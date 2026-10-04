@@ -1,16 +1,15 @@
 import React, { useRef } from 'react';
-import { 
-  Target, 
-  StickyNote, 
-  Flag, 
-  LayoutGrid, 
-  Kanban, 
+import {
+  Target,
+  StickyNote,
+  Flag,
+  LayoutGrid,
+  Kanban,
   Flame,
-  Download, 
-  Upload, 
+  Download,
+  Upload,
   RotateCcw,
   PenTool,
-  Inbox,
   Layers
 } from 'lucide-react';
 import { useGoalStore } from '../../store/useGoalStore';
@@ -19,17 +18,13 @@ import { ActiveOSView } from '../../types/goal';
 import { CanvasTabBar } from './CanvasTabBar';
 
 interface ToolbarProps {
-  onToggleInbox: () => void;
-  isInboxOpen: boolean;
   onToggleGoalBox: () => void;
   isGoalBoxOpen: boolean;
 }
 
-export const Toolbar: React.FC<ToolbarProps> = ({ 
-  onToggleInbox, 
-  isInboxOpen, 
-  onToggleGoalBox, 
-  isGoalBoxOpen 
+export const Toolbar: React.FC<ToolbarProps> = ({
+  onToggleGoalBox,
+  isGoalBoxOpen
 }) => {
   const addGoal = useGoalStore((s) => s.addGoal);
   const addStickyNote = useGoalStore((s) => s.addStickyNote);
@@ -126,32 +121,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             </span>
           </div>
 
-          {/* Hedef Kutusu Butonu (Toggle) */}
+          {/* Hedef Kutusu Butonu (Toggle) - Consolidated */}
           <button
             onClick={onToggleGoalBox}
             className={`flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 border-2 sm:border-3 border-black rounded-xl text-[10px] sm:text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] sm:shadow-[3px_3px_0px_0px_#000] active:shadow-none transition-all shrink-0 ${
-              isGoalBoxOpen 
-                ? 'bg-[#00C2CB] text-black shadow-none translate-x-[1px] translate-y-[1px]' 
+              isGoalBoxOpen
+                ? 'bg-[#00C2CB] text-black shadow-none translate-x-[1px] translate-y-[1px]'
                 : 'bg-white hover:bg-[#00C2CB] text-black'
             }`}
-            title="Tüm Hedefleri Görüntüle ve Yönet"
+            title="Tüm hedefleri yönetin ve yeni fikirler kaydedin"
           >
             <Target className="w-3.5 h-3.5 stroke-[2.5]" />
             <span className="hidden md:inline">HEDEF KUTUSU</span>
-          </button>
-
-          {/* Gelen Kutusu Butonu (Toggle) */}
-          <button
-            onClick={onToggleInbox}
-            className={`flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 border-2 sm:border-3 border-black rounded-xl text-[10px] sm:text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] sm:shadow-[3px_3px_0px_0px_#000] active:shadow-none transition-all shrink-0 ${
-              isInboxOpen 
-                ? 'bg-[#FFE600] text-black shadow-none translate-x-[1px] translate-y-[1px]' 
-                : 'bg-white hover:bg-[#FFE600] text-black'
-            }`}
-            title="Aklınıza gelen fikirleri hızlıca yakalayın"
-          >
-            <Inbox className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span className="hidden md:inline">GELEN KUTUSU</span>
           </button>
 
           {/* 3 Ana Görünüm: Tuval, Yol Haritası, Alışkanlıklar */}
