@@ -1,0 +1,19 @@
+{
+	"$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+	"name": "fabrika-tuval",
+	"owner": {
+		"name": "oguzhalit",
+		"url": "https://github.com/oguzhalit"
+	},
+	"metadata": {
+		"description": "Fabrika build & deployment system with Goal-Hedef app integration. Complete monorepo setup with 30+ CLI verbs and Claude Code plugins.",
+		"version": "0.1.0"
+	},
+	"plugins": [
+		{
+			"name": "fabrika",
+			"source": "./claude-plugins/fabrika",
+			"description": "Fabrika agent pipeline - Build, deployment, planning, and quality assurance. 30+ skills for complete app lifecycle management."
+		}
+	]
+}

@@ -1,0 +1,149 @@
+# Why fabrika is shaped this way
+
+fabrika turns an issue into a merged pull request through a chain of agents. Almost every design
+question people ask about it comes down to the same worry: *why is this so many moving parts when
+one agent could just do the work?* This page answers that. It argues the shape and leaves the full
+argument to the repo's own decision records; none of it is a procedure, and no page here is where
+you look up a flag.
+
+## Stages are separate actors because a judgement needs someone who did not do the work
+
+The chain is `report` → `triage` → `plan-epic` → `build` → `review` → `ship`, with `heal-ci` off to
+the side for a pull request that has stopped moving. Each is its own skill. The stages a driver
+spawns run in an agent shell from [`../agents/`](../agents/); `report`, `plan-epic` and `heal-ci`
+have no shell: a session invokes them directly.
+
+That chain is the text path, and the lane machine has more states than it names. A rendered surface
+is built by `build-ui` and judged by `review-ui`. `review` fires a separate `governance` gate and
+waits on its verdict. A pull request waiting in the merge queue and an epic child being folded into
+its epic's branch are states of their own. The
+[`operate` skill](../skills/operate/SKILL.md) holds the full state table.
+
+The obvious alternative is one long-running agent that does all six. It fails on judgement. An agent
+that just wrote a diff and then reviews it is answering "is this right?" holding every reason it
+believed the diff was right — the reasons are in its context, and the argument for the work is the
+argument for passing it. A separate reviewer starts from the issue and the diff, and nothing else.
+The same split is why the reviewing agent reads its instructions from the base branch rather than
+from the head it is judging: a gate that loads its own operating instructions out of the thing under
+test is not a gate.
+
+The separation also buys context. Each stage carries only its own question's material, so a long
+epic never accumulates one enormous transcript where the early decisions have fallen off the end.
+
+And it fixes authority. One stage owns each question and no other stage recomputes it: `ship` is the
+only merge authority, `review` is the only thing that issues a verdict, `triage` is the only thing
+that types and prioritizes an issue. Two answers to one question is the failure mode the whole
+design is arranged against. The actors are named for the thing that acts rather than the act — a
+`builder` runs `build` — precisely so "who is answering this" stays a question with a name in it.
+
+Human capacity, not agent throughput, is what sizes the chain: batches are shaped to what a reviewer
+can actually check, and the founder keeps one recurring seat rather than one per stage.
+
+## A lane is a run, and its state is on disk because a session is not a place to keep state
+
+A **lane** is one unit of work being driven — an issue, or a standing chore — with a state machine
+over the stages it passes through. `operate` walks that machine, spawning the shell each state
+names and folding the outcome back in.
+
+The lane's state lives in `.fabrika/` on disk as an append-only log, and its ledger is folded fresh
+each run. That is a deliberate rejection of the natural place to put it, which is the driving
+agent's own context. A session ends, gets compacted, or crashes; a run whose state lived only there
+cannot be resumed, cannot be inspected while it is happening, and cannot tell you afterwards what it
+did. Anything a fresh process can fold off disk survives all three.
+
+What may live there is bounded, and the boundary is the point: the log admits only orderings this
+tree can own — drive-loop mechanics — and keeps shared truth on GitHub. A review verdict, a claim, a
+label and a merge-queue position are facts other people and other machines read, so they
+live where those readers already look. A local file asserting a verdict is a second source of truth,
+and the two will disagree.
+
+The claim is the same argument from the other side. It says "this issue is mine", and it does not
+lapse when a run ends, because a run finishing is not the work finishing. The cost accepted there is
+real: a claim can outlive the lane holding it, so reaping dead claims has to actually work.
+
+## The planner does not gate its own plan, and a human sees it before the gate runs
+
+`plan-epic` writes an epic's plan; `check-epic-plan` decides whether that plan is clean enough for
+its children to become buildable. They are two skills for the same reason build and review are: the
+author of a plan is the worst judge of whether it is complete. The gate is deterministic and
+structural, and it enforces itself through state rather than advice — a child that has not passed is
+labelled in a way that makes it unpickable, so "an unverified child got built" is not a thing that
+can happen rather than a thing discouraged.
+
+The human checkpoint sits between them, and it is not redundant with the gate. The gate is fifteen
+structural defect classes; not one of them reads product intent. So an agent could write the user
+stories, satisfy every structural rule, and produce a clean plan for the wrong product. The founder
+approves the plan before the gate runs, and every epic is grilled while it is being planned rather
+than after — asking after the plan is written turns an answer into a re-plan.
+
+## An owner-only step confirms an account, not a person
+
+fabrika keeps six steps for the repo's owner: the UI hand-check, the `pitch-approved:` comment, the
+`bet` row on the betting table, `plan approve`, `decision rule`, and the sole-owner self-approval of
+a control-plane pull request. Each is meant as a person's judgement. What each one checks is
+smaller than that: which GitHub account acted.
+
+That is all GitHub can show a tool. A comment has an author, a table field has an account that set
+it, and a command runs under a token that belongs to an account. None of them records who was at
+the keyboard. So the hand-check, `plan approve`, `decision rule` and the self-approval ask whether
+the account is one the control-plane rows of `.github/CODEOWNERS` name, and the `pitch-approved:`
+comment and the `bet` row ask whether the account has write access. Two of them also refuse a
+comment that carries an agent's stamp, which catches an agent that signs its work and nothing else.
+
+On a repo with one GitHub account, agents act as that account, so an agent can pass every one of
+the six. The line between owner and agent is then a rule the agents keep, written into their
+skills, and no check holds it. fabrika says this plainly instead of adding a proof step, because a
+proof an agent on the same account cannot also produce does not exist on GitHub, and one that
+pretends otherwise would be worse than none: the owner would trust a check that is not there.
+
+A second GitHub account for agents turns four of the six into real checks, since an account that is
+off the control-plane rows fails the roster. The two that read write access still pass it.
+[Run agents under a second GitHub account](run-agents-under-a-second-account.md) has the steps. It
+is optional, and a one-account repo works without it.
+
+One check in this area is GitHub's own, and fabrika does not have to be trusted for it: a pull
+request's author cannot approve that pull request. Where a repo has two or more control-plane
+owners, a control-plane pull request needs an approving review from an owner account that did not
+open it.
+
+## An epic run produces one pull request, because the repair loop is what costs money
+
+An epic has many children. The shape that looks obvious is one pull request per child: each is
+independently reviewable and independently mergeable. fabrika ran that shape and moved off it.
+
+Two things broke. Nothing ever looked at the epic as a whole — two children could each pass their
+own gate and contradict each other — and every failed review round cost a push, a CI run and a
+board write, on work that had not been accepted yet.
+
+Now an epic run is one branch and one pull request. Children land as commits on it, each child's
+review judges its own commit range locally, and the machine ends in one review of the whole pull
+request before the single merge. The inner loop is the cheap one and it never leaves the machine;
+the outer review looks for coherence rather than re-running correctness that already has a verdict.
+That shape is ruled, and the per-child-pull-request engine it replaced is on the record beside it
+with the founder's rationale. Single-issue lanes are untouched: one issue, one pull request.
+
+The guarantee is a state in the machine rather than a step a skill is trusted to perform. A
+convention written in prose gets skipped by an agent that forgot, and does not show up in the lane's
+status.
+
+## fabrika calls nothing outside fabrika, and the pipeline it replaced was deleted
+
+fabrika replaced an earlier pipeline, v1. No fabrika skill and no fabrika verb ever ran v1 code.
+Where v1 had already solved part of a problem, a fabrika session read that code to learn how it
+behaved and what it got wrong, then wrote fabrika's own version. That was duplicated work, knowingly
+paid for: a dependency edge into v1 is the thing that would have made deleting v1 impossible, and
+the whole point of the rewrite was to be able to delete it.
+
+The price bought what it was paid for. v1 was deleted, not frozen: its plugin and its CLI are gone
+from the tree, and fabrika is the one pipeline. The repo that authors fabrika holds the record of
+that deletion in its decision corpus. The alternative on the table was keeping the old tree as a
+comparison baseline. It was refused because two skill rosters answering the same names is the
+two-answers failure again, one level up.
+
+The rule outlives v1, and it is about **calls**. A byte-level format is not a call. When two
+programs meet on a GitHub artifact, that format is a contract, and fabrika owns it: one schema
+module holds the shape and everything else cites it. Two hand-copied copies of a format drift
+silently.
+
+The one deferral that stays sanctioned is a CI gate. Where a gate is already the authority on its
+own question, fabrika expects that gate's answer and computes no second verdict.
