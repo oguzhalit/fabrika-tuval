@@ -18,7 +18,7 @@
 		"sync": "node scripts/sync-bundle.mjs",
 		"prepack": "node scripts/sync-bundle.mjs",
 		"test": "node --test 'scripts/*.unit.test.mjs'",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "effect-tsgo diagnostics --project tsconfig.json --strict && tsc --noEmit"
 	},
 	"pi": {
 		"skills": [
