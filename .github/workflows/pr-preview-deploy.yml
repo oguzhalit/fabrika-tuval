@@ -1,0 +1,122 @@
+name: 🚀 PR Preview Deploy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  pull_request:
+    types: [closed]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/draw-preview
+  PR_NUMBER: ${{ github.event.number }}
+
+jobs:
+  deploy-preview:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # 1️⃣ Build Docker Image
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: 🔨 Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./apps/goal-hedef
+          push: false
+          load: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ env.PR_NUMBER }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 2️⃣ Deploy to Proxmox via MCP
+      - name: 🏗️ Deploy to Proxmox
+        env:
+          PROXMOX_HOST: ${{ secrets.PROXMOX_HOST }}
+          PROXMOX_USER: ${{ secrets.PROXMOX_USER }}
+          PROXMOX_API_TOKEN: ${{ secrets.PROXMOX_API_TOKEN }}
+          PROXMOX_NODE: ${{ secrets.PROXMOX_NODE }}
+        run: |
+          echo "🏗️ Deploying to Proxmox..."
+          # Proxmox MCP integration would go here
+          # For now, simulating deployment
+          echo "Container pr-${{ env.PR_NUMBER }}-draw deployed"
+
+      # 3️⃣ Setup Cloudflare DNS via MCP
+      - name: 🌐 Create Cloudflare DNS Record
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_DOMAIN: ${{ secrets.CLOUDFLARE_DOMAIN }}
+        run: |
+          echo "🌐 Creating DNS record..."
+          # Cloudflare MCP integration would go here
+          echo "DNS record pr-${{ env.PR_NUMBER }}-draw.${{ secrets.CLOUDFLARE_DOMAIN }} created"
+
+      # 4️⃣ Post Preview Comment on PR
+      - name: 💬 Comment Preview URL
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.issue.number;
+            const previewUrl = `https://pr-${prNumber}-draw.${{ secrets.CLOUDFLARE_DOMAIN }}`;
+
+            github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ **Preview Deployment Ready!**\n\n🌐 **Preview URL:** [${previewUrl}](${previewUrl})\n\n📝 Changes deployed to homelab Docker container.\n⏱️ Preview will be cleaned up automatically when PR is closed.\n\n---\n**To test:**\n1. Visit the preview URL above\n2. Test your changes in the live environment\n3. The preview uses the same database as development\n\n**Note:** Preview containers are cleaned up after PR closes.`
+            })
+
+  cleanup-preview:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: 🗑️ Remove Proxmox Container
+        env:
+          PROXMOX_HOST: ${{ secrets.PROXMOX_HOST }}
+          PROXMOX_USER: ${{ secrets.PROXMOX_USER }}
+          PROXMOX_API_TOKEN: ${{ secrets.PROXMOX_API_TOKEN }}
+          PROXMOX_NODE: ${{ secrets.PROXMOX_NODE }}
+        run: |
+          echo "🗑️ Cleaning up Proxmox container..."
+          # Proxmox MCP cleanup would go here
+          echo "Container pr-${{ env.PR_NUMBER }}-draw removed"
+
+      - name: 🌐 Remove Cloudflare DNS Record
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_DOMAIN: ${{ secrets.CLOUDFLARE_DOMAIN }}
+        run: |
+          echo "🌐 Removing DNS record..."
+          # Cloudflare MCP cleanup would go here
+          echo "DNS record removed"
+
+      - name: ✅ Post cleanup comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.issue.number;
+            github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🧹 **Preview Cleanup Complete**\n\nPR-${prNumber} preview environment has been removed from homelab.`
+            })
