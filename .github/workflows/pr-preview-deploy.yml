@@ -47,13 +47,13 @@ jobs:
           mkdir -p ~/.ssh
           echo "$HOMELAB_SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H $HOMELAB_HOST >> ~/.ssh/known_hosts
+          ssh-keyscan -t rsa -H $HOMELAB_HOST >> ~/.ssh/known_hosts 2>&1
 
           # Transfer image
-          scp -i ~/.ssh/id_rsa image-pr-${{ env.PR_NUMBER }}.tar.gz $HOMELAB_USER@$HOMELAB_HOST:/tmp/
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa image-pr-${{ env.PR_NUMBER }}.tar.gz $HOMELAB_USER@$HOMELAB_HOST:/tmp/
 
           # Load and run container on homelab
-          ssh -i ~/.ssh/id_rsa $HOMELAB_USER@$HOMELAB_HOST bash << 'EOFBASH'
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $HOMELAB_USER@$HOMELAB_HOST bash << 'EOFBASH'
           # Load image
           docker load -i /tmp/image-pr-${{ env.PR_NUMBER }}.tar.gz
 
@@ -102,11 +102,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const prNumber = context.issue.number;
-            const previewUrl = `https://pr-${prNumber}-draw.${{ secrets.CLOUDFLARE_DOMAIN }}`;
+            const previewUrl = `https://pr-${{ env.PR_NUMBER }}-draw.${{ secrets.CLOUDFLARE_DOMAIN }}`;
 
             github.rest.issues.createComment({
-              issue_number: prNumber,
+              issue_number: ${{ env.PR_NUMBER }},
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `✅ **Preview Ready!**\n\n🌐 **URL:** [${previewUrl}](${previewUrl})\n\n📦 Running in Docker on homelab\n🔗 Accessible via Cloudflare Tunnel\n🧹 Cleanup on PR close\n\n**Test it:**\n1. Visit the preview URL\n2. Test your changes\n3. Share feedback`
@@ -140,11 +139,12 @@ jobs:
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_DOMAIN: ${{ secrets.CLOUDFLARE_DOMAIN }}
         run: |
           # Get and delete DNS record
           RECORD=$(curl -s -X GET \
             -H "Authorization: Bearer $CF_API_TOKEN" \
-            "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records?name=pr-${{ env.PR_NUMBER }}-draw")
+            "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records?name=pr-${{ env.PR_NUMBER }}-draw.$CF_DOMAIN")
 
           RECORD_ID=$(echo $RECORD | jq -r '.result[0].id // empty')
 
@@ -152,6 +152,9 @@ jobs:
             curl -X DELETE \
               -H "Authorization: Bearer $CF_API_TOKEN" \
               "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records/$RECORD_ID"
+            echo "✅ DNS record deleted: pr-${{ env.PR_NUMBER }}-draw.$CF_DOMAIN"
+          else
+            echo "⚠️  DNS record not found (already deleted?)"
           fi
 
       - name: ✅ Cleanup comment
@@ -160,7 +163,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: ${{ env.PR_NUMBER }},
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `🧹 **Preview Cleaned**\n\nDocker container and DNS record removed.`
