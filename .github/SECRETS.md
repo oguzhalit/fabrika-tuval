@@ -2,21 +2,13 @@
 
 Bu dosya fabrika-tuval projesinde kullanılan GitHub secrets'ları tanımlar.
 
-## 📋 Tanımlı Secrets
+## 📋 Şu Anda Kullanılan Secrets
 
-### Goal-Hedef App Secrets
+Şu an itibarıyla fabrika-tuval'da secrets gerekli değil.
 
-#### `GOAL_HEDEF_API_KEY` (Optional)
-- **Açıklama**: Goal-Hedef uygulamasının API key'i
-- **Gerekli**: Hayır (şimdilik)
-- **Tip**: String
-- **Kullanım**: `env.GOAL_HEDEF_API_KEY` (GitHub Actions workflow'larında)
+### Gelecek İçin Hazırlık
 
-#### `GOAL_HEDEF_DATABASE_URL` (Optional)
-- **Açıklama**: Goal-Hedef'in veritabanı bağlantı URL'i
-- **Gerekli**: Hayır (şimdilik)
-- **Tip**: String (masked)
-- **Kullanım**: `env.GOAL_HEDEF_DATABASE_URL`
+Projede yeni features eklendikçe (API integration, auth, vb.) secrets'lar tanımlanacak.
 
 ## 🔧 Secrets Tanımlama (GitHub Web UI)
 
@@ -24,7 +16,7 @@ Bu dosya fabrika-tuval projesinde kullanılan GitHub secrets'ları tanımlar.
 2. **Settings** → **Secrets and variables** → **Actions**
 3. **New repository secret** tıkla
 4. Secret'ı aşağıdaki bilgilerle doldur:
-   - **Name**: `GOAL_HEDEF_API_KEY` (örneğin)
+   - **Name**: Secret adı (örn: `API_KEY`)
    - **Secret**: Gizli değeri yapıştır
 5. **Add secret** tıkla
 
@@ -33,9 +25,9 @@ Bu dosya fabrika-tuval projesinde kullanılan GitHub secrets'ları tanımlar.
 ```yaml
 - name: Use secret
   env:
-    API_KEY: ${{ secrets.GOAL_HEDEF_API_KEY }}
+    API_KEY: ${{ secrets.API_KEY }}
   run: |
-    echo "API Key configured"
+    echo "Secret configured"
     # Secrets çıktıda gösterilmez
 ```
 
@@ -52,7 +44,7 @@ Bu dosya fabrika-tuval projesinde kullanılan GitHub secrets'ları tanımlar.
 Local'de development yaparken `.env.local` dosyası kullanın:
 
 ```bash
-# apps/goal-hedef/.env.local (gitignore'da var)
+# .env.local (gitignore'da var)
 VITE_API_KEY=your-local-key
 VITE_DATABASE_URL=local-db-url
 ```
@@ -62,3 +54,9 @@ Vite, `VITE_` prefix'li env variables'ları client-side'da kullanabilir.
 ## 📝 Bilgilendirme
 
 Yeni secret eklendiğinde bu dosyayı güncelleyin, ama secret'ın kendisini değil!
+
+### Şu Anda Secrets'ı Olmayan Apps
+
+- **Goal-Hedef**: Sadece client-side React/Vite uygulaması, API/DB ihtiyacı yok
+- **Fabrika-CLI**: Lokal build araçı, external secrets gerekli değil
+- **Fabrika-PI**: Skill/agent bundler, secrets gerekli değil
