@@ -54,19 +54,21 @@ jobs:
       - name: 🚀 Deploy to Homelab (Proxmox QEMU Guest Agent)
         env:
           PROXMOX_HOST: ${{ secrets.PROXMOX_HOST }}
+          PROXMOX_PORT: ${{ secrets.PROXMOX_PORT }}
           PROXMOX_USER: ${{ secrets.PROXMOX_USER }}
           PROXMOX_TOKEN_NAME: ${{ secrets.PROXMOX_TOKEN_NAME }}
           PROXMOX_TOKEN_SECRET: ${{ secrets.PROXMOX_TOKEN_SECRET }}
           REGISTRY_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Setup Proxmox API token
+          # Setup Proxmox API
+          PROXMOX_API="https://${PROXMOX_HOST}:${PROXMOX_PORT}/api2/json"
           API_TOKEN="PVEAPIToken=${PROXMOX_USER}!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_SECRET}"
 
           # Get the node name where QEMU guest is running
           NODE=$(curl -s -k \
             -H "Authorization: $API_TOKEN" \
-            "https://${PROXMOX_HOST}:8006/api2/json/cluster/resources?type=vm" \
+            "${PROXMOX_API}/cluster/resources?type=vm" \
             | jq -r ".data[] | select(.vmid | tonumber == ${{ env.GUEST_VMID }}) | .node" | head -1)
 
           echo "📍 Guest running on node: $NODE"
@@ -88,7 +90,7 @@ jobs:
           curl -s -k -X POST \
             -H "Authorization: $API_TOKEN" \
             -H "Content-Type: application/json" \
-            "https://${PROXMOX_HOST}:8006/api2/json/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
+            "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
             -d "{\"command\": \"sh -c 'echo $COMMANDS_B64 | base64 -d | bash'\"}" \
             | jq '.' || echo "Guest Agent command submitted"
 
@@ -149,16 +151,18 @@ jobs:
       - name: 🗑️ Stop Docker container (Proxmox Guest Agent)
         env:
           PROXMOX_HOST: ${{ secrets.PROXMOX_HOST }}
+          PROXMOX_PORT: ${{ secrets.PROXMOX_PORT }}
           PROXMOX_USER: ${{ secrets.PROXMOX_USER }}
           PROXMOX_TOKEN_NAME: ${{ secrets.PROXMOX_TOKEN_NAME }}
           PROXMOX_TOKEN_SECRET: ${{ secrets.PROXMOX_TOKEN_SECRET }}
         run: |
+          PROXMOX_API="https://${PROXMOX_HOST}:${PROXMOX_PORT}/api2/json"
           API_TOKEN="PVEAPIToken=${PROXMOX_USER}!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_SECRET}"
 
           # Get node name
           NODE=$(curl -s -k \
             -H "Authorization: $API_TOKEN" \
-            "https://${PROXMOX_HOST}:8006/api2/json/cluster/resources?type=vm" \
+            "${PROXMOX_API}/cluster/resources?type=vm" \
             | jq -r ".data[] | select(.vmid | tonumber == ${{ env.GUEST_VMID }}) | .node" | head -1)
 
           echo "🗑️  Stopping container on node: $NODE"
@@ -170,7 +174,7 @@ jobs:
           curl -s -k -X POST \
             -H "Authorization: $API_TOKEN" \
             -H "Content-Type: application/json" \
-            "https://${PROXMOX_HOST}:8006/api2/json/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
+            "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
             -d "{\"command\": \"sh -c 'echo $CLEANUP_B64 | base64 -d | bash'\"}" \
             | jq '.' || echo "Cleanup command submitted"
 
