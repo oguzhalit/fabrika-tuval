@@ -1,8 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
-	"organizeImports": {
-		"enabled": true
-	},
+	"$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
 	"linter": {
 		"enabled": true,
 		"rules": {
@@ -25,6 +22,9 @@
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "double"
+		},
+		"organizeImports": {
+			"enabled": true
 		}
 	},
 	"json": {
