@@ -1,4 +1,4 @@
-name: 🚀 PR Preview Deploy
+name: 🚀 PR Preview Deploy (Docker + Cloudflare Tunnel)
 
 on:
   pull_request:
@@ -7,9 +7,9 @@ on:
     types: [closed]
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/draw-preview
+  IMAGE_NAME: goal-hedef-preview
   PR_NUMBER: ${{ github.event.number }}
+  CONTAINER_PORT: 5173
 
 jobs:
   deploy-preview:
@@ -26,45 +26,77 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       # 1️⃣ Build Docker Image
-      - name: 🐳 Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: 🔨 Build Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: ./apps/goal-hedef
-          push: false
-          load: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ env.PR_NUMBER }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # 2️⃣ Deploy to Proxmox via MCP
-      - name: 🏗️ Deploy to Proxmox
-        env:
-          PROXMOX_HOST: ${{ secrets.PROXMOX_HOST }}
-          PROXMOX_USER: ${{ secrets.PROXMOX_USER }}
-          PROXMOX_API_TOKEN: ${{ secrets.PROXMOX_API_TOKEN }}
-          PROXMOX_NODE: ${{ secrets.PROXMOX_NODE }}
+      - name: 🐳 Build Docker image
         run: |
-          echo "🏗️ Deploying to Proxmox..."
-          # Proxmox MCP integration would go here
-          # For now, simulating deployment
-          echo "Container pr-${{ env.PR_NUMBER }}-draw deployed"
+          cd apps/goal-hedef
+          docker build -t ${{ env.IMAGE_NAME }}:pr-${{ env.PR_NUMBER }} .
 
-      # 3️⃣ Setup Cloudflare DNS via MCP
-      - name: 🌐 Create Cloudflare DNS Record
+      # 2️⃣ Save and transfer to homelab
+      - name: 💾 Save Docker image
+        run: |
+          docker save ${{ env.IMAGE_NAME }}:pr-${{ env.PR_NUMBER }} | gzip > image-pr-${{ env.PR_NUMBER }}.tar.gz
+
+      # 3️⃣ Deploy to Homelab
+      - name: 🚀 Deploy to Homelab Docker
+        env:
+          HOMELAB_SSH_KEY: ${{ secrets.HOMELAB_SSH_KEY }}
+          HOMELAB_HOST: ${{ secrets.HOMELAB_HOST }}
+          HOMELAB_USER: ${{ secrets.HOMELAB_USER }}
+        run: |
+          # Setup SSH
+          mkdir -p ~/.ssh
+          echo "$HOMELAB_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $HOMELAB_HOST >> ~/.ssh/known_hosts
+
+          # Transfer image
+          scp -i ~/.ssh/id_rsa image-pr-${{ env.PR_NUMBER }}.tar.gz $HOMELAB_USER@$HOMELAB_HOST:/tmp/
+
+          # Load and run container on homelab
+          ssh -i ~/.ssh/id_rsa $HOMELAB_USER@$HOMELAB_HOST bash << 'EOFBASH'
+          # Load image
+          docker load -i /tmp/image-pr-${{ env.PR_NUMBER }}.tar.gz
+
+          # Stop old container if exists
+          docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true
+          docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true
+
+          # Run new container
+          docker run -d \
+            --name pr-${{ env.PR_NUMBER }}-draw \
+            -p 300${{ env.PR_NUMBER }}:${{ env.CONTAINER_PORT }} \
+            ${{ env.IMAGE_NAME }}:pr-${{ env.PR_NUMBER }}
+
+          # Clean up
+          rm /tmp/image-pr-${{ env.PR_NUMBER }}.tar.gz
+          EOFBASH
+
+      # 4️⃣ Configure Cloudflare Tunnel Route
+      - name: 🌐 Setup Cloudflare Tunnel Route
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           CF_DOMAIN: ${{ secrets.CLOUDFLARE_DOMAIN }}
+          HOMELAB_HOST: ${{ secrets.HOMELAB_HOST }}
         run: |
-          echo "🌐 Creating DNS record..."
-          # Cloudflare MCP integration would go here
-          echo "DNS record pr-${{ env.PR_NUMBER }}-draw.${{ secrets.CLOUDFLARE_DOMAIN }} created"
+          SUBDOMAIN="pr-${{ env.PR_NUMBER }}-draw"
 
-      # 4️⃣ Post Preview Comment on PR
+          # Create DNS record for Cloudflare Tunnel routing
+          curl -X POST \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records \
+            -d "{
+              \"type\": \"CNAME\",
+              \"name\": \"$SUBDOMAIN\",
+              \"content\": \"$HOMELAB_HOST\",
+              \"ttl\": 1,
+              \"proxied\": true
+            }"
+
+          echo "✅ DNS record created: $SUBDOMAIN.$CF_DOMAIN"
+
+      # 5️⃣ Post Preview Comment
       - name: 💬 Comment Preview URL
         uses: actions/github-script@v7
         with:
@@ -77,7 +109,7 @@ jobs:
               issue_number: prNumber,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `✅ **Preview Deployment Ready!**\n\n🌐 **Preview URL:** [${previewUrl}](${previewUrl})\n\n📝 Changes deployed to homelab Docker container.\n⏱️ Preview will be cleaned up automatically when PR is closed.\n\n---\n**To test:**\n1. Visit the preview URL above\n2. Test your changes in the live environment\n3. The preview uses the same database as development\n\n**Note:** Preview containers are cleaned up after PR closes.`
+              body: `✅ **Preview Ready!**\n\n🌐 **URL:** [${previewUrl}](${previewUrl})\n\n📦 Running in Docker on homelab\n🔗 Accessible via Cloudflare Tunnel\n🧹 Cleanup on PR close\n\n**Test it:**\n1. Visit the preview URL\n2. Test your changes\n3. Share feedback`
             })
 
   cleanup-preview:
@@ -87,36 +119,49 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: 🗑️ Remove Proxmox Container
+      - name: 🗑️ Stop Docker container
         env:
-          PROXMOX_HOST: ${{ secrets.PROXMOX_HOST }}
-          PROXMOX_USER: ${{ secrets.PROXMOX_USER }}
-          PROXMOX_API_TOKEN: ${{ secrets.PROXMOX_API_TOKEN }}
-          PROXMOX_NODE: ${{ secrets.PROXMOX_NODE }}
+          HOMELAB_SSH_KEY: ${{ secrets.HOMELAB_SSH_KEY }}
+          HOMELAB_HOST: ${{ secrets.HOMELAB_HOST }}
+          HOMELAB_USER: ${{ secrets.HOMELAB_USER }}
         run: |
-          echo "🗑️ Cleaning up Proxmox container..."
-          # Proxmox MCP cleanup would go here
-          echo "Container pr-${{ env.PR_NUMBER }}-draw removed"
+          mkdir -p ~/.ssh
+          echo "$HOMELAB_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $HOMELAB_HOST >> ~/.ssh/known_hosts
 
-      - name: 🌐 Remove Cloudflare DNS Record
+          ssh -i ~/.ssh/id_rsa $HOMELAB_USER@$HOMELAB_HOST bash << 'EOFBASH'
+          docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true
+          docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true
+          docker rmi goal-hedef-preview:pr-${{ env.PR_NUMBER }} 2>/dev/null || true
+          EOFBASH
+
+      - name: 🌐 Remove DNS Record
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          CF_DOMAIN: ${{ secrets.CLOUDFLARE_DOMAIN }}
         run: |
-          echo "🌐 Removing DNS record..."
-          # Cloudflare MCP cleanup would go here
-          echo "DNS record removed"
+          # Get and delete DNS record
+          RECORD=$(curl -s -X GET \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records?name=pr-${{ env.PR_NUMBER }}-draw")
 
-      - name: ✅ Post cleanup comment
+          RECORD_ID=$(echo $RECORD | jq -r '.result[0].id // empty')
+
+          if [ ! -z "$RECORD_ID" ]; then
+            curl -X DELETE \
+              -H "Authorization: Bearer $CF_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records/$RECORD_ID"
+          fi
+
+      - name: ✅ Cleanup comment
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const prNumber = context.issue.number;
             github.rest.issues.createComment({
-              issue_number: prNumber,
+              issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🧹 **Preview Cleanup Complete**\n\nPR-${prNumber} preview environment has been removed from homelab.`
+              body: `🧹 **Preview Cleaned**\n\nDocker container and DNS record removed.`
             })
