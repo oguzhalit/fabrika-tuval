@@ -7,12 +7,7 @@
 			"style": {
 				"useImportType": "error"
 			}
-		},
-		"ignore": [
-			"dist",
-			"build",
-			"node_modules"
-		]
+		}
 	},
 	"formatter": {
 		"enabled": true,
