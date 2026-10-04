@@ -1,0 +1,25 @@
+{
+	"name": "fabrika-tuval",
+	"version": "0.0.0",
+	"private": true,
+	"description": "App development with Fabrika",
+	"packageManager": "pnpm@10.27.0",
+	"scripts": {
+		"dev": "turbo run dev",
+		"build": "turbo run build",
+		"test": "turbo run test",
+		"typecheck": "turbo run typecheck",
+		"lint": "biome check .",
+		"format": "biome check --write ."
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.15",
+		"@kampus/fabrika-cli": "^0.9.0",
+		"@kampus/fabrika-pi": "^0.3.0",
+		"turbo": "^2.9.14",
+		"typescript": "^7.0.2"
+	},
+	"volta": {
+		"node": "26.2.0"
+	}
+}

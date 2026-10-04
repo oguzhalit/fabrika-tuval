@@ -1,0 +1,23 @@
+// Fabrika configuration for fabrika-tuval
+{
+	// Project metadata
+	"project": {
+		"name": "fabrika-tuval",
+		"description": "App development with Fabrika"
+	},
+
+	// Apps deployed by Fabrika
+	"apps": {
+		// Add your apps here
+		// "my-app": {
+		//   "path": "apps/my-app",
+		//   "type": "worker" | "web" | "api"
+		// }
+	},
+
+	// Build configuration
+	"build": {
+		"cache": true,
+		"parallel": true
+	}
+}

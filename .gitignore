@@ -1,0 +1,29 @@
+node_modules
+.pnpm-store
+.turbo
+.cache
+dist
+build
+*.tsbuildinfo
+.next
+
+# Generated
+__generated__
+
+# Local env
+.env
+.env.*
+!.env.example
+
+# IDE
+.DS_Store
+.vscode
+.idea
+
+# Test
+test-results
+coverage
+
+# Playwright
+.playwright-mcp
+playwright-report
