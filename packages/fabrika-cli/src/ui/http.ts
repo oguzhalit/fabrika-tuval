@@ -57,7 +57,7 @@ export const storeUpload = (store: string, target: UploadTarget): Effect.Effect<
 			const put = await attempt(
 				fetch(url, {
 					method: "PUT",
-					body: target.bytes,
+					body: target.bytes as unknown as BodyInit,
 					headers: {"content-type": PNG_CONTENT_TYPE},
 				}),
 			);

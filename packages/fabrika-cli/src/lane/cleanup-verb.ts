@@ -263,7 +263,7 @@ export const runCleanup = <R>(
 			);
 		const resolve = (trees: WorkingTrees) =>
 			Effect.gen(function* () {
-				const linked = [];
+				const linked: Array<{branch: string | null; prunable: boolean; path: string}> = [];
 				for (const entry of trees.linked) linked.push({...entry, path: yield* real(entry.path)});
 				return {main: {...trees.main, path: yield* real(trees.main.path)}, linked};
 			});
