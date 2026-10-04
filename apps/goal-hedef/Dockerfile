@@ -3,23 +3,23 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy dependency manifests
-COPY package*.json ./
+# Install pnpm
+RUN npm install -g pnpm
 
-# Install dependencies
-RUN npm ci
-
-# Copy application source
+# Copy entire workspace
 COPY . ./
 
-# Build production bundle
-RUN npm run build
+# Install dependencies
+RUN pnpm install
+
+# Build production bundle for goal-hedef app
+RUN pnpm --filter=@hedef/goal-hedef-canvas build
 
 # Production server
 FROM nginx:alpine
 
 # Copy built assets
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/apps/goal-hedef/dist /usr/share/nginx/html
 
 # Custom nginx configuration for SPA routing
 RUN echo 'server { \
@@ -39,3 +39,4 @@ RUN echo 'server { \
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
+
