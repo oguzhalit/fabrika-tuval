@@ -7,15 +7,18 @@ WORKDIR /app
 RUN npm install -g pnpm
 
 # Copy root package files for workspace
-COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Copy app package
 COPY apps/goal-hedef/package.json ./apps/goal-hedef/
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Copy other app folders if they have packages (for workspace resolution)
+COPY packages/ ./packages/ 2>/dev/null || true
 
-# Copy entire workspace
+# Install dependencies
+RUN pnpm install
+
+# Copy entire application source
 COPY . ./
 
 # Build production bundle
