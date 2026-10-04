@@ -3,6 +3,7 @@
 		"target": "ES2025",
 		"module": "ESNext",
 		"lib": ["ES2025", "DOM", "DOM.Iterable"],
+		"jsx": "react-jsx",
 		"moduleResolution": "bundler",
 		"resolveJsonModule": true,
 		"allowJs": true,
@@ -10,12 +11,10 @@
 		"strict": true,
 		"noEmit": true,
 		"esModuleInterop": true,
-		"skipLibCheck": true
+		"skipLibCheck": true,
+		"skipDefaultLibCheck": true,
+		"noImplicitAny": false
 	},
-	"files": [],
-	"references": [
-		{ "path": "packages/fabrika-cli/tsconfig.json" },
-		{ "path": "packages/fabrika-pi/tsconfig.json" },
-		{ "path": "apps/goal-hedef/tsconfig.json" }
-	]
+	"include": ["packages/**/*.ts", "packages/**/*.tsx", "apps/**/*.ts", "apps/**/*.tsx"],
+	"exclude": ["node_modules", "**/node_modules", "**/*.test.ts", "**/*.spec.ts"]
 }
