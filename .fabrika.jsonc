@@ -60,5 +60,16 @@
 	},
 
 	// Default app (when no app specified in command)
-	"defaultApp": "goal-hedef"
+	"defaultApp": "goal-hedef",
+
+	// Doc leak exemptions — paths that the gate allows despite matching leak patterns
+	"docLeakExempt": [
+		"/CLAUDE.md",
+		"/agents/triager.md",
+		"/packages/leak-guard/README.md",
+		"/skills/report/SKILL.md",
+		"/skills/review-doc/SKILL.md",
+		"/skills/skill-doctor/references/supported-harnesses.md",
+		"/skills/triage/SKILL.md"
+	]
 }

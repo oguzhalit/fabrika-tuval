@@ -3,7 +3,14 @@
   "bootstrap-sha": "main",
   "packages": {
     "packages/fabrika-cli": {
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "/claude-plugins/fabrika/cli-floor.json",
+          "jsonpath": "$.minimum"
+        }
+      ]
     }
   }
 }
