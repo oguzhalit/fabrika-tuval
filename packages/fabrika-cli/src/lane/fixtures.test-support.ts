@@ -1,0 +1,215 @@
+/**
+ * Shared lane fixtures: the committed coder and chore templates read verbatim (the golden-fixture
+ * idiom), and a two-phase document in the /prd-to-tasks shape small enough for a test to mutate.
+ */
+import {Effect} from "effect";
+import {
+	type DriverRouted,
+	type ParkCauseSurface,
+	parkCauseKey,
+	type RepairBudgetSpent,
+	type Uncaused,
+} from "../config/keys/park-cause.ts";
+import {loadConfig} from "../config/load.ts";
+import {type Read, readFromLoad} from "../config/read-key.ts";
+import {readGoldenFixture} from "../golden-fixture.ts";
+import {answer, type VerbOutcome} from "../verb.ts";
+import type {RoutedBasis} from "../wire/routed-elsewhere.ts";
+import {LOCK_DIR_NAME} from "./append-lock.ts";
+import type {ClosingMerge} from "./closing-merge.ts";
+import {type ProveOptions, proofLabelOf} from "./prove-verb.ts";
+
+/**
+ * A prover the test drives, standing in for `runProve` — it records what the verb asked it and
+ * answers what the test wants read. `proof: "not-required"` is the shape `lane prove` answers with
+ * at exit 0 for an event that claims no artifact, so the default lets an append through.
+ *
+ * Both appending verbs take their prover as a parameter so their unit tiers stay offline; this is
+ * the one stand-in, shared so the driver's path and the shell's are exercised against one fake.
+ */
+export const fakeProver = (
+	outcome: VerbOutcome = answer(JSON.stringify({proof: "not-required"})),
+	deferred: ReadonlyArray<string> = [],
+	partial: boolean | null = null,
+	landed: ReadonlyArray<number> = [],
+	diagnosis = false,
+	routed: ReadonlyArray<string> = [],
+	closingMerge: ClosingMerge | null = null,
+) => {
+	const asked: ProveOptions[] = [];
+	return {
+		asked,
+		prove: (options: ProveOptions) =>
+			Effect.sync(() => {
+				asked.push(options);
+				// The label is read off the outcome by the prover's own reader, so a fixture cannot
+				// answer a label its stdout does not carry.
+				return {
+					...outcome,
+					deferred,
+					partial,
+					landed,
+					diagnosis,
+					routed,
+					closingMerge,
+					proof: proofLabelOf(outcome),
+				};
+			}),
+	};
+};
+
+/**
+ * A prover that answers per event, for the one caller that asks about two.
+ *
+ * `lane report`'s conditional terminal tries the advanced event and falls through to the parked one,
+ * so a fake that answers the same thing twice cannot express the case the fall-through exists for:
+ * a `PASS` the board refuses beside a park it proves.
+ */
+export const fakeProverByEvent = (
+	answers: Readonly<Record<string, ProofFacts>>,
+	fallback: ProofFacts = {outcome: answer(JSON.stringify({proof: "not-required"}))},
+) => {
+	const asked: ProveOptions[] = [];
+	return {
+		asked,
+		prove: (options: ProveOptions) =>
+			Effect.sync(() => {
+				asked.push(options);
+				const facts = answers[options.event.toUpperCase()] ?? fallback;
+				return {
+					...facts.outcome,
+					deferred: facts.deferred ?? [],
+					partial: facts.partial ?? null,
+					landed: facts.landed ?? [],
+					diagnosis: facts.diagnosis ?? false,
+					routed: facts.routed ?? [],
+					closingMerge: facts.closingMerge ?? null,
+					...(facts.routedBasis === undefined ? {} : {routedBasis: facts.routedBasis}),
+					proof: proofLabelOf(facts.outcome),
+				};
+			}),
+	};
+};
+
+/** What {@link fakeProverByEvent} answers for one event — every field but the outcome optional. */
+export interface ProofFacts {
+	readonly outcome: VerbOutcome;
+	readonly deferred?: ReadonlyArray<string>;
+	readonly partial?: boolean | null;
+	readonly landed?: ReadonlyArray<number>;
+	readonly diagnosis?: boolean;
+	readonly routed?: ReadonlyArray<string>;
+	readonly routedBasis?: RoutedBasis;
+	readonly closingMerge?: ClosingMerge;
+}
+
+/**
+ * A `parkCause` read at any arm, for a verb test that does not open a config file. Its `record`
+ * default is a fixture convenience, not the shipped value: {@link parkCauseDeclared} is the read a
+ * repo's own file resolves to.
+ */
+export const parkCauseRead = (
+	uncaused: Uncaused = "record",
+	driverRouted: DriverRouted = "refuse",
+	repairBudgetSpent: RepairBudgetSpent = "driver",
+): Read<ParkCauseSurface> => ({
+	_tag: "Value",
+	value: {uncaused, driverRouted, repairBudgetSpent},
+	note: `test fixture: parkCause.uncaused = ${uncaused}, parkCause.driverRouted = ${driverRouted}, parkCause.repairBudgetSpent = ${repairBudgetSpent}`,
+});
+
+/** The `parkCause` read a repo's `.fabrika.jsonc` text resolves to, through the shipped decode. */
+export const parkCauseDeclared = (text: string): Read<ParkCauseSurface> =>
+	readFromLoad(loadConfig({_tag: "Text", text}), parkCauseKey);
+
+/**
+ * The paths a verb wrote that are the lane's — what "nothing was written" means for a refusal.
+ *
+ * A verb that reaches its body has taken the append lock, and taking it stamps a holder inside the
+ * sidecar. That write is the lock's own bookkeeping and is gone again when the lock is released, so
+ * counting it would turn every refusal that got as far as the lock into one that wrote something.
+ */
+export const laneWrites = (written: ReadonlyMap<string, string>): ReadonlyArray<string> =>
+	[...written.keys()].filter((path) => !path.includes(`/${LOCK_DIR_NAME}/`));
+
+export const coderTemplateText = (): string =>
+	readGoldenFixture(import.meta.url, "./templates/coder.workflow.json");
+
+export const coderWorkflow = (): unknown => JSON.parse(coderTemplateText());
+
+export const choreTemplateText = (): string =>
+	readGoldenFixture(import.meta.url, "./templates/chore.workflow.json");
+
+export const choreWorkflow = (): unknown => JSON.parse(choreTemplateText());
+
+const region = (ns: string): Record<string, unknown> => ({
+	initial: "doing",
+	states: {
+		doing: {on: {[`${ns}.DONE`]: "checking", [`${ns}.BLOCKED`]: "blocked"}},
+		checking: {
+			on: {
+				[`${ns}.PASS`]: "passed",
+				[`${ns}.BLOCKED`]: "blocked",
+				[`${ns}.FAIL`]: [
+					{target: "doing", guard: `${ns.toLowerCase()}RetriesRemaining`},
+					{target: "tripped"},
+				],
+			},
+		},
+		blocked: {on: {[`${ns}.UNBLOCKED`]: "hist"}},
+		hist: {type: "history"},
+		passed: {type: "final"},
+		tripped: {type: "final"},
+	},
+});
+
+/** phase1: two parallel tasks (task_a with maxRetries 2); phase2: one; noErrors gates on both. */
+export const twoPhaseWorkflow = (): Record<string, unknown> =>
+	JSON.parse(
+		JSON.stringify({
+			id: "fixture",
+			version: 1,
+			machine: {
+				id: "fixture",
+				initial: "phase1",
+				context: {
+					task_a: {retries: 0, maxRetries: 2, code: true},
+					task_b: {retries: 0, maxRetries: 3, code: false},
+					task_c: {retries: 0, maxRetries: 3, code: true},
+				},
+				states: {
+					phase1: {
+						type: "parallel",
+						states: {
+							task_a: region("TASK_A"),
+							task_b: region("TASK_B"),
+						},
+						onDone: [{target: "phase2", guard: "noErrors"}, {target: "tripped"}],
+					},
+					phase2: {
+						type: "parallel",
+						states: {task_c: region("TASK_C")},
+						onDone: [{target: "complete", guard: "noErrors"}, {target: "tripped"}],
+					},
+					complete: {type: "final"},
+					tripped: {type: "final"},
+				},
+			},
+		}),
+	);
+
+/** Reach one phase-1 state node of a fixture document, for a test to mutate its `on` map. */
+export const stateNode = (
+	workflow: Record<string, unknown>,
+	task: string,
+	state: string,
+): {on: Record<string, unknown>} => {
+	type Loose = Record<
+		string,
+		{states: Record<string, {states: Record<string, {on: Record<string, unknown>}>}>}
+	>;
+	const phases = (workflow.machine as {states: Loose}).states;
+	const node = phases.phase1?.states[task]?.states[state];
+	if (node === undefined) throw new Error(`fixture holds no state ${task}.${state}`);
+	return node;
+};

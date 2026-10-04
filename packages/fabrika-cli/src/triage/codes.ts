@@ -1,0 +1,365 @@
+/**
+ * Exit allocations for `triage`; `triage codes` renders TRIAGE_EXIT_TABLE.
+ * Each leaf in `./command.ts` documents its triggers. Shared meanings import `../exit-codes.ts`;
+ * `../exit-code-alignment.ts` checks that private allocations do not collide with them.
+ *
+ * Code 4 is retired. It combined an absent issue with an unreadable one. Keeping it empty
+ * preserves the split between ZERO_SCOPE and PRECONDITION_UNKNOWN and the shared allocation.
+ */
+
+import {
+	BARE_AT_PATH as SHARED_BARE_AT_PATH,
+	CLASSIFIED as SHARED_CLASSIFIED,
+	EMPTY_STDIN as SHARED_EMPTY_STDIN,
+	LEAKED_PATH as SHARED_LEAKED_PATH,
+	NO_TARGET as SHARED_NO_TARGET,
+	PRECONDITION_UNKNOWN as SHARED_PRECONDITION_UNKNOWN,
+	READBACK_MISMATCH as SHARED_READBACK_MISMATCH,
+	WRITE_UNKNOWN as SHARED_WRITE_UNKNOWN,
+} from "../exit-codes.ts";
+import {NO_IMPLEMENTATION} from "../verb.ts";
+
+const ANSWER = 0;
+const FAILED = 1;
+
+export const EMPTY_STDIN = SHARED_EMPTY_STDIN;
+export const LEAKED_PATH = SHARED_LEAKED_PATH;
+/**
+ * The **authored** text is a bare `@` path reference — **not** redactable.
+ *
+ * Separate from {@link LEAKED_PATH} because the fixes are opposite: the caller's loop on a path
+ * refusal is *redact and re-send*, and on a body that IS a path that loop never terminates.
+ */
+export const BARE_AT_PATH = SHARED_BARE_AT_PATH;
+/**
+ * Zero scope: a read that succeeded over nothing, an absent label vocabulary, or a target issue
+ * **proven absent (404)** or closed — a fail-closed refusal, because a proven negative over
+ * nothing read is no answer at all.
+ *
+ * *Proven* is the operative word. A 404 is a fact about the repository; an unreachable GitHub is not
+ * a fact about anything, and lands on {@link PRECONDITION_UNKNOWN} instead.
+ */
+export const ZERO_SCOPE = SHARED_NO_TARGET;
+/**
+ * The write itself failed, so the outcome is **UNKNOWN** — deliberately not `1`.
+ *
+ * A create or PATCH that times out may or may not have landed. Seating that on `1` would make
+ * "GitHub refused the write" indistinguishable from "the binary is broken", which is the
+ * verdict-versus-invocation collision the reserved range exists to prevent. Each
+ * message carries its recovery instruction, because a blind retry is how one split becomes two
+ * children.
+ */
+export const WRITE_UNKNOWN = SHARED_WRITE_UNKNOWN;
+export const READBACK_MISMATCH = SHARED_READBACK_MISMATCH;
+/**
+ * The supplied value is not permitted in this position — off a closed enum, a `--home` naming a
+ * milestone that is not open, or a `--slug` that is not a kebab-case leaf.
+ *
+ * The superset that keeps `report`'s reading true: there `10` is a title or `--label` carrying a
+ * type or priority. A closed milestone is an off-vocabulary home, so it belongs with the enum
+ * refusals rather than with the shape errors; a slug joins them because its whole fix is the same
+ * one — re-run with another value — which is exactly what `1` cannot tell a caller (`build scratch`
+ * seats it here for the same reason).
+ */
+export const OFF_VOCABULARY = SHARED_CLASSIFIED;
+export const PRECONDITION_UNKNOWN = SHARED_PRECONDITION_UNKNOWN;
+/**
+ * Refused: the issue is human-filed and this is not a `--duplicate-of` fold.
+ *
+ * The fold is the one exception, ruled on 2026-08-21: it moves the content into a survivor rather
+ * than discarding it, so provenance does not gate it. Every other close of a human filing still
+ * refuses here.
+ *
+ * `12`, not `11`, because `11` already means `PRECONDITION_UNKNOWN` in the shipped `report` table
+ * this group aligns to. The specifying issue's acceptance criteria stated `11`/`12` for this pair;
+ * the merged contract's `12`/`13` wins, and the divergence is disclosed rather than silently
+ * resolved. That
+ * clearance is now checked both ways — `../exit-code-alignment.ts` reds if either table moves into
+ * the other's seat.
+ */
+export const HUMAN_FILED = 12;
+export const UNCONFIRMED = 13;
+/**
+ * Refused: the acceptance-criteria block is drifted in a way no mechanical repair covers.
+ *
+ * `repair-criteria` may fix exactly one defect — a heading whose text is already exactly
+ * `Acceptance criteria` and whose only drift is the level. Anything else (drifted text, multiple
+ * headings, a section with no checkbox items, a drift living only inside the preserved original) is
+ * this refusal: rewriting it would be indistinguishable from inventing a contract, which is the one
+ * thing the review gate is forbidden to do.
+ */
+export const UNREPAIRABLE = 14;
+/**
+ * Refused: the **authored region of the composed body** carries an acceptance-criteria block the
+ * wire reader classifies `Malformed`.
+ *
+ * Every downstream consumer (`build issue`, `review criteria`) reads the block through
+ * `../wire/acceptance-criteria.ts` and rejects exactly what it rejects, so writing it to a body only
+ * defers the refusal to a lane that cannot fix it. `Absent` stays allowed here: an
+ * issue with no criteria block is a fact, not a defect, and this code never turns enrich into
+ * "every issue must have criteria". Over a target already carrying `ready-for:agent` that fact
+ * becomes a broken promise instead, and {@link CRITERIA_REQUIRED} is where enrich refuses it.
+ *
+ * Distinct from {@link UNREPAIRABLE}, which is `repair-criteria`'s answer about a block already on
+ * the board. This one is `enrich`'s answer about a block that has not landed yet, so the fix is a
+ * re-send rather than a hand-edit.
+ */
+export const MALFORMED_CRITERIA = 15;
+/**
+ * Refused: the `ready-for:agent` audience asserted over a body whose acceptance-criteria block the
+ * wire reader does not answer `Found` on.
+ *
+ * `ready-for:agent` is the promise that a builder can pick the issue up cold, and the criteria block
+ * is what the promise is made of — so every door onto that state asserts it. Without
+ * this seat the contract is first read at `review criteria`, once a branch, a build, a push, a PR
+ * and a CI run have already been spent on an issue that never carried one.
+ *
+ * **Three doors, one code**, because the fact a caller routes on is the same at all three: the
+ * label-writing pair — `triage apply --ready-for agent` and `decision rule`'s audience flip — and
+ * the body-writing one, `triage enrich` over a target already carrying the label. The last was the
+ * hole: enrich never read the target's labels, so a re-enrichment could compose a criteria-less body
+ * and leave the stamp standing over no contract, and nothing re-checked until `build claim` refused
+ * a lane that had already been spawned.
+ *
+ * Its own code rather than {@link MALFORMED_CRITERIA}'s: that one is `enrich`'s answer about the
+ * *shape* of a block, fixed by re-sending corrected markdown, and it allows `Absent` deliberately.
+ * This one is about the audience, where `Absent` is the case it exists to refuse — and its second
+ * escape is one no re-send covers, dropping the label.
+ */
+export const CRITERIA_REQUIRED = 16;
+/**
+ * Refused: a live claim marker on the target names a session other than this one.
+ *
+ * The claim protocol was advisory at exactly the point it needed to bite — `triage claim` resolved
+ * the race and no verb after it re-read the answer, so a session that read `lost` could still
+ * overwrite the winner's authored body. Every mutating verb now re-reads it, and
+ * this is what they refuse on.
+ *
+ * Its own seat rather than {@link ZERO_SCOPE}'s: a closed target and a contested one need opposite
+ * responses — the first says this issue is finished, the second says wait or take the next one — and
+ * a caller cannot route on a code that fuses them. Holding **no** marker is not this refusal: an
+ * unclaimed issue is the ordinary first-triage case and stays mutable.
+ */
+export const CLAIMED_ELSEWHERE = 17;
+/**
+ * Refused: no value of `.fabrika.jsonc` may be used, so nothing is written.
+ *
+ * The seat covers every way a config fails to yield one — a key's load-time check refusing it, a
+ * file that could not be read, a document that is not a JSON object, a key no decoder accepted —
+ * because from a write path they are one answer: this repo has no usable config, and every label the
+ * reconcile would judge is judged against it. `../config/unusable.ts` is where that set is decided.
+ *
+ * The load-time check that reaches triage is the containment invariant
+ * (`../config/containment.ts`): a facet is delete authority, so a config declaring a value its facet
+ * does not own — or an enumerated facet owning a label no value produces — reconciles an issue into
+ * a shape nobody asked for — and the run that did it printed a success line while it happened.
+ *
+ * Its own seat rather than {@link OFF_VOCABULARY}'s: that one is a bad *argument*, fixed by re-running
+ * the verb with another value, and this one is a bad *repository*, fixed by editing a file — a caller
+ * that retried this code would loop forever.
+ */
+export const CONFIG_REFUSED = 18;
+/**
+ * Refused: the asking lane holds no live claim on the target, so it has no nonce to key on.
+ *
+ * `triage scratch`'s, and only a namespace allocator needs it. The five mutating verbs pass when
+ * nobody holds a claim — an unclaimed issue is the ordinary first-triage case — but a scratch path
+ * IS the lane, so a caller that cannot prove one has nothing to be allocated a directory under.
+ *
+ * Its own seat rather than {@link CLAIMED_ELSEWHERE}'s: that code means a live marker names *another
+ * session*, deliberately excluding "I hold none". This one covers both ways a lane fails to hold the
+ * claim — no marker of its own, and a marker of its own that lost the race to a sibling lane — and
+ * the message says which, because the caller's move differs: claim first, versus back off.
+ */
+export const CLAIM_NOT_HELD = 19;
+/**
+ * Refused: the body being written states an ordering the live `blocked_by` graph carries no edge for.
+ *
+ * The graph is the one carrier of "do not start this yet", so prose stating an ordering the graph
+ * does not carry produces an issue `build pick` admits and no lane can build — an issue that
+ * shipped exactly that cost a claim, a read pass and a back-off. `enrich` is fail-closed over it,
+ * on the `fanout-guard` / `catalog-guard` idiom.
+ *
+ * **There is no override flag**, and the two escapes are on the refusal line: wire the edge with
+ * `triage apply <n> --blocked-by <m>`, or reword the body so it states no ordering it does not own.
+ *
+ * Its own seat rather than {@link MALFORMED_CRITERIA}'s: that one is about the *shape* of a block in
+ * the body, fixed by re-sending corrected markdown, and this one is about the body disagreeing with
+ * the *graph*, which a re-send alone can never fix.
+ */
+export const UNWIRED_ORDERING = 20;
+/**
+ * Refused: a `--blocked-by` target is a **pull request**, where an issue belongs instead.
+ *
+ * "a blocking pull request is named in the graph by the issue its merge closes" — so the edge the
+ * caller wants exists, addressed by another number. The remedy is a different argument, which is why
+ * this is a refusal rather than a POST the API is left to judge.
+ *
+ * Its own seat rather than {@link ZERO_SCOPE}'s: `repos/{o}/{r}/issues/<n>` serves pull requests, so
+ * a PR number resolves `Present` and the proven-absent arm can never fire for one. Fusing the two
+ * would tell a caller "no such issue" about a number that exists and is on their screen.
+ */
+export const PULL_REQUEST_TARGET = 21;
+/**
+ * Refused: an audit document — the input set or a chunk — is not JSON, or a row in it breaks the
+ * pinned verdict-row shape: an unknown verdict, no issue number, a KILL naming no value-bar clause.
+ *
+ * Its own seat rather than {@link PRECONDITION_UNKNOWN}'s: the file was read, so the answer is not
+ * unknown — it is a document a reader must re-emit.
+ */
+export const MALFORMED_AUDIT = 22;
+/**
+ * Refused: a chunk's rows differ from the total it declared. The declared total is the chunk's
+ * checksum, and a merge that went past a short chunk is how a dropped row came back as a verdict
+ * nobody gave.
+ */
+export const CHUNK_MISCOUNTED = 23;
+/** Refused: one issue carries more than one verdict row across the chunks being merged. */
+export const DUPLICATE_VERDICT = 24;
+/**
+ * Refused: the merged issue set is not the audited input set — an issue has no row, or a row names
+ * an issue the audit never listed.
+ */
+export const SET_MISMATCH = 25;
+/**
+ * Refused: the text `triage enrich` was sent carries no plain-language summary section, an empty
+ * one, or more than one.
+ *
+ * Its own seat rather than {@link EMPTY_STDIN}'s: that code says stdin held nothing, and here stdin
+ * held a body that lacks the one section the envelope places first. The fix is to add that section,
+ * not to re-pipe.
+ */
+export const PLAIN_SUMMARY_REQUIRED = 26;
+
+/**
+ * Refused: `triage sweep-homes` left un-homed `status:triaged` issues untouched.
+ *
+ * An un-homed issue has three remedies (home it in an open milestone, label it a standing lane, or
+ * kill it), and choosing one is triage's judgment, so the sweep lists each and writes nothing to it.
+ * The double-marked clears in the same run still land; this code says the backlog is not yet
+ * home-xor-exempt, so the run cannot answer as if it were.
+ *
+ * Its own seat rather than {@link ZERO_SCOPE}'s: that one is a scan that found nothing, and this one
+ * is a scan that found work only a person or a triager can do.
+ */
+export const UNHOMED_REMAIN = 27;
+
+/** The verb never ran (unresolved binary). The shell's, not this process's — no constant owns it. */
+const NEVER_RAN = 127;
+
+/** One row of the shared matrix: a code and the single meaning it carries across the group. */
+export interface ExitCodeRow {
+	readonly code: number;
+	readonly meaning: string;
+}
+
+/**
+ * The whole matrix in ascending order — the machine-readable form of the contract's table.
+ *
+ * The reserved rows sit here beside the allocated ones because the matrix owns what a code *means*
+ * while each verb's `--help` owns what *triggers* it. `4` is absent: it is unallocated, and a row
+ * for it would be a meaning.
+ */
+export const TRIAGE_EXIT_TABLE: ReadonlyArray<ExitCodeRow> = [
+	{code: ANSWER, meaning: "the answer is on stdout"},
+	{code: FAILED, meaning: "usage error, unresolvable repo, or the verb failed to run"},
+	{code: EMPTY_STDIN, meaning: "stdin was read and held nothing"},
+	{code: LEAKED_PATH, meaning: "the authored text carries a machine-local path"},
+	{code: BARE_AT_PATH, meaning: "the authored text is a bare @ path reference — not redactable"},
+	{
+		code: ZERO_SCOPE,
+		meaning:
+			"zero scope: a read that succeeded over nothing, an absent label vocabulary, or a target issue proven absent (404) or closed",
+	},
+	{code: WRITE_UNKNOWN, meaning: "the write itself failed — the outcome is UNKNOWN"},
+	{code: READBACK_MISMATCH, meaning: "the write landed but the read-back does not match"},
+	{
+		code: OFF_VOCABULARY,
+		meaning:
+			"the supplied value is not permitted here — off a closed vocabulary, a non-open milestone, or a slug that is not a kebab-case leaf",
+	},
+	{
+		code: PRECONDITION_UNKNOWN,
+		meaning: "a precondition read failed — nothing was written and the outcome is UNKNOWN",
+	},
+	{
+		code: HUMAN_FILED,
+		meaning: "refused: the issue is human-filed and this is not a --duplicate-of fold",
+	},
+	{
+		code: UNCONFIRMED,
+		meaning: "refused: close-eligible, but the kill is unconfirmed",
+	},
+	{
+		code: UNREPAIRABLE,
+		meaning:
+			"refused: the acceptance-criteria drift is not mechanically repairable — not a pure level drift on exact heading text",
+	},
+	{
+		code: MALFORMED_CRITERIA,
+		meaning:
+			"refused: the composed body's authored region carries an acceptance-criteria block the wire reader classifies Malformed",
+	},
+	{
+		code: CRITERIA_REQUIRED,
+		meaning:
+			"refused: the ready-for:agent audience over a body carrying no acceptance-criteria block the wire reader answers Found on — stamped by --ready-for agent, or composed by enrich over a target already labelled",
+	},
+	{
+		code: CLAIMED_ELSEWHERE,
+		meaning: "refused: a live claim marker on the target names another session",
+	},
+	{
+		code: CONFIG_REFUSED,
+		meaning:
+			"refused: no value of .fabrika.jsonc may be used — a key's load-time check refused it, it could not be read, or it did not decode",
+	},
+	{
+		code: CLAIM_NOT_HELD,
+		meaning: "refused: the asking lane holds no live claim on the target",
+	},
+	{
+		code: UNWIRED_ORDERING,
+		meaning:
+			"refused: the composed body states an ordering the live blocked_by graph carries no edge for",
+	},
+	{
+		code: PULL_REQUEST_TARGET,
+		meaning:
+			"refused: a --blocked-by target is a pull request — a blocking PR is named in the graph by the issue its merge closes",
+	},
+	{
+		code: MALFORMED_AUDIT,
+		meaning:
+			"refused: an audit document is not JSON, or a verdict row breaks the pinned shape — unknown verdict, no issue number, or a KILL with no value-bar clause",
+	},
+	{
+		code: CHUNK_MISCOUNTED,
+		meaning: "refused: a chunk's rows differ from the total it declared — no merged output",
+	},
+	{
+		code: DUPLICATE_VERDICT,
+		meaning:
+			"refused: an issue carries more than one verdict row across the chunks — no merged output",
+	},
+	{
+		code: SET_MISMATCH,
+		meaning:
+			"refused: the merged issue set is not the audited input set — an issue is missing or invented — no merged output",
+	},
+	{
+		code: PLAIN_SUMMARY_REQUIRED,
+		meaning:
+			"refused: the enrich text carries no plain-language summary section, an empty one, or more than one",
+	},
+	{
+		code: UNHOMED_REMAIN,
+		meaning:
+			"refused: sweep-homes left un-homed triaged issues untouched — each needs triage's home, lane or kill",
+	},
+	{code: NO_IMPLEMENTATION, meaning: "no implementation could be resolved"},
+	{code: NEVER_RAN, meaning: "the verb never ran (unresolved binary)"},
+];
+
+/** The unallocated code — see the gap note at the top of this file. */
+export const DELIBERATE_GAP = 4;

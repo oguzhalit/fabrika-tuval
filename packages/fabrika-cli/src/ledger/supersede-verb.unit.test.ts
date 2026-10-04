@@ -1,0 +1,234 @@
+import {Effect, Layer} from "effect";
+import {describe, expect, it} from "vitest";
+import {GATEWAY, GIT_DIRS, served} from "../build/fixtures.test-support.ts";
+import {fakeFs, fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
+import {
+	BARE_AT_PATH,
+	LEAKED_PATH,
+	OFF_VOCABULARY,
+	PRECONDITION_UNKNOWN,
+	READBACK_MISMATCH,
+	WRITE_UNKNOWN,
+	ZERO_SCOPE,
+} from "./codes.ts";
+import {bodyDigest} from "./digest.ts";
+import {CLAIMED, childIssue, DIR, env, epic, subIssues, TOKEN} from "./fixtures.test-support.ts";
+import {
+	type ChildRecord,
+	manifestPath,
+	renderManifest,
+	renderRunRecord,
+	runJsonPath,
+} from "./run.ts";
+import {runSupersede} from "./supersede-verb.ts";
+
+const SUBS = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4300\/sub_issues/;
+const CHILD = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4288$/;
+const EPIC_READ = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4300$/;
+const COMMENT = /^POST https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4288\/comments$/;
+const UNLINK = /^DELETE https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4300\/sub_issue$/;
+const CLOSE = /^PATCH https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4288$/;
+
+const RUN_JSON = renderRunRecord({
+	epic: 4300,
+	run: "4300-c1a4d6f8",
+	mode: "re-plan",
+	cycleDoc: "present",
+	bodyDigest: bodyDigest("An epic brief about the moderation queue.\n"),
+});
+
+const record = (number: number, mintedThisRun: boolean): ChildRecord => ({
+	number,
+	id: number * 10,
+	title: `child ${number}`,
+	type: "type:feature",
+	priority: "p1",
+	readyFor: "agent",
+	stories: [1],
+	containment: "flag",
+	linked: true,
+	mintedThisRun,
+});
+
+const files = (...records: ReadonlyArray<ChildRecord>) => ({
+	[runJsonPath(DIR)]: RUN_JSON,
+	[manifestPath(DIR)]: renderManifest(records),
+});
+
+const COMMENTED = served(
+	{id: 5230661234, html_url: "https://forge.example/o/r/issues/4288#c"},
+	201,
+);
+
+/** The three legs and the reads around them; `once` lets each read differ before and after. */
+const happy = (
+	overrides: {
+		comment?: HttpReply;
+		unlink?: HttpReply;
+		close?: HttpReply;
+		after?: HttpReply;
+		afterSubs?: HttpReply;
+	} = {},
+): ReadonlyArray<Scripted> => [
+	[EPIC_READ, epic()],
+	[/^git rev-parse --path-format=absolute/, GIT_DIRS],
+	...CLAIMED,
+	[once(SUBS), subIssues({number: 4288, id: 42880})],
+	[once(CHILD), childIssue({number: 4288})],
+	[COMMENT, overrides.comment ?? COMMENTED],
+	[UNLINK, overrides.unlink ?? served({})],
+	[CLOSE, overrides.close ?? served({})],
+	[
+		CHILD,
+		overrides.after ?? childIssue({number: 4288, state: "closed", stateReason: "not_planned"}),
+	],
+	[SUBS, overrides.afterSubs ?? served([])],
+];
+
+const run = (
+	script: ReadonlyArray<Scripted> = happy(),
+	fsFiles: Readonly<Record<string, string | null>> = files(record(4288, false)),
+	options: {child?: number; reason?: string} = {},
+) => {
+	const shell = fakeSeams(script);
+	const fs = fakeFs({files: fsFiles});
+	return Effect.runPromise(
+		Effect.provide(
+			runSupersede({
+				number: 4300,
+				child: options.child ?? 4288,
+				reason: options.reason ?? "folded into the loader slice",
+				token: TOKEN,
+				repo: null,
+				cwd: "/repo",
+				env,
+			}),
+			Layer.mergeAll(shell.layer, fs.layer),
+		),
+	).then((outcome) => ({
+		outcome,
+		calls: shell.calls,
+		log: shell.log,
+		bodies: shell.bodies,
+		requests: shell.requests,
+	}));
+};
+
+describe("runSupersede", () => {
+	it("comments, unlinks, closes, and proves the result", async () => {
+		const {outcome} = await run();
+		expect(outcome.code).toBe(0);
+		expect(JSON.parse(outcome.stdout)).toEqual({
+			answer: "superseded",
+			epic: 4300,
+			child: 4288,
+			comment: 5230661234,
+			unlinked: true,
+			state: "closed",
+		});
+	});
+
+	/**
+	 * Closing before unlinking leaves a closed issue still counted as a sub-issue, which the gate reads
+	 * as a child in scope that can never carry a live assignee.
+	 */
+	it("unlinks before it closes, and journals before either", async () => {
+		const {log} = await run();
+		const order = log.filter((line) => COMMENT.test(line) || UNLINK.test(line) || CLOSE.test(line));
+		expect(
+			order.map((line) =>
+				COMMENT.test(line) ? "comment" : UNLINK.test(line) ? "unlink" : "close",
+			),
+		).toEqual(["comment", "unlink", "close"]);
+	});
+
+	it("unlinks on the child's id, not its number", async () => {
+		const {requests, bodies} = await run();
+		const at = requests.findIndex((line) => UNLINK.test(line));
+		expect(JSON.parse(bodies[at] ?? "null")).toEqual({sub_issue_id: 42880});
+	});
+
+	it("refuses a child this run minted — a re-plan does not retire its own work", async () => {
+		const {outcome, requests} = await run(happy(), files(record(4288, true)));
+		expect(outcome.code).toBe(OFF_VOCABULARY);
+		expect(outcome.stderr.at(-1)).toBe(
+			"ledger supersede: #4288 was minted by this run — refusing to supersede a child of the current plan.",
+		);
+		expect(requests.some((line) => COMMENT.test(line))).toBe(false);
+	});
+
+	it("refuses a child that is not this epic's sub-issue", async () => {
+		const {outcome} = await run(
+			[
+				[EPIC_READ, epic()],
+				[/^git rev-parse --path-format=absolute/, GIT_DIRS],
+				...CLAIMED,
+				[SUBS, subIssues({number: 4301, id: 43010})],
+			],
+			files(),
+		);
+		expect(outcome.code).toBe(OFF_VOCABULARY);
+		expect(outcome.stderr.at(-1)).toBe("ledger supersede: #4288 is not a sub-issue of #4300.");
+	});
+
+	it("refuses a child that is already closed", async () => {
+		const {outcome} = await run([
+			[EPIC_READ, epic()],
+			[/^git rev-parse --path-format=absolute/, GIT_DIRS],
+			...CLAIMED,
+			[SUBS, subIssues({number: 4288, id: 42880})],
+			[CHILD, childIssue({number: 4288, state: "closed"})],
+		]);
+		expect(outcome.code).toBe(ZERO_SCOPE);
+	});
+
+	it("refuses a reason carrying a machine-local path, masked", async () => {
+		const {outcome, log} = await run(happy(), files(record(4288, false)), {
+			reason: "see /Users/someone/notes.md",
+		});
+		expect(outcome.code).toBe(LEAKED_PATH);
+		expect(outcome.stderr.join("\n")).toContain("/Users/<redacted>");
+		expect(log).toEqual([]);
+	});
+
+	it("refuses a reason that is a bare @ path reference", async () => {
+		const {outcome} = await run(happy(), files(record(4288, false)), {reason: "@some/path.md"});
+		expect(outcome.code).toBe(BARE_AT_PATH);
+	});
+
+	/** The journal is posted first so the reason survives even if a later leg fails. */
+	it("reports how many legs landed when one could not be proven", async () => {
+		const {outcome} = await run(happy({unlink: GATEWAY}));
+		expect(outcome.code).toBe(WRITE_UNKNOWN);
+		expect(outcome.stderr.at(-1)).toBe(
+			"ledger supersede: wrote 1 of 3 legs on #4288 and could not prove the rest — the child is UNKNOWN.",
+		);
+	});
+
+	it("refuses when the child does not read back closed", async () => {
+		const {outcome} = await run(happy({after: childIssue({number: 4288, state: "open"})}));
+		expect(outcome.code).toBe(READBACK_MISMATCH);
+	});
+
+	it("refuses when the child reads back closed for the wrong reason", async () => {
+		const {outcome} = await run(
+			happy({after: childIssue({number: 4288, state: "closed", stateReason: "completed"})}),
+		);
+		expect(outcome.code).toBe(READBACK_MISMATCH);
+	});
+
+	it("refuses when the child is still linked after the unlink", async () => {
+		const {outcome} = await run(happy({afterSubs: subIssues({number: 4288, id: 42880})}));
+		expect(outcome.code).toBe(READBACK_MISMATCH);
+	});
+
+	it("refuses when the sub-issue list could not be read", async () => {
+		const {outcome} = await run([
+			[EPIC_READ, epic()],
+			[/^git rev-parse --path-format=absolute/, GIT_DIRS],
+			...CLAIMED,
+			[SUBS, GATEWAY],
+		]);
+		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
+	});
+});

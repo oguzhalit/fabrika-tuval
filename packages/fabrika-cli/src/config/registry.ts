@@ -1,0 +1,80 @@
+/**
+ * Every key group `.fabrika.jsonc` carries, one line each.
+ *
+ * This file is the whole coupling between key groups. Adding a key is a new module under `keys/`
+ * plus one line here — the shape the epic requires, because concurrent slices each add a key group
+ * and a single growing reader would make them serialize on one file.
+ */
+
+import {type Registration, register} from "./key-group.ts";
+import {appetiteSizesKey} from "./keys/appetite-sizes.ts";
+import {assemblyRefreshKey} from "./keys/assembly-refresh.ts";
+import {assemblyReplayKey} from "./keys/assembly-replay.ts";
+import {auditCatalogsKey} from "./keys/audit-catalogs.ts";
+import {boardVocabularyKey} from "./keys/board-vocabulary.ts";
+import {boardsKey} from "./keys/boards.ts";
+import {campaignAuthorsKey} from "./keys/campaign-authors.ts";
+import {capClearAuthorsKey} from "./keys/cap-clear-authors.ts";
+import {ciKey} from "./keys/ci.ts";
+import {codeValidatorsKey} from "./keys/code-validators.ts";
+import {configValidatorsKey} from "./keys/config-validators.ts";
+import {containmentVocabularyKey} from "./keys/containment-vocabulary.ts";
+import {unreadableCodeownersKey} from "./keys/control-plane.ts";
+import {dependencyReconcilerKey} from "./keys/dependency-reconciler.ts";
+import {digestKey} from "./keys/digest.ts";
+import {docLeakExemptKey} from "./keys/doc-leak-exempt.ts";
+import {reviewFilterExclusionsKey, reviewFilterUnexcludeKey} from "./keys/filter-exclusions.ts";
+import {governedRootsKey} from "./keys/governed-roots.ts";
+import {laneConcurrencyCapKey} from "./keys/lane-concurrency-cap.ts";
+import {leakNamesKey} from "./keys/leak-names.ts";
+import {machineryLapsKey} from "./keys/machinery-laps.ts";
+import {ownAccountsKey} from "./keys/own-accounts.ts";
+import {parkCauseKey} from "./keys/park-cause.ts";
+import {cycleDocKey, decisionsDirKey, roadmapFileKey} from "./keys/paths.ts";
+import {portabilityKey} from "./keys/portability.ts";
+import {reviewSubsystemsKey} from "./keys/review-subsystems.ts";
+import {reviewUiKey} from "./keys/review-ui.ts";
+import {shipScopeKey} from "./keys/ship-scope.ts";
+import {tableKey} from "./keys/table.ts";
+import {triageFacetsKey} from "./keys/triage-facets.ts";
+import {uiCaptureKey, uiSurfacesKey} from "./keys/ui-surfaces.ts";
+import {workflowValidatorsKey} from "./keys/workflow-validators.ts";
+
+export const KEY_GROUPS: ReadonlyArray<Registration> = [
+	register(appetiteSizesKey),
+	register(assemblyRefreshKey),
+	register(assemblyReplayKey),
+	register(auditCatalogsKey),
+	register(boardVocabularyKey),
+	register(boardsKey),
+	register(campaignAuthorsKey),
+	register(capClearAuthorsKey),
+	register(ciKey),
+	register(codeValidatorsKey),
+	register(configValidatorsKey),
+	register(containmentVocabularyKey),
+	register(cycleDocKey),
+	register(decisionsDirKey),
+	register(dependencyReconcilerKey),
+	register(digestKey),
+	register(docLeakExemptKey),
+	register(governedRootsKey),
+	register(laneConcurrencyCapKey),
+	register(leakNamesKey),
+	register(machineryLapsKey),
+	register(ownAccountsKey),
+	register(parkCauseKey),
+	register(portabilityKey),
+	register(reviewFilterExclusionsKey),
+	register(reviewFilterUnexcludeKey),
+	register(reviewSubsystemsKey),
+	register(reviewUiKey),
+	register(roadmapFileKey),
+	register(shipScopeKey),
+	register(tableKey),
+	register(triageFacetsKey),
+	register(uiCaptureKey),
+	register(uiSurfacesKey),
+	register(unreadableCodeownersKey),
+	register(workflowValidatorsKey),
+];

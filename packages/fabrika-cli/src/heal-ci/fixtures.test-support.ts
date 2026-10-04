@@ -1,0 +1,152 @@
+/**
+ * The canned GitHub payloads the `heal-ci` verb tests script their spawner with, plus the command
+ * patterns each read is matched on.
+ *
+ * The `ship` group's fixtures are reused wherever the payload is the same shape — a second literal
+ * for one platform response is how two tests come to disagree about what the platform returns.
+ */
+import type {HttpReply} from "../fakes.test-support.ts";
+import {okOut} from "../fakes.test-support.ts";
+import type {ExecResult} from "../io/exec.ts";
+import {HEAD} from "../ship/fixtures.test-support.ts";
+
+const API = "https:\\/\\/api\\.github\\.com";
+
+export {
+	checkRuns,
+	comments,
+	ENV,
+	HEAD,
+	httpError,
+	OTHER_HEAD,
+	PROTECTION,
+	planGated,
+	protection,
+	pull,
+	RULES,
+	rules,
+	runsTotal,
+	UNDECLARED,
+	workflows,
+} from "../ship/fixtures.test-support.ts";
+
+/**
+ * The nine reads this group makes over the HTTP client, matched on `METHOD url`.
+ *
+ * `RUN` ends on the run id so it cannot also match `runs/<id>/jobs` — two patterns that overlap are
+ * a script whose second entry is unreachable, and the answer would come from whichever is listed
+ * first rather than from the endpoint the test meant.
+ */
+export const JOBS = new RegExp(`^GET ${API}\\/repos\\/o\\/r\\/actions\\/runs\\/\\d+\\/jobs\\?`);
+export const JOB_LOG = new RegExp(`^GET ${API}\\/repos\\/o\\/r\\/actions\\/jobs\\/\\d+\\/logs$`);
+export const RUN = new RegExp(`^GET ${API}\\/repos\\/o\\/r\\/actions\\/runs\\/\\d+$`);
+export const RERUN = new RegExp(
+	`^POST ${API}\\/repos\\/o\\/r\\/actions\\/runs\\/\\d+\\/rerun-failed-jobs$`,
+);
+/** The whole-run re-fire, which `RERUN` cannot also match — its own pattern ends on `/rerun`. */
+export const RERUN_ALL = new RegExp(
+	`^POST ${API}\\/repos\\/o\\/r\\/actions\\/runs\\/\\d+\\/rerun$`,
+);
+export const HEAD_CHECK_RUNS = new RegExp(
+	`^GET ${API}\\/repos\\/o\\/r\\/commits\\/[0-9a-f]+\\/check-runs\\?`,
+);
+export const OPEN_PULLS = new RegExp(`^GET ${API}\\/repos\\/o\\/r\\/pulls\\?state=open`);
+export const RATE_LIMIT = new RegExp(`^GET ${API}\\/rate_limit$`);
+export const COMMIT_DATE = new RegExp(`^GET ${API}\\/repos\\/o\\/r\\/commits\\/[0-9a-f]+$`);
+
+export const files = (...names: ReadonlyArray<string>): ExecResult =>
+	okOut(JSON.stringify(names.map((filename) => ({filename}))));
+
+/** A terminal page: 200 with no `rel="next"`, which is what the exhaustion proof reads. */
+const served = (body: unknown, status = 200): HttpReply => ({
+	status,
+	body: JSON.stringify(body),
+});
+
+export const jobs = (
+	declared: number,
+	rows: ReadonlyArray<{id: number; name: string; conclusion?: string | null}>,
+): HttpReply =>
+	served({
+		total_count: declared,
+		jobs: rows.map((row) => ({
+			id: row.id,
+			name: row.name,
+			status: "completed",
+			conclusion: row.conclusion ?? "failure",
+		})),
+	});
+
+export const workflowRun = (shape: {
+	id?: number;
+	head?: string;
+	status?: string;
+	conclusion?: string | null;
+	attempt?: number;
+}): HttpReply =>
+	served({
+		id: shape.id ?? 9182736450,
+		head_sha: shape.head ?? "03135b91aa04f7e2c9d8b1640a5c22e9f01b7d3c",
+		status: shape.status ?? "completed",
+		conclusion: shape.conclusion === undefined ? "failure" : shape.conclusion,
+		run_attempt: shape.attempt ?? 1,
+	});
+
+/** The commit payload `commitPushedAt` reads its date out of. */
+export const commitDate = (at: string): HttpReply => served({commit: {committer: {date: at}}});
+
+/** GitHub's own answer to a rerun POST: 201, no body. */
+export const accepted: HttpReply = {status: 201, body: ""};
+
+export const runsAtHead = (
+	declared: number,
+	rows: ReadonlyArray<{
+		id: number;
+		name?: string;
+		status?: string;
+		conclusion?: string | null;
+	}>,
+): ExecResult =>
+	okOut(
+		JSON.stringify({
+			total_count: declared,
+			workflow_runs: rows.map((row) => ({
+				id: row.id,
+				name: row.name ?? "ci",
+				workflow_id: 1,
+				check_suite_id: row.id,
+				status: row.status ?? "completed",
+				conclusion: row.conclusion === undefined ? "failure" : row.conclusion,
+				completed_at: "2026-08-08T00:00:00Z",
+				// The run parser requires provenance, because gate coverage is decided from it. Nothing
+				// in this group judges coverage, so the rows carry the shape the platform sends and no
+				// case here turns it.
+				event: "pull_request",
+				head_sha: HEAD,
+			})),
+		}),
+	);
+
+export const openPulls = (...rows: ReadonlyArray<{number: number; head: string}>): HttpReply =>
+	served(rows.map((row) => ({number: row.number, head: {sha: row.head}})));
+
+export const rateLimit = (remaining: number): HttpReply =>
+	served({resources: {core: {remaining, reset: 1_800_000_000}}});
+
+export const createdComment = (id: number): ExecResult =>
+	okOut(JSON.stringify({id, html_url: `https://example.test/pull/4321#issuecomment-${id}`}));
+
+export const commentBody = (body: string): ExecResult => okOut(JSON.stringify({body}));
+
+/**
+ * A red `ci-required` log as `ci/required-bin.ts` prints it and the runner renders it: per-job
+ * verdict prose and the terminal line, and no failure of the context's own.
+ */
+export const CI_REQUIRED_ROLLUP_LOG = [
+	"check: should_run=true result=success → required-pass",
+	"##[error]unit: should_run=true result=failure → FAIL (a should-have-run gating job did not succeed — silent no-op)",
+	"integration: should_run=false result=skipped → legit-skip",
+	"e2e: should_run=false result=skipped → legit-skip",
+	"##[error]ci-required FAILED — a should-have-run gating job was skipped or failed (see per-job verdicts above)",
+	"##[error]Process completed with exit code 1.",
+].join("\n");

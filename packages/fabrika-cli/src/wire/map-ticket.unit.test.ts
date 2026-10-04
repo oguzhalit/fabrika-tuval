@@ -1,0 +1,62 @@
+import {describe, expect, it} from "vitest";
+import {emitFromFields, parseFields, read, readToLines} from "./map-ticket.ts";
+
+const marker = "map-ticket: #4 · research · 7f3a9c21";
+
+describe("read", () => {
+	it("finds the marker's three fields", () => {
+		expect(read(`${marker}\n`)).toEqual({
+			_tag: "Found",
+			value: {map: 4, kind: "research", nonce: "7f3a9c21"},
+		});
+	});
+
+	it("answers Absent for an artifact with no non-blank line at all", () => {
+		expect(read("\n \n")._tag).toBe("Absent");
+	});
+
+	it.each([
+		["a separator that drifted", "map-ticket: #4 - research - 7f3a9c21"],
+	])("answers Malformed, not Absent, on %s", (_drift, artifact) => {
+		const result = read(`${artifact}\n`);
+		expect(result._tag).toBe("Malformed");
+		// The evidence is the offending bytes quoted back, so a reader can see what was judged.
+		expect(result._tag === "Malformed" && result.evidence).toContain(artifact);
+	});
+
+	it("does not read a marker quoted further down the body", () => {
+		expect(read(`Someone wrote:\n\n${marker}\n`)._tag).toBe("Absent");
+	});
+});
+
+describe("parseFields", () => {
+	it("takes the fields in any order", () => {
+		expect(parseFields("nonce: 7f3a9c21\nkind: prototype\nmap: 4")).toMatchObject({
+			_tag: "Fields",
+			marker: {map: 4, kind: "prototype", nonce: "7f3a9c21"},
+		});
+	});
+
+	it("tolerates a leading # on the map field, which is how a human writes it", () => {
+		expect(parseFields("map: #4\nkind: research\nnonce: 7f3a9c21")._tag).toBe("Fields");
+	});
+
+	it.each([
+		["a missing field", "kind: research\nnonce: 7f3a9c21"],
+		["a duplicated field", "map: 4\nmap: 5\nkind: research\nnonce: 7f3a9c21"],
+		["an unknown key", "map: 4\nkind: research\nnonce: 7f3a9c21\nowner: someone"],
+		["an off-vocabulary kind", "map: 4\nkind: investigation\nnonce: 7f3a9c21"],
+		["a bad nonce", "map: 4\nkind: research\nnonce: run-1"],
+	])("refuses %s rather than composing a weaker marker", (_case, fields) => {
+		expect(emitFromFields(fields)._tag).toBe("Unusable");
+	});
+});
+
+describe("readToLines", () => {
+	it("renders one <field>\\t<value> line per field", () => {
+		expect(readToLines(`${marker}\n`)).toEqual({
+			_tag: "Found",
+			value: ["map\t4", "kind\tresearch", "nonce\t7f3a9c21"],
+		});
+	});
+});

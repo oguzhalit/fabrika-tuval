@@ -1,0 +1,207 @@
+import {Effect} from "effect";
+import {describe, expect, it} from "vitest";
+import {fakeSeams, type HttpReply, linkNext, type Scripted} from "../fakes.test-support.ts";
+import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import {ENV, pull} from "./fixtures.test-support.ts";
+import {ADDED, ARMED, REMOVED} from "./queue.ts";
+import {ARM_SETTLE_FLOOR_SECONDS, runReconcile} from "./reconcile-verb.ts";
+
+/** The pull read is `../io/pulls.ts`'s, and it is served over HTTP. */
+const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4321$/;
+
+const RULES = /^GET \S+\/repos\/o\/r\/rules\/branches\/main$/;
+const SUBJECTS = /^GET \S+\/repos\/o\/r\/commits\?sha=main/;
+const TIMELINE = /^GET \S+\/repos\/o\/r\/issues\/4321\/timeline\?/;
+
+// One poll, zero cadence: the classification is what is under test, not the sleep.
+const options = {pr: 4321, polls: 1, cadenceSeconds: 0, repo: null, json: false, env: ENV};
+
+const run = (
+	rows: ReadonlyArray<Scripted>,
+	http: ReadonlyArray<Scripted>,
+	overrides: Partial<typeof options> = {},
+) =>
+	Effect.runPromise(
+		Effect.provide(runReconcile({...options, ...overrides}), fakeSeams([...rows, ...http]).layer),
+	);
+
+/** The PR read, served — the same canned payload the spawner era scripted. */
+const pullServed = (shape: Parameters<typeof pull>[0] = {}): HttpReply => ({
+	status: 200,
+	body: pull(shape).stdout,
+});
+
+const PR = pullServed();
+
+const withQueue: HttpReply = {status: 200, body: JSON.stringify([{type: "merge_queue"}])};
+const offQueue: HttpReply = {status: 200, body: "[]"};
+const subjects = (...messages: ReadonlyArray<string>): HttpReply => ({
+	status: 200,
+	body: JSON.stringify(messages.map((message) => ({commit: {message}}))),
+});
+const noSubjects = subjects();
+const timeline = (...rows: ReadonlyArray<{event: string; at: string}>): HttpReply => ({
+	status: 200,
+	body: JSON.stringify(rows.map((row) => ({event: row.event, created_at: row.at}))),
+});
+/** An arm stamped this many seconds before the real clock the verb reads. */
+const armedAgo = (seconds: number) => ({
+	event: ARMED,
+	at: new Date(Date.now() - seconds * 1000).toISOString(),
+});
+
+/** The same page, but declaring a `next` — the read that can never prove it is complete. */
+const unexhaustedPage = (): HttpReply => ({
+	status: 200,
+	body: "[]",
+	headers: linkNext("https://api.github.com/repos/o/r/issues/4321/timeline?page=2"),
+});
+
+describe("runReconcile", () => {
+	it("classifies landed off merged:true", async () => {
+		const out = await run(
+			[[PULL, pullServed({merged: true, state: "closed"})]],
+			[[RULES, withQueue]],
+		);
+		expect(out.code).toBe(0);
+		expect(out.stdout).toBe("reconcile\tlanded\t1\t0\n");
+	});
+
+	it("classifies landed off a base-branch squash whose subject ENDS with the number", async () => {
+		const out = await run(
+			[[PULL, PR]],
+			[
+				[RULES, withQueue],
+				[SUBJECTS, subjects("fix(x): a thing (#3924) (#4321)")],
+			],
+		);
+		expect(out.stdout).toBe("reconcile\tlanded\t1\t0\n");
+	});
+
+	it("reports `ejected` as a proven answer at exit 0, never an error (#4557)", async () => {
+		const out = await run(
+			[[PULL, PR]],
+			[
+				[RULES, withQueue],
+				[SUBJECTS, noSubjects],
+				[
+					TIMELINE,
+					timeline(
+						{event: ADDED, at: "2026-08-08T10:00:00Z"},
+						{event: REMOVED, at: "2026-08-08T10:05:00Z"},
+					),
+				],
+			],
+		);
+		expect(out.code).toBe(0);
+		expect(out.stdout).toBe("reconcile\tejected\t1\t0\n");
+	});
+
+	it("reports `parked` when the arm never entered a queue on a queue-governed base", async () => {
+		const out = await run(
+			[[PULL, PR]],
+			[
+				[RULES, withQueue],
+				[SUBJECTS, noSubjects],
+				[TIMELINE, timeline()],
+			],
+		);
+		expect(out.stdout).toBe("reconcile\tparked\t1\t0\n");
+	});
+
+	it("reports `unresolved` at --polls 1 while the arm is younger than the floor", async () => {
+		const out = await run(
+			[[PULL, PR]],
+			[
+				[RULES, withQueue],
+				[SUBJECTS, noSubjects],
+				[TIMELINE, timeline(armedAgo(514))],
+			],
+		);
+		expect(out.stdout).toBe("reconcile\tunresolved\t1\t0\n");
+	});
+
+	it("reports `unresolved` over a multi-poll watch while the arm is younger than the floor", async () => {
+		const out = await run(
+			[[PULL, PR]],
+			[
+				[RULES, withQueue],
+				[SUBJECTS, noSubjects],
+				[TIMELINE, timeline(armedAgo(60))],
+			],
+			{polls: 3},
+		);
+		expect(out.stdout).toBe("reconcile\tunresolved\t3\t0\n");
+	});
+
+	it("reports `parked` once the latest arm is older than the floor", async () => {
+		const out = await run(
+			[[PULL, PR]],
+			[
+				[RULES, withQueue],
+				[SUBJECTS, noSubjects],
+				[TIMELINE, timeline(armedAgo(ARM_SETTLE_FLOOR_SECONDS + 60))],
+			],
+		);
+		expect(out.stdout).toBe("reconcile\tparked\t1\t0\n");
+	});
+
+	it("measures from the latest arm, so a re-arm restarts the wait", async () => {
+		const out = await run(
+			[[PULL, PR]],
+			[
+				[RULES, withQueue],
+				[SUBJECTS, noSubjects],
+				[TIMELINE, timeline(armedAgo(ARM_SETTLE_FLOOR_SECONDS + 600), armedAgo(30))],
+			],
+		);
+		expect(out.stdout).toBe("reconcile\tunresolved\t1\t0\n");
+	});
+
+	it("reports `unresolved` off a queue, where a long dwell is ordinary", async () => {
+		const out = await run(
+			[[PULL, PR]],
+			[
+				[RULES, offQueue],
+				[SUBJECTS, noSubjects],
+				[TIMELINE, timeline()],
+			],
+		);
+		expect(out.stdout).toBe("reconcile\tunresolved\t1\t0\n");
+	});
+
+	it("refuses on 11 when every poll failed to read — UNKNOWN, not `unresolved`", async () => {
+		const out = await run(
+			[[PULL, PR]],
+			[
+				[RULES, withQueue],
+				[SUBJECTS, noSubjects],
+				[TIMELINE, {status: 502, body: '{"message":"Bad gateway"}'}],
+			],
+		);
+		expect(out.code).toBe(PRECONDITION_UNKNOWN);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toContain('the outcome is UNKNOWN, not "unresolved"');
+	});
+
+	it("refuses an unexhausted timeline on 13 — a truncated history classifies nothing", async () => {
+		const out = await run(
+			[[PULL, PR]],
+			[
+				[RULES, withQueue],
+				[SUBJECTS, noSubjects],
+				[TIMELINE, unexhaustedPage()],
+			],
+		);
+		expect(out.code).toBe(INCOMPLETE_SCAN);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toBe(
+			"ship reconcile: the timeline read never reached a terminal page — pagination is unexhausted; refusing to classify over a truncated history.",
+		);
+	});
+
+	it("refuses a PR proven absent on 7", async () => {
+		const out = await run([[PULL, {status: 404, body: '{"message":"Not Found"}'}]], []);
+		expect(out.code).toBe(ZERO_SCOPE);
+	});
+});

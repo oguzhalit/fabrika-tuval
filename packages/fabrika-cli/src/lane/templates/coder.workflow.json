@@ -1,0 +1,230 @@
+{
+	"id": "coder",
+	"version": 1,
+	"machine": {
+		"id": "coder",
+		"initial": "pipeline",
+		"context": {
+			"issue": { "retries": 0, "maxRetries": 3, "classes": [], "laps": 0, "maxLaps": 16 }
+		},
+		"states": {
+			"pipeline": {
+				"type": "parallel",
+				"states": {
+					"issue": {
+						"initial": "queued",
+						"states": {
+							"queued": {
+								"on": {
+									"ISSUE.WIP": [
+										{ "target": "build:mixed", "guard": "class:mixed" },
+										{ "target": "build:ui", "guard": "class:ui" },
+										{ "target": "build" }
+									],
+									"ISSUE.BLOCKED": "blocked"
+								}
+							},
+							"build": {
+								"on": {
+									"ISSUE.DONE": [
+										{ "target": "diagnosed", "guard": "done:diagnosis" },
+										{ "target": "review" }
+									],
+									"ISSUE.BLOCKED": "blocked",
+									"ISSUE.LAP": [
+										{
+											"target": "build",
+											"guard": "lapsRemaining",
+											"actions": "incrementLaps"
+										},
+										{ "target": "human:machinery-stall" }
+									]
+								}
+							},
+							"build:ui": {
+								"on": {
+									"ISSUE.DONE": "review",
+									"ISSUE.BLOCKED": "blocked",
+									"ISSUE.LAP": [
+										{
+											"target": "build:ui",
+											"guard": "lapsRemaining",
+											"actions": "incrementLaps"
+										},
+										{ "target": "human:machinery-stall" }
+									]
+								}
+							},
+							"build:mixed": {
+								"on": {
+									"ISSUE.DONE": "review",
+									"ISSUE.BLOCKED": "blocked",
+									"ISSUE.LAP": [
+										{
+											"target": "build:mixed",
+											"guard": "lapsRemaining",
+											"actions": "incrementLaps"
+										},
+										{ "target": "human:machinery-stall" }
+									]
+								}
+							},
+							"review": {
+								"on": {
+									"ISSUE.PASS": [
+										{ "target": "review:ui", "guard": "class:ui" },
+										{ "target": "ship" }
+									],
+									"ISSUE.BLOCKED": "blocked",
+									"ISSUE.LAP": [
+										{
+											"target": "review",
+											"guard": "lapsRemaining",
+											"actions": "incrementLaps"
+										},
+										{ "target": "human:machinery-stall" }
+									],
+									"ISSUE.FAIL": [
+										{ "target": "build:mixed", "guard": "class:mixed" },
+										{
+											"target": "build",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{ "target": "human:budget-spent" }
+									],
+									"ISSUE.WIP": "queued"
+								}
+							},
+							"review:ui": {
+								"on": {
+									"ISSUE.PASS": "ship",
+									"ISSUE.BLOCKED": "blocked",
+									"ISSUE.LAP": [
+										{
+											"target": "review:ui",
+											"guard": "lapsRemaining",
+											"actions": "incrementLaps"
+										},
+										{ "target": "human:machinery-stall" }
+									],
+									"ISSUE.FAIL": [
+										{ "target": "build:mixed", "guard": "class:mixed" },
+										{
+											"target": "build:ui",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{ "target": "human:budget-spent" }
+									],
+									"ISSUE.WIP": "queued"
+								}
+							},
+							"ship": {
+								"on": {
+									"ISSUE.LAP": [
+										{ "target": "build", "guard": "lap:base-conflicted" },
+										{
+											"target": "ship",
+											"guard": "lapsRemaining",
+											"actions": "incrementLaps"
+										},
+										{ "target": "human:machinery-stall" }
+									],
+									"ISSUE.DONE": [
+										{ "target": "queued", "guard": "merge:partial" },
+										{ "target": "shipped" }
+									],
+									"ISSUE.WIP": "ship:queued",
+									"ISSUE.BLOCKED": "human:cp-approval",
+									"ISSUE.FAIL": [
+										{
+											"target": "build",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{ "target": "human:budget-spent" }
+									]
+								}
+							},
+							"ship:queued": {
+								"on": {
+									"ISSUE.LAP": [
+										{
+											"target": "ship",
+											"guard": "lapsRemaining",
+											"actions": "incrementLaps"
+										},
+										{ "target": "human:machinery-stall" }
+									],
+									"ISSUE.DONE": [
+										{ "target": "queued", "guard": "merge:partial" },
+										{ "target": "shipped" }
+									],
+									"ISSUE.BLOCKED": "human:cp-approval",
+									"ISSUE.WIP": [
+										{
+											"target": "ship:queued",
+											"guard": "waitsRemaining",
+											"actions": "incrementWaits"
+										},
+										{ "target": "human:queue-stall" }
+									],
+									"ISSUE.FAIL": [
+										{
+											"target": "build",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{ "target": "human:budget-spent" }
+									]
+								}
+							},
+							"blocked": {
+								"on": {
+									"ISSUE.UNBLOCKED": "hist"
+								}
+							},
+							"human:cp-approval": {
+								"on": {
+									"ISSUE.UNBLOCKED": "hist",
+									"ISSUE.WIP": "review",
+									"ISSUE.FAIL": [
+										{
+											"target": "build",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{ "target": "human:budget-spent" }
+									]
+								}
+							},
+							"human:queue-stall": {
+								"on": {
+									"ISSUE.UNBLOCKED": "hist"
+								}
+							},
+							"human:machinery-stall": {
+								"on": {
+									"ISSUE.UNBLOCKED": "hist"
+								}
+							},
+							"human:budget-spent": {
+								"type": "final",
+								"on": {
+									"ISSUE.UNBLOCKED": "hist"
+								}
+							},
+							"hist": { "type": "history" },
+							"shipped": { "type": "final" },
+							"diagnosed": { "type": "final" }
+						}
+					}
+				},
+				"onDone": [{ "target": "complete", "guard": "noErrors" }, { "target": "tripped" }]
+			},
+			"complete": { "type": "final" },
+			"tripped": { "type": "final" }
+		}
+	}
+}

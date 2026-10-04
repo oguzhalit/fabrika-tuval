@@ -1,23 +1,48 @@
 // Fabrika configuration for fabrika-tuval
 {
+	"$schema": "./.fabrika.schema.json",
+
 	// Project metadata
 	"project": {
 		"name": "fabrika-tuval",
-		"description": "App development with Fabrika"
+		"description": "Fabrika: deterministic build and deployment system"
 	},
 
-	// Apps deployed by Fabrika
-	"apps": {
-		// Add your apps here
-		// "my-app": {
-		//   "path": "apps/my-app",
-		//   "type": "worker" | "web" | "api"
-		// }
+	// Governed roots — paths that fabric fabric enforces
+	"governedRoots": [".decisions/", ".claude/", ".github/", ".fabrika.jsonc"],
+
+	// Repository names used in portability checks
+	"portability": {
+		"repoNames": ["fabrika-tuval", "kamp-us"]
 	},
 
-	// Build configuration
-	"build": {
-		"cache": true,
-		"parallel": true
+	// Board vocabulary for issue lanes
+	"boardVocabulary": {
+		"standingLanes": []
+	},
+
+	// Lane concurrency cap
+	"laneConcurrencyCap": 2,
+
+	// Assembly configuration
+	"assemblyRefresh": {
+		"onReview": "on",
+		"onDispatch": "on"
+	},
+	"assemblyReplay": {
+		"onCollision": "on"
+	},
+	"machineryLaps": {
+		"onEmit": "on"
+	},
+	"parkCause": {
+		"uncaused": "refuse",
+		"driverRouted": "clear"
+	},
+
+	// Build commands for code surface checks
+	"buildCommands": {
+		"typecheck": "pnpm typecheck",
+		"lint": "pnpm lint"
 	}
 }

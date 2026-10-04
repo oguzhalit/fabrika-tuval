@@ -1,0 +1,321 @@
+/**
+ * The artifact-class partition of a PR's changed files, and the flags derived beside it — `self` and
+ * `harness` on the review partition, `governance` on the ship one.
+ *
+ * The map is a **fixed path partition** so two runs cannot disagree, and it is **total**: a file the
+ * map cannot place is `code`, never dropped. An unclassified file silently excluded from every
+ * rubric is a review that never saw it.
+ */
+
+import {SHIPPED_GOVERNED_ROOTS} from "../config/keys/governed-roots.ts";
+import {SHIPPED_DECISIONS_DIR} from "../config/keys/paths.ts";
+
+export {SHIPPED_GOVERNED_ROOTS};
+
+/** The three artifact classes, in the fixed order the line grammar prints them. */
+export const CLASS_NAMES = ["code", "doc", "skill"] as const;
+export type ClassName = (typeof CLASS_NAMES)[number];
+
+/** The namespace a present class derives. `review post` refuses any namespace outside this image. */
+export const namespaceOf = (name: ClassName): string => `review-${name}`;
+
+/** True when the path is `SKILL.md` itself, wherever it sits. */
+const isSkillFile = (path: string): boolean => path === "SKILL.md" || path.endsWith("/SKILL.md");
+
+/**
+ * The class one path belongs to.
+ *
+ * The last two `skill` rows — `skills/**` and any `SKILL.md` anywhere — are what keep the map honest
+ * on a repo that homes its skills elsewhere; without them a foreign repo's
+ * `skills/deploy-notes/SKILL.md` partitions to `doc` and is graded by the wrong rubric.
+ */
+export const classOf = (path: string): ClassName => {
+	if (
+		path.startsWith("claude-plugins/") ||
+		path.startsWith(".claude/") ||
+		path.startsWith("skills/") ||
+		isSkillFile(path)
+	) {
+		return "skill";
+	}
+	return path.endsWith(".md") ? "doc" : "code";
+};
+
+/** The `self` flag: this diff edits the `review` skill's own text (the BASE-revision fence). */
+const SELF_ROOT = "claude-plugins/fabrika/skills/review/";
+
+/**
+ * The `harness` flag's closed three-root list — *this* repo's governance surface.
+ *
+ * The class map's two portability rows deliberately do not set it: they classify a foreign repo's
+ * skill text for the rubric, while `harness` marks this harness. What governance does with the flag
+ * is the `governance` skill's decision; the flag only makes the seam mechanical.
+ */
+const HARNESS_ROOTS = [".claude/", ".github/", "claude-plugins/"];
+
+export interface ClassTally {
+	readonly name: ClassName;
+	readonly files: number;
+}
+
+export interface Partition {
+	/** Only the classes actually present, in {@link CLASS_NAMES} order. */
+	readonly classes: ReadonlyArray<ClassTally>;
+	readonly self: boolean;
+	readonly harness: boolean;
+	readonly scanned: number;
+}
+
+export const partition = (files: ReadonlyArray<string>): Partition => {
+	const counts = new Map<ClassName, number>();
+	for (const file of files) {
+		const name = classOf(file);
+		counts.set(name, (counts.get(name) ?? 0) + 1);
+	}
+	return {
+		classes: CLASS_NAMES.filter((name) => (counts.get(name) ?? 0) > 0).map((name) => ({
+			name,
+			files: counts.get(name) ?? 0,
+		})),
+		self: files.some((file) => file.startsWith(SELF_ROOT)),
+		harness: files.some((file) => HARNESS_ROOTS.some((root) => file.startsWith(root))),
+		scanned: files.length,
+	};
+};
+
+/**
+ * The namespaces `review post` may emit — narrower than what a PR *requires*, and deliberately so.
+ * The required set is {@link shipNamespacesOf}'s; this is the image the emit fence checks against.
+ */
+export const namespacesOf = (result: Partition): ReadonlyArray<string> =>
+	result.classes.map((entry) => namespaceOf(entry.name));
+
+/**
+ * The `ui` class, which extends the three above.
+ *
+ * It lives here rather than in a second copy under `ship/` so the two groups partition one map: v1
+ * printed the class set from one derivation and hand-copied it into another, and the copy dropped a
+ * class on a live PR. Both `review scope` and `ship scope` print these rows, in this order.
+ *
+ * `review scope` printing `ui` is not `review` growing a rendered rubric. It still emits no
+ * `review-ui` verdict — {@link namespacesOf} over {@link CLASS_NAMES} is the narrower image
+ * `review post` fences on, and that fence is untouched. What the two verbs must agree on is what a
+ * file is *and* what the merge gate will require: while only the ship side derived `ui`, a reviewer
+ * read its own short set as the whole bar, PASSed, and the gate then refused on a namespace nobody
+ * had been told to route.
+ */
+export const SHIP_CLASS_NAMES = [...CLASS_NAMES, "ui"] as const;
+export type ShipClassName = (typeof SHIP_CLASS_NAMES)[number];
+
+/**
+ * A rendered frontend surface. Its own tests are code, not UI — they render nothing.
+ *
+ * `prefixes` is a parameter with no default, exactly as {@link touchesGovernanceRoot}'s `roots` is:
+ * the set is `uiSurfaces` in `.fabrika.jsonc` (`../config/keys/ui-surfaces.ts`), and a compiled-in
+ * source root was one consumer's layout standing in for every repo's — so a second
+ * runnable app raised no `ui` class and its pixels passed every gate unrendered. An empty
+ * list is a repo declaring no rendered surface, and its readers say so out loud.
+ *
+ * A root ending in `/` is a directory and matches by prefix; any other root names one file and
+ * matches only by equality, so `tailwind.config.ts` never covers `tailwind.config.ts.bak`.
+ */
+export const isUiSurface = (path: string, prefixes: ReadonlyArray<string>): boolean =>
+	prefixes.some((root) => (root.endsWith("/") ? path.startsWith(root) : path === root)) &&
+	!/\.(?:test|spec)\.tsx?$/.test(path);
+
+/**
+ * The decision corpus's root as this package ships it, trailing slash included so it matches as a
+ * path prefix.
+ *
+ * Where the corpus actually lives is `decisionsDir` in `.fabrika.jsonc`
+ * (`../config/keys/paths.ts`). This is the shipped value, re-exported from that one home so a
+ * prefix reader with no config load in reach still reads one list instead of a second literal.
+ */
+export const DECISIONS_ROOT = `${SHIPPED_DECISIONS_DIR}/`;
+
+/**
+ * The whole `governance` requirement: at least one changed path under at least one governed root.
+ *
+ * `roots` is a parameter with no default, and that is the point. The set is `governedRoots` in
+ * `.fabrika.jsonc` (`../config/keys/governed-roots.ts`); a default here would let a caller derive
+ * the namespace over one repo's roots inside a repo that declared its own — one question with two
+ * answers, which is the defect this closed. A caller with no config load in reach passes
+ * {@link SHIPPED_GOVERNED_ROOTS} and is visibly doing so.
+ */
+export const touchesGovernanceRoot = (
+	files: ReadonlyArray<string>,
+	roots: ReadonlyArray<string>,
+): boolean => files.some((file) => roots.some((root) => file.startsWith(root)));
+
+export interface ShipPartition {
+	/** Only the classes actually present, in {@link SHIP_CLASS_NAMES} order. */
+	readonly classes: ReadonlyArray<{readonly name: ShipClassName; readonly files: number}>;
+	/** {@link touchesGovernanceRoot} over the same file list — a flag, not a class. */
+	readonly governance: boolean;
+	readonly scanned: number;
+}
+
+export const partitionWithUi = (
+	files: ReadonlyArray<string>,
+	roots: ReadonlyArray<string>,
+	uiPrefixes: ReadonlyArray<string>,
+): ShipPartition => {
+	const base = partition(files);
+	const ui = files.filter((file) => isUiSurface(file, uiPrefixes)).length;
+	return {
+		classes: ui === 0 ? base.classes : [...base.classes, {name: "ui" as const, files: ui}],
+		governance: touchesGovernanceRoot(files, roots),
+		scanned: base.scanned,
+	};
+};
+
+/**
+ * The namespaces one PR's diff requires.
+ *
+ * `governance` is appended off the flag rather than mapped off a class because no file class derives
+ * it — a governance-bearing path is already partitioned as `skill` or `doc` or `code`, and the
+ * namespace is a second, orthogonal question about the same file. Appending is the only direction
+ * this function may move a PR's bar: the `review-*` rows are untouched, so a diff under no
+ * governance root requires exactly what it required before.
+ */
+export const shipNamespacesOf = (result: ShipPartition): ReadonlyArray<string> => {
+	const classes = result.classes.map((entry) => `review-${entry.name}`);
+	return result.governance ? [...classes, "governance"] : classes;
+};
+
+/**
+ * The namespaces a derived set carries that the text-review gate hands to another modality instead
+ * of emitting.
+ *
+ * `review-ui` is the whole list, and `governance` is deliberately not on it: a `governance:
+ * required` round fires inside the review run and no terminal ends that run with the namespace
+ * un-fired. Routing is the *other* shape — a subject `review` cannot judge at all, whose
+ * verdict only the `review-ui` group's own verbs may post.
+ *
+ * It reads a namespace list rather than a partition so both sides of one lane ask it the same
+ * question: `review scope` prints the row a reviewer routes on, and `lane prove` subtracts it from
+ * what a `PASS` out of the plain `review` cell has to stand on.
+ */
+export const ROUTED_NAMESPACES: ReadonlyArray<string> = ["review-ui"];
+
+export const routedNamespacesOf = (namespaces: ReadonlyArray<string>): ReadonlyArray<string> =>
+	namespaces.filter((name) => ROUTED_NAMESPACES.includes(name));
+
+/**
+ * The closed namespace vocabulary `ship gate --require` admits.
+ *
+ * Wider than the review classes, and additively so: `governance` is a namespace no file class
+ * derives, but a namespace `ship gate` cannot require is one that only fires when a session
+ * remembers to fire it.
+ */
+export const SHIP_NAMESPACES: ReadonlyArray<string> = [
+	...SHIP_CLASS_NAMES.map((n) => `review-${n}`),
+	"governance",
+];
+
+/**
+ * The linked issue, from the PR body's first closing keyword.
+ *
+ * Every inflection of the three keywords is admitted — GitHub auto-closes on all of them, and a body
+ * that says `Fixed #N` links exactly as hard as one that says `Fixes #N`. What an issueless PR
+ * *means* is the skill's decision; this only reports it.
+ */
+const CLOSING_KEYWORD = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b[ \t]*:?[ \t]*#(\d+)/i;
+
+export const linkedIssueOf = (body: string): number | null => {
+	const matched = CLOSING_KEYWORD.exec(body);
+	return matched?.[1] === undefined ? null : Number.parseInt(matched[1], 10);
+};
+
+/**
+ * **Every** issue the body's closing keywords link, in body order, deduplicated.
+ *
+ * A sibling rather than a widening of {@link linkedIssueOf}, whose scalar first match is load
+ * bearing where a PR closes one issue and the caller wants that one (`ship release`, `heal-ci`).
+ * An epic tail body carries one closing reference per landed child plus one on the epic itself, at
+ * an arbitrary position among them, so a scalar reader there reports whichever child happens to be
+ * first and answers "unlinked" of the epic — which is false of the board, since GitHub links all of
+ * them. Callers asking "does this body link #N" ask this one and test membership.
+ */
+export const linkedIssuesOf = (body: string): ReadonlyArray<number> => {
+	const all = new RegExp(CLOSING_KEYWORD.source, "gi");
+	const numbers = [...body.matchAll(all)].flatMap((match) =>
+		match[1] === undefined ? [] : [Number.parseInt(match[1], 10)],
+	);
+	return [...new Set(numbers)];
+};
+
+/**
+ * The **whole** reference a PR body can carry to its issue: a closing keyword, else the explicit
+ * non-closing `Part of #N`, else nothing.
+ *
+ * It sits here, beside the primitive it wraps, because `ship scope` and `review scope` ask one
+ * question of one body. While the `Part of` half lived only under `ship/`, a partial-split PR — the
+ * shape `build --partial` emits by contract — was linked to the shipper and issueless to the gate,
+ * so the gate's acceptance-criteria step had no issue to grade against.
+ *
+ * {@link linkedIssueOf} stays closing-keyword-only. The two kinds are told apart here rather than
+ * collapsed into it, because only the closing kind auto-closes on merge.
+ */
+const PART_OF = /\bpart of\b[ \t]*:?[ \t]*#(\d+)/i;
+
+export interface IssueRef {
+	readonly kind: "fixes" | "part-of" | "none";
+	readonly number: number | null;
+}
+
+export const issueRefOf = (body: string): IssueRef => {
+	const closing = linkedIssueOf(body);
+	if (closing !== null) return {kind: "fixes", number: closing};
+	const part = PART_OF.exec(body);
+	return part?.[1] === undefined
+		? {kind: "none", number: null}
+		: {kind: "part-of", number: Number.parseInt(part[1], 10)};
+};
+
+export interface IssueRefs {
+	readonly kind: "fixes" | "part-of" | "none";
+	/**
+	 * The issues of the winning kind alone — the closing ones where the body has any, else the
+	 * `Part of` ones. Read beside {@link IssueRefs.kind}, which says which set this is, so a caller
+	 * asking "does this body discharge #N on merge" tests membership here and nowhere else.
+	 */
+	readonly numbers: ReadonlyArray<number>;
+	/**
+	 * **Every** issue the body names either way, closing and `Part of` together, deduplicated.
+	 *
+	 * The set a nominator asks for: "is this PR about #N" is a wider question than "does merging it
+	 * close #N", and only this field can answer it of an epic tail, whose body carries one closing
+	 * reference per landed child plus `Part of #<epic>` so the merge leaves the epic open.
+	 * {@link IssueRefs.numbers} drops that `Part of` by precedence, which stranded a complete epic
+	 * run at exit `20` with no candidate linking the epic.
+	 */
+	readonly referenced: ReadonlyArray<number>;
+}
+
+/**
+ * The plural sibling of {@link issueRefOf}: every issue of the winning kind, not the first — plus
+ * {@link IssueRefs.referenced}, every issue of either kind.
+ *
+ * `kind` and `numbers` keep the scalar's precedence: closing beats `Part of`, and a body carrying
+ * both is a `fixes` body whose `numbers` are the closing ones. That is load-bearing for closure —
+ * folding the `Part of` numbers in would make an epic tail's merge read as closing the epic it was
+ * written not to close. So the wider set arrives beside them rather than inside them, and the two
+ * reads take the field that answers their own question.
+ */
+export const issueRefsOf = (body: string): IssueRefs => {
+	const all = new RegExp(PART_OF.source, "gi");
+	const parts = [...body.matchAll(all)].flatMap((match) =>
+		match[1] === undefined ? [] : [Number.parseInt(match[1], 10)],
+	);
+	const closing = linkedIssuesOf(body);
+	const referenced = [...new Set([...closing, ...parts])];
+	if (closing.length > 0) return {kind: "fixes", numbers: closing, referenced};
+	return parts.length === 0
+		? {kind: "none", numbers: [], referenced}
+		: {kind: "part-of", numbers: [...new Set(parts)], referenced};
+};
+
+/** `fixes:<n>` / `part-of:<n>`, or the calling group's null token. */
+export const renderIssueRef = (ref: IssueRef, nullToken: string): string =>
+	ref.number === null ? nullToken : `${ref.kind}:${ref.number}`;

@@ -1,0 +1,469 @@
+{
+	"id": "epic-4300",
+	"version": 1,
+	"machine": {
+		"id": "epic-4300",
+		"initial": "phase1",
+		"context": {
+			"issue_4301": {
+				"retries": 0,
+				"maxRetries": 3
+			},
+			"issue_4302": {
+				"retries": 0,
+				"maxRetries": 3
+			},
+			"issue_4303": {
+				"retries": 0,
+				"maxRetries": 3
+			},
+			"epic_4300": {
+				"retries": 0,
+				"maxRetries": 3
+			}
+		},
+		"states": {
+			"phase1": {
+				"type": "parallel",
+				"states": {
+					"issue_4301": {
+						"initial": "queued",
+						"states": {
+							"queued": {
+								"on": {
+									"ISSUE_4301.WIP": "build",
+									"ISSUE_4301.BLOCKED": "blocked"
+								}
+							},
+							"build": {
+								"on": {
+									"ISSUE_4301.DONE": "review",
+									"ISSUE_4301.BLOCKED": "blocked"
+								}
+							},
+							"review": {
+								"on": {
+									"ISSUE_4301.PASS": "integrate",
+									"ISSUE_4301.BLOCKED": "blocked",
+									"ISSUE_4301.FAIL": [
+										{
+											"target": "build",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{
+											"target": "human:budget-spent"
+										}
+									]
+								}
+							},
+							"integrate": {
+								"on": {
+									"ISSUE_4301.DONE": "landed",
+									"ISSUE_4301.WIP": [
+										{
+											"target": "review",
+											"guard": "waitsRemaining",
+											"actions": "incrementWaits"
+										},
+										{
+											"target": "human:replay-stall"
+										}
+									],
+									"ISSUE_4301.BLOCKED": "blocked",
+									"ISSUE_4301.FAIL": [
+										{
+											"target": "build",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{
+											"target": "human:budget-spent"
+										}
+									]
+								}
+							},
+							"blocked": {
+								"on": {
+									"ISSUE_4301.UNBLOCKED": "hist"
+								}
+							},
+							"human:replay-stall": {
+								"on": {
+									"ISSUE_4301.UNBLOCKED": "hist"
+								}
+							},
+							"human:budget-spent": {
+								"type": "final",
+								"on": {
+									"ISSUE_4301.UNBLOCKED": "hist"
+								}
+							},
+							"hist": {
+								"type": "history"
+							},
+							"landed": {
+								"type": "final"
+							},
+							"frozen": {
+								"type": "final",
+								"on": {
+									"ISSUE_4301.UNBLOCKED": "hist"
+								}
+							}
+						}
+					},
+					"issue_4302": {
+						"initial": "queued",
+						"states": {
+							"queued": {
+								"on": {
+									"ISSUE_4302.WIP": "build",
+									"ISSUE_4302.BLOCKED": "blocked"
+								}
+							},
+							"build": {
+								"on": {
+									"ISSUE_4302.DONE": "review",
+									"ISSUE_4302.BLOCKED": "blocked"
+								}
+							},
+							"review": {
+								"on": {
+									"ISSUE_4302.PASS": "integrate",
+									"ISSUE_4302.BLOCKED": "blocked",
+									"ISSUE_4302.FAIL": [
+										{
+											"target": "build",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{
+											"target": "human:budget-spent"
+										}
+									]
+								}
+							},
+							"integrate": {
+								"on": {
+									"ISSUE_4302.DONE": "landed",
+									"ISSUE_4302.WIP": [
+										{
+											"target": "review",
+											"guard": "waitsRemaining",
+											"actions": "incrementWaits"
+										},
+										{
+											"target": "human:replay-stall"
+										}
+									],
+									"ISSUE_4302.BLOCKED": "blocked",
+									"ISSUE_4302.FAIL": [
+										{
+											"target": "build",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{
+											"target": "human:budget-spent"
+										}
+									]
+								}
+							},
+							"blocked": {
+								"on": {
+									"ISSUE_4302.UNBLOCKED": "hist"
+								}
+							},
+							"human:replay-stall": {
+								"on": {
+									"ISSUE_4302.UNBLOCKED": "hist"
+								}
+							},
+							"human:budget-spent": {
+								"type": "final",
+								"on": {
+									"ISSUE_4302.UNBLOCKED": "hist"
+								}
+							},
+							"hist": {
+								"type": "history"
+							},
+							"landed": {
+								"type": "final"
+							},
+							"frozen": {
+								"type": "final",
+								"on": {
+									"ISSUE_4302.UNBLOCKED": "hist"
+								}
+							}
+						}
+					}
+				},
+				"onDone": [
+					{
+						"target": "phase2",
+						"guard": "noErrors"
+					},
+					{
+						"target": "tripped"
+					}
+				]
+			},
+			"phase2": {
+				"type": "parallel",
+				"states": {
+					"issue_4303": {
+						"initial": "queued",
+						"states": {
+							"queued": {
+								"on": {
+									"ISSUE_4303.WIP": "build",
+									"ISSUE_4303.BLOCKED": "blocked"
+								}
+							},
+							"build": {
+								"on": {
+									"ISSUE_4303.DONE": "review",
+									"ISSUE_4303.BLOCKED": "blocked"
+								}
+							},
+							"review": {
+								"on": {
+									"ISSUE_4303.PASS": "integrate",
+									"ISSUE_4303.BLOCKED": "blocked",
+									"ISSUE_4303.FAIL": [
+										{
+											"target": "build",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{
+											"target": "human:budget-spent"
+										}
+									]
+								}
+							},
+							"integrate": {
+								"on": {
+									"ISSUE_4303.DONE": "landed",
+									"ISSUE_4303.WIP": [
+										{
+											"target": "review",
+											"guard": "waitsRemaining",
+											"actions": "incrementWaits"
+										},
+										{
+											"target": "human:replay-stall"
+										}
+									],
+									"ISSUE_4303.BLOCKED": "blocked",
+									"ISSUE_4303.FAIL": [
+										{
+											"target": "build",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{
+											"target": "human:budget-spent"
+										}
+									]
+								}
+							},
+							"blocked": {
+								"on": {
+									"ISSUE_4303.UNBLOCKED": "hist"
+								}
+							},
+							"human:replay-stall": {
+								"on": {
+									"ISSUE_4303.UNBLOCKED": "hist"
+								}
+							},
+							"human:budget-spent": {
+								"type": "final",
+								"on": {
+									"ISSUE_4303.UNBLOCKED": "hist"
+								}
+							},
+							"hist": {
+								"type": "history"
+							},
+							"landed": {
+								"type": "final"
+							},
+							"frozen": {
+								"type": "final",
+								"on": {
+									"ISSUE_4303.UNBLOCKED": "hist"
+								}
+							}
+						}
+					}
+				},
+				"onDone": [
+					{
+						"target": "epic",
+						"guard": "noErrors"
+					},
+					{
+						"target": "tripped"
+					}
+				]
+			},
+			"epic": {
+				"type": "parallel",
+				"states": {
+					"epic_4300": {
+						"initial": "review",
+						"states": {
+							"build": {
+								"on": {
+									"EPIC_4300.DONE": "review",
+									"EPIC_4300.BLOCKED": "blocked"
+								}
+							},
+							"review": {
+								"on": {
+									"EPIC_4300.PASS": [
+										{
+											"target": "review:ui",
+											"guard": "class:ui"
+										},
+										{
+											"target": "ship"
+										}
+									],
+									"EPIC_4300.BLOCKED": "blocked",
+									"EPIC_4300.FAIL": [
+										{
+											"target": "build",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{
+											"target": "human:budget-spent"
+										}
+									]
+								}
+							},
+							"review:ui": {
+								"on": {
+									"EPIC_4300.PASS": "ship",
+									"EPIC_4300.BLOCKED": "blocked",
+									"EPIC_4300.FAIL": [
+										{
+											"target": "build",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{
+											"target": "human:budget-spent"
+										}
+									]
+								}
+							},
+							"ship": {
+								"on": {
+									"EPIC_4300.DONE": "shipped",
+									"EPIC_4300.WIP": "ship:queued",
+									"EPIC_4300.BLOCKED": "human:cp-approval",
+									"EPIC_4300.FAIL": [
+										{
+											"target": "review",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{
+											"target": "human:budget-spent"
+										}
+									]
+								}
+							},
+							"ship:queued": {
+								"on": {
+									"EPIC_4300.DONE": "shipped",
+									"EPIC_4300.BLOCKED": "human:cp-approval",
+									"EPIC_4300.WIP": [
+										{
+											"target": "ship:queued",
+											"guard": "waitsRemaining",
+											"actions": "incrementWaits"
+										},
+										{
+											"target": "human:queue-stall"
+										}
+									],
+									"EPIC_4300.FAIL": [
+										{
+											"target": "review",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{
+											"target": "human:budget-spent"
+										}
+									]
+								}
+							},
+							"blocked": {
+								"on": {
+									"EPIC_4300.UNBLOCKED": "hist"
+								}
+							},
+							"human:cp-approval": {
+								"on": {
+									"EPIC_4300.UNBLOCKED": "hist",
+									"EPIC_4300.WIP": "review",
+									"EPIC_4300.FAIL": [
+										{
+											"target": "build",
+											"guard": "retriesRemaining",
+											"actions": "incrementRetries"
+										},
+										{
+											"target": "human:budget-spent"
+										}
+									]
+								}
+							},
+							"human:queue-stall": {
+								"on": {
+									"EPIC_4300.UNBLOCKED": "hist"
+								}
+							},
+							"hist": {
+								"type": "history"
+							},
+							"shipped": {
+								"type": "final"
+							},
+							"human:budget-spent": {
+								"type": "final",
+								"on": {
+									"EPIC_4300.UNBLOCKED": "hist"
+								}
+							}
+						}
+					}
+				},
+				"onDone": [
+					{
+						"target": "complete",
+						"guard": "noErrors"
+					},
+					{
+						"target": "tripped"
+					}
+				]
+			},
+			"complete": {
+				"type": "final"
+			},
+			"tripped": {
+				"type": "final"
+			}
+		}
+	}
+}

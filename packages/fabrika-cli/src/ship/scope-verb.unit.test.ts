@@ -1,0 +1,525 @@
+import {Effect, Layer} from "effect";
+import {describe, expect, it} from "vitest";
+import {
+	configOnPlatform,
+	fakeFs,
+	fakeSeams,
+	type HttpReply,
+	mergeBaseOnPlatform,
+	type Scripted,
+	uiConfigured,
+	uiConfiguredOnPlatform,
+	unconfigured,
+	unconfiguredOnPlatform,
+} from "../fakes.test-support.ts";
+import type {ExecResult} from "../io/exec.ts";
+import {PULL_FILES_CAP} from "../io/pulls.ts";
+import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, PRIMARY_CHECKOUT, ZERO_SCOPE} from "./codes.ts";
+import {
+	branchRules,
+	CODEOWNERS,
+	ENV,
+	files,
+	HEAD,
+	LINKED_ISSUE,
+	LINKED_WORKTREE,
+	pull,
+	repositoryServed,
+} from "./fixtures.test-support.ts";
+import {runScope, type ScopeOptions} from "./scope-verb.ts";
+
+const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4321$/;
+const FILES = /^GET \S+\/repos\/o\/r\/pulls\/4321\/files\?/;
+const OWNERS = /contents\/\.github\/CODEOWNERS/;
+const RULES = /^GET \S+\/repos\/o\/r\/rules\/branches\/main/;
+const REPO = /^GET https:\/\/api\.github\.com\/repos\/o\/r$/;
+const CONFIG = /contents\/\.fabrika\.jsonc/;
+
+/** A canned `ExecResult` fixture as the body of a 200 — the same payload, off the served seam. */
+const served = (result: ExecResult): HttpReply => ({status: 200, body: result.stdout});
+
+/** A file served through the raw media type, which hands back bytes rather than JSON. */
+const raw = (body: string): HttpReply => ({status: 200, body});
+
+const NOT_FOUND: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
+const BAD_GATEWAY: HttpReply = {status: 502, body: '{"message":"Bad gateway"}'};
+
+const options: ScopeOptions = {
+	pr: 4321,
+	repo: null,
+	json: false,
+	env: ENV,
+	caller: {_tag: "shipper", cwd: "/repo"},
+};
+
+const REV_PARSE = /^git rev-parse/;
+
+/** `git rev-parse --git-dir --git-common-dir` as git answers it in the main working tree. */
+const MAIN_WORKING_TREE: Scripted = [
+	REV_PARSE,
+	{ok: true, stdout: "/repo/.git\n/repo/.git\n", reason: ""},
+];
+
+/** A `/repo` tree whose tracked config declares `shipScope` as given. */
+const shipScopeDeclared = (shipScope: unknown) =>
+	fakeFs({files: {"/repo/.fabrika.jsonc": JSON.stringify({shipScope})}}).layer;
+
+const run = (
+	script: ReadonlyArray<Scripted>,
+	overrides: Partial<typeof options> = {},
+	extra: ReadonlyArray<Scripted> = [],
+	config: ReadonlyArray<Scripted> = unconfiguredOnPlatform(),
+) =>
+	Effect.runPromise(
+		Effect.provide(
+			runScope({...options, ...overrides}),
+			Layer.merge(fakeSeams([...script, ...extra, ...config, LINKED_WORKTREE]).layer, unconfigured),
+		),
+	);
+
+describe("runScope", () => {
+	it("renders a partial split as `part-of:<n>` — the marker resolves at this seam as it does at review's", async () => {
+		const out = await run([
+			[PULL, served(pull({body: "does things\n\nPart of #4000\n"}))],
+			[FILES, served(files("apps/site/worker/cart.ts", "README.md"))],
+			[OWNERS, raw(CODEOWNERS)],
+		]);
+		expect(out.stdout.split("\n")[0]).toBe(`scoped\t${HEAD}\topen\tpart-of:4000`);
+	});
+
+	it("prints one derivation: state, issue ref, classes, the namespaces they require, cp, landing and count", async () => {
+		const out = await run(
+			[
+				[PULL, served(pull())],
+				[FILES, served(files("apps/site/src/App.tsx", "README.md"))],
+				[OWNERS, raw(CODEOWNERS)],
+				[RULES, served(branchRules("pull_request"))],
+			],
+			{},
+			[[REPO, repositoryServed()]],
+			uiConfiguredOnPlatform(),
+		);
+		expect(out.code).toBe(0);
+		expect(out.stdout).toBe(
+			[
+				`scoped\t${HEAD}\topen\tfixes:4287`,
+				"class\tcode\t1",
+				"class\tdoc\t1",
+				"class\tui\t1",
+				"namespace\treview-code",
+				"namespace\treview-doc",
+				"namespace\treview-ui",
+				"cp\tnot-control-plane",
+				"landing\tdirect\tsquash",
+				"files\t2",
+				"",
+			].join("\n"),
+		);
+	});
+
+	it("names the queue path when a queue governs the base — the shipper's route, read once", async () => {
+		const out = await run([
+			[PULL, served(pull())],
+			[FILES, served(files("README.md", "DEVELOPMENT.md"))],
+			[OWNERS, raw(CODEOWNERS)],
+			[RULES, served(branchRules("merge_queue"))],
+		]);
+		expect(out.stdout).toContain(`landing\tqueue\t-\n`);
+	});
+
+	/**
+	 * The one field that degrades rather than refusing: `ship merge` re-derives the same fact and
+	 * refuses `11` on the same failed read, so a printed `unknown` can never license a landing.
+	 */
+	it("prints `unknown` and still answers when the landing path cannot be read", async () => {
+		const out = await run([
+			[PULL, served(pull())],
+			[FILES, served(files("README.md", "DEVELOPMENT.md"))],
+			[OWNERS, raw(CODEOWNERS)],
+			[RULES, {status: 503, body: '{"message":"unavailable"}'}],
+		]);
+		expect(out.code).toBe(0);
+		expect(out.stdout).toContain(`landing\tunknown\t-\n`);
+		expect(out.stderr.some((line) => line.includes("cannot read main's landing path"))).toBe(true);
+	});
+
+	it("derives review-ui from a rendered surface but not from its own test file", async () => {
+		const out = await run(
+			[
+				[PULL, served(pull())],
+				[FILES, served(files("apps/site/src/App.tsx", "apps/site/src/App.test.tsx"))],
+				[OWNERS, raw(CODEOWNERS)],
+			],
+			{},
+			[],
+			uiConfiguredOnPlatform(),
+		);
+		expect(out.stdout).toContain("class\tui\t1");
+	});
+
+	// The prefix list is the repo's own, so a second runnable app's diff derives the class the first
+	// app's does — which a compiled-in source-root literal could not.
+	it("derives review-ui from a diff whose rendered files are all under the second app", async () => {
+		const out = await run(
+			[
+				[PULL, served(pull())],
+				[FILES, served(files("apps/desk/src/ui/Chat.tsx", "apps/desk/src/ui/Chat.test.tsx"))],
+				[OWNERS, raw(CODEOWNERS)],
+			],
+			{},
+			[],
+			uiConfiguredOnPlatform(),
+		);
+		expect(out.stdout).toContain("class\tui\t1");
+		expect(out.stdout).toContain("namespace\treview-ui");
+	});
+
+	it("derives no ui class and says why when the repo declares no uiSurfaces row", async () => {
+		const out = await run([
+			[PULL, served(pull())],
+			[FILES, served(files("apps/site/src/App.tsx", "README.md"))],
+			[OWNERS, raw(CODEOWNERS)],
+		]);
+		expect(out.stdout).not.toContain("class\tui");
+		expect(out.stderr.join("\n")).toContain("declares no `uiSurfaces` rows");
+	});
+
+	it("prints governance beside the class namespaces when the diff touches a governance root", async () => {
+		const out = await run([
+			[PULL, served(pull())],
+			[FILES, served(files(".decisions/0244-corpus-review.md", "README.md"))],
+			[OWNERS, raw(CODEOWNERS)],
+		]);
+		expect(out.stdout).toContain("namespace\tgovernance");
+		// One class here, so the whole namespace block is exactly these two lines, in this order.
+		expect(out.stdout).toContain(["namespace\treview-doc", "namespace\tgovernance"].join("\n"));
+	});
+
+	it("prints no governance line for a diff under no governance root", async () => {
+		const out = await run([
+			[PULL, served(pull())],
+			[FILES, served(files("apps/site/src/App.tsx", "README.md"))],
+			[OWNERS, raw(CODEOWNERS)],
+		]);
+		expect(out.stdout).not.toContain("governance");
+	});
+
+	it("reports a merged PR as an ANSWER, not a refusal", async () => {
+		const out = await run([
+			[PULL, served(pull({merged: true, state: "closed", changedFiles: 1}))],
+			[FILES, served(files("README.md"))],
+			[OWNERS, raw(CODEOWNERS)],
+		]);
+		expect(out.code).toBe(0);
+		expect(out.stdout.split("\n")[0]).toContain("\tmerged\t");
+	});
+
+	it("reports a draft PR as an answer too", async () => {
+		const out = await run([
+			[PULL, served(pull({draft: true, changedFiles: 1}))],
+			[FILES, served(files("README.md"))],
+			[OWNERS, raw(CODEOWNERS)],
+		]);
+		expect(out.stdout.split("\n")[0]).toContain("\tdraft\t");
+	});
+
+	it("classifies a control-plane path off CODEOWNERS itself", async () => {
+		const out = await run([
+			[PULL, served(pull({changedFiles: 1}))],
+			[FILES, served(files(".github/workflows/ci.yml"))],
+			[OWNERS, raw(CODEOWNERS)],
+		]);
+		expect(out.stdout).toContain("cp\tcontrol-plane");
+	});
+
+	it("holds on unknown when the boundary is proven absent — never match-everything", async () => {
+		const out = await run([
+			[PULL, served(pull({changedFiles: 1}))],
+			[FILES, served(files("README.md"))],
+			[OWNERS, NOT_FOUND],
+		]);
+		expect(out.code).toBe(0);
+		expect(out.stdout).toContain("cp\tunknown");
+	});
+
+	it("refuses an UNREADABLE boundary on 11 — a failed read is not `unknown`", async () => {
+		const out = await run([
+			[PULL, served(pull({changedFiles: 1}))],
+			[FILES, served(files("README.md"))],
+			[OWNERS, BAD_GATEWAY],
+		]);
+		expect(out.code).toBe(PRECONDITION_UNKNOWN);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toContain("the scope is UNKNOWN");
+	});
+
+	it("refuses a failed read whatever the repo's config says — never `not-control-plane`", async () => {
+		const out = await run([
+			[PULL, served(pull({changedFiles: 1}))],
+			[FILES, served(files("README.md"))],
+			[OWNERS, BAD_GATEWAY],
+			[CONFIG, raw('{"unreadableCodeowners": "ship"}')],
+		]);
+		expect(out.code).toBe(PRECONDITION_UNKNOWN);
+		expect(out.stdout).toBe("");
+	});
+
+	// The declared count is GitHub's own, computed against a base cached at the last push, so a list
+	// short of it proved nothing about completeness. It used to refuse at 13 — and this is the first
+	// verb a `ship` run makes, so the whole merge path stranded before it started.
+	it("reports a file list short of the declared count and still partitions it (#9322)", async () => {
+		const out = await run([
+			[PULL, served(pull({changedFiles: 9}))],
+			[FILES, served(files("README.md"))],
+			[OWNERS, raw(CODEOWNERS)],
+			[RULES, served(branchRules())],
+		]);
+		expect(out.code).toBe(0);
+		expect(out.stdout.split("\n")[0]).toBe(`scoped\t${HEAD}\topen\tfixes:${LINKED_ISSUE}`);
+		expect(out.stderr.join("\n")).toContain(
+			"GitHub's file list for #4321 holds 1 paths against the 9 its own pull-request record declares",
+		);
+	});
+
+	// The empty read is the seat that survives the retirement, and it is driven by the list rather
+	// than the declared count: a zero can never render as a clean partition.
+	it("refuses an empty file list on 7 even where the record declares files (#9322)", async () => {
+		const out = await run([
+			[PULL, served(pull({changedFiles: 9}))],
+			[FILES, served(files())],
+		]);
+		expect(out.code).toBe(ZERO_SCOPE);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toBe(
+			"ship scope: PR #4321 has zero changed files — nothing to ship.",
+		);
+	});
+
+	// The ceiling is the truncation pagination cannot catch: GitHub stops serving files at 3000 and
+	// ends the Link chain there exactly as a complete read ends. The retired count arm caught this
+	// case by accident; `capped` catches it on purpose.
+	it("refuses a file list at the 3000-file ceiling on 13 (#9322)", async () => {
+		const out = await run([
+			[PULL, served(pull({changedFiles: PULL_FILES_CAP}))],
+			[
+				FILES,
+				served(files(...Array.from({length: PULL_FILES_CAP}, (_, i) => `apps/site/src/f${i}.ts`))),
+			],
+		]);
+		expect(out.code).toBe(INCOMPLETE_SCAN);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toBe(
+			"ship scope: GitHub's file list for #4321 came back at its 3000-file ceiling, so the list is provably partial — a class, a namespace or a §CP path could sit in the part the platform never served.",
+		);
+	});
+
+	it("refuses a PR proven absent on 7", async () => {
+		const out = await run([[PULL, NOT_FOUND]]);
+		expect(out.code).toBe(ZERO_SCOPE);
+		expect(out.stderr.at(-1)).toBe("ship scope: PR #4321 not found in o/r.");
+	});
+
+	describe("the checkout this run stands in", () => {
+		it("refuses the main working tree on 33, before the PR is read, naming the key that lifts it", async () => {
+			const seams = fakeSeams([MAIN_WORKING_TREE, [PULL, served(pull())]]);
+			const out = await Effect.runPromise(
+				Effect.provide(runScope(options), Layer.merge(seams.layer, unconfigured)),
+			);
+			expect(out.code).toBe(PRIMARY_CHECKOUT);
+			expect(out.stdout).toBe("");
+			expect(out.stderr.at(-1)).toBe(
+				'ship scope: this is the repository\'s main working tree — a shipper reads from a worktree of its own, never from the driver\'s checkout, whose branch another seat can move mid-drive. Respawn the shipper with `isolation: worktree`. A repo that ships from its one checkout declares `"shipScope": {"mainWorkingTree": "allow"}` in .fabrika.jsonc. Nothing was read.',
+			);
+			expect(seams.requests).toEqual([]);
+		});
+
+		it("answers from the main working tree when the repo declares `allow`, and says which file allowed it", async () => {
+			const out = await Effect.runPromise(
+				Effect.provide(
+					runScope(options),
+					Layer.merge(
+						fakeSeams([
+							MAIN_WORKING_TREE,
+							[PULL, served(pull())],
+							[FILES, served(files("apps/site/worker/cart.ts", "README.md"))],
+							[OWNERS, raw(CODEOWNERS)],
+							[RULES, served(branchRules("pull_request"))],
+							[REPO, repositoryServed()],
+							...unconfiguredOnPlatform(),
+						]).layer,
+						shipScopeDeclared({mainWorkingTree: "allow"}),
+					),
+				),
+			);
+			expect(out.code).toBe(0);
+			expect(out.stdout.split("\n")[0]).toBe(`scoped\t${HEAD}\topen\tfixes:4287`);
+			expect(out.stderr[0]).toBe(
+				"ship scope: reading from the repository's main working tree — `shipScope` as declared in .fabrika.jsonc allows it.",
+			);
+		});
+
+		// A typo must not land on either arm: falling to `refuse` hides the declaration the repo
+		// believes it made, and falling to `allow` lifts the refusal on a value nobody decoded.
+		it("refuses an undecodable `shipScope` on 11 in the main working tree, before the PR is read", async () => {
+			const seams = fakeSeams([MAIN_WORKING_TREE, [PULL, served(pull())]]);
+			const out = await Effect.runPromise(
+				Effect.provide(
+					runScope(options),
+					Layer.merge(seams.layer, shipScopeDeclared({mainWorkingTree: "yes"})),
+				),
+			);
+			expect(out.code).toBe(PRECONDITION_UNKNOWN);
+			expect(out.stdout).toBe("");
+			expect(out.stderr.at(-1)).toBe(
+				"ship scope: this is the repository's main working tree, and whether this repo allows a read from it is UNKNOWN: `shipScope`'s `mainWorkingTree` is not one of refuse, allow. Nothing was read.",
+			);
+			expect(seams.requests).toEqual([]);
+		});
+
+		it("never weighs `shipScope` from a linked worktree — an undecodable key there refuses nothing", async () => {
+			const out = await Effect.runPromise(
+				Effect.provide(
+					runScope(options),
+					Layer.merge(
+						fakeSeams([
+							[PULL, served(pull())],
+							[FILES, served(files("apps/site/worker/cart.ts", "README.md"))],
+							[OWNERS, raw(CODEOWNERS)],
+							[RULES, served(branchRules("pull_request"))],
+							[REPO, repositoryServed()],
+							...unconfiguredOnPlatform(),
+							LINKED_WORKTREE,
+						]).layer,
+						shipScopeDeclared({mainWorkingTree: "yes"}),
+					),
+				),
+			);
+			expect(out.code).toBe(0);
+		});
+
+		it("passes a linked worktree through to the normal scope answer", async () => {
+			const out = await run(
+				[
+					[PULL, served(pull())],
+					[FILES, served(files("apps/site/worker/cart.ts", "README.md"))],
+					[OWNERS, raw(CODEOWNERS)],
+					[RULES, served(branchRules("pull_request"))],
+				],
+				{},
+				[[REPO, repositoryServed()]],
+			);
+			expect(out.code).toBe(0);
+			expect(out.stdout.split("\n")[0]).toBe(`scoped\t${HEAD}\topen\tfixes:4287`);
+		});
+
+		it("refuses an unreadable worktree fact on 11 with nothing proven", async () => {
+			const out = await run([
+				[REV_PARSE, {ok: false, stdout: "", reason: "fatal: not a git repository"}],
+				[PULL, served(pull())],
+			]);
+			expect(out.code).toBe(PRECONDITION_UNKNOWN);
+			expect(out.stdout).toBe("");
+			expect(out.stderr.at(-1)).toBe(
+				"ship scope: cannot tell whether this tree is a linked worktree: fatal: not a git repository — whether this shipper stands in the driver's checkout is UNKNOWN, and nothing was read.",
+			);
+		});
+
+		it("answers a `relay` caller from the main working tree — the seat is the shipper's, not the derivation's", async () => {
+			const out = await run(
+				[
+					MAIN_WORKING_TREE,
+					[PULL, served(pull())],
+					[FILES, served(files("apps/site/worker/cart.ts", "README.md"))],
+					[OWNERS, raw(CODEOWNERS)],
+					[RULES, served(branchRules("pull_request"))],
+				],
+				{caller: {_tag: "relay"}},
+				[[REPO, repositoryServed()]],
+			);
+			expect(out.code).toBe(0);
+			expect(out.stdout.split("\n")[0]).toBe(`scoped\t${HEAD}\topen\tfixes:4287`);
+		});
+	});
+
+	/**
+	 * The classes derive over the PR's own config — at its head and at the merge base the platform
+	 * names — and never over the checkout the shipper stands in.
+	 */
+	describe("the config the classes derive over", () => {
+		const MERGE_BASE = "c".repeat(40);
+		const SITE = JSON.stringify({
+			uiSurfaces: [
+				{name: "web", prefix: "apps/site/src/", mount: "/", command: "pnpm dev --port {{port}}"},
+			],
+		});
+		const scoped = (config: ReadonlyArray<Scripted>, tree = unconfigured) =>
+			Effect.runPromise(
+				Effect.provide(
+					runScope(options),
+					Layer.merge(
+						fakeSeams([
+							[PULL, served(pull())],
+							[FILES, served(files("apps/site/src/App.tsx", "README.md"))],
+							[OWNERS, raw(CODEOWNERS)],
+							[RULES, served(branchRules())],
+							...config,
+							mergeBaseOnPlatform(MERGE_BASE),
+							...configOnPlatform(null),
+							LINKED_WORKTREE,
+						]).layer,
+						tree,
+					),
+				),
+			);
+
+		it("raises the ui class off the head's row when the working tree declares none", async () => {
+			const out = await scoped(configOnPlatform(SITE, HEAD));
+			expect(out.code).toBe(0);
+			expect(out.stdout).toContain("class\tui\t1");
+			expect(out.stdout).toContain("namespace\treview-ui");
+		});
+
+		it("raises the ui class off the merge base's row when the head removes it", async () => {
+			const out = await scoped([
+				...configOnPlatform("{}", HEAD),
+				...configOnPlatform(SITE, MERGE_BASE),
+			]);
+			expect(out.code).toBe(0);
+			expect(out.stdout).toContain("class\tui\t1");
+		});
+
+		it("derives no ui class off a working-tree row neither commit declares", async () => {
+			const out = await scoped([], uiConfigured);
+			expect(out.code).toBe(0);
+			expect(out.stdout).not.toContain("class\tui");
+		});
+
+		it("refuses naming the merge base when its config does not decode", async () => {
+			const out = await scoped(configOnPlatform('{"governedRoots": []}', MERGE_BASE));
+			expect(out.code).toBe(PRECONDITION_UNKNOWN);
+			expect(out.stdout).toBe("");
+			expect(out.stderr.at(-1)).toContain(
+				`.fabrika.jsonc at the base ${MERGE_BASE} is refused — \`governedRoots\` is empty`,
+			);
+		});
+
+		it("refuses naming the head when its config cannot be read", async () => {
+			const out = await scoped([
+				[
+					new RegExp(`contents/\\.fabrika\\.jsonc\\?ref=${HEAD}$`),
+					{status: 502, body: '{"message":"Bad gateway"}'},
+				],
+			]);
+			expect(out.code).toBe(PRECONDITION_UNKNOWN);
+			expect(out.stderr.at(-1)).toContain(`.fabrika.jsonc at the head ${HEAD} is refused`);
+		});
+
+		it("refuses when the platform names no merge base to read the base config at", async () => {
+			const out = await scoped([
+				[/\/compare\/[^?]+\?per_page=1$/, {status: 200, body: '{"status":"ahead"}'}],
+			]);
+			expect(out.code).toBe(PRECONDITION_UNKNOWN);
+			expect(out.stderr.at(-1)).toContain(`cannot read the merge base of ${HEAD} with main`);
+		});
+	});
+});

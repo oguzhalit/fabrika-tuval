@@ -1,0 +1,148 @@
+/**
+ * The candidate-render step: render the priority surfaces over a flag-forced preview
+ * into a deterministic candidate set staged for blessing — it does NOT bless (that is
+ * the operator's step).
+ *
+ * Thin orchestration over pure cores: resolve the priority surfaces
+ * (`priority-surfaces.ts`), shoot them over the preview via the reused capture leg
+ * (`capture.ts` — the same flake canon the review-design gate uses), PUT each
+ * candidate's bytes to the asset store up front (so the emitted `sha256` IS what a
+ * later bless commits — the no-re-render guard), and fold the results into the candidate
+ * set (`candidate-set.ts`). Both impure legs are injected seams — the unit test
+ * drives the whole orchestration with fakes, no browser and no store (the
+ * pure-core + injected-impure-leg idiom `renderLocal`/`captureAndUpload` already use).
+ */
+import {Effect} from "effect";
+import {assembleCandidateSet, type CandidateSet, type RenderedCandidate} from "./candidate-set.ts";
+import {
+	CaptureError,
+	type CaptureOptions,
+	captureShots,
+	requireWritten,
+	type ShotCapture,
+} from "./capture.ts";
+import {buildCapturePlan, DEFAULT_VIEWPORT, type Shot, type Viewport} from "./plan.ts";
+import {
+	type PrioritySurfaceParams,
+	type PrioritySurfaceSpec,
+	resolvePrioritySurfaces,
+} from "./priority-surfaces.ts";
+
+/**
+ * The injected Playwright capture leg — `captureShots`' shape. Defaulted to the real
+ * leg; the unit test injects a fake to prove the orchestration without a browser.
+ */
+export type CaptureLeg = (
+	shots: readonly Shot[],
+	outDir: string,
+	options: CaptureOptions,
+) => Effect.Effect<readonly ShotCapture[], CaptureError>;
+
+/**
+ * What a store leg returns: the content-address stem the golden pointer records, and the
+ * immutable URL the bytes are readable at. The *store itself* is the consuming repo's — a
+ * repo's goldens live in its own asset store — so this package owns only the shape, never a
+ * host or a credential.
+ */
+export interface StoredGolden {
+	readonly sha256: string;
+	readonly url: string;
+}
+
+/**
+ * The injected store leg — PUT candidate bytes, get back `{ sha256, url }`. Its
+ * error/requirement channels are the caller's (the bin provides the real
+ * store layer; the test injects a fake with neither), so this module's
+ * `renderCandidateSet` stays parametric over both and needs no service at its edge.
+ */
+export type StoreLeg<E = never, R = never> = (
+	pngBytes: Uint8Array,
+) => Effect.Effect<StoredGolden, E, R>;
+
+export interface RenderCandidateSetRequest {
+	/** The flag-forced preview base URL to render the candidates over. */
+	readonly previewUrl: string;
+	/** Concrete data the priority routes need — the seeded term slug. */
+	readonly params: PrioritySurfaceParams;
+	/** Directory the per-candidate PNG bytes are written to. */
+	readonly outDir: string;
+	/**
+	 * The forced flag state the preview is rendered under (flag key → on/off),
+	 * recorded on the set as provenance. This step consumes an already-forced
+	 * preview; it does not force flags.
+	 */
+	readonly forcedFlags?: Readonly<Record<string, boolean>>;
+	/** Viewport to shoot each candidate at (default desktop). */
+	readonly viewport?: Viewport;
+	/** Passed through to the capture leg (timeout, full-page). */
+	readonly captureOptions?: CaptureOptions;
+	/** Override the priority set (test seam); defaults to the built-in set. */
+	readonly specs?: readonly PrioritySurfaceSpec[];
+}
+
+export interface RenderCandidateSetDeps<E = never, R = never> {
+	readonly capture?: CaptureLeg;
+	/** REQUIRED — the asset store leg (there is no browser-free default that PUTs bytes). */
+	readonly store: StoreLeg<E, R>;
+}
+
+/**
+ * Render the priority surfaces into a candidate set. Resolves the ordered
+ * surfaces, shoots them over the preview, stores each candidate's bytes, and
+ * assembles the set — one candidate screen per priority surface, in that order,
+ * each anchored to the exact `sha256` a later bless commits. A capture failure
+ * short-circuits (nothing to bless from a broken render); a store failure propagates
+ * in the leg's own error channel.
+ */
+export const renderCandidateSet = <E = never, R = never>(
+	request: RenderCandidateSetRequest,
+	deps: RenderCandidateSetDeps<E, R>,
+): Effect.Effect<CandidateSet, CaptureError | E, R> => {
+	const capture = deps.capture ?? captureShots;
+	const viewport = request.viewport ?? DEFAULT_VIEWPORT;
+	return Effect.try({
+		try: () => {
+			const surfaces = resolvePrioritySurfaces(request.params, request.specs);
+			const plan = buildCapturePlan(
+				request.previewUrl,
+				surfaces.map((s) => s.surface),
+				viewport,
+			);
+			return {surfaces, plan};
+		},
+		catch: (cause) => new CaptureError({message: "failed to build candidate-render plan", cause}),
+	}).pipe(
+		Effect.flatMap(({surfaces, plan}) =>
+			capture(plan, request.outDir, request.captureOptions ?? {}).pipe(
+				Effect.flatMap(requireWritten),
+				Effect.flatMap((captured) =>
+					Effect.forEach(
+						captured,
+						(shot): Effect.Effect<RenderedCandidate, E, R> =>
+							deps.store(shot.pngBytes).pipe(
+								Effect.map(
+									(stored): RenderedCandidate => ({
+										surfaceId: shot.surface,
+										sha256: stored.sha256,
+										url: stored.url,
+										fileName: shot.fileName,
+										localPath: shot.localPath,
+									}),
+								),
+							),
+						{concurrency: 1},
+					),
+				),
+				Effect.map((rendered) =>
+					assembleCandidateSet({
+						previewUrl: request.previewUrl,
+						viewport: viewport.label,
+						forcedFlags: request.forcedFlags ?? {},
+						surfaces,
+						rendered,
+					}),
+				),
+			),
+		),
+	);
+};

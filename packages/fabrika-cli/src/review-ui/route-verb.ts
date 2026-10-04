@@ -1,0 +1,627 @@
+/**
+ * `review-ui route` — the single sanctioned way to resolve the `review-ui` namespace on a PR that
+ * renders nothing.
+ *
+ * `ship scope` raises the `ui` class off a path test, and a path test cannot see whether pixels
+ * moved. So a PR whose only change under a declared `uiSurfaces` prefix is a docblock requires a
+ * `review-ui` verdict that this group structurally cannot produce — `render` refuses zero surfaces,
+ * `post` requires a capture set — and `ship gate` blocks on the absence forever. This verb records the
+ * missing half instead of manufacturing the verdict: an attested, head-bound "nothing here
+ * renders", which `ship gate` resolves as `routed`.
+ *
+ * **It is not a second verdict path, and three things keep it from becoming one.** The bytes are
+ * their own wire format with no polarity, so a route can never be read as a PASS. The record is
+ * head-bound with no content binding, so every branch push voids it and the next tree is attested
+ * afresh. And `ship gate` admits a route for `review-ui` alone — no other namespace's evidence
+ * requirement is reachable from here.
+ *
+ * The one mechanical precondition is that the PR actually raises the class: routing a namespace the
+ * diff never derived resolves nothing and leaves a record claiming a question nobody asked. That case
+ * is a clean end, not a refusal, so it answers `none` on exit 0 and writes nothing — a caller tells it
+ * from an absent or closed PR by the exit code alone, without parsing a sentence.
+ * Deriving it re-uses `review/classes.ts`'s own `isUiSurface`, over the same declared `uiSurfaces`
+ * prefixes the gate raised the class from, rather than a second predicate — the `none` answer must
+ * bind the exact rule that raised the class, or the two drift and this verb answers `none` on a PR
+ * the gate is meanwhile blocking, sending the reviewer to ROUTED-ELSEWHERE while `ship gate` still
+ * owes the namespace.
+ *
+ * The file set that runs over is the `pulls/<n>/files` enumeration read through
+ * {@link platformFileSet}, so the `changed_files` the pull-request record declares is reported as a
+ * disagreement line and never refused on — that count is computed against a base cached at the last
+ * push, and refusing on it stranded the lane with no act available to clear it. Two shapes still
+ * refuse, because neither leaves a ui count anybody read: an **empty** list, and one at the
+ * endpoint's own file ceiling, which can only ever shrink that count.
+ *
+ * Whether the diff renders anything is the *skill's* judgment over `review diff`'s refusal-guarded
+ * bytes, and it stays there. No verb decides it: that was a rejected candidate, because a
+ * second path heuristic is the first one's defect relocated.
+ *
+ * **Where the route rests on a hand-verification instead of a render, this verb also judges whether
+ * that evidence is still current.** `--verified-at` names the head the hand-verification ran at, and
+ * the evidence stands exactly when no file in the range to `--sha` raises the `ui` class — the same `isUiSurface` over the same prefixes, never a second predicate.
+ * Two shapes leave that range unread rather than clear: a comparison at GitHub's file ceiling, and
+ * one whose two heads have diverged, where the platform answers from their merge base instead. Both
+ * are UNKNOWN.
+ * Left off, the range is never read and the route behaves as it always did: a prose-only diff under
+ * a declared prefix rests on the body alone and has no head to compare against.
+ *
+ * **The record also rests on the text gate's verdict, so this verb reads that too.** The `review-code`
+ * verdict in force at `--sha` is a precondition: a standing FAIL refuses the route outright, and a
+ * route resting on a hand-verification refuses when no text verdict binds that head at all, because
+ * the clause the interim exception prescribes asserts the conjunction. A prose-only route asserts
+ * nothing about the text lane, so an absent verdict there is stated on stderr rather than refused.
+ * The reader is `review verdicts`'s and the ordering `ship gate`'s — see `./text-verdict.ts`.
+ *
+ * **A PR with no preview routes only as far as the repo's `reviewUi.whenNoPreview` rules allow.**
+ * `--no-preview` resolves the mode over the PR's ui files (`./no-preview.ts`): `require-render`
+ * refuses, `skip` posts a record flagged `basis:skip`, and `hand-check` posts one flagged
+ * `basis:hand-check` only over an owner account's comment that names this head and carries screenshots
+ * (`./hand-check.ts`). A hand-check stands in for the render exactly as a desk run does, so it rests
+ * on a standing text PASS too. Both flags ride the record's first line, so `ship gate` and the
+ * lane's proof say the namespace was not rendered. The verb does not take `--no-preview` on the
+ * caller's word: it reads the PR's preview announcement through `render`'s own resolver and routes
+ * only where `render` would refuse for want of one.
+ *
+ * @ruling https://github.com/kamp-us/phoenix/issues/9196#issuecomment-5688739893
+ * @ruling https://github.com/kamp-us/phoenix/issues/10038#issuecomment-5860347862
+ */
+import {Effect} from "effect";
+import type {ChildProcessSpawner} from "effect/unstable/process";
+import {type CommentRecord, createComment, getComment, listComments} from "../io/issues.ts";
+import {
+	COMPARE_FILE_CAP,
+	compareFiles,
+	listPullFiles,
+	patchComment,
+	viewerLogin,
+} from "../io/pulls.ts";
+import type {StdinRead} from "../io/stdin.ts";
+import {normalizeForReadback} from "../report/compose.ts";
+import {type AuthoredSurface, leakRefusal, readAuthored} from "../review/authored.ts";
+import {classConfigOfPull} from "../review/class-config.ts";
+import {isUiSurface} from "../review/classes.ts";
+import {headContentFor} from "../review/head-content.ts";
+import {platformCapLine, platformFileSet} from "../review/local-file-set.ts";
+import {openPull, resolveTargetRepo, scannedLine} from "../review/target.ts";
+import {controlPlaneRoster} from "../ship/roster.ts";
+import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import {
+	emit as emitRecord,
+	headSha,
+	type RouteBasis,
+	readNamespaced,
+	clause as toClause,
+} from "../wire/routed-elsewhere.ts";
+import {read as readMarker} from "../wire/verdict-marker.ts";
+import {handCheckNote, isCantSeeNote, noteLines, requireRenderNote} from "./cant-see-note.ts";
+import {
+	HAND_CHECK_INADMISSIBLE,
+	NO_PREVIEW_MODE_UNMET,
+	OFF_VOCABULARY,
+	PRECONDITION_UNKNOWN,
+	PREVIEW_EXISTS,
+	READBACK_MISMATCH,
+	STALE_TREE,
+	TEXT_REVIEW_UNMET,
+	WRITE_UNKNOWN,
+	ZERO_SCOPE,
+} from "./codes.ts";
+import {admitHandCheck, findHandCheck, handCheckCommentId, nearMisses} from "./hand-check.ts";
+import {filesAtMode, type NoPreviewMode, type NoPreviewRule, noPreviewMode} from "./no-preview.ts";
+import {NAMESPACE} from "./post-verb.ts";
+import {resolvePreview} from "./preview.ts";
+import {standingTextVerdict, TEXT_NAMESPACE, textClaims} from "./text-verdict.ts";
+
+const VERB = "review-ui route";
+
+const SURFACE: AuthoredSurface = {
+	verb: VERB,
+	noun: "the assembled comment",
+	emptyMessage: `${VERB}: no body on stdin — a route with no reasoning is an assertion nobody can check; pipe the reasoning in.`,
+	bareAtMessage: `${VERB}: the body is a bare "@" path reference — the body never arrived. Send its bytes on stdin.`,
+	leakCorrection: "cite it repo-relative or by class root.",
+};
+
+export interface RouteOptions {
+	readonly pr: number;
+	/** The head the emitter read the diff at. The record binds it and nothing else. */
+	readonly sha: string;
+	/** The one-line why, carried on the record's first line. */
+	readonly clause: string;
+	/**
+	 * The head a hand-verification standing in for the render ran at, or `null` where the route
+	 * rests on no such evidence — a prose-only diff under a `uiSurfaces` prefix rests on the body
+	 * alone and has no head to compare. Given one, the range to {@link sha} decides whether the
+	 * evidence is still evidence of the tree being attested.
+	 */
+	readonly verifiedAt: string | null;
+	/**
+	 * Set where the PR has no preview deploy and the route rests on the repo's
+	 * `reviewUi.whenNoPreview` rules instead of the diff. Absent is the route as it always was.
+	 */
+	readonly noPreview?: NoPreviewRequest;
+	readonly repo: string | null;
+	readonly env: Readonly<Record<string, string | undefined>>;
+	readonly stdin: Effect.Effect<StdinRead>;
+}
+
+export interface NoPreviewRequest {
+	/** The repo's `reviewUi.whenNoPreview` rules, resolved by the caller off the tree it stands in. */
+	readonly rules: ReadonlyArray<NoPreviewRule>;
+	/**
+	 * The owner account's hand-check comment, by id or URL, or `null` to let the verb find the newest
+	 * admissible one on the PR itself.
+	 */
+	readonly handCheck: string | null;
+}
+
+/** The basis a no-preview route posts under this mode, or the refusal the mode owes. */
+const basisUnder = (
+	mode: NoPreviewMode,
+	offered: boolean,
+	pr: number,
+	decisive: ReadonlyArray<string>,
+):
+	| {readonly _tag: "Basis"; readonly basis: RouteBasis}
+	| {readonly _tag: "Unmet"; readonly why: string; readonly note: string} => {
+	const files = decisive.join(", ");
+	if (mode === "require-render") {
+		return {
+			_tag: "Unmet",
+			why: `reviewUi.whenNoPreview resolves require-render for #${pr} (${files}) — a render is owed, so a PR with no preview is CANT-SEE, never routed.`,
+			note: requireRenderNote(decisive),
+		};
+	}
+	return offered || mode === "hand-check"
+		? {_tag: "Basis", basis: "hand-check"}
+		: {_tag: "Basis", basis: "skip"};
+};
+
+/**
+ * `null` exactly where `review-ui render` would refuse on its no-preview exit, over the same
+ * resolver; otherwise the refusal a no-preview route owes.
+ */
+const previewAbsence = (
+	pr: number,
+	sha: string,
+	comments: ReadonlyArray<CommentRecord>,
+): {readonly code: number; readonly message: string} | null => {
+	const preview = resolvePreview(comments, null, sha);
+	switch (preview._tag) {
+		case "NoPreview":
+			return null;
+		case "Malformed":
+			return {
+				code: PRECONDITION_UNKNOWN,
+				message: `${VERB}: #${pr}'s preview comment carries the anchor but does not read (${preview.reason}) — whether a preview exists is UNKNOWN; nothing was posted.`,
+			};
+		case "Ambiguous":
+			return {
+				code: PREVIEW_EXISTS,
+				message: `${VERB}: #${pr} announces a preview for ${preview.apps.join(", ")} — a render can run, so a no-preview rule cannot stand in for it; run review-ui render --app <app>.`,
+			};
+		case "Resolved":
+			return {
+				code: PREVIEW_EXISTS,
+				message: prefixMatch(preview.value.deployedSha, sha)
+					? `${VERB}: #${pr} announces a ${preview.value.app} preview at ${sha} — a render can run, so a no-preview rule cannot stand in for it; run review-ui render.`
+					: `${VERB}: #${pr} announces a ${preview.value.app} preview at ${preview.value.deployedSha}, not yet at ${sha} — this PR deploys previews, so wait for it to redeploy and render; a no-preview rule cannot stand in for it.`,
+			};
+	}
+};
+
+/** Either side may be abbreviated, so the match is a prefix in whichever direction is shorter. */
+const prefixMatch = (a: string, b: string): boolean => a.startsWith(b) || b.startsWith(a);
+
+const unreadable = (what: string, pr: number, reason: string): VerbOutcome =>
+	refuse(
+		PRECONDITION_UNKNOWN,
+		`${VERB}: cannot read ${what} for #${pr}: ${reason} — nothing was posted.`,
+	);
+
+export const runRoute = (
+	options: RouteOptions,
+): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
+	Effect.gen(function* () {
+		const {pr} = options;
+		if (!Number.isInteger(pr) || pr <= 0) {
+			return refuse(FAILED, `${VERB}: ${pr} is not a pull-request number.`);
+		}
+		const inspected = headSha(options.sha);
+		if (inspected === null) {
+			return refuse(
+				OFF_VOCABULARY,
+				`${VERB}: --sha "${options.sha}" is not a head SHA — expected 7–40 hex characters.`,
+			);
+		}
+		const clause = toClause(options.clause);
+		if (clause === null) {
+			return refuse(
+				OFF_VOCABULARY,
+				`${VERB}: --clause is blank — a route with no stated reason records nothing a reader can check.`,
+			);
+		}
+		const verified = options.verifiedAt === null ? null : headSha(options.verifiedAt);
+		if (options.verifiedAt !== null && verified === null) {
+			return refuse(
+				OFF_VOCABULARY,
+				`${VERB}: --verified-at "${options.verifiedAt}" is not a head SHA — expected 7–40 hex characters.`,
+			);
+		}
+		const noPreview = options.noPreview ?? null;
+		if (noPreview !== null && verified !== null) {
+			return refuse(
+				OFF_VOCABULARY,
+				`${VERB}: --verified-at and --no-preview name two different routes — a desk run at an earlier head, or the repo's no-preview rules at this one; pass one.`,
+			);
+		}
+		const handCheckId =
+			noPreview === null || noPreview.handCheck === null
+				? null
+				: handCheckCommentId(noPreview.handCheck);
+		if (noPreview !== null && noPreview.handCheck !== null && handCheckId === null) {
+			return refuse(
+				OFF_VOCABULARY,
+				`${VERB}: --hand-check "${noPreview.handCheck}" is not a comment id or a comment URL ending in #issuecomment-<id>.`,
+			);
+		}
+
+		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
+		if (resolved._tag === "Refused") return resolved.outcome;
+		const repo = resolved.repo;
+
+		const authored = readAuthored(SURFACE, yield* options.stdin);
+		if (authored._tag === "Refused") return authored.outcome;
+
+		const target = yield* openPull(VERB, repo, pr, {
+			requireOpen: true,
+			closedReason: "a route on a closed PR resolves nothing.",
+			requireFiles: true,
+			emptyReason: "a route over an empty diff resolves nothing.",
+			unknownMessage: (reason) =>
+				`${VERB}: cannot read the PR for #${pr}: ${reason} — nothing was posted.`,
+		});
+		if (target._tag === "Refused") return target.outcome;
+
+		// The record binds the tree the diff was read at, or it is re-read, never re-bound.
+		const live = target.pull.headSha;
+		if (!prefixMatch(live, inspected)) {
+			return refuse(
+				STALE_TREE,
+				`${VERB}: the live head is ${live}, not ${inspected} — the diff you read is gone; re-read at ${live}.`,
+			);
+		}
+
+		const declared = target.pull.changedFiles;
+		// The enumeration is the file set and `changed_files` is a second opinion beside it —
+		// `platformFileSet` carries why, and the seats it leaves to this verb are the two below.
+		const listed = platformFileSet(VERB, `#${pr}`, declared, yield* listPullFiles(repo, pr));
+		if (listed._tag === "Unreadable") return unreadable("the changed-file list", pr, listed.reason);
+		const files = listed.set.files;
+		// The prefixes the PR's own config declares at its head and merge base — the ones `ship scope`
+		// raised the class from — never the checkout this run stands in.
+		const classConfig = yield* classConfigOfPull(
+			VERB,
+			"which paths raise the ui class is UNKNOWN; nothing was posted.",
+			repo,
+			target.pull,
+		);
+		if (classConfig._tag === "Refused") {
+			return refuse(PRECONDITION_UNKNOWN, classConfig.message);
+		}
+		const uiPrefixes = classConfig.config.uiPrefixes;
+		const ui = files.filter((file) => isUiSurface(file, uiPrefixes));
+		const diagnostics = [
+			scannedLine(
+				VERB,
+				files.length,
+				"changed file",
+				`${declared} declared; ${ui.length} raise the ui class`,
+			),
+			...(listed.set.disagreement === null ? [] : [listed.set.disagreement]),
+		];
+		// Zero is the shortfall the enumeration alone establishes, and with the declared count no
+		// longer refusing it is the only seat left: the no-ui-class answer below would then say
+		// "nothing renders" over a diff nobody read.
+		if (files.length === 0) {
+			return refuse(
+				ZERO_SCOPE,
+				`${VERB}: GitHub served no changed files for #${pr} against the ${declared} its own pull-request record declares — refusing to derive the ui class from a diff nobody read.`,
+				diagnostics,
+			);
+		}
+		// The ceiling is the one truncation the enumeration cannot rule out on its own, and a
+		// truncated list can only ever *shrink* the ui count, so the no-ui-class answer below would
+		// fire on a PR whose class the gate is meanwhile raising. Seated at PRECONDITION_UNKNOWN
+		// rather than the `13` the `ship` verbs use: `13` is RENDER_CRASHED in this group's table,
+		// and this verb already answers UNKNOWN for its other capped platform read, the
+		// `--verified-at` comparison below.
+		if (listed.set.capped) {
+			return refuse(
+				PRECONDITION_UNKNOWN,
+				platformCapLine(
+					VERB,
+					`#${pr}`,
+					"a ui-class file could sit in the part the platform never served.",
+				),
+				diagnostics,
+			);
+		}
+		if (ui.length === 0) {
+			return answer(
+				JSON.stringify({answer: "none", namespace: NAMESPACE, sha: inspected, uiFiles: 0}),
+				[
+					...diagnostics,
+					`${VERB}: #${pr}'s diff raises no ui class, so ship gate requires no ${NAMESPACE} namespace — there is nothing to route; nothing was posted.`,
+				],
+			);
+		}
+
+		let basis: RouteBasis | null = null;
+		if (noPreview !== null) {
+			const mode = noPreviewMode(noPreview.rules, ui);
+			diagnostics.push(
+				`${VERB}: reviewUi.whenNoPreview resolves ${mode} over #${pr}'s ${ui.length} ui file(s).`,
+			);
+			const under = basisUnder(
+				mode,
+				handCheckId !== null,
+				pr,
+				filesAtMode(noPreview.rules, ui, mode),
+			);
+			if (under._tag === "Unmet") {
+				return refuse(NO_PREVIEW_MODE_UNMET, `${VERB}: ${under.why}`, [
+					...diagnostics,
+					...noteLines(VERB, pr, under.note),
+				]);
+			}
+			basis = under.basis;
+		}
+
+		// The clause's other half. `ship gate` reads the two namespaces independently, so a route over
+		// a standing text FAIL merges nothing wrong — what it costs is a permanent record asserting a
+		// PASS nobody formed, which the polarity-free wire format gives a later reader no way to
+		// falsify. One comments read serves this and the upsert below.
+		const comments = yield* listComments(repo, pr);
+		if (comments._tag === "Failure") return unreadable("the comments", pr, comments.reason);
+		diagnostics.push(scannedLine(VERB, comments.value.length, "comment"));
+		if (noPreview !== null) {
+			const absent = previewAbsence(pr, inspected, comments.value);
+			if (absent !== null) return refuse(absent.code, absent.message, diagnostics);
+		}
+		let handCheckLine = "";
+		let handCheckComment: number | null = null;
+		if (basis === "hand-check") {
+			const roster = yield* controlPlaneRoster(repo);
+			if (roster._tag === "Unknown") {
+				return refuse(
+					PRECONDITION_UNKNOWN,
+					`${VERB}: cannot read ${roster.reason} — whether an owner account's hand-check stands on #${pr} is UNKNOWN; nothing was posted.`,
+					diagnostics,
+				);
+			}
+			// A person's attempts only: this gate's own earlier note and a verdict both name the head,
+			// and on a repo whose reviewing account is an owner each would read as a failed hand-check.
+			const attempts = comments.value.filter(
+				(comment) => !isCantSeeNote(comment.body) && readMarker(comment.body)._tag === "Absent",
+			);
+			const owed = (): ReadonlyArray<string> => [
+				...diagnostics,
+				...noteLines(
+					VERB,
+					pr,
+					handCheckNote({repo, pr}, live, nearMisses(attempts, live, roster.logins)),
+				),
+			];
+			let admitted: CommentRecord;
+			if (handCheckId === null) {
+				const found = findHandCheck(comments.value, live, roster.logins);
+				if (found === null) {
+					return refuse(
+						NO_PREVIEW_MODE_UNMET,
+						`${VERB}: reviewUi.whenNoPreview resolves hand-check for #${pr}, and no comment on it is an owner account's hand-check at ${live} — a control-plane account's screenshots naming this head; with none posted, the PR is CANT-SEE.`,
+						owed(),
+					);
+				}
+				admitted = found;
+			} else {
+				const named = admitHandCheck(handCheckId, comments.value, live, roster.logins);
+				if (named._tag === "Inadmissible") {
+					return refuse(
+						HAND_CHECK_INADMISSIBLE,
+						`${VERB}: ${named.reason}; nothing was posted.`,
+						owed(),
+					);
+				}
+				admitted = named.comment;
+			}
+			diagnostics.push(
+				`${VERB}: stands on comment ${admitted.id} by ${admitted.author}, an owner account's hand-check at ${live}.`,
+			);
+			handCheckComment = admitted.id;
+			handCheckLine = `\nHand-check: comment ${admitted.id} by ${admitted.author}, at ${live}.\n`;
+		}
+
+		const claims = textClaims(comments.value);
+		const headContent = yield* headContentFor(
+			VERB,
+			repo,
+			pr,
+			target.pull,
+			options.sha,
+			claims,
+			inspected,
+		);
+		diagnostics.push(...headContent.diagnostics);
+		const text = standingTextVerdict(claims, inspected, headContent.digest);
+		diagnostics.push(
+			scannedLine(
+				VERB,
+				claims.length,
+				`${TEXT_NAMESPACE} claim`,
+				text === null
+					? `none in force at ${inspected}`
+					: `${text.polarity} at ${text.sha} via the ${text.carrier} carrier`,
+			),
+		);
+		if (text !== null && text.polarity === "FAIL") {
+			return refuse(
+				TEXT_REVIEW_UNMET,
+				`${VERB}: ${TEXT_NAMESPACE} stands FAIL at ${inspected} (comment ${text.commentId}) — this record would assert a text PASS that is not there; repair the finding and route at the head the text gate passes.`,
+				diagnostics,
+			);
+		}
+		// Absence refuses exactly where the record claims a PASS: a route resting on a
+		// hand-verification stands in for the render under an interim exception whose prescribed
+		// clause names both halves. A prose-only route claims neither, so it says so instead.
+		if (text === null && (verified !== null || basis === "hand-check")) {
+			return refuse(
+				TEXT_REVIEW_UNMET,
+				`${VERB}: no standing ${TEXT_NAMESPACE} verdict binds ${inspected}, and a route resting on a hand-verification asserts one — land the text verdict first, and read what stands with fabrika review verdicts ${pr}.`,
+				diagnostics,
+			);
+		}
+		if (text === null) {
+			diagnostics.push(
+				`${VERB}: no standing ${TEXT_NAMESPACE} verdict binds ${inspected} — this record rests on the diff alone and asserts nothing about the text lane.`,
+			);
+		}
+
+		if (verified !== null) {
+			const range = `${verified}..${inspected}`;
+			const compared = yield* compareFiles(repo, verified, inspected);
+			if (compared._tag === "Failure") {
+				return unreadable(`the range ${range}`, pr, compared.reason);
+			}
+			// A three-dot compare answers from the merge base, so its file list is the range asked
+			// for only where the hand-verification's head is an ancestor of --sha. A repair's
+			// force-push leaves that head resolvable but diverged, and the served list then hides
+			// every ui-class file changed on the abandoned side — the one shape where re-verifying
+			// matters most. Unread, never cleared.
+			if (compared.value.status !== "identical" && compared.value.status !== "ahead") {
+				return refuse(
+					PRECONDITION_UNKNOWN,
+					`${VERB}: ${verified} is ${compared.value.status} of ${inspected}, not an ancestor — the comparison answers from their merge base, so ${range} was never read. Re-run the hand-verification at ${inspected}.`,
+					diagnostics,
+				);
+			}
+			const spent = compared.value.files.filter((file) => isUiSurface(file, uiPrefixes));
+			diagnostics.push(
+				scannedLine(
+					VERB,
+					compared.value.files.length,
+					"file",
+					`changed in ${range}; ${spent.length} raise the ui class`,
+				),
+			);
+			// The compare declares no total, so a capped list can only ever *hide* a ui-class file —
+			// the same asymmetry the truncated changed-file read above refuses on. UNKNOWN, never a
+			// range the evidence is then cleared over.
+			if (compared.value.capped) {
+				return refuse(
+					PRECONDITION_UNKNOWN,
+					`${VERB}: the comparison over ${range} came back at GitHub's ${COMPARE_FILE_CAP}-file ceiling — refusing to clear the hand-verification against a capped read.`,
+					diagnostics,
+				);
+			}
+			if (spent.length > 0) {
+				return refuse(
+					STALE_TREE,
+					`${VERB}: ${spent.join(", ")} raise the ui class in ${range} — the hand-verification at ${verified} is spent; re-run it at ${inspected}.`,
+					diagnostics,
+				);
+			}
+		}
+
+		const route =
+			basis === null
+				? {namespace: NAMESPACE, sha: inspected, clause}
+				: {namespace: NAMESPACE, sha: inspected, clause, basis};
+		const composed = `${emitRecord(route)}\n${authored.text.replace(/\n+$/, "")}\n${handCheckLine}`;
+		const leaked = leakRefusal(SURFACE, composed);
+		if (leaked !== null) return leaked;
+
+		// One record per namespace, upserted on the emitter's own — a second route at a second head
+		// would leave `ship gate` picking between two claims about one question.
+		const me = yield* viewerLogin;
+		if (me._tag === "Failure") return unreadable("the authenticated user", pr, me.reason);
+		const mine = comments.value
+			.filter(
+				(comment) =>
+					comment.author === me.value && readNamespaced(comment.body, NAMESPACE) !== null,
+			)
+			.reduce<(typeof comments.value)[number] | undefined>((newest, comment) => {
+				if (newest === undefined) return comment;
+				const [a, b] = [
+					comment.updatedAt === "" ? comment.createdAt : comment.updatedAt,
+					newest.updatedAt === "" ? newest.createdAt : newest.updatedAt,
+				];
+				if (a !== b) return a > b ? comment : newest;
+				return comment.id > newest.id ? comment : newest;
+			}, undefined);
+
+		let landed: {readonly id: number; readonly url: string} | null = null;
+		let failure: string | null = null;
+		if (mine === undefined) {
+			const created = yield* createComment(repo, pr, composed);
+			if (created._tag === "Failure") failure = created.reason;
+			else landed = {id: created.value.id, url: created.value.url};
+		} else {
+			const edited = yield* patchComment(repo, mine.id, composed);
+			if (edited._tag === "Failure") failure = edited.reason;
+			else landed = {id: mine.id, url: edited.value};
+		}
+		if (landed === null) {
+			return refuse(
+				WRITE_UNKNOWN,
+				`${VERB}: create/edit failed: ${failure ?? "unknown"} — UNKNOWN whether the route landed; re-read the PR before retrying.`,
+				diagnostics,
+			);
+		}
+
+		// The write call's own echo is not evidence.
+		const back = yield* getComment(repo, landed.id);
+		if (back._tag === "Failure") {
+			return refuse(
+				PRECONDITION_UNKNOWN,
+				`${VERB}: cannot read the posted record for #${pr}: ${back.reason} — nothing was proven.`,
+				diagnostics,
+			);
+		}
+		const record = readNamespaced(normalizeForReadback(back.value), NAMESPACE);
+		const mismatch =
+			record === null
+				? `the comment does not read back as a ${NAMESPACE} route`
+				: record.sha !== inspected
+					? `sha ${record.sha}, expected ${inspected}`
+					: record.clause !== clause
+						? `clause "${record.clause}", expected "${clause}"`
+						: (record.basis ?? null) !== basis
+							? `basis ${record.basis ?? "none"}, expected ${basis ?? "none"}`
+							: normalizeForReadback(back.value) === normalizeForReadback(composed)
+								? null
+								: "the comment's bytes are not the ones that were sent";
+		if (mismatch !== null) {
+			return refuse(
+				READBACK_MISMATCH,
+				`${VERB}: posted, but the read-back does not yield this record (${mismatch}) — inspect comment ${landed.id}.`,
+				diagnostics,
+			);
+		}
+
+		return answer(
+			JSON.stringify({
+				answer: "routed",
+				namespace: NAMESPACE,
+				sha: inspected,
+				uiFiles: ui.length,
+				verifiedAt: verified,
+				basis,
+				...(handCheckComment === null ? {} : {handCheck: handCheckComment}),
+				textReview: text === null ? "absent" : "pass",
+				upsert: mine === undefined ? "created" : "edited",
+				commentUrl: landed.url,
+			}),
+			diagnostics,
+		);
+	});

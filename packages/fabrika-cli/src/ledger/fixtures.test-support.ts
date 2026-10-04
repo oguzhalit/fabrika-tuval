@@ -1,0 +1,185 @@
+/**
+ * The canned GitHub and `git` responses the `ledger` verb tests script their seams with.
+ *
+ * Shaped like the real payloads rather than like the parsers, so a parser that starts reading a
+ * different field still has to find it here — a fixture trimmed to exactly what the code reads today
+ * stops being able to catch tomorrow's misread. The sub-issue payload carries `id` alongside `number`
+ * for the same reason the link and unlink take it: it is the field the relation is keyed on.
+ */
+
+import {
+	comments,
+	GH_TOKEN_ENV,
+	LANE_TOKEN,
+	LANE_UUID,
+	marker,
+	NONCE,
+	served,
+} from "../build/fixtures.test-support.ts";
+import type {HttpReply} from "../fakes.test-support.ts";
+import {PLAN_SECTIONS} from "./plan-block.ts";
+import {runDir, runKey} from "./run.ts";
+
+export const EPIC = 4300;
+export const SESSION = "s-9f2e";
+export const REPO = "o/r";
+/** The tree root `GIT_DIRS` names — every run path in these tests hangs off it. */
+export const TREE_ROOT = "/repo/trees/lane-a";
+export const GIT_DIR = `${TREE_ROOT}/.git`;
+export const DIR = runDir(TREE_ROOT, runKey(EPIC, NONCE));
+export const EXCLUDE_PATH = `${GIT_DIR}/info/exclude`;
+
+export const env = {
+	CLAUDE_PIPELINE_REPO: REPO,
+	CLAUDE_CODE_SESSION_ID: SESSION,
+	...GH_TOKEN_ENV,
+} as Record<string, string | undefined>;
+
+export const epic = (overrides: Record<string, unknown> = {}): HttpReply =>
+	served({
+		number: EPIC,
+		title: "The moderation queue epic",
+		body: "An epic brief about the moderation queue.\n",
+		state: "open",
+		labels: [{name: "type:epic"}, {name: "status:triaged"}],
+		html_url: "https://forge.example/o/r/issues/4300",
+		milestone: null,
+		state_reason: null,
+		...overrides,
+	});
+
+export interface SubIssueFixture {
+	readonly number: number;
+	readonly id?: number;
+	readonly title?: string;
+	readonly labels?: ReadonlyArray<string>;
+	readonly state?: string;
+	readonly stateReason?: string | null;
+}
+
+export const subIssues = (...rows: ReadonlyArray<SubIssueFixture>): HttpReply =>
+	served(
+		rows.map((row) => ({
+			number: row.number,
+			id: row.id ?? row.number * 1000,
+			title: row.title ?? `child ${row.number}`,
+			labels: (row.labels ?? ["type:feature", "p1"]).map((name) => ({name})),
+			state: row.state ?? "open",
+			state_reason: row.stateReason ?? null,
+		})),
+	);
+
+export const childIssue = (options: {
+	number: number;
+	labels?: ReadonlyArray<string>;
+	assignees?: ReadonlyArray<string>;
+	milestone?: string | null;
+	state?: string;
+	stateReason?: string | null;
+	body?: string;
+}): HttpReply =>
+	served({
+		number: options.number,
+		title: `child ${options.number}`,
+		body: options.body ?? "a child body\n",
+		state: options.state ?? "open",
+		state_reason: options.stateReason ?? null,
+		labels: (options.labels ?? []).map((name) => ({name})),
+		assignees: (options.assignees ?? []).map((login) => ({login})),
+		milestone: options.milestone == null ? null : {number: 44, title: options.milestone},
+		html_url: `https://forge.example/o/r/issues/${options.number}`,
+	});
+
+/** A plan block that clears the section set and the story grammar. */
+export const planBlock = (
+	overrides: {stories?: string; drop?: string; criteria?: string} = {},
+): string =>
+	[
+		"## Plan (plan-epic)",
+		"",
+		...PLAN_SECTIONS.filter((heading) => heading !== overrides.drop).flatMap((heading) => {
+			// The criteria rows sit directly under their heading; every other section takes a blank line.
+			if (heading === "Acceptance criteria") {
+				return [
+					`### ${heading}`,
+					overrides.criteria ?? "- [ ] the epic tail leaves no child's slice unwired.",
+					"",
+				];
+			}
+			return [
+				`### ${heading}`,
+				"",
+				heading === "User stories"
+					? (overrides.stories ??
+						"1. As a moderator, I want a queue.\n2. As a yazar, I want a receipt.")
+					: "Something true about this section.",
+				"",
+			];
+		}),
+	].join("\n");
+
+/** A child body that clears the field and criteria readers. */
+export const childBody = (
+	overrides: {stories?: string; containment?: string | null; criteria?: string} = {},
+): string =>
+	[
+		`**Stories:** ${overrides.stories ?? "1, 2"}`,
+		"**TDD:** yes",
+		...(overrides.containment === null
+			? []
+			: [`**Containment:** ${overrides.containment ?? "flag (default-off)"}`]),
+		"",
+		"### What to build",
+		"",
+		"The queue view, over the fate loader.",
+		"",
+		"### Acceptance criteria",
+		overrides.criteria ?? "- [ ] the queue view renders the ten most recent reports",
+		"",
+	].join("\n");
+
+export const labelSet = (...names: ReadonlyArray<string>): HttpReply =>
+	served(names.map((name) => ({name})));
+
+export const DEFAULT_LABELS: ReadonlyArray<string> = [
+	"type:feature",
+	"type:bug",
+	"type:chore",
+	"p0",
+	"p1",
+	"p2",
+	"status:planned",
+	"ready-for:agent",
+	"ready-for:human",
+];
+
+export const milestones = (...rows: ReadonlyArray<readonly [number, string]>): HttpReply =>
+	served(rows.map(([number, title]) => ({number, title})));
+
+/** One page of the `search/issues` envelope — the dedup index's own shape, count and all. */
+export const issueRows = (...rows: ReadonlyArray<readonly [number, string]>): HttpReply =>
+	served({
+		total_count: rows.length,
+		items: rows.map(([number, title]) => ({number, title})),
+	});
+
+/** The same rows as one served page of `issues?state=open` — the backlog dedup source. */
+export const backlogPage = (...rows: ReadonlyArray<readonly [number, string]>): HttpReply =>
+	served(rows.map(([number, title]) => ({number, title})));
+
+/** The claim on the epic, held by the lane `TOKEN` names — the one the run key is derived from. */
+export const CLAIMED: ReadonlyArray<readonly [RegExp, HttpReply]> = [
+	[
+		new RegExp(`^GET .*/repos/${REPO}/issues/${EPIC}/comments\\?`),
+		comments({id: 1, body: marker(SESSION, LANE_UUID)}),
+	],
+	[
+		new RegExp(`^GET .*/repos/${REPO}/collaborators/agent/permission`),
+		served({permission: "write"}),
+	],
+];
+
+/** The `--token` the fixture lane passes: the claim `CLAIMED` posts, read back as an identity. */
+export const TOKEN = LANE_TOKEN;
+
+export {NONCE};

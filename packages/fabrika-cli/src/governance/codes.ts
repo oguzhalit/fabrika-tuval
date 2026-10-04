@@ -1,0 +1,62 @@
+/**
+ * Exit allocations for governance. See ./command.ts help for caller semantics.
+ * Shared meanings stay imported so their values cannot drift.
+ */
+
+import {
+	BARE_AT_PATH as SHARED_BARE_AT_PATH,
+	EMPTY_STDIN as SHARED_EMPTY_STDIN,
+	LEAKED_PATH as SHARED_LEAKED_PATH,
+	NO_TARGET as SHARED_NO_TARGET,
+	PRECONDITION_UNKNOWN as SHARED_PRECONDITION_UNKNOWN,
+	READBACK_MISMATCH as SHARED_READBACK_MISMATCH,
+	WRITE_UNKNOWN as SHARED_WRITE_UNKNOWN,
+} from "../exit-codes.ts";
+import {
+	INCOMPLETE_SCAN as REVIEW_INCOMPLETE_SCAN,
+	STALE_HEAD as REVIEW_STALE_HEAD,
+	SUPERSEDES_VERDICT as REVIEW_SUPERSEDES_VERDICT,
+} from "../review/codes.ts";
+import {OFF_VOCABULARY as TRIAGE_OFF_VOCABULARY} from "../triage/codes.ts";
+
+export const EMPTY_STDIN = SHARED_EMPTY_STDIN;
+export const LEAKED_PATH = SHARED_LEAKED_PATH;
+export const BARE_AT_PATH = SHARED_BARE_AT_PATH;
+/** An absent target is proven; a failed read must use PRECONDITION_UNKNOWN. */
+export const ZERO_SCOPE = SHARED_NO_TARGET;
+export const WRITE_UNKNOWN = SHARED_WRITE_UNKNOWN;
+export const READBACK_MISMATCH = SHARED_READBACK_MISMATCH;
+export const OFF_VOCABULARY = TRIAGE_OFF_VOCABULARY;
+export const PRECONDITION_UNKNOWN = SHARED_PRECONDITION_UNKNOWN;
+
+export const STALE_HEAD = REVIEW_STALE_HEAD;
+export const INCOMPLETE_SCAN = REVIEW_INCOMPLETE_SCAN;
+/**
+ * Refused: this post would retire a standing verdict of the OPPOSITE polarity at the same head — or,
+ * ranged, over the same range — and `--supersede` was not passed. `review`'s seat, for the fact this
+ * group proves identically: `governance post` and `review post` share one range-scoped write path
+ * (`../review/range-post.ts`), so a caller reading a `17` off either must read one meaning.
+ */
+export const SUPERSEDES_VERDICT = REVIEW_SUPERSEDES_VERDICT;
+
+/**
+ * Refused: this PR's diff derives **no** governance namespace.
+ *
+ * This group's one private seat, and deliberately **declared here rather than imported**. It is not
+ * {@link OFF_VOCABULARY}: that is a value off a closed vocabulary, a caller typo. This is a *proven
+ * fact about the PR* — the diff was read, bound and partitioned, and it derives no governance
+ * namespace. Folding them would make "you asked wrongly" and "this PR is not mine to judge" one
+ * number, and only the second is safe to treat as a clean skip. `review/codes.ts` seats its own `14`
+ * as `ACL_DENIED`; that is a different group's private band and carries no cross-group uniqueness
+ * obligation, so importing `14` from `review` beside `12` and `13` would silently take the wrong
+ * meaning (interface convention rule 3).
+ */
+export const NOT_HARNESS_TOUCHING = 14;
+
+/**
+ * The unallocated code: `report file`'s body-section seat, which no verb here performs.
+ *
+ * Registered rather than silently absent, so the gap is a decision the alignment check can read
+ * (`../exit-code-alignment.ts` excludes this export from a table's allocations).
+ */
+export const DELIBERATE_GAP = 4;

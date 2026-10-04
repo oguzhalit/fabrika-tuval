@@ -1,0 +1,381 @@
+/**
+ * The GitHub surface this group reads and writes beyond what `../io/pulls.ts` and `../ship/github.ts`
+ * already serve — the protection surface, the job logs, and the rerun request.
+ *
+ * Two of these are the only genuinely new IO in the group: **fetching a workflow job's log text**
+ * and **requesting a rerun**. Everything else composes shipped modules, and the pagination proofs
+ * are `../io/gh-api.ts`'s, imported rather than re-derived.
+ *
+ * The disciplines are the shipped ones, restated nowhere: every response's status is read before its
+ * bytes, and proven-absent is split from could-not-read at every seam. Since the port off the `gh`
+ * subprocess the status is a number the response carried rather than a code scraped out of an error
+ * string, so `Absent` and `Unknown` are told apart by the platform's own answer.
+ *
+ * **Where the credential comes from.** Every export takes `(repo, …)` and reaches `ambientToken` for
+ * its credential, erasing the transport requirement with `onTransport` rather than publishing
+ * `HttpClient` up through its callers — the shape every transport seam in this package takes.
+ */
+import {Effect} from "effect";
+import {
+	ambientToken,
+	authed,
+	authedExistence,
+	existenceOf,
+	githubMessage,
+	onTransport,
+	type PagedAttempt,
+	pagedEnvelope,
+	pagedWithLinkProof,
+	refusalText,
+	restRead,
+	type ServedStatus,
+} from "../io/gh-api.ts";
+import {type Attempt, fail, ok, type Shell} from "../io/git.ts";
+import {type Existence, unknown} from "../io/issues.ts";
+import {isRecord} from "../io/json.ts";
+import {isBaseConflict, readDefiniteMergeability} from "../ship/mergeability.ts";
+
+const str = (value: unknown): string => (typeof value === "string" ? value : "");
+
+/** One workflow job at a run — the log read's target, and the failing-job filter's subject. */
+export interface WorkflowJob {
+	readonly id: number;
+	readonly name: string;
+	readonly status: string;
+	readonly conclusion: string | null;
+}
+
+export interface JobSet {
+	readonly declared: number;
+	readonly jobs: ReadonlyArray<WorkflowJob>;
+}
+
+/** Every job of one run, paged, with the platform's declared count beside what arrived. */
+export const listRunJobs = (repo: string, run: number): Shell<Attempt<JobSet>> =>
+	authed((token) =>
+		Effect.gen(function* () {
+			const enveloped = yield* pagedEnvelope(
+				token,
+				`repos/${repo}/actions/runs/${run}/jobs`,
+				"jobs",
+			);
+			if (enveloped._tag === "Failure") return enveloped;
+			const jobs: WorkflowJob[] = [];
+			for (const value of enveloped.value.entries) {
+				if (!isRecord(value) || typeof value.id !== "number") {
+					return fail("GitHub answered 200 but one entry is not a workflow job");
+				}
+				jobs.push({
+					id: value.id,
+					name: str(value.name),
+					status: str(value.status),
+					conclusion: typeof value.conclusion === "string" ? value.conclusion : null,
+				});
+			}
+			return ok({declared: enveloped.value.declared, jobs});
+		}),
+	);
+
+/** A run's log availability: the platform serves the bytes, has purged them, or could not be asked. */
+export type LogRead =
+	| {readonly _tag: "Text"; readonly text: string}
+	/** Proven: the platform no longer holds these logs. Permanent, so no retry can change it. */
+	| {readonly _tag: "Expired"}
+	| {readonly _tag: "Failed"; readonly reason: string};
+
+/**
+ * One job's log text.
+ *
+ * `410 Gone` is the platform's own word for expired or purged logs, and it is a **verdict about the
+ * run** rather than a failed read — folding it into a transport failure would tell the caller to
+ * retry a read that can never succeed.
+ *
+ * `404` is read the same way, and only because of where this call sits: the caller has already read
+ * the run and enumerated its jobs over this same token, so a job id this endpoint denies is one whose
+ * bytes are gone rather than one the token cannot see. Outside that ordering a `404` would be
+ * ambiguous, and folding could-not-read into proven-absent is the collapse the group forbids.
+ *
+ * **The endpoint answers `302` to a signed blob URL, and that redirect is followed with the
+ * `Authorization` header dropped** — which is what makes this leg work at all. Probed against this
+ * package's runtime (Node 26, `FetchHttpClient` over `globalThis.fetch`, which sets no `redirect`
+ * option and so follows): the signed URL answers `403` when the header is *present* and `200` when
+ * it is absent, and a default-follow fetch of the API URL answers `200` — so the runtime strips the
+ * header on the cross-origin hop, per the Fetch standard's HTTP-redirect step. Nothing here has to
+ * follow the redirect by hand, and nothing may re-attach the credential to the signed URL.
+ */
+export const fetchJobLog = (repo: string, job: number): Shell<LogRead> =>
+	Effect.gen(function* () {
+		const token = yield* ambientToken;
+		if (token._tag === "Failure") return {_tag: "Failed" as const, reason: token.reason};
+		const outcome = yield* onTransport(
+			restRead(token.value, "GET", `repos/${repo}/actions/jobs/${job}/logs`),
+		);
+		if (outcome._tag === "Unreachable") {
+			return {_tag: "Failed" as const, reason: outcome.reason};
+		}
+		if (outcome.status >= 200 && outcome.status < 300) {
+			return {_tag: "Text" as const, text: outcome.text};
+		}
+		return outcome.status === 410 || outcome.status === 404
+			? {_tag: "Expired" as const}
+			: {_tag: "Failed" as const, reason: refusalText(outcome)};
+	});
+
+export interface RunRecord {
+	readonly id: number;
+	readonly headSha: string;
+	readonly status: string;
+	readonly conclusion: string | null;
+	readonly runAttempt: number;
+}
+
+const toRunRecord = (value: unknown): Attempt<RunRecord> => {
+	if (!isRecord(value) || typeof value.id !== "number") {
+		return fail("GitHub answered 200 but its body is not a workflow run");
+	}
+	return ok({
+		id: value.id,
+		headSha: str(value.head_sha),
+		status: str(value.status),
+		conclusion: typeof value.conclusion === "string" ? value.conclusion : null,
+		runAttempt: typeof value.run_attempt === "number" ? value.run_attempt : 1,
+	});
+};
+
+/** One workflow run — the rerun guard's second and third preconditions read from here. */
+export const getWorkflowRun = (repo: string, run: number): Shell<Existence<RunRecord>> =>
+	authedExistence((token) =>
+		Effect.map(restRead(token, "GET", `repos/${repo}/actions/runs/${run}`), (outcome) =>
+			existenceOf(outcome, toRunRecord),
+		),
+	);
+
+const rerunRequest = (path: string): Shell<Attempt<void>> =>
+	authed((token) =>
+		Effect.map(restRead(token, "POST", path), (outcome) => {
+			if (outcome._tag === "Unreachable") return fail(outcome.reason);
+			return outcome.status >= 200 && outcome.status < 300
+				? ok<void>(undefined)
+				: fail(refusalText(outcome));
+		}),
+	);
+
+/**
+ * Request a re-run of a run's **failed jobs only**.
+ *
+ * The 2xx this returns is a dispatch acknowledgement and **not** proof that a new attempt exists —
+ * the caller re-reads the run and requires `run_attempt` to have increased before it records
+ * anything. v1 wrote its durable marker on the strength of this response and thereby blocked every
+ * future rerun of a run that never re-ran.
+ */
+export const rerunFailedJobs = (repo: string, run: number): Shell<Attempt<void>> =>
+	rerunRequest(`repos/${repo}/actions/runs/${run}/rerun-failed-jobs`);
+
+/**
+ * Request a re-run of **every** job in a run, whatever it concluded.
+ *
+ * {@link rerunFailedJobs} is refused on a run with no failed job, which is the ordinary state of a
+ * governance-floor run since the floor moved off the job's exit code onto a check-run: the job
+ * succeeds — it published an answer — while the check-run it published stays pending. The
+ * same 2xx-is-not-an-attempt discipline holds; the caller still proves the new attempt from run
+ * state.
+ */
+export const rerunRun = (repo: string, run: number): Shell<Attempt<void>> =>
+	rerunRequest(`repos/${repo}/actions/runs/${run}/rerun`);
+
+/**
+ * A read's answer beside the status and `message` GitHub served — which is what a permission denial
+ * and a plan gate are told apart by, now that no error string carries either.
+ */
+export type Answered<A> = {readonly read: A} & ServedStatus;
+
+/**
+ * What a base branch's protection endpoint said — and the one thing its 404 does **not** say.
+ *
+ * `GET /branches/{branch}/protection` answers `404 "Branch not protected"` both when a branch
+ * genuinely has no protection and when the caller lacks the admin permission to see it. It is
+ * ambiguous by construction, so `Absent` here is never on its own evidence of anything.
+ */
+export const branchProtectionContexts = (
+	repo: string,
+	branch: string,
+): Shell<Answered<Existence<ReadonlyArray<string>>>> =>
+	Effect.gen(function* () {
+		const token = yield* ambientToken;
+		if (token._tag === "Failure") {
+			return {read: unknown<ReadonlyArray<string>>(token.reason), status: null};
+		}
+		const outcome = yield* onTransport(
+			restRead(token.value, "GET", `repos/${repo}/branches/${branch}/protection`),
+		);
+		const read = existenceOf<ReadonlyArray<string>>(outcome, (body) => {
+			if (!isRecord(body))
+				return fail("GitHub answered 200 but its body is not a protection record");
+			const required = body.required_status_checks;
+			if (!isRecord(required) || !Array.isArray(required.contexts)) return ok([]);
+			return ok(required.contexts.filter((c): c is string => typeof c === "string"));
+		});
+		return outcome._tag === "Unreachable"
+			? {read, status: null}
+			: {read, status: outcome.status, message: githubMessage(outcome)};
+	});
+
+export interface RulesetRead {
+	readonly contexts: ReadonlyArray<string>;
+	/** True only when a terminal page arrived carrying no `rel="next"` link. */
+	readonly exhausted: boolean;
+	readonly scanned: number;
+}
+
+/**
+ * The required status contexts every repository ruleset imposes on one branch.
+ *
+ * The read is `GET /repos/{repo}/rules/branches/{branch}`, which is the **platform's own evaluation**
+ * of each ruleset's ref condition against this branch. Enumerating `/rulesets` and re-deriving which
+ * conditions match would be a second implementation of `fnmatch` over include/exclude patterns,
+ * `~DEFAULT_BRANCH` and `~ALL` — a platform semantic this package does not get to guess at. Both
+ * endpoints answer at ordinary `repo` scope, so a permission denial here is `unprobeable`, never "no
+ * requirements". Not every 403 is one: where the repository's plan offers neither rulesets nor
+ * branch protection, GitHub answers 403 to every token, and the refusal's `message` is what tells
+ * that plan gate apart — which is why it travels beside the status.
+ */
+export const rulesetContexts = (repo: string, branch: string): Shell<PagedAttempt<RulesetRead>> =>
+	Effect.gen(function* () {
+		const token = yield* ambientToken;
+		if (token._tag === "Failure") return {...token, status: null};
+		const read = yield* onTransport(
+			pagedWithLinkProof(token.value, `repos/${repo}/rules/branches/${branch}`),
+		);
+		if (read._tag === "Failure") return read;
+		const contexts: string[] = [];
+		for (const entry of read.value.entries) {
+			if (!isRecord(entry) || entry.type !== "required_status_checks") continue;
+			const parameters = entry.parameters;
+			if (!isRecord(parameters) || !Array.isArray(parameters.required_status_checks)) continue;
+			for (const check of parameters.required_status_checks) {
+				if (isRecord(check) && typeof check.context === "string") contexts.push(check.context);
+			}
+		}
+		return ok({
+			contexts,
+			exhausted: read.value.exhausted,
+			scanned: read.value.entries.length,
+		});
+	});
+
+export interface OpenPullRow {
+	readonly number: number;
+	readonly headSha: string;
+}
+
+/**
+ * Every open pull request, walked to a **terminal page**.
+ *
+ * The open-PR list declares no total, so the only completeness proof available is a page carrying no
+ * `rel="next"` — and a sweep that answered over an unproven list would report a quiet board it never
+ * finished reading.
+ */
+export const listOpenPulls = (
+	repo: string,
+): Shell<Attempt<{readonly rows: ReadonlyArray<OpenPullRow>; readonly exhausted: boolean}>> =>
+	authed((token) =>
+		Effect.map(pagedWithLinkProof(token, `repos/${repo}/pulls?state=open`), (read) => {
+			if (read._tag === "Failure") return read;
+			const rows: OpenPullRow[] = [];
+			for (const entry of read.value.entries) {
+				if (!isRecord(entry) || typeof entry.number !== "number") {
+					return fail("GitHub answered 200 but one entry is not a pull request");
+				}
+				const head = entry.head;
+				rows.push({
+					number: entry.number,
+					headSha: isRecord(head) ? str(head.sha) : "",
+				});
+			}
+			return ok({rows, exhausted: read.value.exhausted});
+		}),
+	);
+
+export interface RateLimit {
+	readonly remaining: number;
+	/** ISO-8601 UTC, so a refusal can name when the sweep may be retried. */
+	readonly resetsAt: string;
+}
+
+/** The core rate limit, which a full-board sweep is capable of exhausting on its own. */
+export const readRateLimit = (): Shell<Attempt<RateLimit>> =>
+	authed((token) =>
+		Effect.map(restRead(token, "GET", "rate_limit"), (outcome) => {
+			if (outcome._tag === "Unreachable") return fail(outcome.reason);
+			if (outcome.status < 200 || outcome.status >= 300) {
+				return fail(refusalText(outcome));
+			}
+			const parsed = outcome.body;
+			const core =
+				isRecord(parsed) && isRecord(parsed.resources) && isRecord(parsed.resources.core)
+					? parsed.resources.core
+					: null;
+			if (core === null || typeof core.remaining !== "number") {
+				return fail("GitHub answered 200 but the rate-limit record declares no core remaining");
+			}
+			const reset = typeof core.reset === "number" ? new Date(core.reset * 1000).toISOString() : "";
+			return ok({remaining: core.remaining, resetsAt: reset});
+		}),
+	);
+
+/** When the head commit was pushed — the left operand of the strand age, read at the commit. */
+export const commitPushedAt = (repo: string, sha: string): Shell<Attempt<string>> =>
+	authed((token) =>
+		Effect.map(restRead(token, "GET", `repos/${repo}/commits/${sha}`), (outcome) => {
+			if (outcome._tag === "Unreachable") return fail(outcome.reason);
+			if (outcome.status < 200 || outcome.status >= 300) {
+				return fail(refusalText(outcome));
+			}
+			const commit = isRecord(outcome.body) ? outcome.body.commit : null;
+			const committer = isRecord(commit) ? commit.committer : null;
+			const at = isRecord(committer) ? str(committer.date).trim() : "";
+			return at === "" ? fail("GitHub answered 200 but named no commit date") : ok(at);
+		}),
+	);
+
+/**
+ * Whether the merge of a PR's head into its base conflicts, as four values rather than a boolean.
+ *
+ * `Indefinite` is the one that earns the type. GitHub computes `mergeable` lazily, so the first read
+ * of a pull request routinely answers `null` with `mergeable_state: "unknown"` — the platform
+ * declining to answer, which is neither a clean merge nor a conflict. Folding it into `Clear` is the
+ * false green; folding it into `Conflicted` routes a healthy PR to a rebase nobody owes.
+ */
+export type ConflictRead =
+	/** Proven: `mergeable_state` is `dirty`, so the merge of this head into its base conflicts. */
+	| {readonly _tag: "Conflicted"}
+	/** A definite read that is not a base conflict — `clean`, `blocked` and `behind` all land here. */
+	| {readonly _tag: "Clear"}
+	/** The lazy job had not landed inside the window. How many seconds it was given. */
+	| {readonly _tag: "Indefinite"; readonly seconds: number}
+	| {readonly _tag: "Unreadable"; readonly reason: string};
+
+/**
+ * The base-conflict fact `diagnose`'s conflict arm runs on.
+ *
+ * The read and its poll policy are `../ship/mergeability.ts`'s, not this group's: `ship enqueue` and
+ * `ship merge` assert the same precondition through one loop, and a second implementation here would
+ * be a second window over the same lazy job, answering `dirty` on one verb and `UNKNOWN` on another
+ * for one pull request.
+ *
+ * `../io/pulls.ts`'s `PullRecord.mergeability` is **not** that fact and cannot stand in for it: it
+ * collapses every definite not-mergeable value to `conflicting`, so a `blocked` PR — one merely
+ * waiting on its required checks — reads there exactly like a conflicted one.
+ *
+ * @ruling https://github.com/kamp-us/phoenix/issues/9012
+ */
+export const readBaseConflict = (
+	repo: string,
+	pr: number,
+	windowSeconds: number,
+): Shell<ConflictRead> =>
+	Effect.map(readDefiniteMergeability(repo, pr, windowSeconds), (read): ConflictRead => {
+		if (read._tag === "Unreadable") return {_tag: "Unreadable", reason: read.reason};
+		if (read._tag === "Indefinite") return {_tag: "Indefinite", seconds: read.seconds};
+		return isBaseConflict(read.value) ? {_tag: "Conflicted"} : {_tag: "Clear"};
+	});

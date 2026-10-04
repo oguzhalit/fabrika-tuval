@@ -1,0 +1,78 @@
+{
+	"name": "@kampus/fabrika-cli",
+	"version": "0.9.0",
+	"description": "@kampus/fabrika-cli — the deterministic verb package fabrika skills call; `fabrika <group> <verb> …` (epic #4650)",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/kamp-us/phoenix.git",
+		"directory": "packages/fabrika-cli"
+	},
+	"type": "module",
+	"bin": {
+		"fabrika": "./src/bin.ts"
+	},
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"exports": {
+		".": "./src/index.ts",
+		"./capture": "./src/capture/index.ts",
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"dist",
+		"scripts"
+	],
+	"engines": {
+		"node": ">=24"
+	},
+	"publishConfig": {
+		"access": "public",
+		"engines": {
+			"node": ">=22.12"
+		},
+		"bin": {
+			"fabrika": "./dist/bin.js"
+		},
+		"main": "./dist/index.js",
+		"types": "./dist/index.d.ts",
+		"exports": {
+			".": {
+				"types": "./dist/index.d.ts",
+				"import": "./dist/index.js"
+			},
+			"./capture": {
+				"types": "./dist/capture/index.d.ts",
+				"import": "./dist/capture/index.js"
+			},
+			"./package.json": "./package.json"
+		}
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json && node ./scripts/copy-src-assets.mjs",
+		"postinstall": "node ./scripts/provision-browser.mjs",
+		"prepublishOnly": "pnpm run build",
+		"typecheck": "tsc -p tsconfig.json && effect-tsgo diagnostics --project tsconfig.json --strict",
+		"test": "vitest run",
+		"cli": "node src/bin.ts"
+	},
+	"dependencies": {
+		"@demlik/tea": "catalog:",
+		"@effect/platform-node": "catalog:",
+		"@effect/platform-node-shared": "catalog:",
+		"@playwright/test": "catalog:",
+		"effect": "catalog:",
+		"fast-xml-parser": "catalog:",
+		"yaml": "catalog:"
+	},
+	"devDependencies": {
+		"@effect/tsgo": "catalog:",
+		"@effect/vitest": "catalog:",
+		"@types/node": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "catalog:"
+	},
+	"volta": {
+		"node": "26.2.0"
+	}
+}

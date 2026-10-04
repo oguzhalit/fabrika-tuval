@@ -1,0 +1,116 @@
+import {describe, expect, it} from "vitest";
+import {
+	criterionIndex,
+	emit,
+	markedIssue,
+	parseFields,
+	RULING_GRAMMAR,
+	read,
+	rules,
+	rulingUrl,
+	scopeDigest,
+} from "./decision-ruling.ts";
+import {markerTime} from "./grill-marker.ts";
+
+const URL = "https://github.com/o/r/issues/8#issuecomment-3512345";
+const MARKER = `decision-ruled: #8 @ 4d90e1bb27ac · ruling:${URL} · 2026-08-20T05:11:02Z\n`;
+
+const ruling = (supersedes: number | null = null) => ({
+	issue: markedIssue(8) ?? (0 as never),
+	digest: scopeDigest("4d90e1bb27ac") ?? ("" as never),
+	ruling: rulingUrl(URL) ?? ("" as never),
+	supersedes: supersedes === null ? null : (criterionIndex(supersedes) ?? (0 as never)),
+	at: markerTime("2026-08-20T05:11:02Z") ?? ("" as never),
+});
+
+describe("read", () => {
+	it("reads the marker a founder posts, and the bold form a skill writes", () => {
+		expect(read(MARKER)).toMatchObject({
+			_tag: "Found",
+			value: {issue: 8, digest: "4d90e1bb27ac", ruling: URL, at: "2026-08-20T05:11:02Z"},
+		});
+		expect(read(`**${MARKER.trim()}**\n`)).toMatchObject({_tag: "Found", value: {issue: 8}});
+	});
+
+	it("answers Malformed, never Absent, for each field that can drift", () => {
+		const drifts = [
+			`decision-ruled: 8 @ 4d90e1bb27ac · ruling:${URL} · 2026-08-20T05:11:02Z\n`,
+			"decision-ruled: #8 @ 4d90e1bb27ac · ruling:not-a-url · 2026-08-20T05:11:02Z\n",
+		];
+		for (const artifact of drifts) expect(read(artifact)._tag).toBe("Malformed");
+	});
+});
+
+describe("emit", () => {
+	it("round-trips through read", () => {
+		expect(emit(ruling())).toBe(MARKER);
+		expect(read(emit(ruling()))).toMatchObject({_tag: "Found", value: {ruling: URL}});
+	});
+
+	it("round-trips the superseded criterion a ruling names", () => {
+		expect(emit(ruling(3))).toBe(
+			`decision-ruled: #8 @ 4d90e1bb27ac · ruling:${URL} · supersedes:3 · 2026-08-20T05:11:02Z\n`,
+		);
+		expect(read(emit(ruling(3)))).toMatchObject({_tag: "Found", value: {supersedes: 3}});
+	});
+});
+
+/**
+ * The field joined the tail after markers were already on the board, so the two shapes are one
+ * format: a marker carrying no `supersedes:` is not a drifted one, and reading it as such would
+ * un-rule every decision ruled before the widening.
+ */
+describe("the optional superseded-criterion field", () => {
+	it("reads a marker that names none as superseding nothing", () => {
+		expect(read(MARKER)).toMatchObject({_tag: "Found", value: {supersedes: null}});
+	});
+
+	it("reds a position that is not a 1-based criterion row", () => {
+		for (const token of ["zero", "0", "-1", "3.5"]) {
+			const drifted = `decision-ruled: #8 @ 4d90e1bb27ac · ruling:${URL} · supersedes:${token} · 2026-08-20T05:11:02Z\n`;
+			expect(read(drifted)._tag, token).toBe("Malformed");
+		}
+	});
+});
+
+describe("rules", () => {
+	/**
+	 * The staleness property the whole marker exists for: the digest is derived over the issue body,
+	 * so a body rewritten under a standing ruling no longer matches it.
+	 */
+	it("stops rating a ruling current once the body it bound is rewritten", () => {
+		expect(rules(ruling(), 8, "4d90e1bb27ac")).toBe(true);
+		expect(rules(ruling(), 8, "0000aaaa1111")).toBe(false);
+	});
+
+	it("rules nothing on another issue, however fresh the digest", () => {
+		expect(rules(ruling(), 9, "4d90e1bb27ac")).toBe(false);
+	});
+});
+
+describe("parseFields", () => {
+	it("composes from `wire read`'s own output, in any order", () => {
+		expect(
+			parseFields(`at\t2026-08-20T05:11:02Z\nruling\t${URL}\ndigest\t4d90e1bb27ac\nissue\t#8\n`),
+		).toMatchObject({_tag: "Fields", ruling: {issue: 8}});
+	});
+
+	it("refuses rather than defaults on every unusable field", () => {
+		const unusable = [
+			`digest: 4d90e1bb27ac\nruling: ${URL}\nat: 2026-08-20T05:11:02Z\n`,
+			`issue: 8\nruling: ${URL}\nat: 2026-08-20T05:11:02Z\n`,
+			"issue: 8\ndigest: 4d90e1bb27ac\nat: 2026-08-20T05:11:02Z\n",
+			`issue: 8\ndigest: 4d90e1bb27ac\nruling: ${URL}\n`,
+			`issue: 8\nissue: 9\ndigest: 4d90e1bb27ac\nruling: ${URL}\nat: 2026-08-20T05:11:02Z\n`,
+		];
+		for (const fields of unusable) expect(parseFields(fields)._tag).toBe("Unusable");
+	});
+
+	it("names the grammar when the ruling is not an issue-comment URL", () => {
+		const parsed = parseFields(
+			"issue: 8\ndigest: 4d90e1bb27ac\nruling: https://example.com\nat: 2026-08-20T05:11:02Z\n",
+		);
+		expect(parsed).toMatchObject({_tag: "Unusable"});
+		expect(parsed._tag === "Unusable" && parsed.reason).toContain(RULING_GRAMMAR);
+	});
+});

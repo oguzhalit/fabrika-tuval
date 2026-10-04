@@ -1,0 +1,787 @@
+import {Effect} from "effect";
+import {describe, expect, it} from "vitest";
+import type {ParkCauseSurface} from "../config/keys/park-cause.ts";
+import type {Read} from "../config/read-key.ts";
+import {fakeFs} from "../fakes.test-support.ts";
+import {answer, refuse} from "../verb.ts";
+import {
+	APPEND_UNKNOWN,
+	CAUSE_UNRECOGNISED,
+	CLASS_UNRECOGNISED,
+	EVENT_REFUSED,
+	LANE_ABSENT,
+	LANE_UNREADABLE,
+	PARK_UNCAUSED,
+	PROOF_CONTRADICTED,
+	RATIONALE_REFUSED,
+	TASK_UNKNOWN,
+} from "./codes.ts";
+import {
+	coderTemplateText,
+	fakeProver,
+	parkCauseDeclared,
+	parkCauseRead,
+} from "./fixtures.test-support.ts";
+import {foldLog, parseLog} from "./fold.ts";
+import {compileText} from "./machine.ts";
+import {PARK_CAUSE_TOKENS} from "./report.ts";
+import {runStatus} from "./status-verb.ts";
+import {runTransition} from "./transition-verb.ts";
+
+const ROOT = ".fabrika/lanes";
+const WORKFLOW = `${ROOT}/42/workflow.json`;
+const LOG = `${ROOT}/42/events.jsonl`;
+
+const logLine = (event: string): string =>
+	`${JSON.stringify({task: "issue", event: `ISSUE.${event}`, at: "2026-08-16T00:00:00.000Z"})}\n`;
+
+const run = (
+	fs: ReturnType<typeof fakeFs>,
+	event: string,
+	task: string | null = null,
+	cause: string | null = null,
+	classes: ReadonlyArray<string> = [],
+	waitGrant: number | null = null,
+	parkCause: Read<ParkCauseSurface> = parkCauseRead(),
+	rationale: string | null = null,
+	prover: ReturnType<typeof fakeProver> = fakeProver(),
+	axisIssue: number | null = null,
+	owed: {readonly rulingIssue?: number; readonly founderAct?: string} = {},
+) =>
+	Effect.runPromise(
+		Effect.provide(
+			runTransition(
+				{
+					root: ROOT,
+					lane: "42",
+					event,
+					task,
+					cause,
+					axisIssue,
+					rulingIssue: owed.rulingIssue ?? null,
+					founderAct: owed.founderAct ?? null,
+					parkCause,
+					classes,
+					waitGrant,
+					rationale,
+					repo: "o/r",
+					cwd: "/checkout",
+					env: {},
+				},
+				prover.prove,
+			),
+			fs.layer,
+		),
+	);
+
+const freshLane = (log?: string, extra: Parameters<typeof fakeFs>[0] = {}) =>
+	fakeFs({
+		files: {[WORKFLOW]: coderTemplateText(), ...(log === undefined ? {} : {[LOG]: log})},
+		...extra,
+	});
+
+describe("lane transition — the answer", () => {
+	it("appends the accepted event and answers the two stateValues around the fold", async () => {
+		const fs = freshLane();
+
+		const out = await run(fs, "WIP");
+		expect(out.code).toBe(0);
+		expect(JSON.parse(out.stdout)).toMatchObject({
+			previous: {pipeline: {issue: "queued"}},
+			event: "ISSUE.WIP",
+			current: {pipeline: {issue: "build"}},
+			taskAffected: "issue",
+		});
+
+		const appended = fs.written.get(LOG);
+		expect(appended).toBeDefined();
+		expect(JSON.parse(appended?.trim() ?? "")).toMatchObject({task: "issue", event: "ISSUE.WIP"});
+	});
+
+	it("folds the existing log first, so the event lands on the folded state", async () => {
+		const fs = freshLane(logLine("WIP"));
+
+		const out = await run(fs, "DONE");
+		expect(out.code).toBe(0);
+		expect(JSON.parse(out.stdout)).toMatchObject({
+			previous: {pipeline: {issue: "build"}},
+			current: {pipeline: {issue: "review"}},
+		});
+	});
+
+	it("folds a lower-case event to the operator's spelling", async () => {
+		const out = await run(freshLane(), "wip");
+
+		expect(out.code).toBe(0);
+		expect(JSON.parse(out.stdout)).toMatchObject({event: "ISSUE.WIP"});
+	});
+});
+
+describe("lane transition — refuse without append", () => {
+	it("refuses an event the state holds no cell for, log byte-identical, nothing written", async () => {
+		const fs = freshLane(logLine("WIP"));
+
+		const out = await run(fs, "PASS");
+		expect(out.code).toBe(EVENT_REFUSED);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toContain("NoCellError");
+		expect(out.stderr.at(-1)).toContain("log unappended");
+		expect(fs.written.size).toBe(0);
+	});
+
+	it("refuses an event outside the operator's set the same way", async () => {
+		const fs = freshLane();
+
+		const out = await run(fs, "MERGE");
+		expect(out.code).toBe(EVENT_REFUSED);
+		expect(fs.written.size).toBe(0);
+	});
+
+	it("refuses a task the machine does not have on its own code", async () => {
+		const fs = freshLane();
+
+		const out = await run(fs, "WIP", "nope");
+		expect(out.code).toBe(TASK_UNKNOWN);
+		expect(out.stderr.at(-1)).toContain('"nope"');
+		expect(fs.written.size).toBe(0);
+	});
+
+	it("refuses a lane that is provably not there, naming the remedy", async () => {
+		const fs = fakeFs({files: {}});
+
+		const out = await run(fs, "WIP");
+		expect(out.code).toBe(LANE_ABSENT);
+		expect(out.stderr.at(-1)).toContain("template");
+		expect(fs.written.size).toBe(0);
+	});
+
+	it("reports an append that did not land as NOT recorded, never as an answer", async () => {
+		const fs = freshLane(undefined, {unwritable: [LOG]});
+
+		const out = await run(fs, "WIP");
+		expect(out.code).toBe(APPEND_UNKNOWN);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toContain("NOT recorded");
+	});
+
+	it("seats its codes above the reserved band, distinct from each other", () => {
+		const codes = [LANE_ABSENT, EVENT_REFUSED, TASK_UNKNOWN, APPEND_UNKNOWN, CAUSE_UNRECOGNISED];
+		expect(new Set(codes).size).toBe(codes.length);
+		for (const code of codes) expect(code).toBeGreaterThanOrEqual(3);
+	});
+});
+
+describe("lane transition — the park cause a driver-originated BLOCKED carries", () => {
+	it("records a known cause on the event line", async () => {
+		const fs = freshLane(logLine("WIP"));
+
+		const out = await run(fs, "BLOCKED", null, "worktree-holds-branch");
+
+		expect(out.code).toBe(0);
+		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
+		expect(appended).toMatchObject({event: "ISSUE.BLOCKED", cause: "worktree-holds-branch"});
+	});
+
+	it("refuses campaign-paused as a new cause, log byte-identical — no campaign state parks a lane", async () => {
+		const fs = freshLane(logLine("WIP"));
+
+		const out = await run(fs, "BLOCKED", null, "campaign-paused");
+
+		expect(out.code).toBe(CAUSE_UNRECOGNISED);
+		expect(out.stderr.join(" ")).toContain('"campaign-paused" is a retired park cause');
+		expect(fs.written.has(LOG)).toBe(false);
+	});
+
+	it("refuses a cause outside the closed set, log byte-identical", async () => {
+		const fs = freshLane(logLine("WIP"));
+
+		const out = await run(fs, "BLOCKED", null, "the-tree-was-busy");
+
+		expect(out.code).toBe(CAUSE_UNRECOGNISED);
+		expect(out.stderr.at(-1)).toContain("log unappended");
+		expect(fs.written.size).toBe(0);
+	});
+
+	it("refuses a cause on an event that is not a park", async () => {
+		const fs = freshLane();
+
+		const out = await run(fs, "WIP", null, "worktree-holds-branch");
+
+		expect(out.code).toBe(CAUSE_UNRECOGNISED);
+		expect(fs.written.size).toBe(0);
+	});
+
+	it("records render-axis-missing with the axis issue it waits on, and the fold stands it", async () => {
+		const fs = freshLane(logLine("WIP"));
+		const park = (axisIssue: number | null) =>
+			run(
+				fs,
+				"BLOCKED",
+				null,
+				"render-axis-missing",
+				[],
+				null,
+				undefined,
+				null,
+				undefined,
+				axisIssue,
+			);
+
+		const out = await park(9615);
+
+		expect(out.code).toBe(0);
+		expect(JSON.parse(out.stdout)).toMatchObject({cause: "render-axis-missing", axisIssue: 9615});
+		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
+		expect(appended).toMatchObject({
+			event: "ISSUE.BLOCKED",
+			cause: "render-axis-missing",
+			axisIssue: 9615,
+		});
+		const status = await Effect.runPromise(
+			Effect.provide(runStatus({root: ROOT, lane: "42"}), fs.layer),
+		);
+		expect(JSON.parse(status.stdout).context.issue).toMatchObject({
+			cause: "render-axis-missing",
+			axisIssue: 9615,
+		});
+	});
+
+	it("refuses render-axis-missing naming no axis issue, log byte-identical", async () => {
+		const fs = freshLane(logLine("WIP"));
+
+		const out = await run(fs, "BLOCKED", null, "render-axis-missing");
+
+		expect(out.code).toBe(CAUSE_UNRECOGNISED);
+		expect(out.stderr.join(" ")).toContain("--axis-issue");
+		expect(fs.written.size).toBe(0);
+	});
+
+	it("refuses an axis issue beside a cause that waits on none, log byte-identical", async () => {
+		const fs = freshLane(logLine("WIP"));
+
+		const out = await run(
+			fs,
+			"BLOCKED",
+			null,
+			"no-preview-render",
+			[],
+			null,
+			undefined,
+			null,
+			undefined,
+			9615,
+		);
+
+		expect(out.code).toBe(CAUSE_UNRECOGNISED);
+		expect(fs.written.size).toBe(0);
+	});
+
+	it.each([
+		[{cause: "render-axis-missing"}, /names no `axisIssue`/],
+		[{cause: "no-preview-render", axisIssue: 9615}, /waits on no issue/],
+		[{cause: "render-axis-missing", axisIssue: 0}, /no issue number/],
+		[{cause: "ruling-owed"}, /names no `rulingIssue`/],
+		[{cause: "ruling-owed", founderAct: "rotate the logins"}, /names no `rulingIssue`/],
+		[{cause: "founder-act-owed"}, /names no `founderAct`/],
+		[{cause: "founder-act-owed", rulingIssue: 42}, /waits on no ruling/],
+		[{cause: "founder-act-owed", founderAct: " "}, /says nothing/],
+	])("reads %j as a malformed line, never a park", (fields, defect) => {
+		const line = JSON.stringify({
+			task: "issue",
+			event: "ISSUE.BLOCKED",
+			at: "2026-08-16T00:00:00.000Z",
+			...fields,
+		});
+		const parsed = parseLog(`${line}\n`);
+
+		expect(parsed._tag).toBe("Malformed");
+		expect(parsed._tag === "Malformed" && parsed.defects.join(" ")).toMatch(defect);
+	});
+
+	it("appends a causeless event with no cause key, exactly as it always did", async () => {
+		const fs = freshLane(logLine("WIP"));
+
+		const out = await run(fs, "BLOCKED");
+
+		expect(out.code).toBe(0);
+		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
+		expect(Object.keys(appended).sort()).toEqual(["at", "event", "task"]);
+	});
+});
+
+describe("lane transition — a cause-less park under the repo's own `.fabrika.jsonc`", () => {
+	it("is refused unappended where the file declares no `parkCause`, naming the setting", async () => {
+		const fs = freshLane(logLine("WIP"));
+
+		const out = await run(fs, "BLOCKED", null, null, [], null, parkCauseDeclared("{}"));
+
+		expect(out.code).toBe(PARK_UNCAUSED);
+		expect(fs.written.has(LOG)).toBe(false);
+		expect(out.stderr.join(" ")).toContain("`parkCause.uncaused`");
+		expect(out.stderr.join(" ")).toContain('"parkCause": {"uncaused": "record"}');
+	});
+
+	it("is recorded bare where the file declares `uncaused: record`", async () => {
+		const fs = freshLane(logLine("WIP"));
+		const declared = parkCauseDeclared('{"parkCause": {"uncaused": "record"}}');
+
+		const out = await run(fs, "BLOCKED", null, null, [], null, declared);
+
+		expect(out.code).toBe(0);
+		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
+		expect(appended.event).toBe("ISSUE.BLOCKED");
+		expect(Object.hasOwn(appended, "cause")).toBe(false);
+	});
+});
+
+describe("lane transition — a cause-less park under `parkCause.uncaused: refuse`", () => {
+	const strict = parkCauseRead("refuse");
+
+	it("refuses the bare BLOCKED at its own code, log byte-identical", async () => {
+		const fs = freshLane(logLine("WIP"));
+
+		const out = await run(fs, "BLOCKED", null, null, [], null, strict);
+
+		expect(out.code).toBe(PARK_UNCAUSED);
+		expect(fs.written.has(LOG)).toBe(false);
+		// Its own code, not the unknown-cause one: that remedy is "drop or respell", this one's is
+		// the opposite — name a cause.
+		expect(out.code).not.toBe(CAUSE_UNRECOGNISED);
+		for (const cause of PARK_CAUSE_TOKENS) expect(out.stderr.join(" ")).toContain(cause);
+	});
+
+	it("records the same BLOCKED once it names a cause", async () => {
+		const fs = freshLane(logLine("WIP"));
+
+		const out = await run(fs, "BLOCKED", null, "worktree-holds-branch", [], null, strict);
+
+		expect(out.code).toBe(0);
+		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
+		expect(appended).toMatchObject({event: "ISSUE.BLOCKED", cause: "worktree-holds-branch"});
+	});
+
+	it("leaves every non-park event alone — the key binds BLOCKED and nothing else", async () => {
+		const fs = freshLane();
+
+		const out = await run(fs, "WIP", null, null, [], null, strict);
+
+		expect(out.code).toBe(0);
+	});
+
+	it("refuses UNKNOWN on a config nobody could read, rather than recording the bare park", async () => {
+		const fs = freshLane(logLine("WIP"));
+
+		const out = await run(fs, "BLOCKED", null, null, [], null, {
+			_tag: "Refused",
+			reason: "EACCES",
+		});
+
+		expect(out.code).toBe(LANE_UNREADABLE);
+		expect(fs.written.has(LOG)).toBe(false);
+	});
+});
+
+/**
+ * A lane whose remaining work waits on the founder: a `Part of` merge folded it back to `queued`,
+ * and what is left is either a ruling nobody has made or a step only he may take. Both arrivals
+ * refused at `PARK_UNCAUSED` before these two causes existed, so the lane sat in `queued` unparked.
+ */
+describe("lane transition — a park that waits on the founder", () => {
+	const strict = parkCauseRead("refuse");
+	const requeued =
+		logLine("WIP") +
+		logLine("DONE") +
+		logLine("PASS") +
+		`${JSON.stringify({task: "issue", event: "ISSUE.DONE", at: "2026-08-16T00:00:00.000Z", partial: true})}\n`;
+	const STEP = "node packages/preview-seed/src/bin.ts rotate-logins";
+	const park = (
+		fs: ReturnType<typeof fakeFs>,
+		cause: string | null,
+		owed: {readonly rulingIssue?: number; readonly founderAct?: string} = {},
+	) => run(fs, "BLOCKED", null, cause, [], null, strict, null, undefined, null, owed);
+	const statusOf = async (fs: ReturnType<typeof fakeFs>) =>
+		JSON.parse(
+			(await Effect.runPromise(Effect.provide(runStatus({root: ROOT, lane: "42"}), fs.layer)))
+				.stdout,
+		);
+
+	it("refuses the requeued lane's bare park — the arrival both causes exist for", async () => {
+		const fs = freshLane(requeued);
+
+		expect((await statusOf(fs)).stateValue).toEqual({pipeline: {issue: "queued"}});
+		const out = await park(fs, null);
+
+		expect(out.code).toBe(PARK_UNCAUSED);
+		expect(fs.written.has(LOG)).toBe(false);
+	});
+
+	it("records the lane-10334 arrival: the rest waits on a ruling on the lane's own issue", async () => {
+		const fs = freshLane(requeued);
+
+		const out = await park(fs, "ruling-owed", {rulingIssue: 42});
+
+		expect(out.code).toBe(0);
+		expect(JSON.parse(out.stdout)).toMatchObject({
+			previous: {pipeline: {issue: "queued"}},
+			current: {pipeline: {issue: "blocked"}},
+			cause: "ruling-owed",
+			rulingIssue: 42,
+		});
+		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
+		expect(appended).toMatchObject({cause: "ruling-owed", rulingIssue: 42});
+		// The park's own time rides the status beside the issue, because the clear compares a ruling
+		// marker against it.
+		expect((await statusOf(fs)).context.issue).toMatchObject({
+			cause: "ruling-owed",
+			rulingIssue: 42,
+			parkedAt: appended.at,
+		});
+	});
+
+	it("records the lane-9281 arrival: the rest is a command only the founder may run", async () => {
+		const fs = freshLane(requeued);
+
+		const out = await park(fs, "founder-act-owed", {founderAct: ` ${STEP} `});
+
+		expect(out.code).toBe(0);
+		expect(JSON.parse(out.stdout)).toMatchObject({
+			current: {pipeline: {issue: "blocked"}},
+			cause: "founder-act-owed",
+			founderAct: STEP,
+		});
+		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
+		expect(appended).toMatchObject({cause: "founder-act-owed", founderAct: STEP});
+		expect((await statusOf(fs)).context.issue).toMatchObject({founderAct: STEP});
+	});
+
+	it.each([
+		["ruling-owed with no issue", "ruling-owed", {}, "--ruling-issue"],
+		["ruling-owed with a step for its issue", "ruling-owed", {founderAct: STEP}, "--ruling-issue"],
+		["ruling-owed with no issue number", "ruling-owed", {rulingIssue: 0}, "no issue number"],
+		["founder-act-owed with no step", "founder-act-owed", {}, "--founder-act"],
+		["founder-act-owed with a blank step", "founder-act-owed", {founderAct: " "}, "--founder-act"],
+		[
+			"founder-act-owed with an issue for its step",
+			"founder-act-owed",
+			{rulingIssue: 42},
+			"drop --ruling-issue",
+		],
+		["a ruling issue beside another cause", "size-stop", {rulingIssue: 42}, "drop --ruling-issue"],
+		["a step beside another cause", "size-stop", {founderAct: STEP}, "drop --founder-act"],
+	] as const)("refuses %s, log byte-identical", async (_name, cause, owed, names) => {
+		const fs = freshLane(requeued);
+
+		const out = await park(fs, cause, owed);
+
+		expect(out.code).toBe(CAUSE_UNRECOGNISED);
+		expect(out.stderr.join(" ")).toContain(names);
+		expect(fs.written.size).toBe(0);
+	});
+});
+
+describe("lane transition — the lane class the `class:<name>` arms route on", () => {
+	it("records a known class on the event line and routes the arm that reads it", async () => {
+		const fs = freshLane();
+
+		const out = await run(fs, "WIP", null, null, ["ui"]);
+
+		expect(out.code).toBe(0);
+		expect(JSON.parse(out.stdout)).toMatchObject({current: {pipeline: {issue: "build:ui"}}});
+		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
+		expect(appended).toMatchObject({event: "ISSUE.WIP", classes: ["ui"]});
+	});
+
+	it("refuses a class outside the closed set instead of routing it as unclassed", async () => {
+		const fs = freshLane();
+
+		// The miss this closes: `UI` matched no `class:ui` arm, so the guarded array fell through and
+		// the lane built plain — a routing failure nothing said out loud.
+		const out = await run(fs, "WIP", null, null, ["UI-ish"]);
+
+		expect(out.code).toBe(CLASS_UNRECOGNISED);
+		expect(out.stderr.at(-1)).toContain("log unappended");
+		expect(fs.written.size).toBe(0);
+	});
+
+	it("normalises a class's spelling the way a cause's is normalised", async () => {
+		const fs = freshLane();
+
+		const out = await run(fs, "WIP", null, null, [" UI "]);
+
+		expect(out.code).toBe(0);
+		expect(JSON.parse(out.stdout)).toMatchObject({current: {pipeline: {issue: "build:ui"}}});
+	});
+});
+
+describe("lane transition — the rationale a driver's clearance is recorded on", () => {
+	/** A lane sitting in the park an `UNBLOCKED` walks back out of. */
+	const parked = () => freshLane(logLine("WIP") + logLine("BLOCKED"));
+
+	it("records the rationale on the UNBLOCKED line and echoes it in the answer", async () => {
+		const fs = parked();
+
+		const out = await run(fs, "UNBLOCKED", null, null, [], null, undefined, "  rebased the head  ");
+
+		expect(out.code).toBe(0);
+		expect(JSON.parse(out.stdout)).toMatchObject({
+			event: "ISSUE.UNBLOCKED",
+			rationale: "rebased the head",
+		});
+		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
+		expect(appended).toMatchObject({event: "ISSUE.UNBLOCKED", rationale: "rebased the head"});
+	});
+
+	it("refuses a blank rationale at its own code, log byte-identical", async () => {
+		const fs = parked();
+
+		const out = await run(fs, "UNBLOCKED", null, null, [], null, undefined, "   ");
+
+		expect(out.code).toBe(RATIONALE_REFUSED);
+		expect(out.stderr.at(-1)).toContain("log unappended");
+		expect(fs.written.size).toBe(0);
+	});
+
+	it("refuses one riding an event that clears no park", async () => {
+		const fs = freshLane();
+
+		const out = await run(fs, "WIP", null, null, [], null, undefined, "a reason");
+
+		expect(out.code).toBe(RATIONALE_REFUSED);
+		expect(fs.written.size).toBe(0);
+	});
+
+	it("records the same UNBLOCKED with no rationale at all — the ordinary resume", async () => {
+		const fs = parked();
+
+		const out = await run(fs, "UNBLOCKED");
+
+		expect(out.code).toBe(0);
+		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
+		expect(Object.hasOwn(appended, "rationale")).toBe(false);
+	});
+});
+
+/**
+ * The gate that used to be prose a driver read. `operate` laid the proof and the record out as two
+ * adjacent one-liners, so a driver chaining them on one shell line appended whatever the proof said
+ * — which is how one epic's lane recorded a `BLOCKED` over a `lane prove` that had just refused it.
+ */
+describe("lane transition — the proof gate", () => {
+	it("refuses on the prover's own code with the log byte-identical", async () => {
+		const fs = freshLane(logLine("WIP"));
+		const prover = fakeProver(
+			refuse(PROOF_CONTRADICTED, "fabrika lane prove: unproven — #7954 holds a FAIL"),
+		);
+
+		const out = await run(fs, "DONE", null, null, [], null, undefined, null, prover);
+
+		expect(out.code).toBe(PROOF_CONTRADICTED);
+		expect(out.stderr.join(" ")).toContain("holds a FAIL");
+		expect(out.stderr.join(" ")).toContain("log unappended");
+		// The refusal reads as `lane prove`'s, because its remedies are.
+		expect(out.stderr.join(" ")).toContain("fabrika lane prove");
+		expect(fs.written.get(LOG)).toBeUndefined();
+	});
+
+	it("asks the prover for the event and task it is about to append", async () => {
+		const fs = freshLane(logLine("WIP"));
+		const prover = fakeProver();
+
+		const out = await run(fs, "DONE", null, null, [], null, undefined, null, prover);
+
+		expect(out.code).toBe(0);
+		expect(prover.asked).toEqual([
+			{
+				root: ROOT,
+				lane: "42",
+				event: "DONE",
+				task: "issue",
+				classes: null,
+				pr: null,
+				repo: "o/r",
+				cwd: "/checkout",
+				env: {},
+			},
+		]);
+	});
+
+	it("hands the prover the same classes the append carries", async () => {
+		const fs = freshLane(logLine("WIP") + logLine("DONE"));
+		const prover = fakeProver();
+
+		const out = await run(fs, "PASS", null, null, ["ui"], null, undefined, null, prover);
+
+		expect(out.code).toBe(0);
+		expect(prover.asked[0]).toMatchObject({event: "PASS", classes: ["ui"]});
+	});
+
+	it("never reaches the prover for an event the machine refuses", async () => {
+		const fs = freshLane(logLine("WIP"));
+		const prover = fakeProver();
+
+		const out = await run(fs, "WIP", null, null, [], null, undefined, null, prover);
+
+		expect(out.code).toBe(EVENT_REFUSED);
+		expect(prover.asked).toEqual([]);
+		expect(fs.written.get(LOG)).toBeUndefined();
+	});
+
+	it("records the prover's own fields on the driver's line, as `lane report` records them", async () => {
+		const fs = freshLane(logLine("WIP") + logLine("DONE"));
+		const prover = fakeProver(undefined, ["review-ui"], null, []);
+
+		const out = await run(fs, "PASS", null, null, ["ui"], null, undefined, null, prover);
+
+		expect(out.code).toBe(0);
+		expect(JSON.parse(out.stdout)).toMatchObject({deferred: ["review-ui"]});
+		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
+		expect(appended.deferred).toEqual(["review-ui"]);
+	});
+
+	// `partial` reaches the line through `applyEvent`'s payload rather than the entry spread the
+	// other prover fields take, and it is the one that routes: it picks the `merge:partial` arm.
+	it("records the prover's `partial` on the line and routes the merge back to queued", async () => {
+		const fs = freshLane(logLine("WIP") + logLine("DONE") + logLine("PASS"));
+		const prover = fakeProver(undefined, [], true, [4242]);
+
+		const out = await run(fs, "DONE", null, null, [], null, undefined, null, prover);
+
+		expect(out.code).toBe(0);
+		expect(JSON.parse(out.stdout)).toMatchObject({
+			previous: {pipeline: {issue: "ship"}},
+			current: {pipeline: {issue: "queued"}},
+			partial: true,
+			landed: [4242],
+		});
+		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
+		expect(appended.partial).toBe(true);
+	});
+
+	it("records a discharged `partial` as false and lets the merge land", async () => {
+		const fs = freshLane(logLine("WIP") + logLine("DONE") + logLine("PASS"));
+		const prover = fakeProver(undefined, [], false, [4242]);
+
+		const out = await run(fs, "DONE", null, null, [], null, undefined, null, prover);
+
+		expect(out.code).toBe(0);
+		expect(JSON.parse(out.stdout)).toMatchObject({
+			current: "complete",
+			partial: false,
+		});
+		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
+		expect(appended.partial).toBe(false);
+	});
+
+	// The driver's door has to reach the same terminal a shell's `SUCCESS-NO-PR` reaches, or which
+	// verb recorded an investigation's DONE would decide whether it lands on `diagnosed`.
+	it("routes a proven no-PR build DONE to the diagnosed terminal and records the field", async () => {
+		const fs = freshLane(logLine("WIP"));
+		const prover = fakeProver(undefined, [], null, [], true);
+
+		const out = await run(fs, "DONE", null, null, [], null, undefined, null, prover);
+
+		expect(out.code).toBe(0);
+		expect(JSON.parse(out.stdout)).toMatchObject({
+			previous: {pipeline: {issue: "build"}},
+			current: "diagnosed",
+			diagnosis: true,
+		});
+		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
+		expect(appended.diagnosis).toBe(true);
+	});
+
+	it("carries no diagnosis field on a build DONE the prover did not answer one for", async () => {
+		const fs = freshLane(logLine("WIP"));
+
+		const out = await run(fs, "DONE");
+
+		expect(out.code).toBe(0);
+		const line = JSON.parse(out.stdout);
+		expect(line.current).toMatchObject({pipeline: {issue: "review"}});
+		expect(Object.hasOwn(line, "diagnosis")).toBe(false);
+		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
+		expect(Object.hasOwn(appended, "diagnosis")).toBe(false);
+	});
+});
+
+/**
+ * The rewind out of a review cell: a `WIP` whose PR was re-pointed at another issue sends the task
+ * back to `queued`, proven off the nominator and spending no budget.
+ */
+describe("lane transition — the review rewind when no open PR links the issue", () => {
+	const strict = parkCauseRead("refuse");
+	const unlinked = () =>
+		fakeProver(answer(JSON.stringify({proof: "proven", evidence: {kind: "no-linking-pull"}})));
+
+	const line = (event: string, extra: Record<string, unknown> = {}): string =>
+		`${JSON.stringify({task: "issue", event: `ISSUE.${event}`, at: "2026-08-16T00:00:00.000Z", ...extra})}\n`;
+	/** A lane standing in `review` that has already spent one repair round and one lap. */
+	const SPENT_REVIEW =
+		line("WIP") +
+		line("DONE") +
+		line("FAIL") +
+		line("DONE") +
+		line("LAP", {cause: "worktree-holds-branch"});
+
+	const budgetsOf = (text: string | undefined) => {
+		const parsed = parseLog(text ?? "");
+		const compiled = compileText(coderTemplateText());
+		if (parsed._tag !== "Parsed" || compiled._tag !== "Compiled") throw new Error("unreadable");
+		const fold = foldLog(compiled.lane, parsed.entries);
+		if (fold._tag !== "Folded") throw new Error("unreplayable");
+		const {type, retries, laps} = fold.states.issue ?? {};
+		return {type, retries, laps};
+	};
+
+	it("folds a review task to queued with retries and laps unchanged, under uncaused: refuse", async () => {
+		const fs = freshLane(SPENT_REVIEW);
+		expect(budgetsOf(SPENT_REVIEW)).toEqual({type: "review", retries: 1, laps: 1});
+
+		const out = await run(fs, "WIP", null, null, [], null, strict, null, unlinked());
+
+		expect(out.code).toBe(0);
+		expect(JSON.parse(out.stdout)).toMatchObject({
+			previous: {pipeline: {issue: "review"}},
+			event: "ISSUE.WIP",
+			current: {pipeline: {issue: "queued"}},
+		});
+		expect(budgetsOf(fs.written.get(LOG))).toEqual({type: "queued", retries: 1, laps: 1});
+	});
+
+	it("refuses the rewind on the prover's code, log byte-identical, while a PR still links", async () => {
+		const fs = freshLane(SPENT_REVIEW);
+		const prover = fakeProver(
+			refuse(PROOF_CONTRADICTED, "fabrika lane prove: unproven — #4318 still links #42"),
+		);
+
+		const out = await run(fs, "WIP", null, null, [], null, strict, null, prover);
+
+		expect(out.code).toBe(PROOF_CONTRADICTED);
+		expect(out.stderr.join(" ")).toContain("log unappended");
+		expect(fs.written.get(LOG)).toBeUndefined();
+	});
+
+	it("sends a plain lane on to build after the rewind", async () => {
+		const fs = freshLane(SPENT_REVIEW);
+
+		await run(fs, "WIP", null, null, [], null, strict, null, unlinked());
+		const out = await run(fs, "WIP", null, null, [], null, strict);
+
+		expect(JSON.parse(out.stdout)).toMatchObject({current: {pipeline: {issue: "build"}}});
+		expect(budgetsOf(fs.written.get(LOG))).toEqual({type: "build", retries: 1, laps: 1});
+	});
+
+	it("rewinds out of review:ui too, and routes the class:ui lane to build:ui after it", async () => {
+		const fs = freshLane(line("WIP", {classes: ["ui"]}) + line("DONE") + line("PASS"));
+
+		const rewound = await run(fs, "WIP", null, null, [], null, strict, null, unlinked());
+		expect(JSON.parse(rewound.stdout)).toMatchObject({
+			previous: {pipeline: {issue: "review:ui"}},
+			current: {pipeline: {issue: "queued"}},
+		});
+
+		const out = await run(fs, "WIP", null, null, [], null, strict);
+		expect(JSON.parse(out.stdout)).toMatchObject({current: {pipeline: {issue: "build:ui"}}});
+		expect(budgetsOf(fs.written.get(LOG))).toEqual({type: "build:ui", retries: 0, laps: 0});
+	});
+});

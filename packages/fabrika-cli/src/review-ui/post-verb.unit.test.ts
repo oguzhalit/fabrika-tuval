@@ -1,0 +1,595 @@
+import {Effect, FileSystem, Layer, Path, PlatformError} from "effect";
+import {describe, expect, it} from "vitest";
+import {fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
+import {classifyProbe} from "../io/attachment-read-back.ts";
+import type {StdinRead} from "../io/stdin.ts";
+import {FENCE, compose as supersedeWith} from "../review/supersede.ts";
+import {read as readMarker} from "../wire/verdict-marker.ts";
+import {
+	EMPTY_STDIN,
+	INVALID_CAPTURE,
+	MALFORMED_DOCUMENT,
+	OFF_VOCABULARY,
+	PRECONDITION_UNKNOWN,
+	READBACK_MISMATCH,
+	STALE_TREE,
+	SUPERSEDES_VERDICT,
+	UPLOAD_FAILED,
+	WRITE_UNKNOWN,
+	ZERO_SCOPE,
+} from "./codes.ts";
+import {read as readGallery} from "./evidence-gallery.ts";
+import {type CaptureManifest, serializeManifest, sha256Hex} from "./manifest.ts";
+import {
+	type EvidenceCheck,
+	galleryTitle,
+	runPost,
+	runPostFlags,
+	type UploadLeg,
+	unopenedNote,
+} from "./post-verb.ts";
+
+const HEAD = "03135b91aa04f7e2c9d8b1640a5c22e9f01b7d3c";
+const OLD_HEAD = "0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f708192";
+const SET_DIR = "/tmp/fabrika-review-ui/4321-03135b91/judged";
+const CAPTURE_PATH = `${SET_DIR}/pano.png`;
+const MANIFEST_PATH = `${SET_DIR}/manifest.json`;
+const CONFIG = "/repo/.fabrika.jsonc";
+const HOSTED = "https://github.com/user-attachments/assets/9c41";
+const URL = "https://example.test/pull/4321#issuecomment-5154902211";
+/** The instant every run below writes at, so the superseded heading's date is predictable. */
+const NOW_MILLIS = Date.parse("2026-08-29T05:11:17.000Z");
+
+const BYTES = new TextEncoder().encode("png bytes");
+
+const manifest = (overrides: Partial<CaptureManifest> = {}): CaptureManifest => ({
+	set: "judged",
+	pr: 4321,
+	head: HEAD,
+	previewUrl: "https://pr-4321.example.test",
+	captures: [
+		{
+			surface: "/pano",
+			viewport: "desktop",
+			path: CAPTURE_PATH,
+			width: 1280,
+			height: 2140,
+			sha256: sha256Hex(BYTES),
+			pageErrors: {rows: [], more: 0},
+		},
+	],
+	...overrides,
+});
+
+interface FsShape {
+	readonly strings?: Readonly<Record<string, string>>;
+	readonly bytes?: Readonly<Record<string, Uint8Array>>;
+}
+
+const notFound = (method: string, path: string) =>
+	Effect.fail(
+		PlatformError.systemError({
+			_tag: "NotFound",
+			module: "FileSystem",
+			method,
+			pathOrDescriptor: path,
+		}),
+	);
+
+/** A filesystem that can serve BYTES as well as text — a capture is not UTF-8. */
+const fs = (shape: FsShape): Layer.Layer<FileSystem.FileSystem | Path.Path> =>
+	Layer.merge(
+		FileSystem.layerNoop({
+			readFileString: (path: string) => {
+				const text = shape.strings?.[path];
+				return text === undefined ? notFound("readFileString", path) : Effect.succeed(text);
+			},
+			readFile: (path: string) => {
+				const bytes = shape.bytes?.[path];
+				return bytes === undefined ? notFound("readFile", path) : Effect.succeed(bytes);
+			},
+			exists: (path: string) => Effect.succeed(shape.strings?.[path] !== undefined),
+		}),
+		Path.layer,
+	);
+
+const world = (overrides: FsShape = {}): Layer.Layer<FileSystem.FileSystem | Path.Path> =>
+	fs({
+		strings: {[MANIFEST_PATH]: serializeManifest(manifest()), ...overrides.strings},
+		bytes: {[CAPTURE_PATH]: BYTES, ...overrides.bytes},
+	});
+
+const PULL = /GET .*\/repos\/o\/r\/pulls\/4321\b/;
+const USER = /GET .*api\.github\.com\/user$/;
+const COMMENTS = /GET .*\/repos\/o\/r\/issues\/4321\/comments/;
+const CREATE = /POST .*\/repos\/o\/r\/issues\/4321\/comments/;
+const PATCH = /PATCH .*\/repos\/o\/r\/issues\/comments\/\d+/;
+const READBACK = /GET .*\/repos\/o\/r\/issues\/comments\/\d+/;
+
+const pull = (state = "open", head = HEAD): HttpReply => ({
+	status: 200,
+	body: JSON.stringify({
+		number: 4321,
+		state,
+		head: {sha: head},
+		base: {ref: "main"},
+		body: "",
+		changed_files: 1,
+		comments: 0,
+	}),
+});
+
+const comments = (
+	...rows: ReadonlyArray<{id: number; body: string; author?: string; updatedAt?: string}>
+): HttpReply => ({
+	status: 200,
+	body: JSON.stringify(
+		rows.map((row) => ({
+			id: row.id,
+			user: {login: row.author ?? "kampus-bot"},
+			created_at: "2026-08-08T00:00:00Z",
+			updated_at: row.updatedAt ?? "2026-08-08T00:00:00Z",
+			body: row.body,
+		})),
+	),
+});
+
+const hostingLeg: UploadLeg = () => Effect.succeed({_tag: "Hosted", url: HOSTED});
+const failingLeg: UploadLeg = () => Effect.succeed({_tag: "Failed", reason: "HTTP 500"});
+const opensCheck: EvidenceCheck = () => Effect.succeed({_tag: "Resolved"});
+const broken: EvidenceCheck = () =>
+	Effect.succeed({
+		_tag: "Unresolved",
+		reasons: [`${HOSTED}: the hosted asset probed back HTTP 404`],
+	});
+
+const BODY = "| surface | verdict |\n|---|---|\n| /pano | FAIL |\n";
+
+const options = {
+	pr: 4321,
+	polarity: "FAIL",
+	sha: HEAD,
+	clause: "changes-requested",
+	evidence: "judged",
+	carrier: "marker",
+	repo: null,
+	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	stdin: Effect.succeed<StdinRead>({_tag: "Text", text: BODY}),
+	tmpRoot: "/tmp",
+	cwd: "/repo",
+	upload: hostingLeg,
+	confirm: opensCheck,
+	supersede: false,
+	now: Effect.succeed(NOW_MILLIS),
+};
+
+/** The comment as the verb will have posted it, echoed back by the read-back read. */
+const posted = (body: string): HttpReply => ({status: 200, body: JSON.stringify({body})});
+
+/**
+ * The bytes a re-post lands: the fresh verdict on top, `prior` retired below the fence. Built
+ * through the shipped envelope so this fixture cannot drift from the composer under test.
+ */
+const supersededBody = (prior: string): string =>
+	supersedeWith(prior, COMPOSED, new Date(NOW_MILLIS));
+
+const run = (
+	script: ReadonlyArray<Scripted>,
+	overrides: Partial<typeof options> = {},
+	layer: Layer.Layer<FileSystem.FileSystem | Path.Path> = world(),
+) => {
+	const seams = fakeSeams(script);
+	return Effect.runPromise(
+		Effect.provide(runPost({...options, ...overrides}), Layer.merge(seams.layer, layer)),
+	).then((outcome) => ({outcome, requests: seams.requests, bodies: seams.bodies}));
+};
+
+const SHOT = "/pano @ desktop";
+const DIGEST_LINE = `<!-- fabrika:evidence sha256=${sha256Hex(BYTES)} -->`;
+const COMPOSED = `review-ui: FAIL @ ${HEAD} — changes-requested\n\n${BODY.trimEnd()}\n\n## Evidence\n\n### ${SHOT}\n\n![${SHOT}](${HOSTED})\n${DIGEST_LINE}`;
+
+const happy = (): ReadonlyArray<Scripted> => [
+	[PULL, pull()],
+	[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+	[COMMENTS, comments()],
+	[CREATE, {status: 201, body: JSON.stringify({id: 5154902211, html_url: URL})}],
+	[READBACK, posted(COMPOSED)],
+];
+
+describe("galleryTitle", () => {
+	const entry = {
+		surface: "/pano",
+		viewport: "desktop",
+		path: "/tmp/pano@desktop.png",
+		width: 1280,
+		height: 2140,
+		sha256: "9c41",
+		pageErrors: {rows: [], more: 0},
+	};
+
+	it("keeps the surface @ viewport heading for a set rendered without --scheme", () => {
+		expect(galleryTitle(entry)).toBe("/pano @ desktop");
+	});
+
+	it("names the requested and the proven scheme, so a dark shot never heads as the default", () => {
+		expect(galleryTitle({...entry, scheme: {requested: "dark", proven: "dark"}})).toBe(
+			"/pano @ desktop, scheme requested dark, proven dark",
+		);
+	});
+
+	it("names the requested and the proven accent after the scheme, so an amber shot never heads as the default", () => {
+		expect(
+			galleryTitle({
+				...entry,
+				scheme: {requested: "light", proven: "light"},
+				accent: {requested: "amber", proven: "amber"},
+			}),
+		).toBe(
+			"/pano @ desktop, scheme requested light, proven light, accent requested amber, proven amber",
+		);
+	});
+
+	it("names an interacted shot's label after its scheme, so the open menu never heads as the closed one", () => {
+		const interaction = {
+			label: "sil-highlighted",
+			steps: ["hover:#sil"],
+			proven: ["#sil matches :hover"],
+		} as const;
+		expect(galleryTitle({...entry, interaction})).toBe(
+			"/pano @ desktop, interaction sil-highlighted",
+		);
+		expect(galleryTitle({...entry, scheme: {requested: "dark", proven: "dark"}, interaction})).toBe(
+			"/pano @ desktop, scheme requested dark, proven dark, interaction sil-highlighted",
+		);
+	});
+});
+
+describe("runPost", () => {
+	it("posts one marker-first comment with the verified evidence gallery under it", async () => {
+		const {outcome, requests, bodies} = await run(happy());
+		expect(outcome.code).toBe(0);
+		expect(JSON.parse(outcome.stdout)).toEqual({
+			answer: "posted",
+			namespace: "review-ui",
+			polarity: "FAIL",
+			sha: HEAD,
+			upsert: "created",
+			carrier: "marker",
+			surfaces: 1,
+			commentUrl: URL,
+		});
+		const write = bodies[requests.findIndex((request) => CREATE.test(request))] ?? "";
+		const body = String(JSON.parse(write).body);
+		expect(body.split("\n")[0]).toBe(`review-ui: FAIL @ ${HEAD} — changes-requested`);
+		expect(body).toContain(`![${SHOT}](${HOSTED})`);
+		// The gallery embeds the hosted URL, never the local path the reviewer judged.
+		expect(body).not.toContain(CAPTURE_PATH);
+	});
+
+	it("refuses an empty verdict body on 3 — an empty verdict reads as ungated", async () => {
+		const {outcome} = await run(happy(), {
+			stdin: Effect.succeed<StdinRead>({_tag: "NoStdin", reason: "nothing was piped in"}),
+		});
+		expect(outcome.code).toBe(EMPTY_STDIN);
+	});
+
+	it("refuses a bad polarity, a bad carrier, and advisory+FAIL on 10", async () => {
+		expect((await run(happy(), {polarity: "MAYBE"})).outcome.code).toBe(OFF_VOCABULARY);
+		expect((await run(happy(), {carrier: "letter"})).outcome.code).toBe(OFF_VOCABULARY);
+		expect((await run(happy(), {carrier: "advisory"})).outcome.code).toBe(OFF_VOCABULARY);
+	});
+
+	it("refuses a closed PR on 7", async () => {
+		const {outcome} = await run([[PULL, pull("closed")], ...happy().slice(1)]);
+		expect(outcome.code).toBe(ZERO_SCOPE);
+	});
+
+	it("refuses on 12 when the live head moved past --sha, and posts nothing", async () => {
+		const {outcome, requests} = await run([[PULL, pull("open", OLD_HEAD)], ...happy().slice(1)]);
+		expect(outcome.code).toBe(STALE_TREE);
+		expect(requests.some((request) => CREATE.test(request))).toBe(false);
+	});
+
+	it("refuses on 12 when the evidence set was rendered at another head", async () => {
+		const {outcome} = await run(
+			happy(),
+			{},
+			world({strings: {[MANIFEST_PATH]: serializeManifest(manifest({head: OLD_HEAD}))}}),
+		);
+		expect(outcome.code).toBe(STALE_TREE);
+	});
+
+	it("refuses on 4 when the set has no readable manifest — a set without one is not a set", async () => {
+		const absent = await run(happy(), {}, fs({bytes: {[CAPTURE_PATH]: BYTES}}));
+		expect(absent.outcome.code).toBe(MALFORMED_DOCUMENT);
+		const unparseable = await run(happy(), {}, world({strings: {[MANIFEST_PATH]: "{"}}));
+		expect(unparseable.outcome.code).toBe(MALFORMED_DOCUMENT);
+	});
+
+	it("refuses on 4 when the declared uiCapture violates its schema", async () => {
+		const {outcome} = await run(
+			happy(),
+			{},
+			world({strings: {[CONFIG]: '{"uiCapture":{"evidenceStore":{}}}'}}),
+		);
+		expect(outcome.code).toBe(MALFORMED_DOCUMENT);
+	});
+
+	it("refuses on 15 when a capture no longer matches its manifest sha", async () => {
+		const {outcome} = await run(
+			happy(),
+			{},
+			world({bytes: {[CAPTURE_PATH]: new TextEncoder().encode("other bytes")}}),
+		);
+		expect(outcome.code).toBe(INVALID_CAPTURE);
+	});
+
+	it("keeps an unreadable capture UNKNOWN (11) rather than calling it invalid", async () => {
+		const {outcome} = await run(
+			happy(),
+			{},
+			fs({strings: {[MANIFEST_PATH]: serializeManifest(manifest())}}),
+		);
+		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
+	});
+
+	it("posts NOTHING when an evidence upload fails — 17 is this verb's reason to exist", async () => {
+		const {outcome, requests} = await run(happy(), {upload: failingLeg});
+		expect(outcome.code).toBe(UPLOAD_FAILED);
+		expect(requests.some((request) => CREATE.test(request))).toBe(false);
+		expect(outcome.stderr.at(-1)).toMatch(/broken evidence channel/);
+	});
+
+	it("still refuses when the AUTHENTICATED probe reads 404 — #6520 does not soften #3925", async () => {
+		const notResolving: UploadLeg = () =>
+			Effect.succeed({_tag: "Failed", reason: classifyProbe(404) ?? ""});
+		const {outcome, requests} = await run(happy(), {upload: notResolving});
+		expect(outcome.code).toBe(UPLOAD_FAILED);
+		expect(requests.some((request) => CREATE.test(request))).toBe(false);
+		expect(outcome.stderr.join("\n")).toMatch(/probed back HTTP 404/);
+	});
+
+	it("re-checks the posted comment's evidence against the judged bytes, keyed on the landed comment", async () => {
+		const seen: Array<Parameters<EvidenceCheck>[0]> = [];
+		const recording: EvidenceCheck = (request) => {
+			seen.push(request);
+			return Effect.succeed({_tag: "Resolved"});
+		};
+		const {outcome} = await run(happy(), {confirm: recording});
+		expect(outcome.code).toBe(0);
+		expect(seen).toEqual([
+			{repo: "o/r", commentId: 5154902211, evidence: [{url: HOSTED, bytes: BYTES}]},
+		]);
+	});
+
+	it("never reports success when the POSTED comment's evidence does not open — 9, said loudly", async () => {
+		const {outcome, requests} = await run(happy(), {confirm: broken});
+		expect(outcome.code).toBe(READBACK_MISMATCH);
+		expect(outcome.stdout).toBe("");
+		expect(requests.some((request) => CREATE.test(request))).toBe(true);
+		const said = outcome.stderr.join("\n");
+		expect(said).toMatch(/POSTED, BUT ITS EVIDENCE DOES NOT OPEN/);
+		expect(said).toMatch(/comment 5154902211/);
+		expect(said).toMatch(/probed back HTTP 404/);
+	});
+
+	// The ruling: the verb never withdraws or replaces a posted verdict; the gates re-check the
+	// gallery's evidence, and a plain note beside the verdict says why it does not count.
+	describe("step 9 when the posted evidence does not open", () => {
+		const writes = (requests: ReadonlyArray<string>, bodies: ReadonlyArray<string>) =>
+			requests.flatMap((request, index) =>
+				CREATE.test(request) || PATCH.test(request)
+					? [{request, body: String(JSON.parse(bodies[index] ?? "{}").body)}]
+					: [],
+			);
+
+		const pinNote = (body: string) => {
+			expect(body).toBe(unopenedNote(URL, [`${HOSTED}: the hosted asset probed back HTTP 404`]));
+			expect(body.split("\n")[0]).toBe(`This review-ui verdict does not count: ${URL}`);
+			expect(readMarker(body)._tag).toBe("Absent");
+		};
+
+		it("on the create path: the verdict stays as written, a note says why it does not count", async () => {
+			const {outcome, requests, bodies} = await run(happy(), {confirm: broken});
+			expect(outcome.code).toBe(READBACK_MISMATCH);
+			expect(outcome.stdout).toBe("");
+			const landed = writes(requests, bodies);
+			expect(landed).toHaveLength(2);
+			expect(requests.some((request) => /DELETE /.test(request))).toBe(false);
+			expect(CREATE.test(landed[0]?.request ?? "")).toBe(true);
+			expect(landed[0]?.body).toBe(`${COMPOSED}\n`);
+			// The gallery the gates re-check carries the judged bytes' digest.
+			expect(readGallery(landed[0]?.body ?? "")).toEqual({
+				_tag: "Found",
+				evidence: [{url: HOSTED, sha256: sha256Hex(BYTES)}],
+			});
+			expect(CREATE.test(landed[1]?.request ?? "")).toBe(true);
+			pinNote(landed[1]?.body ?? "");
+			expect(outcome.stderr.join("\n")).toMatch(/noted on the PR why this verdict does not count/);
+		});
+
+		it("on the supersede path: the prior verdict stays below the fence, never overwritten", async () => {
+			const prior = `review-ui: PASS @ ${OLD_HEAD} — older round`;
+			const {outcome, requests, bodies} = await run(
+				[
+					[PULL, pull()],
+					[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+					[COMMENTS, comments({id: 42, body: prior, author: "kampus-bot"})],
+					[PATCH, {status: 200, body: JSON.stringify({html_url: URL})}],
+					[READBACK, posted(supersededBody(prior))],
+					[CREATE, {status: 201, body: JSON.stringify({id: 77, html_url: `${URL}-note`})}],
+				],
+				{confirm: broken},
+			);
+			expect(outcome.code).toBe(READBACK_MISMATCH);
+			expect(outcome.stdout).toBe("");
+			const landed = writes(requests, bodies);
+			expect(landed).toHaveLength(2);
+			expect(requests.some((request) => /DELETE /.test(request))).toBe(false);
+			expect(landed[0]?.request).toContain("issues/comments/42");
+			expect(landed[0]?.body).toBe(supersededBody(prior));
+			expect(landed[0]?.body).toContain(
+				`${FENCE}\n\n## Superseded verdict — 2026-08-29\n\n${prior}`,
+			);
+			expect(CREATE.test(landed[1]?.request ?? "")).toBe(true);
+			pinNote(landed[1]?.body ?? "");
+		});
+
+		it("still exits 9 and says so when the note itself does not land", async () => {
+			const {outcome} = await run(
+				[
+					[PULL, pull()],
+					[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+					[COMMENTS, comments()],
+					[once(CREATE), {status: 201, body: JSON.stringify({id: 5154902211, html_url: URL})}],
+					[READBACK, posted(COMPOSED)],
+					[CREATE, {status: 502, body: "{}"}],
+				],
+				{confirm: broken},
+			);
+			expect(outcome.code).toBe(READBACK_MISMATCH);
+			expect(outcome.stderr.join("\n")).toMatch(/did not land/);
+		});
+	});
+
+	it("does not run the after-post check when nothing posted", async () => {
+		let ran = false;
+		const tracking: EvidenceCheck = () => {
+			ran = true;
+			return Effect.succeed({_tag: "Resolved"});
+		};
+		const {outcome} = await run(happy(), {upload: failingLeg, confirm: tracking});
+		expect(outcome.code).toBe(UPLOAD_FAILED);
+		expect(ran).toBe(false);
+	});
+
+	it("appends into this namespace's own comment instead of stacking a second marker", async () => {
+		const prior = `review-ui: PASS @ ${OLD_HEAD} — older round`;
+		const {outcome, requests, bodies} = await run([
+			[PULL, pull()],
+			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[COMMENTS, comments({id: 42, body: prior, author: "kampus-bot"})],
+			[PATCH, {status: 200, body: JSON.stringify({html_url: URL})}],
+			[READBACK, posted(supersededBody(prior))],
+		]);
+		expect(outcome.code).toBe(0);
+		expect(JSON.parse(outcome.stdout).upsert).toBe("superseded");
+		expect(requests.some((request) => CREATE.test(request))).toBe(false);
+		expect(bodies[requests.findIndex((request) => PATCH.test(request))] ?? "").toContain(
+			"older round",
+		);
+	});
+
+	it("supersedes the NEWEST of two markers at one SHA, not whichever came back first (#4881)", async () => {
+		const prior = `review-ui: PASS @ ${HEAD} — after the body-only repair`;
+		const {outcome, requests} = await run(
+			[
+				[PULL, pull()],
+				[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+				[
+					COMMENTS,
+					comments(
+						{
+							id: 41,
+							body: `review-ui: FAIL @ ${HEAD} — first round`,
+							updatedAt: "2026-08-09T09:56:43Z",
+						},
+						{id: 42, body: prior, updatedAt: "2026-08-09T10:10:48Z"},
+					),
+				],
+				[PATCH, {status: 200, body: JSON.stringify({html_url: URL})}],
+				[READBACK, posted(supersededBody(prior))],
+			],
+			{supersede: true},
+		);
+		expect(outcome.code).toBe(0);
+		expect(requests.find((request) => PATCH.test(request))).toContain("issues/comments/42");
+	});
+
+	// The erasure itself: a PASS landing over a standing FAIL at one head is the write that
+	// erased a blocking verdict with nothing on the record.
+	it("refuses on 18 a post that would retire the opposite polarity at this head", async () => {
+		const {outcome, requests} = await run([
+			[PULL, pull()],
+			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[
+				COMMENTS,
+				comments({
+					id: 42,
+					body: `review-ui: PASS @ ${HEAD} — merge-ready`,
+					author: "kampus-bot",
+				}),
+			],
+		]);
+		expect(outcome.code).toBe(SUPERSEDES_VERDICT);
+		expect(outcome.stdout).toBe("");
+		expect(outcome.stderr.at(-1)).toContain("pass --supersede to retire it on the record");
+		expect(requests.some((request) => PATCH.test(request) || CREATE.test(request))).toBe(false);
+	});
+
+	it("refuses on 8 when the write itself failed — UNKNOWN, never 1", async () => {
+		const {outcome} = await run([
+			[PULL, pull()],
+			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[COMMENTS, comments()],
+			[CREATE, {status: 502, body: "{}"}],
+		]);
+		expect(outcome.code).toBe(WRITE_UNKNOWN);
+	});
+
+	it("refuses on 9 when the read-back does not yield this marker", async () => {
+		const {outcome} = await run([
+			[PULL, pull()],
+			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[COMMENTS, comments()],
+			[CREATE, {status: 201, body: JSON.stringify({id: 1, html_url: URL})}],
+			[once(READBACK), posted("someone else's comment entirely")],
+		]);
+		expect(outcome.code).toBe(READBACK_MISMATCH);
+	});
+});
+
+describe("runPostFlags", () => {
+	const runFlags = (evidence: ReadonlyArray<string>) => {
+		const uploads: string[] = [];
+		const recordingLeg: UploadLeg = (request) => {
+			uploads.push(request.fileName);
+			return hostingLeg(request);
+		};
+		let stdinRead = false;
+		const seams = fakeSeams(happy());
+		return Effect.runPromise(
+			Effect.provide(
+				runPostFlags({
+					...options,
+					evidence,
+					upload: recordingLeg,
+					stdin: Effect.sync<StdinRead>(() => {
+						stdinRead = true;
+						return {_tag: "Text", text: BODY};
+					}),
+				}),
+				Layer.merge(seams.layer, world()),
+			),
+		).then((outcome) => ({outcome, uploads, stdinRead, requests: seams.requests}));
+	};
+
+	it("refuses two --evidence sets on 10, naming both, before any read, upload or write", async () => {
+		const {outcome, uploads, stdinRead, requests} = await runFlags(["judged", "long-host"]);
+		expect(outcome.code).toBe(OFF_VOCABULARY);
+		expect(outcome.stdout).toBe("");
+		const reason = outcome.stderr.join("\n");
+		expect(reason).toContain('"judged"');
+		expect(reason).toContain('"long-host"');
+		expect(uploads).toEqual([]);
+		expect(stdinRead).toBe(false);
+		expect(requests).toEqual([]);
+	});
+
+	it("posts a single --evidence set exactly as runPost does", async () => {
+		const {outcome, uploads} = await runFlags(["judged"]);
+		expect(outcome.code).toBe(0);
+		expect(JSON.parse(outcome.stdout)).toMatchObject({answer: "posted", surfaces: 1});
+		expect(uploads).toHaveLength(1);
+	});
+});

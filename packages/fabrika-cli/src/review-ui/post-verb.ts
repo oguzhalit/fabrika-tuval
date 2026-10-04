@@ -1,0 +1,639 @@
+/**
+ * `review-ui post` — the single sanctioned `review-ui` verdict emit.
+ *
+ * Nine steps, each gating the next: re-resolve the live head, read the evidence set through its
+ * manifest, re-validate every capture against that manifest, **verify-upload every capture before
+ * anything posts**, compose through the wire format, leak-scan the assembled comment, upsert one
+ * comment for this namespace under this carrier, read it back from live PR state, and **re-check
+ * that every capture the posted comment embeds opens as the bytes that were judged**.
+ *
+ * Step 4 is this verb's reason to exist. The capture package's upload leg is `never`-typed by
+ * contract — every transport failure degrades to `{hostedUrl: null, uploadError}` and no consumer
+ * ever read `uploadError` — so a 100%-failed evidence channel decorated months of PASSes.
+ * Here a failed upload or a failed verification is `17` and **nothing is posted**: the
+ * judge-the-local-bytes rule still stands (the pixels you judged were local), but the *marker*
+ * does not land over a broken evidence channel.
+ *
+ * There is no `--namespace`. This group emits `review-ui` and nothing else, so a
+ * misdirected-namespace write is unrepresentable rather than refused.
+ *
+ * Step 7 **appends**: a matched comment keeps its prior verdict verbatim below
+ * `../review/supersede.ts`'s fence and the fresh verdict takes the first line, because GitHub keeps
+ * no comment-body history and a PATCH over a verdict is that verdict gone — a standing FAIL
+ * became a PASS with nothing left showing a gate had ever blocked. A post that would retire
+ * a standing verdict of the opposite polarity at the same head is `18` until `--supersede` says so.
+ *
+ * Step 9 **never withdraws** what step 7 wrote. When the posted evidence does not open, the verdict
+ * stays, a plain note beside it says why it does not count, and the verb exits `9`. Not counting it
+ * is the readers' job: `ship gate` and `lane prove` re-check the gallery's evidence before they
+ * count a `review-ui` verdict (`./standing-evidence.ts`).
+ *
+ * @ruling https://github.com/kamp-us/phoenix/issues/9725#issuecomment-5800916149
+ */
+import {Effect, type FileSystem, type Path, Result} from "effect";
+import type * as HttpClient from "effect/unstable/http/HttpClient";
+import type {ChildProcessSpawner} from "effect/unstable/process";
+import {CONFIG_PATH} from "../config/document.ts";
+import {UI_CAPTURE, uiCaptureKey} from "../config/keys/ui-surfaces.ts";
+import {resolve} from "../config/load.ts";
+import {loadRepoConfig} from "../config/working-root.ts";
+import {readFile} from "../io/fs.ts";
+import {createComment, getComment, listComments} from "../io/issues.ts";
+import {patchComment, viewerLogin} from "../io/pulls.ts";
+import type {StdinRead} from "../io/stdin.ts";
+import {normalizeForReadback} from "../report/compose.ts";
+import {emitAdvisory, readAdvisory, reviewedHeadLine} from "../review/advisory.ts";
+import {type AuthoredSurface, leakRefusal, readAuthored} from "../review/authored.ts";
+import {compose as supersedeWith} from "../review/supersede.ts";
+import {openPull, resolveTargetRepo, scannedLine} from "../review/target.ts";
+import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import {
+	emit as emitMarker,
+	headSha,
+	type Polarity,
+	read as readMarker,
+	clause as toClause,
+} from "../wire/verdict-marker.ts";
+import {
+	INVALID_CAPTURE,
+	MALFORMED_DOCUMENT,
+	OFF_VOCABULARY,
+	PRECONDITION_UNKNOWN,
+	READBACK_MISMATCH,
+	STALE_TREE,
+	SUPERSEDES_VERDICT,
+	UPLOAD_FAILED,
+	WRITE_UNKNOWN,
+} from "./codes.ts";
+import {emit as emitGallery} from "./evidence-gallery.ts";
+import {
+	type CaptureEntry,
+	manifestPath,
+	parseManifest,
+	readCaptureBytes,
+	setDirectory,
+	sha256Hex,
+} from "./manifest.ts";
+
+const VERB = "review-ui post";
+
+/** This group's one namespace — an input nowhere, so it can never be aimed elsewhere. */
+export const NAMESPACE = "review-ui";
+
+const SURFACE: AuthoredSurface = {
+	verb: VERB,
+	noun: "the assembled comment",
+	emptyMessage: `${VERB}: no body on stdin — an empty verdict reads as ungated; pipe the verdict body in.`,
+	bareAtMessage: `${VERB}: the body is a bare "@" path reference — the body never arrived. Send its bytes on stdin.`,
+	leakCorrection: "cite it repo-relative or by class root.",
+};
+
+export type Carrier = "marker" | "advisory";
+
+/** One capture's upload, verified — or the reason it is not evidence anybody can see. */
+export type UploadResult =
+	| {readonly _tag: "Hosted"; readonly url: string}
+	| {readonly _tag: "Failed"; readonly reason: string};
+
+export interface UploadRequest {
+	readonly repo: string;
+	readonly fileName: string;
+	readonly bytes: Uint8Array;
+}
+
+/** One capture as posted evidence: the hosted URL the gallery embeds, and the bytes it must serve. */
+export interface HostedEvidence {
+	readonly url: string;
+	readonly bytes: Uint8Array;
+}
+
+/** Whether every embedded capture of a posted comment opens as its judged bytes. */
+export type EvidenceCheckResult =
+	| {readonly _tag: "Resolved"}
+	| {readonly _tag: "Unresolved"; readonly reasons: readonly [string, ...string[]]};
+
+/**
+ * The after-post seam: re-read the posted comment as a reader renders it and hold every embedded
+ * capture to its bytes. The before-post read-back cannot see what the comment itself will serve, so
+ * a verdict whose evidence stopped resolving between the two is caught here rather than reported
+ * as posted.
+ */
+export type EvidenceCheck = (request: {
+	readonly repo: string;
+	readonly commentId: number;
+	readonly evidence: ReadonlyArray<HostedEvidence>;
+}) => Effect.Effect<
+	EvidenceCheckResult,
+	never,
+	HttpClient.HttpClient | ChildProcessSpawner.ChildProcessSpawner
+>;
+
+/**
+ * The evidence-upload seam: upload one capture and **read it back**, individually.
+ *
+ * Injected so the refusal path is testable without the network, and so the two tiers the contract
+ * names (a repo-declared store, else the GitHub user-attachment tier) are a wiring choice rather
+ * than a branch inside the verb.
+ */
+export type UploadLeg = (
+	request: UploadRequest,
+) => Effect.Effect<
+	UploadResult,
+	never,
+	HttpClient.HttpClient | ChildProcessSpawner.ChildProcessSpawner
+>;
+
+export interface PostOptions {
+	readonly pr: number;
+	readonly polarity: string;
+	readonly sha: string;
+	readonly clause: string;
+	/** The `review-ui render` capture-set name whose verified upload is this verdict's evidence. */
+	readonly evidence: string;
+	readonly carrier: string;
+	readonly repo: string | null;
+	readonly env: Readonly<Record<string, string | undefined>>;
+	readonly stdin: Effect.Effect<StdinRead>;
+	/** The OS temp root the set path hangs off — the same port `render` takes. */
+	readonly tmpRoot: string;
+	/**
+	 * Where the tier choice is read from: the **reviewer's own checked-out tree**, never the PR head,
+	 * which this skill never checks out.
+	 */
+	readonly cwd: string;
+	readonly upload: UploadLeg;
+	readonly confirm: EvidenceCheck;
+	/** The explicit acknowledgement that this verdict retires a standing one of the other polarity. */
+	readonly supersede: boolean;
+	/** The wall clock the superseded heading is dated from — a port so a test can pin the day. */
+	readonly now: Effect.Effect<number>;
+}
+
+/** Either side may be abbreviated, so the match is a prefix in whichever direction is shorter. */
+const prefixMatch = (a: string, b: string): boolean => a.startsWith(b) || b.startsWith(a);
+
+const unreadable = (what: string, pr: number, reason: string): VerbOutcome =>
+	refuse(
+		PRECONDITION_UNKNOWN,
+		`${VERB}: cannot read ${what} for #${pr}: ${reason} — nothing was uploaded or posted.`,
+	);
+
+/**
+ * Whether a comment already holds this namespace's verdict **under this carrier** — the upsert key.
+ *
+ * Per carrier because the two anchor on different bytes: an advisory withholds the SHA from its
+ * first line by design, so a marker-only match never finds a prior advisory and every §CP re-post
+ * would stack a second comment.
+ */
+const carriesNamespace = (body: string, carrier: Carrier): boolean => {
+	if (carrier === "advisory") return readAdvisory(body)?.namespace === NAMESPACE;
+	const parsed = readMarker(body);
+	return parsed._tag === "Found" && parsed.value.namespace === NAMESPACE;
+};
+
+/**
+ * The polarity a standing comment's marker carries at `sha`, or `null` when there is none to
+ * compare — an advisory carrier, a marker at another head, or a body carrying no readable marker.
+ *
+ * Head-scoped because a verdict at a moved head is a different fact, not a reversal. Only a flip
+ * over the same tree rewrites what the merge gate reads, which is the loss this refusal exists for.
+ */
+const standingPolarityAt = (body: string, carrier: Carrier, sha: string): Polarity | null => {
+	if (carrier === "advisory") return null;
+	const parsed = readMarker(body);
+	return parsed._tag === "Found" && prefixMatch(parsed.value.sha, sha)
+		? parsed.value.polarity
+		: null;
+};
+
+/** Why the read-back does not show what was posted, or `null` when it does. */
+const mismatchOf = (
+	body: string,
+	posted: {readonly polarity: string; readonly sha: string; readonly clause: string},
+	carrier: Carrier,
+	composed: string,
+): string | null => {
+	const normalized = normalizeForReadback(body);
+	const bytes =
+		normalized === normalizeForReadback(composed)
+			? null
+			: "the comment's bytes are not the ones that were sent";
+	if (carrier === "advisory") {
+		const advisory = readAdvisory(normalized);
+		if (advisory === null) return "the advisory first line or its Reviewed-head: line is not there";
+		if (advisory.namespace !== NAMESPACE) {
+			return `namespace ${advisory.namespace}, expected ${NAMESPACE}`;
+		}
+		if (advisory.sha !== posted.sha) return `Reviewed-head ${advisory.sha}, expected ${posted.sha}`;
+		return bytes;
+	}
+	const parsed = readMarker(normalized);
+	if (parsed._tag !== "Found") return parsed.reason;
+	const marker = parsed.value;
+	if (marker.namespace !== NAMESPACE) return `namespace ${marker.namespace}, expected ${NAMESPACE}`;
+	if (marker.polarity !== posted.polarity) {
+		return `polarity ${marker.polarity}, expected ${posted.polarity}`;
+	}
+	if (marker.sha !== posted.sha) return `sha ${marker.sha}, expected ${posted.sha}`;
+	if (marker.clause !== posted.clause) {
+		return `clause "${marker.clause}", expected "${posted.clause}"`;
+	}
+	return bytes;
+};
+
+/**
+ * The evidence gallery: per shot, the **verified** hosted URL — never a local path — and the digest
+ * of the bytes judged. A set is a surface × viewport cross-product, so the heading names both: two
+ * shots of one surface under one heading would read as a duplicate rather than as the two widths
+ * they are. A `--scheme` set crosses a scheme too, so its heading names the requested and the
+ * proven scheme, and an interacted shot names its label, because an open menu and the closed one
+ * are two shots of one surface; a shot with neither keeps the heading it always had.
+ */
+export const galleryTitle = (entry: CaptureEntry): string =>
+	[
+		`${entry.surface} @ ${entry.viewport}`,
+		...(entry.scheme === undefined
+			? []
+			: [`scheme requested ${entry.scheme.requested}, proven ${entry.scheme.proven}`]),
+		...(entry.accent === undefined
+			? []
+			: [`accent requested ${entry.accent.requested}, proven ${entry.accent.proven}`]),
+		...(entry.interaction === undefined ? [] : [`interaction ${entry.interaction.label}`]),
+	].join(", ");
+
+const gallery = (hosted: ReadonlyArray<readonly [CaptureEntry, string]>): string =>
+	emitGallery(
+		hosted.map(([entry, url]) => ({
+			title: galleryTitle(entry),
+			url,
+			sha256: entry.sha256,
+		})),
+	);
+
+/**
+ * The plain note step 9 leaves beside a verdict whose evidence does not open. It is the PR's record
+ * that the verdict was attempted and why no gate counts it; its first line is no verdict carrier.
+ */
+export const unopenedNote = (verdictUrl: string, reasons: readonly [string, ...string[]]): string =>
+	[
+		`This review-ui verdict does not count: ${verdictUrl}`,
+		"",
+		"Its evidence did not open when `review-ui post` read the posted comment back:",
+		"",
+		...reasons.map((reason) => `- ${reason}`),
+		"",
+		"`fabrika ship gate` and `fabrika lane prove` re-check a review-ui verdict's evidence before they count it, so neither counts this one while its evidence does not open. Re-render and post the verdict again.",
+		"",
+	].join("\n");
+
+/**
+ * Which evidence tier this repo declares, read whole (`4` on a value that does not satisfy its
+ * schema) — the `ui evidence` whole-file rule.
+ *
+ * An undeclared `uiCapture.evidenceStore` is the **attachment tier**, a first-class state and not a
+ * defect: a repo that declares no store hosts its evidence on GitHub.
+ *
+ * The read goes through the `uiCapture` key's own decode rather than a second parse of the same
+ * bytes — a hand-rolled reader beside a schema is two answers to one question, and here they
+ * disagreed about the store's shape. The four resolution arms are resolved directly
+ * rather than through `readKey` because this verb owes `4` and `11` different seats, and `readKey`
+ * collapses malformed and unreadable into one refusal.
+ */
+type TierChoice =
+	| {readonly _tag: "Attachment"}
+	| {readonly _tag: "DeclaredStore"; readonly kind: string}
+	| {readonly _tag: "Malformed"; readonly reason: string}
+	| {readonly _tag: "Unreadable"; readonly reason: string};
+
+const readTierChoice = (
+	cwd: string,
+): Effect.Effect<TierChoice, never, FileSystem.FileSystem | Path.Path> =>
+	Effect.gen(function* () {
+		const resolved = resolve(yield* loadRepoConfig(cwd), uiCaptureKey);
+		if (resolved._tag === "Unknown") {
+			return {_tag: "Unreadable" as const, reason: resolved.reason};
+		}
+		if (resolved._tag === "Malformed") {
+			return {_tag: "Malformed" as const, reason: resolved.reason};
+		}
+		const store = resolved.value.evidenceStore;
+		return store === null
+			? {_tag: "Attachment" as const}
+			: {_tag: "DeclaredStore" as const, kind: store};
+	});
+
+export const runPost = (
+	options: PostOptions,
+): Effect.Effect<
+	VerbOutcome,
+	never,
+	| HttpClient.HttpClient
+	| ChildProcessSpawner.ChildProcessSpawner
+	| FileSystem.FileSystem
+	| Path.Path
+> =>
+	Effect.gen(function* () {
+		const {pr} = options;
+		if (!Number.isInteger(pr) || pr <= 0) {
+			return refuse(FAILED, `${VERB}: ${pr} is not a pull-request number.`);
+		}
+		const polarity = options.polarity.toUpperCase();
+		if (polarity !== "PASS" && polarity !== "FAIL") {
+			return refuse(
+				OFF_VOCABULARY,
+				`${VERB}: --polarity must be PASS or FAIL — got "${options.polarity}".`,
+			);
+		}
+		const carrier = options.carrier.toLowerCase();
+		if (carrier !== "marker" && carrier !== "advisory") {
+			return refuse(
+				OFF_VOCABULARY,
+				`${VERB}: --carrier must be marker or advisory — got "${options.carrier}".`,
+			);
+		}
+		if (carrier === "advisory" && polarity === "FAIL") {
+			return refuse(
+				OFF_VOCABULARY,
+				`${VERB}: --carrier advisory is a PASS path only — post the FAIL marker instead.`,
+			);
+		}
+		const inspected = headSha(options.sha);
+		if (inspected === null) {
+			return refuse(
+				OFF_VOCABULARY,
+				`${VERB}: --sha "${options.sha}" is not a head SHA — expected 7–40 hex characters.`,
+			);
+		}
+		const clause = toClause(options.clause);
+		if (clause === null) {
+			return refuse(
+				OFF_VOCABULARY,
+				`${VERB}: --clause is blank — a verdict with no clause says nothing to a human.`,
+			);
+		}
+
+		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
+		if (resolved._tag === "Refused") return resolved.outcome;
+		const repo = resolved.repo;
+
+		const authored = readAuthored(SURFACE, yield* options.stdin);
+		if (authored._tag === "Refused") return authored.outcome;
+
+		// Step 1 — the verdict binds the tree it was formed over, or it is re-reviewed, never re-bound.
+		const target = yield* openPull(VERB, repo, pr, {
+			requireOpen: true,
+			closedReason: "a verdict on a closed PR gates nothing.",
+			requireFiles: false,
+			unknownMessage: (reason) =>
+				`${VERB}: cannot read the PR for #${pr}: ${reason} — nothing was uploaded or posted.`,
+		});
+		if (target._tag === "Refused") return target.outcome;
+		const live = target.pull.headSha;
+		if (!prefixMatch(live, inspected)) {
+			return refuse(
+				STALE_TREE,
+				`${VERB}: the live head is ${live}, not ${inspected} — the tree you judged is gone; re-review at ${live}.`,
+			);
+		}
+
+		// Step 2 — the set is whatever its manifest says it is; an evidence-less verdict must not land.
+		const setDir = setDirectory(options.tmpRoot, pr, live, options.evidence);
+		const document = yield* Effect.result(readFile(manifestPath(setDir)));
+		if (Result.isFailure(document)) {
+			return refuse(
+				MALFORMED_DOCUMENT,
+				`${VERB}: evidence set "${options.evidence}" has no readable manifest.json (${document.failure.reason}) — a set without its manifest is not a set; re-run review-ui render.`,
+			);
+		}
+		const read = parseManifest(document.success);
+		if (read._tag === "Malformed") {
+			return refuse(
+				MALFORMED_DOCUMENT,
+				`${VERB}: evidence set "${options.evidence}" has no readable manifest.json (${read.reason}) — a set without its manifest is not a set; re-run review-ui render.`,
+			);
+		}
+		const manifest = read.value;
+		if (!prefixMatch(manifest.head, inspected)) {
+			return refuse(
+				STALE_TREE,
+				`${VERB}: evidence set "${options.evidence}" was rendered at ${manifest.head.slice(0, 7)}, you are posting at ${inspected.slice(0, 7)} — stale pixels; re-render at the live head.`,
+			);
+		}
+
+		// Step 3 — re-validate every capture against the manifest that claims it.
+		const bytesByEntry: Array<readonly [CaptureEntry, Uint8Array]> = [];
+		for (const entry of manifest.captures) {
+			const bytes = yield* readCaptureBytes(entry.path);
+			if (bytes._tag === "Unreadable") {
+				return unreadable(
+					`capture "${entry.surface}" in set "${options.evidence}"`,
+					pr,
+					bytes.reason,
+				);
+			}
+			const actual = sha256Hex(bytes.value);
+			if (actual !== entry.sha256) {
+				return refuse(
+					INVALID_CAPTURE,
+					`${VERB}: capture "${entry.surface}" in set "${options.evidence}" is invalid or fails its manifest sha (recorded ${entry.sha256.slice(0, 12)}, read ${actual.slice(0, 12)}).`,
+				);
+			}
+			bytesByEntry.push([entry, bytes.value]);
+		}
+
+		// Step 4 — the tier choice, then verify-upload every capture BEFORE anything posts.
+		const tier = yield* readTierChoice(options.cwd);
+		if (tier._tag === "Malformed") {
+			return refuse(
+				MALFORMED_DOCUMENT,
+				`${VERB}: ${CONFIG_PATH} declares a \`${UI_CAPTURE}\` that does not satisfy its schema: ${tier.reason} — the tier choice is unmakeable.`,
+			);
+		}
+		if (tier._tag === "Unreadable") {
+			return unreadable(CONFIG_PATH, pr, tier.reason);
+		}
+		if (tier._tag === "DeclaredStore") {
+			return refuse(
+				PRECONDITION_UNKNOWN,
+				`${VERB}: ${CONFIG_PATH} declares the "${tier.kind}" evidence store, and this delivery layer wires no store leg for it — the upload target's state is UNKNOWN; nothing was uploaded or posted.`,
+			);
+		}
+		const hosted: Array<readonly [CaptureEntry, string]> = [];
+		const evidence: HostedEvidence[] = [];
+		const failures: string[] = [];
+		for (const [entry, bytes] of bytesByEntry) {
+			const outcome = yield* options.upload({
+				repo,
+				fileName: `${entry.surface.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "root"}.png`,
+				bytes,
+			});
+			if (outcome._tag === "Hosted") {
+				hosted.push([entry, outcome.url]);
+				evidence.push({url: outcome.url, bytes});
+			} else failures.push(`${entry.surface}: ${outcome.reason}`);
+		}
+		if (failures.length > 0) {
+			return refuse(
+				UPLOAD_FAILED,
+				`${VERB}: upload failed for ${failures.length} of ${bytesByEntry.length} captures (${failures[0]}) — refusing to post a verdict over a broken evidence channel.`,
+				failures.map((failure) => `${VERB}: upload failed — ${failure}`),
+			);
+		}
+
+		// Step 5 — compose through the wire format, or through the advisory shape.
+		const firstLine =
+			carrier === "advisory"
+				? emitAdvisory(NAMESPACE, clause)
+				: emitMarker({
+						namespace: NAMESPACE,
+						polarity: polarity as Polarity,
+						sha: inspected,
+						// Head-bound only: this namespace attests deployed PIXELS, and the content digest is
+						// taken over a diff, which a rendered preview is not a function of.
+						content: null,
+						clause,
+					});
+		const below =
+			carrier === "advisory" ? `${reviewedHeadLine(inspected)}\n\n${authored.text}` : authored.text;
+		const composed = `${firstLine}\n${below.replace(/\n+$/, "")}\n\n${gallery(hosted)}\n`;
+
+		// Step 6 — the scan runs over the ASSEMBLED comment, so nothing this verb appended escapes it.
+		const leaked = leakRefusal(SURFACE, composed);
+		if (leaked !== null) return leaked;
+
+		// Step 7 — one namespace under one carrier, one comment: append into it, never over it.
+		const me = yield* viewerLogin;
+		if (me._tag === "Failure") return unreadable("the authenticated user", pr, me.reason);
+		const comments = yield* listComments(repo, pr);
+		if (comments._tag === "Failure") return unreadable("the comments", pr, comments.reason);
+		const diagnostics = [scannedLine(VERB, comments.value.length, "comment")];
+		// The NEWEST match by write stamp, stated rather than left to the order the API returned: a
+		// body-only repair legitimately leaves two verdicts at one SHA, and editing the older one
+		// lands the verdict where nobody reads, which the write-recency rule records.
+		const mine = comments.value
+			.filter((comment) => comment.author === me.value && carriesNamespace(comment.body, carrier))
+			.reduce<(typeof comments.value)[number] | undefined>((newest, comment) => {
+				if (newest === undefined) return comment;
+				const [a, b] = [
+					comment.updatedAt === "" ? comment.createdAt : comment.updatedAt,
+					newest.updatedAt === "" ? newest.createdAt : newest.updatedAt,
+				];
+				if (a !== b) return a > b ? comment : newest;
+				return comment.id > newest.id ? comment : newest;
+			}, undefined);
+
+		// The prior verdict is never replaced, only pushed below the fence — GitHub keeps no
+		// comment-body history, so a PATCH over it is the record gone. A polarity flip at the same head
+		// is the one case that also needs saying out loud: it is the flip the merge gate reads.
+		const standing = mine === undefined ? null : standingPolarityAt(mine.body, carrier, inspected);
+		if (standing !== null && standing !== polarity && !options.supersede) {
+			return refuse(
+				SUPERSEDES_VERDICT,
+				`${VERB}: a standing ${standing} for ${NAMESPACE} at ${inspected} would be superseded by this ${polarity} — pass --supersede to retire it on the record. Nothing was posted.`,
+				diagnostics,
+			);
+		}
+		const envelope =
+			mine === undefined
+				? composed
+				: supersedeWith(mine.body, composed, new Date(yield* options.now));
+
+		let landed: {readonly id: number; readonly url: string} | null = null;
+		let failure: string | null = null;
+		if (mine === undefined) {
+			const created = yield* createComment(repo, pr, envelope);
+			if (created._tag === "Failure") failure = created.reason;
+			else landed = {id: created.value.id, url: created.value.url};
+		} else {
+			const edited = yield* patchComment(repo, mine.id, envelope);
+			if (edited._tag === "Failure") failure = edited.reason;
+			else landed = {id: mine.id, url: edited.value};
+		}
+		if (landed === null) {
+			return refuse(
+				WRITE_UNKNOWN,
+				`${VERB}: create/edit failed: ${failure ?? "unknown"} — UNKNOWN whether the verdict landed; run \`fabrika review verdicts ${pr}\` before retrying.`,
+				diagnostics,
+			);
+		}
+
+		// Step 8 — read it back from live state. The write call's own echo is not evidence.
+		const back = yield* getComment(repo, landed.id);
+		const mismatch =
+			back._tag === "Failure"
+				? back.reason
+				: mismatchOf(back.value, {polarity, sha: inspected, clause}, carrier, envelope);
+		if (mismatch !== null) {
+			return refuse(
+				READBACK_MISMATCH,
+				`${VERB}: posted, but the read-back does not yield this marker (${mismatch}) — inspect comment ${landed.id}.`,
+				diagnostics,
+			);
+		}
+
+		// Step 9 — the verdict is only posted if a reader can open its evidence, so it is re-read the
+		// way a reader's browser renders it rather than trusted from the step-4 read-back.
+		const opened = yield* options.confirm({repo, commentId: landed.id, evidence});
+		if (opened._tag === "Unresolved") {
+			const noted = yield* createComment(repo, pr, unopenedNote(landed.url, opened.reasons));
+			return refuse(
+				READBACK_MISMATCH,
+				`${VERB}: POSTED, BUT ITS EVIDENCE DOES NOT OPEN — ${opened.reasons.length} of ${evidence.length} embedded captures fail the read-back (${opened.reasons[0]}); the verdict in comment ${landed.id} stays on the PR and does not count — ship gate and lane prove re-check its evidence and will not count it while it does not open. Re-render and post again.`,
+				[
+					...diagnostics,
+					...opened.reasons.map((reason) => `${VERB}: evidence does not open — ${reason}`),
+					noted._tag === "Failure"
+						? `${VERB}: the note saying this verdict does not count did not land (${noted.reason}) — the gates re-check its evidence either way.`
+						: `${VERB}: noted on the PR why this verdict does not count: ${noted.value.url}`,
+				],
+			);
+		}
+
+		return answer(
+			JSON.stringify({
+				answer: "posted",
+				namespace: NAMESPACE,
+				polarity,
+				sha: inspected,
+				upsert: mine === undefined ? "created" : "superseded",
+				carrier,
+				surfaces: manifest.captures.length,
+				commentUrl: landed.url,
+			}),
+			diagnostics,
+		);
+	});
+
+/** {@link PostOptions} as the command line hands it: every `--evidence` value, in the order passed. */
+export interface PostFlags extends Omit<PostOptions, "evidence"> {
+	readonly evidence: ReadonlyArray<string>;
+}
+
+/**
+ * The adapter's entry: admit exactly one capture set, then {@link runPost}.
+ *
+ * The flag is repeatable only so a repeat is visible here. A plain string flag keeps one value and
+ * drops the rest without a word, which posted a gallery missing a set whose shots the verdict table
+ * still cited. The refusal lands before stdin, the manifest or any upload is touched.
+ */
+export const runPostFlags = (flags: PostFlags): ReturnType<typeof runPost> => {
+	const [set, ...rest] = flags.evidence;
+	if (set === undefined) {
+		return Effect.succeed(
+			refuse(
+				OFF_VOCABULARY,
+				`${VERB}: no --evidence set was named — a verdict needs its evidence.`,
+			),
+		);
+	}
+	if (rest.length > 0) {
+		const named = flags.evidence.map((name) => `"${name}"`).join(", ");
+		return Effect.succeed(
+			refuse(
+				OFF_VOCABULARY,
+				`${VERB}: --evidence was passed ${flags.evidence.length} times (${named}) — a post carries one capture set, and every set past the first would drop out of the gallery while the verdict still cites its shots. Render every judged surface into one set and pass it once; nothing was read, uploaded or posted.`,
+			),
+		);
+	}
+	return runPost({...flags, evidence: set});
+};

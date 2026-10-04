@@ -1,0 +1,317 @@
+import {Effect, Layer} from "effect";
+import {describe, expect, it} from "vitest";
+import {
+	fakeFs,
+	fakeSeams,
+	type HttpReply,
+	once,
+	type Scripted,
+	unconfigured,
+} from "../fakes.test-support.ts";
+import type {ExecResult} from "../io/exec.ts";
+import {PULL_FILES_CAP} from "../io/pulls.ts";
+import {
+	INCOMPLETE_SCAN,
+	LABEL_ABSENT,
+	PRECONDITION_UNKNOWN,
+	READBACK_MISMATCH,
+	WRITE_UNKNOWN,
+	ZERO_SCOPE,
+} from "./codes.ts";
+import {FLAG_REGISTRY} from "./dark-ship.ts";
+import {ENV, files, issue, pull} from "./fixtures.test-support.ts";
+import {runRelease} from "./release-verb.ts";
+
+/**
+ * The pull record and the unified diff are the same URL under different `Accept` headers, so the
+ * record is scripted `once` and the diff answers every later read of that endpoint.
+ */
+const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4321$/;
+const DIFF = /^GET \S+\/repos\/o\/r\/pulls\/4321$/;
+const FILES = /^GET \S+\/repos\/o\/r\/pulls\/4321\/files\?/;
+const LABELS = /^GET \S+\/repos\/o\/r\/labels\?/;
+const LABEL = /^POST \S+\/repos\/o\/r\/issues\/4287\/labels$/;
+const ISSUE = /^GET \S+\/repos\/o\/r\/issues\/4287$/;
+/** The registry is read at the base ref through the raw media type. */
+const REGISTRY = /contents\/apps\/web\/worker\/features\/flagship\/resources\.ts/;
+
+/** A canned `ExecResult` fixture as the body of a 200 — the same payload, off the served seam. */
+const served = (result: ExecResult): HttpReply => ({status: 200, body: result.stdout});
+
+/** The verb's first read of the pull request — the record, before the diff of the same URL. */
+const pullRecord = (shape: Parameters<typeof pull>[0] = {}): Scripted => [
+	once(PULL),
+	served(pull(shape)),
+];
+
+/** The diff, served as bytes under the diff media type. */
+const diff = (text: string): Scripted => [DIFF, {status: 200, body: text}];
+
+const REGISTRY_TEXT = `export const flags = [
+	FlagshipFlag("sozluk-vote-widget", {defaultVariation: "off"}),
+];
+`;
+
+const REGISTRY_SERVED: HttpReply = {status: 200, body: REGISTRY_TEXT};
+
+/** The registry a repo without a flag substrate has: proven absent, never unreadable. */
+const REGISTRY_ABSENT: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
+
+const REGISTRY_UNREADABLE: HttpReply = {status: 502, body: '{"message":"Bad gateway"}'};
+
+/** The repository's label vocabulary, as the labels endpoint answers it. */
+const taxonomy = (...names: ReadonlyArray<string>): HttpReply => ({
+	status: 200,
+	body: JSON.stringify(names.map((name) => ({name}))),
+});
+
+const TAXONOMY = taxonomy("status:awaiting-release", "status:triaged", "type:bug");
+
+const PLAIN_DIFF = `diff --git a/apps/site/src/App.tsx b/apps/site/src/App.tsx
++const a = 1;
+`;
+
+const DECLARING_DIFF = `diff --git a/${FLAG_REGISTRY} b/${FLAG_REGISTRY}
++	FlagshipFlag("sozluk-new-thing", {defaultVariation: "off"}),
+`;
+
+const options = {pr: 4321, repo: null, json: false, cwd: "/repo", env: ENV};
+
+const run = (
+	script: ReadonlyArray<Scripted>,
+	http: ReadonlyArray<Scripted> = [],
+	overrides: Partial<typeof options> = {},
+	config = unconfigured,
+) =>
+	Effect.runPromise(
+		Effect.provide(
+			runRelease({...options, ...overrides}),
+			Layer.merge(fakeSeams([...script, ...http]).layer, config),
+		),
+	);
+
+const runObserved = (script: ReadonlyArray<Scripted>, http: ReadonlyArray<Scripted> = []) => {
+	const seams = fakeSeams([...script, ...http]);
+	return Effect.runPromise(
+		Effect.provide(runRelease(options), Layer.merge(seams.layer, unconfigured)),
+	).then((out) => ({
+		out,
+		calls: seams.requests,
+	}));
+};
+
+const twoFiles = served(files("apps/site/src/App.tsx", "README.md"));
+
+describe("runRelease", () => {
+	it("answers n/a when no signal fires", async () => {
+		const out = await run(
+			[pullRecord(), [FILES, twoFiles], diff(PLAIN_DIFF)],
+			[[REGISTRY, REGISTRY_SERVED]],
+		);
+		expect(out.code).toBe(0);
+		expect(out.stdout).toBe("release\tn/a\t-\n");
+	});
+
+	it("queues the linked issue and PROVES the label from a re-read", async () => {
+		const out = await run(
+			[
+				pullRecord({body: "Fixes #4287\n\nFlag: sozluk-vote-widget\n"}),
+				[FILES, twoFiles],
+				diff(PLAIN_DIFF),
+				[LABELS, TAXONOMY],
+				[LABEL, {status: 200, body: "[]"}],
+				[ISSUE, served(issue(["status:awaiting-release"]))],
+			],
+			[[REGISTRY, REGISTRY_SERVED]],
+		);
+		expect(out.stdout).toBe("release\tqueued\tsozluk-vote-widget\n");
+	});
+
+	it("queues under the label a repo renamed awaiting-release to, never the shipped name", async () => {
+		const seams = fakeSeams([
+			pullRecord({body: "Fixes #4287\n\nFlag: sozluk-vote-widget\n"}),
+			[FILES, twoFiles],
+			diff(PLAIN_DIFF),
+			[LABELS, taxonomy("state:release-queue", "status:awaiting-release")],
+			[LABEL, {status: 200, body: "[]"}],
+			[ISSUE, served(issue(["state:release-queue"]))],
+			[REGISTRY, REGISTRY_SERVED],
+		]);
+		const config = fakeFs({
+			files: {
+				"/repo/.fabrika.jsonc": JSON.stringify({
+					boardVocabulary: {statuses: {awaitingRelease: "state:release-queue"}},
+				}),
+			},
+		});
+		const out = await Effect.runPromise(
+			Effect.provide(runRelease(options), Layer.merge(seams.layer, config.layer)),
+		);
+		expect(out.stdout).toBe("release\tqueued\tsozluk-vote-widget\n");
+		const posted = seams.requests.findIndex((line) => LABEL.test(line));
+		expect(JSON.parse(seams.bodies[posted] ?? "{}")).toEqual({labels: ["state:release-queue"]});
+	});
+
+	it("refuses a config that gives no board on 11, before it reads the pull request", async () => {
+		const seams = fakeSeams([]);
+		const config = fakeFs({
+			files: {"/repo/.fabrika.jsonc": JSON.stringify({boardVocabulary: {statuses: "queued"}})},
+		});
+		const out = await Effect.runPromise(
+			Effect.provide(runRelease(options), Layer.merge(seams.layer, config.layer)),
+		);
+		expect(out.code).toBe(PRECONDITION_UNKNOWN);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toContain(
+			"ship release: cannot read .fabrika.jsonc's board vocabulary",
+		);
+		expect(seams.requests).toEqual([]);
+	});
+
+	it("answers no-issue — never n/a — when a signal fires with nothing to label", async () => {
+		const out = await run(
+			[pullRecord({body: "no closing keyword here"}), [FILES, twoFiles], diff(DECLARING_DIFF)],
+			[[REGISTRY, REGISTRY_SERVED]],
+		);
+		expect(out.code).toBe(0);
+		expect(out.stdout).toBe("release\tno-issue\t-\n");
+	});
+
+	it("treats an ABSENT registry as a repo without a flag substrate, not as UNKNOWN", async () => {
+		const out = await run(
+			[pullRecord(), [FILES, twoFiles], diff(PLAIN_DIFF)],
+			[[REGISTRY, REGISTRY_ABSENT]],
+		);
+		expect(out.code).toBe(0);
+		expect(out.stdout).toBe("release\tn/a\t-\n");
+	});
+
+	it("refuses an UNREADABLE registry on 11 — dark-ship-ness is UNKNOWN, never n/a", async () => {
+		const out = await run(
+			[pullRecord(), [FILES, twoFiles], diff(PLAIN_DIFF)],
+			[[REGISTRY, REGISTRY_UNREADABLE]],
+		);
+		expect(out.code).toBe(PRECONDITION_UNKNOWN);
+		expect(out.stderr.at(-1)).toContain('whether this is a dark ship is UNKNOWN, never "n/a"');
+	});
+
+	// The declared count is GitHub's own, computed against a base cached at the last push, so a list
+	// short of it proved nothing about completeness. It used to refuse at 13 and block the flag scan.
+	it("reports a file list short of the declared count and still scans (#9322)", async () => {
+		const out = await run(
+			[pullRecord({changedFiles: 9}), [FILES, served(files("README.md"))], diff(PLAIN_DIFF)],
+			[[REGISTRY, REGISTRY_SERVED]],
+		);
+		expect(out.code).toBe(0);
+		expect(out.stdout).toBe("release\tn/a\t-\n");
+		expect(out.stderr.join("\n")).toContain(
+			"GitHub's file list for #4321 holds 1 paths against the 9 its own pull-request record declares",
+		);
+	});
+
+	// The empty read is the seat that survives the retirement: an empty list carries no declaration
+	// to find, so `n/a` would be a dark ship nobody queued.
+	it("refuses an empty file list on 7 rather than answering n/a (#9322)", async () => {
+		const out = await run([pullRecord({changedFiles: 9}), [FILES, served(files())]]);
+		expect(out.code).toBe(ZERO_SCOPE);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toBe(
+			'ship release: PR #4321 has zero changed files — whether it carries a flag signal is unanswerable, and "n/a" would be a dark ship nobody queued.',
+		);
+	});
+
+	// The ceiling is the truncation pagination cannot catch: GitHub stops serving files at 3000 and
+	// ends the Link chain there exactly as a complete read ends.
+	it("refuses a file list at the 3000-file ceiling on 13 (#9322)", async () => {
+		const out = await run([
+			pullRecord({changedFiles: PULL_FILES_CAP}),
+			[
+				FILES,
+				served(files(...Array.from({length: PULL_FILES_CAP}, (_, i) => `apps/site/src/f${i}.ts`))),
+			],
+		]);
+		expect(out.code).toBe(INCOMPLETE_SCAN);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toBe(
+			"ship release: GitHub's file list for #4321 came back at its 3000-file ceiling, so the list is provably partial — a flag declaration could sit in the part the platform never served.",
+		);
+	});
+
+	it("refuses on 8 when the label write fails — escalate, never `queued`", async () => {
+		const out = await run(
+			[
+				pullRecord({body: "Fixes #4287\n\nFlag: sozluk-vote-widget\n"}),
+				[FILES, twoFiles],
+				diff(PLAIN_DIFF),
+				[LABELS, TAXONOMY],
+				[LABEL, {status: 502, body: '{"message":"Bad gateway"}'}],
+			],
+			[[REGISTRY, REGISTRY_SERVED]],
+		);
+		expect(out.code).toBe(WRITE_UNKNOWN);
+		expect(out.stderr.at(-1)).toContain("may be missing from the release queue; escalate");
+	});
+
+	it("refuses on 9 when the write landed and the read-back does not show the label", async () => {
+		const out = await run(
+			[
+				pullRecord({body: "Fixes #4287\n\nFlag: sozluk-vote-widget\n"}),
+				[FILES, twoFiles],
+				diff(PLAIN_DIFF),
+				[LABELS, TAXONOMY],
+				[LABEL, {status: 200, body: "[]"}],
+				[ISSUE, served(issue([]))],
+			],
+			[[REGISTRY, REGISTRY_SERVED]],
+		);
+		expect(out.code).toBe(READBACK_MISMATCH);
+	});
+
+	it("refuses on 23 when status:awaiting-release is absent — never minting it", async () => {
+		const {out, calls} = await runObserved(
+			[
+				pullRecord({body: "Fixes #4287\n\nFlag: sozluk-vote-widget\n"}),
+				[FILES, twoFiles],
+				diff(PLAIN_DIFF),
+				[LABELS, taxonomy("status:triaged", "type:bug")],
+			],
+			[[REGISTRY, REGISTRY_SERVED]],
+		);
+		expect(out.code).toBe(LABEL_ABSENT);
+		expect(out.stderr.at(-1)).toContain('label "status:awaiting-release" is absent');
+		expect(out.stderr.at(-1)).toContain("A real dark ship is not queued");
+		expect(out.stderr.at(-1)).toContain("fabrika status bootstrap label-taxonomy");
+		expect(calls.some((line) => LABEL.test(line))).toBe(false);
+	});
+
+	it("refuses an unreadable taxonomy on 11 — an unreachable GitHub is not an absent label", async () => {
+		const {out, calls} = await runObserved(
+			[
+				pullRecord({body: "Fixes #4287\n\nFlag: sozluk-vote-widget\n"}),
+				[FILES, twoFiles],
+				diff(PLAIN_DIFF),
+				[LABELS, {status: 502, body: '{"message":"Bad gateway"}'}],
+			],
+			[[REGISTRY, REGISTRY_SERVED]],
+		);
+		expect(out.code).toBe(PRECONDITION_UNKNOWN);
+		expect(out.stderr.at(-1)).toContain("cannot read o/r's label taxonomy");
+		expect(calls.some((line) => LABEL.test(line))).toBe(false);
+	});
+
+	it("reads no taxonomy on the paths that post nothing — n/a and no-issue", async () => {
+		const nonWriting = await runObserved(
+			[pullRecord(), [FILES, twoFiles], diff(PLAIN_DIFF)],
+			[[REGISTRY, REGISTRY_SERVED]],
+		);
+		expect(nonWriting.out.code).toBe(0);
+		expect(nonWriting.calls.some((line) => LABELS.test(line))).toBe(false);
+
+		const noIssue = await runObserved(
+			[pullRecord({body: "no closing keyword here"}), [FILES, twoFiles], diff(DECLARING_DIFF)],
+			[[REGISTRY, REGISTRY_SERVED]],
+		);
+		expect(noIssue.out.code).toBe(0);
+		expect(noIssue.calls.some((line) => LABELS.test(line))).toBe(false);
+	});
+});

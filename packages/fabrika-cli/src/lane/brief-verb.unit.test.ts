@@ -1,0 +1,1164 @@
+/** `lane brief` — the three shell prompts it prints, and every refusal that prints none. */
+import {resolve} from "node:path";
+import {Effect, Layer} from "effect";
+import {describe, expect, it} from "vitest";
+import type {EntrypointRead} from "../delegate/entrypoint.ts";
+import {
+	errOut,
+	fakeFs,
+	fakeSeams,
+	type HttpReply,
+	okOut,
+	type Scripted,
+} from "../fakes.test-support.ts";
+import type {ExecResult} from "../io/exec.ts";
+import {PROJECT_SCOPE_FIX} from "../io/projects.ts";
+import type {OverSize} from "../table/flags.ts";
+import type {SizeStop} from "../table/size-stop.ts";
+import {
+	EPIC_RULES,
+	EPIC_TAIL_REPAIR_RULES,
+	EPIC_TAIL_RULES,
+	OWNER_COMMENTS_RULES,
+	RULES,
+	read as readBrief,
+} from "../wire/lane-brief.ts";
+import {runBrief} from "./brief-verb.ts";
+import {seedClasses} from "./class-seed.ts";
+import {
+	BRIEFED_VERB_ABSENT,
+	ISSUE_UNRESOLVED,
+	LANE_ABSENT,
+	LANE_UNREADABLE,
+	MALFORMED_RECORD,
+	NO_SHELL,
+	PR_AMBIGUOUS,
+	PROOF_ABSENT,
+	PROOF_AMBIGUOUS,
+	SIZE_STOPPED,
+	TASK_UNKNOWN,
+} from "./codes.ts";
+import {emitMachine} from "./emit.ts";
+import {coderTemplateText} from "./fixtures.test-support.ts";
+
+const ROOT = ".fabrika/lanes";
+const ISSUE_URL = "https://forge.example/o/r/issues/5751";
+const PR_URL = "https://forge.example/o/r/pull/5790";
+const TITLE = "the operator hand-writes every spawn prompt";
+
+const ISSUE_READ = /^GET .*\/repos\/o\/r\/issues\/5751$/;
+const CHILD_READ = /^GET .*\/repos\/o\/r\/issues\/5729$/;
+const PR_CLOSERS = /^POST .*\/graphql$/;
+
+const NOT_FOUND: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
+const SERVER_ERROR: HttpReply = {status: 503, body: '{"message":"Server Error"}'};
+
+const issuePayload = (number: number, url: string): HttpReply => ({
+	status: 200,
+	body: JSON.stringify({
+		number,
+		title: TITLE,
+		body: "## What is wrong\n\nNothing prints it, nothing records it.",
+		state: "open",
+		labels: [{name: "type:feature"}],
+		html_url: url,
+	}),
+});
+
+/** One page of the closing-issue link edge — every node OPEN, since the verb filters on that. */
+const closingPulls = (...rows: ReadonlyArray<readonly [number, string]>): HttpReply => ({
+	status: 200,
+	body: JSON.stringify({
+		data: {
+			repository: {
+				issue: {
+					closedByPullRequestsReferences: {
+						pageInfo: {hasNextPage: false, endCursor: null},
+						nodes: rows.map(([number, url]) => ({number, url, state: "OPEN"})),
+					},
+				},
+			},
+		},
+	}),
+});
+
+/** The search index's nomination envelope — candidate numbers, never a proof (`searchOpenPulls`). */
+const nominated = (...numbers: ReadonlyArray<number>): HttpReply => ({
+	status: 200,
+	body: JSON.stringify({total_count: numbers.length, items: numbers.map((number) => ({number}))}),
+});
+
+/** Nothing nominated by the body half, so the union answers off the closing edge alone. */
+const NO_NOMINATIONS: Scripted = [/^GET .*\/search\/issues\?/, nominated()];
+
+/** An issue nobody commented on, so the owner-comments read is a proven zero unless a case scripts one. */
+const NO_COMMENTS: Scripted = [
+	/^GET .*\/repos\/o\/r\/issues\/\d+\/comments\?/,
+	{status: 200, body: "[]"},
+];
+
+const pullPayload = (number: number, url: string, body: string): HttpReply => ({
+	status: 200,
+	body: JSON.stringify({
+		number,
+		state: "open",
+		head: {sha: "6ba0a4e2ff5e4f6b9e2b0e4b1f7cf50b7b6a3d21"},
+		base: {ref: "main"},
+		body,
+		changed_files: 1,
+		comments: 0,
+		html_url: url,
+	}),
+});
+
+/**
+ * The nominator's reads for one issue: the closing edge, plus each candidate's own record — the
+ * body is what `tracePulls` matches on, so a candidate the edge names still has to link the issue.
+ */
+const linked = (
+	issue: number,
+	...rows: ReadonlyArray<readonly [number, string]>
+): ReadonlyArray<Scripted> => [
+	[PR_CLOSERS, closingPulls(...rows)],
+	...rows.map(
+		([number, url]): Scripted => [
+			new RegExp(`^GET .*/repos/o/r/pulls/${number}$`),
+			pullPayload(number, url, `Fixes #${issue}\n`),
+		],
+	),
+];
+
+/**
+ * A single-issue lane at `lane`, with one log line per operator event already recorded. `classes`
+ * rides the first event, which is where a UI-class lane's own routing is decided.
+ */
+const lane = (
+	id: string,
+	events: ReadonlyArray<string>,
+	classes: ReadonlyArray<string> | null = null,
+) =>
+	fakeFs({
+		files: {
+			[`${ROOT}/${id}/workflow.json`]: coderTemplateText(),
+			[`${ROOT}/${id}/events.jsonl`]:
+				events.length === 0
+					? null
+					: `${events
+							.map((event, index) =>
+								JSON.stringify({
+									task: "issue",
+									event: `ISSUE.${event}`,
+									at: "2026-08-17T00:00:00Z",
+									...(index === 0 && classes !== null ? {classes} : {}),
+								}),
+							)
+							.join("\n")}\n`,
+		},
+	});
+
+const EPIC = 5800;
+const EPIC_URL = "https://forge.example/o/r/issues/5800";
+const CHILD_URL = "https://forge.example/o/r/issues/5828";
+const EPIC_ISSUE_READ = /^GET .*\/repos\/o\/r\/issues\/5800$/;
+const EPIC_CHILD_READ = /^GET .*\/repos\/o\/r\/issues\/5828$/;
+
+/** The child's range as this tree holds it: the epic branch's commit, and the build branch's tip. */
+const EPIC_BASE = "58ad239e2f8b41c0d7a6935ee1c204ab5d3f9017";
+const CHILD_TIP = "81c1f160c9a24e5b0f7d3821ab6c94ef0d52a7b3";
+const CHILD_BRANCH = "build/5828-child-lane-eaf33a6f";
+const CHILD_MESSAGE = "feat(lane): resolve the child's range (#5828)";
+
+const REV = (rev: string) =>
+	new RegExp(`^git rev-parse --verify --quiet ${rev.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")}\\^`);
+const BRANCHES = /^git for-each-ref --format=%\(refname:short\) refs\/heads$/;
+/** The shallow probe every range read takes before it trusts an ancestry answer. */
+const COMPLETE_CLONE = [/^git rev-parse --is-shallow-repository$/, okOut("false\n")] as const;
+const LOG_RANGE = /^git log --format=/;
+
+/** `git log`'s framing for one commit: `<sha>\x1f<message>\x1e`. */
+const logOf = (...rows: ReadonlyArray<readonly [string, string]>): ExecResult =>
+	okOut(rows.map(([sha, message]) => `${sha}\x1f${message}\n\x1e`).join(""));
+
+/** The git reads that locate the one branch a child built, and the commits it adds. */
+const locating = (
+	branches: ReadonlyArray<string> = [CHILD_BRANCH, "main", "epic/5800"],
+	commits: ReadonlyArray<readonly [string, string]> = [[CHILD_TIP, CHILD_MESSAGE]],
+): ReadonlyArray<Scripted> => [
+	COMPLETE_CLONE,
+	[REV("epic/5800"), okOut(`${EPIC_BASE}\n`)],
+	[/^git rev-parse --verify --quiet build\//, okOut(`${CHILD_TIP}\n`)],
+	[BRANCHES, okOut(`${branches.join("\n")}\n`)],
+	// The child is not integrated here, so its fork point is where the epic branch stands.
+	[/^git merge-base /, okOut(`${EPIC_BASE}\n`)],
+	[LOG_RANGE, logOf(...commits)],
+];
+
+/**
+ * An epic lane in the one-PR shape, its machine emitted by `emitMachine` rather than hand-written —
+ * a brief arm keyed to a shape the emitter does not produce would pass its own test and refuse the
+ * live lane.
+ */
+const epicLane = (
+	// A third element rides the classes a reviewer relayed on that event — the only way the tail's
+	// `class:ui` arm is ever reached, since a tail's context seeds no class.
+	events: ReadonlyArray<readonly [string, string, ReadonlyArray<string>?]>,
+	childClasses: ReadonlyArray<string> = [],
+) => {
+	const emitted = emitMachine(EPIC, "## Dependencies\n\n- phase 1: #5828\n", [
+		{number: 5828, state: "open", stateReason: null, classes: childClasses},
+	]);
+	if (emitted._tag !== "Emitted") throw new Error(`the epic fixture did not emit: ${emitted._tag}`);
+	return fakeFs({
+		files: {
+			[`${ROOT}/${EPIC}/workflow.json`]: emitted.text,
+			[`${ROOT}/${EPIC}/events.jsonl`]:
+				events.length === 0
+					? null
+					: `${events
+							.map(([task, event, classes]) =>
+								JSON.stringify({
+									task,
+									event: `${task.toUpperCase()}.${event}`,
+									at: "2026-08-17T00:00:00Z",
+									...(classes === undefined ? {} : {classes}),
+								}),
+							)
+							.join("\n")}\n`,
+		},
+	});
+};
+
+/**
+ * An out-of-tree entrypoint on purpose: every brief these tests read back is the shape a repo that
+ * *installs* fabrika gets, so a path bound back to `packages/fabrika-cli/` fails here rather than in
+ * a consuming repo's maiden run.
+ */
+const ENTRY = "/checkout/node_modules/@kampus/fabrika-cli/dist/bin.js";
+
+const options = {
+	root: ROOT,
+	lane: "5751",
+	task: null as string | null,
+	repo: null as string | null,
+	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	entrypoint: {_tag: "Entrypoint", entrypoint: ENTRY} as EntrypointRead,
+};
+
+const run = (
+	fs: ReturnType<typeof fakeFs>,
+	script: ReadonlyArray<Scripted>,
+	overrides: Partial<typeof options> = {},
+) =>
+	Effect.runPromise(
+		Effect.provide(
+			runBrief({...options, ...overrides}),
+			// The body half is tailed, so a test scripting its own wins the seam's first-match lookup.
+			Layer.merge(fs.layer, fakeSeams([...script, NO_NOMINATIONS, NO_COMMENTS]).layer),
+		),
+	);
+
+describe("lane brief", () => {
+	it("briefs the builder on a `build` state, with no PR when construction has none", async () => {
+		const out = await run(lane("5751", ["WIP"]), [
+			[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+			[PR_CLOSERS, closingPulls()],
+		]);
+
+		expect(out.code).toBe(0);
+		const brief = readBrief(out.stdout);
+		expect(brief).toMatchObject({
+			_tag: "Found",
+			value: {lane: "5751", task: "issue", state: "build", shell: "builder", issue: ISSUE_URL},
+		});
+		expect(out.stdout).toContain(RULES);
+	});
+
+	it("briefs the reviewer on a `review` state, carrying the one open PR that traces to the issue", async () => {
+		const out = await run(lane("5751", ["WIP", "DONE"]), [
+			[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+			...linked(5751, [5790, PR_URL]),
+		]);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {
+				state: "review",
+				shell: "reviewer",
+				issue: ISSUE_URL,
+				ground: {_tag: "Pull", pr: PR_URL},
+			},
+		});
+	});
+
+	/**
+	 * A rule an owner wrote as a plain comment reached no shell: the brief carried the issue and
+	 * nothing said newer owner comments existed. The brief names them now, as URLs, and never holds
+	 * the dispatch on them.
+	 */
+	describe("the owner comments no ruling marker records", () => {
+		const COMMENTS = /^GET .*\/repos\/o\/r\/issues\/5751\/comments\?/;
+		const OWNER_COMMENT = `https://github.com/${options.env.CLAUDE_PIPELINE_REPO}/issues/5751#issuecomment-900010`;
+		const ownerComment: Scripted = [
+			COMMENTS,
+			{
+				status: 200,
+				body: JSON.stringify([
+					{
+						id: 900010,
+						user: {login: "usirin"},
+						created_at: "2026-08-17T00:00:00Z",
+						updated_at: "2026-08-17T00:00:00Z",
+						body: "Use the second fork, not the first.",
+					},
+				]),
+			},
+		];
+		const ROSTER: ReadonlyArray<Scripted> = [
+			[/^GET .*\/repos\/o\/r$/, {status: 200, body: JSON.stringify({default_branch: "main"})}],
+			[
+				/contents\/\.github\/CODEOWNERS\?ref=main$/,
+				{status: 200, body: "/packages/fabrika-cli/ @o/control-plane\n"},
+			],
+			[
+				/^GET .*\/orgs\/o\/teams\/control-plane\/members/,
+				{status: 200, body: JSON.stringify([{login: "usirin"}])},
+			],
+		];
+
+		it("names each one in a build brief, as a URL the shell is told to read", async () => {
+			const out = await run(lane("5751", ["WIP"]), [
+				[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+				[PR_CLOSERS, closingPulls()],
+				ownerComment,
+				...ROSTER,
+			]);
+
+			expect(out.code).toBe(0);
+			expect(out.stdout).toContain(`owner-comments: ${OWNER_COMMENT}\n## Rules`);
+			expect(out.stdout).toContain(OWNER_COMMENTS_RULES);
+			expect(out.stdout).not.toContain("Use the second fork");
+			expect(readBrief(out.stdout)).toMatchObject({
+				_tag: "Found",
+				value: {ownerComments: {_tag: "Unmarked", urls: [OWNER_COMMENT]}},
+			});
+		});
+
+		it("still briefs, saying `unknown`, when the roster does not resolve", async () => {
+			const out = await run(lane("5751", ["WIP"]), [
+				[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+				[PR_CLOSERS, closingPulls()],
+				ownerComment,
+			]);
+
+			expect(out.code).toBe(0);
+			expect(readBrief(out.stdout)).toMatchObject({
+				_tag: "Found",
+				value: {ownerComments: {_tag: "Unknown"}},
+			});
+			expect(out.stderr.join("\n")).toContain("is UNKNOWN, never zero");
+		});
+	});
+
+	it("briefs the ui-builder shell on a `build:ui` state, still with no PR", async () => {
+		const out = await run(lane("5751", ["WIP"], ["ui"]), [
+			[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+			[PR_CLOSERS, closingPulls()],
+		]);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {state: "build:ui", shell: "ui-builder", ground: {_tag: "Pull", pr: null}},
+		});
+	});
+
+	it("briefs the mixed-builder shell on a `build:mixed` state, still with no PR", async () => {
+		const out = await run(lane("5751", ["WIP"], ["code", "ui"]), [
+			[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+			[PR_CLOSERS, closingPulls()],
+		]);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {state: "build:mixed", shell: "mixed-builder", ground: {_tag: "Pull", pr: null}},
+		});
+	});
+
+	/**
+	 * The seed's whole point: the class stands at the FIRST `WIP`, off the document, with no event
+	 * carrying it. Before a producer existed this lane built in the plain `builder` and reached
+	 * `build:ui` only after a `review-ui` FAIL had raised the class off a diff.
+	 */
+	it("briefs ui-builder off the SEEDED document, on a first WIP that names no class", async () => {
+		const seed = seedClasses(coderTemplateText(), ["ui"]);
+		if (seed._tag !== "Seeded") throw new Error(`the seed fixture did not seed: ${seed._tag}`);
+		const fs = fakeFs({
+			files: {
+				[`${ROOT}/5751/workflow.json`]: seed.text,
+				[`${ROOT}/5751/events.jsonl`]: `${JSON.stringify({
+					task: "issue",
+					event: "ISSUE.WIP",
+					at: "2026-08-17T00:00:00Z",
+				})}\n`,
+			},
+		});
+		const out = await run(fs, [
+			[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+			[PR_CLOSERS, closingPulls()],
+		]);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {state: "build:ui", shell: "ui-builder"},
+		});
+	});
+
+	it("briefs the ui-reviewer shell on a `review:ui` state, over the same one PR", async () => {
+		const out = await run(lane("5751", ["WIP", "DONE", "PASS"], ["ui"]), [
+			[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+			...linked(5751, [5790, PR_URL]),
+		]);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {state: "review:ui", shell: "ui-reviewer", ground: {_tag: "Pull", pr: PR_URL}},
+		});
+	});
+
+	it("prints a single-issue brief byte for byte — the format's bytes, nothing per dispatch", async () => {
+		const out = await run(lane("5751", ["WIP", "DONE"]), [
+			[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+			...linked(5751, [5790, PR_URL]),
+		]);
+
+		expect(out.stdout).toBe(
+			`## Task\nlane: 5751\nroot: ${resolve(ROOT)}\nfabrika: ${ENTRY}\ntask: issue\nstate: review\nshell: reviewer\n## Ground\nissue: ${ISSUE_URL}\npr: ${PR_URL}\n## Rules\n${RULES}\n`,
+		);
+	});
+
+	it("carries the driver's lanes root resolved absolute — the shell would resolve a relative one against its own worktree", async () => {
+		const out = await run(lane("5751", ["WIP"]), [
+			[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+			[PR_CLOSERS, closingPulls()],
+		]);
+
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {root: resolve(ROOT)},
+		});
+	});
+
+	it("prints an absolute root unchanged — resolution is not a rewrite", async () => {
+		const absolute = "/elsewhere/checkout/.fabrika/lanes";
+		const out = await run(
+			fakeFs({
+				files: {
+					[`${absolute}/5751/workflow.json`]: coderTemplateText(),
+					[`${absolute}/5751/events.jsonl`]: `${JSON.stringify({
+						task: "issue",
+						event: "ISSUE.WIP",
+						at: "2026-08-17T00:00:00Z",
+					})}\n`,
+				},
+			}),
+			[
+				[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+				[PR_CLOSERS, closingPulls()],
+			],
+			{root: absolute},
+		);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({_tag: "Found", value: {root: absolute}});
+	});
+
+	it("briefs the shipper on a `ship` state", async () => {
+		const out = await run(lane("5751", ["WIP", "DONE", "PASS"]), [
+			[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+			...linked(5751, [5790, PR_URL]),
+		]);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {state: "ship", shell: "shipper", ground: {_tag: "Pull", pr: PR_URL}},
+		});
+	});
+
+	it("carries URLs only — no title, no body, no verdict text", async () => {
+		const out = await run(lane("5751", ["WIP", "DONE"]), [
+			[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+			...linked(5751, [5790, PR_URL]),
+		]);
+
+		expect(out.stdout).not.toContain(TITLE);
+		expect(out.stdout).not.toContain("Nothing prints it");
+	});
+
+	it("resolves an emitted epic lane's task to the child issue its name carries", async () => {
+		const fs = fakeFs({
+			files: {
+				[`${ROOT}/5680/workflow.json`]: JSON.stringify({
+					id: "epic-5680",
+					version: 1,
+					machine: {
+						id: "epic-5680",
+						initial: "phase1",
+						context: {issue_5729: {retries: 0, maxRetries: 2}},
+						states: {
+							phase1: {
+								type: "parallel",
+								states: {
+									issue_5729: {
+										initial: "queued",
+										states: {
+											queued: {on: {"ISSUE_5729.WIP": "build"}},
+											build: {on: {"ISSUE_5729.DONE": "review"}},
+											review: {on: {"ISSUE_5729.PASS": "ship"}},
+											ship: {on: {"ISSUE_5729.DONE": "shipped"}},
+											shipped: {type: "final"},
+										},
+									},
+								},
+								onDone: [{target: "complete", guard: "noErrors"}, {target: "tripped"}],
+							},
+							complete: {type: "final"},
+							tripped: {type: "final"},
+						},
+					},
+				}),
+				[`${ROOT}/5680/events.jsonl`]: `${JSON.stringify({
+					task: "issue_5729",
+					event: "ISSUE_5729.WIP",
+					at: "2026-08-17T00:00:00Z",
+				})}\n`,
+			},
+		});
+		const out = await run(
+			fs,
+			[
+				[CHILD_READ, issuePayload(5729, "https://forge.example/o/r/issues/5729")],
+				[PR_CLOSERS, closingPulls()],
+			],
+			{lane: "5680", task: "issue_5729"},
+		);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {lane: "5680", task: "issue_5729", issue: "https://forge.example/o/r/issues/5729"},
+		});
+	});
+
+	it("refuses a leaf state that routes to no shell, naming the state", async () => {
+		const out = await run(lane("5751", []), []);
+
+		expect(out.code).toBe(NO_SHELL);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.join("\n")).toContain('"queued"');
+	});
+
+	it("refuses a `human:*` park the same way — a park is never a dispatch", async () => {
+		const out = await run(lane("5751", ["WIP", "DONE", "PASS", "BLOCKED"]), []);
+
+		expect(out.code).toBe(NO_SHELL);
+		expect(out.stderr.join("\n")).toContain("human:cp-approval");
+	});
+
+	it("briefs the reviewer once a refreshed head's `WIP` walks the park back into `review`", async () => {
+		const out = await run(lane("5751", ["WIP", "DONE", "PASS", "BLOCKED", "WIP"]), [
+			[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+			...linked(5751, [5790, PR_URL]),
+		]);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {state: "review", shell: "reviewer", ground: {_tag: "Pull", pr: PR_URL}},
+		});
+	});
+
+	it("refuses a task the machine does not hold", async () => {
+		const out = await run(lane("5751", ["WIP"]), [], {task: "issue_9999"});
+
+		expect(out.code).toBe(TASK_UNKNOWN);
+		expect(out.stdout).toBe("");
+	});
+
+	it("refuses a lane that is not there", async () => {
+		const out = await run(fakeFs({files: {}}), []);
+
+		expect(out.code).toBe(LANE_ABSENT);
+		expect(out.stdout).toBe("");
+	});
+
+	it("refuses a lane record that was read in full and does not replay", async () => {
+		const fs = fakeFs({
+			files: {
+				[`${ROOT}/5751/workflow.json`]: coderTemplateText(),
+				[`${ROOT}/5751/events.jsonl`]: "{not json}\n",
+			},
+		});
+		const out = await run(fs, []);
+
+		expect(out.code).toBe(MALFORMED_RECORD);
+	});
+
+	it("refuses when this fabrika's own entrypoint could not be resolved — UNKNOWN, never a brief", async () => {
+		const out = await run(lane("5751", ["WIP"]), [], {
+			entrypoint: {_tag: "Unresolved", reason: "this fabrika's own package root is not on disk"},
+		});
+
+		expect(out.code).toBe(LANE_UNREADABLE);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.join("\n")).toContain("this fabrika's own package root is not on disk");
+	});
+
+	it("refuses a resolved entrypoint node cannot run — a binstub must never reach the brief", async () => {
+		const binstub = "/checkout/node_modules/.bin/fabrika";
+		const out = await run(lane("5751", ["WIP"]), [], {
+			entrypoint: {_tag: "Entrypoint", entrypoint: binstub},
+		});
+
+		expect(out.code).toBe(LANE_UNREADABLE);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.join("\n")).toContain(`"${binstub}" is not node-runnable`);
+	});
+
+	it("refuses when neither the task nor the lane names an issue", async () => {
+		const out = await run(lane("scratch", ["WIP"]), [], {lane: "scratch"});
+
+		expect(out.code).toBe(ISSUE_UNRESOLVED);
+		expect(out.stdout).toBe("");
+	});
+
+	it("refuses when the issue is proven absent", async () => {
+		const out = await run(lane("5751", ["WIP"]), [[ISSUE_READ, NOT_FOUND]]);
+
+		expect(out.code).toBe(ISSUE_UNRESOLVED);
+	});
+
+	it("refuses when the issue could not be read — UNKNOWN, never a brief", async () => {
+		const out = await run(lane("5751", ["WIP"]), [[ISSUE_READ, SERVER_ERROR]]);
+
+		expect(out.code).toBe(LANE_UNREADABLE);
+		expect(out.stdout).toBe("");
+	});
+
+	it("resolves a `Part of #5751` PR the closing edge cannot see — the open-but-not-closing shape", async () => {
+		const out = await run(lane("5751", ["WIP", "DONE"]), [
+			[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+			[PR_CLOSERS, closingPulls()],
+			[/^GET .*\/search\/issues\?/, nominated(5790)],
+			[/^GET .*\/repos\/o\/r\/pulls\/5790$/, pullPayload(5790, PR_URL, "Part of #5751.\n")],
+		]);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {state: "review", shell: "reviewer", ground: {_tag: "Pull", pr: PR_URL}},
+		});
+	});
+
+	it("refuses two PRs the body search alone nominated, both linking the issue", async () => {
+		const out = await run(lane("5751", ["WIP", "DONE"]), [
+			[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+			[PR_CLOSERS, closingPulls()],
+			[/^GET .*\/search\/issues\?/, nominated(5790, 5791)],
+			[/^GET .*\/repos\/o\/r\/pulls\/5790$/, pullPayload(5790, PR_URL, "Part of #5751.\n")],
+			[
+				/^GET .*\/repos\/o\/r\/pulls\/5791$/,
+				pullPayload(5791, "https://forge.example/o/r/pull/5791", "Part of #5751.\n"),
+			],
+		]);
+
+		expect(out.code).toBe(PR_AMBIGUOUS);
+		expect(out.stderr.join("\n")).toContain("#5790, #5791");
+	});
+
+	it("refuses several open PRs, naming every candidate", async () => {
+		const out = await run(lane("5751", ["WIP", "DONE"]), [
+			[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+			...linked(5751, [5790, PR_URL], [5791, "https://forge.example/o/r/pull/5791"]),
+		]);
+
+		expect(out.code).toBe(PR_AMBIGUOUS);
+		expect(out.stderr.join("\n")).toContain("#5790");
+		expect(out.stderr.join("\n")).toContain("#5791");
+	});
+
+	it("refuses zero open PRs where the state needs one, naming the whole union it searched", async () => {
+		const out = await run(lane("5751", ["WIP", "DONE", "PASS"]), [
+			[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+			[PR_CLOSERS, closingPulls()],
+		]);
+
+		expect(out.code).toBe(PR_AMBIGUOUS);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.join("\n")).toContain("the closing-issue edge and the open PRs whose body");
+	});
+});
+
+describe("lane brief at the size stop", () => {
+	const OVER: OverSize = {
+		_tag: "OverSize",
+		head: 5751,
+		group: null,
+		covers: [5751],
+		size: "S",
+		limitUsd: 15,
+		spentUsd: 31,
+		stopped: true,
+	};
+	const briefWith = (stop: SizeStop) => {
+		const asked: Array<readonly [string, number]> = [];
+		const outcome = Effect.runPromise(
+			Effect.provide(
+				runBrief({
+					...options,
+					sizeStop: (repo, issue) =>
+						Effect.sync(() => {
+							asked.push([repo, issue]);
+							return stop;
+						}),
+				}),
+				Layer.merge(
+					lane("5751", ["WIP"]).layer,
+					fakeSeams([
+						[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
+						[PR_CLOSERS, closingPulls()],
+						NO_NOMINATIONS,
+						NO_COMMENTS,
+					]).layer,
+				),
+			),
+		);
+		return {outcome, asked};
+	};
+
+	it("briefs no shell once the issue's row spent its stop, and names the park to record", async () => {
+		const {outcome, asked} = briefWith({_tag: "Stopped", flag: OVER, rec: "Extend?"});
+		const out = await outcome;
+
+		expect(asked).toEqual([["o/r", 5751]]);
+		expect(out.code).toBe(SIZE_STOPPED);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.join("\n")).toContain(
+			"`fabrika lane transition 5751 BLOCKED --task issue --cause size-stop`",
+		);
+	});
+
+	it("briefs as ever when the row is short of its stop — over its size, the lane keeps going", async () => {
+		const out = await briefWith({
+			_tag: "Clear",
+			note: "#5751 stands on no row that has spent 2x its size",
+		}).outcome;
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({_tag: "Found", value: {shell: "builder"}});
+		expect(out.stderr.join("\n")).toContain("size stop: #5751 stands on no row");
+	});
+
+	it("briefs on a stop it never checked, and says on stderr that it did not", async () => {
+		const out = await briefWith({
+			_tag: "Unchecked",
+			reason: "fabrika lane brief: the token lacks the `project` scope",
+			excuse: "Unadopted",
+		}).outcome;
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({_tag: "Found", value: {shell: "builder"}});
+		expect(out.stderr.join("\n")).toContain("size stop NOT checked");
+		expect(out.stderr.join("\n")).not.toContain("size stop: ");
+	});
+
+	it("briefs past a table it could not read for a missing scope, naming the fix", async () => {
+		const out = await briefWith({
+			_tag: "Unchecked",
+			reason: `fabrika lane brief: the GitHub token lacks the \`project\` scope the table needs (x) — run \`${PROJECT_SCOPE_FIX}\` and re-run`,
+			excuse: "MissingScope",
+		}).outcome;
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({_tag: "Found", value: {shell: "builder"}});
+		const notes = out.stderr.filter((line) => line.includes("size stop NOT checked"));
+		expect(notes).toHaveLength(1);
+		expect(notes[0]).toContain(PROJECT_SCOPE_FIX);
+		expect(notes[0]).not.toContain("declares no `table` block");
+	});
+
+	it("refuses when the table could not be read — UNKNOWN, never a brief", async () => {
+		const out = await briefWith({_tag: "Unknown", reason: "the project read failed"}).outcome;
+
+		expect(out.code).toBe(LANE_UNREADABLE);
+		expect(out.stdout).toBe("");
+	});
+});
+
+describe("lane brief on an epic lane", () => {
+	const runEpic = async (
+		fs: ReturnType<typeof fakeFs>,
+		script: ReadonlyArray<Scripted>,
+		overrides: Partial<typeof options>,
+	) => {
+		const seams = fakeSeams([...script, NO_NOMINATIONS, NO_COMMENTS]);
+		const out = await Effect.runPromise(
+			Effect.provide(
+				runBrief({...options, lane: String(EPIC), ...overrides}),
+				Layer.merge(fs.layer, seams.layer),
+			),
+		);
+		return {out, calls: seams.calls, requests: seams.requests};
+	};
+
+	/** The epic half of the same proof: the class is on the emitted child, not on any event. */
+	it("briefs a `class:ui` child's FIRST WIP to ui-builder, off the emitted document", async () => {
+		const {out} = await runEpic(
+			epicLane([["issue_5828", "WIP"]], ["ui"]),
+			[
+				[EPIC_CHILD_READ, issuePayload(5828, CHILD_URL)],
+				[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)],
+			],
+			{task: "issue_5828"},
+		);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {task: "issue_5828", state: "build:ui", shell: "ui-builder"},
+		});
+	});
+
+	it("briefs a child's build on the epic branch, resolving no PR at all", async () => {
+		const {out, calls, requests} = await runEpic(
+			epicLane([["issue_5828", "WIP"]]),
+			[
+				[EPIC_CHILD_READ, issuePayload(5828, CHILD_URL)],
+				[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)],
+			],
+			{task: "issue_5828"},
+		);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {
+				lane: "5800",
+				task: "issue_5828",
+				state: "build",
+				shell: "builder",
+				issue: CHILD_URL,
+				ground: {_tag: "Epic", epic: EPIC_URL, branch: "epic/5800"},
+			},
+		});
+		expect(out.stdout).toContain(EPIC_RULES);
+		expect(out.stdout).not.toContain("range:");
+		expect(requests.some((request) => PR_CLOSERS.test(request))).toBe(false);
+		// No child branch exists yet at `build`, so the tree is never read for one.
+		expect(calls.some((call) => call.startsWith("git "))).toBe(false);
+	});
+
+	const reviewing = (script: ReadonlyArray<Scripted> = locating()): ReadonlyArray<Scripted> => [
+		[EPIC_CHILD_READ, issuePayload(5828, CHILD_URL)],
+		[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)],
+		...script,
+	];
+
+	const atReview = () =>
+		epicLane([
+			["issue_5828", "WIP"],
+			["issue_5828", "DONE"],
+		]);
+
+	it("briefs a child's review with the range this tree resolved and the range-verdict contract", async () => {
+		const {out, requests} = await runEpic(atReview(), reviewing(), {task: "issue_5828"});
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {
+				state: "review",
+				shell: "reviewer",
+				ground: {
+					_tag: "EpicRange",
+					branch: "epic/5800",
+					range: {base: EPIC_BASE, tip: CHILD_TIP},
+				},
+			},
+		});
+		expect(out.stdout).toContain(`range: ${EPIC_BASE}..${CHILD_TIP}`);
+		expect(out.stdout).toContain("range-verdict-marker");
+		expect(requests.some((request) => PR_CLOSERS.test(request))).toBe(false);
+	});
+
+	it("never prints a literal HEAD — the spawned reviewer would re-resolve it in its own worktree", async () => {
+		const {out} = await runEpic(atReview(), reviewing(), {task: "issue_5828"});
+
+		expect(out.stdout).not.toContain("HEAD");
+	});
+
+	it("refuses a child review when no branch in this tree carries the child's commits", async () => {
+		const {out} = await runEpic(atReview(), reviewing(locating(["main", "epic/5800"])), {
+			task: "issue_5828",
+		});
+
+		expect(out.code).toBe(PROOF_ABSENT);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.join("\n")).toContain("no local branch in this tree was cut for #5828");
+	});
+
+	it("refuses a child review when several branches carry the child's commits", async () => {
+		const {out} = await runEpic(
+			atReview(),
+			reviewing(locating([CHILD_BRANCH, "build/5828-second-try-deadbeef"])),
+			{task: "issue_5828"},
+		);
+
+		expect(out.code).toBe(PROOF_AMBIGUOUS);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.join("\n")).toContain("build/5828-second-try-deadbeef");
+	});
+
+	it("leaves a child review UNKNOWN when the epic branch is not in this tree", async () => {
+		const {out} = await runEpic(
+			atReview(),
+			reviewing([[REV("epic/5800"), errOut("unknown revision")]]),
+			{task: "issue_5828"},
+		);
+
+		expect(out.code).toBe(LANE_UNREADABLE);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.join("\n")).toContain("UNKNOWN");
+	});
+
+	it("leaves a child review UNKNOWN when the range's base sits on a shallow graft boundary", async () => {
+		const {out, calls} = await runEpic(
+			atReview(),
+			reviewing([
+				[/^git rev-parse --is-shallow-repository$/, okOut("true\n")],
+				[REV("epic/5800"), okOut(`${EPIC_BASE}\n`)],
+				[/^git log -1 --format=%P /, okOut("\n")],
+			]),
+			{task: "issue_5828"},
+		);
+
+		expect(out.code).toBe(LANE_UNREADABLE);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.join("\n")).toContain("git fetch --deepen=25");
+		expect(calls.some((line) => BRANCHES.test(line))).toBe(false);
+	});
+
+	it("briefs the epic tail's review on the one PR the run produced", async () => {
+		const {out} = await runEpic(
+			epicLane([
+				["issue_5828", "WIP"],
+				["issue_5828", "DONE"],
+				["issue_5828", "PASS"],
+			]),
+			[[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)], ...linked(EPIC, [5890, PR_URL])],
+			{task: "epic_5800"},
+		);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {
+				task: "epic_5800",
+				state: "review",
+				shell: "reviewer",
+				issue: EPIC_URL,
+				ground: {_tag: "Tail", pr: PR_URL, epic: EPIC_URL},
+			},
+		});
+		// The tail's brief names where each child's build-deviations disclosure lives.
+		expect(out.stdout).toContain(EPIC_TAIL_RULES);
+		expect(out.stdout).not.toContain(EPIC_RULES);
+	});
+
+	/**
+	 * The creditor cell's dispatch. Every child hands its `review-ui` to the tail, so the tail is
+	 * where the rendered gate actually runs — and until the emitted tail carried the cell there was
+	 * no sanctioned way to fire it: the driver of one live epic hand-composed a ui-reviewer spawn off
+	 * the tail's own `review` brief with the `shell:` line swapped, which `operate` otherwise forbids.
+	 */
+	it("briefs the ui-reviewer on a tail sitting in review:ui, over that same one PR", async () => {
+		const {out} = await runEpic(
+			epicLane([
+				["issue_5828", "WIP"],
+				["issue_5828", "DONE"],
+				["issue_5828", "PASS"],
+				["issue_5828", "DONE"],
+				["epic_5800", "PASS", ["ui"]],
+			]),
+			[[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)], ...linked(EPIC, [5890, PR_URL])],
+			{task: "epic_5800"},
+		);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {
+				task: "epic_5800",
+				state: "review:ui",
+				shell: "ui-reviewer",
+				issue: EPIC_URL,
+				ground: {_tag: "Tail", pr: PR_URL, epic: EPIC_URL},
+			},
+		});
+		expect(out.stdout).toContain(EPIC_TAIL_RULES);
+	});
+
+	// `lane brief` used to fall through to a `Pull` ground for any build state, so the builder sent
+	// to repair the assembly was told no branch at all.
+	it("briefs the tail's repair on the assembly branch as well as the run's one PR", async () => {
+		const {out} = await runEpic(
+			epicLane([
+				["issue_5828", "WIP"],
+				["issue_5828", "DONE"],
+				["issue_5828", "PASS"],
+				["issue_5828", "DONE"],
+				["epic_5800", "FAIL"],
+			]),
+			[[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)], ...linked(EPIC, [5890, PR_URL])],
+			{task: "epic_5800"},
+		);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {
+				task: "epic_5800",
+				state: "build",
+				shell: "builder",
+				issue: EPIC_URL,
+				ground: {_tag: "TailRepair", pr: PR_URL, epic: EPIC_URL, branch: "epic/5800"},
+			},
+		});
+		expect(out.stdout).toContain("branch: epic/5800");
+		// The repair round's own rules: whose shell moves the branch, and merge over rebase.
+		expect(out.stdout).toContain(EPIC_TAIL_REPAIR_RULES);
+		expect(out.stdout).not.toContain(EPIC_TAIL_RULES);
+	});
+
+	it("keeps the tail's zero-PR refusal — a run with no PR is a real ambiguity", async () => {
+		const {out} = await runEpic(
+			epicLane([
+				["issue_5828", "WIP"],
+				["issue_5828", "DONE"],
+				["issue_5828", "PASS"],
+			]),
+			[
+				[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)],
+				[PR_CLOSERS, closingPulls()],
+			],
+			{task: "epic_5800"},
+		);
+
+		expect(out.code).toBe(PR_AMBIGUOUS);
+		expect(out.stdout).toBe("");
+	});
+
+	it("refuses the tail when several open PRs claim the epic", async () => {
+		const {out} = await runEpic(
+			epicLane([
+				["issue_5828", "WIP"],
+				["issue_5828", "DONE"],
+				["issue_5828", "PASS"],
+			]),
+			[
+				[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)],
+				...linked(EPIC, [5890, PR_URL], [5891, "https://forge.example/o/r/pull/5891"]),
+			],
+			{task: "epic_5800"},
+		);
+
+		expect(out.code).toBe(PR_AMBIGUOUS);
+		expect(out.stderr.join("\n")).toContain("#5891");
+	});
+
+	it("refuses a child whose epic issue could not be read — UNKNOWN, never a brief", async () => {
+		const {out} = await runEpic(
+			epicLane([["issue_5828", "WIP"]]),
+			[
+				[EPIC_CHILD_READ, issuePayload(5828, CHILD_URL)],
+				[EPIC_ISSUE_READ, SERVER_ERROR],
+			],
+			{task: "issue_5828"},
+		);
+
+		expect(out.code).toBe(LANE_UNREADABLE);
+		expect(out.stdout).toBe("");
+	});
+
+	/**
+	 * A checkout of fabrika's own repo, where the entrypoint is repo-relative and therefore resolves
+	 * inside the shell's worktree — the one shape whose tree the assembly branch decides.
+	 */
+	const IN_TREE = {
+		_tag: "Entrypoint",
+		entrypoint: "packages/fabrika-cli/src/bin.ts",
+	} as EntrypointRead;
+	const EPIC_TREE = "0d4f2a6c8e1b3d5f7a9c2e4b6d8f0a2c4e6b8d0f";
+	const LS_TREE = /^git ls-tree --full-tree --name-only /;
+	const REPORT_MODULE = "packages/fabrika-cli/src/lane/report-verb.ts";
+
+	const readingBranch = (holds: boolean): ReadonlyArray<Scripted> => [
+		[REV("epic/5800"), okOut(`${EPIC_TREE}\n`)],
+		[LS_TREE, okOut(holds ? `${REPORT_MODULE}\n` : "")],
+	];
+
+	it("refuses a child build when the assembly branch does not carry a lane verb the brief names", async () => {
+		const {out} = await runEpic(
+			epicLane([["issue_5828", "WIP"]]),
+			[
+				[EPIC_CHILD_READ, issuePayload(5828, CHILD_URL)],
+				[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)],
+				...readingBranch(false),
+			],
+			{task: "issue_5828", entrypoint: IN_TREE},
+		);
+
+		expect(out.code).toBe(BRIEFED_VERB_ABSENT);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.join("\n")).toContain("`lane report`");
+		// The refusal carries the remedy, so the driver is not left to infer why the brief stopped.
+		expect(out.stderr.join("\n")).toContain("fabrika lane refresh 5800");
+	});
+
+	it("briefs a child build unchanged when the branch carries every lane verb the brief names", async () => {
+		const {out} = await runEpic(
+			epicLane([["issue_5828", "WIP"]]),
+			[
+				[EPIC_CHILD_READ, issuePayload(5828, CHILD_URL)],
+				[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)],
+				...readingBranch(true),
+			],
+			{task: "issue_5828", entrypoint: IN_TREE},
+		);
+
+		expect(out.code).toBe(0);
+		expect(readBrief(out.stdout)).toMatchObject({
+			_tag: "Found",
+			value: {ground: {_tag: "Epic", epic: EPIC_URL, branch: "epic/5800"}},
+		});
+		expect(out.stdout).toContain("fabrika: packages/fabrika-cli/src/bin.ts");
+	});
+
+	it("leaves the branch unread for an installed entrypoint it cannot carry", async () => {
+		const {out, calls} = await runEpic(
+			epicLane([["issue_5828", "WIP"]]),
+			[
+				[EPIC_CHILD_READ, issuePayload(5828, CHILD_URL)],
+				[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)],
+			],
+			{task: "issue_5828"},
+		);
+
+		expect(out.code).toBe(0);
+		expect(calls.some((call) => call.startsWith("git "))).toBe(false);
+	});
+});

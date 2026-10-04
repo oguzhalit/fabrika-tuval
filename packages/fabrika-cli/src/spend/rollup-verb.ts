@@ -1,0 +1,222 @@
+/** Summarize native response usage and coverage, retaining separately labelled legacy totals. */
+import {Effect, type FileSystem, Result} from "effect";
+import {type CapAndCount, capAndCount} from "../evidence.ts";
+import {exists, readFile} from "../io/fs.ts";
+import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import {
+	INPUT_ABSENT,
+	INPUT_UNREADABLE,
+	NOTHING_MEASURED,
+	WINDOW_SELECTED_NO_ROWS,
+} from "./codes.ts";
+import {
+	type DayTotals,
+	type ResolvedWindow,
+	type Rollup,
+	resolveBound,
+	rollUp,
+	type SkillTotals,
+	type SpendTotals,
+	type StageArmTotals,
+} from "./rollup.ts";
+import {readUsageLedger} from "./usage-ledger.ts";
+import {rollUpUsage, type UsageScope} from "./usage-rollup.ts";
+
+const VERB = "fabrika spend rollup";
+
+/**
+ * How many rows of each breakdown reach the answer channel before the rest become a count.
+ *
+ * The three breakdowns are bounded evidence — they make the scalar totals auditable, and no skill
+ * in `claude-plugins/fabrika/skills/` reads a row of any of them by name. Ten each bounds the
+ * answer at thirty rows however long the ledger runs; `byDay` alone was unbounded in time, and
+ * `bySkill`/`byStageArm` already ran to roughly the whole skill and stage-arm corpus.
+ */
+const EVIDENCE_CAP = 10;
+
+/** The answer-channel payload: {@link Rollup} with its three evidence-arrays bounded. */
+export interface BoundedRollup extends Omit<Rollup, "byDay" | "bySkill" | "byStageArm"> {
+	readonly byDay: CapAndCount<DayTotals>;
+	readonly bySkill: CapAndCount<SkillTotals>;
+	readonly byStageArm: CapAndCount<StageArmTotals>;
+}
+
+/**
+ * The breakdown's biggest spenders, plus how many rows the cap dropped.
+ *
+ * Billed-descending, not the key order {@link rollUp} builds in: once a breakdown is capped, keeping
+ * its first rows by key would surface the alphabetically-earliest skill or the oldest day, which is
+ * the least informative slice of a spend answer. Ties keep that key order, because `sort` is stable
+ * (ES2019) over rows this function receives already key-sorted.
+ */
+const topSpenders = <A extends SpendTotals>(rows: ReadonlyArray<A>): CapAndCount<A> =>
+	capAndCount(
+		[...rows].sort((left, right) => right.billed - left.billed),
+		EVIDENCE_CAP,
+	);
+
+const bound = (rollup: Rollup): BoundedRollup => ({
+	...rollup,
+	byDay: topSpenders(rollup.byDay),
+	bySkill: topSpenders(rollup.bySkill),
+	byStageArm: topSpenders(rollup.byStageArm),
+});
+
+export interface RollupOptions extends UsageScope {
+	/** Path to the durable spend ledger. */
+	readonly ledger: string;
+	/** Inclusive lower bound, or `null` for unbounded. */
+	readonly since: string | null;
+	/** Inclusive upper bound, or `null` for unbounded. A bare date means through that whole UTC day. */
+	readonly until: string | null;
+	readonly json: boolean;
+}
+
+const totalsFields = (totals: SpendTotals): ReadonlyArray<string> => [
+	String(totals.billed),
+	String(totals.exCacheRead),
+	String(totals.assistantTurns),
+	String(totals.runs),
+	String(totals.measuredRuns),
+];
+
+/**
+ * One record per line, first field naming the record's kind — so `grep '^day'` is the breakdown and
+ * the unread counts sit in the same answer as the total they qualify.
+ *
+ * Each breakdown's `…More` count prints even at `0`, so "capped at exactly its length" and "the
+ * remainder line is missing" never look alike, and it prints beside its own rows rather than in a
+ * block of its own so one grep still reads a whole breakdown.
+ */
+const render = (rollup: BoundedRollup): string => {
+	const t = rollup.totals;
+	return [
+		`billed\t${t.billed}`,
+		`exCacheRead\t${t.exCacheRead}`,
+		`assistantTurns\t${t.assistantTurns}`,
+		`runs\t${t.runs}`,
+		`measuredRuns\t${t.measuredRuns}`,
+		`skipped\t${rollup.skipped.total}`,
+		`skippedMalformed\t${rollup.skipped.malformed}`,
+		`skippedNewerVersion\t${rollup.skipped.newerVersion}`,
+		`undatedRows\t${rollup.undatedRows}`,
+		...rollup.byDay.rows.map((b) => [`day\t${b.day}`, ...totalsFields(b)].join("\t")),
+		`dayMore\t${rollup.byDay.more}`,
+		...rollup.bySkill.rows.map((b) => [`skill\t${b.skill}`, ...totalsFields(b)].join("\t")),
+		`skillMore\t${rollup.bySkill.more}`,
+		...rollup.byStageArm.rows.map((b) =>
+			[`stage-arm\t${b.stage}\t${b.arm}`, ...totalsFields(b)].join("\t"),
+		),
+		`stageArmMore\t${rollup.byStageArm.more}`,
+	].join("\n");
+};
+
+/**
+ * How many lines the ledger held but could not yield, said in words — appended to every outcome,
+ * answer and refusal alike. A caller who reads only the total still sees the gap, which is the
+ * whole point: a rollup that skipped 40 lines and says nothing is a smaller number that looks whole.
+ */
+const skippedNote = (skipped: {
+	readonly total: number;
+	readonly malformed: number;
+	readonly newerVersion: number;
+}): string =>
+	skipped.total === 0
+		? "every line in the ledger was read."
+		: `${skipped.total} ledger line(s) could NOT be read and are absent from these figures: ${skipped.malformed} malformed (damage — those measurements are gone), ${skipped.newerVersion} written by a newer row version (upgrade fabrika-cli to include them).`;
+
+export const runRollup = (
+	options: RollupOptions,
+): Effect.Effect<VerbOutcome, never, FileSystem.FileSystem> =>
+	Effect.gen(function* () {
+		const path = options.ledger;
+
+		const sinceAt = options.since === null ? null : resolveBound(options.since, "since");
+		const untilAt = options.until === null ? null : resolveBound(options.until, "until");
+		if (options.since !== null && sinceAt === null) {
+			return refuse(FAILED, `${VERB}: --since ${options.since} is not a time.`);
+		}
+		if (options.until !== null && untilAt === null) {
+			return refuse(FAILED, `${VERB}: --until ${options.until} is not a time.`);
+		}
+		const window: ResolvedWindow = {
+			sinceAt,
+			untilAt,
+			text: {since: options.since, until: options.until},
+		};
+
+		const text = yield* Effect.result(readFile(path));
+		if (Result.isFailure(text)) {
+			// Only a probe that comes back a definite `false` proves the ledger is absent; a probe that
+			// itself fails proves nothing, so it stays UNKNOWN rather than becoming "nothing recorded".
+			const probe = yield* Effect.result(exists(path));
+			if (Result.isFailure(probe) || probe.success) {
+				return refuse(
+					INPUT_UNREADABLE,
+					`${VERB}: cannot read the ledger at ${path}: ${text.failure.reason} — the spend is UNKNOWN, never zero.`,
+				);
+			}
+			return refuse(
+				INPUT_ABSENT,
+				`${VERB}: no spend ledger at ${path} — nothing has been recorded yet.`,
+			);
+		}
+
+		const ledger = readUsageLedger(text.success);
+		if (ledger.records.length > 0 && (options.since !== null || options.until !== null))
+			return refuse(
+				FAILED,
+				`${VERB}: version-2 records have no timestamps; use --issue or --run instead of date bounds.`,
+			);
+		const scoped = options.issue != null || options.run != null || options.repo != null;
+		const read = {
+			rows: scoped ? [] : ledger.legacy,
+			skipped: ledger.diagnostics.malformed + ledger.diagnostics.newerVersion,
+			skips: {
+				malformed: ledger.diagnostics.malformed,
+				newerVersion: ledger.diagnostics.newerVersion,
+			},
+		};
+		const skipped = {total: read.skipped, ...read.skips};
+		if (ledger.legacy.length === 0 && ledger.records.length === 0) {
+			return refuse(
+				NOTHING_MEASURED,
+				`${VERB}: ${path} was read in full and yielded no rows — nothing to sum.`,
+				[`${VERB}: ${skippedNote(skipped)}`],
+			);
+		}
+
+		const rollup = rollUp(read, window);
+		const bounds = `${options.since ?? "the first row"} .. ${options.until ?? "the last row"}`;
+		if (rollup.totals.runs === 0 && ledger.records.length === 0 && !scoped) {
+			return refuse(
+				WINDOW_SELECTED_NO_ROWS,
+				`${VERB}: ${read.rows.length} row(s) in ${path}, none of them within ${bounds} — an empty window, not an empty ledger.`,
+				[`${VERB}: ${skippedNote(skipped)}`],
+			);
+		}
+
+		const bounded = bound(rollup);
+		const usage = rollUpUsage(ledger, options);
+		const legacy = {
+			attribution: "unavailable",
+			categories: "historical-four-component",
+			excludedByScope: scoped ? ledger.legacy.length : 0,
+		};
+		const scope = `${VERB}: summed ${rollup.totals.runs} run(s) from ${path} within ${bounds}; ${rollup.totals.measuredRuns} carried a reconstructed spend. ${skippedNote(skipped)}${rollup.undatedRows === 0 ? "" : ` ${rollup.undatedRows} row(s) carry no readable timestamp and this bounded window excluded them.`}`;
+		return answer(
+			options.json
+				? JSON.stringify({...bounded, legacy, usage})
+				: [
+						render(bounded),
+						`legacy\t${JSON.stringify(legacy)}`,
+						...Object.entries(usage).map(
+							([key, value]) => `usage.${key}\t${JSON.stringify(value)}`,
+						),
+					].join("\n"),
+			[
+				scope,
+				`${VERB}: version-2 totals cover ${usage.responses} responses; coverage ${usage.coverage.state}. Legacy totals above have no issue/run attribution.`,
+			],
+		);
+	});

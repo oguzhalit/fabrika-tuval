@@ -1,0 +1,196 @@
+/**
+ * The lane store — where a lane lives on disk, and the one guarded read every verb goes through.
+ *
+ * A lane is a directory: `<root>/<key>/workflow.json` (the machine document, placed there by the
+ * operator from a committed template) plus `events.jsonl` (the append-only log, born on the first
+ * recorded event) — `.fabrika/lanes/<n>/` for an issue lane, `.fabrika/chores/<name>/` for a chore
+ * lane. Lane state is local and gitignored — the repo `.gitignore`'s `/.fabrika/` entry covers it.
+ * Which root a key resolves to is [`key.ts`](key.ts)'s call, not this module's.
+ *
+ * The load keeps four outcomes apart because they take opposite remedies: the lane is provably not
+ * there, it could not be read (UNKNOWN, never "fresh"), it was read in full and is not the shape,
+ * or it loaded. An absent `events.jsonl` alone is NOT one of them — a lane with no events yet is a
+ * well-formed fresh lane, not a fault.
+ */
+import {Effect, type FileSystem, Path, Result} from "effect";
+import {exists, isDirectory, type ReadFailed, readDir, readFile, writeFile} from "../io/fs.ts";
+import {type LogEntry, parseLog} from "./fold.ts";
+import {type CompiledLane, compileText} from "./machine.ts";
+
+/**
+ * The lanes root leaf — `.fabrika/lanes` — and its chore sibling. Relative leaves, joined onto the
+ * repository root a verb derives from the cwd; an explicit `--root` replaces the whole
+ * resolved path.
+ */
+export const DEFAULT_LANES_ROOT = ".fabrika/lanes";
+
+/** Where a chore lane lives: keyed by name, because a chore has no issue number. */
+export const DEFAULT_CHORES_ROOT = ".fabrika/chores";
+
+/**
+ * Where an archived lane lives — a SIBLING of the lanes root, never a directory under it.
+ *
+ * That placement is the whole mechanism: `lane reconcile` and `lane migrate` sweep the roots they
+ * are handed and nothing above them, so a lane moved to a sibling is out of both sweeps without
+ * either verb learning a skip rule it could get wrong.
+ */
+export const DEFAULT_ARCHIVED_LANES_ROOT = ".fabrika/lanes-archived";
+
+/** The machine document whose absence is what makes a lane absent, and nothing else. */
+export const WORKFLOW_FILE = "workflow.json";
+
+export interface LaneRef {
+	/** The lanes root — `.fabrika/lanes`, or `.fabrika/chores` for a chore key. */
+	readonly root: string;
+	/** The lane id under the root — an issue number, or a chore lane's name. */
+	readonly lane: string;
+}
+
+/**
+ * The entries under a lanes root that may be lanes, in name order — the one listing every verb that
+ * sweeps a root goes through.
+ *
+ * A lane is a directory named for its key, so two kinds of entry are provably not one and are
+ * dropped here: a dot-prefixed name (`.DS_Store`, `.git`, an editor's swap file) and an entry that
+ * stats as anything but a directory. Each drop rests on a proof, never on a failure: a root that
+ * cannot be listed fails, and an entry whose kind cannot be read stays a candidate, so
+ * {@link loadLane} reads it and the caller judges what that read answers. Dropping it instead is the
+ * permissive arm — a real lane whose stat failed would silently leave every count.
+ *
+ * @ruling https://github.com/kamp-us/phoenix/issues/9779
+ */
+export const listLanes = (
+	root: string,
+): Effect.Effect<ReadonlyArray<string>, ReadFailed, FileSystem.FileSystem | Path.Path> =>
+	Effect.gen(function* () {
+		const path = yield* Path.Path;
+		const names = yield* readDir(root);
+		const candidates: string[] = [];
+		for (const name of names) {
+			if (name.startsWith(".")) continue;
+			const kind = yield* Effect.result(isDirectory(path.join(root, name)));
+			if (Result.isSuccess(kind) && !kind.success) continue;
+			candidates.push(name);
+		}
+		return candidates.sort();
+	});
+
+export type LoadedLane =
+	| {
+			readonly _tag: "Loaded";
+			readonly lane: CompiledLane;
+			readonly entries: ReadonlyArray<LogEntry>;
+			readonly dir: string;
+			readonly logPath: string;
+	  }
+	| {readonly _tag: "Absent"; readonly dir: string}
+	| {readonly _tag: "Unreadable"; readonly path: string; readonly reason: string}
+	| {readonly _tag: "Malformed"; readonly path: string; readonly defects: ReadonlyArray<string>};
+
+/**
+ * Read and compile one lane. Every outcome is proven; nothing resolves to a plausible default.
+ *
+ * **Absent and unreadable are split by the read's own failure, never by a second look.** Each read
+ * here is one sample of a path another process may be racing to create, so asking `exists()` after
+ * a failed `readFile` asks about a different instant: a reader whose read honestly answered
+ * `NotFound` could get `true` back from the probe and report a lane it had proven fresh as UNKNOWN
+ * (exit `11`). The read already carries the answer in `ReadFailed.notFound`, and one sample cannot
+ * contradict itself. {@link probeLane} and {@link placeMachine} keep their `exists()` because it is
+ * their only sample — they contradict no prior read.
+ *
+ * @ruling https://github.com/kamp-us/phoenix/issues/9315
+ */
+export const loadLane = (
+	ref: LaneRef,
+): Effect.Effect<LoadedLane, never, FileSystem.FileSystem | Path.Path> =>
+	Effect.gen(function* () {
+		const path = yield* Path.Path;
+		const dir = path.join(ref.root, ref.lane);
+		const workflowPath = path.join(dir, WORKFLOW_FILE);
+		const logPath = path.join(dir, "events.jsonl");
+
+		const workflowText = yield* Effect.result(readFile(workflowPath));
+		if (Result.isFailure(workflowText)) {
+			if (!workflowText.failure.notFound) {
+				return {
+					_tag: "Unreadable",
+					path: workflowPath,
+					reason: workflowText.failure.reason,
+				} as const;
+			}
+			return {_tag: "Absent", dir} as const;
+		}
+
+		const compiled = compileText(workflowText.success);
+		if (compiled._tag === "Malformed") {
+			return {_tag: "Malformed", path: workflowPath, defects: compiled.defects} as const;
+		}
+
+		const logText = yield* Effect.result(readFile(logPath));
+		if (Result.isFailure(logText)) {
+			if (!logText.failure.notFound) {
+				return {_tag: "Unreadable", path: logPath, reason: logText.failure.reason} as const;
+			}
+			return {_tag: "Loaded", lane: compiled.lane, entries: [], dir, logPath} as const;
+		}
+		const parsed = parseLog(logText.success);
+		if (parsed._tag === "Malformed") {
+			return {_tag: "Malformed", path: logPath, defects: parsed.defects} as const;
+		}
+		return {_tag: "Loaded", lane: compiled.lane, entries: parsed.entries, dir, logPath} as const;
+	});
+
+export type LanePresence =
+	| {readonly _tag: "Present"; readonly dir: string}
+	| {readonly _tag: "Absent"; readonly dir: string}
+	| {readonly _tag: "Unprobeable"; readonly dir: string; readonly reason: string};
+
+/**
+ * Whether a lane directory is already there — the probe {@link placeMachine} refuses on, split out
+ * so a caller can ask before it spends a board read on a lane that needs no boot at all.
+ */
+export const probeLane = (
+	ref: LaneRef,
+): Effect.Effect<LanePresence, never, FileSystem.FileSystem | Path.Path> =>
+	Effect.gen(function* () {
+		const path = yield* Path.Path;
+		const dir = path.join(ref.root, ref.lane);
+		const probe = yield* Effect.result(exists(dir));
+		if (Result.isFailure(probe)) {
+			return {_tag: "Unprobeable", dir, reason: probe.failure.reason} as const;
+		}
+		return probe.success ? ({_tag: "Present", dir} as const) : ({_tag: "Absent", dir} as const);
+	});
+
+export type Placement =
+	| {readonly _tag: "Placed"; readonly dir: string; readonly workflow: string}
+	| {readonly _tag: "Exists"; readonly dir: string}
+	| {readonly _tag: "Unprobeable"; readonly dir: string; readonly reason: string}
+	| {readonly _tag: "Unwritten"; readonly path: string; readonly reason: string};
+
+/**
+ * Place one machine document as a NEW lane — the boot both `lane open` and `lane emit` share.
+ *
+ * An existing lane directory refuses before anything is written: resuming an existing lane needs no
+ * boot, and silently overwriting a machine mid-drive would corrupt a live fold. A probe that
+ * cannot answer is UNKNOWN, never an absence to build on.
+ */
+export const placeMachine = (
+	ref: LaneRef,
+	text: string,
+): Effect.Effect<Placement, never, FileSystem.FileSystem | Path.Path> =>
+	Effect.gen(function* () {
+		const path = yield* Path.Path;
+		const presence = yield* probeLane(ref);
+		const {dir} = presence;
+		if (presence._tag === "Unprobeable") {
+			return {_tag: "Unprobeable", dir, reason: presence.reason} as const;
+		}
+		if (presence._tag === "Present") return {_tag: "Exists", dir} as const;
+		const workflow = path.join(dir, WORKFLOW_FILE);
+		const wrote = yield* Effect.result(writeFile(workflow, text));
+		if (Result.isFailure(wrote)) {
+			return {_tag: "Unwritten", path: workflow, reason: wrote.failure.reason} as const;
+		}
+		return {_tag: "Placed", dir, workflow} as const;
+	});

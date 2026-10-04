@@ -1,0 +1,725 @@
+import {describe, expect, it} from "vitest";
+import {
+	basisOfRows,
+	childLaneBranches,
+	claimOf,
+	epicOf,
+	foldNamespaces,
+	foldPark,
+	integratedFrom,
+	issueOf,
+	judgeVerdicts,
+	roleOf,
+	traceClosure,
+	traceDiagnosis,
+	tracePulls,
+	traceRange,
+	traceUnlinked,
+} from "./prove.ts";
+
+const SINGLE = {_tag: "Single"} as const;
+const CHILD = {_tag: "Child", epic: 5800} as const;
+const TAIL = {_tag: "Tail", epic: 5800} as const;
+
+describe("epicOf and roleOf", () => {
+	it("reads the epic off the tail task's own name, and calls every other task a child", () => {
+		const tasks = ["issue_5824", "issue_5829", "epic_5800"];
+		expect(epicOf(tasks)).toBe(5800);
+		expect(roleOf("epic_5800", 5800)).toEqual(TAIL);
+		expect(roleOf("issue_5829", 5800)).toEqual(CHILD);
+	});
+
+	it("calls a lane with no tail single — a machine that names no epic has no child regions", () => {
+		expect(epicOf(["issue"])).toBeNull();
+		expect(roleOf("issue", null)).toEqual(SINGLE);
+	});
+});
+
+describe("claimOf", () => {
+	it("claims a pull request for a DONE out of build, verdicts for a PASS out of review", () => {
+		expect(claimOf("DONE", "build", SINGLE)).toEqual({_tag: "OpenPull"});
+		expect(claimOf("PASS", "review", SINGLE, "review:ui")).toEqual({
+			_tag: "HeadVerdicts",
+			defers: ["review-ui"],
+		});
+	});
+
+	/**
+	 * The two review cells prove different halves, and only that split makes the machine's
+	 * `review --PASS--> review:ui` arm walkable: proving `review-ui` of the event that *takes* the
+	 * arm asked the lane for a verdict from the cell it had not entered.
+	 */
+	it("defers the routed namespace out of `review` and nothing out of `review:ui`", () => {
+		expect(claimOf("PASS", "review:ui", SINGLE, "ship")).toEqual({
+			_tag: "HeadVerdicts",
+			defers: [],
+		});
+		expect(claimOf("PASS", "review:ui", TAIL, "ship")).toEqual({
+			_tag: "HeadVerdicts",
+			defers: [],
+		});
+	});
+
+	/**
+	 * The deferral is the routing, so a `review` `PASS` the machine sends anywhere else defers
+	 * nothing — the chore-shaped machine with no such arm, and the rendered head whose class was
+	 * never relayed, both land here. Without this the subtraction outlived the round it
+	 * hands the work to, and `ship gate` was left as the only thing still asking.
+	 */
+	it("defers nothing out of `review` when the event does not route into `review:ui`", () => {
+		expect(claimOf("PASS", "review", SINGLE, "ship")).toEqual({_tag: "HeadVerdicts", defers: []});
+		expect(claimOf("PASS", "review", TAIL, null)).toEqual({_tag: "HeadVerdicts", defers: []});
+	});
+
+	// Spelled out rather than read off `BUILD_STATES`, so dropping a cell from that set reds here: a
+	// `DONE` out of `build:ui` recorded on the ui-builder's word alone is the gap this pins shut.
+	describe.each(["build", "build:ui"])("a DONE out of the %s leaf", (leaf) => {
+		it("claims the open PR on a single lane and on an epic tail", () => {
+			expect(claimOf("DONE", leaf, SINGLE)).toEqual({_tag: "OpenPull"});
+			expect(claimOf("DONE", leaf, TAIL)).toEqual({_tag: "OpenPull"});
+		});
+
+		it("claims the child's range on an epic child", () => {
+			expect(claimOf("DONE", leaf, CHILD)).toEqual({_tag: "RangeCommits", epic: 5800});
+		});
+	});
+
+	it("names every build leaf in the answer for an event that claims nothing", () => {
+		const claim = claimOf("DONE", "queued", SINGLE);
+		expect(claim._tag === "None" && claim.why).toContain('DONE out of "build" / "build:ui"');
+	});
+
+	it("claims the same two artifacts for an epic tail — the tail is the one PR", () => {
+		expect(claimOf("DONE", "build", TAIL)).toEqual({_tag: "OpenPull"});
+		expect(claimOf("PASS", "review", TAIL, "review:ui")).toEqual({
+			_tag: "HeadVerdicts",
+			defers: ["review-ui"],
+		});
+	});
+
+	it("claims a range for a child, which never opens a PR to claim", () => {
+		expect(claimOf("DONE", "build", CHILD)).toEqual({_tag: "RangeCommits", epic: 5800});
+		expect(claimOf("PASS", "review", CHILD)).toEqual({
+			_tag: "RangeVerdict",
+			epic: 5800,
+			defers: ["review-ui"],
+		});
+	});
+
+	/**
+	 * A child's deferral is not routed and `next` cannot switch it off: no cell of a child's region
+	 * and no verb of this CLI can produce a `review-ui` verdict at range scope, so requiring one held
+	 * every ui-bearing child at exit 23 forever. The creditor is the tail, whose one PR
+	 * carries the child's rendered files by construction.
+	 */
+	it("defers the routed namespace on a child's PASS whatever the machine's next leaf is", () => {
+		for (const next of ["integrate", "review:ui", null]) {
+			expect(claimOf("PASS", "review", CHILD, next)).toEqual({
+				_tag: "RangeVerdict",
+				epic: 5800,
+				defers: ["review-ui"],
+			});
+		}
+	});
+
+	/** A child's regions carry no `review:ui` cell, so no event is ever recorded out of one. */
+	it("claims nothing for a child out of `review:ui`, a cell its regions do not have", () => {
+		expect(claimOf("PASS", "review:ui", CHILD)._tag).toBe("None");
+	});
+
+	/**
+	 * The other half of the child's deferral: the cell it hands `review-ui` to has to still owe it.
+	 * The epic tail's `review` routes to `ship` and to no ui cell, so its `PASS` defers nothing and
+	 * stands on the whole set its one PR derives — which is where the child's rendered files are.
+	 */
+	it("leaves the tail owing the whole set, so a child's deferral lands on a cell that pays it", () => {
+		expect(claimOf("PASS", "review", TAIL, "ship")).toEqual({_tag: "HeadVerdicts", defers: []});
+	});
+
+	/**
+	 * A park claims a negative — that the run reached no verdict — so it is read rather than waved
+	 * through, and one still-binding FAIL falsifies it. A child's park has no PR to read.
+	 */
+	it("claims the park a reviewer records out of either review cell, and none for a child", () => {
+		expect(claimOf("BLOCKED", "review", SINGLE, "blocked")).toEqual({_tag: "ParkUncontradicted"});
+		expect(claimOf("BLOCKED", "review:ui", SINGLE, "blocked")).toEqual({
+			_tag: "ParkUncontradicted",
+		});
+		expect(claimOf("BLOCKED", "review", TAIL, "blocked")).toEqual({_tag: "ParkUncontradicted"});
+		expect(claimOf("BLOCKED", "review", CHILD, "blocked")._tag).toBe("None");
+	});
+
+	it("claims the rewind out of either review cell, and none for a child", () => {
+		expect(claimOf("WIP", "review", SINGLE, "queued")).toEqual({_tag: "Unlinked"});
+		expect(claimOf("WIP", "review:ui", SINGLE, "queued")).toEqual({_tag: "Unlinked"});
+		expect(claimOf("WIP", "review", CHILD, "queued")._tag).toBe("None");
+	});
+
+	it("claims nothing for the events no read can falsify, in either shape", () => {
+		for (const [event, leaf] of [
+			["DONE", "ship"],
+			["DONE", "integrate"],
+			["BLOCKED", "build"],
+			["FAIL", "review"],
+			["WIP", "queued"],
+			["UNBLOCKED", "blocked"],
+		]) {
+			expect(claimOf(event ?? "", leaf ?? "", SINGLE)._tag).toBe("None");
+			expect(claimOf(event ?? "", leaf ?? "", CHILD)._tag).toBe("None");
+		}
+	});
+
+	it("claims nothing on a machine that renames the states, rather than refusing it", () => {
+		const claim = claimOf("DONE", "coding", SINGLE);
+		expect(claim._tag).toBe("None");
+		expect(claim._tag === "None" && claim.why).toContain("coding");
+	});
+});
+
+describe("issueOf", () => {
+	it("reads an emitted region's child number, the tail's epic number, else the lane's own id", () => {
+		expect(issueOf("issue_5749", "5680")).toBe(5749);
+		expect(issueOf("epic_5800", "5800")).toBe(5800);
+		expect(issueOf("issue", "5747")).toBe(5747);
+	});
+
+	it("answers null where neither names a number — never a plausible issue", () => {
+		expect(issueOf("issue", "spike-a")).toBeNull();
+	});
+});
+
+describe("childLaneBranches", () => {
+	it("nominates only the branches build branch's own grammar cut for this child", () => {
+		const branches = [
+			"main",
+			"epic/5800",
+			"build/5829-prove-range-arms-154c981b",
+			"build/5824-emitter-reshape-aabbccdd",
+			"build/pr-5891-aabbccdd",
+			"build/5829-not-a-nonce",
+		];
+		expect(childLaneBranches(5829, branches)).toEqual(["build/5829-prove-range-arms-154c981b"]);
+	});
+});
+
+describe("integratedFrom", () => {
+	const TIP = "4cca8326";
+	const EPIC_BEFORE = "ec3894d2";
+
+	it("reads the epic branch as it stood off the integrating merge's first parent", () => {
+		expect(
+			integratedFrom(TIP, [
+				{sha: "aaaa1111", parents: ["ec3894d3", "sibling1"]},
+				{sha: "ec3894d3", parents: [EPIC_BEFORE, TIP]},
+			]),
+		).toBe(EPIC_BEFORE);
+	});
+
+	it("answers nothing for a tip no merge took in — a branch cut and never built on", () => {
+		// The never-built tip IS an epic commit, so a later sibling merge names it as its FIRST
+		// parent. Answering with that merge's second parent would hand back a sibling's fork point.
+		expect(integratedFrom(TIP, [{sha: "aaaa1111", parents: [TIP, "sibling1"]}])).toBe(null);
+	});
+
+	it("takes the oldest merge when a tip was taken in twice", () => {
+		expect(
+			integratedFrom(TIP, [
+				{sha: "bbbb2222", parents: ["later", TIP]},
+				{sha: "ec3894d3", parents: [EPIC_BEFORE, TIP]},
+			]),
+		).toBe(EPIC_BEFORE);
+	});
+});
+
+describe("traceRange", () => {
+	const commit = (issue: number) => `feat(lane): do the thing (#${issue})`;
+	const carrying = {
+		branch: "build/5829-prove-range-arms-154c981b",
+		base: "664eb9d",
+		tip: "03135b9",
+		messages: [commit(5829)],
+		contains: [],
+	};
+
+	it("traces the one branch whose commits name the child, and counts them", () => {
+		expect(traceRange(5829, "epic/5800", [carrying])).toEqual({
+			_tag: "One",
+			branch: carrying.branch,
+			base: "664eb9d",
+			tip: "03135b9",
+			commits: 1,
+			naming: 1,
+		});
+	});
+
+	it("counts the range whole and the naming commits apart, never one as the other", () => {
+		const mixed = {
+			...carrying,
+			messages: [commit(5829), commit(5824), "chore: no issue in this subject"],
+		};
+		expect(traceRange(5829, "epic/5800", [mixed])).toEqual({
+			_tag: "One",
+			branch: carrying.branch,
+			base: "664eb9d",
+			tip: "03135b9",
+			commits: 3,
+			naming: 1,
+		});
+	});
+
+	it("says nothing was built here when no branch was cut for the child", () => {
+		const traced = traceRange(5829, "epic/5800", []);
+		expect(traced._tag).toBe("None");
+		expect(traced._tag === "None" && traced.why).toContain("no local branch in this tree");
+	});
+
+	it("keeps a cut-and-never-built branch apart from one carrying another child's work", () => {
+		const empty = traceRange(5829, "epic/5800", [{...carrying, messages: []}]);
+		expect(empty._tag === "None" && empty.why).toContain("cut and not built on");
+
+		const foreign = traceRange(5829, "epic/5800", [{...carrying, messages: [commit(5824)]}]);
+		expect(foreign._tag === "None" && foreign.why).toContain("names #5829");
+	});
+
+	it("keeps a genuine fork as its own answer rather than picking one", () => {
+		const traced = traceRange(5829, "epic/5800", [
+			carrying,
+			{...carrying, branch: "build/5829-second-try-deadbeef", tip: "9b51636"},
+		]);
+		expect(traced).toEqual({
+			_tag: "Many",
+			branches: [carrying.branch, "build/5829-second-try-deadbeef"],
+		});
+	});
+
+	it("resolves a repair round's superseding branch to the range it strictly contains", () => {
+		const repaired = {
+			...carrying,
+			branch: "build/5829-second-try-deadbeef",
+			tip: "a1068c0",
+			messages: [commit(5829), commit(5829)],
+			contains: [carrying.tip],
+		};
+		expect(traceRange(5829, "epic/5800", [carrying, repaired])).toEqual({
+			_tag: "One",
+			branch: repaired.branch,
+			base: "664eb9d",
+			tip: "a1068c0",
+			commits: 2,
+			naming: 2,
+		});
+	});
+
+	it("walks a three-round chain to the newest tip rather than an intermediate one", () => {
+		const second = {
+			...carrying,
+			branch: "build/5829-second-try-deadbeef",
+			tip: "a1068c0",
+			contains: [carrying.tip],
+		};
+		const third = {
+			...carrying,
+			branch: "build/5829-third-try-c0ffee00",
+			tip: "7d21ab4",
+			contains: [carrying.tip, second.tip],
+		};
+		const traced = traceRange(5829, "epic/5800", [carrying, second, third]);
+		expect(traced._tag === "One" && traced.branch).toBe(third.branch);
+		expect(traced._tag === "One" && traced.tip).toBe("7d21ab4");
+	});
+
+	it("stays ambiguous when two candidates each contain the other", () => {
+		const twin = {...carrying, branch: "build/5829-twin-deadbeef", contains: [carrying.tip]};
+		const traced = traceRange(5829, "epic/5800", [{...carrying, contains: [twin.tip]}, twin]);
+		expect(traced._tag).toBe("Many");
+	});
+
+	it("stays ambiguous when a third branch forks off a superseded round", () => {
+		const second = {
+			...carrying,
+			branch: "build/5829-second-try-deadbeef",
+			tip: "a1068c0",
+			contains: [carrying.tip],
+		};
+		const forked = {
+			...carrying,
+			branch: "build/5829-forked-c0ffee00",
+			tip: "7d21ab4",
+			contains: [carrying.tip],
+		};
+		const traced = traceRange(5829, "epic/5800", [carrying, second, forked]);
+		expect(traced).toEqual({
+			_tag: "Many",
+			branches: [carrying.branch, second.branch, forked.branch],
+		});
+	});
+});
+
+describe("tracePulls", () => {
+	const linking = {
+		number: 4318,
+		open: true,
+		merged: false,
+		linkedIssues: [4312],
+		linkKind: "fixes" as const,
+		referencedIssues: [4312],
+	};
+
+	it("traces the one open PR whose body links the issue", () => {
+		expect(tracePulls(4312, [linking])).toEqual({_tag: "One", pr: 4318});
+	});
+
+	/**
+	 * An epic tail carries a closing reference per landed child and `Part of #<epic>`, so the epic is
+	 * in `referencedIssues` and out of `linkedIssues`. Tracing the narrow set refused every tail
+	 * dispatch of a finished run at exit 20.
+	 */
+	it("proves the epic tail against an epic its body names with `Part of`", () => {
+		const tail = {
+			number: 7861,
+			open: true,
+			merged: false,
+			linkedIssues: [6642, 6643, 6648, 6629, 6630, 6631],
+			linkKind: "fixes" as const,
+			referencedIssues: [6642, 6643, 6648, 6629, 6630, 6631, 7497],
+		};
+		expect(tracePulls(7497, [tail])).toEqual({_tag: "One", pr: 7861});
+		expect(tracePulls(6642, [tail])).toEqual({_tag: "One", pr: 7861});
+	});
+
+	/**
+	 * An epic tail body carries one closing reference per landed child plus the
+	 * epic's own, and the epic's sits last. A scalar `linkedIssue` field reported the first child and
+	 * left the tail unproven against the epic it closes.
+	 */
+	it("proves the epic tail against the epic whose reference is last among N+1", () => {
+		const tail = {
+			number: 6690,
+			open: true,
+			merged: false,
+			linkedIssues: [6642, 6643, 6648, 6629],
+			linkKind: "fixes" as const,
+			referencedIssues: [6642, 6643, 6648, 6629],
+		};
+		expect(tracePulls(6629, [tail])).toEqual({_tag: "One", pr: 6690});
+		expect(tracePulls(6642, [tail])).toEqual({_tag: "One", pr: 6690});
+	});
+
+	it("does not count a PR that only mentions the number, or one that has closed", () => {
+		expect(
+			tracePulls(4312, [
+				{
+					number: 4400,
+					open: true,
+					merged: false,
+					linkedIssues: [],
+					linkKind: "none" as const,
+					referencedIssues: [],
+				},
+			]),
+		).toMatchObject({
+			_tag: "None",
+		});
+		expect(tracePulls(4312, [{...linking, open: false}])).toMatchObject({_tag: "None"});
+	});
+
+	/** The queue-stall recipe's clearing case is a landed PR, which is closed. */
+	it("counts a merged PR only at open-or-merged scope, and never a rejected one", () => {
+		const landed = {...linking, open: false, merged: true};
+		expect(tracePulls(4312, [landed], "open-or-merged")).toEqual({_tag: "One", pr: 4318});
+		expect(tracePulls(4312, [landed])).toMatchObject({_tag: "None"});
+		expect(tracePulls(4312, [{...linking, open: false}], "open-or-merged")).toEqual({
+			_tag: "None",
+			why: "read #4318 — every candidate has closed since it was nominated",
+		});
+	});
+
+	it("keeps several linking PRs as their own answer rather than picking the first", () => {
+		const trace = tracePulls(4312, [
+			linking,
+			{
+				number: 4319,
+				open: true,
+				merged: false,
+				linkedIssues: [4312],
+				linkKind: "fixes" as const,
+				referencedIssues: [4312],
+			},
+		]);
+		expect(trace).toEqual({_tag: "Many", prs: [4318, 4319]});
+	});
+
+	it("tells a candidate that was read and discarded from one that was never nominated", () => {
+		const nothing = tracePulls(4312, []);
+		const read = tracePulls(4312, [
+			{
+				number: 4400,
+				open: true,
+				merged: false,
+				linkedIssues: [4000],
+				linkKind: "fixes" as const,
+				referencedIssues: [4000],
+			},
+		]);
+		const closed = tracePulls(4312, [{...linking, open: false}]);
+		expect(nothing).toEqual({_tag: "None", why: "no open PR links #4312"});
+		expect(read).toEqual({_tag: "None", why: "read #4400 — no candidate's body links #4312"});
+		expect(closed).toEqual({
+			_tag: "None",
+			why: "read #4318 — every candidate has closed since it was nominated",
+		});
+	});
+});
+
+describe("traceUnlinked", () => {
+	const REPOINTED = {_tag: "None", why: "read #9905 — no candidate's body links #7057"} as const;
+
+	it("proves the rewind when the issue is open and no candidate links it", () => {
+		expect(traceUnlinked(7057, "open", REPOINTED)).toMatchObject({_tag: "Proven"});
+	});
+
+	it("is contradicted by a closed issue, which is finished work for lane settle", () => {
+		expect(traceUnlinked(7057, "closed", REPOINTED)).toMatchObject({
+			_tag: "Contradicted",
+			what: expect.stringContaining("lane settle"),
+		});
+	});
+
+	it("is contradicted by one linking PR, and by several", () => {
+		expect(traceUnlinked(7057, "open", {_tag: "One", pr: 9905})).toMatchObject({
+			_tag: "Contradicted",
+			what: expect.stringContaining("#9905 still links #7057"),
+		});
+		expect(traceUnlinked(7057, "open", {_tag: "Many", prs: [9905, 9906]})).toMatchObject({
+			_tag: "Contradicted",
+			what: expect.stringContaining("#9905, #9906 still link #7057"),
+		});
+	});
+});
+
+describe("traceClosure", () => {
+	const merged = (linkKind: "fixes" | "part-of") => ({
+		number: 7328,
+		open: false,
+		merged: true,
+		linkedIssues: [6980],
+		linkKind,
+		referencedIssues: [6980],
+	});
+
+	it("reads a closing merge as the discharge it is", () => {
+		expect(traceClosure(6980, [merged("fixes")])).toEqual({
+			_tag: "Closes",
+			why: "#7328 closes #6980 on merge",
+		});
+	});
+
+	/** A PR merged as `Part of #N` used to fold its lane to `complete`. */
+	it("reads a `Part of #N` merge as leaving the issue open", () => {
+		expect(traceClosure(6980, [merged("part-of")])).toEqual({_tag: "Partial", prs: [7328]});
+	});
+
+	/**
+	 * The permissive-fold regression, on the one body that carries both kinds. Widening
+	 * `linkedIssues` into the union would land the tail in `landedFor(<epic>)` carrying `fixes` and
+	 * report the epic closed — so the closing test is per issue, and the epic keeps the `Partial`
+	 * its `Part of` says.
+	 */
+	it("reads an epic tail as closing its children and leaving the epic open", () => {
+		const tail = {
+			number: 7861,
+			open: false,
+			merged: true,
+			linkedIssues: [6642, 6643],
+			linkKind: "fixes" as const,
+			referencedIssues: [6642, 6643, 7497],
+		};
+		expect(traceClosure(7497, [tail])).toEqual({_tag: "Partial", prs: [7861]});
+		expect(traceClosure(6642, [tail])).toEqual({
+			_tag: "Closes",
+			why: "#7861 closes #6642 on merge",
+		});
+	});
+
+	// Only positive evidence diverts, so every reading short of one answers what the machine already
+	// did — an unread board never reaches here, because the nominator refuses first.
+	it("answers Closes on an open PR, a merge linking elsewhere, and nothing nominated", () => {
+		const open = {...merged("part-of"), open: true, merged: false};
+		const elsewhere = {...merged("part-of"), linkedIssues: [6979], referencedIssues: [6979]};
+
+		expect(traceClosure(6980, [open])._tag).toBe("Closes");
+		expect(traceClosure(6980, [elsewhere])._tag).toBe("Closes");
+		expect(traceClosure(6980, [])).toEqual({
+			_tag: "Closes",
+			why: "no merged PR's body links #6980",
+		});
+	});
+
+	// Where `tracePulls` keeps `Many` because picking one PR is underivable, nothing is picked here:
+	// every candidate says the same thing about the issue, so one closing merge among them settles it.
+	it("takes one closing merge over any number of partials", () => {
+		const second = {...merged("part-of"), number: 7400};
+
+		expect(traceClosure(6980, [merged("part-of"), second])).toEqual({
+			_tag: "Partial",
+			prs: [7328, 7400],
+		});
+		expect(
+			traceClosure(6980, [merged("part-of"), {...second, linkKind: "fixes" as const}]),
+		).toEqual({_tag: "Closes", why: "#7400 closes #6980 on merge"});
+	});
+});
+
+describe("traceDiagnosis", () => {
+	const comment = {id: 900, createdAt: "2026-08-16T02:00:00Z"};
+
+	it("proves a no-PR outcome from a comment written since the task entered build", () => {
+		expect(traceDiagnosis(4312, [comment], "2026-08-16T01:00:00Z")).toEqual({
+			_tag: "Posted",
+			commentId: 900,
+		});
+	});
+
+	it("proves it with no build entry on record, off the newest comment", () => {
+		expect(
+			traceDiagnosis(4312, [{id: 800, createdAt: "2026-08-15T00:00:00Z"}, comment], null),
+		).toEqual({
+			_tag: "Posted",
+			commentId: 900,
+		});
+	});
+
+	it("refuses with no comment at all", () => {
+		const traced = traceDiagnosis(4312, [], "2026-08-16T01:00:00Z");
+		expect(traced._tag).toBe("Absent");
+		expect(traced._tag === "Absent" && traced.why).toContain("no note");
+	});
+
+	it("refuses on a comment that predates the build — a triage note is not the build's note", () => {
+		const traced = traceDiagnosis(4312, [comment], "2026-08-16T03:00:00Z");
+		expect(traced._tag).toBe("Absent");
+		expect(traced._tag === "Absent" && traced.why).toContain("no note");
+	});
+});
+
+describe("judgeVerdicts", () => {
+	const pass = {
+		namespace: "review-code",
+		polarity: "PASS",
+		binding: "current",
+		commentId: 1,
+	} as const;
+
+	it("rows every required namespace, including the ones nothing was written for", () => {
+		expect(judgeVerdicts(["review-code", "governance"], [pass])).toEqual([
+			{namespace: "review-code", state: "pass", commentId: 1},
+			{namespace: "governance", state: "absent", commentId: null},
+		]);
+	});
+
+	it("keeps stale and unknown apart from absent — three different reads", () => {
+		const rows = judgeVerdicts(
+			["review-code", "review-doc"],
+			[
+				{...pass, binding: "stale"},
+				{...pass, namespace: "review-doc", binding: "unknown"},
+			],
+		);
+		expect(rows.map((row) => row.state)).toEqual(["stale", "unknown"]);
+	});
+
+	it("flags a routed row with the basis its route stood on, and a stale one not at all", () => {
+		const routed = {
+			namespace: "review-ui",
+			polarity: "ROUTED",
+			binding: "current",
+			commentId: 2,
+			basis: "hand-check",
+		} as const;
+		expect(judgeVerdicts(["review-ui"], [routed])).toEqual([
+			{namespace: "review-ui", state: "routed", commentId: 2, basis: "hand-check"},
+		]);
+		expect(judgeVerdicts(["review-ui"], [{...routed, binding: "stale"}])).toEqual([
+			{namespace: "review-ui", state: "stale", commentId: 2},
+		]);
+	});
+
+	it("collects each flagged routed row's basis for the event line, and nothing without one", () => {
+		expect(
+			basisOfRows([
+				{namespace: "review-code", state: "pass", commentId: 1},
+				{namespace: "review-ui", state: "routed", commentId: 2, basis: "skip"},
+			]),
+		).toEqual({"review-ui": "skip"});
+		expect(basisOfRows([{namespace: "review-ui", state: "routed", commentId: 2}])).toBeNull();
+	});
+});
+
+describe("foldNamespaces", () => {
+	const row = (namespace: string, state: "pass" | "fail" | "absent" | "routed" | "stale") => ({
+		namespace,
+		state,
+		commentId: null,
+	});
+
+	it("proves a PASS only when every derived namespace passes at the head", () => {
+		const proof = foldNamespaces([row("review-code", "pass"), row("governance", "pass")], "#4318");
+		expect(proof._tag).toBe("Proven");
+	});
+
+	it("reads a missing namespace as in flight — re-read, record nothing", () => {
+		const proof = foldNamespaces(
+			[row("review-code", "pass"), row("governance", "absent")],
+			"#4318",
+		);
+		expect(proof._tag).toBe("InFlight");
+		expect(proof._tag === "InFlight" && proof.what).toContain("governance (absent)");
+	});
+
+	it("reads a current-head FAIL as a contradiction, never as an unfinished review", () => {
+		const proof = foldNamespaces(
+			[row("review-code", "fail"), row("governance", "absent")],
+			"#4318",
+		);
+		expect(proof._tag).toBe("Contradicted");
+		expect(proof._tag === "Contradicted" && proof.what).toContain("review-code");
+	});
+
+	it("satisfies a routed namespace beside a pass — a route is an answer, not an absence", () => {
+		const proof = foldNamespaces([row("review-code", "pass"), row("review-ui", "routed")], "#4318");
+		expect(proof._tag).toBe("Proven");
+		expect(proof._tag === "Proven" && proof.note).toContain("review-ui (routed)");
+	});
+
+	it("holds a route the head has moved past — it rows stale, and stale is not an answer", () => {
+		const proof = foldNamespaces([row("review-code", "pass"), row("review-ui", "stale")], "#4318");
+		expect(proof._tag).toBe("InFlight");
+		expect(proof._tag === "InFlight" && proof.what).toContain("review-ui (stale)");
+	});
+
+	/**
+	 * The park's bar is the opposite shape: a PASS clears a floor, a park only survives a
+	 * contradiction. The rows a PASS is held on are the rows a run parks in the middle of, so holding
+	 * a park on them would be holding it forever.
+	 */
+	describe("foldPark", () => {
+		it("refuses a park when one namespace holds a FAIL that still binds", () => {
+			const proof = foldPark([row("review-code", "fail"), row("governance", "absent")], "#4318");
+			expect(proof._tag).toBe("Contradicted");
+			expect(proof._tag === "Contradicted" && proof.what).toContain(
+				"its terminal is that FAIL and not a park",
+			);
+		});
+
+		it("lets a park through on the rows a PASS is held on — absent, stale, and passing", () => {
+			for (const rows of [
+				[row("review-code", "absent")],
+				[row("review-code", "stale")],
+				[row("review-code", "pass"), row("governance", "absent")],
+				[],
+			]) {
+				expect(foldPark(rows, "#4318")._tag).toBe("Proven");
+			}
+		});
+	});
+});

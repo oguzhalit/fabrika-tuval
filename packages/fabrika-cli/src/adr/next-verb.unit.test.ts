@@ -1,0 +1,194 @@
+import {Effect} from "effect";
+import {describe, expect, it} from "vitest";
+import {errOut, fakeSeams, okOut, type Scripted, tree} from "../fakes.test-support.ts";
+import {
+	BASE_UNFETCHABLE,
+	BRANCH_CLAIMS_UNKNOWN,
+	DIR_UNREADABLE,
+	IN_FLIGHT_UNKNOWN,
+	ORIGIN_REPO_UNRESOLVABLE,
+	UNPARSEABLE_RECORD_ID,
+} from "./codes.ts";
+import {runNext} from "./next-verb.ts";
+
+const SHA = "49a22902d1e0c7b3f5a8e4126b9d0f3c7a1e5b82";
+
+const base = (overrides: ReadonlyArray<Scripted> = []) =>
+	fakeSeams([
+		...overrides,
+		[/^git remote$/, okOut("origin\n")],
+		[/^git remote get-url origin$/, okOut("git@github.com:o/r.git\n")],
+		[/^git fetch/, okOut("")],
+		[/^git rev-parse/, okOut(`${SHA}\n`)],
+		[/^git ls-tree/, okOut(tree("0234-a.md", "0235-b.md", "0236-c.md"))],
+		[/^git log/, okOut("")],
+		[
+			/GET .*\/pulls\?state=open/,
+			{status: 200, body: JSON.stringify([{number: 11}, {number: 12}])},
+		],
+		[
+			/pulls\/11\/files/,
+			{
+				status: 200,
+				body: JSON.stringify([
+					{status: "added", filename: ".records/0237-x.md"},
+					{status: "modified", filename: "README.md"},
+				]),
+			},
+		],
+		[
+			/pulls\/12\/files/,
+			{status: 200, body: JSON.stringify([{status: "added", filename: ".records/0239-y.md"}])},
+		],
+	]);
+
+const options = {dir: ".records", base: "origin/main", repo: null, json: false};
+
+const run = (overrides: ReadonlyArray<Scripted> = [], opts: Partial<typeof options> = {}) =>
+	Effect.runPromise(Effect.provide(runNext({...options, ...opts}), base(overrides).layer));
+
+describe("runNext", () => {
+	it("answers max(union) + 1 on stdout with the scope line on stderr", async () => {
+		const out = await run();
+		expect(out.code).toBe(0);
+		expect(out.stdout).toBe("0240\n");
+		expect(out.stderr.join("\n")).toContain("3 decision records");
+	});
+
+	it("--json carries the whole allocation record", async () => {
+		const out = await run([], {json: true});
+		expect(JSON.parse(out.stdout)).toEqual({
+			id: "0240",
+			mergedMax: "0236",
+			inFlight: ["0237", "0239"],
+			branchClaims: [],
+			baseRef: "origin/main",
+			baseSha: SHA,
+		});
+	});
+
+	it("folds in an id a branch ref claims with no pull request behind it", async () => {
+		const out = await run([[/^git log/, okOut(".records/0241-sibling.md\0.records/0235-b.md\0")]], {
+			json: true,
+		});
+		expect(out.code).toBe(0);
+		expect(JSON.parse(out.stdout)).toMatchObject({id: "0242", branchClaims: ["0235", "0241"]});
+		expect(out.stderr.join("\n")).toContain("2 id(s) claimed on branch refs");
+	});
+
+	it("refuses when the branch walk fails — never 'nothing claimed'", async () => {
+		const out = await run([[/^git log/, errOut("fatal: bad revision")]]);
+		expect(out.code).toBe(BRANCH_CLAIMS_UNKNOWN);
+		expect(out.code).not.toBe(1);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toContain('never "nothing claimed"');
+	});
+
+	// The walk is local and the pull-request enumeration is not, so an already-UNKNOWN answer must
+	// not first spend a full enumeration of GitHub's open pull requests.
+	it("refuses a failed branch walk before it enumerates the open pull requests", async () => {
+		const seams = base([[/^git log/, errOut("fatal: bad revision")]]);
+		const out = await Effect.runPromise(Effect.provide(runNext(options), seams.layer));
+		expect(out.code).toBe(BRANCH_CLAIMS_UNKNOWN);
+		expect(seams.requests.some((r) => r.includes("/pulls"))).toBe(false);
+	});
+
+	it("refuses on an unfetchable base — the merged set is UNKNOWN, not the local tree", async () => {
+		const out = await run([[/^git fetch/, errOut("fatal: couldn't find remote ref nonexistent")]]);
+		expect(out.code).toBe(BASE_UNFETCHABLE);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toContain("the merged set is UNKNOWN");
+	});
+
+	it("refuses when the open pull requests cannot be enumerated — never 'nothing reserved'", async () => {
+		const out = await run([
+			[/GET .*\/pulls\?state=open/, {status: 404, body: '{"message":"Not Found"}'}],
+		]);
+		expect(out.code).toBe(IN_FLIGHT_UNKNOWN);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toContain('never "nothing reserved"');
+	});
+
+	it("refuses when ONE pull request's file list cannot be read — incomplete is UNKNOWN", async () => {
+		const out = await run([[/pulls\/12\/files/, {status: 502, body: "{}"}]]);
+		expect(out.code).toBe(IN_FLIGHT_UNKNOWN);
+		expect(out.stderr.at(-1)).toContain("PR #12");
+		expect(out.stderr.at(-1)).toContain("INCOMPLETE");
+	});
+
+	it("refuses when GitHub answers 200 with a body that is not a list of pull requests", async () => {
+		const out = await run([[/GET .*\/pulls\?state=open/, {status: 200, body: "null"}]]);
+		expect(out.code).toBe(IN_FLIGHT_UNKNOWN);
+		expect(out.stdout).toBe("");
+	});
+
+	it("refuses when a pull request's file list comes back in an unexpected shape", async () => {
+		const out = await run([
+			[/pulls\/11\/files/, {status: 200, body: JSON.stringify([{filename: "just-a-filename.md"}])}],
+		]);
+		expect(out.code).toBe(IN_FLIGHT_UNKNOWN);
+		expect(out.stdout).toBe("");
+	});
+
+	// A fresh adopter's record directory is empty by definition, and `git ls-tree <sha>:<dir>` fails
+	// outright on a directory that is not in the tree — so an empty listing PROVES an existing,
+	// empty directory and mints `0001`.
+	it("answers 0001 on a readable-but-empty --dir, with no open PR claiming an id", async () => {
+		const out = await run([
+			[/^git ls-tree/, okOut("")],
+			[/GET .*\/pulls\?state=open/, {status: 200, body: "[]"}],
+		]);
+		expect(out.code).toBe(0);
+		expect(out.stdout).toBe("0001\n");
+		expect(out.stderr.join("\n")).toContain("0 decision records");
+	});
+
+	it("unions an empty --dir with the in-flight set rather than restarting at 0001", async () => {
+		const out = await run([[/^git ls-tree/, okOut("")]]);
+		expect(out.code).toBe(0);
+		expect(out.stdout).toBe("0240\n");
+	});
+
+	// An unreadable directory is a PROVEN refusal, so it may not share `1` with a verb that failed
+	// to run, and it must stay distinct from the empty directory that answers.
+	it("refuses an unreadable --dir on its own proven code, not on 1", async () => {
+		const out = await run([[/^git ls-tree/, errOut("fatal: not a tree object")]]);
+		expect(out.code).toBe(DIR_UNREADABLE);
+		expect(out.code).not.toBe(1);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toBe(
+			'adr next: cannot read .records at origin/main: fatal: not a tree object — the merged set is UNKNOWN, never "0 records".',
+		);
+	});
+
+	it("keeps an unreadable --dir distinguishable from an empty one", async () => {
+		const unreadable = await run([[/^git ls-tree/, errOut("fatal: not a tree object")]]);
+		const empty = await run([[/^git ls-tree/, okOut("")]]);
+		expect(unreadable.code).toBe(DIR_UNREADABLE);
+		expect(empty.code).toBe(0);
+	});
+
+	it("refuses a record whose id cannot be parsed, on its own proven code", async () => {
+		const out = await run([[/^git ls-tree/, okOut(tree("0234-a.md", "12-bad.md"))]]);
+		expect(out.code).toBe(UNPARSEABLE_RECORD_ID);
+		expect(out.code).not.toBe(1);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toContain("unparseable id: 12-bad.md");
+	});
+
+	it("refuses an unresolvable origin remote on its own proven code, not on 1", async () => {
+		const out = await run([
+			[/^git remote get-url origin$/, errOut("fatal: No such remote 'origin'")],
+		]);
+		expect(out.code).toBe(ORIGIN_REPO_UNRESOLVABLE);
+		expect(out.code).not.toBe(1);
+		expect(out.stdout).toBe("");
+		expect(out.stderr.at(-1)).toContain("cannot resolve --repo from the origin remote");
+	});
+
+	it("refuses when git resolves the base to something that is not an object name", async () => {
+		const out = await run([[/^git rev-parse/, okOut("not-a-sha\n")]]);
+		expect(out.code).toBe(BASE_UNFETCHABLE);
+		expect(out.stdout).toBe("");
+	});
+});
