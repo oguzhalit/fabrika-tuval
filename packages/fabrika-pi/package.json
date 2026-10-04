@@ -30,6 +30,10 @@
 			]
 		}
 	},
+	"devDependencies": {
+		"@effect/tsgo": "^0.36.4",
+		"typescript": "^7.0.2"
+	},
 	"engines": {
 		"node": ">=22.12"
 	}
