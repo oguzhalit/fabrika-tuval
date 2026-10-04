@@ -1,0 +1,58 @@
+{
+  "plugins": {
+    "local": [
+      {
+        "name": "fabrika",
+        "path": "./claude-plugins/fabrika",
+        "enabled": true
+      }
+    ]
+  },
+  "marketplaces": {
+    "kampus": {
+      "url": "https://github.com/kamp-us/phoenix",
+      "enabled": true
+    }
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm exec fabrika status --quiet",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm exec fabrika hook pre-bash",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "fabrika": {
+    "mode": "operator",
+    "monitoring": {
+      "enabled": true,
+      "guards": [
+        "skill-lint",
+        "catalog-guard",
+        "pointer-guard"
+      ]
+    },
+    "lanes": {
+      "root": ".fabrika/lanes",
+      "enabled": true
+    }
+  }
+}
