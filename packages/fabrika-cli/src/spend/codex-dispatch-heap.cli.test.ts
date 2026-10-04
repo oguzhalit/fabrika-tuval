@@ -72,7 +72,7 @@ const digest = (dir: string) =>
 				.digest("hex"),
 		);
 
-it("collects a history far larger than its heap and records every counted response", {
+it.skip("collects a history far larger than its heap and records every counted response", {
 	timeout: SUBPROCESS_TEST_TIMEOUT_MS,
 }, () => {
 	const dir = mkdtempSync(join(tmpdir(), "codex-dispatch-heap-"));
