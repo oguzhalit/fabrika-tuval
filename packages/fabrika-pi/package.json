@@ -17,7 +17,8 @@
 	"scripts": {
 		"sync": "node scripts/sync-bundle.mjs",
 		"prepack": "node scripts/sync-bundle.mjs",
-		"test": "node --test 'scripts/*.unit.test.mjs'"
+		"test": "node --test 'scripts/*.unit.test.mjs'",
+		"typecheck": "tsc --noEmit"
 	},
 	"pi": {
 		"skills": [
