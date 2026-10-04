@@ -6,23 +6,14 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy root package files for workspace
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-
-# Copy app package
-COPY apps/goal-hedef/package.json ./apps/goal-hedef/
-
-# Copy packages directory
-COPY packages/ ./packages/
+# Copy entire workspace
+COPY . ./
 
 # Install dependencies
 RUN pnpm install
 
-# Copy entire application source (this will overwrite partial copies above)
-COPY . ./
-
-# Build production bundle
-RUN pnpm -F goal-hedef build
+# Build production bundle for goal-hedef app
+RUN pnpm --filter=goal-hedef build
 
 # Production server
 FROM nginx:alpine
