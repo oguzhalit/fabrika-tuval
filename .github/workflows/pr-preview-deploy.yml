@@ -2,14 +2,12 @@ name: 🚀 PR Preview Deploy (Docker + Cloudflare Tunnel)
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
-  pull_request:
-    types: [closed]
+    types: [opened, synchronize, reopened, closed]
 
 env:
   IMAGE_NAME: goal-hedef-preview
   PR_NUMBER: ${{ github.event.number }}
-  CONTAINER_PORT: 5173
+  CONTAINER_PORT: 80
 
 jobs:
   deploy-preview:
@@ -28,8 +26,10 @@ jobs:
       # 1️⃣ Build Docker Image
       - name: 🐳 Build Docker image
         run: |
-          cd apps/goal-hedef
-          docker build -t ${{ env.IMAGE_NAME }}:pr-${{ env.PR_NUMBER }} .
+          docker build \
+            -t ${{ env.IMAGE_NAME }}:pr-${{ env.PR_NUMBER }} \
+            -f apps/goal-hedef/Dockerfile \
+            .
 
       # 2️⃣ Save and transfer to homelab
       - name: 💾 Save Docker image
@@ -64,7 +64,7 @@ jobs:
           # Run new container
           docker run -d \
             --name pr-${{ env.PR_NUMBER }}-draw \
-            -p 300${{ env.PR_NUMBER }}:${{ env.CONTAINER_PORT }} \
+            -p 3000:${{ env.CONTAINER_PORT }} \
             ${{ env.IMAGE_NAME }}:pr-${{ env.PR_NUMBER }}
 
           # Clean up

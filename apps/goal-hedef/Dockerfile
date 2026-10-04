@@ -3,17 +3,23 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy dependency manifests
-COPY package*.json ./
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy root package files for workspace
+COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
+
+# Copy app package
+COPY apps/goal-hedef/package.json ./apps/goal-hedef/
 
 # Install dependencies
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 
-# Copy application source
+# Copy entire workspace
 COPY . ./
 
 # Build production bundle
-RUN npm run build
+RUN pnpm -F goal-hedef build
 
 # Production server
 FROM nginx:alpine
