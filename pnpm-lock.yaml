@@ -113,6 +113,9 @@ importers:
         specifier: ^5.0.3
         version: 5.0.15(@types/react@18.3.31)(react@19.2.7)(use-sync-external-store@1.7.0(react@19.2.7))
     devDependencies:
+      '@effect/tsgo':
+        specifier: ^0.36.4
+        version: 0.36.5
       '@types/canvas-confetti':
         specifier: ^1.9.0
         version: 1.9.0
@@ -146,6 +149,33 @@ importers:
       vite:
         specifier: ^6.2.0
         version: 6.4.3(@types/node@22.20.5)(jiti@1.21.7)(yaml@2.9.0)
+
+  packages/authz:
+    devDependencies:
+      '@effect/tsgo':
+        specifier: ^0.36.4
+        version: 0.36.5
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  packages/billing:
+    devDependencies:
+      '@effect/tsgo':
+        specifier: ^0.36.4
+        version: 0.36.5
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  packages/events:
+    devDependencies:
+      '@effect/tsgo':
+        specifier: ^0.36.4
+        version: 0.36.5
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
 
   packages/fabrika-cli:
     dependencies:
@@ -188,6 +218,69 @@ importers:
         version: 4.1.11(@types/node@25.9.9)(vite@6.4.3(@types/node@25.9.9)(jiti@1.21.7)(yaml@2.9.0))
 
   packages/fabrika-pi: {}
+
+  packages/gateway:
+    devDependencies:
+      '@effect/tsgo':
+        specifier: ^0.36.4
+        version: 0.36.5
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  packages/metrics:
+    devDependencies:
+      '@effect/tsgo':
+        specifier: ^0.36.4
+        version: 0.36.5
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  packages/platform:
+    devDependencies:
+      '@effect/tsgo':
+        specifier: ^0.36.4
+        version: 0.36.5
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  packages/security:
+    devDependencies:
+      '@effect/tsgo':
+        specifier: ^0.36.4
+        version: 0.36.5
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  packages/telemetry:
+    devDependencies:
+      '@effect/tsgo':
+        specifier: ^0.36.4
+        version: 0.36.5
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  packages/validation:
+    devDependencies:
+      '@effect/tsgo':
+        specifier: ^0.36.4
+        version: 0.36.5
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  packages/workflow:
+    devDependencies:
+      '@effect/tsgo':
+        specifier: ^0.36.4
+        version: 0.36.5
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
 
 packages:
 
