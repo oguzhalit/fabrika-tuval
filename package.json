@@ -5,16 +5,19 @@
 	"description": "App development with Fabrika",
 	"packageManager": "pnpm@10.27.0",
 	"scripts": {
-		"dev": "cd apps/goal-hedef && pnpm dev",
-		"dev:fabrika": "turbo run dev",
-		"build": "turbo run build",
-		"test": "turbo run test",
-		"typecheck": "turbo run typecheck",
+		"dev": "fabrika dev",
+		"build": "fabrika build",
+		"test": "fabrika test",
+		"typecheck": "fabrika typecheck",
 		"lint": "biome check .",
-		"format": "biome check --write ."
+		"format": "biome check --write .",
+		"fabrika": "fabrika",
+		"dev:turbo": "turbo run dev",
+		"build:turbo": "turbo run build"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.15",
+		"@kampus/fabrika-cli": "workspace:*",
 		"turbo": "^2.9.14",
 		"typescript": "^7.0.2"
 	},

@@ -10,7 +10,7 @@
 	},
 	"type": "module",
 	"bin": {
-		"fabrika": "./src/bin.ts"
+		"fabrika": "./dist/bin.js"
 	},
 	"main": "./src/index.ts",
 	"types": "./src/index.ts",

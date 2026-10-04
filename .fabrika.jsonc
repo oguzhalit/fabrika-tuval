@@ -50,7 +50,15 @@
 	"apps": {
 		"goal-hedef": {
 			"path": "apps/goal-hedef",
-			"description": "Goal & habit tracking canvas application"
+			"description": "Goal & habit tracking canvas application",
+			"commands": {
+				"dev": "pnpm dev",
+				"build": "pnpm build",
+				"typecheck": "pnpm typecheck"
+			}
 		}
-	}
+	},
+
+	// Default app (when no app specified in command)
+	"defaultApp": "goal-hedef"
 }
