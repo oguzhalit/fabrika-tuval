@@ -13,13 +13,13 @@ COPY . ./
 RUN pnpm install
 
 # Build production bundle for goal-hedef app
-RUN pnpm --filter=goal-hedef build
+RUN pnpm --filter=@hedef/goal-hedef-canvas build
 
 # Production server
 FROM nginx:alpine
 
 # Copy built assets
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/apps/goal-hedef/dist /usr/share/nginx/html
 
 # Custom nginx configuration for SPA routing
 RUN echo 'server { \
