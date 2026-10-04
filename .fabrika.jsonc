@@ -71,5 +71,8 @@
 		"/skills/review-doc/SKILL.md",
 		"/skills/skill-doctor/references/supported-harnesses.md",
 		"/skills/triage/SKILL.md"
-	]
+	],
+
+	// Control plane gate configuration
+	"unreadableCodeowners": "refuse"
 }
