@@ -10,10 +10,16 @@ build
 # Generated
 __generated__
 
-# Local env
+# Local env (NEVER commit secrets)
 .env
-.env.*
+.env.local
+.env.*.local
 !.env.example
+
+# App-specific secrets
+apps/*/.*env
+apps/*/.env.local
+apps/*/.env.*.local
 
 # IDE
 .DS_Store

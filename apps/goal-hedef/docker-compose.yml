@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  goal-hedef:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: goal-hedef:latest
+    container_name: goal-hedef
+    restart: unless-stopped
+    ports:
+      - "3000:80"
