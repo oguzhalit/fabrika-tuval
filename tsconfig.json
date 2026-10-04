@@ -1,0 +1,21 @@
+{
+	"compilerOptions": {
+		"target": "ES2025",
+		"module": "ESNext",
+		"lib": ["ES2025", "DOM", "DOM.Iterable"],
+		"moduleResolution": "bundler",
+		"resolveJsonModule": true,
+		"allowJs": true,
+		"checkJs": false,
+		"strict": true,
+		"noEmit": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true
+	},
+	"files": [],
+	"references": [
+		{ "path": "packages/fabrika-cli" },
+		{ "path": "packages/fabrika-pi" },
+		{ "path": "apps/goal-hedef" }
+	]
+}
