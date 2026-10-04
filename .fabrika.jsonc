@@ -44,5 +44,13 @@
 	"buildCommands": {
 		"typecheck": "pnpm typecheck",
 		"lint": "pnpm lint"
+	},
+
+	// Deployed applications
+	"apps": {
+		"goal-hedef": {
+			"path": "apps/goal-hedef",
+			"description": "Goal & habit tracking canvas application"
+		}
 	}
 }

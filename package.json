@@ -5,7 +5,8 @@
 	"description": "App development with Fabrika",
 	"packageManager": "pnpm@10.27.0",
 	"scripts": {
-		"dev": "turbo run dev",
+		"dev": "cd apps/goal-hedef && pnpm dev",
+		"dev:fabrika": "turbo run dev",
 		"build": "turbo run build",
 		"test": "turbo run test",
 		"typecheck": "turbo run typecheck",
