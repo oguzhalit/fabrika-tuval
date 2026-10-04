@@ -14,8 +14,8 @@
 	},
 	"files": [],
 	"references": [
-		{ "path": "packages/fabrika-cli" },
-		{ "path": "packages/fabrika-pi" },
-		{ "path": "apps/goal-hedef" }
+		{ "path": "packages/fabrika-cli/tsconfig.json" },
+		{ "path": "packages/fabrika-pi/tsconfig.json" },
+		{ "path": "apps/goal-hedef/tsconfig.json" }
 	]
 }
