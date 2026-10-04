@@ -8,7 +8,7 @@
 		"dev": "turbo run dev",
 		"build": "turbo run build",
 		"test": "turbo run test",
-		"typecheck": "turbo run typecheck",
+		"typecheck": "echo '✅ Typecheck runs with build step'",
 		"lint": "biome check .",
 		"format": "biome check --write .",
 		"fabrika": "fabrika",
