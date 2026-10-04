@@ -3,7 +3,6 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true,
 			"style": {
 				"useImportType": "error"
 			}
@@ -17,9 +16,6 @@
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "double"
-		},
-		"organizeImports": {
-			"enabled": true
 		}
 	},
 	"json": {
