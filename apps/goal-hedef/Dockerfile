@@ -12,13 +12,13 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # Copy app package
 COPY apps/goal-hedef/package.json ./apps/goal-hedef/
 
-# Copy other app folders if they have packages (for workspace resolution)
-COPY packages/ ./packages/ 2>/dev/null || true
+# Copy packages directory
+COPY packages/ ./packages/
 
 # Install dependencies
 RUN pnpm install
 
-# Copy entire application source
+# Copy entire application source (this will overwrite partial copies above)
 COPY . ./
 
 # Build production bundle
