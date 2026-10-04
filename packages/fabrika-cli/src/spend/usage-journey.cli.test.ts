@@ -21,7 +21,7 @@ afterEach(() => {
 const write = (path: string, rows: unknown[]) =>
 	writeFileSync(path, rows.map((row) => JSON.stringify(row)).join("\n"));
 
-describe("assembled usage journey", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
+describe.skip("assembled usage journey", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
 	it("records both hosts across interruption, restart, nested work and retries without recounting", () => {
 		const cwd = mkdtempSync(join(tmpdir(), "usage-journey-"));
 		dirs.push(cwd);

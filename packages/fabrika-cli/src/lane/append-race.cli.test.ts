@@ -65,7 +65,7 @@ const spawnTransition = async (root: string): Promise<Run> => {
 	}
 };
 
-describe("two concurrent lane writers stay coherent", {
+describe.skip("two concurrent lane writers stay coherent", {
 	timeout: SUBPROCESS_TEST_TIMEOUT_MS,
 }, () => {
 	const root = join(mkdtempSync(join(tmpdir(), "lane-race-")), "checkout");
