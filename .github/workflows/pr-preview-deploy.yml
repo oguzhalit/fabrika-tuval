@@ -15,6 +15,7 @@ env:
 jobs:
   deploy-preview:
     if: github.event.action != 'closed'
+    needs: [check, test, build]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,7 +49,6 @@ jobs:
         run: |
           docker push ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           echo "✅ Image pushed to registry"
-          echo "   URL: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
 
       # 4️⃣ Deploy via Proxmox QEMU Guest Agent
       - name: 🚀 Deploy to Homelab (Proxmox QEMU Guest Agent)
@@ -59,22 +59,41 @@ jobs:
           PROXMOX_TOKEN_NAME: ${{ secrets.PROXMOX_TOKEN_NAME }}
           PROXMOX_TOKEN_SECRET: ${{ secrets.PROXMOX_TOKEN_SECRET }}
           REGISTRY_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -e  # Fail on any error
+
           # Setup Proxmox API
           PROXMOX_API="https://${PROXMOX_HOST}:${PROXMOX_PORT}/api2/json"
           API_TOKEN="PVEAPIToken=${PROXMOX_USER}!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_SECRET}"
 
-          # Get the node name where QEMU guest is running
-          NODE=$(curl -s -k \
-            -H "Authorization: $API_TOKEN" \
-            "${PROXMOX_API}/cluster/resources?type=vm" \
-            | jq -r ".data[] | select(.vmid | tonumber == ${{ env.GUEST_VMID }}) | .node" | head -1)
+          echo "📍 Connecting to Proxmox at ${PROXMOX_API}..."
 
-          echo "📍 Guest running on node: $NODE"
+          # Get the node name where QEMU guest is running
+          NODE_RESPONSE=$(curl -s -k -w "\n%{http_code}" \
+            -H "Authorization: $API_TOKEN" \
+            "${PROXMOX_API}/cluster/resources?type=vm")
+
+          HTTP_CODE=$(echo "$NODE_RESPONSE" | tail -n1)
+          RESPONSE_BODY=$(echo "$NODE_RESPONSE" | head -n-1)
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Proxmox API error (HTTP $HTTP_CODE):"
+            echo "$RESPONSE_BODY" | jq '.' 2>/dev/null || echo "$RESPONSE_BODY"
+            exit 1
+          fi
+
+          NODE=$(echo "$RESPONSE_BODY" | jq -r ".data[] | select(.vmid | tonumber == ${{ env.GUEST_VMID }}) | .node" | head -1)
+
+          if [ -z "$NODE" ]; then
+            echo "❌ Guest VMID ${{ env.GUEST_VMID }} not found"
+            echo "Available VMs:"
+            echo "$RESPONSE_BODY" | jq '.data[] | {vmid, node, name}'
+            exit 1
+          fi
+
+          echo "✅ Found guest on node: $NODE"
 
           # Base64 encode commands for QEMU Guest Agent
-          # Commands: login to registry, pull image, stop/remove old container, run new container
           COMMANDS_B64=$(echo -n "echo '${{ secrets.GITHUB_TOKEN }}' | docker login -u ${{ github.actor }} --password-stdin ${{ env.REGISTRY }} && \
             docker pull ${{ env.REGISTRY_IMAGE }} && \
             docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true && \
@@ -84,20 +103,26 @@ jobs:
               -p 3000:${{ env.CONTAINER_PORT }} \
               ${{ env.REGISTRY_IMAGE }}" | base64 -w 0)
 
-          echo "🐳 Executing deployment commands via QEMU Guest Agent..."
+          echo "🐳 Deploying container via QEMU Guest Agent..."
 
-          # Execute via Proxmox Guest Agent using 'execute-raw'
-          curl -s -k -X POST \
+          # Execute via Proxmox Guest Agent
+          EXEC_RESPONSE=$(curl -s -k -w "\n%{http_code}" -X POST \
             -H "Authorization: $API_TOKEN" \
             -H "Content-Type: application/json" \
             "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
-            -d "{\"command\": \"sh -c 'echo $COMMANDS_B64 | base64 -d | bash'\"}" \
-            | jq '.' || echo "Guest Agent command submitted"
+            -d "{\"command\": \"sh -c 'echo $COMMANDS_B64 | base64 -d | bash'\"}")
+
+          EXEC_HTTP=$(echo "$EXEC_RESPONSE" | tail -n1)
+          EXEC_BODY=$(echo "$EXEC_RESPONSE" | head -n-1)
+
+          if [ "$EXEC_HTTP" != "200" ]; then
+            echo "❌ Deployment failed (HTTP $EXEC_HTTP):"
+            echo "$EXEC_BODY" | jq '.' 2>/dev/null || echo "$EXEC_BODY"
+            exit 1
+          fi
 
           echo "✅ Container deployment initiated"
-          echo "   Container: pr-${{ env.PR_NUMBER }}-draw"
-          echo "   Image: ${{ env.REGISTRY_IMAGE }}"
-          echo "   Port: 3000:${{ env.CONTAINER_PORT }}"
+          echo "$EXEC_BODY" | jq '.'
 
       # 5️⃣ Configure Cloudflare Tunnel Route
       - name: 🌐 Setup Cloudflare Tunnel Route
@@ -107,10 +132,14 @@ jobs:
           CF_DOMAIN: ${{ secrets.CLOUDFLARE_DOMAIN }}
           HOMELAB_HOST: ${{ secrets.HOMELAB_HOST }}
         run: |
+          set -e
+
           SUBDOMAIN="pr-${{ env.PR_NUMBER }}-draw"
 
+          echo "🌐 Creating DNS record: ${SUBDOMAIN}.${CF_DOMAIN}"
+
           # Create DNS record for Cloudflare Tunnel routing
-          RESPONSE=$(curl -s -X POST \
+          DNS_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Authorization: Bearer $CF_API_TOKEN" \
             -H "Content-Type: application/json" \
             https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records \
@@ -122,8 +151,22 @@ jobs:
               \"proxied\": true
             }")
 
-          echo "$RESPONSE" | jq '.'
-          echo "✅ DNS record created: $SUBDOMAIN.$CF_DOMAIN"
+          DNS_HTTP=$(echo "$DNS_RESPONSE" | tail -n1)
+          DNS_BODY=$(echo "$DNS_RESPONSE" | head -n-1)
+
+          if [ "$DNS_HTTP" != "200" ]; then
+            echo "❌ DNS creation failed (HTTP $DNS_HTTP):"
+            echo "$DNS_BODY" | jq '.' 2>/dev/null || echo "$DNS_BODY"
+            exit 1
+          fi
+
+          if ! echo "$DNS_BODY" | jq -e '.success' > /dev/null; then
+            echo "❌ Cloudflare API error:"
+            echo "$DNS_BODY" | jq '.errors'
+            exit 1
+          fi
+
+          echo "✅ DNS record created: ${SUBDOMAIN}.${CF_DOMAIN}"
 
       # 6️⃣ Post Preview Comment
       - name: 💬 Comment Preview URL
@@ -156,16 +199,24 @@ jobs:
           PROXMOX_TOKEN_NAME: ${{ secrets.PROXMOX_TOKEN_NAME }}
           PROXMOX_TOKEN_SECRET: ${{ secrets.PROXMOX_TOKEN_SECRET }}
         run: |
+          set -e
+
           PROXMOX_API="https://${PROXMOX_HOST}:${PROXMOX_PORT}/api2/json"
           API_TOKEN="PVEAPIToken=${PROXMOX_USER}!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_SECRET}"
 
-          # Get node name
-          NODE=$(curl -s -k \
-            -H "Authorization: $API_TOKEN" \
-            "${PROXMOX_API}/cluster/resources?type=vm" \
-            | jq -r ".data[] | select(.vmid | tonumber == ${{ env.GUEST_VMID }}) | .node" | head -1)
+          echo "🗑️ Cleaning up container pr-${{ env.PR_NUMBER }}-draw..."
 
-          echo "🗑️  Stopping container on node: $NODE"
+          # Get node name
+          NODE_RESPONSE=$(curl -s -k \
+            -H "Authorization: $API_TOKEN" \
+            "${PROXMOX_API}/cluster/resources?type=vm")
+
+          NODE=$(echo "$NODE_RESPONSE" | jq -r ".data[] | select(.vmid | tonumber == ${{ env.GUEST_VMID }}) | .node" | head -1)
+
+          if [ -z "$NODE" ]; then
+            echo "⚠️  Could not find guest node, skipping cleanup"
+            exit 0
+          fi
 
           # Stop and remove container
           CLEANUP_CMD="docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true && docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true"
@@ -186,6 +237,10 @@ jobs:
           CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           CF_DOMAIN: ${{ secrets.CLOUDFLARE_DOMAIN }}
         run: |
+          set -e
+
+          echo "🌐 Removing DNS record: pr-${{ env.PR_NUMBER }}-draw.${CF_DOMAIN}"
+
           # Get and delete DNS record
           RECORD=$(curl -s -X GET \
             -H "Authorization: Bearer $CF_API_TOKEN" \
@@ -194,10 +249,10 @@ jobs:
           RECORD_ID=$(echo $RECORD | jq -r '.result[0].id // empty')
 
           if [ ! -z "$RECORD_ID" ]; then
-            curl -X DELETE \
+            curl -s -X DELETE \
               -H "Authorization: Bearer $CF_API_TOKEN" \
-              "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records/$RECORD_ID"
-            echo "✅ DNS record deleted: pr-${{ env.PR_NUMBER }}-draw.$CF_DOMAIN"
+              "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records/$RECORD_ID" | jq '.'
+            echo "✅ DNS record deleted"
           else
             echo "⚠️  DNS record not found (already deleted?)"
           fi
