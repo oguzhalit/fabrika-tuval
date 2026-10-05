@@ -14,13 +14,13 @@
  * enough for the guard to matter — lives in [`append-race.cli.test.ts`](append-race.cli.test.ts),
  * which races real processes against one ledger.
  */
-import {Effect, FileSystem} from "effect";
-import {afterEach, describe, expect, it} from "vitest";
-import {fakeFs} from "../fakes.test-support.ts";
-import {acquireLedgerLock, releaseLedgerLock} from "./append-lock.ts";
-import {CONCURRENT_WRITE, EVENT_REFUSED, LANE_ABSENT} from "./codes.ts";
-import {coderTemplateText, fakeProver, parkCauseRead} from "./fixtures.test-support.ts";
-import {runTransition} from "./transition-verb.ts";
+import { Effect, FileSystem } from "effect";
+import { afterEach, describe, expect, it } from "vitest";
+import { fakeFs } from "../fakes.test-support.ts";
+import { acquireLedgerLock, releaseLedgerLock } from "./append-lock.ts";
+import { CONCURRENT_WRITE, EVENT_REFUSED, LANE_ABSENT } from "./codes.ts";
+import { coderTemplateText, fakeProver, parkCauseRead } from "./fixtures.test-support.ts";
+import { runTransition } from "./transition-verb.ts";
 
 const ROOT = ".fabrika/lanes";
 const WORKFLOW = `${ROOT}/42/workflow.json`;
@@ -33,7 +33,7 @@ const stamp = (who: string, ageMs: number) => `${who} ${Date.now() - ageMs}`;
 
 const freshLane = (extra: Parameters<typeof fakeFs>[0] = {}) =>
 	fakeFs({
-		files: {[WORKFLOW]: coderTemplateText()},
+		files: { [WORKFLOW]: coderTemplateText() },
 		...extra,
 	});
 
@@ -66,13 +66,13 @@ const run = (fs: ReturnType<typeof fakeFs>) =>
 
 const SHORT_LOCK_MS = "120";
 
-describe("lane append lock", {timeout: 10_000}, () => {
+describe("lane append lock", { timeout: 10_000 }, () => {
 	afterEach(() => {
 		delete process.env.FABRIKA_LANE_LOCK_BUDGET_MS;
 	});
 	it("a writer that finds the lock held refuses CONCURRENT_WRITE and leaves the log untouched", async () => {
 		process.env.FABRIKA_LANE_LOCK_BUDGET_MS = SHORT_LOCK_MS;
-		const fs = freshLane({mkdirExisting: [LOCK]});
+		const fs = freshLane({ mkdirExisting: [LOCK] });
 
 		const out = await run(fs);
 		expect(out.code).toBe(CONCURRENT_WRITE);
@@ -84,11 +84,11 @@ describe("lane append lock", {timeout: 10_000}, () => {
 
 	it("the refusal is distinguishable from an ordinary machine refusal on the same event", async () => {
 		process.env.FABRIKA_LANE_LOCK_BUDGET_MS = SHORT_LOCK_MS;
-		const heldLock = freshLane({mkdirExisting: [LOCK]});
+		const heldLock = freshLane({ mkdirExisting: [LOCK] });
 		const machineRefusal = freshLane({
 			files: {
 				[WORKFLOW]: coderTemplateText(),
-				[LOG]: `${JSON.stringify({task: "issue", event: "ISSUE.WIP", at: "2026-08-16T00:00:00.000Z"})}\n`,
+				[LOG]: `${JSON.stringify({ task: "issue", event: "ISSUE.WIP", at: "2026-08-16T00:00:00.000Z" })}\n`,
 			},
 		});
 
@@ -103,7 +103,7 @@ describe("lane append lock", {timeout: 10_000}, () => {
 	});
 
 	it("a lock whose parent directory is absent reports absent, without spending the budget", async () => {
-		const fs = fakeFs({mkdirMissingParent: [LOCK]});
+		const fs = fakeFs({ mkdirMissingParent: [LOCK] });
 		const started = Date.now();
 
 		const attempt = await Effect.runPromise(
@@ -147,7 +147,7 @@ describe("lane append lock", {timeout: 10_000}, () => {
 		process.env.FABRIKA_LANE_LOCK_BUDGET_MS = SHORT_LOCK_MS;
 		// The probe passes and the mkdir then hits ENOENT — the window between the two, which only the
 		// lock's own reason read can answer.
-		const fs = freshLane({mkdirMissingParent: [LOCK]});
+		const fs = freshLane({ mkdirMissingParent: [LOCK] });
 
 		const out = await run(fs);
 		expect(out.code).toBe(LANE_ABSENT);
@@ -158,7 +158,7 @@ describe("lane append lock", {timeout: 10_000}, () => {
 		process.env.FABRIKA_LANE_LOCK_BUDGET_MS = SHORT_LOCK_MS;
 
 		const absent = await run(fakeFs({}));
-		const held = await run(freshLane({mkdirExisting: [LOCK]}));
+		const held = await run(freshLane({ mkdirExisting: [LOCK] }));
 
 		expect(absent.code).toBe(LANE_ABSENT);
 		expect(held.code).toBe(CONCURRENT_WRITE);
@@ -171,7 +171,7 @@ describe("lane append lock", {timeout: 10_000}, () => {
 		// directory, and polled to its deadline against a lock nobody held.
 		const fs = freshLane({
 			mkdirExisting: [LOCK],
-			mtimes: {[LOCK]: new Date(Date.now() - 60_000)},
+			mtimes: { [LOCK]: new Date(Date.now() - 60_000) },
 		});
 
 		const attempt = await Effect.runPromise(
@@ -196,7 +196,7 @@ describe("lane append lock", {timeout: 10_000}, () => {
 		const seam: Record<string, Effect.Effect<void>> = {};
 		const fs = freshLane({
 			mkdirExisting: [LOCK],
-			mtimes: {[LOCK]: new Date(Date.now() - 60_000)},
+			mtimes: { [LOCK]: new Date(Date.now() - 60_000) },
 			duringStat: seam,
 		});
 		const waiter = (name: string) =>
@@ -227,7 +227,7 @@ describe("lane append lock", {timeout: 10_000}, () => {
 		const seam: Record<string, Effect.Effect<void>> = {};
 		const fs = freshLane({
 			mkdirExisting: [LOCK],
-			files: {[WORKFLOW]: coderTemplateText(), [HOLDER]: stamp("crashed", 60_000)},
+			files: { [WORKFLOW]: coderTemplateText(), [HOLDER]: stamp("crashed", 60_000) },
 			duringRead: seam,
 		});
 		const waiter = (name: string) =>
@@ -259,7 +259,7 @@ describe("lane append lock", {timeout: 10_000}, () => {
 		const renames: Record<string, Effect.Effect<void>> = {};
 		const fs = freshLane({
 			mkdirExisting: [LOCK],
-			files: {[WORKFLOW]: coderTemplateText(), [HOLDER]: stamp("crashed", 60_000)},
+			files: { [WORKFLOW]: coderTemplateText(), [HOLDER]: stamp("crashed", 60_000) },
 			duringRead: reads,
 			duringRename: renames,
 		});
@@ -295,7 +295,7 @@ describe("lane append lock", {timeout: 10_000}, () => {
 		// The last moment a hand-off can still be answered by refusing: the stamp is unreadable, so
 		// this writer cannot say the lock is the one it took, and a body that appends anyway is the
 		// double-append nobody detects.
-		const fs = freshLane({unreadable: [HOLDER]});
+		const fs = freshLane({ unreadable: [HOLDER] });
 
 		const out = await run(fs);
 
@@ -311,7 +311,7 @@ describe("lane append lock", {timeout: 10_000}, () => {
 		// the new holder's now, and removing it hands a third writer a lock while that holder appends.
 		const fs = freshLane({
 			mkdirExisting: [LOCK],
-			files: {[WORKFLOW]: coderTemplateText(), [HOLDER]: stamp("someone-else", 0)},
+			files: { [WORKFLOW]: coderTemplateText(), [HOLDER]: stamp("someone-else", 0) },
 		});
 
 		const standing = await Effect.runPromise(
@@ -331,7 +331,7 @@ describe("lane append lock", {timeout: 10_000}, () => {
 	it("a lock younger than the stale horizon is still held at deadline, so live contention refuses", async () => {
 		const fs = freshLane({
 			mkdirExisting: [LOCK],
-			mtimes: {[LOCK]: new Date(Date.now() - 200)},
+			mtimes: { [LOCK]: new Date(Date.now() - 200) },
 		});
 
 		const attempt = await Effect.runPromise(
@@ -351,7 +351,7 @@ describe("lane append lock", {timeout: 10_000}, () => {
 
 	it("a small FABRIKA_LANE_LOCK_BUDGET_MS refuses fast instead of waiting out the derived default", async () => {
 		process.env.FABRIKA_LANE_LOCK_BUDGET_MS = SHORT_LOCK_MS;
-		const fs = freshLane({mkdirExisting: [LOCK], mtimes: {[LOCK]: new Date()}});
+		const fs = freshLane({ mkdirExisting: [LOCK], mtimes: { [LOCK]: new Date() } });
 		const started = Date.now();
 
 		const out = await run(fs);
@@ -369,6 +369,6 @@ describe("lane append lock", {timeout: 10_000}, () => {
 		expect(out.code).toBe(0);
 		const appended = fs.written.get(LOG);
 		expect(appended).toBeDefined();
-		expect(JSON.parse(appended?.trim() ?? "")).toMatchObject({task: "issue", event: "ISSUE.WIP"});
+		expect(JSON.parse(appended?.trim() ?? "")).toMatchObject({ task: "issue", event: "ISSUE.WIP" });
 	});
 });

@@ -9,27 +9,27 @@
  * **Every leaf is declared with `leafCommand`, never a bare `Command.make`** — the bare form
  * silently opts out of the excess-operand guard, which `../excess-operand.unit.test.ts` reds on.
  */
-import {Effect, Option} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStdin} from "../io/stdin.ts";
-import {runChecks} from "./checks-verb.ts";
-import {runCpApproval} from "./cp-approval-verb.ts";
-import {runDisarm} from "./disarm-verb.ts";
-import {runEnqueue} from "./enqueue-verb.ts";
-import {runFloorBatch} from "./floor-batch.ts";
-import {floorRunner} from "./floor-check.ts";
-import {runGate} from "./gate-verb.ts";
-import {runMerge} from "./merge-verb.ts";
-import {MERGEABILITY_WINDOW_SECONDS} from "./mergeability.ts";
-import {runNote} from "./note-verb.ts";
-import {runNudge} from "./nudge-verb.ts";
-import {ARM_SETTLE_FLOOR_SECONDS, runReconcile} from "./reconcile-verb.ts";
-import {runRelease} from "./release-verb.ts";
-import {runResolve} from "./resolve-verb.ts";
-import {runScope} from "./scope-verb.ts";
-import {runThreads} from "./threads-verb.ts";
+import { Effect, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStdin } from "../io/stdin.ts";
+import { runChecks } from "./checks-verb.ts";
+import { runCpApproval } from "./cp-approval-verb.ts";
+import { runDisarm } from "./disarm-verb.ts";
+import { runEnqueue } from "./enqueue-verb.ts";
+import { runFloorBatch } from "./floor-batch.ts";
+import { floorRunner } from "./floor-check.ts";
+import { runGate } from "./gate-verb.ts";
+import { runMerge } from "./merge-verb.ts";
+import { MERGEABILITY_WINDOW_SECONDS } from "./mergeability.ts";
+import { runNote } from "./note-verb.ts";
+import { runNudge } from "./nudge-verb.ts";
+import { ARM_SETTLE_FLOOR_SECONDS, runReconcile } from "./reconcile-verb.ts";
+import { runRelease } from "./release-verb.ts";
+import { runResolve } from "./resolve-verb.ts";
+import { runScope } from "./scope-verb.ts";
+import { runThreads } from "./threads-verb.ts";
 
 const repoFlag = Flag.string("repo").pipe(
 	Flag.optional,
@@ -68,15 +68,15 @@ const mergeabilitySecondsFlag = Flag.integer("mergeability-seconds").pipe(
 
 const scope = leafCommand(
 	"scope",
-	{pr: prArg, repo: repoFlag, json: jsonFlag},
-	Effect.fn(function* ({pr, repo, json}) {
+	{ pr: prArg, repo: repoFlag, json: jsonFlag },
+	Effect.fn(function* ({ pr, repo, json }) {
 		yield* emit(
 			yield* runScope({
 				pr,
 				repo: Option.getOrNull(repo),
 				json,
 				env: process.env,
-				caller: {_tag: "shipper", cwd: process.cwd()},
+				caller: { _tag: "shipper", cwd: process.cwd() },
 			}),
 		);
 	}),
@@ -90,7 +90,7 @@ const scope = leafCommand(
 			"\n  33: the main working tree, and `shipScope.mainWorkingTree` is not `allow`" +
 			'\n  Derivation: the ship skill\'s contract.md, "ship scope"',
 	),
-	Command.withExamples([{command: "fabrika ship scope 4321"}]),
+	Command.withExamples([{ command: "fabrika ship scope 4321" }]),
 );
 
 const cpApproval = leafCommand(
@@ -102,7 +102,7 @@ const cpApproval = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({pr, sha, mergeabilitySeconds, repo, json}) {
+	Effect.fn(function* ({ pr, sha, mergeabilitySeconds, repo, json }) {
 		yield* emit(
 			yield* runCpApproval({
 				pr,
@@ -125,7 +125,7 @@ const cpApproval = leafCommand(
 			"\n  13: a comment, review or changed-file read is provably incomplete" +
 			'\n  Derivation: the ship skill\'s contract.md, "ship cp-approval"',
 	),
-	Command.withExamples([{command: "fabrika ship cp-approval 4321 --sha 03135b91"}]),
+	Command.withExamples([{ command: "fabrika ship cp-approval 4321 --sha 03135b91" }]),
 );
 
 const gate = leafCommand(
@@ -150,7 +150,7 @@ const gate = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({pr, sha, require, cp, repo, json}) {
+	Effect.fn(function* ({ pr, sha, require, cp, repo, json }) {
 		yield* emit(
 			yield* runGate({
 				pr,
@@ -175,7 +175,7 @@ const gate = leafCommand(
 			'\n  Derivation: the ship skill\'s contract.md, "ship gate"',
 	),
 	Command.withExamples([
-		{command: "fabrika ship gate 4321 --sha 03135b91 --require review-code --require review-doc"},
+		{ command: "fabrika ship gate 4321 --sha 03135b91 --require review-code --require review-doc" },
 	]),
 );
 
@@ -193,7 +193,7 @@ const floor = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({pr, sha, publishCheck, repo, json}) {
+	Effect.fn(function* ({ pr, sha, publishCheck, repo, json }) {
 		const options = {
 			pr,
 			sha,
@@ -217,8 +217,8 @@ const floor = leafCommand(
 			'\n  Derivation: the ship skill\'s contract.md, "ship floor"',
 	),
 	Command.withExamples([
-		{command: "fabrika ship floor 4321 --sha 03135b91"},
-		{command: "fabrika ship floor 4321 --sha 03135b91 --publish-check"},
+		{ command: "fabrika ship floor 4321 --sha 03135b91" },
+		{ command: "fabrika ship floor 4321 --sha 03135b91 --publish-check" },
 	]),
 );
 
@@ -229,8 +229,10 @@ const floorBatch = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({sha, repo, json}) {
-		yield* emit(yield* runFloorBatch({sha, repo: Option.getOrNull(repo), json, env: process.env}));
+	Effect.fn(function* ({ sha, repo, json }) {
+		yield* emit(
+			yield* runFloorBatch({ sha, repo: Option.getOrNull(repo), json, env: process.env }),
+		);
 	}),
 ).pipe(
 	Command.withShortDescription("Put the floor's required context on a merge queue's batch ref."),
@@ -241,7 +243,7 @@ const floorBatch = leafCommand(
 			"\n  11: the head's check-runs could not be enumerated; nothing was published" +
 			'\n  Derivation: the ship skill\'s contract.md, "ship floor-batch"',
 	),
-	Command.withExamples([{command: "fabrika ship floor-batch --sha 03135b91"}]),
+	Command.withExamples([{ command: "fabrika ship floor-batch --sha 03135b91" }]),
 );
 
 const checks = leafCommand(
@@ -305,14 +307,14 @@ const checks = leafCommand(
 			"\n  20: every check passed but no workflow this repo authors inspected this head" +
 			'\n  Derivation: the ship skill\'s contract.md, "ship checks"',
 	),
-	Command.withExamples([{command: "fabrika ship checks 4321 --sha 03135b91 --wait"}]),
+	Command.withExamples([{ command: "fabrika ship checks 4321 --sha 03135b91 --wait" }]),
 );
 
 const threads = leafCommand(
 	"threads",
-	{pr: prArg, repo: repoFlag, json: jsonFlag},
-	Effect.fn(function* ({pr, repo, json}) {
-		yield* emit(yield* runThreads({pr, repo: Option.getOrNull(repo), json, env: process.env}));
+	{ pr: prArg, repo: repoFlag, json: jsonFlag },
+	Effect.fn(function* ({ pr, repo, json }) {
+		yield* emit(yield* runThreads({ pr, repo: Option.getOrNull(repo), json, env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("Every unresolved review thread with its class facts."),
@@ -323,7 +325,7 @@ const threads = leafCommand(
 			"\n  13: a thread or comment enumeration is provably short" +
 			'\n  Derivation: the ship skill\'s contract.md, "ship threads"',
 	),
-	Command.withExamples([{command: "fabrika ship threads 4321"}]),
+	Command.withExamples([{ command: "fabrika ship threads 4321" }]),
 );
 
 const resolve = leafCommand(
@@ -336,7 +338,7 @@ const resolve = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({pr, thread, repo, json}) {
+	Effect.fn(function* ({ pr, thread, repo, json }) {
 		yield* emit(
 			yield* runResolve({
 				pr,
@@ -363,7 +365,7 @@ const resolve = leafCommand(
 			'\n  Derivation: the ship skill\'s contract.md, "ship resolve"',
 	),
 	Command.withExamples([
-		{command: "fabrika ship resolve 4321 --thread PRRT_kwDOLxx1 < rationale.md"},
+		{ command: "fabrika ship resolve 4321 --thread PRRT_kwDOLxx1 < rationale.md" },
 	]),
 );
 
@@ -376,7 +378,7 @@ const enqueue = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({pr, sha, mergeabilitySeconds, repo, json}) {
+	Effect.fn(function* ({ pr, sha, mergeabilitySeconds, repo, json }) {
 		yield* emit(
 			yield* runEnqueue({
 				pr,
@@ -401,7 +403,7 @@ const enqueue = leafCommand(
 			"\n  22: PR not ours, no takeover grant; nothing was armed" +
 			'\n  Derivation: the ship skill\'s contract.md, "ship enqueue"',
 	),
-	Command.withExamples([{command: "fabrika ship enqueue 4321 --sha 03135b91"}]),
+	Command.withExamples([{ command: "fabrika ship enqueue 4321 --sha 03135b91" }]),
 );
 
 const merge = leafCommand(
@@ -413,7 +415,7 @@ const merge = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({pr, sha, mergeabilitySeconds, repo, json}) {
+	Effect.fn(function* ({ pr, sha, mergeabilitySeconds, repo, json }) {
 		yield* emit(
 			yield* runMerge({
 				pr,
@@ -439,7 +441,7 @@ const merge = leafCommand(
 			"\n  22: PR not ours, no takeover grant; nothing merged" +
 			'\n  Derivation: the ship skill\'s contract.md, "ship merge"',
 	),
-	Command.withExamples([{command: "fabrika ship merge 4321 --sha 03135b91"}]),
+	Command.withExamples([{ command: "fabrika ship merge 4321 --sha 03135b91" }]),
 );
 
 const reconcile = leafCommand(
@@ -457,7 +459,7 @@ const reconcile = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({pr, polls, cadenceSeconds, repo, json}) {
+	Effect.fn(function* ({ pr, polls, cadenceSeconds, repo, json }) {
 		yield* emit(
 			yield* runReconcile({
 				pr,
@@ -480,7 +482,7 @@ const reconcile = leafCommand(
 			"\n  13: the timeline read never reached a terminal page" +
 			'\n  Derivation: the ship skill\'s contract.md, "ship reconcile"',
 	),
-	Command.withExamples([{command: "fabrika ship reconcile 4321"}]),
+	Command.withExamples([{ command: "fabrika ship reconcile 4321" }]),
 );
 
 const disarm = leafCommand(
@@ -495,8 +497,10 @@ const disarm = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({pr, site, repo, json}) {
-		yield* emit(yield* runDisarm({pr, site, repo: Option.getOrNull(repo), json, env: process.env}));
+	Effect.fn(function* ({ pr, site, repo, json }) {
+		yield* emit(
+			yield* runDisarm({ pr, site, repo: Option.getOrNull(repo), json, env: process.env }),
+		);
 	}),
 ).pipe(
 	Command.withShortDescription("Clear or deliberately keep a parked merge intent."),
@@ -507,14 +511,14 @@ const disarm = leafCommand(
 			"\n  11: the armed-state read failed before any write" +
 			'\n  Derivation: the ship skill\'s contract.md, "ship disarm"',
 	),
-	Command.withExamples([{command: "fabrika ship disarm 4321 --site preflight"}]),
+	Command.withExamples([{ command: "fabrika ship disarm 4321 --site preflight" }]),
 );
 
 const nudge = leafCommand(
 	"nudge",
-	{pr: prArg, sha: shaFlag, repo: repoFlag, json: jsonFlag},
-	Effect.fn(function* ({pr, sha, repo, json}) {
-		yield* emit(yield* runNudge({pr, sha, repo: Option.getOrNull(repo), json, env: process.env}));
+	{ pr: prArg, sha: shaFlag, repo: repoFlag, json: jsonFlag },
+	Effect.fn(function* ({ pr, sha, repo, json }) {
+		yield* emit(yield* runNudge({ pr, sha, repo: Option.getOrNull(repo), json, env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("Remedy a dropped CI trigger by close then reopen, once."),
@@ -529,13 +533,13 @@ const nudge = leafCommand(
 			"\n  17: THE CLOSE LANDED AND THE REOPEN IS UNCONFIRMED; reopen the PR by hand now" +
 			'\n  Derivation: the ship skill\'s contract.md, "ship nudge"',
 	),
-	Command.withExamples([{command: "fabrika ship nudge 4322 --sha 9fe12ab0"}]),
+	Command.withExamples([{ command: "fabrika ship nudge 4322 --sha 9fe12ab0" }]),
 );
 
 const note = leafCommand(
 	"note",
-	{pr: prArg, repo: repoFlag, json: jsonFlag},
-	Effect.fn(function* ({pr, repo, json}) {
+	{ pr: prArg, repo: repoFlag, json: jsonFlag },
+	Effect.fn(function* ({ pr, repo, json }) {
 		yield* emit(
 			yield* runNote({
 				pr,
@@ -559,13 +563,13 @@ const note = leafCommand(
 			"\n  11: the PR could not be read; nothing was posted" +
 			'\n  Derivation: the ship skill\'s contract.md, "ship note"',
 	),
-	Command.withExamples([{command: "fabrika ship note 4322 < stop.md"}]),
+	Command.withExamples([{ command: "fabrika ship note 4322 < stop.md" }]),
 );
 
 const release = leafCommand(
 	"release",
-	{pr: prArg, repo: repoFlag, json: jsonFlag},
-	Effect.fn(function* ({pr, repo, json}) {
+	{ pr: prArg, repo: repoFlag, json: jsonFlag },
+	Effect.fn(function* ({ pr, repo, json }) {
 		yield* emit(
 			yield* runRelease({
 				pr,
@@ -588,7 +592,7 @@ const release = leafCommand(
 			"\n  23: the release label is absent from the repository's taxonomy" +
 			'\n  Derivation: the ship skill\'s contract.md, "ship release"',
 	),
-	Command.withExamples([{command: "fabrika ship release 4321"}]),
+	Command.withExamples([{ command: "fabrika ship release 4321" }]),
 );
 
 export const shipCommand = Command.make("ship").pipe(

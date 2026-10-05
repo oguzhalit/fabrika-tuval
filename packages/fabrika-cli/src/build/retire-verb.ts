@@ -34,12 +34,12 @@
  * primary-checkout driver: the harness rule that refused a cross-worktree `git` reads the typed
  * command, so it binds a shell and not a verb's own child process.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {getIssue} from "../io/issues.ts";
-import {getPullRequest} from "../io/pulls.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {readClaimants} from "./claim.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { getIssue } from "../io/issues.ts";
+import { getPullRequest } from "../io/pulls.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { readClaimants } from "./claim.ts";
 import {
 	PRECONDITION_UNKNOWN,
 	READBACK_MISMATCH,
@@ -66,8 +66,8 @@ import {
 	sessionsByNonce,
 	subjectsFor,
 } from "./retire.ts";
-import {badNumber, resolveTargetRepo, scannedLine} from "./target.ts";
-import {readTree} from "./tree.ts";
+import { badNumber, resolveTargetRepo, scannedLine } from "./target.ts";
+import { readTree } from "./tree.ts";
 
 const VERB = "fabrika build retire";
 
@@ -81,18 +81,18 @@ export interface RetireOptions {
 type Deps = ChildProcessSpawner.ChildProcessSpawner;
 
 type Board =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Board"; readonly board: BoardState};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Board"; readonly board: BoardState };
 
 export const runRetire = (options: RetireOptions): Effect.Effect<VerbOutcome, never, Deps> =>
 	Effect.gen(function* () {
-		const {number} = options;
+		const { number } = options;
 		const bad = badNumber(VERB, "an issue or pull request number", number);
 		if (bad !== null) return bad;
 
 		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
 		if (resolved._tag === "Refused") return resolved.outcome;
-		const {repo} = resolved;
+		const { repo } = resolved;
 
 		const pruned = yield* pruneWorktrees;
 		if (pruned._tag === "Failure") {
@@ -106,7 +106,7 @@ export const runRetire = (options: RetireOptions): Effect.Effect<VerbOutcome, ne
 		if (held._tag === "Refused") return held.outcome;
 		const scope = scannedLine(VERB, held.scanned, "working tree", `#${number}`);
 		if (held.subjects.length === 0) {
-			return answer(JSON.stringify({answer: "none", number, retired: [], held: []}), [
+			return answer(JSON.stringify({ answer: "none", number, retired: [], held: [] }), [
 				scope,
 				`${VERB}: no working tree of this clone holds a lane branch for #${number}.`,
 			]);
@@ -124,16 +124,16 @@ export const runRetire = (options: RetireOptions): Effect.Effect<VerbOutcome, ne
 			);
 		}
 		const selfPaths = new Set([self.value.root]);
-		const verdicts: Array<{subject: Subject; verdict: Seated}> = [];
+		const verdicts: Array<{ subject: Subject; verdict: Seated }> = [];
 		for (const subject of held.subjects) {
 			const seated = classify(subject, read.board, selfPaths);
 			if (seated._tag !== "Unclaimed") {
-				verdicts.push({subject, verdict: seated});
+				verdicts.push({ subject, verdict: seated });
 				continue;
 			}
 			const carried = yield* residue(subject);
 			if (carried._tag === "Refused") return carried.outcome;
-			verdicts.push({subject, verdict: seatResidue(subject, carried.residue)});
+			verdicts.push({ subject, verdict: seatResidue(subject, carried.residue) });
 		}
 
 		const retired: Array<{
@@ -143,7 +143,7 @@ export const runRetire = (options: RetireOptions): Effect.Effect<VerbOutcome, ne
 			salvaged: boolean;
 			unlocked: boolean;
 		}> = [];
-		for (const {subject, verdict} of verdicts) {
+		for (const { subject, verdict } of verdicts) {
 			if (verdict._tag !== "Release") continue;
 			const salvaged = yield* salvage(subject);
 			if (salvaged._tag === "Refused") return salvaged.outcome;
@@ -185,8 +185,8 @@ export const runRetire = (options: RetireOptions): Effect.Effect<VerbOutcome, ne
 			}
 		}
 
-		const holding = verdicts.flatMap(({subject, verdict}) =>
-			verdict._tag === "Release" ? [] : [{subject, verdict}],
+		const holding = verdicts.flatMap(({ subject, verdict }) =>
+			verdict._tag === "Release" ? [] : [{ subject, verdict }],
 		);
 		const notes = [
 			scope,
@@ -195,7 +195,7 @@ export const runRetire = (options: RetireOptions): Effect.Effect<VerbOutcome, ne
 					`${VERB}: retired ${row.path} — it held ${row.branch} (${row.license})${row.salvaged ? `; its uncommitted work was salvaged onto ${row.branch} first` : ""}${row.unlocked ? "; its lock was released under that license" : ""}.`,
 			),
 			...holding.map(
-				({subject, verdict}) =>
+				({ subject, verdict }) =>
 					`${VERB}: ${subject.path} still holds ${subject.branch} — ${verdict._tag === "Self" ? "it is the tree this run is standing in, which no run may remove from inside" : verdict.because}.`,
 			),
 		];
@@ -203,7 +203,7 @@ export const runRetire = (options: RetireOptions): Effect.Effect<VerbOutcome, ne
 			answer: retired.length > 0 ? "retired" : "held",
 			number,
 			retired,
-			held: holding.map(({subject, verdict}) => ({
+			held: holding.map(({ subject, verdict }) => ({
 				path: subject.path,
 				branch: subject.branch,
 				reason: verdict._tag === "Self" ? "self" : verdict.because,
@@ -219,8 +219,8 @@ export const runRetire = (options: RetireOptions): Effect.Effect<VerbOutcome, ne
 	});
 
 type Read =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Residue"; readonly residue: Residue};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Residue"; readonly residue: Residue };
 
 /**
  * What one unclaimed subject carries — read only for the subjects a board license does not cover.
@@ -253,13 +253,13 @@ const residue = (subject: Subject): Effect.Effect<Read, never, Deps> =>
 		}
 		return {
 			_tag: "Residue" as const,
-			residue: {uncommitted: dirty.value, strandedCommits: stranded.value},
+			residue: { uncommitted: dirty.value, strandedCommits: stranded.value },
 		};
 	});
 
 type Salvaged =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Salvaged"; readonly salvaged: boolean};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Salvaged"; readonly salvaged: boolean };
 
 /**
  * The first step: whatever the tree holds uncommitted goes onto its own branch before the tree
@@ -281,7 +281,7 @@ const salvage = (subject: Subject): Effect.Effect<Salvaged, never, Deps> =>
 				),
 			};
 		}
-		if (dirty.value === 0) return {_tag: "Salvaged" as const, salvaged: false};
+		if (dirty.value === 0) return { _tag: "Salvaged" as const, salvaged: false };
 		const committed = yield* salvageWorktree(
 			subject.path,
 			`wip: salvage ${dirty.value} uncommitted path(s) from a retired worktree (${subject.branch})\n`,
@@ -294,11 +294,11 @@ const salvage = (subject: Subject): Effect.Effect<Salvaged, never, Deps> =>
 						`${VERB}: cannot salvage ${dirty.value} uncommitted path(s) in ${subject.path}: ${committed.reason} — the tree is left standing, because removing it would destroy the only copy.`,
 					),
 				}
-			: {_tag: "Salvaged" as const, salvaged: true};
+			: { _tag: "Salvaged" as const, salvaged: true };
 	});
 
 type Held =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
 	| {
 			readonly _tag: "Held";
 			readonly subjects: ReadonlyArray<Subject>;

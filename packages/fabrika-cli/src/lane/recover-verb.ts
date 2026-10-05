@@ -85,20 +85,20 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9241#issuecomment-5687141320
  */
-import {Effect, type FileSystem, type Path, Result} from "effect";
-import type {ClaimStanding} from "../build/dead-claim.ts";
-import type {ParkCauseSurface} from "../config/keys/park-cause.ts";
-import type {Read} from "../config/read-key.ts";
-import {exists} from "../io/fs.ts";
-import {isRecord, parseJson} from "../io/json.ts";
-import type {Reconciled} from "../ship/reconcile-verb.ts";
-import {ANSWER, answer, refuse, type VerbOutcome} from "../verb.ts";
-import {APPEND_UNKNOWN, CONCURRENT_WRITE, LANE_UNREADABLE} from "./codes.ts";
-import {applyEvent, deriveStatus, foldLog, standingCauses} from "./fold.ts";
-import {CHORE_PREFIX} from "./key.ts";
-import type {PullTrace} from "./prove.ts";
-import {epicOf, issueOf, roleOf} from "./prove.ts";
-import type {ProofOutcome, ProveOptions} from "./prove-verb.ts";
+import { Effect, type FileSystem, type Path, Result } from "effect";
+import type { ClaimStanding } from "../build/dead-claim.ts";
+import type { ParkCauseSurface } from "../config/keys/park-cause.ts";
+import type { Read } from "../config/read-key.ts";
+import { exists } from "../io/fs.ts";
+import { isRecord, parseJson } from "../io/json.ts";
+import type { Reconciled } from "../ship/reconcile-verb.ts";
+import { ANSWER, answer, refuse, type VerbOutcome } from "../verb.ts";
+import { APPEND_UNKNOWN, CONCURRENT_WRITE, LANE_UNREADABLE } from "./codes.ts";
+import { applyEvent, deriveStatus, foldLog, standingCauses } from "./fold.ts";
+import { CHORE_PREFIX } from "./key.ts";
+import type { PullTrace } from "./prove.ts";
+import { epicOf, issueOf, roleOf } from "./prove.ts";
+import type { ProofOutcome, ProveOptions } from "./prove-verb.ts";
 import {
 	buildingBy,
 	DEAD_SPAWN_CAUSE,
@@ -109,22 +109,22 @@ import {
 	queuedBy,
 	queuedPullOf,
 } from "./recover.ts";
-import {eventForToken, NO_PARK_EVIDENCE} from "./report.ts";
-import {type IssueCloser, runReport} from "./report-verb.ts";
-import {DEFAULT_CHORES_ROOT, listLanes, loadLane} from "./store.ts";
-import {runTransition} from "./transition-verb.ts";
+import { eventForToken, NO_PARK_EVIDENCE } from "./report.ts";
+import { type IssueCloser, runReport } from "./report-verb.ts";
+import { DEFAULT_CHORES_ROOT, listLanes, loadLane } from "./store.ts";
+import { runTransition } from "./transition-verb.ts";
 
 const VERB = "fabrika lane recover";
 
 /** Which local branches were cut for an issue in this clone, or why that could not be read. */
 export type BranchRead =
-	| {readonly _tag: "Read"; readonly branches: ReadonlyArray<string>}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Read"; readonly branches: ReadonlyArray<string> }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /** Which pull requests on the board link an issue, or why that could not be read. */
 export type PullsRead =
-	| {readonly _tag: "Read"; readonly trace: PullTrace; readonly scanned: number}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Read"; readonly trace: PullTrace; readonly scanned: number }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * The live reads the spawn arm turns on — handed in together, so the arm cannot be enabled without
@@ -153,8 +153,8 @@ export interface SpawnReads<R = never> {
 
 /** One `ship reconcile --polls 1` answer, or why it could not be read. */
 export type QueueRead =
-	| {readonly _tag: "Read"; readonly answer: Reconciled}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Read"; readonly answer: Reconciled }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 const RECONCILED: ReadonlyArray<Reconciled> = ["landed", "ejected", "unresolved", "parked"];
 
@@ -173,8 +173,8 @@ export const queueReadOf = (outcome: VerbOutcome): QueueRead => {
 	const named = isRecord(parsed) ? parsed.outcome : undefined;
 	const answer = RECONCILED.find((known) => known === named);
 	return answer === undefined
-		? {_tag: "Unknown", reason: "ship reconcile exited 0 and named no outcome this sweep knows"}
-		: {_tag: "Read", answer};
+		? { _tag: "Unknown", reason: "ship reconcile exited 0 and named no outcome this sweep knows" }
+		: { _tag: "Read", answer };
 };
 
 export interface RecoverOptions<R = never> {
@@ -325,9 +325,9 @@ const recoverLane = <R>(
 	Effect.gen(function* () {
 		const key = keyOf(root, name);
 		const unreadable = (reason: string): ReadonlyArray<LaneRow> => [
-			{key, root, verdict: "unreadable", reason},
+			{ key, root, verdict: "unreadable", reason },
 		];
-		const loaded = yield* loadLane({root, lane: name});
+		const loaded = yield* loadLane({ root, lane: name });
 		// An entry with no workflow.json is not a lane, and reporting a scratch directory as one would
 		// put noise in front of every real row.
 		if (loaded._tag === "Absent") return [];
@@ -347,14 +347,14 @@ const recoverLane = <R>(
 		let states = folded.states;
 		const status = deriveStatus(loaded.lane, states, standingCauses(loaded.entries));
 		if (status.status === "done") {
-			return [{key, root, verdict: "terminal" as const, from: printable(status.stateValue)}];
+			return [{ key, root, verdict: "terminal" as const, from: printable(status.stateValue) }];
 		}
 		const owed = owedBy(status);
 		const spawns = options.spawns;
 		const building = spawns === null ? [] : buildingBy(status);
 		const queued = queuedBy(status);
 		if (owed.length === 0 && building.length === 0 && queued.length === 0) {
-			return [{key, root, verdict: "current" as const, from: printable(status.stateValue)}];
+			return [{ key, root, verdict: "current" as const, from: printable(status.stateValue) }];
 		}
 
 		// Where this run has proven the lane stands, as a printed stateValue. It advances off the
@@ -397,7 +397,7 @@ const recoverLane = <R>(
 		 * verdict names its landed and its withheld row read under.
 		 */
 		const record = (
-			base: Omit<LaneRow, "verdict"> & {readonly task: string},
+			base: Omit<LaneRow, "verdict"> & { readonly task: string },
 			event: string,
 			cause: string | null,
 			appended: Verdict,
@@ -442,7 +442,7 @@ const recoverLane = <R>(
 					from = landing;
 				};
 				if (options.check) {
-					rows.push({...base, verdict: withheld, to: predicted});
+					rows.push({ ...base, verdict: withheld, to: predicted });
 					advance(predicted);
 					return;
 				}
@@ -492,8 +492,8 @@ const recoverLane = <R>(
 				});
 			});
 
-		for (const {task, leaf, event} of owed) {
-			const base = {key, root, task, state: leaf, event, from};
+		for (const { task, leaf, event } of owed) {
+			const base = { key, root, task, state: leaf, event, from };
 			const proveOptions: ProveOptions = {
 				root,
 				lane: name,
@@ -524,7 +524,7 @@ const recoverLane = <R>(
 			}
 
 			yield* record(
-				{...base, proof: proof.proof, proofCode: proof.code},
+				{ ...base, proof: proof.proof, proofCode: proof.code },
 				event,
 				null,
 				"recovered",
@@ -539,16 +539,16 @@ const recoverLane = <R>(
 		// emitter's own naming rather than by which tasks happen to be active this sweep.
 		const epic = epicOf(Object.keys(loaded.lane.tasks));
 
-		for (const {task, leaf} of building) {
+		for (const { task, leaf } of building) {
 			// `building` is empty unless the arm was handed its reads, so this narrowing can never be
 			// the thing that decides whether the arm runs.
 			if (spawns === null) break;
 			// No `event` on the base: a lane whose builder is alive and well is a `working` row, and a
 			// row carrying `event: "BLOCKED"` would tell a driver reading stdout that a park is what this
 			// sweep judged it owed. The event rides the two rows that actually record one.
-			const base = {key, root, task, state: leaf, from};
+			const base = { key, root, task, state: leaf, from };
 			const hold = (verdict: Verdict, reason: string): void => {
-				rows.push({...base, verdict, reason});
+				rows.push({ ...base, verdict, reason });
 			};
 			const issue = issueOf(task, key);
 			if (issue === null) {
@@ -663,8 +663,8 @@ const recoverLane = <R>(
 			);
 		}
 
-		for (const {task, leaf} of queued) {
-			const base = {key, root, task, state: leaf, from};
+		for (const { task, leaf } of queued) {
+			const base = { key, root, task, state: leaf, from };
 			const pull = queuedPullOf(loaded.entries, task);
 			if (pull === null) {
 				rows.push({
@@ -721,7 +721,13 @@ const recoverLane = <R>(
 				continue;
 			}
 			yield* record(
-				{...base, pr: pull.url, answer: read.answer, token: settlement.token, event: mapped.event},
+				{
+					...base,
+					pr: pull.url,
+					answer: read.answer,
+					token: settlement.token,
+					event: mapped.event,
+				},
 				mapped.event,
 				null,
 				"settled",
@@ -763,7 +769,7 @@ export const runRecover = <R = never>(
 		// run that has written nothing. Listing lazily used to refuse from inside the sweep, after the
 		// first root's appends had landed: exit 11, empty stdout, and not one of the lanes it had just
 		// moved named anywhere.
-		const listings: Array<{root: string; names: ReadonlyArray<string>} | {root: string}> = [];
+		const listings: Array<{ root: string; names: ReadonlyArray<string> } | { root: string }> = [];
 		for (const root of options.roots) {
 			const probe = yield* Effect.result(exists(root));
 			if (Result.isFailure(probe)) {
@@ -773,7 +779,7 @@ export const runRecover = <R = never>(
 				);
 			}
 			if (!probe.success) {
-				listings.push({root});
+				listings.push({ root });
 				continue;
 			}
 			const names = yield* Effect.result(listLanes(root));
@@ -783,14 +789,14 @@ export const runRecover = <R = never>(
 					`${VERB}: cannot list ${root}: ${names.failure.reason} — the lane set is UNKNOWN, never empty. Nothing was appended.`,
 				);
 			}
-			listings.push({root, names: names.success});
+			listings.push({ root, names: names.success });
 		}
 
 		const lanes: LaneRow[] = [];
-		const scanned: Array<{root: string; present: boolean; lanes: number}> = [];
+		const scanned: Array<{ root: string; present: boolean; lanes: number }> = [];
 		for (const listing of listings) {
 			if (!("names" in listing)) {
-				scanned.push({root: listing.root, present: false, lanes: 0});
+				scanned.push({ root: listing.root, present: false, lanes: 0 });
 				continue;
 			}
 			let found = 0;
@@ -800,7 +806,7 @@ export const runRecover = <R = never>(
 				found += 1;
 				lanes.push(...rows);
 			}
-			scanned.push({root: listing.root, present: true, lanes: found});
+			scanned.push({ root: listing.root, present: true, lanes: found });
 		}
 
 		const summary = Object.fromEntries(
@@ -848,5 +854,8 @@ export const runRecover = <R = never>(
 				stderr,
 			);
 		}
-		return answer(JSON.stringify({check: options.check, scanned, summary, lanes}, null, 2), stderr);
+		return answer(
+			JSON.stringify({ check: options.check, scanned, summary, lanes }, null, 2),
+			stderr,
+		);
 	});

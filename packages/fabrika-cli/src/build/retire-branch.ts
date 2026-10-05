@@ -12,7 +12,7 @@
  * left with one candidate and `lane prove` locates the range instead of refusing.
  */
 
-import {parseLaneBranch} from "./lane.ts";
+import { parseLaneBranch } from "./lane.ts";
 
 const BUILD_PREFIX = "build/";
 
@@ -36,7 +36,7 @@ export type Supersession =
 			readonly survivor: string;
 			readonly superseded: ReadonlyArray<string>;
 	  }
-	| {readonly _tag: "Unattested"; readonly why: string};
+	| { readonly _tag: "Unattested"; readonly why: string };
 
 /**
  * Seat the candidates against the board's authorized claim markers.

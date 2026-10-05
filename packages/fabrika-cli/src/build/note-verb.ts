@@ -9,19 +9,19 @@
  * reader can see at a glance that a note predates a later push. Without it a spot judgement carries no
  * freshness signal at all, which is the stale-repair-note class.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {createComment, getComment} from "../io/issues.ts";
-import {getPullRequest} from "../io/pulls.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {leakRefusal, readAuthored} from "./authored.ts";
-import {requireCallerToken, requireClaim, requireSession} from "./claim.ts";
-import {PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {isPullRequest} from "./github.ts";
-import {resolveTargetRepo} from "./target.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { createComment, getComment } from "../io/issues.ts";
+import { getPullRequest } from "../io/pulls.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { leakRefusal, readAuthored } from "./authored.ts";
+import { requireCallerToken, requireClaim, requireSession } from "./claim.ts";
+import { PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { isPullRequest } from "./github.ts";
+import { resolveTargetRepo } from "./target.ts";
 
 const VERB = "build note";
 
@@ -51,7 +51,7 @@ export const runNote = (
 	ChildProcessSpawner.ChildProcessSpawner | HttpClient.HttpClient
 > =>
 	Effect.gen(function* () {
-		const {number} = options;
+		const { number } = options;
 
 		const authored = readAuthored(SURFACE, yield* options.stdin);
 		if (authored._tag === "Refused") return authored.outcome;
@@ -118,7 +118,7 @@ export const runNote = (
 			back._tag === "Ok" && normalizeForReadback(back.value) === normalizeForReadback(composed);
 		return matches
 			? answer(
-					JSON.stringify({answer: "posted", number, commentId: posted.value.id, head}),
+					JSON.stringify({ answer: "posted", number, commentId: posted.value.id, head }),
 					held.notes,
 				)
 			: refuse(

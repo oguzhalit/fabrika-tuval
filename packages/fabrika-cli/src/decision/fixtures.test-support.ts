@@ -5,7 +5,7 @@
  * case under test varies and holds everything else fixed, so a test reads as the one fact it pins.
  */
 
-import type {HttpReply} from "../fakes.test-support.ts";
+import type { HttpReply } from "../fakes.test-support.ts";
 
 export const REPO = "o/r";
 export const ISSUE = 4300;
@@ -26,7 +26,7 @@ export const BODY_NO_CRITERIA = "## The decision\n\nWhich fork?\n";
 /** The same decision with the block's heading drifted a level — the `Malformed` case. */
 export const BODY_DRIFTED_CRITERIA = BODY.replace("### Acceptance", "## Acceptance");
 
-export const env = {CLAUDE_PIPELINE_REPO: REPO, GITHUB_TOKEN: "ghp_scripted"} as Record<
+export const env = { CLAUDE_PIPELINE_REPO: REPO, GITHUB_TOKEN: "ghp_scripted" } as Record<
 	string,
 	string | undefined
 >;
@@ -52,7 +52,7 @@ export const REMOVE_LABEL = new RegExp(
 	`^DELETE ${API}\\/repos\\/${REPO}\\/issues\\/${ISSUE}\\/labels\\/`,
 );
 
-const served = (body: unknown): HttpReply => ({status: 200, body: JSON.stringify(body)});
+const served = (body: unknown): HttpReply => ({ status: 200, body: JSON.stringify(body) });
 
 /** The issue as `GET /repos/o/r/issues/4300` answers, with whatever labels the case wants. */
 export const issueRead = (
@@ -64,9 +64,9 @@ export const issueRead = (
 		title: "Which fork?",
 		body,
 		state: "open",
-		labels: labels.map((name) => ({name})),
+		labels: labels.map((name) => ({ name })),
 		html_url: `https://github.com/${REPO}/issues/${ISSUE}`,
-		user: {login: "agent"},
+		user: { login: "agent" },
 	});
 
 /** One page of comments, each `[id, author, body]`. */
@@ -74,7 +74,7 @@ export const comments = (...rows: ReadonlyArray<readonly [number, string, string
 	served(
 		rows.map(([id, author, body]) => ({
 			id,
-			user: {login: author},
+			user: { login: author },
 			created_at: "2026-08-20T05:00:00Z",
 			updated_at: "2026-08-20T05:00:00Z",
 			body,
@@ -86,14 +86,16 @@ export const RULING_ONLY = comments([RULING_COMMENT, RULER, "Take the second for
 
 /** The roster reads, all four of them, resolving to a two-account control plane. */
 export const acl: ReadonlyArray<readonly [RegExp, HttpReply]> = [
-	[VIEWER, served({login: RULER})],
-	[TRUNK, served({default_branch: "main"})],
-	[CODEOWNERS, {status: 200, body: "/packages/fabrika-cli/ @o/control-plane\n"}],
-	[MEMBERS, served([{login: RULER}, {login: "cansirin"}])],
+	[VIEWER, served({ login: RULER })],
+	[TRUNK, served({ default_branch: "main" })],
+	[CODEOWNERS, { status: 200, body: "/packages/fabrika-cli/ @o/control-plane\n" }],
+	[MEMBERS, served([{ login: RULER }, { login: "cansirin" }])],
 ];
 
 export const taxonomy = served(
-	["type:decision", "ready-for:agent", "ready-for:human", "status:triaged"].map((name) => ({name})),
+	["type:decision", "ready-for:agent", "ready-for:human", "status:triaged"].map((name) => ({
+		name,
+	})),
 );
 
 export const POSTED: HttpReply = {
@@ -114,4 +116,4 @@ export const AUTHORIZATION_POSTED: HttpReply = {
 };
 
 /** A label write's answer — the endpoint echoes the issue's label set, which nothing reads. */
-export const LABEL_WRITTEN: HttpReply = {status: 200, body: "[]"};
+export const LABEL_WRITTEN: HttpReply = { status: 200, body: "[]" };

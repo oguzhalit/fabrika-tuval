@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import {encodePng, solid} from "./fakes.test-support.ts";
-import {decodePng, sha256Of} from "./png.ts";
+import { describe, expect, it } from "vitest";
+import { encodePng, solid } from "./fakes.test-support.ts";
+import { decodePng, sha256Of } from "./png.ts";
 
 describe("decodePng", () => {
 	it("round-trips an RGBA raster through a real PNG", () => {
@@ -22,7 +22,7 @@ describe("decodePng", () => {
 			"the bytes do not carry a PNG signature",
 		],
 	])("calls %s invalid, naming why", (_label, bytes, detail) => {
-		expect(decodePng(bytes)).toEqual({_tag: "Invalid", detail});
+		expect(decodePng(bytes)).toEqual({ _tag: "Invalid", detail });
 	});
 
 	it("calls a PNG truncated mid-IDAT invalid rather than decoding a partial image", () => {

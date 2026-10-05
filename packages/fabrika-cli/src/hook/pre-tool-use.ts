@@ -9,7 +9,7 @@
  * makes. So the allow answer is a fabrika-namespaced token the harness ignores, which still satisfies
  * the convention's positive-answer rule.
  */
-import type {Envelope} from "./envelope.ts";
+import type { Envelope } from "./envelope.ts";
 
 /** The Bash command this envelope carries, or nothing — a payload with no command is not judgeable. */
 export const bashCommandOf = (envelope: Envelope): string | undefined => {
@@ -20,8 +20,8 @@ export const bashCommandOf = (envelope: Envelope): string | undefined => {
 };
 
 export type Decision =
-	| {readonly _tag: "Allow"; readonly because: string}
-	| {readonly _tag: "Deny"; readonly reason: string};
+	| { readonly _tag: "Allow"; readonly because: string }
+	| { readonly _tag: "Deny"; readonly reason: string };
 
 /** The stdout a `PreToolUse` guard answers with; `verb` names it in the allow token. */
 export const preToolUseStdout = (verb: string, decision: Decision): string =>
@@ -35,5 +35,5 @@ export const preToolUseStdout = (verb: string, decision: Decision): string =>
 			})}\n`
 		: `${JSON.stringify({
 				suppressOutput: true,
-				fabrika: {verb, outcome: "allow", because: decision.because},
+				fabrika: { verb, outcome: "allow", because: decision.because },
 			})}\n`;

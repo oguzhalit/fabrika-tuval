@@ -1,11 +1,11 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams} from "../fakes.test-support.ts";
-import {type Attempt, fail, ok, type Shell} from "../io/git.ts";
-import {PULL_FILES_CAP} from "../io/pulls.ts";
-import {platformCapLine, platformFileSet, readLocalFileSet} from "./local-file-set.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams } from "../fakes.test-support.ts";
+import { type Attempt, fail, ok, type Shell } from "../io/git.ts";
+import { PULL_FILES_CAP } from "../io/pulls.ts";
+import { platformCapLine, platformFileSet, readLocalFileSet } from "./local-file-set.ts";
 
-const RANGE = {base: "aaaaaaa", tip: "bbbbbbb"};
+const RANGE = { base: "aaaaaaa", tip: "bbbbbbb" };
 
 /** The spawner the shared read declares but a scripted reader never reaches. */
 const SEAMS = fakeSeams([]).layer;
@@ -47,7 +47,7 @@ describe("readLocalFileSet", () => {
 
 	it("carries an unreadable range's reason instead of an empty set", async () => {
 		const out = await run(2, () => Effect.succeed(fail("fatal: bad revision")));
-		expect(out).toEqual({_tag: "Unreadable", reason: "fatal: bad revision"});
+		expect(out).toEqual({ _tag: "Unreadable", reason: "fatal: bad revision" });
 	});
 });
 
@@ -92,7 +92,7 @@ describe("platformFileSet", () => {
 			"ship gate",
 			"#4321",
 			PULL_FILES_CAP,
-			ok(Array.from({length: PULL_FILES_CAP}, (_, i) => `f${i}.ts`)),
+			ok(Array.from({ length: PULL_FILES_CAP }, (_, i) => `f${i}.ts`)),
 		);
 		expect(at._tag).toBe("Read");
 		if (at._tag !== "Read") return;
@@ -104,7 +104,7 @@ describe("platformFileSet", () => {
 			"ship gate",
 			"#4321",
 			PULL_FILES_CAP - 1,
-			ok(Array.from({length: PULL_FILES_CAP - 1}, (_, i) => `f${i}.ts`)),
+			ok(Array.from({ length: PULL_FILES_CAP - 1 }, (_, i) => `f${i}.ts`)),
 		);
 		expect(under._tag).toBe("Read");
 		if (under._tag !== "Read") return;
@@ -118,7 +118,7 @@ describe("the ceiling belongs to the platform read alone", () => {
 	it("never raises `capped` on a local range read", async () => {
 		const out = await run(
 			PULL_FILES_CAP,
-			listing(Array.from({length: PULL_FILES_CAP}, (_, i) => `f${i}.ts`)),
+			listing(Array.from({ length: PULL_FILES_CAP }, (_, i) => `f${i}.ts`)),
 		);
 		expect(out._tag).toBe("Read");
 		if (out._tag !== "Read") return;

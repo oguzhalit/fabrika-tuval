@@ -14,7 +14,7 @@
  * `./change-detect-verb.ts`.
  */
 
-import {parse} from "yaml";
+import { parse } from "yaml";
 
 /** ci.yml's `changes` job → the `dorny/paths-filter` step whose `token` this asserts. */
 export const CI_CHANGES_SOURCE = {
@@ -27,11 +27,11 @@ const isRecord = (v: unknown): v is Record<string, unknown> =>
 
 /** The verdict. A pass carries no evidence, and each refusal carries exactly its reason. */
 export type ChangeDetectVerdict =
-	| {readonly pass: true}
+	| { readonly pass: true }
 	/** A job/step/`with:` was missing — the invariant is unverifiable (fail closed). */
-	| {readonly pass: false; readonly reason: "zero-scope"; readonly detail: string}
+	| { readonly pass: false; readonly reason: "zero-scope"; readonly detail: string }
 	/** The dorny step selects the GitHub-API read (non-empty or defaulted token) — the flake path. */
-	| {readonly pass: false; readonly reason: "api-mode"; readonly detail: string};
+	| { readonly pass: false; readonly reason: "api-mode"; readonly detail: string };
 
 /**
  * Decide over the ci.yml text: find the `changes` job's first `uses: dorny/paths-filter@…` step and
@@ -50,7 +50,7 @@ export const judge = (ciText: string): ChangeDetectVerdict => {
 		};
 	}
 	if (!isRecord(doc) || !isRecord(doc.jobs)) {
-		return {pass: false, reason: "zero-scope", detail: "ci.yml has no top-level 'jobs:' mapping"};
+		return { pass: false, reason: "zero-scope", detail: "ci.yml has no top-level 'jobs:' mapping" };
 	}
 	const job = doc.jobs[CI_CHANGES_SOURCE.job];
 	if (!isRecord(job) || !Array.isArray(job.steps)) {
@@ -93,7 +93,7 @@ export const judge = (ciText: string): ChangeDetectVerdict => {
 				"Set `token: ''` to force API-free git-mode detection.",
 		};
 	}
-	return {pass: true};
+	return { pass: true };
 };
 
 const VERB = "guard change-detect-guard check";

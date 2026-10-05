@@ -1,5 +1,5 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	comments,
 	GIT_DIRS,
@@ -8,8 +8,8 @@ import {
 	marker,
 	NONCE,
 } from "../build/fixtures.test-support.ts";
-import {fakeSeams, okOut, type Scripted} from "../fakes.test-support.ts";
-import {FAILED} from "../verb.ts";
+import { fakeSeams, okOut, type Scripted } from "../fakes.test-support.ts";
+import { FAILED } from "../verb.ts";
 import {
 	CAPTURE_INVALID,
 	LANE_NOT_MINE,
@@ -19,8 +19,8 @@ import {
 	RENDER_CRASHED,
 	SURFACE_UNREACHABLE,
 } from "./codes.ts";
-import {encodePng, type FakeBytesFsOptions, fakeBytesFs, solid} from "./fakes.test-support.ts";
-import {type BrowseLeg, type HarnessLeg, runRender, type ShotOutcome} from "./render-verb.ts";
+import { encodePng, type FakeBytesFsOptions, fakeBytesFs, solid } from "./fakes.test-support.ts";
+import { type BrowseLeg, type HarnessLeg, runRender, type ShotOutcome } from "./render-verb.ts";
 
 const ROOT = "/repo/trees/lane-a";
 const CONFIG = `${ROOT}/.fabrika.jsonc`;
@@ -33,11 +33,11 @@ const LANE_OK: ReadonlyArray<Scripted> = [
 	[/GET .*\/repos\/o\/r\/issues\/4312$/, issue()],
 	[
 		/GET .*\/repos\/o\/r\/issues\/4312\/comments/,
-		comments({id: 1, body: marker("s-9f2e", LANE_UUID)}),
+		comments({ id: 1, body: marker("s-9f2e", LANE_UUID) }),
 	],
 	[
 		/GET .*\/repos\/o\/r\/collaborators\/agent\/permission/,
-		{status: 200, body: '{"permission":"write"}'},
+		{ status: 200, body: '{"permission":"write"}' },
 	],
 ];
 
@@ -56,7 +56,7 @@ const options = {
 	surfaces: ["/board"],
 	firstRender: [] as ReadonlyArray<string>,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e"} as Record<
+	env: { CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e" } as Record<
 		string,
 		string | undefined
 	>,
@@ -73,13 +73,13 @@ const browsing =
 const run = (
 	script: ReadonlyArray<Scripted>,
 	fs: FakeBytesFsOptions,
-	overrides: Partial<typeof options> & {browse?: BrowseLeg} = {},
+	overrides: Partial<typeof options> & { browse?: BrowseLeg } = {},
 ) =>
 	Effect.runPromise(
 		Effect.provide(
 			runRender({
 				...options,
-				browse: browsing(() => ({_tag: "Captured"})),
+				browse: browsing(() => ({ _tag: "Captured" })),
 				...overrides,
 			}),
 			Layer.merge(fakeSeams(script).layer, fakeBytesFs(fs).layer),
@@ -101,23 +101,23 @@ const DESK = {
 };
 const config = (surfaces: ReadonlyArray<unknown>, capture?: Record<string, unknown>) =>
 	JSON.stringify(
-		capture === undefined ? {uiSurfaces: surfaces} : {uiSurfaces: surfaces, uiCapture: capture},
+		capture === undefined ? { uiSurfaces: surfaces } : { uiSurfaces: surfaces, uiCapture: capture },
 	);
 const harnessFile = config([WEB]);
 const twoApps = config([WEB, DESK]);
 const SESSION = `${ROOT}/.fabrika/design-session.json`;
-const withSession = config([WEB], {storageState: ".fabrika/design-session.json"});
-const captured = {files: {[CONFIG]: harnessFile, [`${SET_DIR}/board.png`]: PNG}};
+const withSession = config([WEB], { storageState: ".fabrika/design-session.json" });
+const captured = { files: { [CONFIG]: harnessFile, [`${SET_DIR}/board.png`]: PNG } };
 
 describe("runRender operands", () => {
 	it("refuses zero surfaces on 1 — no tool guesses surfaces from a diff", async () => {
-		const outcome = await run([], {}, {surfaces: []});
+		const outcome = await run([], {}, { surfaces: [] });
 		expect(outcome.code).toBe(FAILED);
 	});
 
 	it.each([
-		["a non-kebab --out", {out: "After"}, '--out "After" is not a kebab-case set name'],
-		["a reserved :state suffix", {surfaces: ["/board:empty"]}, "carries a :state suffix"],
+		["a non-kebab --out", { out: "After" }, '--out "After" is not a kebab-case set name'],
+		["a reserved :state suffix", { surfaces: ["/board:empty"] }, "carries a :state suffix"],
 	])("refuses %s on 10", async (_label, overrides, fragment) => {
 		const outcome = await run([], {}, overrides);
 		expect(outcome.code).toBe(OFF_VOCABULARY);
@@ -125,7 +125,7 @@ describe("runRender operands", () => {
 	});
 
 	it("refuses a --first-render naming a surface it is not rendering", async () => {
-		const outcome = await run([], {}, {firstRender: ["/terms"]});
+		const outcome = await run([], {}, { firstRender: ["/terms"] });
 		expect(outcome.code).toBe(FAILED);
 	});
 });
@@ -135,7 +135,7 @@ describe("runRender", () => {
 		const fs = fakeBytesFs(captured);
 		const outcome = await Effect.runPromise(
 			Effect.provide(
-				runRender({...options, browse: browsing(() => ({_tag: "Captured"}))}),
+				runRender({ ...options, browse: browsing(() => ({ _tag: "Captured" })) }),
 				Layer.merge(fakeSeams(LANE_OK).layer, fs.layer),
 			),
 		);
@@ -158,25 +158,25 @@ describe("runRender", () => {
 	});
 
 	it("records a --first-render surface as such", async () => {
-		const outcome = await run(LANE_OK, captured, {firstRender: ["/board"]});
+		const outcome = await run(LANE_OK, captured, { firstRender: ["/board"] });
 		expect(JSON.parse(outcome.stdout).captures[0].firstRender).toBe(true);
 	});
 
 	it.each([
 		[
 			"an unreachable surface",
-			() => ({_tag: "Unreachable", reason: "HTTP 404"}) as ShotOutcome,
+			() => ({ _tag: "Unreachable", reason: "HTTP 404" }) as ShotOutcome,
 			SURFACE_UNREACHABLE,
 			"is unreachable in this tree",
 		],
 		[
 			"a crashed render",
-			() => ({_tag: "Crashed", error: "TypeError: x"}) as ShotOutcome,
+			() => ({ _tag: "Crashed", error: "TypeError: x" }) as ShotOutcome,
 			RENDER_CRASHED,
 			"threw during render",
 		],
 	])("refuses %s, naming it on stderr", async (_label, shot, code, fragment) => {
-		const outcome = await run(LANE_OK, captured, {browse: browsing(shot)});
+		const outcome = await run(LANE_OK, captured, { browse: browsing(shot) });
 		expect(outcome.code).toBe(code);
 		expect(outcome.stdout).toBe("");
 		expect(outcome.stderr.join("\n")).toContain(fragment);
@@ -184,7 +184,7 @@ describe("runRender", () => {
 
 	it("refuses an invalid capture on 16 — evidence nobody can open is not evidence", async () => {
 		const outcome = await run(LANE_OK, {
-			files: {[CONFIG]: harnessFile, [`${SET_DIR}/board.png`]: new Uint8Array(0)},
+			files: { [CONFIG]: harnessFile, [`${SET_DIR}/board.png`]: new Uint8Array(0) },
 		});
 		expect(outcome.code).toBe(CAPTURE_INVALID);
 		expect(outcome.stderr.join("\n")).toContain("captured invalid bytes (zero bytes)");
@@ -193,15 +193,15 @@ describe("runRender", () => {
 	it("reports the SMALLEST applicable code when outcomes mix, and enumerates every surface", async () => {
 		const outcome = await run(
 			LANE_OK,
-			{files: {[CONFIG]: harnessFile, [`${SET_DIR}/board.png`]: PNG}},
+			{ files: { [CONFIG]: harnessFile, [`${SET_DIR}/board.png`]: PNG } },
 			{
 				surfaces: ["/board", "/terms", "/new"],
 				browse: browsing((url) =>
 					url.endsWith("/terms")
-						? {_tag: "Crashed", error: "TypeError: x"}
+						? { _tag: "Crashed", error: "TypeError: x" }
 						: url.endsWith("/new")
-							? {_tag: "Unreachable", reason: "HTTP 404"}
-							: {_tag: "Captured"},
+							? { _tag: "Unreachable", reason: "HTTP 404" }
+							: { _tag: "Captured" },
 				),
 			},
 		);
@@ -230,7 +230,7 @@ describe("runRender", () => {
 	it("refuses on 11 when an app's command dies, naming the app", async () => {
 		const outcome = await run(LANE_OK, captured, {
 			startHarness: () =>
-				Effect.succeed({_tag: "Failed", app: "web", reason: "the command exited with 1"}),
+				Effect.succeed({ _tag: "Failed", app: "web", reason: "the command exited with 1" }),
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.at(-1)).toContain('app "web" could not start: the command exited with 1');
@@ -238,7 +238,7 @@ describe("runRender", () => {
 
 	it("refuses on 11 when a ready leg names no origin for an app it was asked to start", async () => {
 		const outcome = await run(LANE_OK, captured, {
-			startHarness: () => Effect.succeed({_tag: "Ready", origins: new Map(), stop: Effect.void}),
+			startHarness: () => Effect.succeed({ _tag: "Ready", origins: new Map(), stop: Effect.void }),
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.at(-1)).toContain(
@@ -248,24 +248,26 @@ describe("runRender", () => {
 	});
 
 	it("refuses a repo declaring no uiSurfaces row on 19, saying so", async () => {
-		const outcome = await run(LANE_OK, {files: {}});
+		const outcome = await run(LANE_OK, { files: {} });
 		expect(outcome.code).toBe(NO_UI_SURFACE);
 		expect(outcome.stderr.at(-1)).toContain("declares no `uiSurfaces` rows");
 	});
 
 	it("refuses a declared empty list on 19 too — an empty list is never read as silence", async () => {
-		const outcome = await run(LANE_OK, {files: {[CONFIG]: config([])}});
+		const outcome = await run(LANE_OK, { files: { [CONFIG]: config([]) } });
 		expect(outcome.code).toBe(NO_UI_SURFACE);
 	});
 
 	it("refuses a uiSurfaces value that violates its schema on 11", async () => {
-		const outcome = await run(LANE_OK, {files: {[CONFIG]: JSON.stringify({uiSurfaces: [{}]})}});
+		const outcome = await run(LANE_OK, {
+			files: { [CONFIG]: JSON.stringify({ uiSurfaces: [{}] }) },
+		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 	});
 
 	it("refuses on 11 when uiCapture declares a storageState no file backs", async () => {
 		const outcome = await run(LANE_OK, {
-			files: {...captured.files, [CONFIG]: withSession},
+			files: { ...captured.files, [CONFIG]: withSession },
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.at(-1)).toContain("would capture the login page");
@@ -275,11 +277,11 @@ describe("runRender", () => {
 		const seen: Array<string | null> = [];
 		const outcome = await run(
 			LANE_OK,
-			{files: {...captured.files, [CONFIG]: withSession, [SESSION]: PNG}},
+			{ files: { ...captured.files, [CONFIG]: withSession, [SESSION]: PNG } },
 			{
 				browse: (request) => {
 					seen.push(request.storageState);
-					return Effect.succeed({_tag: "Captured"});
+					return Effect.succeed({ _tag: "Captured" });
 				},
 			},
 		);
@@ -292,7 +294,7 @@ describe("runRender", () => {
 		const outcome = await run(LANE_OK, captured, {
 			browse: (request) => {
 				seen.push(request.storageState);
-				return Effect.succeed({_tag: "Captured"});
+				return Effect.succeed({ _tag: "Captured" });
 			},
 		});
 		expect(outcome.code).toBe(0);
@@ -302,7 +304,7 @@ describe("runRender", () => {
 	it("refuses a foreign lane on 18", async () => {
 		const foreign: ReadonlyArray<Scripted> = LANE_OK.map((row) =>
 			row[0].source.includes("comments")
-				? [row[0], comments({id: 1, body: marker("other-session", LANE_UUID)})]
+				? [row[0], comments({ id: 1, body: marker("other-session", LANE_UUID) })]
 				: row,
 		);
 		const outcome = await run(foreign, captured);
@@ -312,7 +314,7 @@ describe("runRender", () => {
 
 	it("refuses on 11 when the claim state cannot be read", async () => {
 		const unreadable: ReadonlyArray<Scripted> = LANE_OK.map((row) =>
-			row[0].source.includes("comments") ? [row[0], {status: 502, body: "{}"}] : row,
+			row[0].source.includes("comments") ? [row[0], { status: 502, body: "{}" }] : row,
 		);
 		const outcome = await run(unreadable, captured);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
@@ -334,7 +336,7 @@ describe("runRender across apps", () => {
 			surfaces: ["/board", "/desk/chat"],
 			browse: (request) => {
 				seen.push(request.url);
-				return Effect.succeed({_tag: "Captured"});
+				return Effect.succeed({ _tag: "Captured" });
 			},
 		});
 		expect(outcome.code).toBe(0);
@@ -357,7 +359,7 @@ describe("runRender across apps", () => {
 	it("refuses on 10 a surface no declared mount claims, naming the mounts", async () => {
 		const outcome = await run(
 			LANE_OK,
-			{files: {[CONFIG]: config([DESK])}},
+			{ files: { [CONFIG]: config([DESK]) } },
 			{
 				surfaces: ["/board"],
 			},

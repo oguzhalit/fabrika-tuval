@@ -9,7 +9,7 @@
  * arithmetic mid-flight; a repo opts the axis in for its next emission and nothing else moves.
  */
 
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const MACHINERY_LAPS = "machineryLaps";
 
@@ -23,7 +23,7 @@ export interface MachineryLapsSurface {
 }
 
 /** The shipped surface — what a repo declaring nothing still gets: the machine it has today. */
-export const SHIPPED_MACHINERY_LAPS: MachineryLapsSurface = {onEmit: "off"};
+export const SHIPPED_MACHINERY_LAPS: MachineryLapsSurface = { onEmit: "off" };
 
 const named = (path: string): string => `\`${MACHINERY_LAPS}\`'s \`${path}\``;
 
@@ -36,7 +36,7 @@ const KNOWN: ReadonlyArray<string> = ["onEmit"];
 
 const decodeOnEmit = (raw: unknown): Decoded<OnEmit> =>
 	typeof raw === "string" && (ON_EMIT_VALUES as ReadonlyArray<string>).includes(raw.trim())
-		? {_tag: "Value", value: raw.trim() as OnEmit}
+		? { _tag: "Value", value: raw.trim() as OnEmit }
 		: {
 				_tag: "Malformed",
 				reason: `${named("onEmit")} is not one of ${ON_EMIT_VALUES.join(", ")}`,
@@ -45,7 +45,7 @@ const decodeOnEmit = (raw: unknown): Decoded<OnEmit> =>
 const decode = (raw: unknown): Decoded<MachineryLapsSurface> => {
 	const record = asRecord(raw);
 	if (record === null) {
-		return {_tag: "Malformed", reason: `\`${MACHINERY_LAPS}\` is not an object`};
+		return { _tag: "Malformed", reason: `\`${MACHINERY_LAPS}\` is not an object` };
 	}
 	const stray = Object.keys(record).find((key) => !KNOWN.includes(key));
 	if (stray !== undefined) {
@@ -57,11 +57,11 @@ const decode = (raw: unknown): Decoded<MachineryLapsSurface> => {
 
 	const onEmit =
 		record.onEmit === undefined
-			? ({_tag: "Value", value: SHIPPED_MACHINERY_LAPS.onEmit} as const)
+			? ({ _tag: "Value", value: SHIPPED_MACHINERY_LAPS.onEmit } as const)
 			: decodeOnEmit(record.onEmit);
 	if (onEmit._tag === "Malformed") return onEmit;
 
-	return {_tag: "Value", value: {onEmit: onEmit.value}};
+	return { _tag: "Value", value: { onEmit: onEmit.value } };
 };
 
 export const machineryLapsKey: KeyGroup<MachineryLapsSurface> = {

@@ -21,10 +21,10 @@
  * channel, and that lives in `./unresolved-threads-verb.ts` where the read happens.
  */
 
-import type {ReviewThread} from "../ship/github.ts";
-import {excerptOf, openingAuthorOf} from "../ship/threads.ts";
-import {type Annotation, atFile, atLine, unlocated} from "./annotate.ts";
-import {annotationsOrNone, clean, type GuardVerdict, violation} from "./verdict.ts";
+import type { ReviewThread } from "../ship/github.ts";
+import { excerptOf, openingAuthorOf } from "../ship/threads.ts";
+import { type Annotation, atFile, atLine, unlocated } from "./annotate.ts";
+import { annotationsOrNone, clean, type GuardVerdict, violation } from "./verdict.ts";
 
 const VERB = "guard unresolved-threads check";
 

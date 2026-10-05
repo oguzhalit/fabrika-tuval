@@ -11,14 +11,14 @@
  * is the lock, which only separate processes can contend for.
  * @ruling https://github.com/kamp-us/phoenix/issues/7057
  */
-import {spawn, spawnSync} from "node:child_process";
-import {chmodSync, mkdirSync, readFileSync, realpathSync, writeFileSync} from "node:fs";
-import {hostname} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {afterAll, describe, expect, it} from "vitest";
-import {lockDirFor, stampOf} from "./creation-lock.ts";
-import {gitSync, openClone, removeClones} from "./throwaway-clone.test-support.ts";
+import { spawn, spawnSync } from "node:child_process";
+import { chmodSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { hostname } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterAll, describe, expect, it } from "vitest";
+import { lockDirFor, stampOf } from "./creation-lock.ts";
+import { gitSync, openClone, removeClones } from "./throwaway-clone.test-support.ts";
 
 const BIN = fileURLToPath(new URL("../bin.ts", import.meta.url));
 
@@ -39,7 +39,7 @@ const createOne = (clone: string, cwd: string, name: string): Promise<Created> =
 	new Promise((resolve) => {
 		const child = spawn(process.execPath, [BIN, "hook", "worktree-create"], {
 			cwd,
-			env: {PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? ""},
+			env: { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "" },
 		});
 		let stdout = "";
 		let stderr = "";
@@ -49,7 +49,7 @@ const createOne = (clone: string, cwd: string, name: string): Promise<Created> =
 		child.stderr.on("data", (chunk) => {
 			stderr += chunk;
 		});
-		child.on("close", (code) => resolve({name, code, stdout, stderr}));
+		child.on("close", (code) => resolve({ name, code, stdout, stderr }));
 		child.stdin.end(
 			JSON.stringify({
 				session_id: "80f40b22-8788-40d0-ac1c-08ab808d6086",
@@ -65,13 +65,13 @@ const createOne = (clone: string, cwd: string, name: string): Promise<Created> =
  * A clone whose `post-checkout` is the stand-in install. Its paths are literal because the hook's
  * children inherit only an allowlisted environment.
  */
-const cloneWithStandIn = (): {clone: string; scratch: string; seen: string} => {
-	const {clone, scratch} = openClone();
-	mkdirSync(scratch, {recursive: true});
+const cloneWithStandIn = (): { clone: string; scratch: string; seen: string } => {
+	const { clone, scratch } = openClone();
+	mkdirSync(scratch, { recursive: true });
 	const hooks = join(clone, ".git", "hooks");
 	const inflight = join(scratch, "inflight");
 	const seen = join(scratch, "seen");
-	mkdirSync(inflight, {recursive: true});
+	mkdirSync(inflight, { recursive: true });
 	writeFileSync(seen, "");
 	writeFileSync(
 		join(hooks, "post-checkout"),
@@ -88,17 +88,17 @@ const cloneWithStandIn = (): {clone: string; scratch: string; seen: string} => {
 	chmodSync(join(hooks, "post-checkout"), 0o755);
 	// Local config outranks any global `core.hooksPath` the developer's HOME carries.
 	gitSync(clone, "config", "core.hooksPath", hooks);
-	return {clone, scratch, seen};
+	return { clone, scratch, seen };
 };
 
 const registered = (clone: string): string => gitSync(clone, "worktree", "list", "--porcelain");
 
 describe("hook worktree-create under concurrent spawns", () => {
 	it(`provisions all ${SPAWNS} spawns started at once, and their installs overlap`, async () => {
-		const {clone, scratch, seen} = cloneWithStandIn();
+		const { clone, scratch, seen } = cloneWithStandIn();
 
 		const results = await Promise.all(
-			Array.from({length: SPAWNS}, (_, i) => createOne(clone, scratch, `lane-${i}`)),
+			Array.from({ length: SPAWNS }, (_, i) => createOne(clone, scratch, `lane-${i}`)),
 		);
 
 		// As one object, so a red prints every loser's own stderr.
@@ -121,19 +121,19 @@ describe("hook worktree-create under concurrent spawns", () => {
 	}, 120_000);
 
 	it("is not blocked by a lock a dead process left behind", async () => {
-		const {clone, scratch} = cloneWithStandIn();
+		const { clone, scratch } = cloneWithStandIn();
 		const exited = spawnSync(process.execPath, ["-e", ""]);
 		expect(exited.status).toBe(0);
 		const lockDir = lockDirFor(join(clone, ".git"));
-		mkdirSync(lockDir, {recursive: true});
+		mkdirSync(lockDir, { recursive: true });
 		writeFileSync(
 			join(lockDir, "holder"),
-			stampOf({id: "dead-holder", pid: exited.pid ?? 0, host: hostname(), at: Date.now()}),
+			stampOf({ id: "dead-holder", pid: exited.pid ?? 0, host: hostname(), at: Date.now() }),
 		);
 
 		const created = await createOne(clone, scratch, "after-the-dead");
 
-		expect(created).toMatchObject({code: 0});
+		expect(created).toMatchObject({ code: 0 });
 		expect(registered(clone)).toContain(join(clone, ".claude", "worktrees", "after-the-dead"));
 	}, 120_000);
 });

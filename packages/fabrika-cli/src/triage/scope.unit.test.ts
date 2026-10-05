@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {scannedLine} from "./scope.ts";
+import { describe, expect, it } from "vitest";
+import { scannedLine } from "./scope.ts";
 
 describe("scannedLine", () => {
 	it("names the verb, the count, the noun and the repo", () => {

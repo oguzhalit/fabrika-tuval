@@ -11,8 +11,8 @@
  * names that are labels and nothing else. Standing lanes are in neither: a repo declares its own.
  */
 
-import {classLabel, type StatusNames, statusList} from "./config/board.ts";
-import {SHIP_CLASS_NAMES} from "./review/classes.ts";
+import { classLabel, type StatusNames, statusList } from "./config/board.ts";
+import { SHIP_CLASS_NAMES } from "./review/classes.ts";
 
 export const NEEDS_TRIAGE = "status:needs-triage";
 export const TRIAGED = "status:triaged";

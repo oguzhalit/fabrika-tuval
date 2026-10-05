@@ -11,7 +11,7 @@
  * fog-versus-buildable discriminator, which is seated at intake and expected here.
  */
 
-import {rank, scoreTitle, TOKEN_FLOOR, tokenize} from "../report/dedup.ts";
+import { rank, scoreTitle, TOKEN_FLOOR, tokenize } from "../report/dedup.ts";
 
 /** The prefix every map title carries, so the label and the title agree about what an issue is. */
 export const TITLE_PREFIX = "wayfinding: ";
@@ -96,7 +96,7 @@ export interface QuestionCandidate {
  */
 export const candidatesFor = (
 	question: string,
-	rows: ReadonlyArray<{readonly number: number; readonly title: string}>,
+	rows: ReadonlyArray<{ readonly number: number; readonly title: string }>,
 	limit = 5,
 ): ReadonlyArray<QuestionCandidate> =>
 	rank({

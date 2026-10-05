@@ -25,11 +25,11 @@
  * to refuse. `StillHeld` is that disagreement, and it is not folded into `Unknown`: the write
  * happened, and what is wrong is the board's answer to it.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {deleteComment} from "../io/issues.ts";
-import {type Liveness, livenessOf} from "../lane/shell-budget.ts";
-import {type Claimant, type Claimants, readClaimants} from "./claim.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { deleteComment } from "../io/issues.ts";
+import { type Liveness, livenessOf } from "../lane/shell-budget.ts";
+import { type Claimant, type Claimants, readClaimants } from "./claim.ts";
 
 /**
  * What the board says about the build claim standing on one issue — the read, with nothing written.
@@ -61,8 +61,8 @@ export type ClaimStanding =
 			readonly budgetMinutes: number;
 			readonly scanned: number;
 	  }
-	| {readonly _tag: "Unclaimed"; readonly scanned: number}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unclaimed"; readonly scanned: number }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * Whether the shell holding `issue`'s build claim is past the budget for the work it took — the
@@ -81,10 +81,10 @@ export const claimStanding = (
 	nowEpochMs: number,
 	budgetMinutes: number,
 ): ClaimStanding => {
-	if (claimants._tag === "Unknown") return {_tag: "Unknown", reason: claimants.reason};
+	if (claimants._tag === "Unknown") return { _tag: "Unknown", reason: claimants.reason };
 	const scanned = claimants.claimants.length;
 	const holder = claimants.holder;
-	if (holder === null) return {_tag: "Unclaimed", scanned};
+	if (holder === null) return { _tag: "Unclaimed", scanned };
 
 	const liveness: Liveness = livenessOf(holder.createdAt, nowEpochMs, budgetMinutes);
 	if (liveness._tag === "Unreadable") {
@@ -143,10 +143,10 @@ export type Reclaim =
 			readonly budgetMinutes: number;
 			readonly scanned: number;
 	  }
-	| {readonly _tag: "Unclaimed"; readonly scanned: number}
-	| {readonly _tag: "Unknown"; readonly reason: string}
+	| { readonly _tag: "Unclaimed"; readonly scanned: number }
+	| { readonly _tag: "Unknown"; readonly reason: string }
 	/** The delete ran and a claim still stands — a write whose read-back disagrees with it. */
-	| {readonly _tag: "StillHeld"; readonly token: string; readonly reason: string};
+	| { readonly _tag: "StillHeld"; readonly token: string; readonly reason: string };
 
 /**
  * Retract the build claim on `issue` when its age proves the shell that took it is dead.
@@ -164,7 +164,7 @@ export const reclaimDeadClaim = (
 	Effect.gen(function* () {
 		const standing = yield* readClaimStanding(repo, issue, nowEpochMs, budgetMinutes);
 		if (standing._tag !== "Dead") return standing;
-		const {token, stack} = standing;
+		const { token, stack } = standing;
 
 		for (const marker of stack) {
 			const deleted = yield* deleteComment(repo, marker.commentId);

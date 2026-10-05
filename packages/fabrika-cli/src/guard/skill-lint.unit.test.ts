@@ -1,4 +1,4 @@
-import {assert, describe, it} from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import {
 	checkFrontmatter,
 	isFrontmatterScoped,
@@ -127,9 +127,9 @@ describe("scanFile — flags GraphQL-path gh calls", () => {
 
 describe("lintCorpus — scope + findings", () => {
 	const corpus: ReadonlyArray<ScanFile> = [
-		{file: "skills/a/SKILL.md", content: "gh project view"},
-		{file: "skills/b/SKILL.md", content: "gh api repos/o/r/issues/1"},
-		{file: "skills/write-code/SKILL.md", content: "gh pr edit (documented)"},
+		{ file: "skills/a/SKILL.md", content: "gh project view" },
+		{ file: "skills/b/SKILL.md", content: "gh api repos/o/r/issues/1" },
+		{ file: "skills/write-code/SKILL.md", content: "gh pr edit (documented)" },
 	];
 
 	it("scans only the non-exempt files and reports them as scope", () => {
@@ -150,13 +150,13 @@ describe("isZeroScope — fail-closed on zero scope", () => {
 	});
 
 	it("reports zero scope when every handed file was self-exempt", () => {
-		const result = lintCorpus([{file: "skills/write-code/SKILL.md", content: "gh pr edit"}]);
+		const result = lintCorpus([{ file: "skills/write-code/SKILL.md", content: "gh pr edit" }]);
 		assert.strictEqual(result.scanned.length, 0);
 		assert.isTrue(isZeroScope(result));
 	});
 
 	it("is NOT zero scope when at least one non-exempt file was scanned", () => {
-		const result = lintCorpus([{file: "skills/a/SKILL.md", content: FOLDED_FRONTMATTER}]);
+		const result = lintCorpus([{ file: "skills/a/SKILL.md", content: FOLDED_FRONTMATTER }]);
 		assert.isFalse(isZeroScope(result));
 	});
 });
@@ -212,7 +212,9 @@ describe("checkFrontmatter — the strict-YAML gate (red-then-green)", () => {
 describe("lintCorpus — frontmatter findings + scope", () => {
 	it("still frontmatter-checks a gh-call self-exempt skill (exempt from grep ≠ exempt from YAML)", () => {
 		// write-code/SKILL.md is self-exempt from the gh-grep, but its frontmatter must still parse.
-		const result = lintCorpus([{file: "skills/write-code/SKILL.md", content: BROKEN_FRONTMATTER}]);
+		const result = lintCorpus([
+			{ file: "skills/write-code/SKILL.md", content: BROKEN_FRONTMATTER },
+		]);
 		assert.strictEqual(result.findings.length, 0); // grep exempt
 		assert.strictEqual(result.frontmatterFindings.length, 1); // frontmatter NOT exempt
 		assert.deepStrictEqual([...result.frontmatterScanned], ["skills/write-code/SKILL.md"]);
@@ -288,25 +290,25 @@ describe("scanBarePush — executable `git push` only", () => {
 		const boundedScan = (line: string) => {
 			const t0 = performance.now();
 			const findings = scanBarePush("skills/x/SKILL.md", fenced(line));
-			return {ms: performance.now() - t0, findings};
+			return { ms: performance.now() - t0, findings };
 		};
 
 		it("returns fast on a long `--a=b=c` run that never reaches `push`", () => {
 			// `--\S+=\S+\s+` overlapping `-\S+\s+`, re-split at every `=`: 165 chars → 74.8 s.
-			const {ms, findings} = boundedScan(`git ${"--a=b=c ".repeat(400)}x`);
+			const { ms, findings } = boundedScan(`git ${"--a=b=c ".repeat(400)}x`);
 			assert.strictEqual(findings.length, 0);
 			assert.isBelow(ms, 1000);
 		});
 
 		it("returns fast on a long `-c` run that never reaches `push`", () => {
 			// `-[cC]\s+\S+\s+` overlapping `-\S+\s+` on a bare `-c` token: 140 chars → 64.0 s.
-			const {ms, findings} = boundedScan(`git ${"-c ".repeat(400)}x`);
+			const { ms, findings } = boundedScan(`git ${"-c ".repeat(400)}x`);
 			assert.strictEqual(findings.length, 0);
 			assert.isBelow(ms, 1000);
 		});
 
 		it("returns fast on a mixed option flood that never reaches `push`", () => {
-			const {ms, findings} = boundedScan(`git ${"-c a=b --x=y -C /d ".repeat(200)}x`);
+			const { ms, findings } = boundedScan(`git ${"-c a=b --x=y -C /d ".repeat(200)}x`);
 			assert.strictEqual(findings.length, 0);
 			assert.isBelow(ms, 1000);
 		});
@@ -334,7 +336,7 @@ describe("scanBarePush — executable `git push` only", () => {
 describe("lintCorpus — bare-push findings + scope", () => {
 	it("does NOT exempt write-code, the very file that owns both push sites", () => {
 		const result = lintCorpus([
-			{file: "skills/write-code/SKILL.md", content: fenced('git push -u origin "$BRANCH"')},
+			{ file: "skills/write-code/SKILL.md", content: fenced('git push -u origin "$BRANCH"') },
 		]);
 		assert.strictEqual(result.findings.length, 0); // gh-grep self-exempt
 		assert.strictEqual(result.barePushFindings.length, 1); // push check is NOT
@@ -342,7 +344,7 @@ describe("lintCorpus — bare-push findings + scope", () => {
 	});
 
 	it("is zero scope — a FAIL — when the push check was handed nothing to scan", () => {
-		const result = lintCorpus([{file: "agents/coder.txt", content: "git push origin main"}]);
+		const result = lintCorpus([{ file: "agents/coder.txt", content: "git push origin main" }]);
 		assert.strictEqual(result.barePushScanned.length, 0);
 		assert.isTrue(isZeroScope(result));
 	});
@@ -430,7 +432,7 @@ describe("lintCorpus — portability findings + scope", () => {
 	});
 
 	it("is zero scope — a FAIL — when the portability check was handed no markdown", () => {
-		const result = lintCorpus([{file: "hooks/install.sh", content: "git push origin main"}]);
+		const result = lintCorpus([{ file: "hooks/install.sh", content: "git push origin main" }]);
 		assert.strictEqual(result.portabilityScanned.length, 0);
 		assert.isTrue(isZeroScope(result));
 	});

@@ -22,9 +22,9 @@
  * reinstate the stranded remainder through a different code.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {BoardRead} from "../config/resolve-board.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { BoardRead } from "../config/resolve-board.ts";
 import {
 	createComment,
 	createIssue,
@@ -35,12 +35,12 @@ import {
 	listLabels,
 	resolveRepo,
 } from "../io/issues.ts";
-import {classifyingPrefix, deriveVocabulary, normalizeForReadback} from "../report/compose.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
-import {missingLabelRemedy} from "../status/label-remedy.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { classifyingPrefix, deriveVocabulary, normalizeForReadback } from "../report/compose.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
+import { missingLabelRemedy } from "../status/label-remedy.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import * as graduateEmitted from "../wire/graduate-emitted.ts";
-import {stampOf} from "../wire/grill-marker.ts";
+import { stampOf } from "../wire/grill-marker.ts";
 import {
 	ALREADY_GRADUATED,
 	BAD_SECTIONS,
@@ -56,9 +56,9 @@ import {
 	TRAIL_EMPTY,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import type {DocumentRead} from "./compose-verb.ts";
-import {scanEmissions} from "./read-verb.ts";
-import {deriveTrail, requireSource} from "./source.ts";
+import type { DocumentRead } from "./compose-verb.ts";
+import { scanEmissions } from "./read-verb.ts";
+import { deriveTrail, requireSource } from "./source.ts";
 import {
 	checkSections,
 	inlineDecisionText,
@@ -67,7 +67,7 @@ import {
 	SPEC_SECTIONS,
 	withFooter,
 } from "./spec.ts";
-import {digestOfDecisions} from "./trail.ts";
+import { digestOfDecisions } from "./trail.ts";
 
 /** Unreachable: the digest is built here and the covered set is non-empty by the checks above. */
 const never = (what: string): never => {
@@ -125,7 +125,7 @@ export const runEmit = <R = never>(
 	options: EmitOptions<R>,
 ): Effect.Effect<VerbOutcome, never, R | ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {source, title} = options;
+		const { source, title } = options;
 		if (!Number.isInteger(source) || source <= 0) {
 			return refuse(FAILED, `${VERB}: ${source} is not an issue number.`);
 		}
@@ -196,7 +196,7 @@ export const runEmit = <R = never>(
 
 		const resolved = yield* deriveTrail(VERB, repo, source, found.value.kind, options.env);
 		if (resolved._tag === "Refused") return resolved.outcome;
-		const {trail, scope} = resolved.value;
+		const { trail, scope } = resolved.value;
 
 		if (trail.readiness === "blocked") {
 			return refuse(
@@ -307,7 +307,7 @@ export const runEmit = <R = never>(
 		}
 		// The footer is appended BEFORE the scan, never after: bytes added after a scan are bytes
 		// nobody scanned, and this footer interpolates a source number and a digest.
-		const composed = withFooter(body, renderFooter({source, specDigest, timestamp: at}));
+		const composed = withFooter(body, renderFooter({ source, specDigest, timestamp: at }));
 		const scan = scanBody(composed);
 		if (scan.leaks.length > 0) {
 			return refuse(

@@ -8,13 +8,13 @@
  * See `guard publish-isolation-guard check --help` for results and exit codes.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {exists, type ReadFailed, readFile} from "../io/fs.ts";
-import {isRecord, parseJson} from "../io/json.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {atFile} from "./annotate.ts";
-import {scanWorkspaceMembers} from "./members.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { exists, type ReadFailed, readFile } from "../io/fs.ts";
+import { isRecord, parseJson } from "../io/json.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { atFile } from "./annotate.ts";
+import { scanWorkspaceMembers } from "./members.ts";
 import {
 	driftLine,
 	judge,
@@ -83,7 +83,7 @@ const readMembers = (
 				deps: manifestRuntimeDeps(pkg),
 			});
 		}
-		return {members, unparseable};
+		return { members, unparseable };
 	});
 
 const judgeRoot = (
@@ -98,7 +98,7 @@ const judgeRoot = (
 			);
 		}
 		const arms = parsePublishArms(yield* readFile(workflow));
-		const {members, unparseable} = yield* readMembers(root);
+		const { members, unparseable } = yield* readMembers(root);
 		if (unparseable.length > 0) {
 			return unknown(
 				`${VERB}: ${unparseable.length} workspace manifest(s) do not parse as JSON — their runtime deps could not be judged, so the verdict is UNKNOWN, never clean:\n${unparseable
@@ -106,7 +106,7 @@ const judgeRoot = (
 					.join("\n")}`,
 			);
 		}
-		const {published, drift} = resolvePublished(arms, members);
+		const { published, drift } = resolvePublished(arms, members);
 		if (drift.length > 0) {
 			return zeroScope(
 				`${VERB}: ${drift.length} publish.yml resolve arm(s) do not name exactly one published workspace member, so the published set is unknown, fail-closed:\n${drift.map(driftLine).join("\n")}`,

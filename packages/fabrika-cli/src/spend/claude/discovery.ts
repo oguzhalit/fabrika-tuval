@@ -1,8 +1,8 @@
-import {Effect, FileSystem, Path, Result, Schema} from "effect";
-import type {ExpectedTranscript} from "./inventory.ts";
-import {decodeJson, NativeRow, sessionKey} from "./native.ts";
+import { Effect, FileSystem, Path, Result, Schema } from "effect";
+import type { ExpectedTranscript } from "./inventory.ts";
+import { decodeJson, NativeRow, sessionKey } from "./native.ts";
 
-const Meta = Schema.Struct({toolUseId: Schema.String});
+const Meta = Schema.Struct({ toolUseId: Schema.String });
 export interface Transcript {
 	readonly child: string | null;
 	readonly path: string;
@@ -105,5 +105,5 @@ export const discover = Effect.fn("spend.claude.discover")(function* (
 					: "unreadable",
 		});
 	}
-	return {transcripts, parents, enumerated};
+	return { transcripts, parents, enumerated };
 });

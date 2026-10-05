@@ -1,10 +1,10 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, linkNext, type Scripted} from "../fakes.test-support.ts";
-import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {ENV, pull} from "./fixtures.test-support.ts";
-import {ADDED, ARMED, REMOVED} from "./queue.ts";
-import {ARM_SETTLE_FLOOR_SECONDS, runReconcile} from "./reconcile-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, linkNext, type Scripted } from "../fakes.test-support.ts";
+import { INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { ENV, pull } from "./fixtures.test-support.ts";
+import { ADDED, ARMED, REMOVED } from "./queue.ts";
+import { ARM_SETTLE_FLOOR_SECONDS, runReconcile } from "./reconcile-verb.ts";
 
 /** The pull read is `../io/pulls.ts`'s, and it is served over HTTP. */
 const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4321$/;
@@ -14,7 +14,7 @@ const SUBJECTS = /^GET \S+\/repos\/o\/r\/commits\?sha=main/;
 const TIMELINE = /^GET \S+\/repos\/o\/r\/issues\/4321\/timeline\?/;
 
 // One poll, zero cadence: the classification is what is under test, not the sleep.
-const options = {pr: 4321, polls: 1, cadenceSeconds: 0, repo: null, json: false, env: ENV};
+const options = { pr: 4321, polls: 1, cadenceSeconds: 0, repo: null, json: false, env: ENV };
 
 const run = (
 	rows: ReadonlyArray<Scripted>,
@@ -22,7 +22,7 @@ const run = (
 	overrides: Partial<typeof options> = {},
 ) =>
 	Effect.runPromise(
-		Effect.provide(runReconcile({...options, ...overrides}), fakeSeams([...rows, ...http]).layer),
+		Effect.provide(runReconcile({ ...options, ...overrides }), fakeSeams([...rows, ...http]).layer),
 	);
 
 /** The PR read, served — the same canned payload the spawner era scripted. */
@@ -33,16 +33,16 @@ const pullServed = (shape: Parameters<typeof pull>[0] = {}): HttpReply => ({
 
 const PR = pullServed();
 
-const withQueue: HttpReply = {status: 200, body: JSON.stringify([{type: "merge_queue"}])};
-const offQueue: HttpReply = {status: 200, body: "[]"};
+const withQueue: HttpReply = { status: 200, body: JSON.stringify([{ type: "merge_queue" }]) };
+const offQueue: HttpReply = { status: 200, body: "[]" };
 const subjects = (...messages: ReadonlyArray<string>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(messages.map((message) => ({commit: {message}}))),
+	body: JSON.stringify(messages.map((message) => ({ commit: { message } }))),
 });
 const noSubjects = subjects();
-const timeline = (...rows: ReadonlyArray<{event: string; at: string}>): HttpReply => ({
+const timeline = (...rows: ReadonlyArray<{ event: string; at: string }>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(rows.map((row) => ({event: row.event, created_at: row.at}))),
+	body: JSON.stringify(rows.map((row) => ({ event: row.event, created_at: row.at }))),
 });
 /** An arm stamped this many seconds before the real clock the verb reads. */
 const armedAgo = (seconds: number) => ({
@@ -60,7 +60,7 @@ const unexhaustedPage = (): HttpReply => ({
 describe("runReconcile", () => {
 	it("classifies landed off merged:true", async () => {
 		const out = await run(
-			[[PULL, pullServed({merged: true, state: "closed"})]],
+			[[PULL, pullServed({ merged: true, state: "closed" })]],
 			[[RULES, withQueue]],
 		);
 		expect(out.code).toBe(0);
@@ -87,8 +87,8 @@ describe("runReconcile", () => {
 				[
 					TIMELINE,
 					timeline(
-						{event: ADDED, at: "2026-08-08T10:00:00Z"},
-						{event: REMOVED, at: "2026-08-08T10:05:00Z"},
+						{ event: ADDED, at: "2026-08-08T10:00:00Z" },
+						{ event: REMOVED, at: "2026-08-08T10:05:00Z" },
 					),
 				],
 			],
@@ -129,7 +129,7 @@ describe("runReconcile", () => {
 				[SUBJECTS, noSubjects],
 				[TIMELINE, timeline(armedAgo(60))],
 			],
-			{polls: 3},
+			{ polls: 3 },
 		);
 		expect(out.stdout).toBe("reconcile\tunresolved\t3\t0\n");
 	});
@@ -176,7 +176,7 @@ describe("runReconcile", () => {
 			[
 				[RULES, withQueue],
 				[SUBJECTS, noSubjects],
-				[TIMELINE, {status: 502, body: '{"message":"Bad gateway"}'}],
+				[TIMELINE, { status: 502, body: '{"message":"Bad gateway"}' }],
 			],
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -201,7 +201,7 @@ describe("runReconcile", () => {
 	});
 
 	it("refuses a PR proven absent on 7", async () => {
-		const out = await run([[PULL, {status: 404, body: '{"message":"Not Found"}'}]], []);
+		const out = await run([[PULL, { status: 404, body: '{"message":"Not Found"}' }]], []);
 		expect(out.code).toBe(ZERO_SCOPE);
 	});
 });

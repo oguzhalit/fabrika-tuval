@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	anchorBlocksIn,
 	anchorsIn,
@@ -41,7 +41,7 @@ describe("scanAnchors", () => {
 				"+<!-- anchor: G --> two",
 			),
 		);
-		expect(hits).toEqual([{kind: "removed", name: "G", file: "a.md", line: 10}]);
+		expect(hits).toEqual([{ kind: "removed", name: "G", file: "a.md", line: 10 }]);
 	});
 
 	it("reports NO phantom hit when the edited line only DESCRIBES the tag inside backticks", () => {
@@ -99,26 +99,26 @@ const PACKED_BRANCH_DOCBLOCK = (checkout: string): string =>
 describe("anchorBlocksIn", () => {
 	it("carries the anchor's continuation lines, which is the text the same-line scan never read", () => {
 		expect(anchorBlocksIn("<!-- anchor: G --> a claim\nthat wraps here\n\nunrelated\n")).toEqual([
-			{name: "G", line: 1, text: "a claim that wraps here"},
+			{ name: "G", line: 1, text: "a claim that wraps here" },
 		]);
 	});
 
 	it("ends a block at the next anchor, so one paragraph never answers for another", () => {
 		expect(anchorBlocksIn("<!-- anchor: A --> one\n<!-- anchor: B --> two\n")).toEqual([
-			{name: "A", line: 1, text: "one"},
-			{name: "B", line: 2, text: "two"},
+			{ name: "A", line: 1, text: "one" },
+			{ name: "B", line: 2, text: "two" },
 		]);
 	});
 
 	it("ends a block at a heading, a new list item and a fence — the units a paragraph cannot span", () => {
 		expect(anchorBlocksIn("- <!-- anchor: H --> a claim\n- a sibling bullet\n")).toEqual([
-			{name: "H", line: 1, text: "a claim"},
+			{ name: "H", line: 1, text: "a claim" },
 		]);
 		expect(anchorBlocksIn("<!-- anchor: H --> a claim\n## Next\n")).toEqual([
-			{name: "H", line: 1, text: "a claim"},
+			{ name: "H", line: 1, text: "a claim" },
 		]);
 		expect(anchorBlocksIn("<!-- anchor: H --> a claim\n```sh\nrm -rf\n```\n")).toEqual([
-			{name: "H", line: 1, text: "a claim"},
+			{ name: "H", line: 1, text: "a claim" },
 		]);
 	});
 
@@ -131,23 +131,23 @@ describe("anchorBlocksIn", () => {
 	it("does not let a backticked tag CUT a block short — masking decides anchors, not content", () => {
 		expect(
 			anchorBlocksIn("<!-- anchor: G --> a claim\nwritten as `<!-- anchor: NAME -->` here\n"),
-		).toEqual([{name: "G", line: 1, text: "a claim written as `<!-- anchor: NAME -->` here"}]);
+		).toEqual([{ name: "G", line: 1, text: "a claim written as `<!-- anchor: NAME -->` here" }]);
 	});
 
 	// The over-capture this file's own tests exposed: the tag sits inside a TypeScript string literal,
 	// so the lines below it are unrelated code the anchor never covered.
 	it("does NOT continue past a tag that real content precedes — it covered no lines below it", () => {
 		expect(anchorBlocksIn('expect(scan("<!-- anchor: A --> one"));\nexpect(other());\n')).toEqual([
-			{name: "A", line: 1, text: 'one"));'},
+			{ name: "A", line: 1, text: 'one"));' },
 		]);
 	});
 
 	it("still continues from a tag a blockquote marker or a bullet precedes — those open a line", () => {
 		expect(anchorBlocksIn("> <!-- anchor: G --> a claim\n> that wraps\n")).toEqual([
-			{name: "G", line: 1, text: "a claim > that wraps"},
+			{ name: "G", line: 1, text: "a claim > that wraps" },
 		]);
 		expect(anchorBlocksIn("1. <!-- anchor: G --> a claim\n   that wraps\n")).toEqual([
-			{name: "G", line: 1, text: "a claim that wraps"},
+			{ name: "G", line: 1, text: "a claim that wraps" },
 		]);
 	});
 
@@ -169,18 +169,18 @@ describe("anchorBlocksIn", () => {
 	it("ends a docblock's block at the star-only line — a docblock's paragraph break", () => {
 		expect(
 			anchorBlocksIn("/**\n * <!-- anchor: G --> a claim\n *\n * a second paragraph\n */\n"),
-		).toEqual([{name: "G", line: 2, text: "a claim"}]);
+		).toEqual([{ name: "G", line: 2, text: "a claim" }]);
 	});
 
 	it("still breaks on a REAL list inside a docblock — the frame strips decoration, not structure", () => {
 		expect(
 			anchorBlocksIn("/**\n * <!-- anchor: G --> a claim\n * - a bullet below it\n */\n"),
-		).toEqual([{name: "G", line: 2, text: "a claim"}]);
+		).toEqual([{ name: "G", line: 2, text: "a claim" }]);
 	});
 
 	it("still breaks on a markdown star bullet, where no comment frame says otherwise", () => {
 		expect(anchorBlocksIn("* <!-- anchor: G --> a claim\n* a sibling bullet\n")).toEqual([
-			{name: "G", line: 1, text: "a claim"},
+			{ name: "G", line: 1, text: "a claim" },
 		]);
 	});
 });
@@ -245,7 +245,7 @@ describe("scanAnchorBlocks", () => {
 
 	it("reports an anchor absent from the later bytes as `removed`, at the line it sat on", () => {
 		expect(scanAnchorBlocks("a.md", "x\n<!-- anchor: G --> a claim\n", "x\nplain prose\n")).toEqual(
-			[{kind: "removed", name: "G", file: "a.md", line: 2}],
+			[{ kind: "removed", name: "G", file: "a.md", line: 2 }],
 		);
 	});
 
@@ -256,7 +256,7 @@ describe("scanAnchorBlocks", () => {
 				"<!-- anchor: G --> one\n\n<!-- anchor: G --> two\n",
 				"<!-- anchor: G --> one\n\n<!-- anchor: G --> rewritten\n",
 			),
-		).toEqual([{kind: "modified", name: "G", file: "a.md", line: 3}]);
+		).toEqual([{ kind: "modified", name: "G", file: "a.md", line: 3 }]);
 	});
 
 	// Positional pairing alone answers the wrong question here: both blocks are intact, but the old
@@ -278,7 +278,7 @@ describe("scanAnchorBlocks", () => {
 				"<!-- anchor: G --> the old claim\n",
 				"<!-- anchor: G --> a new claim\n\n<!-- anchor: G --> the old claim, softened\n",
 			),
-		).toEqual([{kind: "modified", name: "G", file: "a.md", line: 1}]);
+		).toEqual([{ kind: "modified", name: "G", file: "a.md", line: 1 }]);
 	});
 
 	it("reports the SECOND of two same-named blocks as removed when only one survives", () => {
@@ -288,7 +288,7 @@ describe("scanAnchorBlocks", () => {
 				"<!-- anchor: G --> one\n\n<!-- anchor: G --> two\n",
 				"<!-- anchor: G --> one\n",
 			),
-		).toEqual([{kind: "removed", name: "G", file: "a.md", line: 3}]);
+		).toEqual([{ kind: "removed", name: "G", file: "a.md", line: 3 }]);
 	});
 
 	it("reports NOTHING when an anchor is added — a new guarantee is not a moved one", () => {
@@ -297,11 +297,14 @@ describe("scanAnchorBlocks", () => {
 });
 
 describe("mergeHits", () => {
-	const walk = {kind: "modified", name: "G", file: "a.md", line: 12} as const;
-	const block = {kind: "modified", name: "G", file: "a.md", line: 40} as const;
+	const walk = { kind: "modified", name: "G", file: "a.md", line: 12 } as const;
+	const block = { kind: "modified", name: "G", file: "a.md", line: 40 } as const;
 
 	it("keeps a same-named anchor in another file — a name in two files is two questions", () => {
-		expect(mergeHits([walk], [{...block, file: "b.md"}])).toEqual([walk, {...block, file: "b.md"}]);
+		expect(mergeHits([walk], [{ ...block, file: "b.md" }])).toEqual([
+			walk,
+			{ ...block, file: "b.md" },
+		]);
 	});
 
 	it("carries a block-only hit through — the case the diff walk structurally cannot see", () => {

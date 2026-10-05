@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {citedIds, decisionBearingText, type SweepCandidate, sweep, tokenize} from "./sweep.ts";
+import { describe, expect, it } from "vitest";
+import { citedIds, decisionBearingText, type SweepCandidate, sweep, tokenize } from "./sweep.ts";
 
 const rec = (id: string, status: string, decision: string): SweepCandidate => ({
 	id,
@@ -9,7 +9,7 @@ const rec = (id: string, status: string, decision: string): SweepCandidate => ({
 
 /** Twelve live records — above the rarity floor — sharing a common word and little else. */
 const corpus = (): SweepCandidate[] =>
-	Array.from({length: 12}, (_, i) =>
+	Array.from({ length: 12 }, (_, i) =>
 		rec(`01${String(i).padStart(2, "0")}`, "accepted", "the gate is closed"),
 	);
 
@@ -39,7 +39,7 @@ describe("citedIds", () => {
 describe("sweep", () => {
 	it("is indeterminate when the subject yields no distinctive terms", () => {
 		const result = sweep(
-			{id: "0240", text: "---\nstatus: proposed\n---\n\n## Decision\n\n."},
+			{ id: "0240", text: "---\nstatus: proposed\n---\n\n## Decision\n\n." },
 			corpus(),
 			8,
 		);
@@ -52,7 +52,7 @@ describe("sweep", () => {
 		c[0] = rec("0100", "accepted", "reticulate the splines carefully");
 		c[1] = rec("0101", "accepted", "reticulate nothing at all");
 		const subject = rec("0240", "proposed", "reticulate the splines");
-		const result = sweep({id: "0240", text: subject.text}, c, 8);
+		const result = sweep({ id: "0240", text: subject.text }, c, 8);
 		expect(result.outcome).toBe("shortlist");
 		expect(result.entries.map((e) => e.id)).toEqual(["0100", "0101"]);
 		expect(result.entries[0]?.score).toBeGreaterThan(result.entries[1]?.score ?? 0);
@@ -79,7 +79,7 @@ describe("sweep", () => {
 		for (let i = 0; i < 5; i += 1)
 			c[i] = rec(`01${String(i).padStart(2, "0")}`, "accepted", "reticulate splines");
 		const result = sweep(
-			{id: "0240", text: rec("0240", "proposed", "reticulate splines").text},
+			{ id: "0240", text: rec("0240", "proposed", "reticulate splines").text },
 			c,
 			8,
 		);

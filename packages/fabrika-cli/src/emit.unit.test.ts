@@ -6,13 +6,13 @@
  * only a spawn can observe it (`./emit.cli.test.ts` does, once), and spawning every group to prove
  * a shared helper is still shared is not a budget this package has.
  */
-import {readdirSync, readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
+import { readdirSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
 
 const SRC = fileURLToPath(new URL(".", import.meta.url));
 
-const groupCommands = readdirSync(SRC, {withFileTypes: true})
+const groupCommands = readdirSync(SRC, { withFileTypes: true })
 	.filter((entry) => entry.isDirectory())
 	.map((entry) => [`${entry.name}/command.ts`, `${SRC}${entry.name}/command.ts`] as const)
 	.filter(([, path]) => {

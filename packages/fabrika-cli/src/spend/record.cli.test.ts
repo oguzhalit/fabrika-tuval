@@ -1,11 +1,11 @@
-import {spawn, spawnSync} from "node:child_process";
-import {mkdtempSync, readFileSync, rmSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {afterEach, describe, expect, it} from "vitest";
+import { spawn, spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterEach, describe, expect, it } from "vitest";
 
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
 
 const cli = fileURLToPath(new URL("../bin.ts", import.meta.url));
 const fixture = JSON.parse(
@@ -13,7 +13,7 @@ const fixture = JSON.parse(
 );
 const dirs: string[] = [];
 afterEach(() => {
-	for (const dir of dirs.splice(0)) rmSync(dir, {recursive: true, force: true});
+	for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 const ledger = () => {
 	const dir = mkdtempSync(join(tmpdir(), "spend-record-"));
@@ -26,14 +26,14 @@ const call = (args: string[], input?: unknown) =>
 		input: input === undefined ? undefined : JSON.stringify(input),
 	});
 
-describe("spend record CLI", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
+describe("spend record CLI", { timeout: SUBPROCESS_TEST_TIMEOUT_MS }, () => {
 	it("serializes separate recorder processes using the same ledger", async () => {
 		const path = ledger();
 		const results = await Promise.all(
 			Array.from(
-				{length: 4},
+				{ length: 4 },
 				() =>
-					new Promise<{status: number | null; stdout: string; stderr: string}>(
+					new Promise<{ status: number | null; stdout: string; stderr: string }>(
 						(resolve, reject) => {
 							const child = spawn(process.execPath, [cli, "spend", "record", "--ledger", path]);
 							let stdout = "";
@@ -45,7 +45,7 @@ describe("spend record CLI", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
 								stderr += chunk;
 							});
 							child.on("error", reject);
-							child.on("close", (status) => resolve({status, stdout, stderr}));
+							child.on("close", (status) => resolve({ status, stdout, stderr }));
 							child.stdin.end(JSON.stringify(fixture));
 						},
 					),

@@ -1,9 +1,9 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {HttpReply} from "../fakes.test-support.ts";
-import {read as readApproval} from "../wire/plan-approval.ts";
-import {runApprove} from "./approve-verb.ts";
-import {APPROVAL_UNAUTHORIZED, PRECONDITION_UNKNOWN, READBACK_MISMATCH} from "./codes.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { HttpReply } from "../fakes.test-support.ts";
+import { read as readApproval } from "../wire/plan-approval.ts";
+import { runApprove } from "./approve-verb.ts";
+import { APPROVAL_UNAUTHORIZED, PRECONDITION_UNKNOWN, READBACK_MISMATCH } from "./codes.ts";
 import {
 	CHILD as CHILD_AT,
 	CWD,
@@ -35,32 +35,32 @@ const GET_COMMENT = new RegExp(`^GET ${API}\\/repos\\/o\\/r\\/issues\\/comments\
 
 const NOW = () => new Date("2026-08-16T07:16:03.500Z");
 
-const served = (body: unknown): HttpReply => ({status: 200, body: JSON.stringify(body)});
+const served = (body: unknown): HttpReply => ({ status: 200, body: JSON.stringify(body) });
 
 const ledger: ReadonlyArray<Scripted> = [
-	[EPIC, epic({body: epicBody({dependencies: "- phase 1: #4301"})})],
+	[EPIC, epic({ body: epicBody({ dependencies: "- phase 1: #4301" }) })],
 	[SUBS, subIssues(4301)],
-	[CHILD, child({number: 4301})],
+	[CHILD, child({ number: 4301 })],
 	[CYCLE, cycleDoc],
 ];
 
 const acl: ReadonlyArray<Scripted> = [
-	[VIEWER, served({login: "noor"})],
-	[TRUNK, served({default_branch: "main"})],
-	[CODEOWNERS, {status: 200, body: "/packages/fabrika-cli/ @o/control-plane\n"}],
-	[MEMBERS, served([{login: "noor"}, {login: "mira"}])],
+	[VIEWER, served({ login: "noor" })],
+	[TRUNK, served({ default_branch: "main" })],
+	[CODEOWNERS, { status: 200, body: "/packages/fabrika-cli/ @o/control-plane\n" }],
+	[MEMBERS, served([{ login: "noor" }, { login: "mira" }])],
 ];
 
 const POSTED: HttpReply = {
 	status: 201,
-	body: JSON.stringify({id: 512346, html_url: `${issueUrl(4300)}#c`}),
+	body: JSON.stringify({ id: 512346, html_url: `${issueUrl(4300)}#c` }),
 };
 
 const run = (script: ReadonlyArray<Scripted>) => {
 	const seams = planSeams(script);
 	return Effect.runPromise(
-		Effect.provide(runApprove({number: 4300, repo: null, env, cwd: CWD, now: NOW}), seams.layer),
-	).then((outcome) => ({outcome, calls: seams.http.calls, bodies: seams.http.bodies}));
+		Effect.provide(runApprove({ number: 4300, repo: null, env, cwd: CWD, now: NOW }), seams.layer),
+	).then((outcome) => ({ outcome, calls: seams.http.calls, bodies: seams.http.bodies }));
 };
 
 /** The bytes the verb posted — the marker travels as the request body's `body` field now. */
@@ -72,18 +72,23 @@ const postedBody = (posted: {
 	if (at < 0) return "";
 	const sent: unknown = JSON.parse(posted.bodies[at] ?? "{}");
 	return typeof sent === "object" && sent !== null && "body" in sent
-		? String((sent as {body: unknown}).body)
+		? String((sent as { body: unknown }).body)
 		: "";
 };
 
-const derivedDigest = (): Promise<string> => digestOver(ledger, {env});
+const derivedDigest = (): Promise<string> => digestOver(ledger, { env });
 
 describe("runApprove", () => {
 	it("posts a marker bound to the digest it derived itself and reads it back", async () => {
 		const digest = await derivedDigest();
 		const first = await run([...ledger, ...acl, [POST, POSTED]]);
 		const body = postedBody(first);
-		const {outcome} = await run([...ledger, ...acl, [POST, POSTED], [GET_COMMENT, served({body})]]);
+		const { outcome } = await run([
+			...ledger,
+			...acl,
+			[POST, POSTED],
+			[GET_COMMENT, served({ body })],
+		]);
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout)).toEqual({
 			answer: "approved",
@@ -106,12 +111,12 @@ describe("runApprove", () => {
 		const marked = readApproval(postedBody(posted));
 		expect(marked._tag).toBe("Found");
 		if (marked._tag !== "Found") return;
-		expect(marked.value).toEqual({epic: 4300, digest, at: "2026-08-16T07:16:03Z"});
+		expect(marked.value).toEqual({ epic: 4300, digest, at: "2026-08-16T07:16:03Z" });
 	});
 
 	it("refuses 24 when the invoking account is not on the roster, and posts nothing", async () => {
-		const {outcome, calls} = await run([
-			[VIEWER, served({login: "someone-else"})],
+		const { outcome, calls } = await run([
+			[VIEWER, served({ login: "someone-else" })],
 			...ledger,
 			...acl,
 			[POST, POSTED],
@@ -122,8 +127,8 @@ describe("runApprove", () => {
 	});
 
 	it("refuses 24 when CODEOWNERS names no control-plane owner at all", async () => {
-		const {outcome, calls} = await run([
-			[CODEOWNERS, {status: 200, body: "# nobody owns anything\n"}],
+		const { outcome, calls } = await run([
+			[CODEOWNERS, { status: 200, body: "# nobody owns anything\n" }],
 			...ledger,
 			...acl,
 			[POST, POSTED],
@@ -137,8 +142,8 @@ describe("runApprove", () => {
 	 * approved". Both readings are wrong and the exit code is the one that says so.
 	 */
 	it("refuses 11 on a failed roster read — neither approved nor unapproved", async () => {
-		const {outcome, calls} = await run([
-			[MEMBERS, {status: 502, body: '{"message":"Bad gateway"}'}],
+		const { outcome, calls } = await run([
+			[MEMBERS, { status: 502, body: '{"message":"Bad gateway"}' }],
 			...ledger,
 			...acl,
 			[POST, POSTED],
@@ -151,8 +156,8 @@ describe("runApprove", () => {
 	});
 
 	it("refuses 11 when the CODEOWNERS read fails, and posts nothing", async () => {
-		const {outcome, calls} = await run([
-			[CODEOWNERS, {status: 500, body: '{"message":"Server error"}'}],
+		const { outcome, calls } = await run([
+			[CODEOWNERS, { status: 500, body: '{"message":"Server error"}' }],
 			...ledger,
 			...acl,
 			[POST, POSTED],
@@ -162,11 +167,11 @@ describe("runApprove", () => {
 	});
 
 	it("refuses 9 when the marker posts and does not read back", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			...ledger,
 			...acl,
 			[POST, POSTED],
-			[GET_COMMENT, served({body: "plan-approved: #4300 @ ffffffffffff · x\n"})],
+			[GET_COMMENT, served({ body: "plan-approved: #4300 @ ffffffffffff · x\n" })],
 		]);
 		expect(outcome.code).toBe(READBACK_MISMATCH);
 	});

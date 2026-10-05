@@ -22,18 +22,18 @@
  * An unreadable answer is `Unknown`, never `Fresh`. Reading a failed read as "no prior lane" is the
  * permissive arm the whole refusal exists to close.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {resolveRepo} from "../io/issues.ts";
-import {pullsClosing} from "../io/pulls.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { resolveRepo } from "../io/issues.ts";
+import { pullsClosing } from "../io/pulls.ts";
 
 export type PriorLane =
 	/** The board carries work a lane published on this issue — every pull request that proves it. */
-	| {readonly _tag: "Prior"; readonly pulls: ReadonlyArray<number>}
+	| { readonly _tag: "Prior"; readonly pulls: ReadonlyArray<number> }
 	/** The board carries none, so nothing here says this issue was ever driven. */
-	| {readonly _tag: "Fresh"}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Fresh" }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 export type PriorLaneReader<R> = (issue: number) => Effect.Effect<PriorLane, never, R>;
 
@@ -70,7 +70,7 @@ export const priorLaneReader = (
 				};
 			}
 			return closers.value.length === 0
-				? ({_tag: "Fresh"} as const)
-				: ({_tag: "Prior", pulls: closers.value.map((pull) => pull.number)} as const);
+				? ({ _tag: "Fresh" } as const)
+				: ({ _tag: "Prior", pulls: closers.value.map((pull) => pull.number) } as const);
 		});
 };

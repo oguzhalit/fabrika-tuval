@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import type {DocumentRead} from "./clear-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import type { DocumentRead } from "./clear-verb.ts";
 import {
 	AUTHORIZATION_VOID,
 	GRANT_UNAUTHORIZED,
@@ -17,7 +17,7 @@ import {
 	served,
 	TRUNK_READ,
 } from "./fixtures.test-support.ts";
-import {runTakeover} from "./takeover-verb.ts";
+import { runTakeover } from "./takeover-verb.ts";
 
 const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4310$/;
 const COMMENTS = /^GET \S+\/repos\/o\/r\/issues\/4310\/comments/;
@@ -38,23 +38,23 @@ const config = (value: Record<string, unknown>): HttpReply => ({
 	body: JSON.stringify(value),
 });
 /** No `.fabrika.jsonc` at the base: `ownAccounts` falls back to the running account. */
-const NO_CONFIG: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
+const NO_CONFIG: HttpReply = { status: 404, body: '{"message":"Not Found"}' };
 
 /** The control-plane set — who may grant — read off CODEOWNERS on the default branch. */
 const roster = (...owners: ReadonlyArray<string>): ReadonlyArray<Scripted> => [
-	[TRUNK_READ, served({default_branch: "main"})],
+	[TRUNK_READ, served({ default_branch: "main" })],
 	[CODEOWNERS_READ, codeownersNaming(...owners)],
 ];
 
 const document = (text: string): Effect.Effect<DocumentRead> =>
-	Effect.succeed({_tag: "Text", text});
+	Effect.succeed({ _tag: "Text", text });
 
 const options = {
 	pr: 4310,
 	authorizationPath: "authorization.md",
 	authorization: document(AUTHORIZATION),
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r", GITHUB_TOKEN: "ghp_scripted"} as Record<
+	env: { CLAUDE_PIPELINE_REPO: "o/r", GITHUB_TOKEN: "ghp_scripted" } as Record<
 		string,
 		string | undefined
 	>,
@@ -64,11 +64,14 @@ const options = {
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) => {
 	const seams = fakeSeams(script);
 	return Effect.runPromise(
-		Effect.provide(runTakeover({...options, ...overrides}), seams.layer),
-	).then((outcome) => ({outcome, requests: seams.requests, bodies: seams.bodies}));
+		Effect.provide(runTakeover({ ...options, ...overrides }), seams.layer),
+	).then((outcome) => ({ outcome, requests: seams.requests, bodies: seams.bodies }));
 };
 
-const ADA_PR: Scripted = [PULL, pull({number: 4310, base: {ref: "main"}, user: {login: "ada"}})];
+const ADA_PR: Scripted = [
+	PULL,
+	pull({ number: 4310, base: { ref: "main" }, user: { login: "ada" } }),
+];
 
 const grantable = (
 	running = "founder",
@@ -76,21 +79,21 @@ const grantable = (
 	owners: ReadonlyArray<string> = ["@founder"],
 ): ReadonlyArray<Scripted> => [
 	ADA_PR,
-	[VIEWER, served({login: running})],
+	[VIEWER, served({ login: running })],
 	[CONFIG, base],
 	...roster(...owners),
-	[permissionOf(running), served({permission: "write"})],
+	[permissionOf(running), served({ permission: "write" })],
 ];
 
 const posted = (requests: ReadonlyArray<string>) => requests.some((line) => POST.test(line));
 
 describe("runTakeover", () => {
 	it("posts one comment — the marker over the quoted authorization — and reads it back", async () => {
-		const {outcome, requests, bodies} = await run([
+		const { outcome, requests, bodies } = await run([
 			...grantable(),
 			[COMMENTS, comments()],
-			[POST, served({id: 900, html_url: "https://x/y#c"}, 201)],
-			[GET_COMMENT, served({body: BODY})],
+			[POST, served({ id: 900, html_url: "https://x/y#c" }, 201)],
+			[GET_COMMENT, served({ body: BODY })],
 		]);
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout)).toEqual({
@@ -107,52 +110,55 @@ describe("runTakeover", () => {
 	});
 
 	it("answers already-granted and posts nothing when an honoured grant stands", async () => {
-		const {outcome, requests} = await run([
+		const { outcome, requests } = await run([
 			...grantable(),
-			[COMMENTS, comments({id: 77, author: "founder", body: BODY})],
+			[COMMENTS, comments({ id: 77, author: "founder", body: BODY })],
 		]);
 		expect(outcome.code).toBe(0);
-		expect(JSON.parse(outcome.stdout)).toMatchObject({resolvesTo: "already-granted", comment: 77});
+		expect(JSON.parse(outcome.stdout)).toMatchObject({
+			resolvesTo: "already-granted",
+			comment: 77,
+		});
 		expect(posted(requests)).toBe(false);
 	});
 
 	it("refuses at 7 on a PR one of ours opened — it needs no grant", async () => {
-		const {outcome, requests} = await run([
-			[PULL, pull({number: 4310, base: {ref: "main"}, user: {login: "agent-bot"}})],
-			[VIEWER, served({login: "founder"})],
-			[CONFIG, config({ownAccounts: ["@agent-bot"]})],
+		const { outcome, requests } = await run([
+			[PULL, pull({ number: 4310, base: { ref: "main" }, user: { login: "agent-bot" } })],
+			[VIEWER, served({ login: "founder" })],
+			[CONFIG, config({ ownAccounts: ["@agent-bot"] })],
 			...roster("@founder"),
-			[permissionOf("founder"), served({permission: "write"})],
+			[permissionOf("founder"), served({ permission: "write" })],
 		]);
 		expect(outcome.code).toBe(ZERO_SCOPE);
 		expect(posted(requests)).toBe(false);
 	});
 
 	it("refuses at 25 when the invoking account opened the PR itself", async () => {
-		const {outcome, requests} = await run(grantable("ada", NO_CONFIG, ["@ada"]));
+		const { outcome, requests } = await run(grantable("ada", NO_CONFIG, ["@ada"]));
 		expect(outcome.code).toBe(GRANT_UNAUTHORIZED);
 		expect(outcome.stderr.at(-1)).toContain("an author cannot hand their own PR over");
 		expect(posted(requests)).toBe(false);
 	});
 
 	it("refuses at 25 when the invoking account is outside the control-plane set", async () => {
-		const {outcome, requests} = await run(grantable("mallory"));
+		const { outcome, requests } = await run(grantable("mallory"));
 		expect(outcome.code).toBe(GRANT_UNAUTHORIZED);
 		expect(posted(requests)).toBe(false);
 	});
 
 	it("refuses at 25 when CODEOWNERS names nobody — an empty control plane grants nobody", async () => {
-		const {outcome} = await run(grantable("founder", NO_CONFIG, []));
+		const { outcome } = await run(grantable("founder", NO_CONFIG, []));
 		expect(outcome.code).toBe(GRANT_UNAUTHORIZED);
 		expect(outcome.stderr.at(-1)).toContain("CODEOWNERS names no control-plane owner");
 	});
 
 	it("names a still-declared capClearAuthors in a deprecation notice and grants on CODEOWNERS alone", async () => {
-		const {outcome} = await run([
-			...grantable("founder", config({capClearAuthors: ["@someone-else"]})),
+		const { outcome } = await run([
+			...grantable("founder", config({ capClearAuthors: ["@someone-else"] })),
 			[COMMENTS, comments()],
-			[POST, served({id: 900, html_url: "https://x/y#c"}, 201)],
-			[GET_COMMENT, served({body: BODY})],
+			[POST, served({ id: 900, html_url: "https://x/y#c" }, 201)],
+			[GET_COMMENT, served({ body: BODY })],
 		]);
 		expect(outcome.code).toBe(0);
 		expect(outcome.stderr).toContain(
@@ -161,12 +167,12 @@ describe("runTakeover", () => {
 	});
 
 	it("refuses at 25 when a configured account holds less than write", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			ADA_PR,
-			[VIEWER, served({login: "founder"})],
+			[VIEWER, served({ login: "founder" })],
 			[CONFIG, NO_CONFIG],
 			...roster("@founder"),
-			[permissionOf("founder"), served({permission: "read"})],
+			[permissionOf("founder"), served({ permission: "read" })],
 		]);
 		expect(outcome.code).toBe(GRANT_UNAUTHORIZED);
 	});
@@ -175,22 +181,22 @@ describe("runTakeover", () => {
 		["empty", "   "],
 		["undated", "take it over"],
 	])("refuses at 26 on an %s authorization, before any read", async (_name, text) => {
-		const {outcome, requests} = await run([], {authorization: document(text)});
+		const { outcome, requests } = await run([], { authorization: document(text) });
 		expect(outcome.code).toBe(AUTHORIZATION_VOID);
 		expect(requests).toHaveLength(0);
 	});
 
 	it("refuses at 11 when the config at the base cannot be read", async () => {
-		const {outcome} = await run(grantable("founder", {status: 502, body: '{"message":"Bad"}'}));
+		const { outcome } = await run(grantable("founder", { status: 502, body: '{"message":"Bad"}' }));
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 	});
 
 	it("refuses at 9 when the posted grant does not read back", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			...grantable(),
 			[COMMENTS, comments()],
-			[POST, served({id: 900, html_url: "https://x/y#c"}, 201)],
-			[GET_COMMENT, served({body: "something else\n"})],
+			[POST, served({ id: 900, html_url: "https://x/y#c" }, 201)],
+			[GET_COMMENT, served({ body: "something else\n" })],
 		]);
 		expect(outcome.code).toBe(READBACK_MISMATCH);
 	});

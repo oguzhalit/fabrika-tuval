@@ -20,15 +20,15 @@
  * not one.
  */
 
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
 
 declare const RECORD_ID: unique symbol;
 declare const NOTE: unique symbol;
 
 /** A four-digit decision id. Branded so a `Found` cannot carry `""` or a half-written id. */
-export type RecordId = string & {readonly [RECORD_ID]: true};
+export type RecordId = string & { readonly [RECORD_ID]: true };
 /** The one-line note. Branded for the same reason: a blank note points at nothing. */
-export type Note = string & {readonly [NOTE]: true};
+export type Note = string & { readonly [NOTE]: true };
 
 /** What the row says about the record. A fourth token is not a kind — it is a drift. */
 export type DigestKind = "tension" | "blast" | "routine";
@@ -91,7 +91,7 @@ export const parseRow = (line: string): DigestRow | string => {
 	}
 	const text = note(fields[3] ?? "");
 	if (text === null) return `row ${id} carries no note — the field that says why the row is here`;
-	return {id, kind, note: text};
+	return { id, kind, note: text };
 };
 
 /**
@@ -147,7 +147,7 @@ export const read = (artifact: string): GovernanceDigestRead => {
 			`line ${fenceAt + 1}: "${(lines[fenceAt] ?? "").trim()}"`,
 		);
 	}
-	return {_tag: "Found", value: [first, ...rest]};
+	return { _tag: "Found", value: [first, ...rest] };
 };
 
 export const emitRow = (row: DigestRow): string => `${ROW}\t${row.id}\t${row.kind}\t${row.note}`;
@@ -164,8 +164,8 @@ export const renderRows = (rows: GovernanceDigest): NonEmptyReadonlyArray<string
 };
 
 export type DigestFields =
-	| {readonly _tag: "Fields"; readonly rows: GovernanceDigest}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly rows: GovernanceDigest }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 /** Parse `emit`'s stdin: one `row\t<id>\t<kind>\t<note>` per line, in the order they are ranked. */
 export const parseFields = (fields: string): DigestFields => {
@@ -174,26 +174,26 @@ export const parseFields = (fields: string): DigestFields => {
 	for (const [index, line] of lines.entries()) {
 		const parsed = parseRow(line);
 		if (typeof parsed === "string") {
-			return {_tag: "Unusable", reason: `line ${index + 1}: ${parsed}`};
+			return { _tag: "Unusable", reason: `line ${index + 1}: ${parsed}` };
 		}
 		rows.push(parsed);
 	}
 	const [first, ...rest] = rows;
 	return first === undefined
-		? {_tag: "Unusable", reason: "no rows were given — an empty readout is not a readout"}
-		: {_tag: "Fields", rows: [first, ...rest]};
+		? { _tag: "Unusable", reason: "no rows were given — an empty readout is not a readout" }
+		: { _tag: "Fields", rows: [first, ...rest] };
 };
 
 /** The registry row's byte-level `emit`, bound to this module's typed core. */
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.rows)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.rows) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderRows(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderRows(result.value) } : result;
 };

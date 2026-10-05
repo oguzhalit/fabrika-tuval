@@ -13,11 +13,11 @@
  * byte outside it.
  */
 
-import {isThematicBreak} from "../build/dependencies.ts";
-import {unfencedLines} from "../plan/ledger.ts";
-import {preservedEnvelope} from "../triage/enrich.ts";
-import {PLAN_HEADING} from "./plan-block.ts";
-import type {PlanMode} from "./run.ts";
+import { isThematicBreak } from "../build/dependencies.ts";
+import { unfencedLines } from "../plan/ledger.ts";
+import { preservedEnvelope } from "../triage/enrich.ts";
+import { PLAN_HEADING } from "./plan-block.ts";
+import type { PlanMode } from "./run.ts";
 
 export const DEPENDENCIES_HEADING = "## Dependencies";
 
@@ -28,14 +28,14 @@ const TOP_LEVEL_HEADING_RE = /^#{1,2}\s+/;
 /** 0-based indices into the body's lines, for the unfenced lines matching `pattern`. */
 const anchorsIn = (body: string, pattern: RegExp): ReadonlyArray<number> =>
 	unfencedLines(body)
-		.filter(({text}) => pattern.test(text.trim()))
-		.map(({line}) => line - 1);
+		.filter(({ text }) => pattern.test(text.trim()))
+		.map(({ line }) => line - 1);
 
 export type Splice =
-	| {readonly _tag: "Composed"; readonly body: string}
-	| {readonly _tag: "Unresolvable"; readonly reason: string};
+	| { readonly _tag: "Composed"; readonly body: string }
+	| { readonly _tag: "Unresolvable"; readonly reason: string };
 
-const unresolvable = (reason: string): Splice => ({_tag: "Unresolvable", reason});
+const unresolvable = (reason: string): Splice => ({ _tag: "Unresolvable", reason });
 
 const headingCount = (epic: number, heading: string, count: number): string =>
 	`#${epic}'s body carries ${count} "${heading}" headings — the plan region has no single meaning.`;
@@ -68,7 +68,7 @@ export const splicePlan = (input: SpliceInput): Splice => {
 		if (planAnchors.length > 0) {
 			return unresolvable(headingCount(input.epic, PLAN_HEADING, planAnchors.length));
 		}
-		return {_tag: "Composed", body: `${block(input.body)}\n\n${composed}`};
+		return { _tag: "Composed", body: `${block(input.body)}\n\n${composed}` };
 	}
 
 	if (planAnchors.length === 0) {
@@ -111,7 +111,7 @@ export const splicePlan = (input: SpliceInput): Splice => {
 	const after = lines.slice(end).join("\n").replace(/^\n+/, "");
 	const head = before === "" ? "" : `${before}\n\n`;
 	const tail = after.trim() === "" ? "" : `\n${after}`;
-	return {_tag: "Composed", body: `${head}${composed}${tail}`};
+	return { _tag: "Composed", body: `${head}${composed}${tail}` };
 };
 
 export interface DependenciesSpliceInput {
@@ -159,5 +159,5 @@ export const spliceDependencies = (input: DependenciesSpliceInput): Splice => {
 	const after = lines.slice(end).join("\n").replace(/^\n+/, "");
 	const head = before === "" ? "" : `${before}\n\n`;
 	const tail = after.trim() === "" ? "" : `\n${after}`;
-	return {_tag: "Composed", body: `${head}${block(input.topology)}\n${tail}`};
+	return { _tag: "Composed", body: `${head}${block(input.topology)}\n${tail}` };
 };

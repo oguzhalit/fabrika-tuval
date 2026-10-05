@@ -1,6 +1,6 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, okOut, once, type Scripted, unconfigured} from "../fakes.test-support.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, okOut, once, type Scripted, unconfigured } from "../fakes.test-support.ts";
 import {
 	accepted,
 	checkRuns,
@@ -10,11 +10,11 @@ import {
 	runsAtHead,
 	workflowRun,
 } from "../heal-ci/fixtures.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {CONTENT, PATHS_AT} from "../review/fixtures.test-support.ts";
-import {FENCE, compose as supersedeWith} from "../review/supersede.ts";
-import {CHECK_RUN_NAME} from "../ship/floor-check.ts";
+import type { ExecResult } from "../io/exec.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { CONTENT, PATHS_AT } from "../review/fixtures.test-support.ts";
+import { FENCE, compose as supersedeWith } from "../review/supersede.ts";
+import { CHECK_RUN_NAME } from "../ship/floor-check.ts";
 import {
 	BARE_AT_PATH,
 	EMPTY_STDIN,
@@ -28,8 +28,8 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {binding, comments, HEAD, OLD_HEAD, paths, pull} from "./fixtures.test-support.ts";
-import {runPost} from "./post-verb.ts";
+import { binding, comments, HEAD, OLD_HEAD, paths, pull } from "./fixtures.test-support.ts";
+import { runPost } from "./post-verb.ts";
 
 const PULL = /^GET .*\/repos\/o\/r\/pulls\/4321$/;
 const VIEWER = /^GET .*\/user$/;
@@ -46,7 +46,7 @@ const URL = "https://github.com/o/r/pull/4321#issuecomment-5154902211";
 const ON = Date.parse("2026-09-01T00:00:00Z");
 
 /** A fixture's canned JSON, served as the 200 the REST read now parses. */
-const served = (result: ExecResult) => ({status: 200, body: result.stdout});
+const served = (result: ExecResult) => ({ status: 200, body: result.stdout });
 
 const options = {
 	pr: 4321,
@@ -58,33 +58,33 @@ const options = {
 	repo: null,
 	json: false,
 	cwd: "/repo",
-	env: {CLAUDE_PIPELINE_REPO: "o/r", GITHUB_TOKEN: "ghp_scripted"} as Record<
+	env: { CLAUDE_PIPELINE_REPO: "o/r", GITHUB_TOKEN: "ghp_scripted" } as Record<
 		string,
 		string | undefined
 	>,
-	stdin: Effect.succeed({_tag: "Text", text: BODY} as StdinRead),
+	stdin: Effect.succeed({ _tag: "Text", text: BODY } as StdinRead),
 	supersede: false,
 	now: Effect.succeed(ON),
 };
 
 const layerFor = (script: ReadonlyArray<Scripted>) => {
 	const seams = fakeSeams(script);
-	return {seams, layer: Layer.mergeAll(seams.layer, unconfigured)};
+	return { seams, layer: Layer.mergeAll(seams.layer, unconfigured) };
 };
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runPost({...options, ...overrides}), layerFor(script).layer));
+	Effect.runPromise(Effect.provide(runPost({ ...options, ...overrides }), layerFor(script).layer));
 
 const composed = (body = BODY, sha = HEAD): string =>
 	`governance: PASS @ ${sha} content:${CONTENT} — no contradiction, no weakening\n\n${body}`;
 
-const created = (id = 91): ExecResult => okOut(JSON.stringify({id, html_url: URL}));
+const created = (id = 91): ExecResult => okOut(JSON.stringify({ id, html_url: URL }));
 
 const governing = (...extra: ReadonlyArray<Scripted>): ReadonlyArray<Scripted> => [
 	[PULL, served(pull())],
 	...binding(),
 	[PATHS_AT(), paths(".decisions/0240-x.md", "src/cart.ts")],
-	[VIEWER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+	[VIEWER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 	[COMMENTS, served(comments())],
 	...extra,
 ];
@@ -100,21 +100,21 @@ const reposting = (prior: string): ReadonlyArray<Scripted> => [
 	[PULL, served(pull())],
 	...binding(),
 	[PATHS_AT(), paths(".decisions/0240-x.md", "src/cart.ts")],
-	[VIEWER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-	[COMMENTS, served(comments({id: 77, body: prior}))],
-	[PATCH, {status: 200, body: JSON.stringify({html_url: URL})}],
+	[VIEWER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+	[COMMENTS, served(comments({ id: 77, body: prior }))],
+	[PATCH, { status: 200, body: JSON.stringify({ html_url: URL }) }],
 	[
 		READ_BACK,
 		{
 			status: 200,
-			body: JSON.stringify({body: supersedeWith(prior, composed(), new Date(ON))}),
+			body: JSON.stringify({ body: supersedeWith(prior, composed(), new Date(ON)) }),
 		},
 	],
 ];
 
 /** The body one write carried, as text. */
 const written = (
-	seams: {readonly requests: ReadonlyArray<string>; readonly bodies: ReadonlyArray<string>},
+	seams: { readonly requests: ReadonlyArray<string>; readonly bodies: ReadonlyArray<string> },
 	pattern: RegExp,
 ): string => {
 	const index = seams.requests.findIndex((request) => pattern.test(request));
@@ -125,8 +125,8 @@ describe("runPost", () => {
 	it("composes the marker, upserts one comment, reads it back, and prints the line", async () => {
 		const out = await run(
 			governing(
-				[CREATE, {status: 201, body: created().stdout}],
-				[READ_BACK, {status: 200, body: JSON.stringify({body: composed()})}],
+				[CREATE, { status: 201, body: created().stdout }],
+				[READ_BACK, { status: 200, body: JSON.stringify({ body: composed() }) }],
 			),
 		);
 		expect(out.code).toBe(0);
@@ -173,7 +173,7 @@ describe("runPost", () => {
 		const shell = fakeSeams(reposting(standing));
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runPost({...options, supersede: true}),
+				runPost({ ...options, supersede: true }),
 				Layer.mergeAll(shell.layer, unconfigured),
 			),
 		);
@@ -185,17 +185,17 @@ describe("runPost", () => {
 	// The head dimension of the upsert key. Without it a re-gate after a repair PATCHes the prior
 	// head's verdict away, and the record of what was true over that tree becomes unrecoverable.
 	it("leaves a prior head's verdict intact and appends at the new head", async () => {
-		const {seams, layer} = layerFor([
+		const { seams, layer } = layerFor([
 			[PULL, served(pull())],
 			...binding(),
 			[PATHS_AT(), paths(".decisions/0240-x.md", "src/cart.ts")],
-			[VIEWER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[VIEWER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[
 				COMMENTS,
-				served(comments({id: 77, body: composed("the round before the repair\n", OLD_HEAD)})),
+				served(comments({ id: 77, body: composed("the round before the repair\n", OLD_HEAD) })),
 			],
-			[CREATE, {status: 201, body: created().stdout}],
-			[READ_BACK, {status: 200, body: JSON.stringify({body: composed()})}],
+			[CREATE, { status: 201, body: created().stdout }],
+			[READ_BACK, { status: 200, body: JSON.stringify({ body: composed() }) }],
 		]);
 		const out = await Effect.runPromise(Effect.provide(runPost(options), layer));
 		expect(out.code).toBe(0);
@@ -206,10 +206,10 @@ describe("runPost", () => {
 	it("emits the record with --json, naming the fixed namespace", async () => {
 		const out = await run(
 			governing(
-				[CREATE, {status: 201, body: created().stdout}],
-				[READ_BACK, {status: 200, body: JSON.stringify({body: composed()})}],
+				[CREATE, { status: 201, body: created().stdout }],
+				[READ_BACK, { status: 200, body: JSON.stringify({ body: composed() }) }],
 			),
-			{json: true},
+			{ json: true },
 		);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			outcome: "posted",
@@ -220,7 +220,7 @@ describe("runPost", () => {
 	});
 
 	it("refuses on 14 when the diff derives NO governance root, and writes nothing", async () => {
-		const {seams, layer} = layerFor([
+		const { seams, layer } = layerFor([
 			[PULL, served(pull())],
 			...binding(),
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
@@ -234,29 +234,29 @@ describe("runPost", () => {
 	});
 
 	it("refuses a stale --sha on 12 before it writes anything", async () => {
-		const out = await run(governing(), {sha: OLD_HEAD});
+		const out = await run(governing(), { sha: OLD_HEAD });
 		expect(out.code).toBe(STALE_HEAD);
 		expect(out.stderr.at(-1)).toContain("re-review at");
 	});
 
 	it("refuses a bad polarity, a bad sha and a blank clause on 10", async () => {
-		expect((await run(governing(), {polarity: "APPROVED"})).code).toBe(OFF_VOCABULARY);
-		expect((await run(governing(), {sha: "origin/main"})).code).toBe(OFF_VOCABULARY);
-		expect((await run(governing(), {clause: "   "})).code).toBe(OFF_VOCABULARY);
+		expect((await run(governing(), { polarity: "APPROVED" })).code).toBe(OFF_VOCABULARY);
+		expect((await run(governing(), { sha: "origin/main" })).code).toBe(OFF_VOCABULARY);
+		expect((await run(governing(), { clause: "   " })).code).toBe(OFF_VOCABULARY);
 	});
 
 	it("refuses an empty pipe on 3 and a bare @ body on 6", async () => {
-		const empty = await run(governing(), {stdin: Effect.succeed({_tag: "Text", text: "  "})});
+		const empty = await run(governing(), { stdin: Effect.succeed({ _tag: "Text", text: "  " }) });
 		expect(empty.code).toBe(EMPTY_STDIN);
 		const bare = await run(governing(), {
-			stdin: Effect.succeed({_tag: "Text", text: "@notes/verdict.md"}),
+			stdin: Effect.succeed({ _tag: "Text", text: "@notes/verdict.md" }),
 		});
 		expect(bare.code).toBe(BARE_AT_PATH);
 	});
 
 	it("separates an UNREAD pipe from an empty one — 1, never 3", async () => {
 		const out = await run(governing(), {
-			stdin: Effect.succeed({_tag: "Failed", reason: "EAGAIN"}),
+			stdin: Effect.succeed({ _tag: "Failed", reason: "EAGAIN" }),
 		});
 		expect(out.code).toBe(1);
 		expect(out.code).not.toBe(EMPTY_STDIN);
@@ -264,21 +264,21 @@ describe("runPost", () => {
 
 	it("refuses a machine-local path in the ASSEMBLED comment on 5", async () => {
 		const out = await run(governing(), {
-			stdin: Effect.succeed({_tag: "Text", text: "see ~/notes/verdict.md for the sweep\n"}),
+			stdin: Effect.succeed({ _tag: "Text", text: "see ~/notes/verdict.md for the sweep\n" }),
 		});
 		expect(out.code).toBe(LEAKED_PATH);
 		expect(out.stdout).toBe("");
 	});
 
 	it("refuses an absent or closed PR on 7", async () => {
-		expect((await run([[PULL, {status: 404, body: '{"message":"Not Found"}'}]])).code).toBe(
+		expect((await run([[PULL, { status: 404, body: '{"message":"Not Found"}' }]])).code).toBe(
 			ZERO_SCOPE,
 		);
-		expect((await run([[PULL, served(pull({state: "closed"}))]])).code).toBe(ZERO_SCOPE);
+		expect((await run([[PULL, served(pull({ state: "closed" }))]])).code).toBe(ZERO_SCOPE);
 	});
 
 	it("seats a failed write on 8, never on 1 — the outcome is UNKNOWN", async () => {
-		const out = await run(governing([CREATE, {status: 504, body: "{}"}]));
+		const out = await run(governing([CREATE, { status: 504, body: "{}" }]));
 		expect(out.code).toBe(WRITE_UNKNOWN);
 		expect(out.code).not.toBe(1);
 		expect(out.stderr.at(-1)).toContain("UNKNOWN whether the verdict landed");
@@ -287,8 +287,8 @@ describe("runPost", () => {
 	it("seats a read-back that does not carry the marker on 9", async () => {
 		const out = await run(
 			governing(
-				[CREATE, {status: 201, body: created().stdout}],
-				[READ_BACK, {status: 200, body: JSON.stringify({body: "thanks!\n"})}],
+				[CREATE, { status: 201, body: created().stdout }],
+				[READ_BACK, { status: 200, body: JSON.stringify({ body: "thanks!\n" }) }],
 			),
 		);
 		expect(out.code).toBe(READBACK_MISMATCH);
@@ -296,16 +296,16 @@ describe("runPost", () => {
 	});
 
 	it("seats an unreadable precondition on 11 — nothing was posted", async () => {
-		const out = await run([[PULL, {status: 502, body: "{}"}]]);
+		const out = await run([[PULL, { status: 502, body: "{}" }]]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("nothing was posted");
 	});
 
 	it("re-reads the comment from live state — the write call's own echo is not evidence", async () => {
-		const {seams, layer} = layerFor(
+		const { seams, layer } = layerFor(
 			governing(
-				[once(CREATE), {status: 201, body: created().stdout}],
-				[READ_BACK, {status: 200, body: JSON.stringify({body: composed()})}],
+				[once(CREATE), { status: 201, body: created().stdout }],
+				[READ_BACK, { status: 200, body: JSON.stringify({ body: composed() }) }],
 			),
 		);
 		await Effect.runPromise(Effect.provide(runPost(options), layer));
@@ -319,15 +319,15 @@ describe("runPost", () => {
 describe("runPost asserts the governance floor at the head it posted to", () => {
 	const landed = (...extra: ReadonlyArray<Scripted>): ReadonlyArray<Scripted> =>
 		governing(
-			[CREATE, {status: 201, body: created().stdout}],
-			[READ_BACK, {status: 200, body: JSON.stringify({body: composed()})}],
+			[CREATE, { status: 201, body: created().stdout }],
+			[READ_BACK, { status: 200, body: JSON.stringify({ body: composed() }) }],
 			...extra,
 		);
 
 	/** The `{total_count, workflow_runs}` envelope at the head the verdict landed on. */
 	const floorListed: Scripted = [
 		RUNS,
-		{status: 200, body: runsAtHead(1, [{id: FLOOR, name: "governance-floor"}]).stdout},
+		{ status: 200, body: runsAtHead(1, [{ id: FLOOR, name: "governance-floor" }]).stdout },
 	];
 
 	/** The floor's check-run at the head, still pending — the state a re-fire is owed to. */
@@ -335,19 +335,20 @@ describe("runPost asserts the governance floor at the head it posted to", () => 
 		HEAD_CHECK_RUNS,
 		{
 			status: 200,
-			body: checkRuns(1, [{name: CHECK_RUN_NAME, status: "in_progress", conclusion: null}]).stdout,
+			body: checkRuns(1, [{ name: CHECK_RUN_NAME, status: "in_progress", conclusion: null }])
+				.stdout,
 		},
 	];
 
 	const floorRed = (): ReadonlyArray<Scripted> => [
-		[once(RUN), workflowRun({id: FLOOR, attempt: 1})],
+		[once(RUN), workflowRun({ id: FLOOR, attempt: 1 })],
 		[RERUN, accepted],
-		[RUN, workflowRun({id: FLOOR, attempt: 2})],
+		[RUN, workflowRun({ id: FLOOR, attempt: 2 })],
 		floorPending,
 	];
 
 	it("re-fires the red floor run and names the new attempt on stderr", async () => {
-		const {seams, layer} = layerFor([...floorRed(), ...landed(floorListed)]);
+		const { seams, layer } = layerFor([...floorRed(), ...landed(floorListed)]);
 		const out = await Effect.runPromise(Effect.provide(runPost(options), layer));
 		expect(out.code).toBe(0);
 		expect(seams.requests.some((call) => RERUN.test(call))).toBe(true);
@@ -355,14 +356,14 @@ describe("runPost asserts the governance floor at the head it posted to", () => 
 	});
 
 	it("carries the floor's outcome in the --json record", async () => {
-		const out = await run([...floorRed(), ...landed(floorListed)], {json: true});
-		expect(JSON.parse(out.stdout)).toMatchObject({outcome: "posted", floor: "refired"});
+		const out = await run([...floorRed(), ...landed(floorListed)], { json: true });
+		expect(JSON.parse(out.stdout)).toMatchObject({ outcome: "posted", floor: "refired" });
 	});
 
 	// The verdict is landed and read back before the floor is touched, so a floor that could not be
 	// asserted is a red check to clear, never an unwritten verdict to retry.
 	it("still answers 0 when the floor cannot be asserted, and says the check may need a re-fire", async () => {
-		const out = await run(landed([RUNS, {status: 502, body: "{}"}]));
+		const out = await run(landed([RUNS, { status: 502, body: "{}" }]));
 		expect(out.code).toBe(0);
 		expect(out.stdout).toContain("\tcreated\t");
 		expect(out.stderr.at(-1)).toContain("may still need a re-fire");
@@ -371,11 +372,11 @@ describe("runPost asserts the governance floor at the head it posted to", () => 
 	// The order is proven by what a failed read-back leaves undone rather than by two indices in one
 	// list: a verdict that did not read back re-fires nothing at all.
 	it("asserts the floor only after the verdict has been read back", async () => {
-		const {seams, layer} = layerFor([
+		const { seams, layer } = layerFor([
 			...floorRed(),
 			...governing(
-				[CREATE, {status: 201, body: created().stdout}],
-				[READ_BACK, {status: 502, body: "{}"}],
+				[CREATE, { status: 201, body: created().stdout }],
+				[READ_BACK, { status: 502, body: "{}" }],
 				floorListed,
 			),
 		]);

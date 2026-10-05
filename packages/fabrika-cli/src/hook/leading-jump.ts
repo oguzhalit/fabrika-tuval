@@ -23,17 +23,17 @@
  * does not see are listed in the decision record under *What stays out of key*, and that list is
  * the guard's bound rather than an oversight.
  */
-import {isAbsolute, resolve, sep} from "node:path";
-import type {Decision} from "./pre-tool-use.ts";
+import { isAbsolute, resolve, sep } from "node:path";
+import type { Decision } from "./pre-tool-use.ts";
 
 /** The two spellings of the act the ruling names. A jump is a jump whichever one is typed. */
 export const JUMP_KEYWORDS = ["cd", "pushd"] as const;
 
 export type Jump =
 	/** The command does not open with a directory jump. Nothing here to judge. */
-	| {readonly _tag: "None"}
+	| { readonly _tag: "None" }
 	/** A jump whose destination is written out, and so can be resolved without running anything. */
-	| {readonly _tag: "Literal"; readonly keyword: string; readonly target: string}
+	| { readonly _tag: "Literal"; readonly keyword: string; readonly target: string }
 	/** A jump whose destination only exists once the shell has run. Where it lands is unknowable. */
 	| {
 			readonly _tag: "Unverifiable";
@@ -64,7 +64,7 @@ const firstCommand = (text: string): string => {
 };
 
 /** One whitespace-delimited token off the front, keeping its quoting, and what follows it. */
-const nextToken = (text: string): {readonly token: string; readonly rest: string} | undefined => {
+const nextToken = (text: string): { readonly token: string; readonly rest: string } | undefined => {
 	const start = text.trimStart();
 	if (start === "") return undefined;
 	let quote: string | undefined;
@@ -81,7 +81,7 @@ const nextToken = (text: string): {readonly token: string; readonly rest: string
 		}
 		if (/\s/.test(char)) break;
 	}
-	return {token: start.slice(0, index), rest: start.slice(index)};
+	return { token: start.slice(0, index), rest: start.slice(index) };
 };
 
 /** Split on whitespace no quote is holding open, keeping each token's quoting with it. */
@@ -120,7 +120,9 @@ const openerAt = (text: string): (typeof GROUPINGS)[number] | undefined =>
  * `(cd /elsewhere && node …)`, `{ cd /elsewhere; node …; }` and `VAR=x cd /elsewhere` are the same
  * act as the bare jump, one keystroke away, and reading only the raw head let all three through.
  */
-const unwrap = (text: string): {readonly text: string; readonly closers: ReadonlyArray<string>} => {
+const unwrap = (
+	text: string,
+): { readonly text: string; readonly closers: ReadonlyArray<string> } => {
 	let rest = text.trimStart();
 	const closers: string[] = [];
 	for (;;) {
@@ -131,7 +133,7 @@ const unwrap = (text: string): {readonly text: string; readonly closers: Readonl
 			continue;
 		}
 		const next = nextToken(rest);
-		if (next === undefined || !ASSIGNMENT.test(next.token)) return {text: rest, closers};
+		if (next === undefined || !ASSIGNMENT.test(next.token)) return { text: rest, closers };
 		rest = next.rest.trimStart();
 	}
 };
@@ -163,10 +165,10 @@ export const parseLeadingJump = (command: string): Jump => {
 	const keyword = JUMP_KEYWORDS.find(
 		(word) => head === word || head.startsWith(`${word} `) || head.startsWith(`${word}\t`),
 	);
-	if (keyword === undefined) return {_tag: "None"};
+	if (keyword === undefined) return { _tag: "None" };
 
 	const tokens = operands(head.slice(keyword.length));
-	if (tokens.length === 0) return {_tag: "Literal", keyword, target: "~"};
+	if (tokens.length === 0) return { _tag: "Literal", keyword, target: "~" };
 	if (tokens.length > 1) {
 		return {
 			_tag: "Unverifiable",
@@ -177,7 +179,7 @@ export const parseLeadingJump = (command: string): Jump => {
 	}
 
 	const token = tokens[0] as string;
-	if (wrappedIn(token, "'")) return {_tag: "Literal", keyword, target: token.slice(1, -1)};
+	if (wrappedIn(token, "'")) return { _tag: "Literal", keyword, target: token.slice(1, -1) };
 
 	const bare = wrappedIn(token, '"') ? token.slice(1, -1) : token;
 	if (bare === "-") {
@@ -189,12 +191,12 @@ export const parseLeadingJump = (command: string): Jump => {
 		};
 	}
 	if (/[$`]/.test(bare)) {
-		return {_tag: "Unverifiable", keyword, argument: token, reason: "it expands at run time"};
+		return { _tag: "Unverifiable", keyword, argument: token, reason: "it expands at run time" };
 	}
 	if (/[*?[]/.test(bare)) {
-		return {_tag: "Unverifiable", keyword, argument: token, reason: "it is a glob"};
+		return { _tag: "Unverifiable", keyword, argument: token, reason: "it is a glob" };
 	}
-	return {_tag: "Literal", keyword, target: bare};
+	return { _tag: "Literal", keyword, target: bare };
 };
 
 export interface JumpGround {
@@ -225,10 +227,10 @@ const expandHome = (target: string, home: string): string =>
  * jump is never the only way to reach one — which keeps the guard from closing a route that has no
  * replacement.
  */
-export const decideJump = ({command, cwd, workingTree, home}: JumpGround): Decision => {
+export const decideJump = ({ command, cwd, workingTree, home }: JumpGround): Decision => {
 	const jump = parseLeadingJump(command);
 	if (jump._tag === "None")
-		return {_tag: "Allow", because: "the command opens with no directory jump"};
+		return { _tag: "Allow", because: "the command opens with no directory jump" };
 
 	const advice = `Work from ${workingTree}, addressing anything outside it by absolute path.`;
 	if (jump._tag === "Unverifiable") {
@@ -250,7 +252,7 @@ export const decideJump = ({command, cwd, workingTree, home}: JumpGround): Decis
 		: jump.target;
 	const target = isAbsolute(expanded) ? resolve(expanded) : resolve(cwd, expanded);
 	if (inside(workingTree, target)) {
-		return {_tag: "Allow", because: `the jump stays inside ${workingTree}`};
+		return { _tag: "Allow", because: `the jump stays inside ${workingTree}` };
 	}
 	return {
 		_tag: "Deny",

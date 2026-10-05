@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import type {Ticket} from "./frontier.ts";
-import {cycleFrom, reaches, ticketBody, ticketTitle, waitsOnGraph} from "./ticket.ts";
+import { describe, expect, it } from "vitest";
+import type { Ticket } from "./frontier.ts";
+import { cycleFrom, reaches, ticketBody, ticketTitle, waitsOnGraph } from "./ticket.ts";
 
 const ticket = (number: number, blockedBy: ReadonlyArray<number>): Ticket => ({
 	number,
@@ -34,11 +34,11 @@ describe("cycleFrom", () => {
 
 	it("names the loop when the new ticket both waits on and gates the same chain", () => {
 		// new -> 9142 already, and 9144 -> new; 9144 reaches 9142, so the loop closes.
-		expect(cycleFrom(graph, [9144], [9142])).toEqual({waitsOn: 9144, gates: 9142});
+		expect(cycleFrom(graph, [9144], [9142])).toEqual({ waitsOn: 9144, gates: 9142 });
 	});
 
 	it("catches the degenerate loop where one ticket is named on both sides", () => {
-		expect(cycleFrom(graph, [9142], [9142])).toEqual({waitsOn: 9142, gates: 9142});
+		expect(cycleFrom(graph, [9142], [9142])).toEqual({ waitsOn: 9142, gates: 9142 });
 	});
 });
 

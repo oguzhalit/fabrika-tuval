@@ -21,10 +21,10 @@
  * one negative that is proven: `review append-criterion` refuses an issue carrying no conforming
  * block, so no row can have been appended under one that does not exist.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {getIssue} from "../io/issues.ts";
-import {read as readCriteria} from "../wire/acceptance-criteria.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { getIssue } from "../io/issues.ts";
+import { read as readCriteria } from "../wire/acceptance-criteria.ts";
 import {
 	type CriterionProvenance,
 	readProvenanceTag,
@@ -34,8 +34,8 @@ import {
 
 /** What one issue body says about rows routed from this subject's round. */
 export type BodyRead =
-	| {readonly _tag: "Rows"; readonly rows: ReadonlyArray<string>}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Rows"; readonly rows: ReadonlyArray<string> }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /**
  * The criteria on `body` that were appended from `provenance`'s round `round`, as the reviewer
@@ -47,7 +47,7 @@ export const rowsAppendedOn = (
 	round: number,
 ): BodyRead => {
 	const block = readCriteria(body);
-	if (block._tag === "Absent") return {_tag: "Rows", rows: []};
+	if (block._tag === "Absent") return { _tag: "Rows", rows: [] };
 	if (block._tag !== "Found") {
 		return {
 			_tag: "Unreadable",
@@ -60,13 +60,13 @@ export const rowsAppendedOn = (
 			? [withoutProvenanceTag(criterion.text)]
 			: [];
 	});
-	return {_tag: "Rows", rows};
+	return { _tag: "Rows", rows };
 };
 
 /** What the issues this verdict's subject is about say about rows routed from this round. */
 export type AppendedRead =
 	/** Proven: not one of the issues read carries a row tagged for this subject and this round. */
-	| {readonly _tag: "None"}
+	| { readonly _tag: "None" }
 	/** This round routed a finding into `issue`'s contract, and these are the rows it wrote. */
 	| {
 			readonly _tag: "Appended";
@@ -74,7 +74,7 @@ export type AppendedRead =
 			readonly rows: ReadonlyArray<string>;
 	  }
 	/** A read that could not be completed — never collapsed into {@link None}. */
-	| {readonly _tag: "Unreadable"; readonly issue: number; readonly reason: string};
+	| { readonly _tag: "Unreadable"; readonly issue: number; readonly reason: string };
 
 /**
  * Read every issue in `issues` for a row this round routed, stopping at the first that carries one.
@@ -94,17 +94,17 @@ export const appendedThisRound = (
 		for (const issue of issues) {
 			const found = yield* getIssue(repo, issue);
 			if (found._tag === "Unknown") {
-				return {_tag: "Unreadable" as const, issue, reason: found.reason};
+				return { _tag: "Unreadable" as const, issue, reason: found.reason };
 			}
 			// A 404 is a fact about the repository: an issue that is not there carries no row.
 			if (found._tag === "Absent") continue;
 			const read = rowsAppendedOn(found.value.body, provenance, round);
 			if (read._tag === "Unreadable") {
-				return {_tag: "Unreadable" as const, issue, reason: read.reason};
+				return { _tag: "Unreadable" as const, issue, reason: read.reason };
 			}
 			if (read.rows.length > 0) {
-				return {_tag: "Appended" as const, issue, rows: read.rows};
+				return { _tag: "Appended" as const, issue, rows: read.rows };
 			}
 		}
-		return {_tag: "None" as const};
+		return { _tag: "None" as const };
 	});

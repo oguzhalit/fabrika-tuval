@@ -9,8 +9,8 @@
  *
  * It touches no repository and performs no read, which is why it takes no `--repo`.
  */
-import {answer, type VerbOutcome} from "../verb.ts";
-import {DELIBERATE_GAP, TRIAGE_EXIT_TABLE} from "./codes.ts";
+import { answer, type VerbOutcome } from "../verb.ts";
+import { DELIBERATE_GAP, TRIAGE_EXIT_TABLE } from "./codes.ts";
 
 export interface CodesInput {
 	readonly json: boolean;
@@ -18,9 +18,9 @@ export interface CodesInput {
 
 const GAP_NOTE = `triage codes: ${DELIBERATE_GAP} is unallocated — it once fused "proven absent" with "unreadable", which 7 and 11 now split.`;
 
-export const runCodes = ({json}: CodesInput): VerbOutcome => {
+export const runCodes = ({ json }: CodesInput): VerbOutcome => {
 	const stdout = json
-		? `${JSON.stringify({gap: DELIBERATE_GAP, codes: TRIAGE_EXIT_TABLE})}\n`
+		? `${JSON.stringify({ gap: DELIBERATE_GAP, codes: TRIAGE_EXIT_TABLE })}\n`
 		: `${TRIAGE_EXIT_TABLE.map((row) => `${row.code}\t${row.meaning}`).join("\n")}\n`;
 	return answer(stdout, [GAP_NOTE]);
 };

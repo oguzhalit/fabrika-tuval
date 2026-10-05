@@ -26,18 +26,18 @@
  * the answer, and resolving it the other way would hand out authority nobody proved.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {authorKeyNotices} from "../config/deprecated-authors.ts";
-import {capClearAuthorsKey, type GrantAuthor} from "../config/keys/cap-clear-authors.ts";
-import {loadConfig} from "../config/load.ts";
-import type {CommentRecord} from "../io/issues.ts";
-import {permissionFor} from "../io/pulls.ts";
-import {CONFIG_PATH} from "../repo-config.ts";
-import {CAP_ROUND} from "../retry-budget.ts";
-import {listTeamMembers, readFileAtRef} from "../ship/github.ts";
-import {controlPlaneRoster} from "../ship/roster.ts";
-import {read as readClearance} from "../wire/cap-clearance.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { authorKeyNotices } from "../config/deprecated-authors.ts";
+import { capClearAuthorsKey, type GrantAuthor } from "../config/keys/cap-clear-authors.ts";
+import { loadConfig } from "../config/load.ts";
+import type { CommentRecord } from "../io/issues.ts";
+import { permissionFor } from "../io/pulls.ts";
+import { CONFIG_PATH } from "../repo-config.ts";
+import { CAP_ROUND } from "../retry-budget.ts";
+import { listTeamMembers, readFileAtRef } from "../ship/github.ts";
+import { controlPlaneRoster } from "../ship/roster.ts";
+import { read as readClearance } from "../wire/cap-clearance.ts";
 
 /** Any ISO-8601 date in the quoted authorization — the same dating rule `grill rule` enforces. */
 const ISO_DATE = /\d{4}-\d{2}-\d{2}/;
@@ -63,8 +63,8 @@ export interface ClearanceRow {
 }
 
 export type ClearancesRead =
-	| {readonly _tag: "Rows"; readonly rows: ReadonlyArray<ClearanceRow>}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Rows"; readonly rows: ReadonlyArray<ClearanceRow> }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /** The rounds an honoured row grants — what `../cap-clearance.ts`'s derivations take. */
 export const grantedFrom = (rows: ReadonlyArray<ClearanceRow>): ReadonlyArray<number> =>
@@ -77,8 +77,8 @@ export type Membership =
 			/** The default-branch ref the CODEOWNERS roster was read at, for a refusal's evidence. */
 			readonly ref: string;
 	  }
-	| {readonly _tag: "Unusable"; readonly reason: string}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unusable"; readonly reason: string }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * The control-plane set as a predicate — who may clear a round or grant a takeover.
@@ -93,7 +93,7 @@ export const controlPlaneMembership = (
 	Effect.gen(function* () {
 		const roster = yield* controlPlaneRoster(repo);
 		if (roster._tag === "Unknown") {
-			return {_tag: "Unknown" as const, reason: `the control-plane set: ${roster.reason}`};
+			return { _tag: "Unknown" as const, reason: `the control-plane set: ${roster.reason}` };
 		}
 		if (roster.logins.size === 0) {
 			return {
@@ -110,8 +110,8 @@ export const controlPlaneMembership = (
 	});
 
 export type Expanded =
-	| {readonly _tag: "Logins"; readonly holds: (login: string) => boolean}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Logins"; readonly holds: (login: string) => boolean }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * An author set as a predicate, with every team expanded once.
@@ -160,7 +160,7 @@ export const capClearAuthorsNotices = (
 		file._tag === "Present"
 			? authorKeyNotices(
 					verb,
-					loadConfig({_tag: "Text", text: file.value}),
+					loadConfig({ _tag: "Text", text: file.value }),
 					capClearAuthorsKey,
 					`${CONFIG_PATH} at ${baseRef}`,
 				)
@@ -168,8 +168,8 @@ export const capClearAuthorsNotices = (
 	);
 
 export type Permissions =
-	| {readonly _tag: "Levels"; readonly levelOf: (login: string) => string | null}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Levels"; readonly levelOf: (login: string) => string | null }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * Each login's live repository permission, read once per distinct login.
@@ -194,7 +194,10 @@ export const permissionsFor = (
 			}
 			levels.set(login, read._tag === "Present" ? read.value : null);
 		}
-		return {_tag: "Levels" as const, levelOf: (login: string) => levels.get(login.trim()) ?? null};
+		return {
+			_tag: "Levels" as const,
+			levelOf: (login: string) => levels.get(login.trim()) ?? null,
+		};
 	});
 
 /**
@@ -219,8 +222,8 @@ const adjacentAuthorization = (
 
 /** Why this marker is not budget, or `null` when all four clauses hold. */
 const refusalFor = (
-	membership: Exclude<Membership, {readonly _tag: "Unknown"}>,
-	permissions: Extract<Permissions, {readonly _tag: "Levels"}>,
+	membership: Exclude<Membership, { readonly _tag: "Unknown" }>,
+	permissions: Extract<Permissions, { readonly _tag: "Levels" }>,
 	repo: string,
 	author: string,
 	round: number,
@@ -256,13 +259,13 @@ export const clearancesOn = (
 	Effect.gen(function* () {
 		const marked = comments.flatMap((comment, index) => {
 			const parsed = readClearance(comment.body);
-			return parsed._tag === "Absent" ? [] : [{comment, index, parsed}];
+			return parsed._tag === "Absent" ? [] : [{ comment, index, parsed }];
 		});
-		if (marked.length === 0) return {_tag: "Rows" as const, rows: []};
+		if (marked.length === 0) return { _tag: "Rows" as const, rows: [] };
 
 		const membership = yield* controlPlaneMembership(repo);
 		if (membership._tag === "Unknown") {
-			return {_tag: "Unknown" as const, reason: membership.reason};
+			return { _tag: "Unknown" as const, reason: membership.reason };
 		}
 		// Only the authors the control-plane set already names are worth an ACL read: one it does not
 		// name is refused on that clause alone, and reading it would let a hiccup on an irrelevant login
@@ -270,16 +273,18 @@ export const clearancesOn = (
 		const permissions = yield* permissionsFor(
 			repo,
 			membership._tag === "Set"
-				? marked.flatMap(({comment}) => (membership.holds(comment.author) ? [comment.author] : []))
+				? marked.flatMap(({ comment }) =>
+						membership.holds(comment.author) ? [comment.author] : [],
+					)
 				: [],
 		);
 		if (permissions._tag === "Unknown") {
-			return {_tag: "Unknown" as const, reason: permissions.reason};
+			return { _tag: "Unknown" as const, reason: permissions.reason };
 		}
 
 		const rows: ClearanceRow[] = [];
-		for (const {comment, index, parsed} of marked) {
-			const base = {by: comment.author, commentId: comment.id};
+		for (const { comment, index, parsed } of marked) {
+			const base = { by: comment.author, commentId: comment.id };
 			if (parsed._tag === "Malformed") {
 				rows.push({
 					...base,
@@ -291,7 +296,7 @@ export const clearancesOn = (
 				});
 				continue;
 			}
-			const {round, at} = parsed.value;
+			const { round, at } = parsed.value;
 			const authorization = adjacentAuthorization(comments, index, comment.author);
 			const reason = refusalFor(
 				membership,
@@ -307,8 +312,8 @@ export const clearancesOn = (
 				at,
 				authorization,
 				honoured: reason === null,
-				...(reason === null ? {} : {reason}),
+				...(reason === null ? {} : { reason }),
 			});
 		}
-		return {_tag: "Rows" as const, rows};
+		return { _tag: "Rows" as const, rows };
 	});

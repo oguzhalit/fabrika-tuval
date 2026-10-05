@@ -32,7 +32,7 @@ export const parseTags = (raw: string): ReadonlyArray<string> =>
 export const recordFilename = (id: string, slug: string): string => `${id}-${slug}.md`;
 
 /** The bytes `adr new` writes. */
-export const renderTemplate = ({id, title, status, date, tags}: ScaffoldInput): string =>
+export const renderTemplate = ({ id, title, status, date, tags }: ScaffoldInput): string =>
 	`---
 id: ${id}
 title: ${title}

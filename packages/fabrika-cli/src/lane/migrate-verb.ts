@@ -35,17 +35,17 @@
  * the read can only turn a write into a skip. That is what keeps this verb's guarantee intact — it
  * writes only where the swap is provably inert.
  */
-import {Effect, type FileSystem, Path, Result} from "effect";
-import {exists, readFile, writeFile} from "../io/fs.ts";
-import {isRecord, parseJson} from "../io/json.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {LANE_ABSENT, LANE_UNREADABLE, MIGRATION_UNSAFE, SHAPE_MISMATCH} from "./codes.ts";
-import type {ExpectationReader} from "./expectation.ts";
-import {CHORE_PREFIX, rawKeyIssue} from "./key.ts";
-import {compileText} from "./machine.ts";
-import {type Drift, graftContext, judgeMigration, sameMachine} from "./migrate.ts";
-import {judgeShape, originOf} from "./shape.ts";
-import {DEFAULT_CHORES_ROOT, listLanes, loadLane} from "./store.ts";
+import { Effect, type FileSystem, Path, Result } from "effect";
+import { exists, readFile, writeFile } from "../io/fs.ts";
+import { isRecord, parseJson } from "../io/json.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { LANE_ABSENT, LANE_UNREADABLE, MIGRATION_UNSAFE, SHAPE_MISMATCH } from "./codes.ts";
+import type { ExpectationReader } from "./expectation.ts";
+import { CHORE_PREFIX, rawKeyIssue } from "./key.ts";
+import { compileText } from "./machine.ts";
+import { type Drift, graftContext, judgeMigration, sameMachine } from "./migrate.ts";
+import { judgeShape, originOf } from "./shape.ts";
+import { DEFAULT_CHORES_ROOT, listLanes, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane migrate";
 
@@ -111,10 +111,10 @@ const VERDICTS: ReadonlyArray<Verdict> = [
  * there is no template to swap — the lane is a directory to retire, and this verb only names it.
  */
 type LaneShape =
-	| {readonly state: "matches"}
-	| {readonly state: "mismatched"; readonly reason: string}
-	| {readonly state: "duplicate"; readonly parent: number | null; readonly reason: string}
-	| {readonly state: "unknown"; readonly reason: string};
+	| { readonly state: "matches" }
+	| { readonly state: "mismatched"; readonly reason: string }
+	| { readonly state: "duplicate"; readonly parent: number | null; readonly reason: string }
+	| { readonly state: "unknown"; readonly reason: string };
 
 interface LaneRow {
 	readonly key: string;
@@ -145,15 +145,15 @@ const shapeOf = <R>(
 		const document = parseJson(documentText);
 		const id = isRecord(document) && typeof document.id === "string" ? document.id : null;
 		if (id === null) {
-			return {state: "unknown", reason: "this lane's document has no `id` to read a machine off"};
+			return { state: "unknown", reason: "this lane's document has no `id` to read a machine off" };
 		}
 		const read = yield* expectations(issue);
-		if (read._tag === "Unknown") return {state: "unknown", reason: read.reason};
+		if (read._tag === "Unknown") return { state: "unknown", reason: read.reason };
 		const judged = judgeShape(issue, originOf(id), read.expectation);
-		if (judged._tag === "Matches") return {state: "matches"};
+		if (judged._tag === "Matches") return { state: "matches" };
 		return judged._tag === "Duplicate"
-			? {state: "duplicate", parent: judged.parent, reason: judged.reason}
-			: {state: "mismatched", reason: judged.reason};
+			? { state: "duplicate", parent: judged.parent, reason: judged.reason }
+			: { state: "mismatched", reason: judged.reason };
 	});
 
 const migrateLane = <R>(
@@ -166,8 +166,8 @@ const migrateLane = <R>(
 	Effect.gen(function* () {
 		const path = yield* Path.Path;
 		const key = keyOf(root, name);
-		const unreadable = (reason: string): LaneRow => ({key, root, verdict: "unreadable", reason});
-		const loaded = yield* loadLane({root, lane: name});
+		const unreadable = (reason: string): LaneRow => ({ key, root, verdict: "unreadable", reason });
+		const loaded = yield* loadLane({ root, lane: name });
 		// An entry with no workflow.json is not a lane — a scratch directory under the root is not a
 		// migration to report, and calling it one would put noise in front of every real one.
 		if (loaded._tag === "Absent") return null;
@@ -191,17 +191,17 @@ const migrateLane = <R>(
 		// Every row past this point carries the judgement, including the ones it did not decide — an
 		// `unknown` shape is what says the board was asked and did not answer, and dropping it would
 		// leave a degraded sweep reading exactly like a clean one.
-		const withShape = (row: LaneRow): LaneRow => (shape === undefined ? row : {...row, shape});
+		const withShape = (row: LaneRow): LaneRow => (shape === undefined ? row : { ...row, shape });
 		// Ahead of every migration verdict: a lane running the wrong machine for its issue is not a
 		// lane to bring up to a template, whatever the graft says.
 		if (shape?.state === "mismatched") {
-			return withShape({key, root, verdict: "mismatched", reason: shape.reason});
+			return withShape({ key, root, verdict: "mismatched", reason: shape.reason });
 		}
 		// Ahead of the graft for the opposite reason a mismatch is: this lane's template is right and
 		// migrating it would be inert, but writing to a ledger an operator is being told to retire
 		// hands them a directory this run just touched.
 		if (shape?.state === "duplicate") {
-			return withShape({key, root, verdict: "duplicate", reason: shape.reason});
+			return withShape({ key, root, verdict: "duplicate", reason: shape.reason });
 		}
 
 		const grafts = templateTexts.map((text) => graftContext(text, onDisk.success));
@@ -218,7 +218,8 @@ const migrateLane = <R>(
 				reason: `machine "${id}" was generated, not booted — it drains on the machine it was emitted with and is never migrated`,
 			});
 		}
-		if (sameMachine(onDisk.success, graft.text)) return withShape({key, root, verdict: "current"});
+		if (sameMachine(onDisk.success, graft.text))
+			return withShape({ key, root, verdict: "current" });
 
 		const candidate = compileText(graft.text);
 		if (candidate._tag === "Malformed") {
@@ -249,13 +250,13 @@ const migrateLane = <R>(
 				drifts: judged.drifts,
 			});
 		}
-		if (check) return withShape({key, root, verdict: "stale"});
+		if (check) return withShape({ key, root, verdict: "stale" });
 
 		const wrote = yield* Effect.result(writeFile(workflowPath, graft.text));
 		return withShape(
 			Result.isFailure(wrote)
 				? unreadable(`the write to ${workflowPath} did not land: ${wrote.failure.reason}`)
-				: {key, root, verdict: "migrated"},
+				: { key, root, verdict: "migrated" },
 		);
 	});
 
@@ -264,8 +265,8 @@ export const runMigrate = <R = never>(
 ): Effect.Effect<VerbOutcome, never, R | FileSystem.FileSystem | Path.Path> =>
 	Effect.gen(function* () {
 		const lanes: LaneRow[] = [];
-		const scanned: Array<{root: string; present: boolean; lanes: number}> = [];
-		for (const {root, templatePaths} of options.roots) {
+		const scanned: Array<{ root: string; present: boolean; lanes: number }> = [];
+		for (const { root, templatePaths } of options.roots) {
 			const templateTexts: string[] = [];
 			for (const templatePath of templatePaths) {
 				const template = yield* Effect.result(readFile(templatePath));
@@ -285,7 +286,7 @@ export const runMigrate = <R = never>(
 				);
 			}
 			if (!probe.success) {
-				scanned.push({root, present: false, lanes: 0});
+				scanned.push({ root, present: false, lanes: 0 });
 				continue;
 			}
 			const names = yield* Effect.result(listLanes(root));
@@ -311,7 +312,7 @@ export const runMigrate = <R = never>(
 				found += 1;
 				lanes.push(row);
 			}
-			scanned.push({root, present: true, lanes: found});
+			scanned.push({ root, present: true, lanes: found });
 		}
 
 		// A key that matched nothing is a proven absence, never a clean sweep of zero: the caller
@@ -341,7 +342,7 @@ export const runMigrate = <R = never>(
 		];
 		if (unsafe.length === 0 && mismatched.length === 0) {
 			return answer(
-				JSON.stringify({check: options.check, scanned, summary, lanes}, null, 2),
+				JSON.stringify({ check: options.check, scanned, summary, lanes }, null, 2),
 				stderr,
 			);
 		}

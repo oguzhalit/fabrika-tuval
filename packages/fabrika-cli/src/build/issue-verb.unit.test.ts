@@ -1,16 +1,16 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type Scripted} from "../fakes.test-support.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {GATEWAY, issue, NOT_FOUND} from "./fixtures.test-support.ts";
-import {runIssue} from "./issue-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type Scripted } from "../fakes.test-support.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { GATEWAY, issue, NOT_FOUND } from "./fixtures.test-support.ts";
+import { runIssue } from "./issue-verb.ts";
 
 const ISSUE = /GET .*\/repos\/o\/r\/issues\/4312$/;
 
 const options = {
 	number: 4312,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 };
 
 const run = (script: ReadonlyArray<Scripted>) =>
@@ -32,8 +32,8 @@ describe("runIssue", () => {
 		expect(parsed.labels).toEqual(["type:bug", "p1", "status:triaged"]);
 		expect(parsed.criteria.state).toBe("found");
 		expect(parsed.criteria.items).toEqual([
-			{text: "focus stays in the editor after save", checked: false, evidence: null},
-			{text: "a test covers it", checked: true, evidence: null},
+			{ text: "focus stays in the editor after save", checked: false, evidence: null },
+			{ text: "a test covers it", checked: true, evidence: null },
 		]);
 	});
 
@@ -60,7 +60,7 @@ describe("runIssue", () => {
 				checked: false,
 				evidence: "hand-verification at localhost:5173",
 			},
-			{text: "a test covers the reducer", checked: false, evidence: null},
+			{ text: "a test covers the reducer", checked: false, evidence: null },
 		]);
 		expect(out.stderr.join("\n")).toContain("1 of 2 criteria mark evidence outside the diff");
 		expect(out.stderr.join("\n")).toContain(
@@ -69,7 +69,7 @@ describe("runIssue", () => {
 	});
 
 	it("reports a genuinely absent block as `absent`, on exit 0", async () => {
-		const out = await run([[ISSUE, issue({body: "just a description\n"})]]);
+		const out = await run([[ISSUE, issue({ body: "just a description\n" })]]);
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).criteria.state).toBe("absent");
 	});
@@ -81,7 +81,7 @@ describe("runIssue", () => {
 	 */
 	it("reports a drifted heading as `malformed`, never as `absent`", async () => {
 		const out = await run([
-			[ISSUE, issue({body: "### Acceptance Criteria\n\n- [ ] focus stays put\n"})],
+			[ISSUE, issue({ body: "### Acceptance Criteria\n\n- [ ] focus stays put\n" })],
 		]);
 		const parsed = JSON.parse(out.stdout);
 		expect(parsed.criteria.state).toBe("malformed");
@@ -94,7 +94,7 @@ describe("runIssue", () => {
 	});
 
 	it("refuses a closed issue on 7 too", async () => {
-		const out = await run([[ISSUE, issue({state: "closed"})]]);
+		const out = await run([[ISSUE, issue({ state: "closed" })]]);
 		expect(out.code).toBe(ZERO_SCOPE);
 	});
 

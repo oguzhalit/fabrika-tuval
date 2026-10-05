@@ -21,18 +21,18 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9844#issuecomment-5851228368
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {createComment, getComment, listComments} from "../io/issues.ts";
-import {viewerLogin} from "../io/pulls.ts";
-import {sameLogin} from "../ownership/pr-ownership.ts";
-import {readPrOwnership} from "../ownership/read.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {stampOf} from "../wire/grill-marker.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { createComment, getComment, listComments } from "../io/issues.ts";
+import { viewerLogin } from "../io/pulls.ts";
+import { sameLogin } from "../ownership/pr-ownership.ts";
+import { readPrOwnership } from "../ownership/read.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { stampOf } from "../wire/grill-marker.ts";
 import * as takeoverGrant from "../wire/takeover-grant.ts";
-import type {DocumentRead} from "./clear-verb.ts";
+import type { DocumentRead } from "./clear-verb.ts";
 import {
 	capClearAuthorsNotices,
 	clearsWriteFloor,
@@ -49,7 +49,7 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {openPull, resolveTargetRepo} from "./target.ts";
+import { openPull, resolveTargetRepo } from "./target.ts";
 
 const VERB = "build takeover";
 
@@ -70,7 +70,7 @@ export const runTakeover = <R = never>(
 	options: TakeoverOptions<R>,
 ): Effect.Effect<VerbOutcome, never, R | ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr, authorizationPath} = options;
+		const { pr, authorizationPath } = options;
 		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
 		if (resolved._tag === "Refused") return resolved.outcome;
 		const repo = resolved.repo;
@@ -119,7 +119,7 @@ export const runTakeover = <R = never>(
 				`${VERB}: cannot read PR #${pr}: ${reason} — whether it can be handed over is UNKNOWN. Nothing was posted.`,
 		);
 		if (target._tag === "Refused") return target.outcome;
-		const {authorLogin: author, baseRef} = target.pull;
+		const { authorLogin: author, baseRef } = target.pull;
 
 		const viewer = yield* viewerLogin;
 		if (viewer._tag === "Failure") {
@@ -176,7 +176,7 @@ export const runTakeover = <R = never>(
 
 		const standing = yield* readPrOwnership(
 			repo,
-			{number: pr, author, baseRef},
+			{ number: pr, author, baseRef },
 			listComments(repo, pr),
 		);
 		if (standing._tag === "Unknown") {
@@ -213,7 +213,7 @@ export const runTakeover = <R = never>(
 				`${VERB}: the marker for #${pr} could not be composed — the clock or the number is not one a grant can name. Nothing was posted.`,
 			);
 		}
-		const body = `${takeoverGrant.emit({pr: granted, at})}\n${quoted}\n`;
+		const body = `${takeoverGrant.emit({ pr: granted, at })}\n${quoted}\n`;
 		const posted = yield* createComment(repo, pr, body);
 		if (posted._tag === "Failure") {
 			return refuse(

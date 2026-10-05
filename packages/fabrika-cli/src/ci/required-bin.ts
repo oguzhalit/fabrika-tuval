@@ -9,7 +9,7 @@
  * fast. One `import` of a relative plain-TS module is the whole module graph; an `effect` import
  * anywhere on this path would put the CLI's dependency tree on the gate's critical path.
  */
-import {inputFromEnv, judge} from "./required.ts";
+import { inputFromEnv, judge } from "./required.ts";
 
 const verdict = judge(inputFromEnv(process.env));
 

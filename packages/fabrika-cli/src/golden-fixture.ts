@@ -13,8 +13,8 @@
  * real committed file on disk, and `fileURLToPath` has no `Path` equivalent — both sit on
  * `.patterns/effect-platform-access.md`'s bright line.
  */
-import {readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 /** `baseUrl` is the caller's `import.meta.url`; `name` is the fixture path relative to it. */
 export const readGoldenFixture = (baseUrl: string | URL, name: string): string =>

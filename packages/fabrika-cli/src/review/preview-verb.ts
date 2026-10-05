@@ -27,24 +27,24 @@
  * `GOVERNED_FILTER` (the hard invariant); an unreadable diff file, an unreadable git read, or a
  * subject that cannot be bound is `PRECONDITION_UNKNOWN` — never a permissive empty read.
  */
-import {Effect, FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import { Effect, FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	governedRootsOr,
 	reviewFilterExclusionsOr,
 	reviewFilterUnexcludeOr,
 	uiSurfacesOr,
 } from "../config/paths.ts";
-import {diffRange, diffRangePaths} from "../io/git.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {type ClassRefs, classConfigAtCommits} from "./class-config.ts";
-import {GOVERNED_FILTER, INCOMPLETE_SCAN, OFF_VOCABULARY, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {filesInDiff} from "./diff.ts";
-import {effectiveExclusions, isFilterPlacement, previewOf} from "./filter-spike.ts";
-import {refusalProbes} from "./guard-trees.ts";
-import {bindHead, boundLine} from "./head.ts";
-import {rangeMergeBase, readRangeFlags} from "./range-flags.ts";
-import {badNumber, openPull, resolveTargetRepo} from "./target.ts";
+import { diffRange, diffRangePaths } from "../io/git.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { type ClassRefs, classConfigAtCommits } from "./class-config.ts";
+import { GOVERNED_FILTER, INCOMPLETE_SCAN, OFF_VOCABULARY, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { filesInDiff } from "./diff.ts";
+import { effectiveExclusions, isFilterPlacement, previewOf } from "./filter-spike.ts";
+import { refusalProbes } from "./guard-trees.ts";
+import { bindHead, boundLine } from "./head.ts";
+import { rangeMergeBase, readRangeFlags } from "./range-flags.ts";
+import { badNumber, openPull, resolveTargetRepo } from "./target.ts";
 
 const VERB = "review preview";
 
@@ -159,7 +159,7 @@ export const runPreview = (
 		const serve = (
 			diff: string,
 			provenance: ReadonlyArray<string>,
-			classes: {readonly roots: ReadonlyArray<string>; readonly prefixes: ReadonlyArray<string>},
+			classes: { readonly roots: ReadonlyArray<string>; readonly prefixes: ReadonlyArray<string> },
 		): VerbOutcome => {
 			const probes = refusalProbes(classes.roots);
 			const preview = previewOf(diff, placement, patterns, probes, classes.roots, classes.prefixes);
@@ -191,9 +191,9 @@ export const runPreview = (
 						outcome: "previewed",
 						placement: result.placement,
 						matched_paths: result.matched_paths,
-						excluded: {count: result.excluded.length, paths: result.excluded},
+						excluded: { count: result.excluded.length, paths: result.excluded },
 						...(result.unexcluded.length > 0
-							? {unexcluded: {count: result.unexcluded.length, paths: result.unexcluded}}
+							? { unexcluded: { count: result.unexcluded.length, paths: result.unexcluded } }
 							: {}),
 						active_classes: result.active_classes,
 						namespaces: result.namespaces,
@@ -256,8 +256,8 @@ export const runPreview = (
 			}
 			const fs = yield* FileSystem.FileSystem;
 			const read = yield* Effect.match(fs.readFileString(diffFile), {
-				onFailure: (cause) => ({_tag: "Refused" as const, message: String(cause)}),
-				onSuccess: (text: string) => ({_tag: "Loaded" as const, text}),
+				onFailure: (cause) => ({ _tag: "Refused" as const, message: String(cause) }),
+				onSuccess: (text: string) => ({ _tag: "Loaded" as const, text }),
 			});
 			if (read._tag === "Refused") {
 				return refuse(
@@ -278,7 +278,7 @@ export const runPreview = (
 				"the required UI reviews are UNKNOWN without configured UI prefixes.",
 			);
 			if (surfaces._tag === "Refused") return refuse(PRECONDITION_UNKNOWN, surfaces.message);
-			return serve(read.text, [], {roots: roots.roots, prefixes: surfaces.prefixes});
+			return serve(read.text, [], { roots: roots.roots, prefixes: surfaces.prefixes });
 		}
 
 		if (pr !== null) {
@@ -318,7 +318,7 @@ export const runPreview = (
 				provenance,
 			);
 			if (short !== null) return short;
-			const classes = yield* classesAt({head: head.sha, base: head.mergeBase});
+			const classes = yield* classesAt({ head: head.sha, base: head.mergeBase });
 			if (classes._tag === "Refused") return refuse(PRECONDITION_UNKNOWN, classes.message);
 			return serve(served.value, provenance, classes);
 		}
@@ -329,7 +329,7 @@ export const runPreview = (
 				`${VERB}: --repo is a PR-subject modifier — a range binds content in this checkout, not a named repository.`,
 			);
 		}
-		const ranged = readRangeFlags(VERB, {base, tip, sha});
+		const ranged = readRangeFlags(VERB, { base, tip, sha });
 		if (ranged._tag !== "Ranged") {
 			// `Pull` is unreachable — the subject count above proved a range was named — and its fold
 			// here is the no-subject refusal, the only honest reading of "no range named".
@@ -370,7 +370,7 @@ export const runPreview = (
 			provenance,
 		);
 		if (short !== null) return short;
-		const classes = yield* classesAt({head: range.tip, base: merged.value});
+		const classes = yield* classesAt({ head: range.tip, base: merged.value });
 		if (classes._tag === "Refused") return refuse(PRECONDITION_UNKNOWN, classes.message);
 		return serve(served.value, provenance, classes);
 	});

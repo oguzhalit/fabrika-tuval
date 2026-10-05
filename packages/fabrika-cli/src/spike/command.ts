@@ -16,20 +16,20 @@
  * rather than emit the parser's generic message.
  */
 
-import {randomBytes} from "node:crypto";
-import {tmpdir} from "node:os";
-import {Effect, Option} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {execRecord} from "../io/exec.ts";
-import {readStdin} from "../io/stdin.ts";
-import {runCapture} from "./capture-verb.ts";
-import {runDispose} from "./dispose-verb.ts";
-import {runOpen} from "./open-verb.ts";
-import {runRun} from "./run-verb.ts";
-import {runStatus} from "./status-verb.ts";
-import {KINDS} from "./workspace.ts";
+import { randomBytes } from "node:crypto";
+import { tmpdir } from "node:os";
+import { Effect, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { execRecord } from "../io/exec.ts";
+import { readStdin } from "../io/stdin.ts";
+import { runCapture } from "./capture-verb.ts";
+import { runDispose } from "./dispose-verb.ts";
+import { runOpen } from "./open-verb.ts";
+import { runRun } from "./run-verb.ts";
+import { runStatus } from "./status-verb.ts";
+import { KINDS } from "./workspace.ts";
 
 const repoFlag = Flag.string("repo").pipe(
 	Flag.optional,
@@ -69,7 +69,7 @@ const open = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({question, kind, ticket, nonce, repo}) {
+	Effect.fn(function* ({ question, kind, ticket, nonce, repo }) {
 		yield* emit(
 			yield* runOpen({
 				question,
@@ -134,7 +134,7 @@ const run = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({nonce, timeout, env, command}) {
+	Effect.fn(function* ({ nonce, timeout, env, command }) {
 		yield* emit(
 			yield* runRun({
 				nonce,
@@ -161,7 +161,7 @@ const run = leafCommand(
 			'  Derivation: the prototyping skill\'s contract.md, "spike run"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika spike run --nonce 7f3a9c21 -- node walkthrough.mjs"}]),
+	Command.withExamples([{ command: "fabrika spike run --nonce 7f3a9c21 -- node walkthrough.mjs" }]),
 );
 
 const capture = leafCommand(
@@ -173,7 +173,7 @@ const capture = leafCommand(
 		nonce: nonceFlag,
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({spike, nonce, repo}) {
+	Effect.fn(function* ({ spike, nonce, repo }) {
 		yield* emit(
 			yield* runCapture({
 				spike,
@@ -206,7 +206,7 @@ const capture = leafCommand(
 			'  Derivation: the prototyping skill\'s contract.md, "spike capture"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika spike capture 9310 --nonce 7f3a9c21 < decision.md"}]),
+	Command.withExamples([{ command: "fabrika spike capture 9310 --nonce 7f3a9c21 < decision.md" }]),
 );
 
 const dispose = leafCommand(
@@ -221,7 +221,7 @@ const dispose = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({nonce, forfeit, repo}) {
+	Effect.fn(function* ({ nonce, forfeit, repo }) {
 		yield* emit(
 			yield* runDispose({
 				nonce,
@@ -253,13 +253,13 @@ const dispose = leafCommand(
 			'  Derivation: the prototyping skill\'s contract.md, "spike dispose"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika spike dispose --nonce 7f3a9c21"}]),
+	Command.withExamples([{ command: "fabrika spike dispose --nonce 7f3a9c21" }]),
 );
 
 const status = leafCommand(
 	"status",
-	{nonce: nonceFlag, repo: repoFlag},
-	Effect.fn(function* ({nonce, repo}) {
+	{ nonce: nonceFlag, repo: repoFlag },
+	Effect.fn(function* ({ nonce, repo }) {
 		yield* emit(
 			yield* runStatus({
 				nonce,
@@ -281,7 +281,7 @@ const status = leafCommand(
 			'  Derivation: the prototyping skill\'s contract.md, "spike status"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika spike status --nonce 7f3a9c21"}]),
+	Command.withExamples([{ command: "fabrika spike status --nonce 7f3a9c21" }]),
 );
 
 export const spikeCommand = Command.make("spike").pipe(

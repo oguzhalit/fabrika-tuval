@@ -17,15 +17,15 @@
  * a standalone issue all leave every edge exactly as the board read it, so a gate can never admit on
  * evidence it failed to read.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type BlockedGate, type Blockedness, gateOf, readBlockedness} from "./blockedness.ts";
-import {getParent} from "./github.ts";
-import {type Assembly, readAssembly} from "./landed.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type BlockedGate, type Blockedness, gateOf, readBlockedness } from "./blockedness.ts";
+import { getParent } from "./github.ts";
+import { type Assembly, readAssembly } from "./landed.ts";
 
 /** A blockedness read that answered — the only shape discharge can subtract from. */
-export type BlockednessRead = Extract<Blockedness, {readonly _tag: "Read"}>;
+export type BlockednessRead = Extract<Blockedness, { readonly _tag: "Read" }>;
 
 type Seams = ChildProcessSpawner.ChildProcessSpawner | HttpClient.HttpClient;
 
@@ -54,7 +54,7 @@ export const dischargeLanded = (
 	Effect.gen(function* () {
 		const undischarged = read.open.length + read.unread.length > 0;
 		if (!undischarged || epic === null)
-			return {remaining: read, discharged: [], assembly: null} as const;
+			return { remaining: read, discharged: [], assembly: null } as const;
 
 		const assembly = yield* readAssembly(env, repo, epic);
 		const landed = assembly._tag === "Read" ? assembly.landed : new Set<number>();
@@ -73,7 +73,7 @@ export const dischargeLanded = (
 
 /** What the assembly-branch read added, said on stderr so the upgrade is auditable at either seam. */
 export const assemblyNotes = (verb: string, discharge: Discharge): ReadonlyArray<string> => {
-	const {assembly, discharged} = discharge;
+	const { assembly, discharged } = discharge;
 	if (assembly === null) return [];
 	if (assembly._tag === "Unreadable") {
 		return [
@@ -113,8 +113,8 @@ export const readDischargedGate = (
 ): Effect.Effect<DischargedGate, never, Seams> =>
 	Effect.gen(function* () {
 		const read = yield* readBlockedness(repo, issue);
-		if (read._tag === "Unknown") return {gate: gateOf(read), notes: []};
-		if (read.open.length + read.unread.length === 0) return {gate: gateOf(read), notes: []};
+		if (read._tag === "Unknown") return { gate: gateOf(read), notes: [] };
+		if (read.open.length + read.unread.length === 0) return { gate: gateOf(read), notes: [] };
 
 		const parent = yield* getParent(env, repo, issue);
 		if (parent._tag === "Unknown") {
@@ -132,5 +132,5 @@ export const readDischargedGate = (
 			parent._tag === "Present" ? parent.value : null,
 			read,
 		);
-		return {gate: gateOf(discharge.remaining), notes: assemblyNotes(verb, discharge)};
+		return { gate: gateOf(discharge.remaining), notes: assemblyNotes(verb, discharge) };
 	});

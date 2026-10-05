@@ -5,21 +5,21 @@
  * test is not either verb's own logic but the one thing they share: what they reconcile against is
  * the *resolved* vocabulary, never the compiled-in default.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
-import {ok} from "../io/git.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {runBootstrap} from "../status/bootstrap-verb.ts";
-import {runApply} from "./apply-verb.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
+import { ok } from "../io/git.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { runBootstrap } from "../status/bootstrap-verb.ts";
+import { runApply } from "./apply-verb.ts";
 import {
 	CWD,
 	type GuardedSeams,
 	guardedShell,
 	triageContext,
 } from "./claim-fixtures.test-support.ts";
-import {OFF_VOCABULARY} from "./codes.ts";
-import {runPark} from "./park-verb.ts";
+import { OFF_VOCABULARY } from "./codes.ts";
+import { runPark } from "./park-verb.ts";
 
 const ISSUE = /GET .*\/repos\/o\/r\/issues\/4312$/;
 const LABELS = /GET .*\/repos\/o\/r\/labels\?/;
@@ -36,7 +36,7 @@ const bodyFor = (seams: GuardedSeams, pattern: RegExp): string => {
 /** The whole board a hypothetical adopting repo declares: its own types, priorities and lanes. */
 const FOREIGN = JSON.stringify({
 	boardVocabulary: {
-		statuses: {needsTriage: "state:new", triaged: "state:ready", needsInfo: "state:blocked"},
+		statuses: { needsTriage: "state:new", triaged: "state:ready", needsInfo: "state:blocked" },
 		types: ["task", "defect"],
 		priorities: ["sev1", "sev2"],
 		audiences: ["human", "agent"],
@@ -53,7 +53,7 @@ const issue = (labels: ReadonlyArray<string>): HttpReply => ({
 		title: "t",
 		body: BODY,
 		state: "open",
-		labels: labels.map((name) => ({name})),
+		labels: labels.map((name) => ({ name })),
 		html_url: "https://example.test/issues/4312",
 		milestone: null,
 	}),
@@ -74,7 +74,7 @@ const FOREIGN_LABELS: HttpReply = {
 			"ready-for:agent",
 			"ready-for:human",
 			"team:infra",
-		].map((name) => ({name})),
+		].map((name) => ({ name })),
 	),
 };
 
@@ -90,7 +90,7 @@ const applyOptions = {
 	token: null as string | null,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 	cwd: CWD,
 };
 
@@ -100,8 +100,8 @@ describe("triage apply under a declared board vocabulary", () => {
 		[once(ISSUE), issue(["state:new", "sev1"])],
 		[ISSUE, issue(["type:task", "sev2", "state:ready", "ready-for:agent", "team:infra"])],
 		[LABELS, FOREIGN_LABELS],
-		[REMOVE, {status: 200, body: "[]"}],
-		[ADD, {status: 200, body: "[]"}],
+		[REMOVE, { status: 200, body: "[]" }],
+		[ADD, { status: 200, body: "[]" }],
 	];
 
 	it("writes the repo's own type, priority, status and lane", async () => {
@@ -120,7 +120,7 @@ describe("triage apply under a declared board vocabulary", () => {
 	it("refuses a type off the declared vocabulary before it reads the board", async () => {
 		const shell = guardedShell(script());
 		const out = await Effect.runPromise(
-			Effect.provide(runApply({...applyOptions, type: "bug"}), triageContext(shell, FOREIGN)),
+			Effect.provide(runApply({ ...applyOptions, type: "bug" }), triageContext(shell, FOREIGN)),
 		);
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.join(" ")).toContain("task, defect");
@@ -133,7 +133,7 @@ describe("triage apply under a declared board vocabulary", () => {
 		const shell = guardedShell(script());
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runApply({...applyOptions, lane: "wayfinder:backlog"}),
+				runApply({ ...applyOptions, lane: "wayfinder:backlog" }),
 				triageContext(shell, FOREIGN),
 			),
 		);
@@ -156,9 +156,12 @@ describe("triage park under a declared board vocabulary", () => {
 			[once(ISSUE), issue(["type:task", "sev1", "state:ready"])],
 			[ISSUE, issue(["state:blocked"])],
 			[LABELS, FOREIGN_LABELS],
-			[COMMENT, {status: 201, body: JSON.stringify({id: 1, html_url: "https://example.test/c/1"})}],
-			[REMOVE, {status: 200, body: "[]"}],
-			[ADD, {status: 200, body: "[]"}],
+			[
+				COMMENT,
+				{ status: 201, body: JSON.stringify({ id: 1, html_url: "https://example.test/c/1" }) },
+			],
+			[REMOVE, { status: 200, body: "[]" }],
+			[ADD, { status: 200, body: "[]" }],
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
@@ -167,8 +170,8 @@ describe("triage park under a declared board vocabulary", () => {
 					token: null as string | null,
 					repo: null,
 					json: false,
-					env: {CLAUDE_PIPELINE_REPO: "o/r"},
-					stdin: Effect.succeed({_tag: "Text", text: "what would unblock it"} as StdinRead),
+					env: { CLAUDE_PIPELINE_REPO: "o/r" },
+					stdin: Effect.succeed({ _tag: "Text", text: "what would unblock it" } as StdinRead),
 					cwd: CWD,
 				}),
 				triageContext(shell, FOREIGN),
@@ -185,10 +188,10 @@ describe("status bootstrap under a declared board vocabulary", () => {
 
 	const run = (config: string | null) => {
 		const shell = guardedShell([
-			[LIST, {status: 200, body: "[]"}],
-			[CREATE, {status: 201, body: "{}"}],
+			[LIST, { status: 200, body: "[]" }],
+			[CREATE, { status: 201, body: "{}" }],
 		]);
-		const files = config === null ? {} : {[`${CWD}/.fabrika.jsonc`]: config};
+		const files = config === null ? {} : { [`${CWD}/.fabrika.jsonc`]: config };
 		return Effect.runPromise(
 			Effect.provide(
 				runBootstrap({
@@ -196,11 +199,11 @@ describe("status bootstrap under a declared board vocabulary", () => {
 					path: null,
 					json: true,
 					repoRoot: CWD,
-					configSource: config === null ? {_tag: "Absent"} : {_tag: "Text", text: config},
+					configSource: config === null ? { _tag: "Absent" } : { _tag: "Text", text: config },
 					repo: ok("o/r"),
-					stdin: Effect.succeed({_tag: "NoStdin"} as StdinRead),
+					stdin: Effect.succeed({ _tag: "NoStdin" } as StdinRead),
 				}),
-				Layer.merge(shell.layer, fakeFs({files}).layer),
+				Layer.merge(shell.layer, fakeFs({ files }).layer),
 			),
 		).then(() => shell);
 	};
@@ -228,8 +231,8 @@ describe("status bootstrap under a declared board vocabulary", () => {
 	// break, arriving from the other direction.
 	it("writes nothing when the config could not be read", async () => {
 		const shell = guardedShell([
-			[LIST, {status: 200, body: "[]"}],
-			[CREATE, {status: 201, body: "{}"}],
+			[LIST, { status: 200, body: "[]" }],
+			[CREATE, { status: 201, body: "{}" }],
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
@@ -238,11 +241,11 @@ describe("status bootstrap under a declared board vocabulary", () => {
 					path: null,
 					json: true,
 					repoRoot: CWD,
-					configSource: {_tag: "Unreadable", reason: "cannot resolve the repo root"},
+					configSource: { _tag: "Unreadable", reason: "cannot resolve the repo root" },
 					repo: ok("o/r"),
-					stdin: Effect.succeed({_tag: "NoStdin"} as StdinRead),
+					stdin: Effect.succeed({ _tag: "NoStdin" } as StdinRead),
 				}),
-				Layer.merge(shell.layer, fakeFs({files: {}}).layer),
+				Layer.merge(shell.layer, fakeFs({ files: {} }).layer),
 			),
 		);
 		expect(out.code).toBe(11);

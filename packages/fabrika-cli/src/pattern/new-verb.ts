@@ -6,18 +6,18 @@
  * missing. Creating `--dir` when it is absent is the bootstrap half of the same rule — a repo
  * adopting fabrika has no `.patterns/`, and its first doc has to be writable on the documented path.
  */
-import {Effect, type FileSystem, type Path, Result} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {exists, writeFile} from "../io/fs.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, type FileSystem, type Path, Result } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { exists, writeFile } from "../io/fs.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	ALREADY_EXISTS,
 	PRECONDITION_UNKNOWN,
 	SOURCE_REPOSITORY_REFUSED,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {docTemplate, isKebabCase, splitAnchorToken, titleFrom} from "./doc.ts";
-import {inspectSourceRepository, sourceEvidenceLine} from "./source.ts";
+import { docTemplate, isKebabCase, splitAnchorToken, titleFrom } from "./doc.ts";
+import { inspectSourceRepository, sourceEvidenceLine } from "./source.ts";
 
 export interface NewOptions {
 	readonly slug: string;
@@ -38,7 +38,7 @@ export const runNew = (
 	FileSystem.FileSystem | Path.Path | ChildProcessSpawner.ChildProcessSpawner
 > =>
 	Effect.gen(function* () {
-		const {slug, dir, anchor, decision, sourceRepo, sourcePackage, json} = options;
+		const { slug, dir, anchor, decision, sourceRepo, sourcePackage, json } = options;
 		if (!isKebabCase(slug)) {
 			return refuse(
 				FAILED,

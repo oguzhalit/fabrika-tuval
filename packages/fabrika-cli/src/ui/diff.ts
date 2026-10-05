@@ -12,7 +12,7 @@
  * 4-connectivity, an uncapped region list — so this is a second implementation on purpose rather
  * than a reuse missed: the build-side numbers are pinned by this contract and may not drift with it.
  */
-import type {RasterImage} from "./png.ts";
+import type { RasterImage } from "./png.ts";
 
 /** A pixel differs when the max per-channel absolute delta exceeds this. */
 export const CHANNEL_THRESHOLD = 10;
@@ -31,7 +31,7 @@ export interface DiffBox {
 
 /** The diff object exactly as it appears in a `ui golden` answer. */
 export type UiDiff =
-	| {readonly magnitude: number; readonly regions: ReadonlyArray<DiffBox>}
+	| { readonly magnitude: number; readonly regions: ReadonlyArray<DiffBox> }
 	| {
 			readonly magnitude: 1;
 			readonly regions: ReadonlyArray<never>;
@@ -119,7 +119,7 @@ const components = (width: number, height: number, differs: Uint8Array): DiffBox
 				}
 			}
 		}
-		boxes.push({x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1});
+		boxes.push({ x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 });
 	}
 	return boxes;
 };
@@ -132,12 +132,12 @@ const components = (width: number, height: number, differs: Uint8Array): DiffBox
 export const diffAgainstGolden = (golden: RasterImage, candidate: RasterImage): DiffOutcome => {
 	if (golden.width !== candidate.width || golden.height !== candidate.height) {
 		return {
-			diff: {magnitude: 1, regions: [], dimensionMismatch: true},
+			diff: { magnitude: 1, regions: [], dimensionMismatch: true },
 			capped: false,
 			found: 0,
 		};
 	}
-	const {width, height} = candidate;
+	const { width, height } = candidate;
 	const differs = new Uint8Array(width * height);
 	let count = 0;
 	for (let p = 0; p < width * height; p++) {

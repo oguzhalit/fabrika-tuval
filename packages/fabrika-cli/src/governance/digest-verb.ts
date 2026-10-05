@@ -13,9 +13,9 @@
  * are judgment; a ranking verb would be a second judgement wearing a verb's clothes.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {idFromFile, isFourDigitId, statusOf, titleOf} from "../adr/records.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { idFromFile, isFourDigitId, statusOf, titleOf } from "../adr/records.ts";
 import {
 	commitDiff,
 	commitStatuses,
@@ -26,10 +26,10 @@ import {
 	parentlessCommitDates,
 	readFileAt,
 } from "../io/git.ts";
-import {baseOrTrunk, trunkUnresolved} from "../io/trunk.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {scanAnchors} from "./anchors.ts";
-import {INCOMPLETE_SCAN, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import { baseOrTrunk, trunkUnresolved } from "../io/trunk.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { scanAnchors } from "./anchors.ts";
+import { INCOMPLETE_SCAN, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
 
 const VERB = "governance digest";
 
@@ -63,7 +63,7 @@ export const runDigest = (
 	options: DigestOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {json} = options;
+		const { json } = options;
 		if (!DAY.test(options.since)) {
 			return refuse(
 				OFF_VOCABULARY,
@@ -199,7 +199,7 @@ export const runDigest = (
 					outcome,
 					count: records.length,
 					records,
-					window: {since: options.since, until},
+					window: { since: options.since, until },
 					base: options.base,
 				}),
 				diagnostics,

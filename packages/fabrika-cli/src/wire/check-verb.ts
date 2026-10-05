@@ -6,12 +6,12 @@
  * covers both, and it prints the scope it judged on **every** path — a verdict whose scope is
  * unstated cannot be told from a verdict over nothing.
  */
-import {Effect} from "effect";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {classifyArtifact, judgedLine} from "./artifact.ts";
-import {ABSENT, MALFORMED} from "./codes.ts";
-import {resolveFormat} from "./resolve-format.ts";
+import { Effect } from "effect";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { classifyArtifact, judgedLine } from "./artifact.ts";
+import { ABSENT, MALFORMED } from "./codes.ts";
+import { resolveFormat } from "./resolve-format.ts";
 
 const VERB = "wire check";
 
@@ -21,7 +21,7 @@ export interface CheckOptions {
 	readonly stdin: Effect.Effect<StdinRead>;
 }
 
-export const runCheck = ({format, json, stdin}: CheckOptions): Effect.Effect<VerbOutcome> =>
+export const runCheck = ({ format, json, stdin }: CheckOptions): Effect.Effect<VerbOutcome> =>
 	Effect.map(stdin, (piped) => {
 		const lookup = resolveFormat(VERB, format);
 		if (lookup._tag === "Refusal") return lookup.outcome;
@@ -41,7 +41,7 @@ export const runCheck = ({format, json, stdin}: CheckOptions): Effect.Effect<Ver
 			]);
 		}
 		const stdout = json
-			? `${JSON.stringify({format, outcome: "conforms", fields: result.value.length})}\n`
+			? `${JSON.stringify({ format, outcome: "conforms", fields: result.value.length })}\n`
 			: `conforms\t${format}\t${result.value.length}\n`;
 		return answer(stdout, [scope]);
 	});

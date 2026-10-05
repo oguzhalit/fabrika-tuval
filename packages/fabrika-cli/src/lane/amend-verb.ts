@@ -29,16 +29,16 @@
  * refusal was protecting. The child's issue is not touched here: `ledger defer` unlinks it and
  * leaves it open, and that separation is the same one that keeps this verb reconciling nothing.
  */
-import {Effect, FileSystem, Path, Result} from "effect";
+import { Effect, FileSystem, Path, Result } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {readClaimants} from "../build/claim.ts";
-import {badNumber, openIssue, resolveTargetRepo} from "../build/target.ts";
-import {appendText, readFile, writeFile} from "../io/fs.ts";
-import {listSubIssues} from "../plan/github.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {judgeAmendment} from "./amend.ts";
-import {lockedRefusal, withLedgerLock} from "./append-lock.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { readClaimants } from "../build/claim.ts";
+import { badNumber, openIssue, resolveTargetRepo } from "../build/target.ts";
+import { appendText, readFile, writeFile } from "../io/fs.ts";
+import { listSubIssues } from "../plan/github.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { judgeAmendment } from "./amend.ts";
+import { lockedRefusal, withLedgerLock } from "./append-lock.ts";
 import {
 	AMEND_DROPS_LANDED,
 	AMEND_UNREPLAYABLE,
@@ -51,13 +51,13 @@ import {
 	TOPOLOGY_FOREIGN,
 	TOPOLOGY_MALFORMED,
 } from "./codes.ts";
-import type {Deferral} from "./deferral.ts";
-import {type EmitResult, emitMachine, taskIdChild} from "./emit.ts";
-import type {LogEntry} from "./fold.ts";
-import {AMENDED_EVENT, bareEvent, type CompiledLane, compileText} from "./machine.ts";
-import {sameMachine} from "./migrate.ts";
-import {loadRefusal, replayRefusal} from "./refusals.ts";
-import {type LaneRef, loadLane, WORKFLOW_FILE} from "./store.ts";
+import type { Deferral } from "./deferral.ts";
+import { type EmitResult, emitMachine, taskIdChild } from "./emit.ts";
+import type { LogEntry } from "./fold.ts";
+import { AMENDED_EVENT, bareEvent, type CompiledLane, compileText } from "./machine.ts";
+import { sameMachine } from "./migrate.ts";
+import { loadRefusal, replayRefusal } from "./refusals.ts";
+import { type LaneRef, loadLane, WORKFLOW_FILE } from "./store.ts";
 
 const VERB = "fabrika lane amend";
 
@@ -84,9 +84,9 @@ export interface AmendOptions extends LaneRef {
 
 /** What a deferred child's own issue says about who is working it right now. */
 export type Ownership =
-	| {readonly _tag: "Idle"}
-	| {readonly _tag: "Held"; readonly token: string}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Idle" }
+	| { readonly _tag: "Held"; readonly token: string }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 export type OwnershipReader = (
 	repo: string,
@@ -103,10 +103,10 @@ export type OwnershipReader = (
 export const claimOwnership: OwnershipReader = (repo, child) =>
 	Effect.gen(function* () {
 		const read = yield* readClaimants(repo, child);
-		if (read._tag === "Unknown") return {_tag: "Unknown" as const, reason: read.reason};
+		if (read._tag === "Unknown") return { _tag: "Unknown" as const, reason: read.reason };
 		return read.holder === null
-			? {_tag: "Idle" as const}
-			: {_tag: "Held" as const, token: read.holder.token};
+			? { _tag: "Idle" as const }
+			: { _tag: "Held" as const, token: read.holder.token };
 	});
 
 /**
@@ -118,7 +118,10 @@ export const claimOwnership: OwnershipReader = (repo, child) =>
 const carriesLaps = (lane: CompiledLane): boolean =>
 	Object.values(lane.tasks).some((task) => task.lapStates.size > 0);
 
-const emitRefusal = (epic: number, result: Exclude<EmitResult, {_tag: "Emitted"}>): VerbOutcome => {
+const emitRefusal = (
+	epic: number,
+	result: Exclude<EmitResult, { _tag: "Emitted" }>,
+): VerbOutcome => {
 	switch (result._tag) {
 		case "NoTopology":
 			return refuse(
@@ -173,7 +176,7 @@ export const amendmentEntry = (
 		event: `${task.toUpperCase()}.${AMENDED_EVENT}`,
 		at,
 		tasks,
-		...(defers.length === 0 ? {} : {defers}),
+		...(defers.length === 0 ? {} : { defers }),
 	};
 };
 
@@ -195,7 +198,7 @@ const deferralRows = (
 			(entry) => entry.task === task && bareEvent(entry.event) !== AMENDED_EVENT,
 		);
 		const last = recorded[recorded.length - 1];
-		return last === undefined ? [] : [{task, through: last.at, reason}];
+		return last === undefined ? [] : [{ task, through: last.at, reason }];
 	});
 
 export const runAmend = (
@@ -356,7 +359,7 @@ export const runAmend = (
 		}
 
 		return yield* withLedgerLock(
-			{fs, path, dir: loaded.dir, verb: VERB},
+			{ fs, path, dir: loaded.dir, verb: VERB },
 			Effect.gen(function* () {
 				// Re-read and re-judge under the lock: between the judgement above and this append a
 				// concurrent writer may have moved the lane, and a machine swapped under a history this
@@ -424,7 +427,7 @@ export const runAmend = (
 				);
 			}),
 			{
-				onAbsent: (dir) => loadRefusal(VERB, {_tag: "Absent", dir}),
+				onAbsent: (dir) => loadRefusal(VERB, { _tag: "Absent", dir }),
 				onLocked: (lockDir) => refuse(CONCURRENT_WRITE, lockedRefusal(VERB, lockDir)),
 			},
 		);

@@ -7,17 +7,17 @@
  * linked-tree cases are the discriminating ones: trusting `cwd` fails the first, and trusting
  * `--show-toplevel` fails the second.
  */
-import {mkdirSync, mkdtempSync, realpathSync, rmSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {NodeServices} from "@effect/platform-node";
-import {Effect} from "effect";
-import {afterAll, beforeAll, describe, expect, it} from "vitest";
-import type {StdinRead} from "../io/stdin.ts";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
-import {UNPLANNABLE_WORKTREE} from "./codes.ts";
-import {gitSync} from "./throwaway-clone.test-support.ts";
-import {runWorktreeCreate} from "./worktree-create-verb.ts";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import type { StdinRead } from "../io/stdin.ts";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
+import { UNPLANNABLE_WORKTREE } from "./codes.ts";
+import { gitSync } from "./throwaway-clone.test-support.ts";
+import { runWorktreeCreate } from "./worktree-create-verb.ts";
 
 const NAME = "agent-subdir";
 
@@ -32,7 +32,7 @@ beforeAll(() => {
 	gitSync(repo, "commit", "--quiet", "--allow-empty", "-m", "seed");
 	gitSync(repo, "worktree", "add", "--quiet", "--detach", linked);
 });
-afterAll(() => rmSync(root, {recursive: true, force: true}));
+afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 const plan = (cwd: string) =>
 	Effect.runPromise(
@@ -49,7 +49,7 @@ const plan = (cwd: string) =>
 					}),
 				}),
 				dryRun: true,
-				env: {PATH: process.env.PATH, HOME: process.env.HOME},
+				env: { PATH: process.env.PATH, HOME: process.env.HOME },
 			}),
 			NodeServices.layer,
 		),
@@ -60,7 +60,7 @@ describe("hook worktree-create plans every cwd of one clone under its primary wo
 		"plans the tree under the primary checkout when the session was launched in a subdirectory",
 		async () => {
 			const subdir = join(repo, "packages", "fabrika-cli");
-			mkdirSync(subdir, {recursive: true});
+			mkdirSync(subdir, { recursive: true });
 
 			const out = await plan(subdir);
 
@@ -108,7 +108,7 @@ describe("hook worktree-create plans every cwd of one clone under its primary wo
 		"refuses a cwd in no repository, naming it, rather than falling back to it",
 		async () => {
 			const outside = join(root, "not-a-repo");
-			mkdirSync(outside, {recursive: true});
+			mkdirSync(outside, { recursive: true });
 
 			const out = await plan(outside);
 

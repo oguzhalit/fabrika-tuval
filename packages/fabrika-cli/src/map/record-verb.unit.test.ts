@@ -1,6 +1,6 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs, fakeSeams, once, type Scripted} from "../fakes.test-support.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs, fakeSeams, once, type Scripted } from "../fakes.test-support.ts";
 import {
 	AUTHORIZATION,
 	answerComment,
@@ -8,7 +8,7 @@ import {
 	roundDigestOf,
 	rulingComment,
 } from "../grill/fixtures.test-support.ts";
-import {type DecisionEntry, renderDecision, spliceSection} from "./body.ts";
+import { type DecisionEntry, renderDecision, spliceSection } from "./body.ts";
 import {
 	BAD_SECTIONS,
 	NO_TARGET,
@@ -34,8 +34,8 @@ import {
 	composeLaneMarker,
 	composeTicketMarker,
 } from "./markers.ts";
-import {applyRecord} from "./record.ts";
-import {runRecord} from "./record-verb.ts";
+import { applyRecord } from "./record.ts";
+import { runRecord } from "./record-verb.ts";
 
 const PERMISSION = /collaborators\/.*\/permission/;
 const CHILDREN = /issues\/9140\/sub_issues/;
@@ -46,16 +46,16 @@ const MAP_ISSUE = /issues\/9140$/;
 const PATCH_MAP = /PATCH .*\/issues\/9140/;
 const PATCH_TICKET = /PATCH .*\/issues\/9142/;
 
-const served = (body: string) => ({status: 200, body}) as const;
+const served = (body: string) => ({ status: 200, body }) as const;
 
 type Seams = ReturnType<typeof fakeSeams>;
 
 /** The JSON bodies of every `PATCH …/issues/9140` the run issued, in order. */
 const mapPatches = (seams: Seams): ReadonlyArray<string> =>
 	seams.requests
-		.map((line, index) => ({line, body: seams.bodies[index] ?? ""}))
-		.filter(({line}) => line.startsWith("PATCH") && line.includes("/issues/9140"))
-		.map(({body}) => body);
+		.map((line, index) => ({ line, body: seams.bodies[index] ?? "" }))
+		.filter(({ line }) => line.startsWith("PATCH") && line.includes("/issues/9140"))
+		.map(({ body }) => body);
 
 const mapPatchAt = (seams: Seams): number =>
 	seams.requests.findIndex((line) => line.startsWith("PATCH") && line.includes("/issues/9140"));
@@ -75,38 +75,39 @@ const options = {
 	spike: null as number | null,
 	questionId: null as string | null,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: REPO},
+	env: { CLAUDE_PIPELINE_REPO: REPO },
 };
 
 const run = (
 	script: ReadonlyArray<Scripted>,
 	over: Partial<typeof options> = {},
-	files: Readonly<Record<string, string | null>> = {[FINDING]: `${ANSWER}\n`},
+	files: Readonly<Record<string, string | null>> = { [FINDING]: `${ANSWER}\n` },
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runRecord({...options, ...over}),
-			Layer.merge(fakeSeams(script).layer, fakeFs({files}).layer),
+			runRecord({ ...options, ...over }),
+			Layer.merge(fakeSeams(script).layer, fakeFs({ files }).layer),
 		),
 	);
 
 const ticketComments = (
-	extra: ReadonlyArray<{readonly id: number; readonly body: string}> = [],
+	extra: ReadonlyArray<{ readonly id: number; readonly body: string }> = [],
 	kind: "research" | "decision" | "prototype" = "research",
-) => commentsJson([{id: 1, body: composeTicketMarker({map: MAP, kind, nonce: NONCE})}, ...extra]);
+) =>
+	commentsJson([{ id: 1, body: composeTicketMarker({ map: MAP, kind, nonce: NONCE }) }, ...extra]);
 
 const frontier = (comments: string): ReadonlyArray<Scripted> => [
 	[PERMISSION, served('{"permission":"write"}')],
 	[CHILDREN, served(`[{"number":${TICKET}}]`)],
 	[TICKET_COMMENTS, served(comments)],
 	[EDGES, served("[]")],
-	[TICKET_ISSUE, served(issueJson({number: TICKET, body: "which table carries it?"}))],
+	[TICKET_ISSUE, served(issueJson({ number: TICKET, body: "which table carries it?" }))],
 ];
 
 const laneClosed = (outcome: "answered" | "no-evidence" | "unreachable") =>
 	ticketComments([
-		{id: 2, body: composeLaneMarker({map: MAP, ticket: TICKET, nonce: NONCE})},
-		{id: 3, body: composeFindingMarker({map: MAP, ticket: TICKET, outcome, nonce: NONCE})},
+		{ id: 2, body: composeLaneMarker({ map: MAP, ticket: TICKET, nonce: NONCE }) },
+		{ id: 3, body: composeFindingMarker({ map: MAP, ticket: TICKET, outcome, nonce: NONCE }) },
 	]);
 
 /** The body `runRecord` composes for `entry`, or a thrown failure if the fence refuses it. */
@@ -116,17 +117,17 @@ const composed = (entry: DecisionEntry, body = MAP_BODY): string => {
 	return outcome.body;
 };
 
-const recorded = composed({text: ANSWER, authority: {_tag: "Finding", ticket: TICKET}});
+const recorded = composed({ text: ANSWER, authority: { _tag: "Finding", ticket: TICKET } });
 
 describe("runRecord", () => {
 	it("exits 1 when --ruled-on arrives without a well-formed --question-id", async () => {
-		const out = await run([], {ruledOn: 9301, questionId: "2.3"});
+		const out = await run([], { ruledOn: 9301, questionId: "2.3" });
 		expect(out.code).toBe(1);
 		expect(out.stdout).toBe("");
 	});
 
 	it("exits 4 on an empty finding", async () => {
-		const out = await run([], {}, {[FINDING]: "\n"});
+		const out = await run([], {}, { [FINDING]: "\n" });
 		expect(out.code).toBe(BAD_SECTIONS);
 		expect(out.stdout).toBe("");
 	});
@@ -134,7 +135,7 @@ describe("runRecord", () => {
 	it("exits 21 when the lane returned unreachable — there is no answer to record", async () => {
 		const out = await run([
 			...frontier(laneClosed("unreachable")),
-			[MAP_ISSUE, served(issueJson({number: MAP, body: MAP_BODY, labels: ["wayfinding:map"]}))],
+			[MAP_ISSUE, served(issueJson({ number: MAP, body: MAP_BODY, labels: ["wayfinding:map"] }))],
 		]);
 		expect(out.code).toBe(OUTCOME_UNRECORDABLE);
 		expect(out.stdout).toBe("");
@@ -148,13 +149,13 @@ describe("runRecord", () => {
 					[
 						{
 							id: 2,
-							body: composeForkMarker({map: MAP, ticket: TICKET, route: "session", issue: 9301}),
+							body: composeForkMarker({ map: MAP, ticket: TICKET, route: "session", issue: 9301 }),
 						},
 					],
 					"decision",
 				),
 			),
-			[MAP_ISSUE, served(issueJson({number: MAP, body: MAP_BODY, labels: ["wayfinding:map"]}))],
+			[MAP_ISSUE, served(issueJson({ number: MAP, body: MAP_BODY, labels: ["wayfinding:map"] }))],
 		]);
 		expect(out.code).toBe(TICKET_UNKNOWN);
 		expect(out.stderr.join("\n")).toContain("never by restating it");
@@ -167,14 +168,14 @@ describe("runRecord", () => {
 			...frontier(laneClosed("answered")),
 			[
 				once(MAP_ISSUE),
-				served(issueJson({number: MAP, body: MAP_BODY, labels: ["wayfinding:map"]})),
+				served(issueJson({ number: MAP, body: MAP_BODY, labels: ["wayfinding:map"] })),
 			],
-			[MAP_ISSUE, served(issueJson({number: MAP, body: recorded, labels: ["wayfinding:map"]}))],
+			[MAP_ISSUE, served(issueJson({ number: MAP, body: recorded, labels: ["wayfinding:map"] }))],
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
 				runRecord(options),
-				Layer.merge(seams.layer, fakeFs({files: {[FINDING]: `${ANSWER}\n`}}).layer),
+				Layer.merge(seams.layer, fakeFs({ files: { [FINDING]: `${ANSWER}\n` } }).layer),
 			),
 		);
 		expect(out.code).toBe(0);
@@ -195,14 +196,14 @@ describe("runRecord", () => {
 			...frontier(laneClosed("answered")),
 			[
 				once(MAP_ISSUE),
-				served(issueJson({number: MAP, body: MAP_BODY, labels: ["wayfinding:map"]})),
+				served(issueJson({ number: MAP, body: MAP_BODY, labels: ["wayfinding:map"] })),
 			],
-			[MAP_ISSUE, served(issueJson({number: MAP, body: recorded, labels: ["wayfinding:map"]}))],
+			[MAP_ISSUE, served(issueJson({ number: MAP, body: recorded, labels: ["wayfinding:map"] }))],
 		]);
 		await Effect.runPromise(
 			Effect.provide(
 				runRecord(options),
-				Layer.merge(seams.layer, fakeFs({files: {[FINDING]: `${ANSWER}\n`}}).layer),
+				Layer.merge(seams.layer, fakeFs({ files: { [FINDING]: `${ANSWER}\n` } }).layer),
 			),
 		);
 		const patches = mapPatches(seams);
@@ -213,14 +214,14 @@ describe("runRecord", () => {
 
 	it("exits 8 naming the ticket when the close does not land — the visible half is the survivor", async () => {
 		const out = await run([
-			[PATCH_TICKET, {status: 502, body: "{}"}],
+			[PATCH_TICKET, { status: 502, body: "{}" }],
 			[PATCH_MAP, served("{}")],
 			...frontier(laneClosed("answered")),
 			[
 				once(MAP_ISSUE),
-				served(issueJson({number: MAP, body: MAP_BODY, labels: ["wayfinding:map"]})),
+				served(issueJson({ number: MAP, body: MAP_BODY, labels: ["wayfinding:map"] })),
 			],
-			[MAP_ISSUE, served(issueJson({number: MAP, body: recorded, labels: ["wayfinding:map"]}))],
+			[MAP_ISSUE, served(issueJson({ number: MAP, body: recorded, labels: ["wayfinding:map"] }))],
 		]);
 		expect(out.code).toBe(WRITE_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -247,21 +248,21 @@ const FOLDED = MULTI_PARAGRAPH.replace(/\s*\n\s*/g, " ");
 
 describe("a multi-paragraph finding", () => {
 	it("is folded to one line, so the body it writes still parses", async () => {
-		const folded = composed({text: FOLDED, authority: {_tag: "Finding", ticket: TICKET}});
+		const folded = composed({ text: FOLDED, authority: { _tag: "Finding", ticket: TICKET } });
 		const seams = fakeSeams([
 			[PATCH_TICKET, served("{}")],
 			[PATCH_MAP, served("{}")],
 			...frontier(laneClosed("answered")),
 			[
 				once(MAP_ISSUE),
-				served(issueJson({number: MAP, body: MAP_BODY, labels: ["wayfinding:map"]})),
+				served(issueJson({ number: MAP, body: MAP_BODY, labels: ["wayfinding:map"] })),
 			],
-			[MAP_ISSUE, served(issueJson({number: MAP, body: folded, labels: ["wayfinding:map"]}))],
+			[MAP_ISSUE, served(issueJson({ number: MAP, body: folded, labels: ["wayfinding:map"] }))],
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
 				runRecord(options),
-				Layer.merge(seams.layer, fakeFs({files: {[FINDING]: `${MULTI_PARAGRAPH}\n`}}).layer),
+				Layer.merge(seams.layer, fakeFs({ files: { [FINDING]: `${MULTI_PARAGRAPH}\n` } }).layer),
 			),
 		);
 		expect(out.code).toBe(0);
@@ -276,15 +277,15 @@ describe("the lockstep is one act: an interrupted run resumes", () => {
 	/** The map after the body half landed: the answer recorded, the ticket never closed. */
 	const halfDone = (): ReadonlyArray<Scripted> => [
 		...frontier(laneClosed("answered")),
-		[MAP_ISSUE, served(issueJson({number: MAP, body: recorded, labels: ["wayfinding:map"]}))],
+		[MAP_ISSUE, served(issueJson({ number: MAP, body: recorded, labels: ["wayfinding:map"] }))],
 	];
 
 	it("closes the ticket and writes no second entry when the answer is already on the map", async () => {
 		const seams = fakeSeams([[PATCH_TICKET, served("{}")], ...halfDone()]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runRecord({...options, digest: digestFor(recorded)}),
-				Layer.merge(seams.layer, fakeFs({files: {[FINDING]: `${ANSWER}\n`}}).layer),
+				runRecord({ ...options, digest: digestFor(recorded) }),
+				Layer.merge(seams.layer, fakeFs({ files: { [FINDING]: `${ANSWER}\n` } }).layer),
 			),
 		);
 		expect(out.code).toBe(0);
@@ -300,7 +301,7 @@ describe("the lockstep is one act: an interrupted run resumes", () => {
 	});
 
 	it("exits 8 when the resumed close still does not land — never 0 with the ticket open", async () => {
-		const out = await run([[PATCH_TICKET, {status: 502, body: "{}"}], ...halfDone()], {
+		const out = await run([[PATCH_TICKET, { status: 502, body: "{}" }], ...halfDone()], {
 			digest: digestFor(recorded),
 		});
 		expect(out.code).toBe(WRITE_UNKNOWN);
@@ -324,7 +325,7 @@ const forkedDecision = (): ReadonlyArray<Scripted> =>
 			[
 				{
 					id: 2,
-					body: composeForkMarker({map: MAP, ticket: TICKET, route: "session", issue: SESSION}),
+					body: composeForkMarker({ map: MAP, ticket: TICKET, route: "session", issue: SESSION }),
 				},
 			],
 			"decision",
@@ -333,26 +334,26 @@ const forkedDecision = (): ReadonlyArray<Scripted> =>
 
 const mapAt = (body: string): Scripted => [
 	MAP_ISSUE,
-	served(issueJson({number: MAP, body, labels: ["wayfinding:map"]})),
+	served(issueJson({ number: MAP, body, labels: ["wayfinding:map"] })),
 ];
 
 const session = (
-	comments: ReadonlyArray<{readonly id: number; readonly body: string}>,
+	comments: ReadonlyArray<{ readonly id: number; readonly body: string }>,
 ): ReadonlyArray<Scripted> => [
-	[SESSION_ISSUE, served(issueJson({number: SESSION, labels: ["grilling:session"]}))],
+	[SESSION_ISSUE, served(issueJson({ number: SESSION, labels: ["grilling:session"] }))],
 	[SESSION_COMMENTS, served(commentsJson(comments))],
 ];
 
 /** Round 1 posted, then R1.2 ruled with its adjacent dated authorization. */
 const RULED = [
-	{id: 11, body: roundComment(1)},
-	{id: 12, body: AUTHORIZATION},
-	{id: 13, body: rulingComment(QUESTION, BOUND)},
+	{ id: 11, body: roundComment(1) },
+	{ id: 12, body: AUTHORIZATION },
+	{ id: 13, body: rulingComment(QUESTION, BOUND) },
 ];
 
 const ruledRecord = composed({
 	text: ANSWER,
-	authority: {_tag: "Ruled", session: SESSION, questionId: QUESTION},
+	authority: { _tag: "Ruled", session: SESSION, questionId: QUESTION },
 });
 
 describe("a forked decision ticket's ruling is read through the grill reader", () => {
@@ -364,14 +365,14 @@ describe("a forked decision ticket's ruling is read through the grill reader", (
 			...session(RULED),
 			[
 				once(MAP_ISSUE),
-				served(issueJson({number: MAP, body: MAP_BODY, labels: ["wayfinding:map"]})),
+				served(issueJson({ number: MAP, body: MAP_BODY, labels: ["wayfinding:map"] })),
 			],
 			mapAt(ruledRecord),
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runRecord({...options, ruledOn: SESSION, questionId: QUESTION}),
-				Layer.merge(seams.layer, fakeFs({files: {[FINDING]: `${ANSWER}\n`}}).layer),
+				runRecord({ ...options, ruledOn: SESSION, questionId: QUESTION }),
+				Layer.merge(seams.layer, fakeFs({ files: { [FINDING]: `${ANSWER}\n` } }).layer),
 			),
 		);
 		expect(out.code).toBe(0);
@@ -389,10 +390,10 @@ describe("a forked decision ticket's ruling is read through the grill reader", (
 			[
 				...forkedDecision(),
 				mapAt(MAP_BODY),
-				[SESSION_ISSUE, served(issueJson({number: SESSION, labels: ["grilling:session"]}))],
-				[SESSION_COMMENTS, {status: 403, body: '{"message":"API rate limit exceeded"}'}],
+				[SESSION_ISSUE, served(issueJson({ number: SESSION, labels: ["grilling:session"] }))],
+				[SESSION_COMMENTS, { status: 403, body: '{"message":"API rate limit exceeded"}' }],
 			],
-			{ruledOn: SESSION, questionId: QUESTION},
+			{ ruledOn: SESSION, questionId: QUESTION },
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -404,9 +405,9 @@ describe("a forked decision ticket's ruling is read through the grill reader", (
 			[
 				...forkedDecision(),
 				mapAt(MAP_BODY),
-				[SESSION_ISSUE, {status: 404, body: '{"message":"Not Found"}'}],
+				[SESSION_ISSUE, { status: 404, body: '{"message":"Not Found"}' }],
 			],
-			{ruledOn: SESSION, questionId: QUESTION},
+			{ ruledOn: SESSION, questionId: QUESTION },
 		);
 		expect(out.code).toBe(NO_TARGET);
 		expect(out.stdout).toBe("");
@@ -429,11 +430,11 @@ describe("a forked decision ticket's ruling is read through the grill reader", (
 				...forkedDecision(),
 				mapAt(MAP_BODY),
 				...session([
-					{id: 11, body: roundComment(1)},
-					{id: 12, body: answerComment("R1.1", BOUND)},
+					{ id: 11, body: roundComment(1) },
+					{ id: 12, body: answerComment("R1.1", BOUND) },
 				]),
 			],
-			{ruledOn: SESSION, questionId: "R1.1"},
+			{ ruledOn: SESSION, questionId: "R1.1" },
 		);
 		expect(out.code).toBe(TICKET_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -448,13 +449,13 @@ describe("two decision tickets forked to one grilling session", () => {
 		"Decisions",
 		renderDecision({
 			text: "the decay clock runs per account",
-			authority: {_tag: "Ruled", session: SESSION, questionId: "R1.1"},
+			authority: { _tag: "Ruled", session: SESSION, questionId: "R1.1" },
 		}),
 	);
 
 	it("records the second ticket's own answer instead of resuming on the first's", async () => {
 		const landed = composed(
-			{text: ANSWER, authority: {_tag: "Ruled", session: SESSION, questionId: QUESTION}},
+			{ text: ANSWER, authority: { _tag: "Ruled", session: SESSION, questionId: QUESTION } },
 			siblingRecorded,
 		);
 		const seams = fakeSeams([
@@ -464,7 +465,7 @@ describe("two decision tickets forked to one grilling session", () => {
 			...session(RULED),
 			[
 				once(MAP_ISSUE),
-				served(issueJson({number: MAP, body: siblingRecorded, labels: ["wayfinding:map"]})),
+				served(issueJson({ number: MAP, body: siblingRecorded, labels: ["wayfinding:map"] })),
 			],
 			mapAt(landed),
 		]);
@@ -476,7 +477,7 @@ describe("two decision tickets forked to one grilling session", () => {
 					ruledOn: SESSION,
 					questionId: QUESTION,
 				}),
-				Layer.merge(seams.layer, fakeFs({files: {[FINDING]: `${ANSWER}\n`}}).layer),
+				Layer.merge(seams.layer, fakeFs({ files: { [FINDING]: `${ANSWER}\n` } }).layer),
 			),
 		);
 		expect(out.code).toBe(0);
@@ -491,7 +492,7 @@ describe("two decision tickets forked to one grilling session", () => {
 
 	it("still resumes when the map already carries THIS run's citation", async () => {
 		const mine = composed(
-			{text: ANSWER, authority: {_tag: "Ruled", session: SESSION, questionId: QUESTION}},
+			{ text: ANSWER, authority: { _tag: "Ruled", session: SESSION, questionId: QUESTION } },
 			siblingRecorded,
 		);
 		const seams = fakeSeams([[PATCH_TICKET, served("{}")], ...forkedDecision(), mapAt(mine)]);
@@ -503,11 +504,11 @@ describe("two decision tickets forked to one grilling session", () => {
 					ruledOn: SESSION,
 					questionId: QUESTION,
 				}),
-				Layer.merge(seams.layer, fakeFs({files: {[FINDING]: `${ANSWER}\n`}}).layer),
+				Layer.merge(seams.layer, fakeFs({ files: { [FINDING]: `${ANSWER}\n` } }).layer),
 			),
 		);
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({resumed: true, closed: true});
+		expect(JSON.parse(out.stdout)).toMatchObject({ resumed: true, closed: true });
 		expect(mapPatches(seams)).toEqual([]);
 	});
 });
@@ -524,14 +525,14 @@ describe("a citation on a ticket carrying no fork marker", () => {
 			...session(RULED),
 			[
 				once(MAP_ISSUE),
-				served(issueJson({number: MAP, body: MAP_BODY, labels: ["wayfinding:map"]})),
+				served(issueJson({ number: MAP, body: MAP_BODY, labels: ["wayfinding:map"] })),
 			],
 			mapAt(ruledRecord),
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runRecord({...options, ruledOn: SESSION, questionId: QUESTION}),
-				Layer.merge(seams.layer, fakeFs({files: {[FINDING]: `${ANSWER}\n`}}).layer),
+				runRecord({ ...options, ruledOn: SESSION, questionId: QUESTION }),
+				Layer.merge(seams.layer, fakeFs({ files: { [FINDING]: `${ANSWER}\n` } }).layer),
 			),
 		);
 		expect(out.code).toBe(0);
@@ -548,11 +549,11 @@ describe("a citation on a ticket carrying no fork marker", () => {
 				...unforked(),
 				mapAt(MAP_BODY),
 				...session([
-					{id: 11, body: roundComment(1)},
-					{id: 12, body: answerComment("R1.1", BOUND)},
+					{ id: 11, body: roundComment(1) },
+					{ id: 12, body: answerComment("R1.1", BOUND) },
 				]),
 			],
-			{ruledOn: SESSION, questionId: "R1.1"},
+			{ ruledOn: SESSION, questionId: "R1.1" },
 		);
 		expect(out.code).toBe(TICKET_UNKNOWN);
 		expect(out.stdout).toBe("");

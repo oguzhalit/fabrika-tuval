@@ -6,13 +6,13 @@
  * [`resolve.ts`](./resolve.ts) as Effects over substitutable services. This file is the boundary
  * that reads `process` and calls `process.exit`, so nothing under test has to.
  */
-import {NodeServices} from "@effect/platform-node";
-import {Effect, FileSystem, Path} from "effect";
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem, Path } from "effect";
 import * as Schema from "effect/Schema";
-import {NO_IMPLEMENTATION} from "../verb.ts";
-import {VERSION} from "../version.ts";
-import {declaredVersion, probeLocalInstall} from "./local.ts";
-import {relateCopy} from "./repository.ts";
+import { NO_IMPLEMENTATION } from "../verb.ts";
+import { VERSION } from "../version.ts";
+import { declaredVersion, probeLocalInstall } from "./local.ts";
+import { relateCopy } from "./repository.ts";
 import {
 	DEBUG_ENV,
 	foreignCheckoutRefusal,
@@ -24,12 +24,12 @@ import {
 	spawnDelegate,
 	traceLine,
 } from "./resolve.ts";
-import {discoverRepoRoot, originOf} from "./root.ts";
+import { discoverRepoRoot, originOf } from "./root.ts";
 
 /** The running copy's own root could not be canonicalized — fatal, never a fallback. */
 export class RealPathFailed extends Schema.TaggedError<RealPathFailed>()(
 	"fabrika-cli/RealPathFailed",
-	{path: Schema.String, reason: Schema.String},
+	{ path: Schema.String, reason: Schema.String },
 ) {}
 
 /** `<package root>/src/delegate/entry.ts` — the package root is two levels up. */
@@ -62,7 +62,7 @@ const program = Effect.gen(function* () {
 		.pipe(
 			Effect.catchTag(
 				"PlatformError",
-				(cause) => new RealPathFailed({path: own, reason: cause.message}),
+				(cause) => new RealPathFailed({ path: own, reason: cause.message }),
 			),
 		);
 	// Both walks stay on the `E` channel, so an ancestor that cannot be probed ends the run with the
@@ -75,13 +75,13 @@ const program = Effect.gen(function* () {
 	// The relation, not the two roots, is what the refusal turns on: a worktree of the copy's own
 	// repository is a different checkout but the same project.
 	const origin = yield* relateCopy(selfOrigin, repoRoot);
-	const resolution = resolve({selfPackageRoot, origin, repoRoot, local});
+	const resolution = resolve({ selfPackageRoot, origin, repoRoot, local });
 
 	if (process.env[DEBUG_ENV] !== undefined) console.error(traceLine(selfPackageRoot, resolution));
 
 	if (resolution._tag === "refuse-foreign-checkout") {
 		console.error(foreignCheckoutRefusal(resolution));
-		return {_tag: "exited", status: NO_IMPLEMENTATION} as const;
+		return { _tag: "exited", status: NO_IMPLEMENTATION } as const;
 	}
 	if (resolution._tag === "run-here") return undefined;
 	if (resolution._tag === "warn-and-run-here") {
@@ -127,11 +127,11 @@ export const delegateOrRunHere = async (): Promise<void> => {
 		program.pipe(
 			Effect.catchTags({
 				"fabrika-cli/ReadFailed": (cause) =>
-					Effect.succeed({failed: cause.path, reason: cause.reason}),
+					Effect.succeed({ failed: cause.path, reason: cause.reason }),
 				"fabrika-cli/RealPathFailed": (cause) =>
-					Effect.succeed({failed: cause.path, reason: cause.reason}),
+					Effect.succeed({ failed: cause.path, reason: cause.reason }),
 				BadArgument: (cause) =>
-					Effect.succeed({failed: packageRootUrl.href, reason: cause.message}),
+					Effect.succeed({ failed: packageRootUrl.href, reason: cause.message }),
 			}),
 			Effect.provide(NodeServices.layer),
 		),

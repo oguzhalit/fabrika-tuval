@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {scanBody} from "../report/leaks.ts";
+import { describe, expect, it } from "vitest";
+import { scanBody } from "../report/leaks.ts";
 import {
 	foreignRefsIn,
 	isLaneScratchLeaf,

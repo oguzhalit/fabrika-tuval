@@ -12,14 +12,14 @@
  * (`../adr/`), not a guard's. `validate` is the whole of what CI ran.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import {isRecordCandidate} from "../adr/records.ts";
-import {decisionsDirOr, noCorpusOverride} from "../config/paths.ts";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {exists, type ReadFailed, readDir, readFile} from "../io/fs.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {atFile} from "./annotate.ts";
-import {type DecisionFile, defectFiles, describeDefect, findDefects} from "./decisions-number.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { isRecordCandidate } from "../adr/records.ts";
+import { decisionsDirOr, noCorpusOverride } from "../config/paths.ts";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { exists, type ReadFailed, readDir, readFile } from "../io/fs.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { atFile } from "./annotate.ts";
+import { type DecisionFile, defectFiles, describeDefect, findDefects } from "./decisions-number.ts";
 import {
 	annotationsOrNone,
 	clean,
@@ -63,7 +63,7 @@ const judge = (
 		}
 		const files: Array<DecisionFile> = [];
 		for (const file of names) {
-			files.push({file, text: yield* readFile(path.join(dir, file))});
+			files.push({ file, text: yield* readFile(path.join(dir, file)) });
 		}
 		const defects = findDefects(files);
 		if (defects.length === 0) {

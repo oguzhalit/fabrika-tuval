@@ -5,7 +5,7 @@
  * a different field still has to find it here — a fixture trimmed to exactly what the code reads today
  * stops being able to catch tomorrow's misread.
  */
-import {type HttpReply, okOut} from "../fakes.test-support.ts";
+import { type HttpReply, okOut } from "../fakes.test-support.ts";
 
 /**
  * The credential a ported test hands its verb.
@@ -13,7 +13,7 @@ import {type HttpReply, okOut} from "../fakes.test-support.ts";
  * `resolveToken` reads the env before it reaches for `gh auth token`, so naming one here keeps a
  * test about some other axis from having to script a spawn it does not care about.
  */
-export const GH_TOKEN_ENV = {GITHUB_TOKEN: "ghp_scripted"} as const;
+export const GH_TOKEN_ENV = { GITHUB_TOKEN: "ghp_scripted" } as const;
 
 /** One served JSON answer, for a test scripting the HTTP seam. */
 export const served = (payload: unknown, status = 200): HttpReply => ({
@@ -22,10 +22,10 @@ export const served = (payload: unknown, status = 200): HttpReply => ({
 });
 
 /** What the API answers for a number that does not exist — the `Absent` arm's whole evidence. */
-export const NOT_FOUND: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
+export const NOT_FOUND: HttpReply = { status: 404, body: '{"message":"Not Found"}' };
 
 /** Served, and unreadable for a reason that is not absence — the `Unknown` arm. */
-export const GATEWAY: HttpReply = {status: 502, body: '{"message":"Bad gateway"}'};
+export const GATEWAY: HttpReply = { status: 502, body: '{"message":"Bad gateway"}' };
 
 export const HEAD = "03135b9188d2be6c0a4b7bd0b7a3ff9c53f0f2b1";
 export const OLD_HEAD = "8f1c2ad4e5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0";
@@ -60,7 +60,7 @@ export const issuePayload = (overrides: Record<string, unknown> = {}): Record<st
 	title: "Editor loses focus after save",
 	body: CRITERIA_BODY,
 	state: "open",
-	labels: [{name: "type:bug"}, {name: "p1"}, {name: "status:triaged"}],
+	labels: [{ name: "type:bug" }, { name: "p1" }, { name: "status:triaged" }],
 	html_url: `https://example.test/o/r/issues/${SERVED_ISSUE}`,
 	milestone: null,
 	state_reason: null,
@@ -73,7 +73,7 @@ export const issue = (overrides: Record<string, unknown> = {}): HttpReply =>
 export const pullPayload = (overrides: Record<string, unknown> = {}): Record<string, unknown> => ({
 	number: 4318,
 	state: "open",
-	head: {sha: HEAD, ref: "build/4312-editor-focus-loss-c1a4d6f8"},
+	head: { sha: HEAD, ref: "build/4312-editor-focus-loss-c1a4d6f8" },
 	body: `Fixes #${SERVED_ISSUE}\n\n## Deviations\nNone.\n`,
 	changed_files: 3,
 	comments: 0,
@@ -97,7 +97,7 @@ const commentPayload = (rows: ReadonlyArray<CommentFixture>): ReadonlyArray<unkn
 	rows.map((row) => ({
 		id: row.id,
 		body: row.body,
-		user: {login: row.author ?? "agent"},
+		user: { login: row.author ?? "agent" },
 		created_at: row.createdAt ?? "2026-08-09T00:00:00Z",
 	}));
 
@@ -111,7 +111,7 @@ export const comments = (...rows: ReadonlyArray<CommentFixture>): HttpReply =>
  */
 export const truncatedComments = (...rows: ReadonlyArray<CommentFixture>): HttpReply => {
 	const whole = JSON.stringify(commentPayload(rows));
-	return {status: 200, body: whole.slice(0, whole.lastIndexOf("}"))};
+	return { status: 200, body: whole.slice(0, whole.lastIndexOf("}")) };
 };
 
 /**
@@ -139,8 +139,8 @@ export const NO_TABLE: readonly [RegExp, HttpReply] = [
 		data: {
 			repository: {
 				id: "R_repo",
-				owner: {id: "O_o", login: "o"},
-				projectsV2: {pageInfo: {hasNextPage: false, endCursor: null}, nodes: []},
+				owner: { id: "O_o", login: "o" },
+				projectsV2: { pageInfo: { hasNextPage: false, endCursor: null }, nodes: [] },
 			},
 		},
 	}),
@@ -158,13 +158,13 @@ export const codeownersNaming = (...owners: ReadonlyArray<string>): HttpReply =>
 
 /** A control plane of one account, `@usirin` — who may clear a round, and whose grant counts. */
 export const CP_ROSTER: ReadonlyArray<readonly [RegExp, HttpReply]> = [
-	[TRUNK_READ, served({default_branch: "main"})],
+	[TRUNK_READ, served({ default_branch: "main" })],
 	[CODEOWNERS_READ, codeownersNaming("@usirin")],
 ];
 
 /** The same edge list, naming one blocker — pair it with that blocker's own `issues/<n>` read. */
 export const blockedBy = (...blockers: ReadonlyArray<number>): HttpReply =>
-	served(blockers.map((number) => ({number, state: "open"})));
+	served(blockers.map((number) => ({ number, state: "open" })));
 
 /**
  * A body carrying the conforming block — what a triaged, agent-ready issue looks like.
@@ -200,11 +200,11 @@ export const candidates = (
 		number: row.number,
 		title: row.title ?? `issue ${row.number}`,
 		body: row.body ?? CRITERIA_BODY,
-		labels: row.labels.map((name) => ({name})),
-		assignees: (row.assignees ?? []).map((login) => ({login})),
+		labels: row.labels.map((name) => ({ name })),
+		assignees: (row.assignees ?? []).map((login) => ({ login })),
 		milestone:
-			row.milestone === undefined || row.milestone === null ? null : {number: row.milestone},
-		...(row.pull === true ? {pull_request: {url: "…"}} : {}),
+			row.milestone === undefined || row.milestone === null ? null : { number: row.milestone },
+		...(row.pull === true ? { pull_request: { url: "…" } } : {}),
 	}));
 
 /** The same rows as one served page — what a test scripts the pool's read with. */

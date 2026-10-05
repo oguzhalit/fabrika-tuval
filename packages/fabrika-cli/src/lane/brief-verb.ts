@@ -29,13 +29,13 @@
  * ruling marker records, read through the scan `review criteria` and `lane prove` answer from. That
  * read never refuses a dispatch: a failure rides in the brief as `unknown`.
  */
-import {Effect, type FileSystem, Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {describeUnmarked, standingRulings} from "../decision/standing-rulings.ts";
-import type {EntrypointRead} from "../delegate/entrypoint.ts";
-import {getIssue, resolveRepo} from "../io/issues.ts";
-import type {SizeStop} from "../table/size-stop.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { describeUnmarked, standingRulings } from "../decision/standing-rulings.ts";
+import type { EntrypointRead } from "../delegate/entrypoint.ts";
+import { getIssue, resolveRepo } from "../io/issues.ts";
+import type { SizeStop } from "../table/size-stop.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	type ArtifactUrl,
 	artifactUrl,
@@ -53,8 +53,8 @@ import {
 	shellOf,
 	shellState,
 } from "../wire/lane-brief.ts";
-import {headSha} from "../wire/marker-line.ts";
-import {carriedVerbs} from "./briefed-verbs.ts";
+import { headSha } from "../wire/marker-line.ts";
+import { carriedVerbs } from "./briefed-verbs.ts";
 import {
 	BRIEFED_VERB_ABSENT,
 	ISSUE_UNRESOLVED,
@@ -66,12 +66,12 @@ import {
 	SIZE_STOPPED,
 	TASK_UNKNOWN,
 } from "./codes.ts";
-import {foldLog, resolveTask} from "./fold.ts";
-import {nominatePulls, nominationScope} from "./nominate.ts";
-import {epicOf, issueOf, tracePulls} from "./prove.ts";
-import {DEEPEN_REMEDY, locateRange, type RangeLocation} from "./range.ts";
-import {loadRefusal, replayRefusal} from "./refusals.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { foldLog, resolveTask } from "./fold.ts";
+import { nominatePulls, nominationScope } from "./nominate.ts";
+import { epicOf, issueOf, tracePulls } from "./prove.ts";
+import { DEEPEN_REMEDY, locateRange, type RangeLocation } from "./range.ts";
+import { loadRefusal, replayRefusal } from "./refusals.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane brief";
 
@@ -139,8 +139,8 @@ const sizeStopRefusal = (
 };
 
 type UrlRead =
-	| {readonly _tag: "Url"; readonly url: ArtifactUrl}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Url"; readonly url: ArtifactUrl }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /** One issue's published URL, or the refusal that stands in its place — proven absent vs UNKNOWN. */
 const issueUrl = (
@@ -181,7 +181,7 @@ const issueUrl = (
 						notes,
 					),
 				} as const)
-			: ({_tag: "Url", url} as const);
+			: ({ _tag: "Url", url } as const);
 	});
 
 /**
@@ -193,7 +193,7 @@ const issueUrl = (
  * graft boundary sends it a count that swallowed everyone else's landed commits.
  */
 const rangeRefusal = (
-	located: Exclude<RangeLocation, {readonly _tag: "Located"}>,
+	located: Exclude<RangeLocation, { readonly _tag: "Located" }>,
 	notes: ReadonlyArray<string>,
 ): VerbOutcome => {
 	if (located._tag === "Truncated") {
@@ -217,8 +217,8 @@ const rangeRefusal = (
 };
 
 type GroundRead =
-	| {readonly _tag: "Ground"; readonly ground: LaneGround; readonly notes: ReadonlyArray<string>}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Ground"; readonly ground: LaneGround; readonly notes: ReadonlyArray<string> }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * A child state's ground: the epic issue and the assembly branch its worktree is cut from, plus —
@@ -239,11 +239,15 @@ const childGround = (
 	Effect.gen(function* () {
 		const branch = epicBranch(epic);
 		if (!isReviewState(state)) {
-			return {_tag: "Ground", ground: {_tag: "Epic", epic: epicUrl, branch}, notes: []} as const;
+			return {
+				_tag: "Ground",
+				ground: { _tag: "Epic", epic: epicUrl, branch },
+				notes: [],
+			} as const;
 		}
 		const located = yield* locateRange(VERB, epic, issue);
 		if (located._tag !== "Located") {
-			return {_tag: "Refused", outcome: rangeRefusal(located, notes)} as const;
+			return { _tag: "Refused", outcome: rangeRefusal(located, notes) } as const;
 		}
 		const base = headSha(located.range.base);
 		const tip = headSha(located.range.tip);
@@ -259,7 +263,7 @@ const childGround = (
 		}
 		return {
 			_tag: "Ground",
-			ground: {_tag: "EpicRange", epic: epicUrl, branch, range: {base, tip}},
+			ground: { _tag: "EpicRange", epic: epicUrl, branch, range: { base, tip } },
 			notes: located.notes,
 		} as const;
 	});
@@ -313,21 +317,21 @@ const ownerCommentsOf = (
 	notes: string[],
 ): Effect.Effect<OwnerComments, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		if (!isBuildState(state) && !isReviewState(state)) return {_tag: "None"};
+		if (!isBuildState(state) && !isReviewState(state)) return { _tag: "None" };
 		const ruled = yield* standingRulings(repo, issue);
 		if (ruled._tag === "Unknown") {
 			notes.push(
 				`${VERB}: ${ruled.reason} — whether a control-plane account commented on #${issue} without a ruling marker is UNKNOWN, never zero; the brief says so.`,
 			);
-			return {_tag: "Unknown"};
+			return { _tag: "Unknown" };
 		}
 		notes.push(...describeUnmarked(VERB, issue, ruled));
-		if (ruled.unmarked._tag === "Unknown") return {_tag: "Unknown"};
+		if (ruled.unmarked._tag === "Unknown") return { _tag: "Unknown" };
 		const [first, ...rest] = ruled.unmarked.comments.flatMap((comment) => {
 			const url = artifactUrl(comment.url);
 			return url === null ? [] : [url];
 		});
-		return first === undefined ? {_tag: "None"} : {_tag: "Unmarked", urls: [first, ...rest]};
+		return first === undefined ? { _tag: "None" } : { _tag: "Unmarked", urls: [first, ...rest] };
 	});
 
 export const runBrief = (
@@ -494,9 +498,9 @@ export const runBrief = (
 		const ground: LaneGround =
 			epic !== null && prUrl !== null
 				? isBuildState(state)
-					? {_tag: "TailRepair", pr: prUrl, epic: read.url, branch: epicBranch(epic)}
-					: {_tag: "Tail", pr: prUrl, epic: read.url}
-				: {_tag: "Pull", pr: prUrl};
+					? { _tag: "TailRepair", pr: prUrl, epic: read.url, branch: epicBranch(epic) }
+					: { _tag: "Tail", pr: prUrl, epic: read.url }
+				: { _tag: "Pull", pr: prUrl };
 		if (epic !== null) {
 			const stale = yield* briefedVerbRefusal(path, ground, fabrika, epic, notes);
 			if (stale !== null) return stale;

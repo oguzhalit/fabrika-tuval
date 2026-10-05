@@ -1,9 +1,9 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type Scripted} from "../fakes.test-support.ts";
-import {CAP_ROUND} from "../retry-budget.ts";
-import {PROTECTION, protection, RULES, rules} from "../ship/fixtures.test-support.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type Scripted } from "../fakes.test-support.ts";
+import { CAP_ROUND } from "../retry-budget.ts";
+import { PROTECTION, protection, RULES, rules } from "../ship/fixtures.test-support.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
 import {
 	CODEOWNERS_READ,
 	CP_ROSTER,
@@ -19,7 +19,7 @@ import {
 	served,
 	TRUNK_READ,
 } from "./fixtures.test-support.ts";
-import {runChildVerdicts, runVerdicts} from "./verdicts-verb.ts";
+import { runChildVerdicts, runVerdicts } from "./verdicts-verb.ts";
 
 const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4310$/;
 const COMMENTS = /^GET \S+\/repos\/o\/r\/issues\/4310\/comments/;
@@ -32,17 +32,17 @@ const failAt = (sha: string) => `review-code: FAIL @ ${sha} — the debounce fix
 const PASS_STALE = `review-doc: PASS @ ${OLD_HEAD} — guide matches shipped behavior`;
 
 const NO_REVIEWS = served([]);
-const PR = pull({number: 4310, body: "Fixes #4312\n\n## Deviations\nNone.\n"});
+const PR = pull({ number: 4310, body: "Fixes #4312\n\n## Deviations\nNone.\n" });
 const PR_ON_MAIN = pull({
 	number: 4310,
 	body: "Fixes #4312\n\n## Deviations\nNone.\n",
-	base: {ref: "main"},
+	base: { ref: "main" },
 });
 
 const options = {
 	pr: 4310,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r", ...GH_TOKEN_ENV} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r", ...GH_TOKEN_ENV } as Record<string, string | undefined>,
 };
 
 const run = (script: ReadonlyArray<Scripted>) =>
@@ -52,7 +52,7 @@ describe("runVerdicts", () => {
 	it("binds each marker to the live head and keeps the latest per gate", async () => {
 		const out = await run([
 			[PULL, PR],
-			[COMMENTS, comments({id: 1, body: PASS_STALE}, {id: 2, body: FAIL_NOW})],
+			[COMMENTS, comments({ id: 1, body: PASS_STALE }, { id: 2, body: FAIL_NOW })],
 			[REVIEWS, NO_REVIEWS],
 			[ISSUE_COMMENTS, served([])],
 			[ISSUE, issue()],
@@ -61,15 +61,15 @@ describe("runVerdicts", () => {
 		const parsed = JSON.parse(out.stdout);
 		expect(parsed.head).toBe(HEAD);
 		expect(parsed.rows).toHaveLength(2);
-		expect(parsed.rows.find((r: {gate: string}) => r.gate === "review-doc").current).toBe(false);
-		expect(parsed.rows.find((r: {gate: string}) => r.gate === "review-code").current).toBe(true);
+		expect(parsed.rows.find((r: { gate: string }) => r.gate === "review-doc").current).toBe(false);
+		expect(parsed.rows.find((r: { gate: string }) => r.gate === "review-code").current).toBe(true);
 	});
 
 	/** "The FAIL is old" and "there is no FAIL" are different facts. */
 	it("keeps a stale marker in the fold, flagged stale — never drops it", async () => {
 		const out = await run([
 			[PULL, PR],
-			[COMMENTS, comments({id: 1, body: PASS_STALE})],
+			[COMMENTS, comments({ id: 1, body: PASS_STALE })],
 			[REVIEWS, NO_REVIEWS],
 			[ISSUE_COMMENTS, served([])],
 			[ISSUE, issue()],
@@ -83,7 +83,7 @@ describe("runVerdicts", () => {
 		const out = await run([
 			[PULL, PR],
 			[COMMENTS, served([])],
-			[REVIEWS, served([{id: 98001, state: "CHANGES_REQUESTED", body: "the debounce races"}])],
+			[REVIEWS, served([{ id: 98001, state: "CHANGES_REQUESTED", body: "the debounce races" }])],
 			[ISSUE_COMMENTS, served([])],
 			[ISSUE, issue()],
 		]);
@@ -108,11 +108,11 @@ describe("runVerdicts", () => {
 			[
 				COMMENTS,
 				comments(
-					{id: 1, body: failAt(PRIOR_HEADS[0]), createdAt: at(0)},
-					{id: 2, body: failAt(PRIOR_HEADS[0]), createdAt: at(5)},
-					{id: 3, body: failAt(PRIOR_HEADS[1]), createdAt: at(400)},
-					{id: 4, body: failAt(PRIOR_HEADS[2]), createdAt: at(900)},
-					{id: 5, body: failAt(PRIOR_HEADS[3]), createdAt: at(1400)},
+					{ id: 1, body: failAt(PRIOR_HEADS[0]), createdAt: at(0) },
+					{ id: 2, body: failAt(PRIOR_HEADS[0]), createdAt: at(5) },
+					{ id: 3, body: failAt(PRIOR_HEADS[1]), createdAt: at(400) },
+					{ id: 4, body: failAt(PRIOR_HEADS[2]), createdAt: at(900) },
+					{ id: 5, body: failAt(PRIOR_HEADS[3]), createdAt: at(1400) },
 				),
 			],
 			[REVIEWS, NO_REVIEWS],
@@ -186,7 +186,7 @@ describe("runVerdicts", () => {
 			],
 		]);
 		expect(JSON.parse(out.stdout).frozenCriteria).toEqual([
-			{text: "an e2e covers the empty-list case", appendedRound: CAP_ROUND},
+			{ text: "an e2e covers the empty-list case", appendedRound: CAP_ROUND },
 		]);
 	});
 
@@ -207,8 +207,8 @@ describe("runVerdicts", () => {
 						id: 9001,
 						body: `the counters are off by one\n\n<!-- ac:escalated pr:#4310 round:${CAP_ROUND} -->`,
 					},
-					{id: 9002, body: "<!-- ac:escalated pr:#4999 round:5 --> another PR's finding"},
-					{id: 9003, body: "a plain comment"},
+					{ id: 9002, body: "<!-- ac:escalated pr:#4999 round:5 --> another PR's finding" },
+					{ id: 9003, body: "a plain comment" },
 				),
 			],
 			[ISSUE, issue()],
@@ -216,7 +216,7 @@ describe("runVerdicts", () => {
 		expect(out.code).toBe(0);
 		const parsed = JSON.parse(out.stdout);
 		expect(parsed.escalatedFindings).toHaveLength(1);
-		expect(parsed.escalatedFindings[0]).toMatchObject({round: CAP_ROUND, commentId: 9001});
+		expect(parsed.escalatedFindings[0]).toMatchObject({ round: CAP_ROUND, commentId: 9001 });
 		expect(parsed.escalatedFindings[0].body).toContain("the counters are off by one");
 		expect(out.stderr.join("\n")).toContain("1 finding(s) escalated past the freeze");
 	});
@@ -251,7 +251,7 @@ describe("runVerdicts", () => {
 	it("prints an empty fold as a proven answer on exit 0, with the counts on stderr", async () => {
 		const out = await run([
 			[PULL, PR],
-			[COMMENTS, comments({id: 1, body: "just a normal comment"})],
+			[COMMENTS, comments({ id: 1, body: "just a normal comment" })],
 			[REVIEWS, NO_REVIEWS],
 			[ISSUE_COMMENTS, served([])],
 			[ISSUE, issue()],
@@ -275,21 +275,21 @@ describe("runVerdicts", () => {
 		const PASS_NOW = `review-code: PASS @ ${HEAD} — merge-ready`;
 		const folded = (overrides: Record<string, unknown>) =>
 			run([
-				[PULL, pull({number: 4310, base: {ref: "main"}, ...overrides})],
-				[COMMENTS, comments({id: 1, body: PASS_NOW})],
+				[PULL, pull({ number: 4310, base: { ref: "main" }, ...overrides })],
+				[COMMENTS, comments({ id: 1, body: PASS_NOW })],
 				[REVIEWS, NO_REVIEWS],
 				[ISSUE_COMMENTS, served([])],
 				[ISSUE, issue()],
 			]);
 
 		it("reads a mergeable PR as mergeable", async () => {
-			const out = await folded({mergeable: true, mergeable_state: "clean"});
+			const out = await folded({ mergeable: true, mergeable_state: "clean" });
 			expect(JSON.parse(out.stdout).mergeability).toBe("mergeable");
 			expect(out.stderr.join("\n")).toContain("build verdicts: PR #4310 merges cleanly into main.");
 		});
 
 		it("reads a conflicting PR as conflicting, and says so beside the PASS row", async () => {
-			const out = await folded({mergeable: false, mergeable_state: "dirty"});
+			const out = await folded({ mergeable: false, mergeable_state: "dirty" });
 			const parsed = JSON.parse(out.stdout);
 			expect(parsed.mergeability).toBe("conflicting");
 			expect(parsed.rows[0].polarity).toBe("PASS");
@@ -299,7 +299,7 @@ describe("runVerdicts", () => {
 		});
 
 		it("keeps a null mergeable UNKNOWN — never collapsed to a clean value", async () => {
-			const out = await folded({mergeable: null, mergeable_state: "unknown"});
+			const out = await folded({ mergeable: null, mergeable_state: "unknown" });
 			expect(JSON.parse(out.stdout).mergeability).toBe("unknown");
 			expect(out.stderr.join("\n")).toContain("is UNKNOWN — GitHub had not computed it yet");
 		});
@@ -313,12 +313,13 @@ describe("runVerdicts", () => {
 	describe("required checks at head", () => {
 		const PASS_NOW = `review-code: PASS @ ${HEAD} — merge-ready`;
 		const RUNS = new RegExp(`^GET \\S+/repos/o/r/commits/${HEAD}/check-runs`);
-		const runs = (list: ReadonlyArray<{name: string; status: string; conclusion: string | null}>) =>
-			served({total_count: list.length, check_runs: list});
+		const runs = (
+			list: ReadonlyArray<{ name: string; status: string; conclusion: string | null }>,
+		) => served({ total_count: list.length, check_runs: list });
 		const folded = (script: ReadonlyArray<Scripted>) =>
 			run([
 				[PULL, PR_ON_MAIN],
-				[COMMENTS, comments({id: 1, body: PASS_NOW})],
+				[COMMENTS, comments({ id: 1, body: PASS_NOW })],
 				[REVIEWS, NO_REVIEWS],
 				[ISSUE_COMMENTS, served([])],
 				[ISSUE, issue()],
@@ -332,12 +333,12 @@ describe("runVerdicts", () => {
 				[
 					RUNS,
 					runs([
-						{name: "packages unit tests", status: "completed", conclusion: "success"},
-						{name: "Analyze (python)", status: "completed", conclusion: "failure"},
+						{ name: "packages unit tests", status: "completed", conclusion: "success" },
+						{ name: "Analyze (python)", status: "completed", conclusion: "failure" },
 					]),
 				],
 			]);
-			expect(JSON.parse(out.stdout).requiredChecks).toEqual({state: "green"});
+			expect(JSON.parse(out.stdout).requiredChecks).toEqual({ state: "green" });
 		});
 
 		it("folds red beside an all-PASS row set, naming each failing required context", async () => {
@@ -345,25 +346,25 @@ describe("runVerdicts", () => {
 				[
 					RUNS,
 					runs([
-						{name: "packages unit tests", status: "completed", conclusion: "failure"},
-						{name: "Analyze (python)", status: "completed", conclusion: "failure"},
+						{ name: "packages unit tests", status: "completed", conclusion: "failure" },
+						{ name: "Analyze (python)", status: "completed", conclusion: "failure" },
 					]),
 				],
 			]);
 			const parsed = JSON.parse(out.stdout);
 			expect(out.code).toBe(0);
 			expect(parsed.rows[0].polarity).toBe("PASS");
-			expect(parsed.requiredChecks).toEqual({state: "red", failing: ["packages unit tests"]});
+			expect(parsed.requiredChecks).toEqual({ state: "red", failing: ["packages unit tests"] });
 			expect(out.stderr.join("\n")).toContain(
 				`build verdicts: required check(s) RED on PR #4310 at ${HEAD}: packages unit tests — a red required check is repair work no gate emits a FAIL for, so this fold is not a clean answer.`,
 			);
 		});
 
 		it.each([
-			["still running", [{name: "packages unit tests", status: "in_progress", conclusion: null}]],
+			["still running", [{ name: "packages unit tests", status: "in_progress", conclusion: null }]],
 			[
 				"not yet reported",
-				[{name: "Analyze (python)", status: "completed", conclusion: "success"}],
+				[{ name: "Analyze (python)", status: "completed", conclusion: "success" }],
 			],
 		])("folds a required context %s as pending, never green", async (_, list) => {
 			const out = await folded([[RUNS, runs(list)]]);
@@ -427,7 +428,7 @@ describe("runVerdicts", () => {
 	});
 	describe("the founder's cleared rounds", () => {
 		const PERMISSION = /^GET \S+\/repos\/o\/r\/collaborators\/usirin\/permission/;
-		const WRITES = served({permission: "admin"});
+		const WRITES = served({ permission: "admin" });
 		const AUTHORIZATION = 'Founder ruling 2026-08-18: "one more round."';
 		// One graded head per round, so the set spends the whole declared budget — a round is a head,
 		// not a span of clock.
@@ -454,7 +455,7 @@ describe("runVerdicts", () => {
 			},
 		];
 		const GRANT = [
-			{id: 5, body: AUTHORIZATION, author: "usirin", createdAt: "2026-08-18T03:10:00Z"},
+			{ id: 5, body: AUTHORIZATION, author: "usirin", createdAt: "2026-08-18T03:10:00Z" },
 			{
 				id: 6,
 				body: `cap-cleared: round ${CAP_ROUND} · 2026-08-18T03:11:00Z`,
@@ -489,7 +490,11 @@ describe("runVerdicts", () => {
 			const parsed = JSON.parse(out.stdout);
 			expect(parsed.capReached).toBe(false);
 			expect(parsed.clearances).toHaveLength(1);
-			expect(parsed.clearances[0]).toMatchObject({round: CAP_ROUND, by: "usirin", honoured: true});
+			expect(parsed.clearances[0]).toMatchObject({
+				round: CAP_ROUND,
+				by: "usirin",
+				honoured: true,
+			});
 		});
 
 		it("spends the grant on the next round — it never re-arms", async () => {
@@ -547,8 +552,8 @@ describe("runVerdicts", () => {
 				[ISSUE, issue()],
 			]);
 			const parsed = JSON.parse(out.stdout);
-			const bare = parsed.clearances.find((row: {round: number}) => row.round === CAP_ROUND + 1);
-			expect(bare).toMatchObject({honoured: false, authorization: null});
+			const bare = parsed.clearances.find((row: { round: number }) => row.round === CAP_ROUND + 1);
+			expect(bare).toMatchObject({ honoured: false, authorization: null });
 			expect(bare.reason).toContain("immediately before");
 			expect(parsed.capReached).toBe(true);
 		});
@@ -559,14 +564,14 @@ describe("runVerdicts", () => {
 				[PULL, PR_ON_MAIN],
 				[COMMENTS, comments(...CAPPED, ...GRANT)],
 				...CP_ROSTER,
-				[PERMISSION, served({permission: "read"})],
+				[PERMISSION, served({ permission: "read" })],
 				[REVIEWS, NO_REVIEWS],
 				[ISSUE_COMMENTS, served([])],
 				[ISSUE, issue()],
 			]);
 			const parsed = JSON.parse(out.stdout);
 			expect(parsed.capReached).toBe(true);
-			expect(parsed.clearances[0]).toMatchObject({honoured: false});
+			expect(parsed.clearances[0]).toMatchObject({ honoured: false });
 			expect(parsed.clearances[0].reason).toContain("below write");
 		});
 
@@ -603,7 +608,7 @@ describe("runVerdicts", () => {
 			]);
 			const parsed = JSON.parse(out.stdout);
 			expect(parsed.capReached).toBe(true);
-			expect(parsed.clearances[0]).toMatchObject({honoured: false});
+			expect(parsed.clearances[0]).toMatchObject({ honoured: false });
 			expect(parsed.clearances[0].reason).toContain("is not in o/r's control-plane set at main");
 		});
 
@@ -611,7 +616,7 @@ describe("runVerdicts", () => {
 			const out = await run([
 				[PULL, PR_ON_MAIN],
 				[COMMENTS, comments(...CAPPED, ...GRANT)],
-				[TRUNK_READ, served({default_branch: "main"})],
+				[TRUNK_READ, served({ default_branch: "main" })],
 				[CODEOWNERS_READ, GATEWAY],
 				[REVIEWS, NO_REVIEWS],
 				[ISSUE_COMMENTS, served([])],
@@ -641,7 +646,10 @@ describe("runChildVerdicts", () => {
 				runChildVerdicts({
 					issue: 4312,
 					repo: null,
-					env: {CLAUDE_PIPELINE_REPO: "o/r", ...GH_TOKEN_ENV} as Record<string, string | undefined>,
+					env: { CLAUDE_PIPELINE_REPO: "o/r", ...GH_TOKEN_ENV } as Record<
+						string,
+						string | undefined
+					>,
 				}),
 				fakeSeams(script).layer,
 			),
@@ -650,7 +658,7 @@ describe("runChildVerdicts", () => {
 	it("folds the standing verdict per gate with the range it was formed over", async () => {
 		const out = await runChild([
 			[ISSUE, issue()],
-			[CHILD_COMMENTS, comments({id: 8801, body: `${range("FAIL")}\n\nthe finding's text`})],
+			[CHILD_COMMENTS, comments({ id: 8801, body: `${range("FAIL")}\n\nthe finding's text` })],
 		]);
 		expect(out.code).toBe(0);
 		const answered = JSON.parse(out.stdout);
@@ -672,9 +680,9 @@ describe("runChildVerdicts", () => {
 			[
 				CHILD_COMMENTS,
 				comments(
-					{id: 1, body: range("FAIL")},
-					{id: 2, body: `governance: FAIL range:${BASE}..${TIP} content:2f1a9c4e0b7d — no`},
-					{id: 3, body: range("FAIL", NEXT_TIP)},
+					{ id: 1, body: range("FAIL") },
+					{ id: 2, body: `governance: FAIL range:${BASE}..${TIP} content:2f1a9c4e0b7d — no` },
+					{ id: 3, body: range("FAIL", NEXT_TIP) },
 				),
 			],
 		]);
@@ -687,7 +695,7 @@ describe("runChildVerdicts", () => {
 			[
 				CHILD_COMMENTS,
 				comments(
-					{id: 8801, body: range("FAIL")},
+					{ id: 8801, body: range("FAIL") },
 					{
 						id: 8802,
 						body: `the union widened\n\n<!-- ac:escalated range:${BASE}..${TIP} round:${CAP_ROUND} -->`,
@@ -697,21 +705,21 @@ describe("runChildVerdicts", () => {
 		]);
 		const parsed = JSON.parse(out.stdout);
 		expect(parsed.escalatedFindings).toHaveLength(1);
-		expect(parsed.escalatedFindings[0]).toMatchObject({round: CAP_ROUND, commentId: 8802});
+		expect(parsed.escalatedFindings[0]).toMatchObject({ round: CAP_ROUND, commentId: 8802 });
 		expect(parsed.escalatedFindings[0].body).toContain("the union widened");
 	});
 
 	it("reports no clearance and says why — a grant is recorded against a base branch", async () => {
 		const out = await runChild([
 			[ISSUE, issue()],
-			[CHILD_COMMENTS, comments({id: 8801, body: range("PASS")})],
+			[CHILD_COMMENTS, comments({ id: 8801, body: range("PASS") })],
 		]);
 		expect(JSON.parse(out.stdout).clearances).toEqual([]);
 		expect(out.stderr.join("\n")).toContain("a child has no PR");
 	});
 
 	it("refuses a PR on 7 — its verdicts are head-bound", async () => {
-		const out = await runChild([[ISSUE, issue({pull_request: {}})]]);
+		const out = await runChild([[ISSUE, issue({ pull_request: {} })]]);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-1)).toContain("drop --issue and pass --pr");
 	});

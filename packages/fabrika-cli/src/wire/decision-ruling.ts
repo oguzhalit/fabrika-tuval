@@ -38,7 +38,7 @@
  * bytes **plus** an author the control-plane roster resolved.
  */
 
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
 import {
 	absent,
 	FIELD_SEPARATOR,
@@ -60,8 +60,8 @@ import {
 	scopeDigest,
 } from "./issue-marker.ts";
 
-export type {MarkerTime} from "./grill-marker.ts";
-export {type MarkedIssue, type ScopeDigest, scopeDigest} from "./issue-marker.ts";
+export type { MarkerTime } from "./grill-marker.ts";
+export { type MarkedIssue, type ScopeDigest, scopeDigest } from "./issue-marker.ts";
 
 /**
  * The key that names these bytes.
@@ -80,7 +80,7 @@ export const SUPERSEDES_PREFIX = "supersedes:";
 declare const RULING_URL: unique symbol;
 
 /** The comment a ruling is written in, as a GitHub issue-comment URL. */
-export type RulingUrl = string & {readonly [RULING_URL]: true};
+export type RulingUrl = string & { readonly [RULING_URL]: true };
 
 /**
  * The one grammar a ruling URL is written in — the same one `build claim --cites` takes, quoted in
@@ -111,7 +111,7 @@ declare const CRITERION_INDEX: unique symbol;
  * The body criterion a ruling replaces: its 1-based position in the issue's acceptance-criteria
  * block. Positive by construction, so "supersedes the zeroth row" has no inhabitant.
  */
-export type CriterionIndex = number & {readonly [CRITERION_INDEX]: true};
+export type CriterionIndex = number & { readonly [CRITERION_INDEX]: true };
 
 export const criterionIndex = (raw: number): CriterionIndex | null =>
 	Number.isInteger(raw) && raw > 0 ? (raw as CriterionIndex) : null;
@@ -197,12 +197,12 @@ export const read = (artifact: string): DecisionRulingRead => {
 	}
 	return {
 		_tag: "Found",
-		value: {issue: bound.issue, digest: bound.digest, ruling, supersedes, at},
+		value: { issue: bound.issue, digest: bound.digest, ruling, supersedes, at },
 	};
 };
 
 /** Compose the marker's first line. Round-trips through {@link read}. */
-export const emit = ({issue, digest, ruling, supersedes, at}: DecisionRuling): string =>
+export const emit = ({ issue, digest, ruling, supersedes, at }: DecisionRuling): string =>
 	emitIssueMarker(KEY, issue, digest, [
 		`${RULING_PREFIX}${ruling}`,
 		...(supersedes === null ? [] : [`${SUPERSEDES_PREFIX}${supersedes}`]),
@@ -228,8 +228,8 @@ export const renderRuling = (ruling: DecisionRuling): NonEmptyReadonlyArray<stri
 ];
 
 export type DecisionRulingFields =
-	| {readonly _tag: "Fields"; readonly ruling: DecisionRuling}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly ruling: DecisionRuling }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 const KEYS = ["issue", "digest", "ruling", "supersedes", "at"] as const;
 
@@ -237,7 +237,7 @@ const KEYS = ["issue", "digest", "ruling", "supersedes", "at"] as const;
 export const parseFields = (fields: string): DecisionRulingFields => {
 	const lines = parseFieldLines(fields, KEYS);
 	if (lines._tag === "Unusable") return lines;
-	const {seen} = lines;
+	const { seen } = lines;
 
 	const issue = issueField(seen.get("issue") ?? "");
 	if (issue === null) {
@@ -286,22 +286,22 @@ export const parseFields = (fields: string): DecisionRulingFields => {
 			reason: `"${seen.get("at") ?? ""}" is not an ISO-8601 UTC timestamp — expected a Z-suffixed instant`,
 		};
 	}
-	return {_tag: "Fields", ruling: {issue, digest, ruling, supersedes, at}};
+	return { _tag: "Fields", ruling: { issue, digest, ruling, supersedes, at } };
 };
 
 /** The registry row's byte-level `emit`, bound to this module's typed core. */
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.ruling)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.ruling) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderRuling(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderRuling(result.value) } : result;
 };
 
 /** Re-exported so a caller building a marker brands the number through one door. */
-export {markedIssue};
+export { markedIssue };

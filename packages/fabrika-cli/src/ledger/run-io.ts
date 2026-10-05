@@ -10,11 +10,11 @@
  * an unread pipe byte-identical to an empty one.
  */
 
-import {Effect, FileSystem, Path} from "effect";
-import {renderLeaks, scanBody} from "../report/leaks.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {LEAKED_PATH, PRECONDITION_UNKNOWN} from "./codes.ts";
-import type {LedgerMessages} from "./preconditions.ts";
+import { Effect, FileSystem, Path } from "effect";
+import { renderLeaks, scanBody } from "../report/leaks.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { LEAKED_PATH, PRECONDITION_UNKNOWN } from "./codes.ts";
+import type { LedgerMessages } from "./preconditions.ts";
 import {
 	type ChildRecord,
 	manifestPath,
@@ -27,19 +27,19 @@ import {
 } from "./run.ts";
 
 export type Loaded<A> =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Loaded"; readonly value: A};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Loaded"; readonly value: A };
 
-const refused = <A>(outcome: VerbOutcome): Loaded<A> => ({_tag: "Refused", outcome});
+const refused = <A>(outcome: VerbOutcome): Loaded<A> => ({ _tag: "Refused", outcome });
 
 /** Read a file, or the reason it could not be read — absence and a fault are one answer here. */
 const readText = (
 	fs: FileSystem.FileSystem,
 	path: string,
-): Effect.Effect<{text: string} | {reason: string}> =>
+): Effect.Effect<{ text: string } | { reason: string }> =>
 	fs.readFileString(path).pipe(
-		Effect.map((text) => ({text})),
-		Effect.catchTag("PlatformError", (cause) => Effect.succeed({reason: cause.message})),
+		Effect.map((text) => ({ text })),
+		Effect.catchTag("PlatformError", (cause) => Effect.succeed({ reason: cause.message })),
 	);
 
 /** `run.json`, or the `11` refusal. The run is UNKNOWN when it cannot be read or does not parse. */
@@ -62,7 +62,7 @@ export const loadRun = (
 			? refused<RunRecord>(
 					refuse(PRECONDITION_UNKNOWN, messages.unreadable(path, "it is not a run record"), notes),
 				)
-			: {_tag: "Loaded", value: record};
+			: { _tag: "Loaded", value: record };
 	});
 
 /** `children.jsonl`, or the `11` refusal. An absent manifest is unreadable, not empty. */
@@ -89,7 +89,7 @@ export const loadManifest = (
 						notes,
 					),
 				)
-			: {_tag: "Loaded", value: records};
+			: { _tag: "Loaded", value: records };
 	});
 
 /** A staged document's bytes, or `null` when this run never staged it. */
@@ -110,7 +110,7 @@ export const stage = (
 	Effect.gen(function* () {
 		const fs = yield* FileSystem.FileSystem;
 		const pathService = yield* Path.Path;
-		return yield* fs.makeDirectory(pathService.dirname(path), {recursive: true}).pipe(
+		return yield* fs.makeDirectory(pathService.dirname(path), { recursive: true }).pipe(
 			Effect.andThen(fs.writeFileString(path, text)),
 			Effect.as(null),
 			Effect.catchTag("PlatformError", (cause) => Effect.succeed(cause.message)),

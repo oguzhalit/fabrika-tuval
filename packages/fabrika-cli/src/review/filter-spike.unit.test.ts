@@ -6,8 +6,8 @@
  * refused, the spike's own defaults never are. `guard-trees.sync.unit.test.ts` proves the probes
  * still sit in the guards' sources; this file proves what the filter does about them.
  */
-import {describe, expect, it} from "vitest";
-import {filesInDiff} from "./diff.ts";
+import { describe, expect, it } from "vitest";
+import { filesInDiff } from "./diff.ts";
 import {
 	applyPlacement,
 	DEFAULT_EXCLUSIONS,
@@ -25,13 +25,13 @@ import {
 } from "./filter-spike.ts";
 
 const probes = [
-	{guard: "catalog-guard", path: "package.json", source: "test"},
+	{ guard: "catalog-guard", path: "package.json", source: "test" },
 	{
 		guard: "fanout-guard",
 		path: "src/features/fate-live/fanned-mutations.ts",
 		source: "test",
 	},
-	{guard: "governedRoots", path: "governed/probe.md", source: "test"},
+	{ guard: "governedRoots", path: "governed/probe.md", source: "test" },
 ];
 
 const previewOf = (
@@ -78,11 +78,11 @@ describe("pattern matching", () => {
 
 describe("the refusal invariant", () => {
 	it("refuses a pattern that reaches a guard probe", () => {
-		expect(refusalFor([{pattern: "**/package.json", source: "caller"}], probes)).toEqual([
-			{pattern: "**/package.json", guard: "catalog-guard", probe: "package.json"},
+		expect(refusalFor([{ pattern: "**/package.json", source: "caller" }], probes)).toEqual([
+			{ pattern: "**/package.json", guard: "catalog-guard", probe: "package.json" },
 		]);
-		expect(refusalFor([{pattern: "src/features/**", source: "caller"}], probes)).toHaveLength(1);
-		expect(refusalFor([{pattern: "governed/", source: "caller"}], probes)).toHaveLength(1);
+		expect(refusalFor([{ pattern: "src/features/**", source: "caller" }], probes)).toHaveLength(1);
+		expect(refusalFor([{ pattern: "governed/", source: "caller" }], probes)).toHaveLength(1);
 	});
 
 	it("never refuses the spike's own defaults over guard probes", () => {
@@ -169,7 +169,7 @@ describe("the effective exclusion set", () => {
 
 	it("extends the set with config additions, then the CLI's, each source tagged", () => {
 		const effective = effectiveExclusions(["dist/**", "coverage/**"], [], "*.gen.ts");
-		expect(effective.patterns.map(({pattern}) => pattern)).toEqual([
+		expect(effective.patterns.map(({ pattern }) => pattern)).toEqual([
 			"pnpm-lock.yaml",
 			SNAP,
 			"**/__generated__/**",
@@ -179,14 +179,14 @@ describe("the effective exclusion set", () => {
 			"coverage/**",
 			"*.gen.ts",
 		]);
-		expect(effective.patterns.at(-3)).toMatchObject({source: "config"});
-		expect(effective.patterns.at(-1)).toMatchObject({source: "caller"});
+		expect(effective.patterns.at(-3)).toMatchObject({ source: "config" });
+		expect(effective.patterns.at(-1)).toMatchObject({ source: "caller" });
 		expect(effective.unexcluded).toEqual([]);
 	});
 
 	it("removes exactly the named default and enumerates it as un-excluded", () => {
 		const effective = effectiveExclusions([], [LOCK], null);
-		expect(effective.patterns.map(({pattern}) => pattern)).not.toContain(LOCK);
+		expect(effective.patterns.map(({ pattern }) => pattern)).not.toContain(LOCK);
 		expect(effective.unexcluded).toEqual([LOCK]);
 	});
 
@@ -198,22 +198,22 @@ describe("the effective exclusion set", () => {
 
 	it("lets an equal config addition re-add a removed default — and then it is not un-excluded", () => {
 		const effective = effectiveExclusions([LOCK], [LOCK], null);
-		expect(effective.patterns).toContainEqual({pattern: LOCK, source: "config"});
+		expect(effective.patterns).toContainEqual({ pattern: LOCK, source: "config" });
 		expect(effective.unexcluded).toEqual([]);
 	});
 
 	it("lets an equal CLI exclusion re-add a removed default the same way", () => {
 		const effective = effectiveExclusions([], [LOCK], LOCK);
-		expect(effective.patterns).toContainEqual({pattern: LOCK, source: "caller"});
+		expect(effective.patterns).toContainEqual({ pattern: LOCK, source: "caller" });
 		expect(effective.unexcluded).toEqual([]);
 	});
 
 	it("dedupes by pattern string across every source, first declaration winning", () => {
 		const effective = effectiveExclusions([SNAP, "dist/**"], [], `${SNAP}, dist/**`);
 		expect(effective.patterns).toHaveLength(DEFAULT_EXCLUSIONS.length + 1);
-		expect(effective.patterns.filter(({pattern}) => pattern === SNAP)).toHaveLength(1);
-		expect(effective.patterns.filter(({pattern}) => pattern === "dist/**")).toHaveLength(1);
-		expect(effective.patterns.find(({pattern}) => pattern === SNAP)?.source).toBe("default");
+		expect(effective.patterns.filter(({ pattern }) => pattern === SNAP)).toHaveLength(1);
+		expect(effective.patterns.filter(({ pattern }) => pattern === "dist/**")).toHaveLength(1);
+		expect(effective.patterns.find(({ pattern }) => pattern === SNAP)?.source).toBe("default");
 	});
 
 	it("derives the same un-excluded list the effective set's own absence proves", () => {
@@ -242,7 +242,7 @@ describe("the preview derivation", () => {
 		expect(preview._tag).toBe("Preview");
 		if (preview._tag !== "Preview") return;
 		expect(preview.result.matched_paths).toEqual(["src/a.ts"]);
-		expect(preview.result.active_classes).toEqual([{name: "code", files: 2}]);
+		expect(preview.result.active_classes).toEqual([{ name: "code", files: 2 }]);
 		expect(preview.result.namespaces).toEqual(["review-code"]);
 		expect(preview.result.excluded).toEqual(["pnpm-lock.yaml"]);
 		expect(preview.result.filtered_diff).toContain("x-fabrika-excluded-path: pnpm-lock.yaml");
@@ -252,7 +252,7 @@ describe("the preview derivation", () => {
 		const preview = previewOf(diff, "after", DEFAULT_EXCLUSIONS, probes);
 		expect(preview._tag).toBe("Preview");
 		if (preview._tag !== "Preview") return;
-		expect(preview.result.active_classes).toEqual([{name: "code", files: 2}]);
+		expect(preview.result.active_classes).toEqual([{ name: "code", files: 2 }]);
 		expect(preview.result.namespaces).toEqual(["review-code"]);
 		expect(preview.result.matched_paths).toEqual(["src/a.ts"]);
 	});
@@ -269,7 +269,7 @@ describe("the preview derivation", () => {
 		expect(preview._tag).toBe("Preview");
 		if (preview._tag !== "Preview") return;
 		expect(preview.result.matched_paths).toEqual([]);
-		expect(preview.result.active_classes).toEqual([{name: "code", files: 1}]);
+		expect(preview.result.active_classes).toEqual([{ name: "code", files: 1 }]);
 		expect(preview.result.namespaces).toEqual(["review-code"]);
 	});
 
@@ -277,7 +277,7 @@ describe("the preview derivation", () => {
 		const preview = previewOf(
 			diff,
 			"after",
-			[...DEFAULT_EXCLUSIONS, {pattern: "governed/", source: "caller"}],
+			[...DEFAULT_EXCLUSIONS, { pattern: "governed/", source: "caller" }],
 			probes,
 		);
 		expect(preview._tag).toBe("Refused");
@@ -343,7 +343,7 @@ describe("git-quoted headers reach the filter", () => {
 		const preview = previewOf(
 			`${plainSection}\n${quotedSection}\n`,
 			"after",
-			[{pattern: DECODED, source: "caller"}],
+			[{ pattern: DECODED, source: "caller" }],
 			probes,
 		);
 		expect(preview._tag).toBe("Preview");
@@ -370,27 +370,27 @@ describe("git-quoted headers reach the filter", () => {
 
 describe("a pattern naming a governed tree literally is refused", () => {
 	const governedProbes = [
-		{guard: "governedRoots", path: "governed/probe.md", source: "test"},
-		{guard: "governedRoots", path: ".claude/probe.md", source: "test"},
-		{guard: "governedRoots", path: ".fabrika.jsonc", source: "test"},
+		{ guard: "governedRoots", path: "governed/probe.md", source: "test" },
+		{ guard: "governedRoots", path: ".claude/probe.md", source: "test" },
+		{ guard: "governedRoots", path: ".fabrika.jsonc", source: "test" },
 	];
 
 	it("a wildcard pattern carrying the governed tree as a literal refuses", () => {
-		const refusals = refusalFor([{pattern: "governed/*.ts", source: "caller"}], governedProbes);
+		const refusals = refusalFor([{ pattern: "governed/*.ts", source: "caller" }], governedProbes);
 		expect(refusals).toHaveLength(1);
 		expect(refusals[0]?.guard).toBe("governedRoots");
 	});
 
 	it("a deeper literal path under a governed root refuses", () => {
 		const refusals = refusalFor(
-			[{pattern: ".claude/skills/**/*.ts", source: "config"}],
+			[{ pattern: ".claude/skills/**/*.ts", source: "config" }],
 			governedProbes,
 		);
 		expect(refusals).toHaveLength(1);
 	});
 
 	it("a bare governed-tree prefix refuses", () => {
-		const refusals = refusalFor([{pattern: "governed", source: "caller"}], governedProbes);
+		const refusals = refusalFor([{ pattern: "governed", source: "caller" }], governedProbes);
 		expect(refusals).toHaveLength(1);
 	});
 
@@ -398,41 +398,41 @@ describe("a pattern naming a governed tree literally is refused", () => {
 		expect(refusalFor(DEFAULT_EXCLUSIONS, governedProbes)).toEqual([]);
 		expect(
 			refusalFor(
-				[{pattern: "packages/epic-ledger/package.json", source: "caller"}],
+				[{ pattern: "packages/epic-ledger/package.json", source: "caller" }],
 				governedProbes,
 			),
 		).toEqual([]);
 	});
 
 	it("a double-star-led governed tree refuses — the root's name still pins it behind a glob", () => {
-		const refusals = refusalFor([{pattern: "**/governed/**", source: "caller"}], governedProbes);
+		const refusals = refusalFor([{ pattern: "**/governed/**", source: "caller" }], governedProbes);
 		expect(refusals).toHaveLength(1);
 	});
 
 	it("a double-star-led hidden governed root refuses the same way", () => {
-		const refusals = refusalFor([{pattern: "**/.claude/**", source: "caller"}], governedProbes);
+		const refusals = refusalFor([{ pattern: "**/.claude/**", source: "caller" }], governedProbes);
 		expect(refusals).toHaveLength(1);
 	});
 
 	it("a double-star-led bare governed tree — no trailing glob — refuses", () => {
-		const refusals = refusalFor([{pattern: "**/governed", source: "caller"}], governedProbes);
+		const refusals = refusalFor([{ pattern: "**/governed", source: "caller" }], governedProbes);
 		expect(refusals).toHaveLength(1);
 	});
 
 	it("a wildcard-led suffix glob is not refused — the fence only refuses what a pattern forces", () => {
-		expect(refusalFor([{pattern: "**/*.ts", source: "caller"}], governedProbes)).toEqual([]);
+		expect(refusalFor([{ pattern: "**/*.ts", source: "caller" }], governedProbes)).toEqual([]);
 	});
 
 	it("the defaults stay allowed against the governed root alone", () => {
-		const rootProbe = [{guard: "governedRoots", path: "governed/probe.md", source: "test"}];
+		const rootProbe = [{ guard: "governedRoots", path: "governed/probe.md", source: "test" }];
 		expect(refusalFor(DEFAULT_EXCLUSIONS, rootProbe)).toEqual([]);
 	});
 
 	it("a foreign literal prefix does not pin a governed root deeper in the pattern", () => {
 		const refusals = refusalFor(
 			[
-				{pattern: "packages/**/*.test.ts", source: "config"},
-				{pattern: "lib/**/governed/*.ts", source: "caller"},
+				{ pattern: "packages/**/*.test.ts", source: "config" },
+				{ pattern: "lib/**/governed/*.ts", source: "caller" },
 			],
 			governedProbes,
 		);
@@ -443,7 +443,7 @@ describe("a pattern naming a governed tree literally is refused", () => {
 describe("the governed runtime backstop", () => {
 	// governedRoots probes only: the file-level `probes` fixture carries the fanout guard's .ts
 	// probe, against which `**/*.ts` refuses at the probe arm and never reaches the backstop.
-	const backstopProbes = [{guard: "governedRoots", path: "governed/probe.md", source: "test"}];
+	const backstopProbes = [{ guard: "governedRoots", path: "governed/probe.md", source: "test" }];
 	const governedSection = [
 		"diff --git a/governed/real.ts b/governed/real.ts",
 		"--- a/governed/real.ts",
@@ -463,25 +463,29 @@ describe("the governed runtime backstop", () => {
 		expect(
 			governedExcluded(
 				["governed/real.ts", "src/a.ts"],
-				[{pattern: "**/*.ts", source: "caller"}],
+				[{ pattern: "**/*.ts", source: "caller" }],
 				probes,
 			),
-		).toEqual([{pattern: "**/*.ts", path: "governed/real.ts"}]);
+		).toEqual([{ pattern: "**/*.ts", path: "governed/real.ts" }]);
 	});
 
 	it("governedExcluded returns nothing when no excluded path sits under a governed root", () => {
 		expect(
-			governedExcluded(["src/a.ts", "lib/b.ts"], [{pattern: "**/*.ts", source: "caller"}], probes),
+			governedExcluded(
+				["src/a.ts", "lib/b.ts"],
+				[{ pattern: "**/*.ts", source: "caller" }],
+				probes,
+			),
 		).toEqual([]);
 	});
 
 	it("governedExcluded picks the first pattern in set order when two patterns exclude the path", () => {
 		const patterns = [
-			{pattern: "**/*.ts", source: "caller" as const},
-			{pattern: "governed/**", source: "caller" as const},
+			{ pattern: "**/*.ts", source: "caller" as const },
+			{ pattern: "governed/**", source: "caller" as const },
 		];
 		expect(governedExcluded(["governed/real.ts"], patterns, probes)).toEqual([
-			{pattern: "**/*.ts", path: "governed/real.ts"},
+			{ pattern: "**/*.ts", path: "governed/real.ts" },
 		]);
 	});
 
@@ -489,7 +493,7 @@ describe("the governed runtime backstop", () => {
 		const preview = previewOf(
 			governedSection,
 			"after",
-			[{pattern: "**/*.ts", source: "caller"}],
+			[{ pattern: "**/*.ts", source: "caller" }],
 			backstopProbes,
 		);
 		expect(preview._tag).toBe("Refused");
@@ -508,7 +512,7 @@ describe("the governed runtime backstop", () => {
 		const preview = previewOf(
 			ungovernedSection,
 			"after",
-			[{pattern: "**/*.ts", source: "caller"}],
+			[{ pattern: "**/*.ts", source: "caller" }],
 			backstopProbes,
 		);
 		expect(preview._tag).toBe("Preview");

@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	classify,
 	controlPlaneOwnersOf,
@@ -138,7 +138,7 @@ describe("classify", () => {
 
 describe("splitTeam", () => {
 	it("splits an @org/team owner into the two segments the REST roster read needs", () => {
-		expect(splitTeam(TEAM)).toEqual({org: "acme", team: "control-plane"});
+		expect(splitTeam(TEAM)).toEqual({ org: "acme", team: "control-plane" });
 	});
 
 	it("answers null for an individual owner — the discriminator cp-approval routes the roster on", () => {

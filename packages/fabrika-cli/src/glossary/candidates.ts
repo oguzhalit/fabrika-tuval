@@ -9,8 +9,8 @@
  * precision — suppression here is equality on the normalized key, never containment in either
  * direction.
  */
-import {STOPWORDS} from "../adr/sweep.ts";
-import {normalizeKey} from "./register.ts";
+import { STOPWORDS } from "../adr/sweep.ts";
+import { normalizeKey } from "./register.ts";
 
 /** One commit's decision-bearing text. `files` is resolved separately, only where it is needed. */
 export interface CommitText {
@@ -102,7 +102,7 @@ export const rankCandidates = (
 		);
 		const first = hitting[0];
 		if (first === undefined) continue;
-		candidates.push({phrase, hits: hitting.length, firstCommit: first.sha});
+		candidates.push({ phrase, hits: hitting.length, firstCommit: first.sha });
 	}
 
 	return candidates

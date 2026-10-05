@@ -4,7 +4,7 @@
  * forks, the exit seats and the report lines a reader acts on are proven through the board read in
  * `./homing-verb.unit.test.ts`.
  */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	disposition,
 	judge,
@@ -14,7 +14,7 @@ import {
 	type TriagedIssue,
 	toGuardVerdict,
 } from "./homing.ts";
-import {PRESENT} from "./label-universe.ts";
+import { PRESENT } from "./label-universe.ts";
 
 const issue = (
 	number: number,
@@ -28,7 +28,7 @@ const issue = (
 });
 
 // Issue scope in a repo that HAS the label — the ordinary case.
-const issueScope = (number: number): Scope => ({_tag: "issue", number, universe: PRESENT});
+const issueScope = (number: number): Scope => ({ _tag: "issue", number, universe: PRESENT });
 
 /** A repo's declared lanes, as a fixture: the decision carries no lane of its own. */
 const LANES: ReadonlyArray<string> = ["wayfinder:backlog", "axis:pipeline-hardening"];
@@ -65,11 +65,12 @@ describe("disposition", () => {
 		).toBe("unhomed");
 	});
 
-	it.each([
-		...LANES,
-	])("a milestone AND %s is double-marked — banned outright, and it is never homed", (label) => {
-		expect(disposition(issue(1, 17, [label]), LANES)).toBe("double-marked");
-	});
+	it.each([...LANES])(
+		"a milestone AND %s is double-marked — banned outright, and it is never homed",
+		(label) => {
+			expect(disposition(issue(1, 17, [label]), LANES)).toBe("double-marked");
+		},
+	);
 
 	it("a double-marked resolution carries the milestone and the lanes its remedy names", () => {
 		expect(resolve(issue(42, 17, ["wayfinder:backlog", "p2"]), LANES)).toEqual({
@@ -122,7 +123,7 @@ describe("judge — violations", () => {
 		const v = judge([issue(9, null)], LANES, issueScope(9));
 		expect(v.pass).toBe(false);
 		if (!v.pass && v.reason === "violations") {
-			expect(v.violations).toEqual([{kind: "unhomed", number: 9, title: "issue 9"}]);
+			expect(v.violations).toEqual([{ kind: "unhomed", number: 9, title: "issue 9" }]);
 		}
 	});
 

@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import type {CommandNode} from "../unknown-subcommand.ts";
-import {guardCommand} from "./command.ts";
+import { describe, expect, it } from "vitest";
+import type { CommandNode } from "../unknown-subcommand.ts";
+import { guardCommand } from "./command.ts";
 
 const childOf = (node: CommandNode | undefined, name: string): CommandNode | undefined =>
 	node?.subcommands.flatMap((set) => set.commands).find((child) => child.name === name);

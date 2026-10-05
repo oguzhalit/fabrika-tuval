@@ -13,7 +13,7 @@ import {
 	READBACK_MISMATCH as SHARED_READBACK_MISMATCH,
 	WRITE_UNKNOWN as SHARED_WRITE_UNKNOWN,
 } from "../exit-codes.ts";
-import {OFF_VOCABULARY as TRIAGE_OFF_VOCABULARY} from "../triage/codes.ts";
+import { OFF_VOCABULARY as TRIAGE_OFF_VOCABULARY } from "../triage/codes.ts";
 
 export const EMPTY_STDIN = SHARED_EMPTY_STDIN;
 export const LEAKED_PATH = SHARED_LEAKED_PATH;

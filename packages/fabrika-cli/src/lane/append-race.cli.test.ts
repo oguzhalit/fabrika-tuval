@@ -23,15 +23,15 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9138#issuecomment-5702162985
  * @ruling https://github.com/kamp-us/phoenix/issues/9315
  */
-import {execFile} from "node:child_process";
-import {existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {promisify} from "node:util";
-import {beforeAll, describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
+import { execFile } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
+import { beforeAll, describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
 
 const BIN = fileURLToPath(new URL("../bin.ts", import.meta.url));
 const exec = promisify(execFile);
@@ -44,7 +44,7 @@ interface Run {
 
 const spawnTransition = async (root: string): Promise<Run> => {
 	try {
-		const {stdout} = await exec(
+		const { stdout } = await exec(
 			process.execPath,
 			[
 				"--experimental-strip-types",
@@ -56,12 +56,12 @@ const spawnTransition = async (root: string): Promise<Run> => {
 				"--root",
 				join(root, ".fabrika", "lanes"),
 			],
-			{cwd: root, env: process.env},
+			{ cwd: root, env: process.env },
 		);
-		return {code: 0, stdout, stderr: ""};
+		return { code: 0, stdout, stderr: "" };
 	} catch (err) {
-		const failure = err as {code?: number; stdout?: string; stderr?: string};
-		return {code: failure.code ?? -1, stdout: failure.stdout ?? "", stderr: failure.stderr ?? ""};
+		const failure = err as { code?: number; stdout?: string; stderr?: string };
+		return { code: failure.code ?? -1, stdout: failure.stdout ?? "", stderr: failure.stderr ?? "" };
 	}
 };
 
@@ -74,8 +74,8 @@ describe.skip("two concurrent lane writers stay coherent", {
 
 	beforeAll(() => {
 		// The ground guard needs a repo marker; `.fabrika` itself is one.
-		mkdirSync(join(root, ".fabrika"), {recursive: true});
-		mkdirSync(join(lanesRoot, "42"), {recursive: true});
+		mkdirSync(join(root, ".fabrika"), { recursive: true });
+		mkdirSync(join(lanesRoot, "42"), { recursive: true });
 		writeFileSync(join(lanesRoot, "42", "workflow.json"), coderTemplateText());
 	});
 
@@ -85,8 +85,8 @@ describe.skip("two concurrent lane writers stay coherent", {
 
 			const [a, b] = await Promise.all([spawnTransition(root), spawnTransition(root)]);
 			const runs = [
-				{...a, name: "A"},
-				{...b, name: "B"},
+				{ ...a, name: "A" },
+				{ ...b, name: "B" },
 			];
 
 			for (const r of runs) {

@@ -19,16 +19,16 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/8857#issuecomment-5625302485
  */
 
-import {isBareAtReference, type Leak, renderLeaks, scanBody} from "./report/leaks.ts";
-import {FAILED, refuse, type VerbOutcome} from "./verb.ts";
+import { isBareAtReference, type Leak, renderLeaks, scanBody } from "./report/leaks.ts";
+import { FAILED, refuse, type VerbOutcome } from "./verb.ts";
 
 /** An ISO-8601 date, which is what makes a quoted authorization datable. */
 export const ISO_DATE = /\d{4}-\d{2}-\d{2}/;
 
 /** A file the adapter read for the verb, so the verb itself touches no filesystem. */
 export type AuthorizationDocument =
-	| {readonly _tag: "Text"; readonly text: string}
-	| {readonly _tag: "Failed"; readonly reason: string};
+	| { readonly _tag: "Text"; readonly text: string }
+	| { readonly _tag: "Failed"; readonly reason: string };
 
 /**
  * The seats the calling group gives the three proven refusals. The read failure is `1` everywhere —
@@ -44,8 +44,8 @@ export interface AuthorizationCodes {
 }
 
 export type AuthorizationRead =
-	| {readonly _tag: "Quoted"; readonly text: string}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Quoted"; readonly text: string }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /** The comment body a quoted authorization posts as — trimmed, newline-terminated, never reworded. */
 export const authorizationBody = (quoted: string): string => `${quoted.trim()}\n`;
@@ -112,5 +112,5 @@ export const readAuthorization = (
 			),
 		};
 	}
-	return {_tag: "Quoted", text: quoted};
+	return { _tag: "Quoted", text: quoted };
 };

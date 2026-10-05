@@ -14,15 +14,15 @@
  * which is exactly the boundary the fix moves — "the tokens arrived" is proven by which refusal
  * answers.
  */
-import {execFileSync} from "node:child_process";
-import {mkdtempSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
-import {BASE_UNFETCHABLE} from "./adr/codes.ts";
-import {NO_WORKSPACE} from "./spike/codes.ts";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "./test-budget.ts";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import { BASE_UNFETCHABLE } from "./adr/codes.ts";
+import { NO_WORKSPACE } from "./spike/codes.ts";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "./test-budget.ts";
 
 const BIN = fileURLToPath(new URL("./bin.ts", import.meta.url));
 
@@ -38,12 +38,12 @@ const fabrika = (args: ReadonlyArray<string>, cwd: string = process.cwd()): Run 
 		const stdout = execFileSync(process.execPath, [BIN, ...args], {
 			cwd,
 			encoding: "utf8",
-			env: {...process.env, FABRIKA_SKIP_INFER: "1"},
+			env: { ...process.env, FABRIKA_SKIP_INFER: "1" },
 			stdio: ["ignore", "pipe", "pipe"],
 		});
-		return {code: 0, stdout, stderr: ""};
+		return { code: 0, stdout, stderr: "" };
 	} catch (err) {
-		const failure = err as {status?: number; stdout?: string; stderr?: string};
+		const failure = err as { status?: number; stdout?: string; stderr?: string };
 		return {
 			code: failure.status ?? -1,
 			stdout: failure.stdout ?? "",

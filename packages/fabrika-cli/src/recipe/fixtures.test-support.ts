@@ -4,11 +4,11 @@
  * The PR shape itself is `ship/fixtures.test-support.ts`'s — the §CP clearance is that group's verb
  * relayed, so a second PR fixture here would let the two disagree about what the platform returns.
  */
-import type {HttpReply} from "../fakes.test-support.ts";
-import {okOut} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {coderTemplateText} from "../lane/fixtures.test-support.ts";
-import {WAIT_BUDGET} from "../wait-budget.ts";
+import type { HttpReply } from "../fakes.test-support.ts";
+import { okOut } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { coderTemplateText } from "../lane/fixtures.test-support.ts";
+import { WAIT_BUDGET } from "../wait-budget.ts";
 
 export const LANES_ROOT = ".fabrika/lanes";
 
@@ -76,7 +76,7 @@ export const PARKED_AT_QUEUE_STALL = eventLog(
 	"WIP",
 	"DONE",
 	"PASS",
-	...Array.from({length: WAIT_BUDGET + 2}, () => "WIP"),
+	...Array.from({ length: WAIT_BUDGET + 2 }, () => "WIP"),
 );
 
 /** queued → blocked, the bare park no fixed fix keys on. */
@@ -115,9 +115,9 @@ export const PARKED_ON_SPAWN = parkedBlockedOn("spawn-dead");
  * history `UNBLOCKED` walks back into.
  */
 export const PARKED_ON_ROUTED_UI = [
-	{task: "issue", event: "ISSUE.WIP", at: "2026-08-16T00:00:00.000Z", classes: ["ui"]},
-	{task: "issue", event: "ISSUE.DONE", at: "2026-08-16T00:01:00.000Z"},
-	{task: "issue", event: "ISSUE.PASS", at: "2026-08-16T00:02:00.000Z"},
+	{ task: "issue", event: "ISSUE.WIP", at: "2026-08-16T00:00:00.000Z", classes: ["ui"] },
+	{ task: "issue", event: "ISSUE.DONE", at: "2026-08-16T00:01:00.000Z" },
+	{ task: "issue", event: "ISSUE.PASS", at: "2026-08-16T00:02:00.000Z" },
 	{
 		task: "issue",
 		event: "ISSUE.BLOCKED",
@@ -137,9 +137,9 @@ export const AXIS_ISSUE = 9615;
  * render.
  */
 export const PARKED_ON_RENDER_AXIS = [
-	{task: "issue", event: "ISSUE.WIP", at: "2026-08-16T00:00:00.000Z", classes: ["ui"]},
-	{task: "issue", event: "ISSUE.DONE", at: "2026-08-16T00:01:00.000Z"},
-	{task: "issue", event: "ISSUE.PASS", at: "2026-08-16T00:02:00.000Z"},
+	{ task: "issue", event: "ISSUE.WIP", at: "2026-08-16T00:00:00.000Z", classes: ["ui"] },
+	{ task: "issue", event: "ISSUE.DONE", at: "2026-08-16T00:01:00.000Z" },
+	{ task: "issue", event: "ISSUE.PASS", at: "2026-08-16T00:02:00.000Z" },
 	{
 		task: "issue",
 		event: "ISSUE.BLOCKED",
@@ -157,7 +157,7 @@ export const PARKED_ON_RENDER_AXIS = [
  */
 export const parkedOnRuling = (rulingIssue: number, at: string): string =>
 	eventLog("WIP") +
-	`${JSON.stringify({task: "issue", event: "ISSUE.BLOCKED", at, cause: "ruling-owed", rulingIssue})}\n`;
+	`${JSON.stringify({ task: "issue", event: "ISSUE.BLOCKED", at, cause: "ruling-owed", rulingIssue })}\n`;
 
 /** The step {@link PARKED_ON_FOUNDER_ACT} waits on — the lane-9281 shape, a command no agent runs. */
 export const FOUNDER_ACT = "node packages/preview-seed/src/bin.ts rotate-logins";
@@ -209,7 +209,7 @@ export const branchList = (...names: ReadonlyArray<string>): ExecResult => okOut
 
 /** `git worktree list --porcelain`'s answer, as blocks of `worktree`/`HEAD`/`branch` lines. */
 export const worktreeList = (
-	...held: ReadonlyArray<{readonly path: string; readonly branch: string}>
+	...held: ReadonlyArray<{ readonly path: string; readonly branch: string }>
 ): ExecResult =>
 	okOut(
 		held
@@ -224,7 +224,7 @@ export const worktreeList = (
  * the queue-moved recipe's own success case turns on — a landed PR is closed.
  */
 export const closingPullsIn = (
-	...rows: ReadonlyArray<{readonly number: number; readonly state: string}>
+	...rows: ReadonlyArray<{ readonly number: number; readonly state: string }>
 ): ExecResult =>
 	okOut(
 		JSON.stringify({
@@ -232,7 +232,7 @@ export const closingPullsIn = (
 				repository: {
 					issue: {
 						closedByPullRequestsReferences: {
-							pageInfo: {hasNextPage: false, endCursor: null},
+							pageInfo: { hasNextPage: false, endCursor: null },
 							nodes: rows.map((row) => ({
 								number: row.number,
 								url: `https://example.test/pull/${row.number}`,
@@ -247,11 +247,13 @@ export const closingPullsIn = (
 
 /** The same edge with every node open — what every caller but the queue-stall row nominates from. */
 export const closingPulls = (...numbers: ReadonlyArray<number>): ExecResult =>
-	closingPullsIn(...numbers.map((number) => ({number, state: "OPEN"})));
+	closingPullsIn(...numbers.map((number) => ({ number, state: "OPEN" })));
 
 /** The search index's nomination envelope — candidate numbers, never a proof (`searchOpenPulls`). */
 export const nominatedPulls = (...numbers: ReadonlyArray<number>): ExecResult =>
-	okOut(JSON.stringify({total_count: numbers.length, items: numbers.map((number) => ({number}))}));
+	okOut(
+		JSON.stringify({ total_count: numbers.length, items: numbers.map((number) => ({ number })) }),
+	);
 
 export interface RunShape {
 	readonly id: number;
@@ -272,7 +274,7 @@ const runBody = (shape: RunShape): Record<string, unknown> => ({
 /** The Actions list endpoint's page — rows under `workflow_runs`, never a bare array. */
 export const runsAtHead = (...shapes: ReadonlyArray<RunShape>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify({total_count: shapes.length, workflow_runs: shapes.map(runBody)}),
+	body: JSON.stringify({ total_count: shapes.length, workflow_runs: shapes.map(runBody) }),
 });
 
 /** One run, re-read. */
@@ -284,7 +286,7 @@ export const oneRun = (shape: RunShape): HttpReply => ({
 /** A served refusal — the status is the fact, and the message is what GitHub prints beside it. */
 export const httpError = (status: number, message = "refused"): HttpReply => ({
 	status,
-	body: JSON.stringify({message}),
+	body: JSON.stringify({ message }),
 });
 
 /** A `governance` verdict comment body at `sha`. */

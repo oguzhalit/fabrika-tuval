@@ -19,12 +19,12 @@
  * readers gave before the content field existed — which is what makes the git read non-regressive
  * rather than a new way to wedge a lane.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {PullRecord} from "../io/pulls.ts";
-import {bindToContent} from "../wire/verdict-marker.ts";
-import {contentDigestAt} from "./content-binding.ts";
-import {bindHead} from "./head.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { PullRecord } from "../io/pulls.ts";
+import { bindToContent } from "../wire/verdict-marker.ts";
+import { contentDigestAt } from "./content-binding.ts";
+import { bindHead } from "./head.ts";
 
 /** The two bound fields of a verdict claim — a {@link import("../wire/verdict-marker.ts").VerdictMarker} satisfies it. */
 export interface ContentClaim {
@@ -60,13 +60,13 @@ export const headContentFor = (
 ): Effect.Effect<HeadContent, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		if (!claims.some((claim) => needsHeadDigest(claim, head))) {
-			return {digest: null, diagnostics: []};
+			return { digest: null, diagnostics: [] };
 		}
 		const bound = yield* bindHead(verb, repo, pr, pull, asked);
 		const digest =
 			bound._tag === "Bound" ? yield* contentDigestAt(bound.head.mergeBase, bound.head.sha) : null;
 		return digest !== null && digest._tag === "Ok"
-			? {digest: digest.value, diagnostics: []}
+			? { digest: digest.value, diagnostics: [] }
 			: {
 					digest: null,
 					diagnostics: [

@@ -124,7 +124,7 @@ export const parseIndex = (text: string): ParsedIndex => {
 
 	const close = () => {
 		if (headingLine === -1 && tailLine === null) return;
-		sections.push({heading, headingLine, rows: current, tailLine});
+		sections.push({ heading, headingLine, rows: current, tailLine });
 	};
 
 	for (const [at, line] of lines.entries()) {
@@ -162,7 +162,7 @@ export const parseIndex = (text: string): ParsedIndex => {
 	}
 	close();
 
-	return {sections, rows, hasTable: sections.some(sectionHasTable)};
+	return { sections, rows, hasTable: sections.some(sectionHasTable) };
 };
 
 /** Every section that carries a table, in document order — the set `--section` may name. */

@@ -17,11 +17,11 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10135
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {TableSettings} from "../config/keys/table.ts";
-import type {Api} from "../io/gh-api.ts";
-import type {Shell} from "../io/git.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { TableSettings } from "../config/keys/table.ts";
+import type { Api } from "../io/gh-api.ts";
+import type { Shell } from "../io/git.ts";
 import {
 	type ProjectsAnswer,
 	readBoard,
@@ -29,9 +29,9 @@ import {
 	readRepository,
 	withProjects,
 } from "../io/projects.ts";
-import {excuseText, failedRead, type Known, readAdoption} from "./adoption.ts";
-import {type BetOrder, betOrder} from "./bets.ts";
-import {defaultTitle, FIELD} from "./shape.ts";
+import { excuseText, failedRead, type Known, readAdoption } from "./adoption.ts";
+import { type BetOrder, betOrder } from "./bets.ts";
+import { defaultTitle, FIELD } from "./shape.ts";
 
 /** Which project a bet order came from, as `owner#number`. */
 export interface BetSource {
@@ -41,17 +41,17 @@ export interface BetSource {
 
 export type BetsRead =
 	/** The repository has no table project; `note` says why, for the caller's stderr. */
-	| {readonly _tag: "NoTable"; readonly note: string}
-	| {readonly _tag: "Read"; readonly source: BetSource; readonly order: BetOrder}
+	| { readonly _tag: "NoTable"; readonly note: string }
+	| { readonly _tag: "Read"; readonly source: BetSource; readonly order: BetOrder }
 	/** The table could not be read. UNKNOWN — never read as "no bets". */
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 interface Located {
 	readonly id: string;
 	readonly source: BetSource;
 }
 
-const failed = <A>(reason: string): ProjectsAnswer<A> => ({_tag: "Failed", reason});
+const failed = <A>(reason: string): ProjectsAnswer<A> => ({ _tag: "Failed", reason });
 
 const locate = (
 	token: string,
@@ -69,14 +69,14 @@ const locate = (
 				? failed<Located | null>(
 						`\`table.project\` names project ${wanted} under ${owner}, and ${owner} has no such project`,
 					)
-				: {_tag: "Ok", value: {id: read.value.id, source: {owner, number: wanted}}};
+				: { _tag: "Ok", value: { id: read.value.id, source: { owner, number: wanted } } };
 		}
 		const node = yield* readRepository(token, repo);
 		if (node._tag !== "Ok") return node;
 		const title = defaultTitle(repo);
 		const titled = node.value.linkedProjects.filter((ref) => ref.title === title && !ref.closed);
 		const [only, ...more] = titled;
-		if (only === undefined) return {_tag: "Ok", value: null};
+		if (only === undefined) return { _tag: "Ok", value: null };
 		if (more.length > 0) {
 			return failed<Located | null>(
 				`${titled.length} open projects linked to ${repo} are titled "${title}" (${titled.map((ref) => `#${ref.number}`).join(", ")}) — set \`table.project.number\` to the one that is the table`,
@@ -84,7 +84,7 @@ const locate = (
 		}
 		return {
 			_tag: "Ok",
-			value: {id: only.id, source: {owner: node.value.owner.login, number: only.number}},
+			value: { id: only.id, source: { owner: node.value.owner.login, number: only.number } },
 		};
 	});
 
@@ -96,8 +96,8 @@ export type TableReader<A> = (
 ) => Api<ProjectsAnswer<A>>;
 
 export type Found<A> =
-	| {readonly _tag: "None"}
-	| {readonly _tag: "Table"; readonly source: BetSource; readonly value: A};
+	| { readonly _tag: "None" }
+	| { readonly _tag: "Table"; readonly source: BetSource; readonly value: A };
 
 const readTable = <A>(
 	repo: string,
@@ -108,20 +108,20 @@ const readTable = <A>(
 		Effect.gen(function* () {
 			const located = yield* locate(token, repo, settings);
 			if (located._tag !== "Ok") return located;
-			if (located.value === null) return {_tag: "Ok", value: {_tag: "None"}};
+			if (located.value === null) return { _tag: "Ok", value: { _tag: "None" } };
 			const value = yield* read(token, located.value.id, settings);
 			return value._tag === "Ok"
-				? {_tag: "Ok", value: {_tag: "Table", source: located.value.source, value: value.value}}
+				? { _tag: "Ok", value: { _tag: "Table", source: located.value.source, value: value.value } }
 				: value;
 		}),
 	);
 
 export type TableRead<A> =
 	/** The repository has no table project; `note` says why, for the caller's stderr. */
-	| {readonly _tag: "NoTable"; readonly note: string}
-	| {readonly _tag: "Read"; readonly source: BetSource; readonly value: A}
+	| { readonly _tag: "NoTable"; readonly note: string }
+	| { readonly _tag: "Read"; readonly source: BetSource; readonly value: A }
 	/** The table could not be read. UNKNOWN — never read as an empty table. */
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /** What one table read means for its reader, given whether the repository adopted a table. */
 export const tableReadOf = <A>(
@@ -134,7 +134,7 @@ export const tableReadOf = <A>(
 			adoption,
 			found._tag === "MissingScope"
 				? found
-				: {_tag: "Failed", reason: `the table project: ${found.reason}`},
+				: { _tag: "Failed", reason: `the table project: ${found.reason}` },
 		);
 		return failed._tag === "Unknown"
 			? failed
@@ -148,7 +148,7 @@ export const tableReadOf = <A>(
 				_tag: "NoTable",
 				note: `no table project — none is configured, and none titled "${defaultTitle(repo)}" is linked to ${repo}`,
 			}
-		: {_tag: "Read", source: found.value.source, value: found.value.value};
+		: { _tag: "Read", source: found.value.source, value: found.value.value };
 };
 
 /**
@@ -188,9 +188,9 @@ export const readBets = (
 					tableDay: FIELD.tableDay,
 				}),
 				(board): ProjectsAnswer<BetOrder> =>
-					board._tag === "Ok" ? {_tag: "Ok", value: betOrder(board.value, settings, now)} : board,
+					board._tag === "Ok" ? { _tag: "Ok", value: betOrder(board.value, settings, now) } : board,
 			),
 		),
 		(read): BetsRead =>
-			read._tag === "Read" ? {_tag: "Read", source: read.source, order: read.value} : read,
+			read._tag === "Read" ? { _tag: "Read", source: read.source, order: read.value } : read,
 	);

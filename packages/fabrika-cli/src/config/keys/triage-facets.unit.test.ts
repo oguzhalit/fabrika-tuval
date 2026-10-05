@@ -1,18 +1,18 @@
-import {describe, expect, it} from "vitest";
-import {AUDIENCES, FACET_VOCABULARY, PRIORITIES, TYPES} from "../../triage/facets.ts";
-import {loadConfig, resolve} from "../load.ts";
-import {TRIAGE_FACETS, triageFacetsKey} from "./triage-facets.ts";
+import { describe, expect, it } from "vitest";
+import { AUDIENCES, FACET_VOCABULARY, PRIORITIES, TYPES } from "../../triage/facets.ts";
+import { loadConfig, resolve } from "../load.ts";
+import { TRIAGE_FACETS, triageFacetsKey } from "./triage-facets.ts";
 
 const load = (config: unknown) =>
-	loadConfig({_tag: "Text", text: JSON.stringify({[TRIAGE_FACETS]: config})});
+	loadConfig({ _tag: "Text", text: JSON.stringify({ [TRIAGE_FACETS]: config }) });
 
 /** The lanes the conforming table's repo declares — a fixture, since none is shipped. */
 const LANES = ["wayfinder:backlog", "axis:pipeline-hardening"];
 
 /** The conforming table, as a config would write it. Every violating case below is one edit off it. */
 const CONFORMING = [
-	{name: "type", owns: "^type:", values: TYPES.map((type) => `type:${type}`)},
-	{name: "priority", owns: "^p\\d+$", values: [...PRIORITIES]},
+	{ name: "type", owns: "^type:", values: TYPES.map((type) => `type:${type}`) },
+	{ name: "priority", owns: "^p\\d+$", values: [...PRIORITIES] },
 	{
 		name: "status",
 		ownsLabels: ["status:needs-triage", "status:triaged", "status:needs-info"],
@@ -23,18 +23,18 @@ const CONFORMING = [
 		owns: "^ready-for:",
 		values: AUDIENCES.map((audience) => `ready-for:${audience}`),
 	},
-	{name: "lane", ownsLabels: [...LANES], values: [...LANES]},
+	{ name: "lane", ownsLabels: [...LANES], values: [...LANES] },
 ];
 
 const edited = (name: string, over: Record<string, unknown>): ReadonlyArray<unknown> =>
-	CONFORMING.map((facet) => (facet.name === name ? {...facet, ...over} : facet));
+	CONFORMING.map((facet) => (facet.name === name ? { ...facet, ...over } : facet));
 
 describe("the shipped default", () => {
 	it("is the vocabulary `triage/facets.ts` carries, and it conforms", () => {
 		expect(triageFacetsKey.shippedDefault).toBe(FACET_VOCABULARY);
-		expect(loadConfig({_tag: "Absent"})).toEqual({
+		expect(loadConfig({ _tag: "Absent" })).toEqual({
 			_tag: "Config",
-			documents: {tracked: {_tag: "Absent"}, local: {_tag: "Absent"}},
+			documents: { tracked: { _tag: "Absent" }, local: { _tag: "Absent" } },
 		});
 	});
 });
@@ -46,7 +46,7 @@ describe("a declared table", () => {
 	});
 
 	it("refuses the whole load when a priority value its pattern does not own is declared", () => {
-		const refused = load(edited("priority", {values: ["p0", "p1", "urgent"]}));
+		const refused = load(edited("priority", { values: ["p0", "p1", "urgent"] }));
 		expect(refused._tag).toBe("Refused");
 		if (refused._tag !== "Refused") return;
 		expect(refused.reason).toContain("facet `priority`");
@@ -62,7 +62,7 @@ describe("decoding", () => {
 	};
 
 	it("refuses a non-array", () => {
-		expect(malformed({name: "type"})).toContain("is not an array");
+		expect(malformed({ name: "type" })).toContain("is not an array");
 	});
 
 	it("refuses an empty table, which would hand every facet zero delete authority", () => {
@@ -70,27 +70,27 @@ describe("decoding", () => {
 	});
 
 	it("refuses a facet with no name", () => {
-		expect(malformed([{owns: "^type:", values: ["type:bug"]}])).toContain("declares no `name`");
+		expect(malformed([{ owns: "^type:", values: ["type:bug"] }])).toContain("declares no `name`");
 	});
 
 	it("refuses a facet with no values", () => {
-		expect(malformed([{name: "type", owns: "^type:", values: []}])).toContain("`values`");
+		expect(malformed([{ name: "type", owns: "^type:", values: [] }])).toContain("`values`");
 	});
 
 	it("refuses a facet declaring neither ownership form", () => {
-		expect(malformed([{name: "type", values: ["type:bug"]}])).toContain(
+		expect(malformed([{ name: "type", values: ["type:bug"] }])).toContain(
 			"declares neither `owns` nor `ownsLabels`",
 		);
 	});
 
 	it("refuses a facet declaring both ownership forms", () => {
 		expect(
-			malformed([{name: "type", owns: "^type:", ownsLabels: ["type:bug"], values: ["type:bug"]}]),
+			malformed([{ name: "type", owns: "^type:", ownsLabels: ["type:bug"], values: ["type:bug"] }]),
 		).toContain("declares both");
 	});
 
 	it("refuses a pattern that is not a usable regular expression", () => {
-		expect(malformed([{name: "type", owns: "^type:(", values: ["type:bug"]}])).toContain(
+		expect(malformed([{ name: "type", owns: "^type:(", values: ["type:bug"] }])).toContain(
 			"not a usable regular expression",
 		);
 	});

@@ -7,12 +7,12 @@
  * Two defect classes are deliberately not computed here — machine-local paths and dead internal links
  * — because a merge-blocking gate already decides each, and a second answer could contradict it.
  */
-import {Effect, Path, Result} from "effect";
-import {idFromFile, isLive, statusOf} from "../adr/records.ts";
-import {corpusOverride, decisionsDirOr} from "../config/paths.ts";
-import {readDir, readFile} from "../io/fs.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import { Effect, Path, Result } from "effect";
+import { idFromFile, isLive, statusOf } from "../adr/records.ts";
+import { corpusOverride, decisionsDirOr } from "../config/paths.ts";
+import { readDir, readFile } from "../io/fs.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
 import {
 	type CitationScope,
 	type CitationState,
@@ -60,11 +60,11 @@ const resolveCitations = (
 ): GlossaryEffect<CitationScope> =>
 	Effect.gen(function* () {
 		const states = new Map<string, CitationState>();
-		const resolved = (): CitationScope => ({_tag: "Resolved", dir, states});
+		const resolved = (): CitationScope => ({ _tag: "Resolved", dir, states });
 
 		const listing = yield* Effect.result(readDir(decisionsPath));
 		if (Result.isFailure(listing)) {
-			return {_tag: "Unverified", detail: `cannot read ${dir}: ${listing.failure.reason}`};
+			return { _tag: "Unverified", detail: `cannot read ${dir}: ${listing.failure.reason}` };
 		}
 
 		const byId = new Map<string, string>();
@@ -75,7 +75,7 @@ const resolveCitations = (
 		for (const id of wanted) {
 			const name = byId.get(id);
 			if (name === undefined) {
-				states.set(id, {_tag: "Dead"});
+				states.set(id, { _tag: "Dead" });
 				continue;
 			}
 			const text = yield* Effect.result(readFile(`${decisionsPath}/${name}`));
@@ -86,7 +86,7 @@ const resolveCitations = (
 				};
 			}
 			const status = statusOf(text.success) ?? "";
-			states.set(id, isLive(status) ? {_tag: "Live"} : {_tag: "Superseded", status});
+			states.set(id, isLive(status) ? { _tag: "Live" } : { _tag: "Superseded", status });
 		}
 		return resolved();
 	});
@@ -104,7 +104,7 @@ const citationScopeLine = (citations: CitationScope, wanted: number): string => 
 
 export const runCheck = (options: CheckOptions): GlossaryEffect<VerbOutcome> =>
 	Effect.gen(function* () {
-		const selected = selectRegisters(VERB, options.register, {allowed: true, refusal: ""});
+		const selected = selectRegisters(VERB, options.register, { allowed: true, refusal: "" });
 		if (selected._tag === "Refused") return selected.outcome;
 
 		const dir = yield* resolveDir(VERB, options.cwd, options.dir);
@@ -131,7 +131,7 @@ export const runCheck = (options: CheckOptions): GlossaryEffect<VerbOutcome> =>
 					scope,
 				);
 			}
-			present.push({register: file.name, rows});
+			present.push({ register: file.name, rows });
 			scope.push(`${VERB}: ${file.display} — ${rows.length} row(s).`);
 		}
 
@@ -154,7 +154,7 @@ export const runCheck = (options: CheckOptions): GlossaryEffect<VerbOutcome> =>
 		}
 
 		const wanted = new Set(
-			present.flatMap(({rows}) => rows.flatMap((row) => [...citationsOf(row)])),
+			present.flatMap(({ rows }) => rows.flatMap((row) => [...citationsOf(row)])),
 		);
 		const corpus = yield* decisionsDirOr(
 			VERB,
@@ -167,9 +167,9 @@ export const runCheck = (options: CheckOptions): GlossaryEffect<VerbOutcome> =>
 		// answer: with nothing cited there is nothing a corpus could settle.
 		const citations: CitationScope =
 			wanted.size === 0
-				? {_tag: "Empty"}
+				? { _tag: "Empty" }
 				: corpus._tag === "Declined"
-					? {_tag: "Unverified", detail: corpus.message}
+					? { _tag: "Unverified", detail: corpus.message }
 					: yield* resolveCitations(
 							corpus.dir,
 							pathService.resolve(dir.value.root, corpus.dir.replace(/\/+$/, "")),
@@ -177,7 +177,7 @@ export const runCheck = (options: CheckOptions): GlossaryEffect<VerbOutcome> =>
 						);
 		scope.push(citationScopeLine(citations, wanted.size));
 
-		const findings = findDefects({registers: present, citations});
+		const findings = findDefects({ registers: present, citations });
 		const scannedRows = present.reduce((total, entry) => total + entry.rows.length, 0);
 		const outcome = findings.length === 0 ? "clean" : "defects";
 		const reason =

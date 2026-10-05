@@ -10,8 +10,8 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9852
  */
 
-import type {KeyGroup} from "./key-group.ts";
-import {type Load, resolve} from "./load.ts";
+import type { KeyGroup } from "./key-group.ts";
+import { type Load, resolve } from "./load.ts";
 
 /** The notice a verb prints when the config it read still declares a retired author key. */
 export const deprecatedAuthorNotice = (verb: string, key: string, where: string): string =>

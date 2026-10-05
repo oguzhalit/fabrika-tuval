@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	criterionIndex,
 	emit,
@@ -10,7 +10,7 @@ import {
 	rulingUrl,
 	scopeDigest,
 } from "./decision-ruling.ts";
-import {markerTime} from "./grill-marker.ts";
+import { markerTime } from "./grill-marker.ts";
 
 const URL = "https://github.com/o/r/issues/8#issuecomment-3512345";
 const MARKER = `decision-ruled: #8 @ 4d90e1bb27ac · ruling:${URL} · 2026-08-20T05:11:02Z\n`;
@@ -27,9 +27,9 @@ describe("read", () => {
 	it("reads the marker a founder posts, and the bold form a skill writes", () => {
 		expect(read(MARKER)).toMatchObject({
 			_tag: "Found",
-			value: {issue: 8, digest: "4d90e1bb27ac", ruling: URL, at: "2026-08-20T05:11:02Z"},
+			value: { issue: 8, digest: "4d90e1bb27ac", ruling: URL, at: "2026-08-20T05:11:02Z" },
 		});
-		expect(read(`**${MARKER.trim()}**\n`)).toMatchObject({_tag: "Found", value: {issue: 8}});
+		expect(read(`**${MARKER.trim()}**\n`)).toMatchObject({ _tag: "Found", value: { issue: 8 } });
 	});
 
 	it("answers Malformed, never Absent, for each field that can drift", () => {
@@ -44,14 +44,14 @@ describe("read", () => {
 describe("emit", () => {
 	it("round-trips through read", () => {
 		expect(emit(ruling())).toBe(MARKER);
-		expect(read(emit(ruling()))).toMatchObject({_tag: "Found", value: {ruling: URL}});
+		expect(read(emit(ruling()))).toMatchObject({ _tag: "Found", value: { ruling: URL } });
 	});
 
 	it("round-trips the superseded criterion a ruling names", () => {
 		expect(emit(ruling(3))).toBe(
 			`decision-ruled: #8 @ 4d90e1bb27ac · ruling:${URL} · supersedes:3 · 2026-08-20T05:11:02Z\n`,
 		);
-		expect(read(emit(ruling(3)))).toMatchObject({_tag: "Found", value: {supersedes: 3}});
+		expect(read(emit(ruling(3)))).toMatchObject({ _tag: "Found", value: { supersedes: 3 } });
 	});
 });
 
@@ -62,7 +62,7 @@ describe("emit", () => {
  */
 describe("the optional superseded-criterion field", () => {
 	it("reads a marker that names none as superseding nothing", () => {
-		expect(read(MARKER)).toMatchObject({_tag: "Found", value: {supersedes: null}});
+		expect(read(MARKER)).toMatchObject({ _tag: "Found", value: { supersedes: null } });
 	});
 
 	it("reds a position that is not a 1-based criterion row", () => {
@@ -92,7 +92,7 @@ describe("parseFields", () => {
 	it("composes from `wire read`'s own output, in any order", () => {
 		expect(
 			parseFields(`at\t2026-08-20T05:11:02Z\nruling\t${URL}\ndigest\t4d90e1bb27ac\nissue\t#8\n`),
-		).toMatchObject({_tag: "Fields", ruling: {issue: 8}});
+		).toMatchObject({ _tag: "Fields", ruling: { issue: 8 } });
 	});
 
 	it("refuses rather than defaults on every unusable field", () => {
@@ -110,7 +110,7 @@ describe("parseFields", () => {
 		const parsed = parseFields(
 			"issue: 8\ndigest: 4d90e1bb27ac\nruling: https://example.com\nat: 2026-08-20T05:11:02Z\n",
 		);
-		expect(parsed).toMatchObject({_tag: "Unusable"});
+		expect(parsed).toMatchObject({ _tag: "Unusable" });
 		expect(parsed._tag === "Unusable" && parsed.reason).toContain(RULING_GRAMMAR);
 	});
 });

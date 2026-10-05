@@ -2,10 +2,10 @@
  * `lane integrate` — the merged tree's dependencies are reconciled before it is judged, and the
  * assembly branch keeps nothing that did not pass.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeFs, fakeShell, okOut, once} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeFs, fakeShell, okOut, once } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
 import {
 	APPEND_UNKNOWN,
 	ASSEMBLY_DIRTY,
@@ -17,9 +17,9 @@ import {
 	PROOF_ABSENT,
 	RECONCILE_REFUSED,
 } from "./codes.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
-import {runIntegrate} from "./integrate-verb.ts";
-import {replayBranchName} from "./replay.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
+import { runIntegrate } from "./integrate-verb.ts";
+import { replayBranchName } from "./replay.ts";
 
 const ROOT = ".fabrika/lanes";
 const EPIC = 7140;
@@ -35,8 +35,8 @@ const GRADED = "eeee555";
 const INSTALL = "pnpm install --frozen-lockfile";
 const TYPECHECK = "pnpm typecheck --force";
 const CONFIG = JSON.stringify({
-	dependencyReconciler: {command: ["pnpm", "install", "--frozen-lockfile"]},
-	codeValidators: [{command: ["pnpm", "typecheck", "--force"]}],
+	dependencyReconciler: { command: ["pnpm", "install", "--frozen-lockfile"] },
+	codeValidators: [{ command: ["pnpm", "typecheck", "--force"] }],
 });
 
 const LANE_FILES = {
@@ -90,9 +90,9 @@ const REGISTRY = "flags.ts";
 const REPLAY_BRANCH = replayBranchName(CHILD, BEFORE);
 
 const REPLAY_CONFIG = JSON.stringify({
-	dependencyReconciler: {command: ["pnpm", "install", "--frozen-lockfile"]},
-	codeValidators: [{command: ["pnpm", "typecheck", "--force"]}],
-	assemblyReplay: {onCollision: "on"},
+	dependencyReconciler: { command: ["pnpm", "install", "--frozen-lockfile"] },
+	codeValidators: [{ command: ["pnpm", "typecheck", "--force"] }],
+	assemblyReplay: { onCollision: "on" },
 });
 
 /** The collision the replay exists for: an append each, where the base had nothing. */
@@ -175,10 +175,10 @@ const run = (
 	const shell = fakeShell(script, undefined, unstartable);
 	return Effect.runPromise(
 		Effect.provide(
-			runIntegrate({epic: EPIC, child: CHILD, root: ROOT, lane: String(EPIC)}),
-			Layer.merge(shell.layer, fakeFs({files}).layer),
+			runIntegrate({ epic: EPIC, child: CHILD, root: ROOT, lane: String(EPIC) }),
+			Layer.merge(shell.layer, fakeFs({ files }).layer),
 		),
-	).then((outcome) => ({outcome, calls: shell.calls, cwds: shell.cwds}));
+	).then((outcome) => ({ outcome, calls: shell.calls, cwds: shell.cwds }));
 };
 
 /** The command lines that judge or change the merged tree, in the order they ran. */
@@ -193,7 +193,7 @@ const staged = (calls: ReadonlyArray<string>) =>
 
 describe("runIntegrate", () => {
 	it("merges, reconciles from the merged lockfile, then validates — in that order", async () => {
-		const {outcome, calls, cwds} = await run([
+		const { outcome, calls, cwds } = await run([
 			...upToMerge(),
 			[MERGE, okOut("")],
 			[RECONCILE, okOut("")],
@@ -211,7 +211,7 @@ describe("runIntegrate", () => {
 	});
 
 	it("never pushes and never writes the lane's log — the answer is a fact about a tree", async () => {
-		const {calls} = await run([
+		const { calls } = await run([
 			...upToMerge(),
 			[MERGE, okOut("")],
 			[RECONCILE, okOut("")],
@@ -224,7 +224,7 @@ describe("runIntegrate", () => {
 	});
 
 	it("resets the merge and runs no validator when the merged lockfile does not install", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			...upToMerge(),
 			[MERGE, okOut("")],
 			[RECONCILE, errOut("ERR_PNPM_OUTDATED_LOCKFILE")],
@@ -242,7 +242,7 @@ describe("runIntegrate", () => {
 	});
 
 	it("refuses a reconciliation that could not be executed at all", async () => {
-		const {outcome, calls} = await run(
+		const { outcome, calls } = await run(
 			[...upToMerge(), [MERGE, okOut("")], [RESET, okOut("")], [HEAD, okOut(BEFORE)]],
 			LANE_FILES,
 			[RECONCILE],
@@ -254,7 +254,7 @@ describe("runIntegrate", () => {
 	});
 
 	it("refuses an install that repaired the lockfile rather than honouring it", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			...upToMerge(),
 			[MERGE, okOut("")],
 			[RECONCILE, okOut("")],
@@ -270,7 +270,7 @@ describe("runIntegrate", () => {
 	});
 
 	it("merges nothing into a seat that was already dirty — that dirt is not the child's", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, SEATED],
 			[BRANCHES, HAS_CHILD],
 			[CHILD_REV, okOut(GRADED)],
@@ -290,7 +290,7 @@ describe("runIntegrate", () => {
 	});
 
 	it("is UNKNOWN, never a pass, when the seat's cleanliness cannot be read before the merge", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, SEATED],
 			[BRANCHES, HAS_CHILD],
 			[HEAD, okOut(BEFORE)],
@@ -303,7 +303,7 @@ describe("runIntegrate", () => {
 	});
 
 	it("proves the seat clean before merging, so the post-install probe diffs against an empty baseline", async () => {
-		const {calls} = await run([
+		const { calls } = await run([
 			...upToMerge(),
 			[MERGE, okOut("")],
 			[RECONCILE, okOut("")],
@@ -320,7 +320,7 @@ describe("runIntegrate", () => {
 	});
 
 	it("aborts a conflicting merge and reconciles nothing — there is no merged tree to judge", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			...upToMerge(),
 			[MERGE, errOut("CONFLICT (content): Merge conflict in packages/app/package.json")],
 			[ABORT, okOut("")],
@@ -340,7 +340,7 @@ describe("runIntegrate", () => {
 	});
 
 	it("is UNKNOWN on a collision whose assemblyReplay cannot be read — never the clean refusal", async () => {
-		const {outcome, calls} = await run(
+		const { outcome, calls } = await run(
 			[
 				...upToMerge(),
 				[MERGE, errOut("CONFLICT (content): Merge conflict in flags.ts")],
@@ -349,7 +349,9 @@ describe("runIntegrate", () => {
 			],
 			{
 				...LANE_FILES,
-				[`${SEAT}/.fabrika.jsonc`]: JSON.stringify({assemblyReplay: {onCollision: "sometimes"}}),
+				[`${SEAT}/.fabrika.jsonc`]: JSON.stringify({
+					assemblyReplay: { onCollision: "sometimes" },
+				}),
 			},
 		);
 
@@ -358,7 +360,7 @@ describe("runIntegrate", () => {
 	});
 
 	it("resets the branch on a red validator — the semantic collision, after a good install", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			...upToMerge(),
 			[MERGE, okOut("")],
 			[RECONCILE, okOut("")],
@@ -379,7 +381,7 @@ describe("runIntegrate", () => {
 	});
 
 	it("is UNKNOWN, never a FAIL, when the reset leaves the merge on the branch", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			...upToMerge(),
 			[MERGE, okOut("")],
 			[RECONCILE, okOut("")],
@@ -394,7 +396,7 @@ describe("runIntegrate", () => {
 	});
 
 	it("refuses UNKNOWN when the merged tree's repo declares no code validator", async () => {
-		const {outcome, calls} = await run(
+		const { outcome, calls } = await run(
 			[
 				...upToMerge(),
 				[MERGE, okOut("")],
@@ -406,7 +408,7 @@ describe("runIntegrate", () => {
 			{
 				...LANE_FILES,
 				[`${SEAT}/.fabrika.jsonc`]: JSON.stringify({
-					dependencyReconciler: {command: ["pnpm", "install", "--frozen-lockfile"]},
+					dependencyReconciler: { command: ["pnpm", "install", "--frozen-lockfile"] },
 					codeValidators: [],
 				}),
 			},
@@ -417,12 +419,12 @@ describe("runIntegrate", () => {
 	});
 
 	it("skips the install in a repo that declares no reconciler, and still validates", async () => {
-		const {outcome, calls} = await run(
+		const { outcome, calls } = await run(
 			[...upToMerge(), [MERGE, okOut("")], [VALIDATE, okOut("")], [HEAD, okOut(AFTER)]],
 			{
 				...LANE_FILES,
 				[`${SEAT}/.fabrika.jsonc`]: JSON.stringify({
-					codeValidators: [{command: ["pnpm", "typecheck", "--force"]}],
+					codeValidators: [{ command: ["pnpm", "typecheck", "--force"] }],
 				}),
 			},
 		);
@@ -434,7 +436,7 @@ describe("runIntegrate", () => {
 
 	describe("with assemblyReplay on", () => {
 		it("replays the collision, records the moved range, and asks for one review round", async () => {
-			const {outcome, calls} = await run(replayScript(), REPLAY_FILES);
+			const { outcome, calls } = await run(replayScript(), REPLAY_FILES);
 
 			expect(outcome.code).toBe(0);
 			const lines = outcome.stdout.trim().split("\n");
@@ -445,7 +447,7 @@ describe("runIntegrate", () => {
 				child: CHILD,
 				replay: REPLAY_BRANCH,
 				onto: BEFORE,
-				range: {from: BEFORE, to: REPLAY},
+				range: { from: BEFORE, to: REPLAY },
 				resolved: [REGISTRY],
 				regenerated: [],
 				commits: 1,
@@ -460,10 +462,10 @@ describe("runIntegrate", () => {
 
 		it("keeps both sides of the conflicted file and stages what it wrote", async () => {
 			const shell = fakeShell(replayScript());
-			const fs = fakeFs({files: REPLAY_FILES});
+			const fs = fakeFs({ files: REPLAY_FILES });
 			await Effect.runPromise(
 				Effect.provide(
-					runIntegrate({epic: EPIC, child: CHILD, root: ROOT, lane: String(EPIC)}),
+					runIntegrate({ epic: EPIC, child: CHILD, root: ROOT, lane: String(EPIC) }),
 					Layer.merge(shell.layer, fs.layer),
 				),
 			);
@@ -475,7 +477,7 @@ describe("runIntegrate", () => {
 		});
 
 		it("restores through the captured head, not ORIG_HEAD, when the replay's validators red", async () => {
-			const {outcome, calls} = await run(
+			const { outcome, calls } = await run(
 				[
 					...replayScript([[VALIDATE, errOut("src/x.ts(3,1): error TS2345")]]),
 					[RESET_TO_HEAD, okOut("")],
@@ -501,7 +503,7 @@ describe("runIntegrate", () => {
 		});
 
 		it("is UNKNOWN, not a red, when the child's branch will not go back", async () => {
-			const {outcome} = await run(
+			const { outcome } = await run(
 				[
 					...replayScript([[VALIDATE, errOut("src/x.ts(3,1): error TS2345")]]),
 					[RESET_TO_HEAD, okOut("")],
@@ -517,7 +519,7 @@ describe("runIntegrate", () => {
 		});
 
 		it("is UNKNOWN, never a FAIL, when that restore leaves the replay on the branch", async () => {
-			const {outcome} = await run(
+			const { outcome } = await run(
 				[
 					...replayScript([[VALIDATE, errOut("error")]]),
 					[RESET_TO_HEAD, errOut("fatal: Unable to write new index file")],
@@ -531,7 +533,7 @@ describe("runIntegrate", () => {
 		});
 
 		it("parks a hunk that is not a plain keep-both, and proves the branch went back", async () => {
-			const {outcome, calls} = await run(
+			const { outcome, calls } = await run(
 				[
 					...upToMerge(),
 					[once(MERGE), errOut(`CONFLICT (content): Merge conflict in ${REGISTRY}`)],
@@ -546,7 +548,7 @@ describe("runIntegrate", () => {
 					[RESET_TO_HEAD, okOut("")],
 					[once(HEAD), okOut(BEFORE)],
 				],
-				{...REPLAY_FILES, [`${SEAT}/${REGISTRY}`]: SEMANTIC_CONFLICT},
+				{ ...REPLAY_FILES, [`${SEAT}/${REGISTRY}`]: SEMANTIC_CONFLICT },
 			);
 
 			expect(outcome.code).toBe(MERGE_CONFLICT);
@@ -590,7 +592,7 @@ describe("runIntegrate", () => {
 			];
 
 			it("regenerates the lockfile, still owes a review round, and still reconciles fail-closed", async () => {
-				const {outcome, calls} = await run(
+				const { outcome, calls } = await run(
 					[
 						...upToRegenerate(),
 						[REGENERATE, okOut("")],
@@ -627,7 +629,7 @@ describe("runIntegrate", () => {
 			});
 
 			it("parks a regenerator that fails, naming the command and the lockfile, and proves the reset", async () => {
-				const {outcome, calls} = await run(
+				const { outcome, calls } = await run(
 					[
 						...upToRegenerate(),
 						[REGENERATE, errOut("ERR_PNPM_NO_MATCHING_VERSION")],
@@ -650,7 +652,7 @@ describe("runIntegrate", () => {
 		});
 
 		it("is UNKNOWN when the pick stops and the unmerged paths cannot be read", async () => {
-			const {outcome, calls} = await run(
+			const { outcome, calls } = await run(
 				[
 					...upToMerge(),
 					[once(MERGE), errOut("CONFLICT")],
@@ -672,7 +674,7 @@ describe("runIntegrate", () => {
 	});
 
 	it("merges nothing when no working tree holds the assembly branch", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, UNSEATED],
 			[BRANCHES, HAS_CHILD],
 		]);
@@ -682,14 +684,14 @@ describe("runIntegrate", () => {
 	});
 
 	it("refuses the main working tree standing on the assembly branch", async () => {
-		const {outcome, calls} = await run([[LIST, CONSCRIPTED]]);
+		const { outcome, calls } = await run([[LIST, CONSCRIPTED]]);
 
 		expect(outcome.code).toBe(PRIMARY_CHECKOUT);
 		expect(calls.some((line) => line.includes(" merge "))).toBe(false);
 	});
 
 	it("refuses a child branch this repository does not carry", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, SEATED],
 			[BRANCHES, okOut(`main\n${BRANCH}\n`)],
 		]);
@@ -699,7 +701,7 @@ describe("runIntegrate", () => {
 	});
 
 	it("merges nothing when the pre-merge head cannot be read — there is nowhere to reset back to", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, SEATED],
 			[BRANCHES, HAS_CHILD],
 			[HEAD, errOut("fatal: ambiguous argument 'HEAD'")],

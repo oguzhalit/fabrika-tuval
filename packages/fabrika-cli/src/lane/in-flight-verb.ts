@@ -10,14 +10,14 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/10232
  */
-import {Effect, FileSystem, Path, Result} from "effect";
-import {parseToken} from "../build/lane.ts";
-import {appendText} from "../io/fs.ts";
-import type {Attempt} from "../io/git.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {isBuildState, type ShellState, shellOf, shellState} from "../wire/lane-brief.ts";
-import {type Instant, instant} from "../wire/lane-record.ts";
-import {lockedRefusal, withLedgerLock} from "./append-lock.ts";
+import { Effect, FileSystem, Path, Result } from "effect";
+import { parseToken } from "../build/lane.ts";
+import { appendText } from "../io/fs.ts";
+import type { Attempt } from "../io/git.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { isBuildState, type ShellState, shellOf, shellState } from "../wire/lane-brief.ts";
+import { type Instant, instant } from "../wire/lane-record.ts";
+import { lockedRefusal, withLedgerLock } from "./append-lock.ts";
 import {
 	APPEND_UNKNOWN,
 	CONCURRENT_WRITE,
@@ -27,15 +27,15 @@ import {
 	NO_SHELL,
 	TASK_UNKNOWN,
 } from "./codes.ts";
-import {foldLog, resolveTask} from "./fold.ts";
-import {encodeInFlight, type InFlightRecord, loadInFlight} from "./in-flight.ts";
-import {loadRefusal, replayRefusal} from "./refusals.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { foldLog, resolveTask } from "./fold.ts";
+import { encodeInFlight, type InFlightRecord, loadInFlight } from "./in-flight.ts";
+import { loadRefusal, replayRefusal } from "./refusals.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 /** The fact a writer composed off the task's folded state, or the refusal saying why it would not. */
 type Composed<F extends InFlightRecord> =
-	| {readonly _tag: "Fact"; readonly fact: F}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Fact"; readonly fact: F }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * Append the fact `compose` builds off the task's folded state, under the ledger lock.
@@ -54,7 +54,7 @@ const appendInFlight = <F extends InFlightRecord>(
 		const fs = yield* FileSystem.FileSystem;
 		const path = yield* Path.Path;
 		return yield* withLedgerLock(
-			{fs, path, dir: path.join(ref.root, ref.lane), verb},
+			{ fs, path, dir: path.join(ref.root, ref.lane), verb },
 			Effect.gen(function* () {
 				const loaded = yield* loadLane(ref);
 				if (loaded._tag !== "Loaded") return loadRefusal(verb, loaded);
@@ -92,7 +92,7 @@ const appendInFlight = <F extends InFlightRecord>(
 				}
 				const composed = compose(resolved.taskId, state, at);
 				if (composed._tag === "Refused") return composed.outcome;
-				const {fact} = composed;
+				const { fact } = composed;
 				const wrote = yield* Effect.result(appendText(standing.path, encodeInFlight(fact)));
 				if (Result.isFailure(wrote)) {
 					return refuse(
@@ -103,7 +103,7 @@ const appendInFlight = <F extends InFlightRecord>(
 				return told(fact);
 			}),
 			{
-				onAbsent: (absentDir) => loadRefusal(verb, {_tag: "Absent", dir: absentDir}),
+				onAbsent: (absentDir) => loadRefusal(verb, { _tag: "Absent", dir: absentDir }),
 				onLocked: (lockDir) => refuse(CONCURRENT_WRITE, lockedRefusal(verb, lockDir)),
 			},
 		);
@@ -123,7 +123,7 @@ export const runDispatched = (
 		DISPATCHED,
 		options,
 		options.task,
-		(task, state, at) => ({_tag: "Fact", fact: {kind: "dispatched", task, state, at} as const}),
+		(task, state, at) => ({ _tag: "Fact", fact: { kind: "dispatched", task, state, at } as const }),
 		(fact) =>
 			answer(
 				JSON.stringify({
@@ -182,7 +182,7 @@ export const runWorking = (
 				isBuildState(state)
 					? {
 							_tag: "Fact",
-							fact: {kind: "working", task, token: options.token, worktree, at} as const,
+							fact: { kind: "working", task, token: options.token, worktree, at } as const,
 						}
 					: {
 							_tag: "Refused",

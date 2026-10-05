@@ -1,8 +1,8 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFs, fakeFs, record} from "../fakes.test-support.ts";
-import {type CheckOptions, runCheck} from "./check-verb.ts";
-import {BAD_SECTIONS, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFs, fakeFs, record } from "../fakes.test-support.ts";
+import { type CheckOptions, runCheck } from "./check-verb.ts";
+import { BAD_SECTIONS, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
 import {
 	DIR,
 	LANGUAGE_NO_ROWS,
@@ -24,10 +24,10 @@ const options: CheckOptions = {
 };
 
 const run = (fs: FakeFs, overrides: Partial<CheckOptions> = {}) =>
-	Effect.runPromise(Effect.provide(runCheck({...options, ...overrides}), fs.layer));
+	Effect.runPromise(Effect.provide(runCheck({ ...options, ...overrides }), fs.layer));
 
 const withDecisions = (files: Record<string, string | null>, names: ReadonlyArray<string>) =>
-	fakeFs({dirs: {[DECISIONS]: [...names]}, files});
+	fakeFs({ dirs: { [DECISIONS]: [...names] }, files });
 
 const corpus = () =>
 	withDecisions(
@@ -53,7 +53,7 @@ describe("runCheck", () => {
 	});
 
 	it("exits 0 on clean, with the pinned reason on stderr", async () => {
-		const out = await run(fakeFs({files: {[TERMS_PATH]: TERMS_CLEAN}}));
+		const out = await run(fakeFs({ files: { [TERMS_PATH]: TERMS_CLEAN } }));
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("clean\n");
 		expect(out.stderr.at(-1)).toBe(
@@ -62,7 +62,7 @@ describe("runCheck", () => {
 	});
 
 	it("exits 0 on bootstrap for an absent register", async () => {
-		const out = await run(fakeFs({files: {}}));
+		const out = await run(fakeFs({ files: {} }));
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("bootstrap\n");
 		expect(out.stderr.at(-1)).toContain("bootstrap, not clean");
@@ -70,7 +70,7 @@ describe("runCheck", () => {
 
 	// Present-and-empty and absent are different facts and never share a code.
 	it("reds on a register that is present and holds zero rows", async () => {
-		const out = await run(fakeFs({files: {[TERMS_PATH]: LANGUAGE_NO_ROWS}}));
+		const out = await run(fakeFs({ files: { [TERMS_PATH]: LANGUAGE_NO_ROWS } }));
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toBe(
@@ -79,7 +79,7 @@ describe("runCheck", () => {
 	});
 
 	it("reports an unresolved decision corpus rather than reporting clean over it", async () => {
-		const out = await run(fakeFs({files: {[TERMS_PATH]: TERMS}}));
+		const out = await run(fakeFs({ files: { [TERMS_PATH]: TERMS } }));
 		expect(out.code).toBe(0);
 		expect(out.stdout).toContain("citations-unverified\t-\t-\t-\tcannot read .decisions:");
 		expect(out.stdout.split("\n")[0]).toBe("defects");
@@ -87,7 +87,7 @@ describe("runCheck", () => {
 
 	// The flag is an override, not the only way to name a corpus.
 	it("resolves the corpus from the repo's config when --decisions is absent", async () => {
-		const out = await run(corpus(), {decisions: null});
+		const out = await run(corpus(), { decisions: null });
 		expect(out.code).toBe(0);
 		expect(out.stdout).toContain("cites 0044");
 		expect(out.stderr.join("\n")).toContain("citation(s) resolved under .decisions");
@@ -95,10 +95,10 @@ describe("runCheck", () => {
 
 	it("leaves citations unverified on a repo that declares it keeps no corpus", async () => {
 		const fs = withDecisions(
-			{[TERMS_PATH]: TERMS, [`${REPO}/.fabrika.jsonc`]: '{"decisionsDir": null}'},
+			{ [TERMS_PATH]: TERMS, [`${REPO}/.fabrika.jsonc`]: '{"decisionsDir": null}' },
 			[],
 		);
-		const out = await run(fs, {decisions: null});
+		const out = await run(fs, { decisions: null });
 		expect(out.code).toBe(0);
 		expect(out.stdout).toContain("citations-unverified\t-\t-\t-\t");
 		expect(out.stdout).toContain("declines `decisionsDir`");
@@ -114,10 +114,10 @@ describe("runCheck", () => {
 	// A repo that keeps no corpus and cites nothing has no defect it could ever clear.
 	it("reports clean on a declined corpus when no row cites anything", async () => {
 		const fs = withDecisions(
-			{[TERMS_PATH]: TERMS_CLEAN, [`${REPO}/.fabrika.jsonc`]: '{"decisionsDir": null}'},
+			{ [TERMS_PATH]: TERMS_CLEAN, [`${REPO}/.fabrika.jsonc`]: '{"decisionsDir": null}' },
 			[],
 		);
-		const out = await run(fs, {decisions: null});
+		const out = await run(fs, { decisions: null });
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("clean\n");
 		expect(out.stdout).not.toContain("citations-unverified");
@@ -127,7 +127,7 @@ describe("runCheck", () => {
 	});
 
 	it("refuses an unreadable register — the outcome is UNKNOWN, never clean", async () => {
-		const out = await run(fakeFs({files: {[TERMS_PATH]: TERMS}, unreadable: [TERMS_PATH]}));
+		const out = await run(fakeFs({ files: { [TERMS_PATH]: TERMS }, unreadable: [TERMS_PATH] }));
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain('never "clean"');
@@ -135,26 +135,26 @@ describe("runCheck", () => {
 
 	it("refuses a malformed term table", async () => {
 		const out = await run(
-			fakeFs({files: {[TERMS_PATH]: "## S\n\n| Term | Definition | Not |\n| pano | x | |\n"}}),
+			fakeFs({ files: { [TERMS_PATH]: "## S\n\n| Term | Definition | Not |\n| pano | x | |\n" } }),
 		);
 		expect(out.code).toBe(BAD_SECTIONS);
 	});
 
 	it("refuses an off-enum --register", async () => {
-		const out = await run(fakeFs({files: {}}), {register: "sozluk"});
+		const out = await run(fakeFs({ files: {} }), { register: "sozluk" });
 		expect(out.code).toBe(OFF_VOCABULARY);
 	});
 
 	it("reports a key declared in both registers under --register both", async () => {
 		const out = await run(
-			fakeFs({files: {[TERMS_PATH]: TERMS_CLEAN, [LANGUAGE_PATH]: TERMS_CLEAN}}),
-			{register: "both"},
+			fakeFs({ files: { [TERMS_PATH]: TERMS_CLEAN, [LANGUAGE_PATH]: TERMS_CLEAN } }),
+			{ register: "both" },
 		);
 		expect(out.stdout).toContain("cross-register\tlanguage");
 	});
 
 	it("carries the counts the outcome is only readable against, in --json", async () => {
-		const out = await run(fakeFs({files: {[TERMS_PATH]: TERMS_CLEAN}}), {json: true});
+		const out = await run(fakeFs({ files: { [TERMS_PATH]: TERMS_CLEAN } }), { json: true });
 		expect(JSON.parse(out.stdout)).toEqual({
 			outcome: "clean",
 			findings: [],

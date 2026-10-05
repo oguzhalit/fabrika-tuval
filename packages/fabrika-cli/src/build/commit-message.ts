@@ -9,7 +9,7 @@
  * created commit and a claim test over the numbers the message names.
  */
 
-import {scanBody} from "../report/leaks.ts";
+import { scanBody } from "../report/leaks.ts";
 
 /** Every `#<n>` a message names, in order, duplicates included. */
 export const issueRefsIn = (message: string): ReadonlyArray<number> =>

@@ -30,45 +30,45 @@
  *
  * Respawning whatever the lane parked out of is the operator's, not this verb's.
  */
-import {acceptsOf} from "@demlik/tea";
-import {Effect, type FileSystem, type Path} from "effect";
+import { acceptsOf } from "@demlik/tea";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {readClaimants} from "../build/claim.ts";
-import {WORKTREE_HELD} from "../build/codes.ts";
-import {reclaimDeadClaim} from "../build/dead-claim.ts";
-import {worktreeCheckouts} from "../build/git.ts";
-import {childLaneBranches} from "../build/lane.ts";
-import {runRetire} from "../build/retire-verb.ts";
-import {placedRows, selects} from "../campaign/table.ts";
-import {CONFIG_PATH} from "../config/document.ts";
-import {PARK_CAUSE, type ParkCauseSurface} from "../config/keys/park-cause.ts";
-import {readRoadmapFile} from "../config/paths.ts";
-import type {Read} from "../config/read-key.ts";
-import {runRuling} from "../decision/ruling-verb.ts";
-import {runClassify} from "../heal-ci/classify-verb.ts";
-import {runLogs} from "../heal-ci/logs-verb.ts";
-import {fetchAndResolve, localBranches, readFileAt} from "../io/git.ts";
-import {getIssue, listComments} from "../io/issues.ts";
-import {isRecord, parseJson} from "../io/json.ts";
-import type {PullScope} from "../io/pulls.ts";
-import {resolveTrunk, trunkUnresolved} from "../io/trunk.ts";
-import {nominatePulls, nominationScope} from "../lane/nominate.ts";
-import {tracePulls} from "../lane/prove.ts";
-import {runProve} from "../lane/prove-verb.ts";
-import {NO_PARK_EVIDENCE, routeUnder} from "../lane/report.ts";
-import {BUILD_CLAIM_BUDGET_MINUTES} from "../lane/shell-budget.ts";
-import {runStatus} from "../lane/status-verb.ts";
-import {loadLane} from "../lane/store.ts";
-import {runTransition} from "../lane/transition-verb.ts";
-import {ownershipGate} from "../ownership/gate.ts";
-import {runChecks} from "../ship/checks-verb.ts";
-import {runCpApproval} from "../ship/cp-approval-verb.ts";
-import {runGate} from "../ship/gate-verb.ts";
-import {MERGEABILITY_WINDOW_SECONDS} from "../ship/mergeability.ts";
-import {runReconcile} from "../ship/reconcile-verb.ts";
-import {runScope} from "../ship/scope-verb.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { readClaimants } from "../build/claim.ts";
+import { WORKTREE_HELD } from "../build/codes.ts";
+import { reclaimDeadClaim } from "../build/dead-claim.ts";
+import { worktreeCheckouts } from "../build/git.ts";
+import { childLaneBranches } from "../build/lane.ts";
+import { runRetire } from "../build/retire-verb.ts";
+import { placedRows, selects } from "../campaign/table.ts";
+import { CONFIG_PATH } from "../config/document.ts";
+import { PARK_CAUSE, type ParkCauseSurface } from "../config/keys/park-cause.ts";
+import { readRoadmapFile } from "../config/paths.ts";
+import type { Read } from "../config/read-key.ts";
+import { runRuling } from "../decision/ruling-verb.ts";
+import { runClassify } from "../heal-ci/classify-verb.ts";
+import { runLogs } from "../heal-ci/logs-verb.ts";
+import { fetchAndResolve, localBranches, readFileAt } from "../io/git.ts";
+import { getIssue, listComments } from "../io/issues.ts";
+import { isRecord, parseJson } from "../io/json.ts";
+import type { PullScope } from "../io/pulls.ts";
+import { resolveTrunk, trunkUnresolved } from "../io/trunk.ts";
+import { nominatePulls, nominationScope } from "../lane/nominate.ts";
+import { tracePulls } from "../lane/prove.ts";
+import { runProve } from "../lane/prove-verb.ts";
+import { NO_PARK_EVIDENCE, routeUnder } from "../lane/report.ts";
+import { BUILD_CLAIM_BUDGET_MINUTES } from "../lane/shell-budget.ts";
+import { runStatus } from "../lane/status-verb.ts";
+import { loadLane } from "../lane/store.ts";
+import { runTransition } from "../lane/transition-verb.ts";
+import { ownershipGate } from "../ownership/gate.ts";
+import { runChecks } from "../ship/checks-verb.ts";
+import { runCpApproval } from "../ship/cp-approval-verb.ts";
+import { runGate } from "../ship/gate-verb.ts";
+import { MERGEABILITY_WINDOW_SECONDS } from "../ship/mergeability.ts";
+import { runReconcile } from "../ship/reconcile-verb.ts";
+import { runScope } from "../ship/scope-verb.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	NOT_PARKED,
 	PARK_HOLDS,
@@ -79,11 +79,17 @@ import {
 	TARGET_ABSENT,
 	TASK_UNRESOLVED,
 } from "./codes.ts";
-import {classifyPark, isPark, type ParkClass, type ParkRecipe, QUEUE_MOVED_GRANT} from "./parks.ts";
-import {buildExit, decisionExit, laneExit, relayRefusal} from "./relay.ts";
-import {rulingSince} from "./ruling-read.ts";
-import {clearProof, issueOf, type LeafRead, leafOf, repairProof} from "./status-read.ts";
-import {openPull, resolveTargetRepo, scannedLine} from "./target.ts";
+import {
+	classifyPark,
+	isPark,
+	type ParkClass,
+	type ParkRecipe,
+	QUEUE_MOVED_GRANT,
+} from "./parks.ts";
+import { buildExit, decisionExit, laneExit, relayRefusal } from "./relay.ts";
+import { rulingSince } from "./ruling-read.ts";
+import { clearProof, issueOf, type LeafRead, leafOf, repairProof } from "./status-read.ts";
+import { openPull, resolveTargetRepo, scannedLine } from "./target.ts";
 
 const VERB = "fabrika recipe unpark";
 
@@ -146,8 +152,8 @@ type Clearance =
 	 * The park's cause is a defect no wait removes, so the lane leaves the park into repair: recorded
 	 * as the park's `FAIL`, never as an `UNBLOCKED` back into the state that parked it.
 	 */
-	| {readonly _tag: "Repair"; readonly mechanism: string}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Repair"; readonly mechanism: string }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 type Deps =
 	| FileSystem.FileSystem
@@ -157,7 +163,7 @@ type Deps =
 
 export const runUnpark = (options: UnparkOptions): Effect.Effect<VerbOutcome, never, Deps> =>
 	Effect.gen(function* () {
-		const ref = {root: options.root, lane: options.lane};
+		const ref = { root: options.root, lane: options.lane };
 
 		const before = yield* runStatus(ref);
 		if (before.code !== 0) {
@@ -173,7 +179,7 @@ export const runUnpark = (options: UnparkOptions): Effect.Effect<VerbOutcome, ne
 		if (read._tag === "Unreadable") {
 			return refuse(TASK_UNRESOLVED, `${VERB}: ${read.reason}.`);
 		}
-		const {task, leaf} = read;
+		const { task, leaf } = read;
 
 		const parked = classifyPark(leaf, read.cause);
 		if (parked._tag === "NotParked") {
@@ -295,8 +301,8 @@ export const runUnpark = (options: UnparkOptions): Effect.Effect<VerbOutcome, ne
 				event,
 				mechanism: clearance.mechanism,
 				current: proof.leaf,
-				...(clearance.waitGrant === null ? {} : {waitGrant: clearance.waitGrant}),
-				...(rationale === null ? {} : {rationale}),
+				...(clearance.waitGrant === null ? {} : { waitGrant: clearance.waitGrant }),
+				...(rationale === null ? {} : { rationale }),
 			}),
 			[
 				routed._tag === "Recipe"
@@ -323,26 +329,26 @@ export const runUnpark = (options: UnparkOptions): Effect.Effect<VerbOutcome, ne
  * budget a repo declared `founder` is `Human` here and says which setting made it so.
  */
 type Routing =
-	| {readonly _tag: "Recipe"; readonly recipe: ParkRecipe}
-	| {readonly _tag: "Driver"; readonly cause: string}
-	| {readonly _tag: "Human"; readonly reason: string};
+	| { readonly _tag: "Recipe"; readonly recipe: ParkRecipe }
+	| { readonly _tag: "Driver"; readonly cause: string }
+	| { readonly _tag: "Human"; readonly reason: string };
 
 const routeOfPark = (
-	parked: Extract<ParkClass, {readonly _tag: "Known" | "Novel"}>,
+	parked: Extract<ParkClass, { readonly _tag: "Known" | "Novel" }>,
 	parkCause: ParkCauseSurface,
 ): Routing => {
-	if (parked._tag === "Known") return {_tag: "Recipe", recipe: parked.recipe};
+	if (parked._tag === "Known") return { _tag: "Recipe", recipe: parked.recipe };
 	const cause = parked.cause;
 	const route = routeUnder(cause, parkCause);
 	if (cause !== null && route === "driver" && parkCause.driverRouted === "clear") {
-		return {_tag: "Driver", cause};
+		return { _tag: "Driver", cause };
 	}
 	return cause === "repair-budget-spent" && route === "founder"
 		? {
 				_tag: "Human",
 				reason: `this repo's \`${PARK_CAUSE}.repairBudgetSpent\` is "founder", so a spent repair budget is a human's call`,
 			}
-		: {_tag: "Human", reason: parked.reason};
+		: { _tag: "Human", reason: parked.reason };
 };
 
 /**
@@ -353,7 +359,7 @@ const clear = (
 	options: UnparkOptions,
 	task: string,
 	recipe: ParkRecipe,
-	read: Extract<LeafRead, {readonly _tag: "Leaf"}>,
+	read: Extract<LeafRead, { readonly _tag: "Leaf" }>,
 ): Effect.Effect<Clearance, never, Deps> => {
 	switch (recipe.clearance) {
 		case "axis-closed":
@@ -407,7 +413,7 @@ const clearRouteSatisfied = (
 	recipe: ParkRecipe,
 ): Effect.Effect<Clearance, never, Deps> =>
 	Effect.gen(function* () {
-		const no = (outcome: VerbOutcome): Clearance => ({_tag: "Refused", outcome});
+		const no = (outcome: VerbOutcome): Clearance => ({ _tag: "Refused", outcome });
 		const unknown = (what: string, reason: string): Clearance =>
 			no(
 				refuse(
@@ -438,7 +444,7 @@ const clearRouteSatisfied = (
 			repo,
 			json: true,
 			env: options.env,
-			caller: {_tag: "relay"},
+			caller: { _tag: "relay" },
 		});
 		if (scoped.code !== 0) {
 			return unknown(`#${pr}'s scope`, `fabrika ship scope refused at exit ${scoped.code}`);
@@ -503,7 +509,7 @@ const clearRouteSatisfied = (
 		// `ship gate`'s rows name their namespace `name`; read the key it writes, never a plausible one.
 		const routed = (Array.isArray(conjunction.namespaces) ? conjunction.namespaces : [])
 			.filter(
-				(row): row is {readonly name: string} =>
+				(row): row is { readonly name: string } =>
 					isRecord(row) && row.state === "routed" && typeof row.name === "string",
 			)
 			.map((row) => row.name);
@@ -538,7 +544,7 @@ const clearCpApproval = (
 	recipe: ParkRecipe,
 ): Effect.Effect<Clearance, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const no = (outcome: VerbOutcome): Clearance => ({_tag: "Refused", outcome});
+		const no = (outcome: VerbOutcome): Clearance => ({ _tag: "Refused", outcome });
 
 		const issue = issueOf(options.lane, task);
 		if (issue === null) {
@@ -650,7 +656,7 @@ const clearBranchFree = (
 	recipe: ParkRecipe,
 ): Effect.Effect<Clearance, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const no = (outcome: VerbOutcome): Clearance => ({_tag: "Refused", outcome});
+		const no = (outcome: VerbOutcome): Clearance => ({ _tag: "Refused", outcome });
 
 		const issue = issueOf(options.lane, task);
 		if (issue === null) {
@@ -695,8 +701,8 @@ const clearBranchFree = (
 	});
 
 type TreeRead =
-	| {readonly _tag: "Freed"; readonly retired: number}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Freed"; readonly retired: number }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * Whether any working tree of this clone still holds one of `candidates`, after the recipe's own
@@ -718,7 +724,7 @@ const treesFreedOf = (
 	scanned: ReadonlyArray<string>,
 ): Effect.Effect<TreeRead, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const no = (outcome: VerbOutcome): TreeRead => ({_tag: "Refused", outcome});
+		const no = (outcome: VerbOutcome): TreeRead => ({ _tag: "Refused", outcome });
 
 		const checkouts = yield* worktreeCheckouts;
 		if (checkouts._tag === "Failure") {
@@ -734,7 +740,7 @@ const treesFreedOf = (
 		const scope = scannedLine(VERB, checkouts.value.length, "working tree", candidates.join(", "));
 		let retired = 0;
 		if (held.length > 0 && recipe.remedy !== null) {
-			const retire = yield* runRetire({number: issue, repo: options.repo, env: options.env});
+			const retire = yield* runRetire({ number: issue, repo: options.repo, env: options.env });
 			// `33` is the retirement proving the board licenses none, which is this recipe's own hold
 			// rather than a fault — the re-read below reports it in the recipe's words.
 			if (retire.code !== 0 && retire.code !== WORKTREE_HELD) {
@@ -772,7 +778,7 @@ const treesFreedOf = (
 			);
 		}
 
-		return {_tag: "Freed", retired};
+		return { _tag: "Freed", retired };
 	});
 
 /**
@@ -814,7 +820,7 @@ const clearSpawnClear = (
 	recipe: ParkRecipe,
 ): Effect.Effect<Clearance, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const no = (outcome: VerbOutcome): Clearance => ({_tag: "Refused", outcome});
+		const no = (outcome: VerbOutcome): Clearance => ({ _tag: "Refused", outcome });
 
 		const issue = issueOf(options.lane, task);
 		if (issue === null) {
@@ -912,8 +918,12 @@ const clearSpawnClear = (
 	});
 
 type ClaimsRead =
-	| {readonly _tag: "Released"; readonly subjects: ReadonlyArray<number>; readonly scanned: string}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| {
+			readonly _tag: "Released";
+			readonly subjects: ReadonlyArray<number>;
+			readonly scanned: string;
+	  }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * Whether any build claim still stands on the lane — on its issue, and on every open PR linking it —
@@ -936,7 +946,7 @@ const claimsReleasedOf = (
 	recipe: ParkRecipe,
 ): Effect.Effect<ClaimsRead, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const no = (outcome: VerbOutcome): ClaimsRead => ({_tag: "Refused", outcome});
+		const no = (outcome: VerbOutcome): ClaimsRead => ({ _tag: "Refused", outcome });
 
 		const nominated = yield* nominatePulls(repo, issue, "open");
 		if (nominated._tag === "Unreadable") {
@@ -1002,7 +1012,7 @@ const clearClaimReleased = (
 	recipe: ParkRecipe,
 ): Effect.Effect<Clearance, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const no = (outcome: VerbOutcome): Clearance => ({_tag: "Refused", outcome});
+		const no = (outcome: VerbOutcome): Clearance => ({ _tag: "Refused", outcome });
 
 		const issue = issueOf(options.lane, task);
 		if (issue === null) {
@@ -1042,7 +1052,7 @@ const clearTreeReleased = (
 	recipe: ParkRecipe,
 ): Effect.Effect<Clearance, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const no = (outcome: VerbOutcome): Clearance => ({_tag: "Refused", outcome});
+		const no = (outcome: VerbOutcome): Clearance => ({ _tag: "Refused", outcome });
 
 		const issue = issueOf(options.lane, task);
 		if (issue === null) {
@@ -1106,7 +1116,7 @@ const clearAxisClosed = (
 	axisIssue: number | null,
 ): Effect.Effect<Clearance, never, Deps> =>
 	Effect.gen(function* () {
-		const no = (outcome: VerbOutcome): Clearance => ({_tag: "Refused", outcome});
+		const no = (outcome: VerbOutcome): Clearance => ({ _tag: "Refused", outcome });
 		if (axisIssue === null) {
 			return no(
 				refuse(
@@ -1138,7 +1148,7 @@ const clearAxisClosed = (
 				),
 			);
 		}
-		return {_tag: "Cleared", mechanism: `axis-closed:#${axisIssue}`, waitGrant: null};
+		return { _tag: "Cleared", mechanism: `axis-closed:#${axisIssue}`, waitGrant: null };
 	});
 
 /**
@@ -1157,7 +1167,7 @@ const clearRulingMade = (
 	parkedAt: string | null,
 ): Effect.Effect<Clearance, never, Deps> =>
 	Effect.gen(function* () {
-		const no = (outcome: VerbOutcome): Clearance => ({_tag: "Refused", outcome});
+		const no = (outcome: VerbOutcome): Clearance => ({ _tag: "Refused", outcome });
 		if (rulingIssue === null) {
 			return no(
 				refuse(
@@ -1166,7 +1176,7 @@ const clearRulingMade = (
 				),
 			);
 		}
-		const relayed = yield* runRuling({number: rulingIssue, repo: options.repo, env: options.env});
+		const relayed = yield* runRuling({ number: rulingIssue, repo: options.repo, env: options.env });
 		if (relayed.code !== 0) {
 			return no(relayRefusal(VERB, "fabrika decision ruling", relayed, decisionExit(relayed.code)));
 		}
@@ -1218,7 +1228,7 @@ const clearCampaignActive = (
 	recipe: ParkRecipe,
 ): Effect.Effect<Clearance, never, Deps> =>
 	Effect.gen(function* () {
-		const no = (outcome: VerbOutcome): Clearance => ({_tag: "Refused", outcome});
+		const no = (outcome: VerbOutcome): Clearance => ({ _tag: "Refused", outcome });
 		const unknown = (what: string, reason: string): Clearance =>
 			no(
 				refuse(
@@ -1293,7 +1303,7 @@ const clearCampaignActive = (
 			);
 		}
 
-		return {_tag: "Cleared", mechanism: `campaign-active:#${milestone}`, waitGrant: null};
+		return { _tag: "Cleared", mechanism: `campaign-active:#${milestone}`, waitGrant: null };
 	});
 
 /**
@@ -1321,7 +1331,7 @@ const clearQueueMoved = (
 	recipe: ParkRecipe,
 ): Effect.Effect<Clearance, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const no = (outcome: VerbOutcome): Clearance => ({_tag: "Refused", outcome});
+		const no = (outcome: VerbOutcome): Clearance => ({ _tag: "Refused", outcome });
 		const SCOPE = "open-or-merged" as const;
 
 		const issue = issueOf(options.lane, task);
@@ -1397,8 +1407,8 @@ const clearQueueMoved = (
 
 /** The one live PR a park hangs on, or the refusal that resolution owes. */
 type ParkedPull =
-	| {readonly _tag: "Found"; readonly pr: number}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Found"; readonly pr: number }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * The single pull request a park hangs on, through the shared nominator (`../lane/nominate.ts`).
@@ -1419,7 +1429,7 @@ const soleParkedPull = (
 	scope: PullScope = "open",
 ): Effect.Effect<ParkedPull, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const no = (outcome: VerbOutcome): ParkedPull => ({_tag: "Refused", outcome});
+		const no = (outcome: VerbOutcome): ParkedPull => ({ _tag: "Refused", outcome });
 
 		const nominated = yield* nominatePulls(repo, issue, scope);
 		if (nominated._tag === "Unreadable") {
@@ -1451,7 +1461,7 @@ const soleParkedPull = (
 				),
 			);
 		}
-		return {_tag: "Found", pr: traced.pr};
+		return { _tag: "Found", pr: traced.pr };
 	});
 
 /**
@@ -1484,7 +1494,7 @@ const clearCiGreen = (
 	Effect.gen(function* () {
 		const read = yield* readOpenHeadCi(options, task, recipe);
 		if (read._tag === "Refused") return read;
-		const {repo, pr, head, namespaces, rollup, scanned} = read;
+		const { repo, pr, head, namespaces, rollup, scanned } = read;
 		if (rollup === "red") {
 			return yield* repairOrHold(options, repo, pr, head, task, recipe, scanned);
 		}
@@ -1573,7 +1583,7 @@ type OpenHeadCi =
 	  }
 	| Refusal;
 
-type Refusal = {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+type Refusal = { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 const headUnknown = (what: string, reason: string): Refusal => ({
 	_tag: "Refused",
@@ -1586,7 +1596,7 @@ const headUnknown = (what: string, reason: string): Refusal => ({
 /** The park still standing on a rollup that is not `green`. */
 const holdOnRollup = (
 	recipe: ParkRecipe,
-	read: Extract<OpenHeadCi, {readonly _tag: "Read"}>,
+	read: Extract<OpenHeadCi, { readonly _tag: "Read" }>,
 ): Refusal => ({
 	_tag: "Refused",
 	outcome: refuse(
@@ -1606,7 +1616,7 @@ const readOpenHeadCi = (
 	recipe: ParkRecipe,
 ): Effect.Effect<OpenHeadCi, never, Deps> =>
 	Effect.gen(function* () {
-		const no = (outcome: VerbOutcome): Refusal => ({_tag: "Refused", outcome});
+		const no = (outcome: VerbOutcome): Refusal => ({ _tag: "Refused", outcome });
 		const unknown = headUnknown;
 
 		const issue = issueOf(options.lane, task);
@@ -1635,7 +1645,7 @@ const readOpenHeadCi = (
 			repo,
 			json: true,
 			env: options.env,
-			caller: {_tag: "relay"},
+			caller: { _tag: "relay" },
 		});
 		if (scoped.code !== 0) {
 			return unknown(`#${pr}'s scope`, `fabrika ship scope refused at exit ${scoped.code}`);
@@ -1689,7 +1699,7 @@ const readOpenHeadCi = (
 		if (!isRecord(rolled) || typeof rolled.rollup !== "string") {
 			return unknown(`#${pr}'s CI at ${head}`, "fabrika ship checks exited 0 and named no rollup");
 		}
-		return {_tag: "Read", repo, pr, head, namespaces, rollup: rolled.rollup, scanned};
+		return { _tag: "Read", repo, pr, head, namespaces, rollup: rolled.rollup, scanned };
 	});
 
 /**
@@ -1765,7 +1775,7 @@ const repairOrHold = (
 		}
 		const classified = yield* runClassify({
 			json: true,
-			stdin: Effect.succeed({_tag: "Text", text: logs.stdout}),
+			stdin: Effect.succeed({ _tag: "Text", text: logs.stdout }),
 		});
 		const rows = classifiedContexts(classified);
 		if (rows === null) {
@@ -1789,16 +1799,16 @@ const repairOrHold = (
 			(reason) =>
 				`${VERB}: cannot read PR #${pr}: ${reason} — whose repair this red is is UNKNOWN, and nothing was written.`,
 		);
-		if (target._tag === "Refused") return {_tag: "Refused", outcome: target.outcome};
+		if (target._tag === "Refused") return { _tag: "Refused", outcome: target.outcome };
 		const owned = yield* ownershipGate(
 			VERB,
 			repo,
-			{number: pr, author: target.pull.authorLogin, baseRef: target.pull.baseRef},
+			{ number: pr, author: target.pull.authorLogin, baseRef: target.pull.baseRef },
 			listComments(repo, pr),
-			{notOurs: PARK_HOLDS, unknown: PRECONDITION_UNKNOWN},
+			{ notOurs: PARK_HOLDS, unknown: PRECONDITION_UNKNOWN },
 			"its logic red is its author's to repair, so the park holds and nothing was written.",
 		);
-		if (owned._tag === "Refused") return {_tag: "Refused", outcome: owned.outcome};
+		if (owned._tag === "Refused") return { _tag: "Refused", outcome: owned.outcome };
 
 		return {
 			_tag: "Repair",
@@ -1807,9 +1817,9 @@ const repairOrHold = (
 	});
 
 type FailArm =
-	| {readonly _tag: "Armed"}
-	| {readonly _tag: "Armless"}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Armed" }
+	| { readonly _tag: "Armless" }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * Whether the lane's own machine lets `leaf` take a `FAIL`, read off the document the lane runs and
@@ -1823,22 +1833,22 @@ const failArmAt = (
 	leaf: string,
 ): Effect.Effect<FailArm, never, FileSystem.FileSystem | Path.Path> =>
 	Effect.gen(function* () {
-		const loaded = yield* loadLane({root: options.root, lane: options.lane});
+		const loaded = yield* loadLane({ root: options.root, lane: options.lane });
 		switch (loaded._tag) {
 			case "Absent":
-				return {_tag: "Unknown", reason: `no workflow.json under ${loaded.dir}`} as const;
+				return { _tag: "Unknown", reason: `no workflow.json under ${loaded.dir}` } as const;
 			case "Unreadable":
-				return {_tag: "Unknown", reason: `${loaded.path}: ${loaded.reason}`} as const;
+				return { _tag: "Unknown", reason: `${loaded.path}: ${loaded.reason}` } as const;
 			case "Malformed":
-				return {_tag: "Unknown", reason: `${loaded.path}: ${loaded.defects.join("; ")}`} as const;
+				return { _tag: "Unknown", reason: `${loaded.path}: ${loaded.defects.join("; ")}` } as const;
 			case "Loaded": {
 				const compiled = loaded.lane.tasks[task];
 				if (compiled === undefined) {
-					return {_tag: "Unknown", reason: `the machine declares no task "${task}"`} as const;
+					return { _tag: "Unknown", reason: `the machine declares no task "${task}"` } as const;
 				}
 				return acceptsOf(compiled.machine, leaf).includes("FAIL")
-					? ({_tag: "Armed"} as const)
-					: ({_tag: "Armless"} as const);
+					? ({ _tag: "Armed" } as const)
+					: ({ _tag: "Armless" } as const);
 			}
 		}
 	});

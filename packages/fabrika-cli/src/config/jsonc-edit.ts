@@ -13,11 +13,11 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10362#issuecomment-5974640994
  */
 
-import {parseJson} from "../io/json.ts";
+import { parseJson } from "../io/json.ts";
 
 export type JsoncEdit =
-	| {readonly _tag: "Edited"; readonly text: string}
-	| {readonly _tag: "Refused"; readonly reason: string};
+	| { readonly _tag: "Edited"; readonly text: string }
+	| { readonly _tag: "Refused"; readonly reason: string };
 
 interface Member {
 	readonly key: string;
@@ -105,7 +105,7 @@ const objectAt = (text: string, open: number): ObjectSpan | null => {
 	const members: Member[] = [];
 	let index = skipTrivia(text, open + 1);
 	while (index < text.length) {
-		if (text[index] === "}") return {open, close: index, members};
+		if (text[index] === "}") return { open, close: index, members };
 		if (text[index] !== '"') return null;
 		const keyEnd = stringEnd(text, index);
 		if (keyEnd === null) return null;
@@ -115,7 +115,7 @@ const objectAt = (text: string, open: number): ObjectSpan | null => {
 		const start = skipTrivia(text, colon + 1);
 		const end = valueEnd(text, start);
 		if (end === null) return null;
-		members.push({key, keyStart: index, start, end});
+		members.push({ key, keyStart: index, start, end });
 		index = skipTrivia(text, end);
 		if (text[index] === ",") index = skipTrivia(text, index + 1);
 	}
@@ -142,7 +142,7 @@ const indentUnit = (text: string, root: ObjectSpan): string => {
 
 /** `keys` nested around `value`: `["a", "b"]` over `1` is `{a: {b: 1}}`. */
 const nest = (keys: ReadonlyArray<string>, value: unknown): unknown =>
-	keys.reduceRight((inner, key) => ({[key]: inner}), value);
+	keys.reduceRight((inner, key) => ({ [key]: inner }), value);
 
 /**
  * A new last member for `object`. A comma goes straight after the member before it, so a comment
@@ -215,7 +215,7 @@ const setIn = (
 ): JsoncEdit => {
 	const member = object.members.find((candidate) => candidate.key === key);
 	if (member === undefined) {
-		return {_tag: "Edited", text: appendMember(text, object, key, nest(rest, value), unit)};
+		return { _tag: "Edited", text: appendMember(text, object, key, nest(rest, value), unit) };
 	}
 	const [next, ...deeper] = rest;
 	if (next === undefined) {
@@ -235,7 +235,7 @@ const setIn = (
 	}
 	const inner = objectAt(text, member.start);
 	return inner === null
-		? {_tag: "Refused", reason: `"${[...walked, key].join(".")}" is not an object`}
+		? { _tag: "Refused", reason: `"${[...walked, key].join(".")}" is not an object` }
 		: setIn(text, inner, [...walked, key], [next, ...deeper], value, unit);
 };
 
@@ -251,6 +251,6 @@ const setIn = (
 export const setJsoncValue = (text: string, path: KeyPath, value: unknown): JsoncEdit => {
 	const root = objectAt(text, skipTrivia(text, 0));
 	return root === null
-		? {_tag: "Refused", reason: "the document is not a JSON object"}
+		? { _tag: "Refused", reason: "the document is not a JSON object" }
 		: setIn(text, root, [], path, value, indentUnit(text, root));
 };

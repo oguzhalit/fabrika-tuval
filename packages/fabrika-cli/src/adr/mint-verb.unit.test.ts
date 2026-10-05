@@ -3,8 +3,8 @@
  * the one written, and every UNKNOWN read refuses BEFORE anything reaches disk. An allocator that
  * scaffolds over a half-read set is the collision the fusion exists to remove.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	errOut,
 	type FakeFs,
@@ -14,7 +14,7 @@ import {
 	type Scripted,
 	tree,
 } from "../fakes.test-support.ts";
-import {FAILED} from "../verb.ts";
+import { FAILED } from "../verb.ts";
 import {
 	ALREADY_EXISTS,
 	BASE_UNFETCHABLE,
@@ -24,7 +24,7 @@ import {
 	ORIGIN_REPO_UNRESOLVABLE,
 	UNPARSEABLE_RECORD_ID,
 } from "./codes.ts";
-import {runMint} from "./mint-verb.ts";
+import { runMint } from "./mint-verb.ts";
 
 const SHA = "49a22902d1e0c7b3f5a8e4126b9d0f3c7a1e5b82";
 const PATH = ".records/0240-only-landed-adrs-may-be-cited.md";
@@ -34,7 +34,7 @@ const PULLS = /GET .*\/pulls\?state=open/;
 /** A pull request's file list, as the endpoint answers it. */
 const files = (...entries: ReadonlyArray<readonly [string, string]>) => ({
 	status: 200,
-	body: JSON.stringify(entries.map(([status, filename]) => ({status, filename}))),
+	body: JSON.stringify(entries.map(([status, filename]) => ({ status, filename }))),
 });
 
 const seams = (overrides: ReadonlyArray<Scripted> = []) =>
@@ -46,7 +46,7 @@ const seams = (overrides: ReadonlyArray<Scripted> = []) =>
 		[/^git rev-parse/, okOut(`${SHA}\n`)],
 		[/^git ls-tree/, okOut(tree("0234-a.md", "0235-b.md", "0236-c.md"))],
 		[/^git log/, okOut("")],
-		[PULLS, {status: 200, body: JSON.stringify([{number: 11}, {number: 12}])}],
+		[PULLS, { status: 200, body: JSON.stringify([{ number: 11 }, { number: 12 }]) }],
 		[/pulls\/11\/files/, files(["added", ".records/0237-x.md"], ["modified", "README.md"])],
 		[/pulls\/12\/files/, files(["added", ".records/0239-y.md"])],
 	]);
@@ -69,7 +69,7 @@ const run = (
 	fs: FakeFs = fakeFs({}),
 ) =>
 	Effect.runPromise(
-		Effect.provide(runMint({...options, ...opts}), Layer.merge(seams(overrides).layer, fs.layer)),
+		Effect.provide(runMint({ ...options, ...opts }), Layer.merge(seams(overrides).layer, fs.layer)),
 	);
 
 describe("runMint", () => {
@@ -83,7 +83,7 @@ describe("runMint", () => {
 	});
 
 	it("--json carries the allocation the record was written at", async () => {
-		const out = await run([], {json: true});
+		const out = await run([], { json: true });
 		expect(JSON.parse(out.stdout)).toEqual({
 			path: PATH,
 			id: "0240",
@@ -120,12 +120,12 @@ describe("runMint", () => {
 		["the record directory is unreadable", [/^git ls-tree/, errOut("boom")], DIR_UNREADABLE],
 		[
 			"the open pull requests cannot be enumerated",
-			[PULLS, {status: 502, body: "{}"}],
+			[PULLS, { status: 502, body: "{}" }],
 			IN_FLIGHT_UNKNOWN,
 		],
 		[
 			"a pull request's files cannot be read",
-			[/pulls\/11\/files/, {status: 502, body: "{}"}],
+			[/pulls\/11\/files/, { status: 502, body: "{}" }],
 			IN_FLIGHT_UNKNOWN,
 		],
 		[
@@ -151,7 +151,7 @@ describe("runMint", () => {
 	});
 
 	it("refuses to overwrite an allocated path that already exists, keeping the scope line", async () => {
-		const fs = fakeFs({files: {[PATH]: "existing"}});
+		const fs = fakeFs({ files: { [PATH]: "existing" } });
 		const out = await run([], {}, fs);
 		expect(out.code).toBe(ALREADY_EXISTS);
 		expect(out.stdout).toBe("");
@@ -164,7 +164,7 @@ describe("runMint", () => {
 		const fs = fakeFs({});
 		const sh = seams();
 		const out = await Effect.runPromise(
-			Effect.provide(runMint({...options, slug: "Not Kebab"}), Layer.merge(sh.layer, fs.layer)),
+			Effect.provide(runMint({ ...options, slug: "Not Kebab" }), Layer.merge(sh.layer, fs.layer)),
 		);
 		expect(out.code).toBe(FAILED);
 		expect(out.stderr.at(-1)).toBe(

@@ -17,7 +17,7 @@
  * the ground says.
  */
 
-import {ASSERTED_SECTIONS} from "../wire/handoff-pack.ts";
+import { ASSERTED_SECTIONS } from "../wire/handoff-pack.ts";
 
 export interface AssertedHalf {
 	readonly intent: string;
@@ -28,25 +28,25 @@ export interface AssertedHalf {
 
 export type AssertedProblem =
 	/** A heading the format does not own, or text under none — the closed-set refusal. */
-	| {readonly _tag: "Outside"; readonly heading: string}
+	| { readonly _tag: "Outside"; readonly heading: string }
 	/** One named section carries nothing. Its own case so `## Unsure` can name its own remedy. */
-	| {readonly _tag: "Empty"; readonly heading: string}
+	| { readonly _tag: "Empty"; readonly heading: string }
 	/** The four are not all present, in order. */
-	| {readonly _tag: "Shape"; readonly detail: string};
+	| { readonly _tag: "Shape"; readonly detail: string };
 
 export type AssertedParse =
-	| {readonly _tag: "Asserted"; readonly value: AssertedHalf}
-	| {readonly _tag: "Problem"; readonly problem: AssertedProblem};
+	| { readonly _tag: "Asserted"; readonly value: AssertedHalf }
+	| { readonly _tag: "Problem"; readonly problem: AssertedProblem };
 
 const HEADING = /^##\s+(.*\S)\s*$/;
 
 export const parseAsserted = (text: string): AssertedParse => {
-	const sections: {name: string; lines: string[]}[] = [];
+	const sections: { name: string; lines: string[] }[] = [];
 	let stray: string | null = null;
 	for (const raw of text.split("\n")) {
 		const heading = HEADING.exec(raw);
 		if (heading?.[1] !== undefined) {
-			sections.push({name: heading[1], lines: []});
+			sections.push({ name: heading[1], lines: [] });
 			continue;
 		}
 		const current = sections.at(-1);
@@ -57,12 +57,12 @@ export const parseAsserted = (text: string): AssertedParse => {
 		current.lines.push(raw);
 	}
 
-	if (stray !== null) return {_tag: "Problem", problem: {_tag: "Outside", heading: stray}};
+	if (stray !== null) return { _tag: "Problem", problem: { _tag: "Outside", heading: stray } };
 	const unknown = sections.find(
 		(section) => !(ASSERTED_SECTIONS as ReadonlyArray<string>).includes(section.name),
 	);
 	if (unknown !== undefined) {
-		return {_tag: "Problem", problem: {_tag: "Outside", heading: `## ${unknown.name}`}};
+		return { _tag: "Problem", problem: { _tag: "Outside", heading: `## ${unknown.name}` } };
 	}
 	const names = sections.map((section) => section.name);
 	if (names.join(" ") !== ASSERTED_SECTIONS.join(" ")) {
@@ -78,7 +78,7 @@ export const parseAsserted = (text: string): AssertedParse => {
 	}
 	const empty = sections.find((section) => section.lines.join("\n").trim() === "");
 	if (empty !== undefined) {
-		return {_tag: "Problem", problem: {_tag: "Empty", heading: `## ${empty.name}`}};
+		return { _tag: "Problem", problem: { _tag: "Empty", heading: `## ${empty.name}` } };
 	}
 
 	const [intent, established, nextAct, unsure] = sections;
@@ -89,9 +89,13 @@ export const parseAsserted = (text: string): AssertedParse => {
 		unsure === undefined
 	) {
 		// Unreachable: the order check above already proved all four are present.
-		return {_tag: "Problem", problem: {_tag: "Shape", detail: "the asserted half is incomplete"}};
+		return {
+			_tag: "Problem",
+			problem: { _tag: "Shape", detail: "the asserted half is incomplete" },
+		};
 	}
-	const body = (section: {lines: ReadonlyArray<string>}): string => section.lines.join("\n").trim();
+	const body = (section: { lines: ReadonlyArray<string> }): string =>
+		section.lines.join("\n").trim();
 	return {
 		_tag: "Asserted",
 		value: {

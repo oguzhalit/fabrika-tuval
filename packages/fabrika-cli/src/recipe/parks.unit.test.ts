@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import {PARK_CAUSES} from "../lane/report.ts";
-import {classifyPark, isPark, KNOWN_PARKS} from "./parks.ts";
+import { describe, expect, it } from "vitest";
+import { PARK_CAUSES } from "../lane/report.ts";
+import { classifyPark, isPark, KNOWN_PARKS } from "./parks.ts";
 
 describe("the park table", () => {
 	it("recognises the lane machine's two park shapes and nothing else", () => {

@@ -23,14 +23,14 @@ import {
 	emit as emitTicketMarker,
 	read as readTicketFormat,
 } from "../wire/map-ticket.ts";
-import type {Kind} from "./body.ts";
+import type { Kind } from "./body.ts";
 
 /**
  * The ticket marker is the one marker here that is a **registered wire format**, so its grammar lives
  * in `../wire/map-ticket.ts` and this module only re-exports it. The other four are internal to this
  * group: nothing outside it reads them, and a format nobody meets through is not a wire format.
  */
-export {reaches as reachesForTicketMarker} from "../wire/map-ticket.ts";
+export { reaches as reachesForTicketMarker } from "../wire/map-ticket.ts";
 
 /** The lane key's grammar. A human-readable label two runs would collide on is not a nonce. */
 export const NONCE = /^[0-9a-f]{8}$/;
@@ -86,7 +86,7 @@ export const composeTicketMarker = (marker: TicketMarker): string => {
 	// Unreachable through the callers, which all check `isNonce` first; composing an unbranded nonce
 	// would emit a marker this module's own reader refuses, so it throws rather than shipping bytes.
 	if (key === null) throw new Error(`"${marker.nonce}" is not a run nonce`);
-	return emitTicketMarker({map: marker.map, kind: marker.kind, nonce: key});
+	return emitTicketMarker({ map: marker.map, kind: marker.kind, nonce: key });
 };
 
 export const composeLaneMarker = (marker: LaneMarker): string =>

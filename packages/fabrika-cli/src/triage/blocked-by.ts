@@ -13,11 +13,11 @@
  * that is a pull request is refused on its own seat**, because `repos/{o}/{r}/issues/<n>` serves PRs
  * — so one resolves `Present` and the proven-absent arm never fires for it (see `edgeTarget`).
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {addBlockedBy, blockedBy, edgeTarget} from "../io/edges.ts";
-import {type Existence, present, unknown} from "../io/issues.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { addBlockedBy, blockedBy, edgeTarget } from "../io/edges.ts";
+import { type Existence, present, unknown } from "../io/issues.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
 import {
 	PRECONDITION_UNKNOWN,
 	PULL_REQUEST_TARGET,
@@ -34,18 +34,18 @@ export interface EdgePlan {
 	/** Every `--blocked-by` value, deduplicated, in the order given. */
 	readonly requested: ReadonlyArray<number>;
 	/** The requested edges the graph does not carry yet, with the internal id each POST takes. */
-	readonly toWrite: ReadonlyArray<{readonly number: number; readonly id: number}>;
+	readonly toWrite: ReadonlyArray<{ readonly number: number; readonly id: number }>;
 }
 
 export type EdgeStep<A> =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
 	| {
 			readonly _tag: "Resolved";
 			readonly value: A;
 	  };
 
-const refused = (outcome: VerbOutcome): EdgeStep<never> => ({_tag: "Refused", outcome});
-const resolved = <A>(value: A): EdgeStep<A> => ({_tag: "Resolved", value});
+const refused = (outcome: VerbOutcome): EdgeStep<never> => ({ _tag: "Refused", outcome });
+const resolved = <A>(value: A): EdgeStep<A> => ({ _tag: "Resolved", value });
 
 /**
  * Resolve every `--blocked-by` target and decide which edges are missing — reads only.
@@ -61,7 +61,7 @@ export const planEdges = (
 ): Effect.Effect<EdgeStep<EdgePlan>, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		const requested = [...new Set(values)];
-		if (requested.length === 0) return resolved({requested, toWrite: []});
+		if (requested.length === 0) return resolved({ requested, toWrite: [] });
 		if (requested.includes(issue)) {
 			return refused(refuse(ZERO_SCOPE, `${verb}: --blocked-by ${issue} names the issue itself.`));
 		}
@@ -79,7 +79,7 @@ export const planEdges = (
 			);
 		}
 
-		const toWrite: {number: number; id: number}[] = [];
+		const toWrite: { number: number; id: number }[] = [];
 		for (const number of requested) {
 			if (live.value.includes(number)) continue;
 			const target = yield* edgeTarget(repo, number);
@@ -107,9 +107,9 @@ export const planEdges = (
 					),
 				);
 			}
-			toWrite.push({number, id: target.value.id});
+			toWrite.push({ number, id: target.value.id });
 		}
-		return resolved({requested, toWrite});
+		return resolved({ requested, toWrite });
 	});
 
 /**
@@ -128,7 +128,7 @@ export const landEdges = (
 	Effect.gen(function* () {
 		if (plan.requested.length === 0) return resolved([]);
 
-		for (const {number, id} of plan.toWrite) {
+		for (const { number, id } of plan.toWrite) {
 			const written = yield* addBlockedBy(repo, issue, id);
 			if (written._tag === "Failure") {
 				return refused(

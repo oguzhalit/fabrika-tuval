@@ -1,10 +1,10 @@
 /**
  * The roll-up core: summing, grouping, the window, and every number it declines to count.
  */
-import {assert, describe, it} from "@effect/vitest";
-import type {LedgerRead, LedgerRow} from "./ledger.ts";
-import {type ResolvedWindow, resolveBound, rollUp, selectWindow} from "./rollup.ts";
-import type {RunSpend} from "./token-spend.ts";
+import { assert, describe, it } from "@effect/vitest";
+import type { LedgerRead, LedgerRow } from "./ledger.ts";
+import { type ResolvedWindow, resolveBound, rollUp, selectWindow } from "./rollup.ts";
+import type { RunSpend } from "./token-spend.ts";
 
 const spendOf = (billed: number, exCacheRead: number, assistantTurns: number): RunSpend => ({
 	_tag: "Reconstructed",
@@ -36,20 +36,24 @@ const row = (overrides: Partial<LedgerRow> = {}): LedgerRow => ({
 const read = (rows: ReadonlyArray<LedgerRow>, malformed = 0, newerVersion = 0): LedgerRead => ({
 	rows,
 	skipped: malformed + newerVersion,
-	skips: {malformed, newerVersion},
+	skips: { malformed, newerVersion },
 });
 
-const UNBOUNDED: ResolvedWindow = {sinceAt: null, untilAt: null, text: {since: null, until: null}};
+const UNBOUNDED: ResolvedWindow = {
+	sinceAt: null,
+	untilAt: null,
+	text: { since: null, until: null },
+};
 
 const window = (since: string | null, until: string | null): ResolvedWindow => ({
 	sinceAt: since === null ? null : resolveBound(since, "since"),
 	untilAt: until === null ? null : resolveBound(until, "until"),
-	text: {since, until},
+	text: { since, until },
 });
 
 describe("rollUp — the totals", () => {
 	it("sums billed, ex-cache-read, assistant turns and the run count", () => {
-		const out = rollUp(read([row(), row({spend: spendOf(50, 20, 1)})]), UNBOUNDED);
+		const out = rollUp(read([row(), row({ spend: spendOf(50, 20, 1) })]), UNBOUNDED);
 		assert.deepStrictEqual(out.totals, {
 			billed: 150,
 			exCacheRead: 60,
@@ -63,8 +67,8 @@ describe("rollUp — the totals", () => {
 		const out = rollUp(
 			read([
 				row(),
-				row({spend: {_tag: "TranscriptMissing"}}),
-				row({spend: {_tag: "NoBilledTurns"}}),
+				row({ spend: { _tag: "TranscriptMissing" } }),
+				row({ spend: { _tag: "NoBilledTurns" } }),
 			]),
 			UNBOUNDED,
 		);
@@ -76,7 +80,7 @@ describe("rollUp — the totals", () => {
 
 describe("rollUp — the three breakdowns", () => {
 	const rows = [
-		row({recordedAt: "2026-08-08T10:00:00.000Z", skillName: "write-code", stage: "build"}),
+		row({ recordedAt: "2026-08-08T10:00:00.000Z", skillName: "write-code", stage: "build" }),
 		row({
 			recordedAt: "2026-08-09T10:00:00.000Z",
 			skillName: "review-code",
@@ -84,7 +88,7 @@ describe("rollUp — the three breakdowns", () => {
 			arm: "no-skill",
 			spend: spendOf(50, 20, 1),
 		}),
-		row({recordedAt: "2026-08-09T20:00:00.000Z", skillName: "write-code", stage: "build"}),
+		row({ recordedAt: "2026-08-09T20:00:00.000Z", skillName: "write-code", stage: "build" }),
 	];
 
 	it("groups by the UTC day of each row's own stamp", () => {
@@ -142,10 +146,10 @@ describe("resolveBound — what an operator's --since/--until means", () => {
 
 describe("selectWindow — the bounds are inclusive at both edges", () => {
 	const rows = [
-		row({recordedAt: "2026-08-07T23:59:59.999Z", caseId: 1}),
-		row({recordedAt: "2026-08-08T00:00:00.000Z", caseId: 2}),
-		row({recordedAt: "2026-08-09T23:59:59.999Z", caseId: 3}),
-		row({recordedAt: "2026-08-10T00:00:00.000Z", caseId: 4}),
+		row({ recordedAt: "2026-08-07T23:59:59.999Z", caseId: 1 }),
+		row({ recordedAt: "2026-08-08T00:00:00.000Z", caseId: 2 }),
+		row({ recordedAt: "2026-08-09T23:59:59.999Z", caseId: 3 }),
+		row({ recordedAt: "2026-08-10T00:00:00.000Z", caseId: 4 }),
 	];
 
 	it("keeps a row on the first millisecond of --since and the last of --until", () => {
@@ -171,7 +175,7 @@ describe("selectWindow — the bounds are inclusive at both edges", () => {
 
 	it("drops a row a bounded window cannot place in time, and says how many", () => {
 		const out = rollUp(
-			read([...rows, row({recordedAt: "not a time", caseId: 9})]),
+			read([...rows, row({ recordedAt: "not a time", caseId: 9 })]),
 			window("2026-08-08", "2026-08-09"),
 		);
 		assert.strictEqual(out.totals.runs, 2);
@@ -179,7 +183,7 @@ describe("selectWindow — the bounds are inclusive at both edges", () => {
 	});
 
 	it("keeps an undated row in when nothing was bounded — there is nothing to prove", () => {
-		const out = rollUp(read([row({recordedAt: "not a time"})]), UNBOUNDED);
+		const out = rollUp(read([row({ recordedAt: "not a time" })]), UNBOUNDED);
 		assert.strictEqual(out.totals.runs, 1);
 		assert.strictEqual(out.undatedRows, 0);
 	});
@@ -188,7 +192,7 @@ describe("selectWindow — the bounds are inclusive at both edges", () => {
 describe("rollUp — the lines it could not read ride out on the answer", () => {
 	it("carries the skipped total and both halves onto the rollup", () => {
 		const out = rollUp(read([row()], 40, 2), UNBOUNDED);
-		assert.deepStrictEqual(out.skipped, {total: 42, malformed: 40, newerVersion: 2});
+		assert.deepStrictEqual(out.skipped, { total: 42, malformed: 40, newerVersion: 2 });
 	});
 
 	it("reports the skipped lines even when the window itself selected nothing", () => {
@@ -199,6 +203,6 @@ describe("rollUp — the lines it could not read ride out on the answer", () => 
 
 	it("echoes the window it covered, so an answer states its own scope", () => {
 		const out = rollUp(read([row()]), window("2026-08-01", null));
-		assert.deepStrictEqual(out.window, {since: "2026-08-01", until: null});
+		assert.deepStrictEqual(out.window, { since: "2026-08-01", until: null });
 	});
 });

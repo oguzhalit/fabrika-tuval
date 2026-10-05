@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import type {StatusNames} from "../config/board.ts";
-import {DEFAULT_STATUS_NAMES} from "../labels.ts";
-import {DIGEST_RE, type LedgerScope, scopeDigest, serializeScope} from "./digest.ts";
+import { describe, expect, it } from "vitest";
+import type { StatusNames } from "../config/board.ts";
+import { DEFAULT_STATUS_NAMES } from "../labels.ts";
+import { DIGEST_RE, type LedgerScope, scopeDigest, serializeScope } from "./digest.ts";
 import {
 	CHILD,
 	CYCLE_DOC,
@@ -13,7 +13,7 @@ import {
 	SUB_ISSUES,
 	subIssues,
 } from "./fixtures.test-support.ts";
-import type {ChildLedger} from "./model.ts";
+import type { ChildLedger } from "./model.ts";
 
 const EPIC = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4300$/;
 
@@ -40,7 +40,7 @@ const scope = (overrides: Partial<LedgerScope> = {}): LedgerScope => ({
 	epicStories: [1, 2],
 	epicCriteria: [],
 	cycleDoc: "present",
-	topology: {phases: [{phase: 1, members: ["#4301"]}], edges: []},
+	topology: { phases: [{ phase: 1, members: ["#4301"] }], edges: [] },
 	dependenciesAbsent: false,
 	...overrides,
 });
@@ -54,14 +54,14 @@ describe("the digest is flip-neutral (the invariant the whole gate rests on)", (
 	it("does not move when a child flips from status:planned to status:triaged", () => {
 		const before = scope();
 		const after = scope({
-			children: [child({labels: ["p1", "status:triaged", "type:feature"]})],
+			children: [child({ labels: ["p1", "status:triaged", "type:feature"] })],
 		});
 		expect(digest(after)).toBe(digest(before));
 	});
 
 	it("does not move mid-write, while a child carries both labels", () => {
 		const midWrite = scope({
-			children: [child({labels: ["p1", "status:planned", "status:triaged", "type:feature"]})],
+			children: [child({ labels: ["p1", "status:planned", "status:triaged", "type:feature"] })],
 		});
 		expect(digest(midWrite)).toBe(digest(scope()));
 	});
@@ -77,14 +77,14 @@ describe("the digest is flip-neutral (the invariant the whole gate rests on)", (
 			triaged: "state:ready",
 		};
 		const labelled = (...labels: ReadonlyArray<string>) =>
-			scopeDigest(scope({children: [child({labels: [...labels]})]}), renamed);
+			scopeDigest(scope({ children: [child({ labels: [...labels] })] }), renamed);
 		expect(labelled("p1", "state:ready")).toBe(labelled("p1", "state:planned"));
 		expect(labelled("p1", "status:triaged")).not.toBe(labelled("p1", "status:planned"));
 	});
 
 	it("DOES move when any other label changes — the exclusion is two names, not a blanket", () => {
 		const relabelled = scope({
-			children: [child({labels: ["p0", "status:planned", "type:feature"]})],
+			children: [child({ labels: ["p0", "status:planned", "type:feature"] })],
 		});
 		expect(digest(relabelled)).not.toBe(digest(scope()));
 	});
@@ -98,22 +98,22 @@ describe("the epic's own acceptance criteria bind the digest", () => {
 	});
 
 	it("moves when a criterion is reworded — the texts are serialized, not their count", () => {
-		const one = scope({epicCriteria: ["the tail wires every child"]});
-		const reworded = scope({epicCriteria: ["the tail wires every child, in order"]});
+		const one = scope({ epicCriteria: ["the tail wires every child"] });
+		const reworded = scope({ epicCriteria: ["the tail wires every child, in order"] });
 		expect(digest(reworded)).not.toBe(digest(one));
 	});
 
 	it("moves when a criterion is added, and again when it is removed", () => {
 		const bare = scope();
-		const one = scope({epicCriteria: ["the tail wires every child"]});
+		const one = scope({ epicCriteria: ["the tail wires every child"] });
 		expect(digest(one)).not.toBe(digest(bare));
-		expect(digest(scope({epicCriteria: ["a", "b"]}))).not.toBe(digest(one));
+		expect(digest(scope({ epicCriteria: ["a", "b"] }))).not.toBe(digest(one));
 	});
 });
 
 describe("serializeScope", () => {
 	it("is canonical: one line per child ascending, then the epic line, no trailing newline", () => {
-		const two = scope({children: [child({number: 4302}), child({number: 4301})]});
+		const two = scope({ children: [child({ number: 4302 }), child({ number: 4301 })] });
 		const lines = serialize(two).split("\n");
 		expect(lines[0]?.startsWith("#4301|")).toBe(true);
 		expect(lines[1]?.startsWith("#4302|")).toBe(true);
@@ -123,20 +123,20 @@ describe("serializeScope", () => {
 
 	it("distinguishes an unobserved assignee slot from an observed-empty one", () => {
 		const unobserved = serialize(
-			scope({children: [child({assignees: null, assigneesObserved: false})]}),
+			scope({ children: [child({ assignees: null, assigneesObserved: false })] }),
 		);
 		expect(unobserved).toContain("assignees=?");
 		expect(serialize(scope())).toContain("assignees=|");
 	});
 
 	it("distinguishes an absent story claim from an explicit `none`", () => {
-		expect(serialize(scope({children: [child({stories: null})]}))).toContain("stories=?");
-		expect(serialize(scope({children: [child({stories: []})]}))).toContain("stories=none");
+		expect(serialize(scope({ children: [child({ stories: null })] }))).toContain("stories=?");
+		expect(serialize(scope({ children: [child({ stories: [] })] }))).toContain("stories=none");
 	});
 
 	it("carries the phase spine and the requires edges in separate fields", () => {
 		const withEdge = scope({
-			topology: {phases: [{phase: 1, members: ["#4301"]}], edges: [["#4302", "#4301"]]},
+			topology: { phases: [{ phase: 1, members: ["#4301"] }], edges: [["#4302", "#4301"]] },
 		});
 		expect(serialize(withEdge)).toContain("deps=p1:#4301|edges=#4302>#4301");
 	});
@@ -154,17 +154,17 @@ describe("scopeDigest", () => {
 
 describe("the digest a plan verb prints, on a board that renamed planned and triaged", () => {
 	const config = JSON.stringify({
-		boardVocabulary: {statuses: {planned: "status:drafted", triaged: "status:ready"}},
+		boardVocabulary: { statuses: { planned: "status:drafted", triaged: "status:ready" } },
 	});
 	const printed = (status: string): Promise<string> =>
 		digestOver(
 			[
-				[EPIC, epic({body: epicBody({dependencies: "- phase 1: #4301"})})],
+				[EPIC, epic({ body: epicBody({ dependencies: "- phase 1: #4301" }) })],
 				[SUB_ISSUES, subIssues(4301)],
-				[CHILD(4301), issue({number: 4301, labels: ["type:feature", "p1", status]})],
+				[CHILD(4301), issue({ number: 4301, labels: ["type:feature", "p1", status] })],
 				[CYCLE_DOC, cycleDoc],
 			],
-			{config},
+			{ config },
 		);
 
 	/**

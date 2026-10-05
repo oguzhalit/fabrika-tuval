@@ -5,10 +5,10 @@
  * The `ship` group's fixtures are reused wherever the payload is the same shape — a second literal
  * for one platform response is how two tests come to disagree about what the platform returns.
  */
-import type {HttpReply} from "../fakes.test-support.ts";
-import {okOut} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {HEAD} from "../ship/fixtures.test-support.ts";
+import type { HttpReply } from "../fakes.test-support.ts";
+import { okOut } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { HEAD } from "../ship/fixtures.test-support.ts";
 
 const API = "https:\\/\\/api\\.github\\.com";
 
@@ -55,7 +55,7 @@ export const RATE_LIMIT = new RegExp(`^GET ${API}\\/rate_limit$`);
 export const COMMIT_DATE = new RegExp(`^GET ${API}\\/repos\\/o\\/r\\/commits\\/[0-9a-f]+$`);
 
 export const files = (...names: ReadonlyArray<string>): ExecResult =>
-	okOut(JSON.stringify(names.map((filename) => ({filename}))));
+	okOut(JSON.stringify(names.map((filename) => ({ filename }))));
 
 /** A terminal page: 200 with no `rel="next"`, which is what the exhaustion proof reads. */
 const served = (body: unknown, status = 200): HttpReply => ({
@@ -65,7 +65,7 @@ const served = (body: unknown, status = 200): HttpReply => ({
 
 export const jobs = (
 	declared: number,
-	rows: ReadonlyArray<{id: number; name: string; conclusion?: string | null}>,
+	rows: ReadonlyArray<{ id: number; name: string; conclusion?: string | null }>,
 ): HttpReply =>
 	served({
 		total_count: declared,
@@ -93,10 +93,11 @@ export const workflowRun = (shape: {
 	});
 
 /** The commit payload `commitPushedAt` reads its date out of. */
-export const commitDate = (at: string): HttpReply => served({commit: {committer: {date: at}}});
+export const commitDate = (at: string): HttpReply =>
+	served({ commit: { committer: { date: at } } });
 
 /** GitHub's own answer to a rerun POST: 201, no body. */
-export const accepted: HttpReply = {status: 201, body: ""};
+export const accepted: HttpReply = { status: 201, body: "" };
 
 export const runsAtHead = (
 	declared: number,
@@ -127,16 +128,16 @@ export const runsAtHead = (
 		}),
 	);
 
-export const openPulls = (...rows: ReadonlyArray<{number: number; head: string}>): HttpReply =>
-	served(rows.map((row) => ({number: row.number, head: {sha: row.head}})));
+export const openPulls = (...rows: ReadonlyArray<{ number: number; head: string }>): HttpReply =>
+	served(rows.map((row) => ({ number: row.number, head: { sha: row.head } })));
 
 export const rateLimit = (remaining: number): HttpReply =>
-	served({resources: {core: {remaining, reset: 1_800_000_000}}});
+	served({ resources: { core: { remaining, reset: 1_800_000_000 } } });
 
 export const createdComment = (id: number): ExecResult =>
-	okOut(JSON.stringify({id, html_url: `https://example.test/pull/4321#issuecomment-${id}`}));
+	okOut(JSON.stringify({ id, html_url: `https://example.test/pull/4321#issuecomment-${id}` }));
 
-export const commentBody = (body: string): ExecResult => okOut(JSON.stringify({body}));
+export const commentBody = (body: string): ExecResult => okOut(JSON.stringify({ body }));
 
 /**
  * A red `ci-required` log as `ci/required-bin.ts` prints it and the runner renders it: per-job

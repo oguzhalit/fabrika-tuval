@@ -2,7 +2,7 @@
  * Shared lane fixtures: the committed coder and chore templates read verbatim (the golden-fixture
  * idiom), and a two-phase document in the /prd-to-tasks shape small enough for a test to mutate.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import {
 	type DriverRouted,
 	type ParkCauseSurface,
@@ -10,14 +10,14 @@ import {
 	type RepairBudgetSpent,
 	type Uncaused,
 } from "../config/keys/park-cause.ts";
-import {loadConfig} from "../config/load.ts";
-import {type Read, readFromLoad} from "../config/read-key.ts";
-import {readGoldenFixture} from "../golden-fixture.ts";
-import {answer, type VerbOutcome} from "../verb.ts";
-import type {RoutedBasis} from "../wire/routed-elsewhere.ts";
-import {LOCK_DIR_NAME} from "./append-lock.ts";
-import type {ClosingMerge} from "./closing-merge.ts";
-import {type ProveOptions, proofLabelOf} from "./prove-verb.ts";
+import { loadConfig } from "../config/load.ts";
+import { type Read, readFromLoad } from "../config/read-key.ts";
+import { readGoldenFixture } from "../golden-fixture.ts";
+import { answer, type VerbOutcome } from "../verb.ts";
+import type { RoutedBasis } from "../wire/routed-elsewhere.ts";
+import { LOCK_DIR_NAME } from "./append-lock.ts";
+import type { ClosingMerge } from "./closing-merge.ts";
+import { type ProveOptions, proofLabelOf } from "./prove-verb.ts";
 
 /**
  * A prover the test drives, standing in for `runProve` — it records what the verb asked it and
@@ -28,7 +28,7 @@ import {type ProveOptions, proofLabelOf} from "./prove-verb.ts";
  * the one stand-in, shared so the driver's path and the shell's are exercised against one fake.
  */
 export const fakeProver = (
-	outcome: VerbOutcome = answer(JSON.stringify({proof: "not-required"})),
+	outcome: VerbOutcome = answer(JSON.stringify({ proof: "not-required" })),
 	deferred: ReadonlyArray<string> = [],
 	partial: boolean | null = null,
 	landed: ReadonlyArray<number> = [],
@@ -67,7 +67,7 @@ export const fakeProver = (
  */
 export const fakeProverByEvent = (
 	answers: Readonly<Record<string, ProofFacts>>,
-	fallback: ProofFacts = {outcome: answer(JSON.stringify({proof: "not-required"}))},
+	fallback: ProofFacts = { outcome: answer(JSON.stringify({ proof: "not-required" })) },
 ) => {
 	const asked: ProveOptions[] = [];
 	return {
@@ -84,7 +84,7 @@ export const fakeProverByEvent = (
 					diagnosis: facts.diagnosis ?? false,
 					routed: facts.routed ?? [],
 					closingMerge: facts.closingMerge ?? null,
-					...(facts.routedBasis === undefined ? {} : {routedBasis: facts.routedBasis}),
+					...(facts.routedBasis === undefined ? {} : { routedBasis: facts.routedBasis }),
 					proof: proofLabelOf(facts.outcome),
 				};
 			}),
@@ -114,13 +114,13 @@ export const parkCauseRead = (
 	repairBudgetSpent: RepairBudgetSpent = "driver",
 ): Read<ParkCauseSurface> => ({
 	_tag: "Value",
-	value: {uncaused, driverRouted, repairBudgetSpent},
+	value: { uncaused, driverRouted, repairBudgetSpent },
 	note: `test fixture: parkCause.uncaused = ${uncaused}, parkCause.driverRouted = ${driverRouted}, parkCause.repairBudgetSpent = ${repairBudgetSpent}`,
 });
 
 /** The `parkCause` read a repo's `.fabrika.jsonc` text resolves to, through the shipped decode. */
 export const parkCauseDeclared = (text: string): Read<ParkCauseSurface> =>
-	readFromLoad(loadConfig({_tag: "Text", text}), parkCauseKey);
+	readFromLoad(loadConfig({ _tag: "Text", text }), parkCauseKey);
 
 /**
  * The paths a verb wrote that are the lane's — what "nothing was written" means for a refusal.
@@ -145,21 +145,21 @@ export const choreWorkflow = (): unknown => JSON.parse(choreTemplateText());
 const region = (ns: string): Record<string, unknown> => ({
 	initial: "doing",
 	states: {
-		doing: {on: {[`${ns}.DONE`]: "checking", [`${ns}.BLOCKED`]: "blocked"}},
+		doing: { on: { [`${ns}.DONE`]: "checking", [`${ns}.BLOCKED`]: "blocked" } },
 		checking: {
 			on: {
 				[`${ns}.PASS`]: "passed",
 				[`${ns}.BLOCKED`]: "blocked",
 				[`${ns}.FAIL`]: [
-					{target: "doing", guard: `${ns.toLowerCase()}RetriesRemaining`},
-					{target: "tripped"},
+					{ target: "doing", guard: `${ns.toLowerCase()}RetriesRemaining` },
+					{ target: "tripped" },
 				],
 			},
 		},
-		blocked: {on: {[`${ns}.UNBLOCKED`]: "hist"}},
-		hist: {type: "history"},
-		passed: {type: "final"},
-		tripped: {type: "final"},
+		blocked: { on: { [`${ns}.UNBLOCKED`]: "hist" } },
+		hist: { type: "history" },
+		passed: { type: "final" },
+		tripped: { type: "final" },
 	},
 });
 
@@ -173,9 +173,9 @@ export const twoPhaseWorkflow = (): Record<string, unknown> =>
 				id: "fixture",
 				initial: "phase1",
 				context: {
-					task_a: {retries: 0, maxRetries: 2, code: true},
-					task_b: {retries: 0, maxRetries: 3, code: false},
-					task_c: {retries: 0, maxRetries: 3, code: true},
+					task_a: { retries: 0, maxRetries: 2, code: true },
+					task_b: { retries: 0, maxRetries: 3, code: false },
+					task_c: { retries: 0, maxRetries: 3, code: true },
 				},
 				states: {
 					phase1: {
@@ -184,15 +184,15 @@ export const twoPhaseWorkflow = (): Record<string, unknown> =>
 							task_a: region("TASK_A"),
 							task_b: region("TASK_B"),
 						},
-						onDone: [{target: "phase2", guard: "noErrors"}, {target: "tripped"}],
+						onDone: [{ target: "phase2", guard: "noErrors" }, { target: "tripped" }],
 					},
 					phase2: {
 						type: "parallel",
-						states: {task_c: region("TASK_C")},
-						onDone: [{target: "complete", guard: "noErrors"}, {target: "tripped"}],
+						states: { task_c: region("TASK_C") },
+						onDone: [{ target: "complete", guard: "noErrors" }, { target: "tripped" }],
 					},
-					complete: {type: "final"},
-					tripped: {type: "final"},
+					complete: { type: "final" },
+					tripped: { type: "final" },
 				},
 			},
 		}),
@@ -203,12 +203,12 @@ export const stateNode = (
 	workflow: Record<string, unknown>,
 	task: string,
 	state: string,
-): {on: Record<string, unknown>} => {
+): { on: Record<string, unknown> } => {
 	type Loose = Record<
 		string,
-		{states: Record<string, {states: Record<string, {on: Record<string, unknown>}>}>}
+		{ states: Record<string, { states: Record<string, { on: Record<string, unknown> }> }> }
 	>;
-	const phases = (workflow.machine as {states: Loose}).states;
+	const phases = (workflow.machine as { states: Loose }).states;
 	const node = phases.phase1?.states[task]?.states[state];
 	if (node === undefined) throw new Error(`fixture holds no state ${task}.${state}`);
 	return node;

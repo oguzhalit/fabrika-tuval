@@ -15,10 +15,10 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10370
  */
 
-import {isAgentStamped} from "../guard/pitch.ts";
-import type {CommentRecord} from "../io/issues.ts";
-import {isUiEvidence} from "../ui/evidence-comment.ts";
-import {headSha, SHA_MIN} from "../wire/marker-line.ts";
+import { isAgentStamped } from "../guard/pitch.ts";
+import type { CommentRecord } from "../io/issues.ts";
+import { isUiEvidence } from "../ui/evidence-comment.ts";
+import { headSha, SHA_MIN } from "../wire/marker-line.ts";
 
 /** A comment id, or a comment URL ending in `#issuecomment-<id>`. */
 export const handCheckCommentId = (raw: string): number | null => {
@@ -57,8 +57,8 @@ const namesHead = (body: string, head: string): boolean =>
 export type FailedFact = "absent" | "author" | "evidence" | "stamp" | "head" | "screenshot";
 
 export type HandCheck =
-	| {readonly _tag: "Admitted"; readonly comment: CommentRecord}
-	| {readonly _tag: "Inadmissible"; readonly fact: FailedFact; readonly reason: string};
+	| { readonly _tag: "Admitted"; readonly comment: CommentRecord }
+	| { readonly _tag: "Inadmissible"; readonly fact: FailedFact; readonly reason: string };
 
 export const admitHandCheck = (
 	id: number,
@@ -68,7 +68,7 @@ export const admitHandCheck = (
 ): HandCheck => {
 	const comment = comments.find((candidate) => candidate.id === id);
 	if (comment === undefined) {
-		return {_tag: "Inadmissible", fact: "absent", reason: `comment ${id} is not on this PR`};
+		return { _tag: "Inadmissible", fact: "absent", reason: `comment ${id} is not on this PR` };
 	}
 	if (!owners.has(comment.author)) {
 		return {
@@ -105,7 +105,7 @@ export const admitHandCheck = (
 			reason: `comment ${id} carries no screenshot — a hand-check is the screenshots that stand in for the render`,
 		};
 	}
-	return {_tag: "Admitted", comment};
+	return { _tag: "Admitted", comment };
 };
 
 /**
@@ -160,5 +160,5 @@ export const nearMisses = (
 			...(SCREENSHOT.test(comment.body) ? [] : (["screenshot"] as const)),
 		];
 		const [fact, ...rest] = failed;
-		return fact === undefined || rest.length > 0 ? [] : [{comment, fact}];
+		return fact === undefined || rest.length > 0 ? [] : [{ comment, fact }];
 	});

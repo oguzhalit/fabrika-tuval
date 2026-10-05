@@ -11,17 +11,17 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9761
  * @ruling https://github.com/kamp-us/phoenix/issues/9882
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import {childTaskId} from "../lane/emit.ts";
-import {applyCorrections} from "../lane/fold.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { childTaskId } from "../lane/emit.ts";
+import { applyCorrections } from "../lane/fold.ts";
 import {
 	INTEGRATE_STATE,
 	type IntegrateFailure,
 	standingIntegrateFailure,
 } from "../lane/integrate-failure.ts";
-import {loadLane} from "../lane/store.ts";
-import {FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, WRONG_LANE} from "./codes.ts";
+import { loadLane } from "../lane/store.ts";
+import { FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, WRONG_LANE } from "./codes.ts";
 
 /** The epic lane a child's claim reads, as the brief names it: its key and its lanes root. */
 export interface ChildLedger {
@@ -30,8 +30,8 @@ export interface ChildLedger {
 }
 
 export type LedgerFlags =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Read"; readonly ledger: ChildLedger | null};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Read"; readonly ledger: ChildLedger | null };
 
 /** `--lane` and `--lane-root` are one address: both or neither, and neither may be blank. */
 export const readLedgerFlags = (
@@ -39,7 +39,7 @@ export const readLedgerFlags = (
 	lane: string | null,
 	root: string | null,
 ): LedgerFlags => {
-	if (lane === null && root === null) return {_tag: "Read", ledger: null};
+	if (lane === null && root === null) return { _tag: "Read", ledger: null };
 	if (lane === null || root === null || lane.trim() === "" || root.trim() === "") {
 		return {
 			_tag: "Refused",
@@ -49,11 +49,11 @@ export const readLedgerFlags = (
 			),
 		};
 	}
-	return {_tag: "Read", ledger: {lane: lane.trim(), root: root.trim()}};
+	return { _tag: "Read", ledger: { lane: lane.trim(), root: root.trim() } };
 };
 
 export type IntegrateRound =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
 	| {
 			readonly _tag: "Read";
 			readonly failure: IntegrateFailure | null;

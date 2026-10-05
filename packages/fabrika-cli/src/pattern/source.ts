@@ -1,10 +1,10 @@
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {execCapture} from "../io/exec.ts";
-import {isObjectName} from "../io/git.ts";
-import {canonicalOriginUrl, parseSourceManifest, type SourceManifest} from "./source-model.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { execCapture } from "../io/exec.ts";
+import { isObjectName } from "../io/git.ts";
+import { canonicalOriginUrl, parseSourceManifest, type SourceManifest } from "./source-model.ts";
 
-export {canonicalOriginUrl} from "./source-model.ts";
+export { canonicalOriginUrl } from "./source-model.ts";
 
 export interface SourceEvidence {
 	readonly origin: string;
@@ -19,10 +19,10 @@ export interface SourceEvidence {
 }
 
 export type SourceInspection =
-	| {readonly _tag: "Evidence"; readonly evidence: SourceEvidence}
-	| {readonly _tag: "Refused"; readonly reason: string};
+	| { readonly _tag: "Evidence"; readonly evidence: SourceEvidence }
+	| { readonly _tag: "Refused"; readonly reason: string };
 
-const refused = (reason: string): SourceInspection => ({_tag: "Refused", reason});
+const refused = (reason: string): SourceInspection => ({ _tag: "Refused", reason });
 
 const packageRoot = (manifestPath: string): string => {
 	const slash = manifestPath.lastIndexOf("/");
@@ -139,7 +139,7 @@ export const inspectSourceRepository = (
 				commit,
 				package: selected.name,
 				version: selected.version,
-				inspected: {source, tests, docs},
+				inspected: { source, tests, docs },
 			},
 		};
 	});

@@ -7,7 +7,7 @@
  * destroy work with no diff small enough for a reviewer to notice. {@link linesChangedBeyond} makes
  * that rule mechanical rather than remembered.
  */
-import {composeRow, type ParsedIndex, parseIndex, tableSections} from "./index-table.ts";
+import { composeRow, type ParsedIndex, parseIndex, tableSections } from "./index-table.ts";
 
 export type InsertOutcome =
 	| {
@@ -17,11 +17,11 @@ export type InsertOutcome =
 			readonly section: string;
 	  }
 	/** A row already links the doc. Registering twice is a no-op, not an error. */
-	| {readonly _tag: "Already"; readonly section: string}
-	| {readonly _tag: "NoTable"}
-	| {readonly _tag: "NoSection"; readonly present: ReadonlyArray<string>}
-	| {readonly _tag: "Ambiguous"; readonly count: number}
-	| {readonly _tag: "MultiLine"; readonly beyond: number};
+	| { readonly _tag: "Already"; readonly section: string }
+	| { readonly _tag: "NoTable" }
+	| { readonly _tag: "NoSection"; readonly present: ReadonlyArray<string> }
+	| { readonly _tag: "Ambiguous"; readonly count: number }
+	| { readonly _tag: "MultiLine"; readonly beyond: number };
 
 export interface InsertRequest {
 	readonly slug: string;
@@ -61,30 +61,30 @@ const insertionPoint = (index: ParsedIndex, headingLine: number): number | null 
  */
 export const insertRow = (text: string, request: InsertRequest): InsertOutcome => {
 	const index = parseIndex(text);
-	if (!index.hasTable) return {_tag: "NoTable"};
+	if (!index.hasTable) return { _tag: "NoTable" };
 
 	const matches = index.sections.filter(
 		(s) => s.headingLine !== -1 && s.heading === request.section,
 	);
-	if (matches.length === 0) return {_tag: "NoSection", present: tableSections(index)};
-	if (matches.length > 1) return {_tag: "Ambiguous", count: matches.length};
+	if (matches.length === 0) return { _tag: "NoSection", present: tableSections(index) };
+	if (matches.length > 1) return { _tag: "Ambiguous", count: matches.length };
 
 	const existing = index.rows.find((row) => row.member === `${request.slug}.md`);
-	if (existing !== undefined) return {_tag: "Already", section: existing.section};
+	if (existing !== undefined) return { _tag: "Already", section: existing.section };
 
 	const heading = matches[0];
-	if (heading === undefined) return {_tag: "NoSection", present: tableSections(index)};
+	if (heading === undefined) return { _tag: "NoSection", present: tableSections(index) };
 	const at = insertionPoint(index, heading.headingLine);
-	if (at === null) return {_tag: "NoSection", present: tableSections(index)};
+	if (at === null) return { _tag: "NoSection", present: tableSections(index) };
 
 	const row = composeRow(request.slug, request.topic, request.readWhen);
 	const lines = text.split("\n");
 	const next = [...lines.slice(0, at), row, ...lines.slice(at)].join("\n");
 
 	const beyond = linesChangedBeyond(text, next, at);
-	if (beyond > 0) return {_tag: "MultiLine", beyond};
+	if (beyond > 0) return { _tag: "MultiLine", beyond };
 
-	return {_tag: "Inserted", text: next, row, section: heading.heading};
+	return { _tag: "Inserted", text: next, row, section: heading.heading };
 };
 
 /** Whether a written-back index carries the row under the section, parsed to the same cells. */

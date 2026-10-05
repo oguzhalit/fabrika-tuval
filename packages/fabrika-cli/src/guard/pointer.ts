@@ -79,7 +79,7 @@ export const extractPathRefs = (text: string): ReadonlyArray<PathRef> => {
 	for (let m = INLINE_SPAN.exec(masked); m !== null; m = INLINE_SPAN.exec(masked)) {
 		const path = toPathRef(m[2] ?? "");
 		if (path === null) continue;
-		refs.push({path, line: masked.slice(0, m.index).split("\n").length});
+		refs.push({ path, line: masked.slice(0, m.index).split("\n").length });
 	}
 	return refs;
 };
@@ -105,7 +105,7 @@ export const stalePointersIn = (
 	resolves: (path: string) => boolean,
 ): ReadonlyArray<StalePointer> =>
 	extractPathRefs(text).flatMap((ref) =>
-		resolves(ref.path) ? [] : [{file, line: ref.line, path: ref.path}],
+		resolves(ref.path) ? [] : [{ file, line: ref.line, path: ref.path }],
 	);
 
 /** The report: one `file:line → path` row per stale pointer, then the remedy. */

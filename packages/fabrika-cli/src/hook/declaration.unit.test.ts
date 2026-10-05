@@ -1,24 +1,24 @@
-import {describe, expect, it} from "vitest";
-import {argvOf, declaredHooks, violations} from "./declaration.ts";
+import { describe, expect, it } from "vitest";
+import { argvOf, declaredHooks, violations } from "./declaration.ts";
 
 const oneHook = (command: string) => ({
-	hooks: {SessionStart: [{matcher: "startup", hooks: [{type: "command", command}]}]},
+	hooks: { SessionStart: [{ matcher: "startup", hooks: [{ type: "command", command }] }] },
 });
 
 describe("declaredHooks flattens the declaration", () => {
 	it("carries the event and matcher down onto each command", () => {
 		expect(declaredHooks(oneHook("fabrika hook check"))).toEqual([
-			{event: "SessionStart", matcher: "startup", command: "fabrika hook check"},
+			{ event: "SessionStart", matcher: "startup", command: "fabrika hook check" },
 		]);
 	});
 
 	it.each([
 		["a non-object document", 7],
 		["a document with no hooks key", {}],
-		["a matcher group that is not an array", {hooks: {SessionStart: {}}}],
+		["a matcher group that is not an array", { hooks: { SessionStart: {} } }],
 		[
 			"a hook entry with no command string",
-			{hooks: {SessionStart: [{hooks: [{type: "command"}]}]}},
+			{ hooks: { SessionStart: [{ hooks: [{ type: "command" }] }] } },
 		],
 	])("contributes no row for %s — zero hooks, which a caller must red on", (_label, document) => {
 		expect(declaredHooks(document)).toEqual([]);

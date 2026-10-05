@@ -36,15 +36,15 @@
  * construct.
  */
 
-import type {CommitRange} from "../io/git.ts";
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
-import type {HeadSha} from "./marker-line.ts";
-import {parseRange, renderRange} from "./range-verdict-marker.ts";
+import type { CommitRange } from "../io/git.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
+import type { HeadSha } from "./marker-line.ts";
+import { parseRange, renderRange } from "./range-verdict-marker.ts";
 
 declare const ARTIFACT_URL: unique symbol;
 
 /** An `https://` artifact link. Branded so a blank or a summary cannot ride in a `Found`. */
-export type ArtifactUrl = string & {readonly [ARTIFACT_URL]: true};
+export type ArtifactUrl = string & { readonly [ARTIFACT_URL]: true };
 
 export const artifactUrl = (raw: string): ArtifactUrl | null => {
 	const value = raw.trim();
@@ -58,7 +58,7 @@ declare const LANES_ROOT: unique symbol;
  * which resolves against whichever worktree the reader happens to stand in — cannot ride in a
  * `Found`.
  */
-export type LanesRoot = string & {readonly [LANES_ROOT]: true};
+export type LanesRoot = string & { readonly [LANES_ROOT]: true };
 
 export const lanesRoot = (raw: string): LanesRoot | null => {
 	const value = raw.trim();
@@ -78,7 +78,7 @@ declare const FABRIKA_ENTRY: unique symbol;
  * the whole point: a path with no `.ts`/`.js` extension is a binstub, and a binstub in a worktree
  * resolves through the delegate layer to the primary checkout's code.
  */
-export type FabrikaEntry = string & {readonly [FABRIKA_ENTRY]: true};
+export type FabrikaEntry = string & { readonly [FABRIKA_ENTRY]: true };
 
 const NODE_SCRIPT = /\.[cm]?[jt]s$/;
 
@@ -92,7 +92,7 @@ export const fabrikaEntry = (raw: string): FabrikaEntry | null => {
 declare const GIT_REF: unique symbol;
 
 /** A git ref name. Branded so a URL, a range, or a flag-shaped word cannot ride in one. */
-export type GitRef = string & {readonly [GIT_REF]: true};
+export type GitRef = string & { readonly [GIT_REF]: true };
 
 export const gitRef = (raw: string): GitRef | null => {
 	const value = raw.trim();
@@ -196,15 +196,15 @@ export const shellState = (raw: string): ShellState | null => {
  * one.
  */
 export type LaneGround =
-	| {readonly _tag: "Pull"; readonly pr: ArtifactUrl | null}
-	| {readonly _tag: "Tail"; readonly pr: ArtifactUrl; readonly epic: ArtifactUrl}
+	| { readonly _tag: "Pull"; readonly pr: ArtifactUrl | null }
+	| { readonly _tag: "Tail"; readonly pr: ArtifactUrl; readonly epic: ArtifactUrl }
 	| {
 			readonly _tag: "TailRepair";
 			readonly pr: ArtifactUrl;
 			readonly epic: ArtifactUrl;
 			readonly branch: GitRef;
 	  }
-	| {readonly _tag: "Epic"; readonly epic: ArtifactUrl; readonly branch: GitRef}
+	| { readonly _tag: "Epic"; readonly epic: ArtifactUrl; readonly branch: GitRef }
 	| {
 			readonly _tag: "EpicRange";
 			readonly epic: ArtifactUrl;
@@ -224,9 +224,9 @@ export type LaneGround =
  * @ruling https://github.com/kamp-us/phoenix/issues/10309#issuecomment-5974136525
  */
 export type OwnerComments =
-	| {readonly _tag: "None"}
-	| {readonly _tag: "Unmarked"; readonly urls: NonEmptyReadonlyArray<ArtifactUrl>}
-	| {readonly _tag: "Unknown"};
+	| { readonly _tag: "None" }
+	| { readonly _tag: "Unmarked"; readonly urls: NonEmptyReadonlyArray<ArtifactUrl> }
+	| { readonly _tag: "Unknown" };
 
 /** The token the `owner-comments` field carries when the read behind it failed. */
 export const OWNER_COMMENTS_UNKNOWN = "unknown";
@@ -435,7 +435,7 @@ const shapeFields = (brief: LaneBrief): ReadonlyArray<readonly [string, string]>
 			["branch", brief.ground.branch],
 		];
 	}
-	const {epic, branch} = brief.ground;
+	const { epic, branch } = brief.ground;
 	return [
 		["epic", epic],
 		["branch", branch],
@@ -503,12 +503,12 @@ interface Scan {
 }
 
 const sectionsOf = (artifact: string): Scan => {
-	const sections: {name: string; lines: string[]}[] = [];
+	const sections: { name: string; lines: string[] }[] = [];
 	let stray: string | null = null;
 	for (const raw of artifact.split("\n")) {
 		const heading = HEADING.exec(raw);
 		if (heading?.[1] !== undefined) {
-			sections.push({name: heading[1], lines: []});
+			sections.push({ name: heading[1], lines: [] });
 			continue;
 		}
 		const current = sections.at(-1);
@@ -518,7 +518,7 @@ const sectionsOf = (artifact: string): Scan => {
 		}
 		current.lines.push(raw);
 	}
-	return {sections, stray};
+	return { sections, stray };
 };
 
 const trimmed = (lines: ReadonlyArray<string>): ReadonlyArray<string> => {
@@ -528,40 +528,40 @@ const trimmed = (lines: ReadonlyArray<string>): ReadonlyArray<string> => {
 };
 
 type FieldScan =
-	| {readonly _tag: "Fields"; readonly fields: ReadonlyMap<string, string>}
-	| {readonly _tag: "NotAField"; readonly line: string}
-	| {readonly _tag: "Unowned"; readonly key: string}
+	| { readonly _tag: "Fields"; readonly fields: ReadonlyMap<string, string> }
+	| { readonly _tag: "NotAField"; readonly line: string }
+	| { readonly _tag: "Unowned"; readonly key: string }
 	| {
 			readonly _tag: "Misplaced";
 			readonly key: string;
 			readonly owner: SectionName;
 			readonly at: SectionName;
 	  }
-	| {readonly _tag: "Repeated"; readonly key: string; readonly at: SectionName};
+	| { readonly _tag: "Repeated"; readonly key: string; readonly at: SectionName };
 
 const fieldsOf = (sections: ReadonlyArray<FieldSection>): FieldScan => {
 	const fields = new Map<string, string>();
-	for (const {name, section} of sections) {
+	for (const { name, section } of sections) {
 		for (const line of section.lines) {
 			if (line.trim() === "") continue;
 			const field = FIELD.exec(line.trim());
-			if (field?.[1] === undefined) return {_tag: "NotAField", line: line.trim()};
+			if (field?.[1] === undefined) return { _tag: "NotAField", line: line.trim() };
 			const key = field[1];
 			const owner = OWNER[key];
-			if (owner === undefined) return {_tag: "Unowned", key};
-			if (owner !== name) return {_tag: "Misplaced", key, owner, at: name};
-			if (fields.has(key)) return {_tag: "Repeated", key, at: name};
+			if (owner === undefined) return { _tag: "Unowned", key };
+			if (owner !== name) return { _tag: "Misplaced", key, owner, at: name };
+			if (fields.has(key)) return { _tag: "Repeated", key, at: name };
 			fields.set(key, field[2] ?? "");
 		}
 	}
-	return {_tag: "Fields", fields};
+	return { _tag: "Fields", fields };
 };
 
 type GroundScan =
-	| {readonly _tag: "Ground"; readonly ground: LaneGround}
-	| {readonly _tag: "Bad"; readonly reason: string; readonly field: string};
+	| { readonly _tag: "Ground"; readonly ground: LaneGround }
+	| { readonly _tag: "Bad"; readonly reason: string; readonly field: string };
 
-const bad = (reason: string, field: string): GroundScan => ({_tag: "Bad", reason, field});
+const bad = (reason: string, field: string): GroundScan => ({ _tag: "Bad", reason, field });
 
 /**
  * Which ground the fields carry, and whether the state may stand on it — the one reader both `read`
@@ -581,7 +581,7 @@ const groundOf = (fields: ReadonlyMap<string, string>, state: ShellState): Groun
 		if (pr === null && !isBuildState(state)) {
 			return bad(`a "${state}" brief carries no PR URL — that shell has nothing to read`, "pr");
 		}
-		return {_tag: "Ground", ground: {_tag: "Pull", pr}};
+		return { _tag: "Ground", ground: { _tag: "Pull", pr } };
 	}
 	const epic = artifactUrl(epicRaw);
 	if (epic === null) return bad(`"${epicRaw}" is not an epic issue URL`, "epic");
@@ -603,7 +603,7 @@ const groundOf = (fields: ReadonlyMap<string, string>, state: ShellState): Groun
 				"state",
 			);
 		}
-		return {_tag: "Ground", ground: {_tag: "Tail", pr, epic}};
+		return { _tag: "Ground", ground: { _tag: "Tail", pr, epic } };
 	}
 	// A branch AND a PR is the tail's repair round, and it is the only ground that carries both: the
 	// PR's head *is* that branch. Every other state on an epic lane is a child, which has no PR — and
@@ -622,7 +622,7 @@ const groundOf = (fields: ReadonlyMap<string, string>, state: ShellState): Groun
 		const pr = artifactUrl(prRaw);
 		if (pr === null) return bad(`"${prRaw}" is not a PR URL`, "pr");
 		return rangeRaw === ""
-			? {_tag: "Ground", ground: {_tag: "TailRepair", pr, epic, branch}}
+			? { _tag: "Ground", ground: { _tag: "TailRepair", pr, epic, branch } }
 			: bad(`a "${state}" brief names a range, and nothing has landed for one to judge`, "range");
 	}
 	if (state === "ship") {
@@ -630,7 +630,7 @@ const groundOf = (fields: ReadonlyMap<string, string>, state: ShellState): Groun
 	}
 	if (!isReviewState(state)) {
 		return rangeRaw === ""
-			? {_tag: "Ground", ground: {_tag: "Epic", epic, branch}}
+			? { _tag: "Ground", ground: { _tag: "Epic", epic, branch } }
 			: bad(`a "${state}" brief names a range, and nothing has landed for one to judge`, "range");
 	}
 	if (rangeRaw === "") {
@@ -643,12 +643,12 @@ const groundOf = (fields: ReadonlyMap<string, string>, state: ShellState): Groun
 			"range",
 		);
 	}
-	return {_tag: "Ground", ground: {_tag: "EpicRange", epic, branch, range}};
+	return { _tag: "Ground", ground: { _tag: "EpicRange", epic, branch, range } };
 };
 
 type OwnerCommentsScan =
-	| {readonly _tag: "Comments"; readonly comments: OwnerComments}
-	| {readonly _tag: "Bad"; readonly reason: string};
+	| { readonly _tag: "Comments"; readonly comments: OwnerComments }
+	| { readonly _tag: "Bad"; readonly reason: string };
 
 /**
  * What the `owner-comments` field carries, and whether the state may carry it — the one reader
@@ -659,14 +659,14 @@ const ownerCommentsOf = (
 	state: ShellState,
 ): OwnerCommentsScan => {
 	const raw = (fields.get("owner-comments") ?? "").trim();
-	if (raw === "") return {_tag: "Comments", comments: {_tag: "None"}};
+	if (raw === "") return { _tag: "Comments", comments: { _tag: "None" } };
 	if (!isBuildState(state) && !isReviewState(state)) {
 		return {
 			_tag: "Bad",
 			reason: `a "${state}" brief names owner comments — only a shell that builds or judges reads them`,
 		};
 	}
-	if (raw === OWNER_COMMENTS_UNKNOWN) return {_tag: "Comments", comments: {_tag: "Unknown"}};
+	if (raw === OWNER_COMMENTS_UNKNOWN) return { _tag: "Comments", comments: { _tag: "Unknown" } };
 	const urls: ArtifactUrl[] = [];
 	for (const token of raw.split(/\s+/)) {
 		const url = artifactUrl(token);
@@ -680,18 +680,18 @@ const ownerCommentsOf = (
 	}
 	const [first, ...rest] = urls;
 	return first === undefined
-		? {_tag: "Comments", comments: {_tag: "None"}}
-		: {_tag: "Comments", comments: {_tag: "Unmarked", urls: [first, ...rest]}};
+		? { _tag: "Comments", comments: { _tag: "None" } }
+		: { _tag: "Comments", comments: { _tag: "Unmarked", urls: [first, ...rest] } };
 };
 
 /** Read a brief. Total: `Found` | `Absent` | `Malformed`. */
 export const read = (artifact: string): LaneBriefRead => {
-	const {sections, stray} = sectionsOf(artifact);
+	const { sections, stray } = sectionsOf(artifact);
 	// Stray text is a *drift* only once the bytes reach for this format at all. Bytes carrying no
 	// section are simply not a brief, and reporting those as malformed would make every unrelated
 	// comment a defective one.
 	if (sections.find((section) => section.name === "Task") === undefined) {
-		return {_tag: "Absent", reason: 'no "## Task" section — these bytes are not a lane brief'};
+		return { _tag: "Absent", reason: 'no "## Task" section — these bytes are not a lane brief' };
 	}
 	if (stray !== null) {
 		return malformed(
@@ -721,8 +721,8 @@ export const read = (artifact: string): LaneBriefRead => {
 	}
 
 	const scan = fieldsOf([
-		{name: "Task", section: task},
-		{name: "Ground", section: ground},
+		{ name: "Task", section: task },
+		{ name: "Ground", section: ground },
 	]);
 	if (scan._tag === "NotAField") {
 		return malformed(`a section carries a line that is not a field: "${scan.line}"`, scan.line);
@@ -826,8 +826,8 @@ export const renderBrief = (brief: LaneBrief): NonEmptyReadonlyArray<string> => 
 ];
 
 export type LaneBriefFields =
-	| {readonly _tag: "Fields"; readonly brief: LaneBrief}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly brief: LaneBrief }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 /**
  * Parse `emit`'s stdin: one `<key>: <value>` per line.
@@ -842,7 +842,7 @@ export const parseFields = (fields: string): LaneBriefFields => {
 		if (line === "") continue;
 		const field = FIELD.exec(line);
 		if (field?.[1] === undefined) {
-			return {_tag: "Unusable", reason: `line ${index + 1} is not a "<field>: <value>" line`};
+			return { _tag: "Unusable", reason: `line ${index + 1} is not a "<field>: <value>" line` };
 		}
 		if (!OWNED_FIELDS.has(field[1])) {
 			return {
@@ -859,20 +859,20 @@ export const parseFields = (fields: string): LaneBriefFields => {
 	const task = (values.get("task") ?? "").trim();
 	const state = shellState(values.get("state") ?? "");
 	const issue = artifactUrl(values.get("issue") ?? "");
-	if (laneRaw === "") return {_tag: "Unusable", reason: "no lane id"};
-	if (root === null) return {_tag: "Unusable", reason: "no absolute lanes root"};
+	if (laneRaw === "") return { _tag: "Unusable", reason: "no lane id" };
+	if (root === null) return { _tag: "Unusable", reason: "no absolute lanes root" };
 	if (fabrika === null) {
-		return {_tag: "Unusable", reason: "no node-runnable fabrika entrypoint"};
+		return { _tag: "Unusable", reason: "no node-runnable fabrika entrypoint" };
 	}
-	if (task === "") return {_tag: "Unusable", reason: "no task name"};
+	if (task === "") return { _tag: "Unusable", reason: "no task name" };
 	if (state === null) {
-		return {_tag: "Unusable", reason: `no shell state (${SHELL_STATES.join("/")})`};
+		return { _tag: "Unusable", reason: `no shell state (${SHELL_STATES.join("/")})` };
 	}
-	if (issue === null) return {_tag: "Unusable", reason: "no issue URL"};
+	if (issue === null) return { _tag: "Unusable", reason: "no issue URL" };
 	const scanned = groundOf(values, state);
-	if (scanned._tag === "Bad") return {_tag: "Unusable", reason: scanned.reason};
+	if (scanned._tag === "Bad") return { _tag: "Unusable", reason: scanned.reason };
 	const owned = ownerCommentsOf(values, state);
-	if (owned._tag === "Bad") return {_tag: "Unusable", reason: owned.reason};
+	if (owned._tag === "Bad") return { _tag: "Unusable", reason: owned.reason };
 	return {
 		_tag: "Fields",
 		brief: {
@@ -893,12 +893,12 @@ export const parseFields = (fields: string): LaneBriefFields => {
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.brief)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.brief) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderBrief(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderBrief(result.value) } : result;
 };

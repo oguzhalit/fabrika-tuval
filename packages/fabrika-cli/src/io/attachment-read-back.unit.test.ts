@@ -2,8 +2,8 @@
  * The shared read-back's pure core: the render call, the signed link it yields, the anonymous
  * probe, and the two checks that hold the served asset to the capture.
  */
-import {createHash} from "node:crypto";
-import {describe, expect, it} from "@effect/vitest";
+import { createHash } from "node:crypto";
+import { describe, expect, it } from "@effect/vitest";
 import {
 	classifyBytes,
 	classifyDigest,
@@ -26,7 +26,7 @@ describe("renderCall", () => {
 		expect(renderCall(HOSTED, "o/r")).toEqual({
 			method: "POST",
 			path: "markdown",
-			body: {text: `![evidence](${HOSTED})`, mode: "gfm", context: "o/r"},
+			body: { text: `![evidence](${HOSTED})`, mode: "gfm", context: "o/r" },
 			accept: "text/html",
 		});
 	});

@@ -21,7 +21,7 @@
  * no `PASS`/`FAIL` polarity and binds a spec digest rather than a head SHA.
  */
 
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
 import {
 	absent,
 	firstNonBlankLine,
@@ -35,7 +35,7 @@ import {
 declare const SPEC_DIGEST: unique symbol;
 
 /** The spec digest a marker binds: exactly 12 lowercase hex characters. */
-export type SpecDigest = string & {readonly [SPEC_DIGEST]: true};
+export type SpecDigest = string & { readonly [SPEC_DIGEST]: true };
 
 const SPEC_DIGEST_RE = /^[0-9a-f]{12}$/;
 
@@ -131,8 +131,8 @@ export const renderMarker = (marker: GraduateEmitted): NonEmptyReadonlyArray<str
 ];
 
 export type GraduateEmittedFields =
-	| {readonly _tag: "Fields"; readonly marker: GraduateEmitted}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly marker: GraduateEmitted }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 const FIELD_LINE = /^([A-Za-z-]+)[ \t]*[:\t][ \t]*(.*)$/;
 const KEYS = ["source", "emitted", "digest", "covers", "at"] as const;
@@ -178,11 +178,11 @@ export const parseFields = (fields: string): GraduateEmittedFields => {
 	}
 	const source = (seen.get("source") ?? "").trim().replace(/^#/, "");
 	if (!/^\d+$/.test(source)) {
-		return {_tag: "Unusable", reason: `"${seen.get("source")}" is not an issue number`};
+		return { _tag: "Unusable", reason: `"${seen.get("source")}" is not an issue number` };
 	}
 	const emitted = (seen.get("emitted") ?? "").trim().replace(/^#/, "");
 	if (!/^\d+$/.test(emitted)) {
-		return {_tag: "Unusable", reason: `"${seen.get("emitted")}" is not an issue number`};
+		return { _tag: "Unusable", reason: `"${seen.get("emitted")}" is not an issue number` };
 	}
 	const digest = specDigest(seen.get("digest") ?? "");
 	if (digest === null) {
@@ -193,7 +193,7 @@ export const parseFields = (fields: string): GraduateEmittedFields => {
 	}
 	const covers = parseCovers(seen.get("covers") ?? "");
 	if (covers === null) {
-		return {_tag: "Unusable", reason: "covers names no ref — an emission specifies at least one"};
+		return { _tag: "Unusable", reason: "covers names no ref — an emission specifies at least one" };
 	}
 	const at = markerTime(seen.get("at") ?? "");
 	if (at === null) {
@@ -218,12 +218,12 @@ export const parseFields = (fields: string): GraduateEmittedFields => {
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.marker)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.marker) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderMarker(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderMarker(result.value) } : result;
 };

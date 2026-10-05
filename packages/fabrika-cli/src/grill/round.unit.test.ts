@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	AUTHORIZATION,
 	answerComment,
@@ -132,7 +132,7 @@ describe("the round digest", () => {
 
 	it("refuses a round whose block is missing a field it is taken over", () => {
 		const partial = questions(2).map((question, index) =>
-			index === 0 ? {...question, recommended: null} : question,
+			index === 0 ? { ...question, recommended: null } : question,
 		);
 		const digested = digestRound(partial);
 		expect(digested._tag).toBe("Unbindable");
@@ -168,7 +168,7 @@ describe("the digest is neutral to every write this group makes", () => {
 		["an authorization quote", AUTHORIZATION],
 		[
 			"a later round's supersede marker",
-			supersedeComment([{question: "R2.2", digest: bound, round: 3}]),
+			supersedeComment([{ question: "R2.2", digest: bound, round: 3 }]),
 		],
 	])("is unchanged after %s is posted beside it", (_case, _posted) => {
 		// Every write is a NEW comment; the round comment's bytes are never edited, which is the

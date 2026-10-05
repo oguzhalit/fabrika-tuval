@@ -11,15 +11,15 @@
  * `process.chdir` and the runner's directory is put back in `afterEach`. That is the one way to
  * drive the shipped Effect reader itself rather than a re-typed copy of its argv.
  */
-import {execFileSync} from "node:child_process";
-import {mkdtempSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {NodeServices} from "@effect/platform-node";
-import {Effect} from "effect";
-import {afterEach, describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
-import {containmentOf} from "./containment.ts";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
+import { afterEach, describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
+import { containmentOf } from "./containment.ts";
 
 /**
  * Both config layers are pinned away from the developer's own: merge behaviour is configurable, and
@@ -48,7 +48,7 @@ interface Repo {
 const openRepo = (): Repo => {
 	const dir = mkdtempSync(join(tmpdir(), "fabrika-containment-"));
 	const git = (...args: ReadonlyArray<string>): string =>
-		execFileSync("git", [...args], {cwd: dir, env: GIT_ENV, encoding: "utf8"});
+		execFileSync("git", [...args], { cwd: dir, env: GIT_ENV, encoding: "utf8" });
 	git("init", "--quiet", "-b", "main");
 	git("config", "core.hooksPath", join(dir, ".no-hooks"));
 	return {
@@ -130,7 +130,7 @@ describe("containmentOf against a real squash landing", {
 			}).split(" ")[0] ?? "";
 		expect(blind("main...feature")).toBe(blind("main~1..main"));
 
-		await expect(read(repo, "feature", "main")).resolves.toEqual({_tag: "Unlanded"});
+		await expect(read(repo, "feature", "main")).resolves.toEqual({ _tag: "Unlanded" });
 	});
 
 	it("reads a branch whose work never landed as unlanded, so nothing re-cuts it", async () => {
@@ -139,7 +139,7 @@ describe("containmentOf against a real squash landing", {
 		repo.write("a.txt", "trunk moved\n");
 		repo.commit("the trunk's own commit");
 
-		await expect(read(repo, "feature", "main")).resolves.toEqual({_tag: "Unlanded"});
+		await expect(read(repo, "feature", "main")).resolves.toEqual({ _tag: "Unlanded" });
 	});
 
 	it("reads a fast-forwarded branch as an ancestor without paying for the patch reads", async () => {
@@ -147,7 +147,7 @@ describe("containmentOf against a real squash landing", {
 		branched(repo, "a.txt", "changed\n");
 		repo.git("merge", "--ff-only", "feature");
 
-		await expect(read(repo, "feature", "main")).resolves.toEqual({_tag: "Ancestor"});
+		await expect(read(repo, "feature", "main")).resolves.toEqual({ _tag: "Ancestor" });
 	});
 
 	it("reads a branch that nets to nothing against the trunk as adding no content", async () => {
@@ -159,6 +159,6 @@ describe("containmentOf against a real squash landing", {
 		repo.commit("and its revert");
 		repo.git("checkout", "--quiet", "main");
 
-		await expect(read(repo, "feature", "main")).resolves.toEqual({_tag: "NoChange"});
+		await expect(read(repo, "feature", "main")).resolves.toEqual({ _tag: "NoChange" });
 	});
 });

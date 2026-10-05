@@ -6,12 +6,12 @@
  * manifest — and **every failure is data**, because a registry that cannot be reached has to refuse
  * the pin rather than answer with a stale guess.
  */
-import {Cause, Duration, Effect} from "effect";
+import { Cause, Duration, Effect } from "effect";
 import * as HttpClient from "effect/unstable/http/HttpClient";
 import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest";
-import {onTransport} from "./gh-api.ts";
-import {type Attempt, fail, ok} from "./git.ts";
-import {isRecord, parseJson} from "./json.ts";
+import { onTransport } from "./gh-api.ts";
+import { type Attempt, fail, ok } from "./git.ts";
+import { isRecord, parseJson } from "./json.ts";
 
 const REGISTRY_ROOT = "https://registry.npmjs.org";
 

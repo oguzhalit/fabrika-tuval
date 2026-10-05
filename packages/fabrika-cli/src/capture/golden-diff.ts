@@ -178,7 +178,7 @@ export const diffRasters = (
 		};
 	}
 
-	const {width, height} = candidate;
+	const { width, height } = candidate;
 	const threshold = options.channelThreshold ?? 0;
 	const masked = buildMask(width, height, options.masks ?? []);
 	const diff = new Uint8Array(width * height);

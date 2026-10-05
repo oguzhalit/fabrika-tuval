@@ -42,13 +42,17 @@
  * config the classes derive over is read at that same commit and its merge base
  * (`./class-config.ts`), for the same reason.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {ReviewSubsystem} from "../config/keys/review-subsystems.ts";
-import {noUiSurfaces, reviewFilterExclusionsOr, reviewFilterUnexcludeOr} from "../config/paths.ts";
-import {diffRangePaths} from "../io/git.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {classConfigAtCommits} from "./class-config.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { ReviewSubsystem } from "../config/keys/review-subsystems.ts";
+import {
+	noUiSurfaces,
+	reviewFilterExclusionsOr,
+	reviewFilterUnexcludeOr,
+} from "../config/paths.ts";
+import { diffRangePaths } from "../io/git.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { classConfigAtCommits } from "./class-config.ts";
 import {
 	issueRefOf,
 	partition,
@@ -58,7 +62,7 @@ import {
 	shipNamespacesOf,
 	touchesGovernanceRoot,
 } from "./classes.ts";
-import {GOVERNED_FILTER, INCOMPLETE_SCAN, PRECONDITION_UNKNOWN} from "./codes.ts";
+import { GOVERNED_FILTER, INCOMPLETE_SCAN, PRECONDITION_UNKNOWN } from "./codes.ts";
 import {
 	applyPlacement,
 	effectiveExclusions,
@@ -67,10 +71,10 @@ import {
 	patternToMatcher,
 	refusalFor,
 } from "./filter-spike.ts";
-import {refusalProbes} from "./guard-trees.ts";
-import {bindHead, boundLine} from "./head.ts";
-import {readLocalFileSet} from "./local-file-set.ts";
-import {badNumber, openPull, resolveTargetRepo, scannedLine} from "./target.ts";
+import { refusalProbes } from "./guard-trees.ts";
+import { bindHead, boundLine } from "./head.ts";
+import { readLocalFileSet } from "./local-file-set.ts";
+import { badNumber, openPull, resolveTargetRepo, scannedLine } from "./target.ts";
 
 const VERB = "review scope";
 
@@ -103,7 +107,7 @@ export const subsystemRowsOf = (
 		.map((entry) => {
 			const matcher = patternToMatcher(entry.pattern);
 			const paths = files.filter((file) => matcher.test(file)).sort();
-			return {name: entry.subsystem, files: paths.length, paths, constraint: entry.constraint};
+			return { name: entry.subsystem, files: paths.length, paths, constraint: entry.constraint };
 		})
 		.filter((row) => row.files > 0)
 		.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
@@ -135,7 +139,7 @@ export const runScope = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -143,7 +147,7 @@ export const runScope = (
 		if (resolved._tag === "Refused") return resolved.outcome;
 		const repo = resolved.repo;
 
-		const target = yield* openPull(VERB, repo, pr, {requireOpen: true, requireFiles: true});
+		const target = yield* openPull(VERB, repo, pr, { requireOpen: true, requireFiles: true });
 		if (target._tag === "Refused") return target.outcome;
 		const pull = target.pull;
 
@@ -155,7 +159,7 @@ export const runScope = (
 		const read = yield* classConfigAtCommits(
 			VERB,
 			"which paths raise the ui class, count as governed or carry a subsystem constraint is UNKNOWN and this partition would carry an answer nobody derived.",
-			{head: head.sha, base: head.mergeBase},
+			{ head: head.sha, base: head.mergeBase },
 		);
 		if (read._tag === "Refused") return refuse(PRECONDITION_UNKNOWN, read.message);
 		const classConfig = read.config;
@@ -167,7 +171,7 @@ export const runScope = (
 		const listed = yield* readLocalFileSet(
 			VERB,
 			`#${pr}`,
-			{base: head.mergeBase, tip: head.sha},
+			{ base: head.mergeBase, tip: head.sha },
 			pull.changedFiles,
 			diffRangePaths,
 		);
@@ -286,13 +290,13 @@ export const runScope = (
 					scanned: result.scanned,
 					namespaces,
 					routed,
-					...(subsystemRows.length > 0 ? {subsystems: subsystemRows} : {}),
+					...(subsystemRows.length > 0 ? { subsystems: subsystemRows } : {}),
 					...(options.filterPlacement != null
 						? {
 								filter_placement: options.filterPlacement,
-								excluded: {count: excluded.length, paths: excluded},
+								excluded: { count: excluded.length, paths: excluded },
 								...(unexcluded.length > 0
-									? {unexcluded: {count: unexcluded.length, paths: unexcluded}}
+									? { unexcluded: { count: unexcluded.length, paths: unexcluded } }
 									: {}),
 							}
 						: {}),

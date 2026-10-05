@@ -7,7 +7,7 @@
  * markdown table. Rendering that as `unregistered` would report a defect this verb never proved, and
  * would send a caller to add rows to a file that cannot hold them.
  */
-import type {ParsedIndex} from "./index-table.ts";
+import type { ParsedIndex } from "./index-table.ts";
 
 export type Registration = "registered" | "unregistered" | "unknown";
 
@@ -60,18 +60,18 @@ export const readCorpus = (input: {
 	readonly index: ParsedIndex | null;
 }): CorpusReading => {
 	if (!input.present) {
-		return {outcome: "absent", members: [], dangling: [], unregistered: 0, unknown: 0};
+		return { outcome: "absent", members: [], dangling: [], unregistered: 0, unknown: 0 };
 	}
 	const slugs = docSlugs(input.names);
 	if (slugs.length === 0) {
-		return {outcome: "none", members: [], dangling: [], unregistered: 0, unknown: 0};
+		return { outcome: "none", members: [], dangling: [], unregistered: 0, unknown: 0 };
 	}
 
-	const {index} = input;
+	const { index } = input;
 	if (index === null) {
 		return {
 			outcome: "library",
-			members: slugs.map((slug) => ({slug, registration: "unknown" as const, section: "-"})),
+			members: slugs.map((slug) => ({ slug, registration: "unknown" as const, section: "-" })),
 			dangling: [],
 			unregistered: 0,
 			unknown: slugs.length,
@@ -89,13 +89,13 @@ export const readCorpus = (input: {
 	const members = slugs.map((slug): CorpusMember => {
 		const section = sectionOf.get(`${slug}.md`);
 		return section === undefined
-			? {slug, registration: "unregistered", section: "-"}
-			: {slug, registration: "registered", section};
+			? { slug, registration: "unregistered", section: "-" }
+			: { slug, registration: "registered", section };
 	});
 
 	const dangling = index.rows
 		.filter((row) => row.target !== null && (row.member === null || !docNames.has(row.member)))
-		.map((row): DanglingRow => ({target: row.target ?? "", section: row.section}));
+		.map((row): DanglingRow => ({ target: row.target ?? "", section: row.section }));
 
 	return {
 		outcome: "library",

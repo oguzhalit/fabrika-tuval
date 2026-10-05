@@ -9,28 +9,28 @@
  * **Every leaf is declared with `leafCommand`, never a bare `Command.make`** — the bare form silently
  * opts out of the excess-operand guard, which `../excess-operand.unit.test.ts` reds on.
  */
-import {tmpdir} from "node:os";
-import {Effect, Option} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStdin} from "../io/stdin.ts";
-import {CAP_ROUND} from "../retry-budget.ts";
-import {refuse} from "../verb.ts";
-import {runAppendCriterion} from "./append-criterion-verb.ts";
-import {runCi} from "./ci-verb.ts";
-import {OFF_VOCABULARY} from "./codes.ts";
-import {runCriteria} from "./criteria-verb.ts";
-import {runDeviations} from "./deviations-verb.ts";
-import {runDiff} from "./diff-verb.ts";
-import type {FilterPlacement} from "./filter-spike.ts";
-import {runPost} from "./post-verb.ts";
-import {runPreview} from "./preview-verb.ts";
-import {runReport} from "./report-verb.ts";
-import {runScope} from "./scope-verb.ts";
-import {runScratch} from "./scratch-verb.ts";
-import {runSeat} from "./seat-verb.ts";
-import {runVerdicts} from "./verdicts-verb.ts";
+import { tmpdir } from "node:os";
+import { Effect, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStdin } from "../io/stdin.ts";
+import { CAP_ROUND } from "../retry-budget.ts";
+import { refuse } from "../verb.ts";
+import { runAppendCriterion } from "./append-criterion-verb.ts";
+import { runCi } from "./ci-verb.ts";
+import { OFF_VOCABULARY } from "./codes.ts";
+import { runCriteria } from "./criteria-verb.ts";
+import { runDeviations } from "./deviations-verb.ts";
+import { runDiff } from "./diff-verb.ts";
+import type { FilterPlacement } from "./filter-spike.ts";
+import { runPost } from "./post-verb.ts";
+import { runPreview } from "./preview-verb.ts";
+import { runReport } from "./report-verb.ts";
+import { runScope } from "./scope-verb.ts";
+import { runScratch } from "./scratch-verb.ts";
+import { runSeat } from "./seat-verb.ts";
+import { runVerdicts } from "./verdicts-verb.ts";
 
 /**
  * The two flags every verb in this group shares, declared once here.
@@ -103,7 +103,7 @@ const scope = leafCommand(
 		filterPlacement: filterPlacementFlag,
 		exclude: excludeFlag,
 	},
-	Effect.fn(function* ({pr, sha, repo, json, filterPlacement, exclude}) {
+	Effect.fn(function* ({ pr, sha, repo, json, filterPlacement, exclude }) {
 		const placement = placementOf("scope", Option.getOrNull(filterPlacement));
 		if (placement && typeof placement === "object") {
 			yield* emit(placement);
@@ -153,7 +153,7 @@ const diff = leafCommand(
 		filterPlacement: filterPlacementFlag,
 		exclude: excludeFlag,
 	},
-	Effect.fn(function* ({pr, sha, repo, filterPlacement, exclude}) {
+	Effect.fn(function* ({ pr, sha, repo, filterPlacement, exclude }) {
 		const placement = placementOf("diff", Option.getOrNull(filterPlacement));
 		if (placement && typeof placement === "object") {
 			yield* emit(placement);
@@ -202,8 +202,10 @@ const criteria = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({issue, repo, json}) {
-		yield* emit(yield* runCriteria({issue, repo: Option.getOrNull(repo), json, env: process.env}));
+	Effect.fn(function* ({ issue, repo, json }) {
+		yield* emit(
+			yield* runCriteria({ issue, repo: Option.getOrNull(repo), json, env: process.env }),
+		);
 	}),
 ).pipe(
 	Command.withShortDescription(
@@ -219,7 +221,10 @@ const criteria = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika review criteria 4287", description: "Read the set an issue's review grades"},
+		{
+			command: "fabrika review criteria 4287",
+			description: "Read the set an issue's review grades",
+		},
 	]),
 );
 
@@ -250,7 +255,7 @@ const ci = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({pr, sha, wait, budgetSeconds, cadenceSeconds, repo, json}) {
+	Effect.fn(function* ({ pr, sha, wait, budgetSeconds, cadenceSeconds, repo, json }) {
 		yield* emit(
 			yield* runCi({
 				pr,
@@ -294,9 +299,9 @@ const ci = leafCommand(
 
 const verdicts = leafCommand(
 	"verdicts",
-	{pr: prArg, repo: repoFlag, json: jsonFlag},
-	Effect.fn(function* ({pr, repo, json}) {
-		yield* emit(yield* runVerdicts({pr, repo: Option.getOrNull(repo), json, env: process.env}));
+	{ pr: prArg, repo: repoFlag, json: jsonFlag },
+	Effect.fn(function* ({ pr, repo, json }) {
+		yield* emit(yield* runVerdicts({ pr, repo: Option.getOrNull(repo), json, env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("Every verdict marker on a PR, bound to the live head."),
@@ -312,14 +317,14 @@ const verdicts = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika review verdicts 4321", description: "Sweep every verdict marker on a PR"},
+		{ command: "fabrika review verdicts 4321", description: "Sweep every verdict marker on a PR" },
 	]),
 );
 
 const deviations = leafCommand(
 	"deviations",
-	{pr: prArg, sha: boundShaFlag, repo: repoFlag, json: jsonFlag},
-	Effect.fn(function* ({pr, sha, repo, json}) {
+	{ pr: prArg, sha: boundShaFlag, repo: repoFlag, json: jsonFlag },
+	Effect.fn(function* ({ pr, sha, repo, json }) {
 		yield* emit(
 			yield* runDeviations({
 				pr,
@@ -355,9 +360,9 @@ const deviations = leafCommand(
 
 const report = leafCommand(
 	"report",
-	{pr: prArg, repo: repoFlag, json: jsonFlag},
-	Effect.fn(function* ({pr, repo, json}) {
-		yield* emit(yield* runReport({pr, repo: Option.getOrNull(repo), json, env: process.env}));
+	{ pr: prArg, repo: repoFlag, json: jsonFlag },
+	Effect.fn(function* ({ pr, repo, json }) {
+		yield* emit(yield* runReport({ pr, repo: Option.getOrNull(repo), json, env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("The PR body's Report section state and text."),
@@ -538,7 +543,7 @@ const appendCriterion = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({issue, pr, base, tip, round, repo, json}) {
+	Effect.fn(function* ({ issue, pr, base, tip, round, repo, json }) {
 		yield* emit(
 			yield* runAppendCriterion({
 				issue,
@@ -605,8 +610,8 @@ const scratch = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({pr, slug, lane, sha}) {
-		yield* emit(yield* runScratch({pr, slug, lane, sha, env: process.env, tmpRoot: tmpdir()}));
+	Effect.fn(function* ({ pr, slug, lane, sha }) {
+		yield* emit(yield* runScratch({ pr, slug, lane, sha, env: process.env, tmpRoot: tmpdir() }));
 	}),
 ).pipe(
 	Command.withShortDescription("The per-lane scratch path a reviewer's staged files go under."),
@@ -643,7 +648,7 @@ const seat = leafCommand(
 		),
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({issue, base, tip, json}) {
+	Effect.fn(function* ({ issue, base, tip, json }) {
 		yield* emit(
 			yield* runSeat({
 				issue,

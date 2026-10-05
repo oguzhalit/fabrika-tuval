@@ -6,8 +6,8 @@
  * `glossary check` reports as `cross-register`; reporting it twice here would make one term
  * look like two.
  */
-import {Effect, Path} from "effect";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, Path } from "effect";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	type GlossaryEffect,
 	readRegister,
@@ -15,7 +15,7 @@ import {
 	resolveDir,
 	selectRegisters,
 } from "./guards.ts";
-import {normalizeKey, overlaps, type Row} from "./register.ts";
+import { normalizeKey, overlaps, type Row } from "./register.ts";
 
 const VERB = "glossary lookup";
 
@@ -65,7 +65,7 @@ const resolve = (term: string, corpus: ReadonlyArray<Declared>): Resolution => {
 	const overlapping = corpus.filter((entry) => overlaps(entry.row.key, normalized));
 	const first = overlapping[0];
 	if (first === undefined) {
-		return {term, normalized, state: "absent", register: null, section: null, matched: []};
+		return { term, normalized, state: "absent", register: null, section: null, matched: [] };
 	}
 	return {
 		term,
@@ -89,7 +89,7 @@ export const runLookup = (options: LookupOptions): GlossaryEffect<VerbOutcome> =
 	Effect.gen(function* () {
 		if (options.terms.length === 0) return refuse(FAILED, `${VERB}: no term given.`);
 
-		const selected = selectRegisters(VERB, options.register, {allowed: true, refusal: ""});
+		const selected = selectRegisters(VERB, options.register, { allowed: true, refusal: "" });
 		if (selected._tag === "Refused") return selected.outcome;
 
 		const dir = yield* resolveDir(VERB, options.cwd, options.dir);
@@ -105,7 +105,7 @@ export const runLookup = (options: LookupOptions): GlossaryEffect<VerbOutcome> =
 				scope.push(`${VERB}: ${file.display} — absent, contributing 0 row(s).`);
 				continue;
 			}
-			for (const row of state.value.parsed.rows) corpus.push({row, register: file.name});
+			for (const row of state.value.parsed.rows) corpus.push({ row, register: file.name });
 			scope.push(`${VERB}: ${file.display} — ${state.value.parsed.rows.length} row(s).`);
 		}
 

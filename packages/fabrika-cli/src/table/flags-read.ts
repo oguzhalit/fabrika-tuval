@@ -8,15 +8,15 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9821
  */
 
-import {Effect} from "effect";
-import type {TableSettings} from "../config/keys/table.ts";
-import type {ProjectSnapshot, ProjectsAnswer} from "../io/projects.ts";
-import type {LaneRecord} from "../wire/lane-record.ts";
-import {PRECONDITION_UNKNOWN, SCOPE_MISSING} from "./codes.ts";
-import {type HeadRow, type StageCell, sizeOf} from "./flags.ts";
-import {membersOf} from "./group.ts";
-import {FIELD, productBoard} from "./shape.ts";
-import {betsOf, type Row, type SyncNode} from "./sync.ts";
+import { Effect } from "effect";
+import type { TableSettings } from "../config/keys/table.ts";
+import type { ProjectSnapshot, ProjectsAnswer } from "../io/projects.ts";
+import type { LaneRecord } from "../wire/lane-record.ts";
+import { PRECONDITION_UNKNOWN, SCOPE_MISSING } from "./codes.ts";
+import { type HeadRow, type StageCell, sizeOf } from "./flags.ts";
+import { membersOf } from "./group.ts";
+import { FIELD, productBoard } from "./shape.ts";
+import { betsOf, type Row, type SyncNode } from "./sync.ts";
 import {
 	type Refusal,
 	readRecords,
@@ -37,11 +37,11 @@ export interface Heads {
 	readonly graph: ReadonlyMap<number, SyncNode>;
 }
 
-const refused = (code: number, reason: string): Refusal => ({_tag: "Refused", code, reason});
+const refused = (code: number, reason: string): Refusal => ({ _tag: "Refused", code, reason });
 
 export const stopOn = (
 	verb: string,
-	failed: Exclude<ProjectsAnswer<unknown>, {_tag: "Ok"}>,
+	failed: Exclude<ProjectsAnswer<unknown>, { _tag: "Ok" }>,
 	what: string,
 ): Refusal =>
 	failed._tag === "MissingScope"
@@ -58,7 +58,7 @@ const optionName = (row: Row | undefined, field: string): string | null => {
 const stageOf = (row: Row): StageCell | null => {
 	const stage = cell(row, FIELD.stage);
 	return stage?.value._tag === "Option"
-		? {name: stage.value.name, setter: stage.creator, setAt: stage.updatedAt}
+		? { name: stage.value.name, setter: stage.creator, setAt: stage.updatedAt }
 		: null;
 };
 
@@ -84,7 +84,7 @@ export const readHeadRows = <R>(
 		const located = yield* board.locate(repo, productBoard(repo, settings));
 		if (located._tag !== "Ok") return stopOn(verb, located, "cannot find the table");
 		if (located.value._tag === "Refused") return located.value;
-		const {project} = located.value;
+		const { project } = located.value;
 		const items = yield* board.items(project.id);
 		if (items._tag !== "Ok") {
 			return stopOn(verb, items, `cannot read project #${project.number}'s rows`);
@@ -111,7 +111,7 @@ export const readHeadRows = <R>(
 				},
 			];
 		});
-		return {_tag: "HeadRows", project, rows: heads, table: rows, scoped};
+		return { _tag: "HeadRows", project, rows: heads, table: rows, scoped };
 	});
 
 /** {@link readHeadRows}, with the lane records on the issues each row stands for. */
@@ -125,8 +125,8 @@ export const readHeads = <R>(
 	Effect.gen(function* () {
 		const heads = yield* readHeadRows(board, verb, repo, settings, issues);
 		if (heads._tag === "Refused") return heads;
-		const {project, rows, table, scoped} = heads;
+		const { project, rows, table, scoped } = heads;
 		const read = yield* readRecords(board, verb, repo, scoped, new Set(table.keys()));
 		if (read._tag === "Refused") return read;
-		return {_tag: "Heads", project, rows, records: read.records, table, graph: scoped.graph};
+		return { _tag: "Heads", project, rows, records: read.records, table, graph: scoped.graph };
 	});

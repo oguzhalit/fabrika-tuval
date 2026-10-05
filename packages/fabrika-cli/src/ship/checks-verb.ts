@@ -17,11 +17,11 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/8362
  */
-import {Clock, Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {producerFor, producesCi, resolveCi} from "../config/ci-producer.ts";
-import {reasonHistogram} from "../evidence.ts";
-import {commitExists} from "../io/pulls.ts";
+import { Clock, Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { producerFor, producesCi, resolveCi } from "../config/ci-producer.ts";
+import { reasonHistogram } from "../evidence.ts";
+import { commitExists } from "../io/pulls.ts";
 import {
 	authorityNote,
 	type BlockingSet,
@@ -32,10 +32,10 @@ import {
 	reportingNote,
 	unreadableCause,
 } from "../review/blocking.ts";
-import {gateCoverageOf, type RunProvenance} from "../review/gate-coverage.ts";
-import {isFailing, isStalled, rollupOf, statusOf} from "../review/rollup.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {INCOMPLETE_SCAN, NO_GATE_COVERAGE, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import { gateCoverageOf, type RunProvenance } from "../review/gate-coverage.ts";
+import { isFailing, isStalled, rollupOf, statusOf } from "../review/rollup.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { INCOMPLETE_SCAN, NO_GATE_COVERAGE, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
 import {
 	latestPerContext,
 	listRunsAtHead,
@@ -43,7 +43,7 @@ import {
 	listWorkflowPaths,
 	type ShipCheckRun,
 } from "./github.ts";
-import {isSuperseded, supersededSuites} from "./supersession.ts";
+import { isSuperseded, supersededSuites } from "./supersession.ts";
 import {
 	badNumber,
 	inspectedSha,
@@ -163,7 +163,7 @@ export const runChecks = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 		const bound = inspectedSha(VERB, options.sha);
@@ -224,7 +224,7 @@ export const runChecks = (
 					diagnostics,
 				);
 			}
-			const {declared, runs} = enumerated.value;
+			const { declared, runs } = enumerated.value;
 			if (runs.length < declared) {
 				return refuse(
 					INCOMPLETE_SCAN,
@@ -354,9 +354,9 @@ export const runChecks = (
 			read: Sample,
 			rollup: ChecksRollup,
 		):
-			| {readonly _tag: "Ungated"; readonly outcome: VerbOutcome}
-			| {readonly _tag: "Judged"; readonly notes: ReadonlyArray<string>} => {
-			if (rollup !== "green") return {_tag: "Judged", notes: []};
+			| { readonly _tag: "Ungated"; readonly outcome: VerbOutcome }
+			| { readonly _tag: "Judged"; readonly notes: ReadonlyArray<string> } => {
+			if (rollup !== "green") return { _tag: "Judged", notes: [] };
 			const coverage = gateCoverageOf(read.workflows, read.ranAtHead, head);
 			if (coverage._tag === "Unreadable") {
 				// Never the coverage refusal: that code says the repository's gates were silent, and an
@@ -412,7 +412,7 @@ export const runChecks = (
 			if (producer._tag === "Refused") return refuse(ZERO_SCOPE, producer.reason, diagnostics);
 			const rendered = render(read, rollup, wedged, settle);
 			return producer._tag === "OptedOut"
-				? {...rendered, stderr: [...rendered.stderr, producer.note]}
+				? { ...rendered, stderr: [...rendered.stderr, producer.note] }
 				: rendered;
 		};
 

@@ -6,14 +6,14 @@
  * Bash command a permission bypass the operator never granted — two failures that look identical in
  * a test asserting only the exit code.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {ENVELOPE_UNKNOWN, GROUND_UNKNOWN, MALFORMED_ENVELOPE, WRONG_EVENT} from "./codes.ts";
-import {PRETOOLUSE_BLOCKING_EXIT} from "./harness-exit.ts";
-import {runPreBash} from "./pre-bash-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { ENVELOPE_UNKNOWN, GROUND_UNKNOWN, MALFORMED_ENVELOPE, WRONG_EVENT } from "./codes.ts";
+import { PRETOOLUSE_BLOCKING_EXIT } from "./harness-exit.ts";
+import { runPreBash } from "./pre-bash-verb.ts";
 
 const PRIMARY = "/primary";
 const WORKTREE = "/wt";
@@ -22,7 +22,7 @@ const WORKTREE = "/wt";
 const repoFs = () =>
 	fakeFs({
 		directories: [`${PRIMARY}/.git`],
-		dirs: {[PRIMARY]: [".git"], [`${PRIMARY}/.git/worktrees/wt`]: []},
+		dirs: { [PRIMARY]: [".git"], [`${PRIMARY}/.git/worktrees/wt`]: [] },
 		files: {
 			[`${WORKTREE}/.git`]: "gitdir: /primary/.git/worktrees/wt",
 			[`${PRIMARY}/.git/worktrees/wt/commondir`]: "../..",
@@ -36,23 +36,23 @@ const envelope = (command: string, cwd: string) =>
 		transcript_path: "/t.jsonl",
 		cwd,
 		tool_name: "Bash",
-		tool_input: {command},
+		tool_input: { command },
 	});
 
 const run = (
 	text: string,
 	fs = repoFs(),
-	env: Record<string, string | undefined> = {HOME: "/Users/operator"},
+	env: Record<string, string | undefined> = { HOME: "/Users/operator" },
 ): Promise<VerbOutcome> =>
 	Effect.runPromise(
 		Effect.provide(
-			runPreBash({stdin: Effect.succeed({_tag: "Text", text} as StdinRead), env}),
+			runPreBash({ stdin: Effect.succeed({ _tag: "Text", text } as StdinRead), env }),
 			fs.layer,
 		),
 	);
 
 const decisionOf = (out: VerbOutcome): Record<string, unknown> =>
-	(JSON.parse(out.stdout) as {hookSpecificOutput?: Record<string, unknown>}).hookSpecificOutput ??
+	(JSON.parse(out.stdout) as { hookSpecificOutput?: Record<string, unknown> }).hookSpecificOutput ??
 	{};
 
 describe("the verdict on the wire", () => {
@@ -73,7 +73,7 @@ describe("the verdict on the wire", () => {
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).not.toHaveProperty("hookSpecificOutput");
-		expect(JSON.parse(out.stdout)).toMatchObject({fabrika: {outcome: "allow"}});
+		expect(JSON.parse(out.stdout)).toMatchObject({ fabrika: { outcome: "allow" } });
 	});
 });
 
@@ -82,7 +82,7 @@ describe("what the guard arms on", () => {
 		const out = await run(envelope(`cd /elsewhere && git switch main`, PRIMARY));
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({fabrika: {outcome: "allow"}});
+		expect(JSON.parse(out.stdout)).toMatchObject({ fabrika: { outcome: "allow" } });
 		expect(out.stderr.join("\n")).toContain("primary checkout");
 	});
 
@@ -98,7 +98,7 @@ describe("the states in which nothing was judged", () => {
 	it("fails open and loud when the cwd's working tree cannot be established", async () => {
 		const out = await run(
 			envelope(`cd ${PRIMARY} && node bin.ts`, WORKTREE),
-			fakeFs({unprobeable: [`${WORKTREE}/.git`]}),
+			fakeFs({ unprobeable: [`${WORKTREE}/.git`] }),
 		);
 
 		expect(out.code).toBe(GROUND_UNKNOWN);
@@ -112,7 +112,7 @@ describe("the states in which nothing was judged", () => {
 		const unknown = await Effect.runPromise(
 			Effect.provide(
 				runPreBash({
-					stdin: Effect.succeed({_tag: "Failed", reason: "read failed"} as StdinRead),
+					stdin: Effect.succeed({ _tag: "Failed", reason: "read failed" } as StdinRead),
 					env: {},
 				}),
 				repoFs().layer,
@@ -131,7 +131,7 @@ describe("the states in which nothing was judged", () => {
 				transcript_path: "/t",
 				cwd: WORKTREE,
 				tool_name: "Bash",
-				tool_input: {command: `cd ${PRIMARY} && ls`},
+				tool_input: { command: `cd ${PRIMARY} && ls` },
 			}),
 		);
 		const noCommand = await run(
@@ -141,7 +141,7 @@ describe("the states in which nothing was judged", () => {
 				transcript_path: "/t",
 				cwd: WORKTREE,
 				tool_name: "Agent",
-				tool_input: {subagent_type: "general-purpose"},
+				tool_input: { subagent_type: "general-purpose" },
 			}),
 		);
 

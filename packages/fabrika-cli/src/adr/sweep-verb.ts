@@ -3,12 +3,12 @@
  *
  * A readable empty corpus is below the rarity floor; an unreadable corpus cannot be ranked.
  */
-import {Effect, type FileSystem, Result} from "effect";
-import {readDir, readFile} from "../io/fs.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {DIR_UNREADABLE, NO_SUBJECT} from "./codes.ts";
-import {idFromFile, isFourDigitId, partitionRecordNames} from "./records.ts";
-import {renderEntry, type SweepCandidate, sweep} from "./sweep.ts";
+import { Effect, type FileSystem, Result } from "effect";
+import { readDir, readFile } from "../io/fs.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { DIR_UNREADABLE, NO_SUBJECT } from "./codes.ts";
+import { idFromFile, isFourDigitId, partitionRecordNames } from "./records.ts";
+import { renderEntry, type SweepCandidate, sweep } from "./sweep.ts";
 
 export interface SweepOptions {
 	/** A four-digit id already in `--dir`, or a path to the draft file. */
@@ -22,7 +22,7 @@ export const runSweep = (
 	options: SweepOptions,
 ): Effect.Effect<VerbOutcome, never, FileSystem.FileSystem> =>
 	Effect.gen(function* () {
-		const {dir, limit, json} = options;
+		const { dir, limit, json } = options;
 		const root = dir.replace(/\/+$/, "");
 
 		const listing = yield* Effect.result(readDir(root));
@@ -32,7 +32,7 @@ export const runSweep = (
 				`adr sweep: cannot read ${root}: the directory could not be listed — the outcome is UNKNOWN, never "no-overlap".`,
 			);
 		}
-		const {records} = partitionRecordNames(listing.success);
+		const { records } = partitionRecordNames(listing.success);
 
 		const corpus: SweepCandidate[] = [];
 		for (const file of records) {
@@ -45,7 +45,7 @@ export const runSweep = (
 					`adr sweep: cannot read ${root}: ${file} could not be read — the outcome is UNKNOWN, never "no-overlap".`,
 				);
 			}
-			corpus.push({id: idFromFile(file) ?? file, file, text: text.success});
+			corpus.push({ id: idFromFile(file) ?? file, file, text: text.success });
 		}
 
 		const wanted = options.new;
@@ -62,7 +62,7 @@ export const runSweep = (
 
 		if (limit < 0) return refuse(FAILED, `adr sweep: --limit ${limit} is negative.`);
 
-		const result = sweep({id: subjectId, text: subjectText}, corpus, limit);
+		const result = sweep({ id: subjectId, text: subjectText }, corpus, limit);
 		const scope = `adr sweep: scanned ${root}, ${result.scanned} decision records; ${result.inScope} uncited live-accepted record(s) in scope (${result.cited} already cited).`;
 		const diagnostics = result.reason === null ? [scope] : [scope, `adr sweep: ${result.reason}.`];
 

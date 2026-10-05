@@ -1,37 +1,37 @@
-import {describe, expect, it} from "vitest";
-import {loadConfig, resolve} from "../load.ts";
-import {BOARDS, boardsKey, SHIPPED_ON_CALL} from "./boards.ts";
+import { describe, expect, it } from "vitest";
+import { loadConfig, resolve } from "../load.ts";
+import { BOARDS, boardsKey, SHIPPED_ON_CALL } from "./boards.ts";
 
 const declared = (boards: unknown) =>
-	resolve(loadConfig({_tag: "Text", text: JSON.stringify({[BOARDS]: boards})}), boardsKey);
+	resolve(loadConfig({ _tag: "Text", text: JSON.stringify({ [BOARDS]: boards }) }), boardsKey);
 
 describe("a repo with no `boards` block", () => {
 	it("has one board", () => {
-		expect(resolve(loadConfig({_tag: "Absent"}), boardsKey)).toMatchObject({
+		expect(resolve(loadConfig({ _tag: "Absent" }), boardsKey)).toMatchObject({
 			_tag: "Default",
-			value: {_tag: "One"},
+			value: { _tag: "One" },
 		});
 		expect(
-			resolve(loadConfig({_tag: "Text", text: JSON.stringify({table: {}})}), boardsKey),
-		).toMatchObject({_tag: "Default", value: {_tag: "One"}});
+			resolve(loadConfig({ _tag: "Text", text: JSON.stringify({ table: {} }) }), boardsKey),
+		).toMatchObject({ _tag: "Default", value: { _tag: "One" } });
 	});
 });
 
 describe("a declared on-call board", () => {
 	it("splits on the shipped values when it declares nothing else", () => {
-		expect(declared({onCall: {}})).toEqual({
+		expect(declared({ onCall: {} })).toEqual({
 			_tag: "Declared",
 			layer: "tracked",
-			value: {_tag: "Split", onCall: SHIPPED_ON_CALL},
+			value: { _tag: "Split", onCall: SHIPPED_ON_CALL },
 		});
 		expect(SHIPPED_ON_CALL).toEqual({
-			route: {origins: ["customer"], types: ["bug"], labels: []},
+			route: { origins: ["customer"], types: ["bug"], labels: [] },
 			responseTargets: {
-				byLabel: [{name: "same day", hours: 24, labels: ["p0"]}],
-				otherwise: {name: "this week", hours: 168},
+				byLabel: [{ name: "same day", hours: 24, labels: ["p0"] }],
+				otherwise: { name: "this week", hours: 168 },
 			},
 			spendShare: 20,
-			project: {owner: null, number: null},
+			project: { owner: null, number: null },
 		});
 	});
 
@@ -39,13 +39,13 @@ describe("a declared on-call board", () => {
 		expect(
 			declared({
 				onCall: {
-					route: {labels: ["ci-broken"]},
+					route: { labels: ["ci-broken"] },
 					responseTargets: {
-						byLabel: [{name: "now", hours: 2, labels: ["outage"]}],
-						otherwise: {name: "soon", hours: 48},
+						byLabel: [{ name: "now", hours: 2, labels: ["outage"] }],
+						otherwise: { name: "soon", hours: 48 },
 					},
 					spendShare: 35,
-					project: {number: 9},
+					project: { number: 9 },
 				},
 			}),
 		).toEqual({
@@ -54,13 +54,13 @@ describe("a declared on-call board", () => {
 			value: {
 				_tag: "Split",
 				onCall: {
-					route: {origins: ["customer"], types: ["bug"], labels: ["ci-broken"]},
+					route: { origins: ["customer"], types: ["bug"], labels: ["ci-broken"] },
 					responseTargets: {
-						byLabel: [{name: "now", hours: 2, labels: ["outage"]}],
-						otherwise: {name: "soon", hours: 48},
+						byLabel: [{ name: "now", hours: 2, labels: ["outage"] }],
+						otherwise: { name: "soon", hours: 48 },
 					},
 					spendShare: 35,
-					project: {owner: null, number: 9},
+					project: { owner: null, number: 9 },
 				},
 			},
 		});
@@ -68,35 +68,38 @@ describe("a declared on-call board", () => {
 
 	it.each([
 		["a block with no onCall board", {}],
-		["a stray top-level key", {onCall: {}, product: {}}],
-		["a stray on-call key", {onCall: {size: "S"}}],
-		["a route list that is not a list", {onCall: {route: {types: "bug"}}}],
-		["a route naming one label twice", {onCall: {route: {labels: ["a", "a"]}}}],
-		["a zero-hour target", {onCall: {responseTargets: {otherwise: {name: "never", hours: 0}}}}],
+		["a stray top-level key", { onCall: {}, product: {} }],
+		["a stray on-call key", { onCall: { size: "S" } }],
+		["a route list that is not a list", { onCall: { route: { types: "bug" } } }],
+		["a route naming one label twice", { onCall: { route: { labels: ["a", "a"] } } }],
+		[
+			"a zero-hour target",
+			{ onCall: { responseTargets: { otherwise: { name: "never", hours: 0 } } } },
+		],
 		[
 			"a labeled target naming no label",
-			{onCall: {responseTargets: {byLabel: [{name: "x", hours: 1, labels: []}]}}},
+			{ onCall: { responseTargets: { byLabel: [{ name: "x", hours: 1, labels: [] }] } } },
 		],
 		[
 			"one target name used twice",
 			{
 				onCall: {
 					responseTargets: {
-						byLabel: [{name: "soon", hours: 1, labels: ["a"]}],
-						otherwise: {name: "soon", hours: 5},
+						byLabel: [{ name: "soon", hours: 1, labels: ["a"] }],
+						otherwise: { name: "soon", hours: 5 },
 					},
 				},
 			},
 		],
-		["a share over 100", {onCall: {spendShare: 120}}],
-		["a share of zero", {onCall: {spendShare: 0}}],
-		["a project number that is not a positive integer", {onCall: {project: {number: 0}}}],
+		["a share over 100", { onCall: { spendShare: 120 } }],
+		["a share of zero", { onCall: { spendShare: 0 } }],
+		["a project number that is not a positive integer", { onCall: { project: { number: 0 } } }],
 	])("refuses %s whole", (_name, value) => {
-		expect(declared(value)).toMatchObject({_tag: "Malformed"});
+		expect(declared(value)).toMatchObject({ _tag: "Malformed" });
 	});
 
 	it("names no path, repository, issue number or login in its shipped values", () => {
-		expect(SHIPPED_ON_CALL.project).toEqual({owner: null, number: null});
+		expect(SHIPPED_ON_CALL.project).toEqual({ owner: null, number: null });
 		const strings: string[] = [];
 		const walk = (value: unknown): void => {
 			if (typeof value === "string") strings.push(value);

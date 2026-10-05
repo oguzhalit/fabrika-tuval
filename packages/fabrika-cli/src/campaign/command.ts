@@ -9,13 +9,13 @@
  * whole closed vocabulary in this group's own words rather than emit the parser's generic message.
  */
 
-import {Effect, Option} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {runList} from "./list-verb.ts";
-import {runOpen} from "./open-verb.ts";
-import {runState} from "./state-verb.ts";
+import { Effect, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { runList } from "./list-verb.ts";
+import { runOpen } from "./open-verb.ts";
+import { runState } from "./state-verb.ts";
 
 const fileFlag = Flag.string("file").pipe(
 	Flag.optional,
@@ -52,7 +52,7 @@ const list = leafCommand(
 		file: fileFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({state, file, json}) {
+	Effect.fn(function* ({ state, file, json }) {
 		yield* emit(
 			yield* runList({
 				state: Option.getOrNull(state),
@@ -73,7 +73,7 @@ const list = leafCommand(
 			'  Derivation: the campaign skill\'s contract.md, "campaign list"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika campaign list --state active"}]),
+	Command.withExamples([{ command: "fabrika campaign list --state active" }]),
 );
 
 const open = leafCommand(
@@ -92,7 +92,7 @@ const open = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({name, milestone, cites, file, repo, json}) {
+	Effect.fn(function* ({ name, milestone, cites, file, repo, json }) {
 		yield* emit(
 			yield* runOpen({
 				name,
@@ -150,7 +150,7 @@ const state = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({selector, to, cites, file, repo, json}) {
+	Effect.fn(function* ({ selector, to, cites, file, repo, json }) {
 		yield* emit(
 			yield* runState({
 				selector,

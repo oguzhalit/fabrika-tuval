@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
-import {cameFromSection} from "../wire/came-from.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
+import { cameFromSection } from "../wire/came-from.ts";
 import {
 	BARE_AT_PATH,
 	BINDING_MALFORMED,
@@ -12,8 +12,8 @@ import {
 	SESSION_AMBIGUOUS,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {sessionPayload} from "./fixtures.test-support.ts";
-import {type OpenSubject, openSubject, runOpen} from "./open-verb.ts";
+import { sessionPayload } from "./fixtures.test-support.ts";
+import { type OpenSubject, openSubject, runOpen } from "./open-verb.ts";
 
 const LABELS = /^GET .*\/repos\/o\/r\/labels\?/;
 const SEARCH = /^GET .*\/repos\/o\/r\/issues\?state=open&labels=/;
@@ -21,15 +21,15 @@ const ISSUE = /^GET .*\/repos\/o\/r\/issues\/\d+$/;
 const CREATE = /^POST .*\/repos\/o\/r\/issues$/;
 const LABEL_WRITE = /^POST .*\/repos\/o\/r\/issues\/\d+\/labels$/;
 
-const served = (body: string, status = 200): HttpReply => ({status, body});
-const NOT_FOUND: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
-const GATEWAY: HttpReply = {status: 502, body: '{"message":"Bad gateway"}'};
+const served = (body: string, status = 200): HttpReply => ({ status, body });
+const NOT_FOUND: HttpReply = { status: 404, body: '{"message":"Not Found"}' };
+const GATEWAY: HttpReply = { status: 502, body: '{"message":"Bad gateway"}' };
 
 const TOPIC = "sozluk moderation model";
 
 const options = {
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 };
 
 /** The subject a test names, refusing rather than silently opening on something else. */
@@ -39,10 +39,10 @@ const subjectOf = (topic: string | null, ticket: number | null): OpenSubject => 
 	return subject;
 };
 
-const onTopic = {...options, subject: subjectOf(TOPIC, null)};
+const onTopic = { ...options, subject: subjectOf(TOPIC, null) };
 
 const created = served(
-	JSON.stringify({number: 9412, html_url: "https://example.test/issues/9412"}),
+	JSON.stringify({ number: 9412, html_url: "https://example.test/issues/9412" }),
 	201,
 );
 
@@ -58,11 +58,11 @@ const listing = (...rows: ReadonlyArray<Record<string, unknown>>): HttpReply =>
 	served(JSON.stringify(rows));
 
 const labelled = (...names: ReadonlyArray<string>): HttpReply =>
-	served(JSON.stringify(names.map((name) => ({name}))));
+	served(JSON.stringify(names.map((name) => ({ name }))));
 
 const run = (
 	script: ReadonlyArray<Scripted>,
-	overrides: {readonly topic?: string | null; readonly ticket?: number | null} = {},
+	overrides: { readonly topic?: string | null; readonly ticket?: number | null } = {},
 ) =>
 	Effect.runPromise(
 		Effect.provide(
@@ -84,7 +84,7 @@ describe("runOpen mints a session when none matches", () => {
 		withLabel,
 		[SEARCH, listing()],
 		[CREATE, created],
-		[ISSUE, served(sessionPayload(9412, {labels: []}))],
+		[ISSUE, served(sessionPayload(9412, { labels: [] }))],
 		[LABEL_WRITE, served("{}")],
 	];
 
@@ -116,7 +116,7 @@ describe("runOpen resumes an existing session", () => {
 		]);
 		const out = await Effect.runPromise(Effect.provide(runOpen(onTopic), seams.layer));
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({session: 9412, created: false});
+		expect(JSON.parse(out.stdout)).toMatchObject({ session: 9412, created: false });
 		expect(seams.requests.some((request) => CREATE.test(request))).toBe(false);
 	});
 
@@ -130,7 +130,7 @@ describe("runOpen resumes an existing session", () => {
 			[SEARCH, listing(row(9412, title))],
 			[ISSUE, served(sessionPayload(9412))],
 		]);
-		expect(JSON.parse(out.stdout)).toMatchObject({session: 9412, created: false});
+		expect(JSON.parse(out.stdout)).toMatchObject({ session: 9412, created: false });
 	});
 
 	it("does not match a title a human reads as related but that is not equal", async () => {
@@ -138,10 +138,10 @@ describe("runOpen resumes an existing session", () => {
 			withLabel,
 			[SEARCH, listing(row(9412, "sozluk moderation"))],
 			[CREATE, created],
-			[ISSUE, served(sessionPayload(9412, {labels: []}))],
+			[ISSUE, served(sessionPayload(9412, { labels: [] }))],
 			[LABEL_WRITE, served("{}")],
 		]);
-		expect(JSON.parse(out.stdout)).toMatchObject({created: true});
+		expect(JSON.parse(out.stdout)).toMatchObject({ created: true });
 	});
 });
 
@@ -151,16 +151,16 @@ describe("runOpen seats each refusal on its own code, with nothing on stdout", (
 			string,
 			number,
 			ReadonlyArray<Scripted>,
-			{readonly topic?: string | null; readonly ticket?: number | null},
+			{ readonly topic?: string | null; readonly ticket?: number | null },
 		]
 	> = [
 		[
 			"a machine-local path in the topic",
 			LEAKED_PATH,
 			[withLabel],
-			{topic: "why /Users/someone/notes.md is stale"},
+			{ topic: "why /Users/someone/notes.md is stale" },
 		],
-		["a bare @ path topic", BARE_AT_PATH, [withLabel], {topic: "@/Users/someone/notes.md"}],
+		["a bare @ path topic", BARE_AT_PATH, [withLabel], { topic: "@/Users/someone/notes.md" }],
 		["the session label not existing", NO_TARGET, [[LABELS, labelled("bug", "chore")]], {}],
 		["a label read that failed", PRECONDITION_UNKNOWN, [[LABELS, GATEWAY]], {}],
 		["a search that could not complete", PRECONDITION_UNKNOWN, [withLabel, [SEARCH, GATEWAY]], {}],
@@ -183,7 +183,7 @@ describe("runOpen seats each refusal on its own code, with nothing on stdout", (
 				withLabel,
 				[SEARCH, listing()],
 				[CREATE, created],
-				[ISSUE, served(sessionPayload(9412, {labels: [], title: "something else entirely"}))],
+				[ISSUE, served(sessionPayload(9412, { labels: [], title: "something else entirely" }))],
 			],
 			{},
 		],
@@ -194,7 +194,7 @@ describe("runOpen seats each refusal on its own code, with nothing on stdout", (
 				withLabel,
 				[SEARCH, listing()],
 				[CREATE, created],
-				[ISSUE, served(sessionPayload(9412, {labels: []}))],
+				[ISSUE, served(sessionPayload(9412, { labels: [] }))],
 				[LABEL_WRITE, GATEWAY],
 			],
 			{},
@@ -218,7 +218,7 @@ describe("runOpen seats each refusal on its own code, with nothing on stdout", (
 			withLabel,
 			[SEARCH, listing()],
 			[CREATE, created],
-			[ISSUE, served(sessionPayload(9412, {labels: []}))],
+			[ISSUE, served(sessionPayload(9412, { labels: [] }))],
 			[LABEL_WRITE, GATEWAY],
 		]);
 		expect(out.stderr.join("\n")).toContain("#9412");
@@ -239,14 +239,14 @@ describe("runOpen binds a session to a wayfinding frontier ticket", () => {
 	const SESSION_READ = /^GET .*\/repos\/o\/r\/issues\/9412$/;
 	const ticketRead: Scripted = [
 		TICKET_READ,
-		served(sessionPayload(TICKET, {labels: ["wayfinding:map"], title: TITLE})),
+		served(sessionPayload(TICKET, { labels: ["wayfinding:map"], title: TITLE })),
 	];
 	const bound = (number: number, title = TITLE): Record<string, unknown> =>
 		row(number, title, `A grilling session.\n\n${cameFromSection(TICKET)}`);
 	const onTicket = (script: ReadonlyArray<Scripted>) => fakeSeams(script);
 	const forTicket = (seams: ReturnType<typeof fakeSeams>, topic: string | null = null) =>
 		Effect.runPromise(
-			Effect.provide(runOpen({...options, subject: subjectOf(topic, TICKET)}), seams.layer),
+			Effect.provide(runOpen({ ...options, subject: subjectOf(topic, TICKET) }), seams.layer),
 		);
 
 	it("takes the title from the ticket and records the ticket on the body", async () => {
@@ -255,7 +255,7 @@ describe("runOpen binds a session to a wayfinding frontier ticket", () => {
 			ticketRead,
 			[SEARCH, listing()],
 			[CREATE, created],
-			[SESSION_READ, served(sessionPayload(9412, {labels: [], title: TITLE}))],
+			[SESSION_READ, served(sessionPayload(9412, { labels: [], title: TITLE }))],
 			[LABEL_WRITE, served("{}")],
 		]);
 		const out = await forTicket(seams);
@@ -277,10 +277,10 @@ describe("runOpen binds a session to a wayfinding frontier ticket", () => {
 			withLabel,
 			ticketRead,
 			[SEARCH, listing(bound(9412))],
-			[SESSION_READ, served(sessionPayload(9412, {title: TITLE}))],
+			[SESSION_READ, served(sessionPayload(9412, { title: TITLE }))],
 		]);
 		const out = await forTicket(seams);
-		expect(JSON.parse(out.stdout)).toMatchObject({session: 9412, ticket: TICKET, created: false});
+		expect(JSON.parse(out.stdout)).toMatchObject({ session: 9412, ticket: TICKET, created: false });
 		expect(seams.requests.some((request) => CREATE.test(request))).toBe(false);
 	});
 
@@ -291,11 +291,11 @@ describe("runOpen binds a session to a wayfinding frontier ticket", () => {
 				withLabel,
 				ticketRead,
 				[SEARCH, listing(bound(9412, renamed))],
-				[SESSION_READ, served(sessionPayload(9412, {title: renamed}))],
+				[SESSION_READ, served(sessionPayload(9412, { title: renamed }))],
 			]),
 			"a topic nobody would match on",
 		);
-		expect(JSON.parse(out.stdout)).toMatchObject({session: 9412, created: false});
+		expect(JSON.parse(out.stdout)).toMatchObject({ session: 9412, created: false });
 	});
 
 	it("does not resume a same-titled session that is bound to nothing", async () => {
@@ -305,11 +305,11 @@ describe("runOpen binds a session to a wayfinding frontier ticket", () => {
 				ticketRead,
 				[SEARCH, listing(row(9400, TITLE))],
 				[CREATE, created],
-				[SESSION_READ, served(sessionPayload(9412, {labels: [], title: TITLE}))],
+				[SESSION_READ, served(sessionPayload(9412, { labels: [], title: TITLE }))],
 				[LABEL_WRITE, served("{}")],
 			]),
 		);
-		expect(JSON.parse(out.stdout)).toMatchObject({session: 9412, created: true});
+		expect(JSON.parse(out.stdout)).toMatchObject({ session: 9412, created: true });
 	});
 
 	it("refuses on 16 when two open sessions carry the same ticket", async () => {
@@ -350,19 +350,19 @@ describe("runOpen binds a session to a wayfinding frontier ticket", () => {
 				ticketRead,
 				[SEARCH, listing(other)],
 				[CREATE, created],
-				[SESSION_READ, served(sessionPayload(9412, {labels: [], title: TITLE}))],
+				[SESSION_READ, served(sessionPayload(9412, { labels: [], title: TITLE }))],
 				[LABEL_WRITE, served("{}")],
 			]),
 		);
-		expect(JSON.parse(out.stdout)).toMatchObject({session: 9412, created: true});
+		expect(JSON.parse(out.stdout)).toMatchObject({ session: 9412, created: true });
 	});
 });
 
 describe("openSubject makes 'neither a topic nor a ticket' unrepresentable", () => {
 	it("answers null only when both are absent", () => {
 		expect(openSubject(null, null)).toBeNull();
-		expect(openSubject(TOPIC, null)).toEqual({_tag: "Topic", topic: TOPIC});
-		expect(openSubject(null, 5652)).toEqual({_tag: "Ticket", ticket: 5652});
-		expect(openSubject(TOPIC, 5652)).toEqual({_tag: "Bound", topic: TOPIC, ticket: 5652});
+		expect(openSubject(TOPIC, null)).toEqual({ _tag: "Topic", topic: TOPIC });
+		expect(openSubject(null, 5652)).toEqual({ _tag: "Ticket", ticket: 5652 });
+		expect(openSubject(TOPIC, 5652)).toEqual({ _tag: "Bound", topic: TOPIC, ticket: 5652 });
 	});
 });

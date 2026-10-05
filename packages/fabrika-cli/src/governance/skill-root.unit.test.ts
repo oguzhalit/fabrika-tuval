@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {insideRoot, resolveSkillRoots, skillRootsIn} from "./skill-root.ts";
+import { describe, expect, it } from "vitest";
+import { insideRoot, resolveSkillRoots, skillRootsIn } from "./skill-root.ts";
 
 describe("resolveSkillRoots", () => {
 	it("resolves the one install and returns its directory", () => {
@@ -8,11 +8,11 @@ describe("resolveSkillRoots", () => {
 				"claude-plugins/fabrika/skills/governance/SKILL.md",
 				"claude-plugins/fabrika/skills/review/SKILL.md",
 			]),
-		).toEqual({_tag: "One", root: "claude-plugins/fabrika/skills/governance/"});
+		).toEqual({ _tag: "One", root: "claude-plugins/fabrika/skills/governance/" });
 	});
 
 	it("does NOT match a repo-root `skills/` tree — the plugin segment is part of the pattern", () => {
-		expect(resolveSkillRoots(["skills/governance/SKILL.md"])).toEqual({_tag: "None"});
+		expect(resolveSkillRoots(["skills/governance/SKILL.md"])).toEqual({ _tag: "None" });
 	});
 
 	it("matches an install at any depth, so a foreign repo's layout still resolves", () => {
@@ -34,7 +34,7 @@ describe("resolveSkillRoots", () => {
 	});
 
 	it("answers None over an empty tree, which is a fact and not an error", () => {
-		expect(resolveSkillRoots([])).toEqual({_tag: "None"});
+		expect(resolveSkillRoots([])).toEqual({ _tag: "None" });
 		expect(skillRootsIn([])).toEqual([]);
 	});
 });

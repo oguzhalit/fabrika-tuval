@@ -13,21 +13,21 @@
  * at the new head: comments are append-only evidence, never edited in place, because evidence at a
  * stale head misleads.
  */
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {requireSession} from "../build/claim.ts";
-import {contentOf, gate} from "../build/content-gate.ts";
-import {publishTarget} from "../build/git.ts";
-import {laneScratchDir} from "../build/scratch-verb.ts";
-import {resolveTargetRepo} from "../build/target.ts";
-import {noUiSurfaces, uiCaptureOr, uiSurfacesOr} from "../config/paths.ts";
-import {createComment, getComment} from "../io/issues.ts";
-import {getPullRequest} from "../io/pulls.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {readBytes} from "./bytes.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { requireSession } from "../build/claim.ts";
+import { contentOf, gate } from "../build/content-gate.ts";
+import { publishTarget } from "../build/git.ts";
+import { laneScratchDir } from "../build/scratch-verb.ts";
+import { resolveTargetRepo } from "../build/target.ts";
+import { noUiSurfaces, uiCaptureOr, uiSurfacesOr } from "../config/paths.ts";
+import { createComment, getComment } from "../io/issues.ts";
+import { getPullRequest } from "../io/pulls.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { readBytes } from "./bytes.ts";
 import {
 	BAD_SECTIONS,
 	BARE_AT_PATH,
@@ -41,11 +41,11 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {evidenceHeader} from "./evidence-comment.ts";
-import {requireUiLane} from "./lane.ts";
-import {decodePng, sha256Of} from "./png.ts";
-import {pullHeadRef} from "./pull-head.ts";
-import {pairSets, parseSetManifest, type SetCapture} from "./set-manifest.ts";
+import { evidenceHeader } from "./evidence-comment.ts";
+import { requireUiLane } from "./lane.ts";
+import { decodePng, sha256Of } from "./png.ts";
+import { pullHeadRef } from "./pull-head.ts";
+import { pairSets, parseSetManifest, type SetCapture } from "./set-manifest.ts";
 
 const VERB = "ui evidence";
 
@@ -58,8 +58,8 @@ export interface UploadTarget {
 }
 
 export type Upload =
-	| {readonly _tag: "Ok"; readonly url: string}
-	| {readonly _tag: "Failed"; readonly reason: string};
+	| { readonly _tag: "Ok"; readonly url: string }
+	| { readonly _tag: "Failed"; readonly reason: string };
 
 export interface EvidenceOptions {
 	readonly pr: number;
@@ -96,7 +96,7 @@ export const composeEvidence = (
 	}>,
 	head: string,
 ): string => {
-	const rows = pairs.map(({surface, before, after}) =>
+	const rows = pairs.map(({ surface, before, after }) =>
 		before === null
 			? `### \`${surface}\` — new surface\n\n![after](${after})`
 			: `### \`${surface}\`\n\n| before | after |\n| --- | --- |\n| ![before](${before}) | ![after](${after}) |`,
@@ -108,8 +108,8 @@ const readCapture = (
 	capture: SetCapture,
 	set: string,
 ): Effect.Effect<
-	| {readonly _tag: "Bytes"; readonly bytes: Uint8Array}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome},
+	| { readonly _tag: "Bytes"; readonly bytes: Uint8Array }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome },
 	never,
 	FileSystem.FileSystem
 > =>
@@ -142,15 +142,15 @@ const readCapture = (
 						`${VERB}: capture "${capture.surface}" in set "${set}" is invalid (${image.detail}).`,
 					),
 				}
-			: {_tag: "Bytes" as const, bytes: read.bytes};
+			: { _tag: "Bytes" as const, bytes: read.bytes };
 	});
 
 const readSet = (
 	dir: string,
 	set: string,
 ): Effect.Effect<
-	| {readonly _tag: "Set"; readonly captures: ReadonlyArray<SetCapture>}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome},
+	| { readonly _tag: "Set"; readonly captures: ReadonlyArray<SetCapture> }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome },
 	never,
 	FileSystem.FileSystem
 > =>
@@ -174,7 +174,7 @@ const readSet = (
 						`${VERB}: set "${set}"'s manifest.json is not a set manifest: ${parsed.violation}.`,
 					),
 				}
-			: {_tag: "Set" as const, captures: parsed.captures};
+			: { _tag: "Set" as const, captures: parsed.captures };
 	});
 
 export const runEvidence = (
@@ -287,7 +287,7 @@ export const runEvidence = (
 					role === "before" ? (options.before as string) : options.after,
 				);
 				if (read._tag === "Refused")
-					return {...read.outcome, stderr: [...lane.notes, ...read.outcome.stderr]};
+					return { ...read.outcome, stderr: [...lane.notes, ...read.outcome.stderr] };
 				targets.push({
 					surface: capture.surface,
 					role,

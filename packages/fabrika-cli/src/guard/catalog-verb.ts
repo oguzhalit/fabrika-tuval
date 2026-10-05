@@ -8,11 +8,11 @@
  * See `guard catalog-guard check --help` for results and exit codes.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {exists, type ReadFailed, readFile} from "../io/fs.ts";
-import {isRecord, parseJson} from "../io/json.ts";
-import type {VerbOutcome} from "../verb.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { exists, type ReadFailed, readFile } from "../io/fs.ts";
+import { isRecord, parseJson } from "../io/json.ts";
+import type { VerbOutcome } from "../verb.ts";
 import {
 	type AllowlistEntry,
 	type CatalogViolation,
@@ -25,7 +25,7 @@ import {
 	violationAnnotations,
 	violationReport,
 } from "./catalog.ts";
-import {scanWorkspaceMembers} from "./members.ts";
+import { scanWorkspaceMembers } from "./members.ts";
 import {
 	annotationsOrNone,
 	clean,
@@ -64,7 +64,7 @@ const readManifests = (
 	paths: ReadonlyArray<string>,
 ): Effect.Effect<
 	{
-		readonly read: ReadonlyArray<{readonly manifest: PackageManifest; readonly text: string}>;
+		readonly read: ReadonlyArray<{ readonly manifest: PackageManifest; readonly text: string }>;
 		readonly unparseable: ReadonlyArray<Unparseable>;
 	},
 	ReadFailed,
@@ -72,18 +72,18 @@ const readManifests = (
 > =>
 	Effect.gen(function* () {
 		const path = yield* Path.Path;
-		const read: Array<{manifest: PackageManifest; text: string}> = [];
+		const read: Array<{ manifest: PackageManifest; text: string }> = [];
 		const unparseable: Array<Unparseable> = [];
 		for (const rel of paths) {
 			const text = yield* readFile(path.join(root, rel));
 			const parsed = parseJson(text);
 			if (!isRecord(parsed)) {
-				unparseable.push({path: rel, reason: "does not parse as a JSON object"});
+				unparseable.push({ path: rel, reason: "does not parse as a JSON object" });
 				continue;
 			}
-			read.push({manifest: {path: rel, deps: manifestDeps(parsed)}, text});
+			read.push({ manifest: { path: rel, deps: manifestDeps(parsed) }, text });
 		}
-		return {read, unparseable};
+		return { read, unparseable };
 	});
 
 /** The repo-relative manifest paths in scope: every real workspace member, plus the root. */
@@ -110,7 +110,7 @@ const judge = (
 				`${VERB}: scanned ZERO package.json manifests — fail-closed, like every guard here. Is the repo root correct, or did the workspace shape change?`,
 			);
 		}
-		const {read, unparseable} = yield* readManifests(root, paths);
+		const { read, unparseable } = yield* readManifests(root, paths);
 		if (unparseable.length > 0) {
 			return unknown(
 				[

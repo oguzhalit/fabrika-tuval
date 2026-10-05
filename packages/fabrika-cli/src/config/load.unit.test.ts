@@ -1,21 +1,21 @@
-import {describe, expect, it} from "vitest";
-import {CONFIG_PATH} from "./document.ts";
-import type {KeyGroup, Registration} from "./key-group.ts";
-import {capClearAuthorsKey} from "./keys/cap-clear-authors.ts";
-import {docLeakExemptKey} from "./keys/doc-leak-exempt.ts";
-import {governedRootsKey, SHIPPED_GOVERNED_ROOTS} from "./keys/governed-roots.ts";
-import {workflowValidatorsKey} from "./keys/workflow-validators.ts";
-import {type Load, loadConfig, resolve} from "./load.ts";
-import {KEY_GROUPS} from "./registry.ts";
+import { describe, expect, it } from "vitest";
+import { CONFIG_PATH } from "./document.ts";
+import type { KeyGroup, Registration } from "./key-group.ts";
+import { capClearAuthorsKey } from "./keys/cap-clear-authors.ts";
+import { docLeakExemptKey } from "./keys/doc-leak-exempt.ts";
+import { governedRootsKey, SHIPPED_GOVERNED_ROOTS } from "./keys/governed-roots.ts";
+import { workflowValidatorsKey } from "./keys/workflow-validators.ts";
+import { type Load, loadConfig, resolve } from "./load.ts";
+import { KEY_GROUPS } from "./registry.ts";
 
-const fromText = (text: string): Load => loadConfig({_tag: "Text", text});
+const fromText = (text: string): Load => loadConfig({ _tag: "Text", text });
 
 /** Every registered key, so an arm that must hold for all of them is asserted over all of them. */
 const registered: Array<[string, Registration]> = KEY_GROUPS.map((group) => [group.key, group]);
 
 describe("the four resolution arms", () => {
 	it.each(registered)("%s resolves to its shipped default with no file at all", (_key, group) => {
-		const load = loadConfig({_tag: "Absent"});
+		const load = loadConfig({ _tag: "Absent" });
 		expect(load._tag).toBe("Config");
 		if (load._tag !== "Config") return;
 		const resolved = group.resolve(load.documents);
@@ -30,11 +30,11 @@ describe("the four resolution arms", () => {
 	});
 
 	it.each(registered)("%s is UNKNOWN when the file exists and cannot be read", (_key, group) => {
-		const load = loadConfig({_tag: "Unreadable", reason: "EACCES"});
+		const load = loadConfig({ _tag: "Unreadable", reason: "EACCES" });
 		expect(load._tag).toBe("Config");
 		if (load._tag !== "Config") return;
 		const resolved = group.resolve(load.documents);
-		expect(resolved).toEqual({_tag: "Unknown", reason: "EACCES"});
+		expect(resolved).toEqual({ _tag: "Unknown", reason: "EACCES" });
 	});
 
 	it.each(registered)("%s refuses a document that is not a JSON object", (_key, group) => {
@@ -59,8 +59,8 @@ describe("declared values", () => {
 			_tag: "Declared",
 			layer: "tracked",
 			value: [
-				{_tag: "User", login: "ada"},
-				{_tag: "Team", org: "acme", team: "control-plane"},
+				{ _tag: "User", login: "ada" },
+				{ _tag: "Team", org: "acme", team: "control-plane" },
 			],
 		});
 	});
@@ -75,7 +75,7 @@ describe("declared values", () => {
 	it("reads exempt paths trimmed, in declaration order", () => {
 		expect(
 			declared('{"docLeakExempt": [" /CLAUDE.md ", "/agents/triager.md"]}', docLeakExemptKey),
-		).toEqual({_tag: "Declared", layer: "tracked", value: ["/CLAUDE.md", "/agents/triager.md"]});
+		).toEqual({ _tag: "Declared", layer: "tracked", value: ["/CLAUDE.md", "/agents/triager.md"] });
 	});
 
 	it("reads each validator with the files it opens", () => {
@@ -87,7 +87,7 @@ describe("declared values", () => {
 		).toEqual({
 			_tag: "Declared",
 			layer: "tracked",
-			value: [{argv: ["node", "b.js"], reads: [".github/workflows/ci.yml"]}],
+			value: [{ argv: ["node", "b.js"], reads: [".github/workflows/ci.yml"] }],
 		});
 	});
 
@@ -104,35 +104,38 @@ describe("declared values", () => {
 /** A malformed value refuses that key's whole value, naming what it rejected. */
 describe("malformed values", () => {
 	it.each([
-		{shape: "a key that is not an array", text: '{"capClearAuthors": "@ada"}'},
-		{shape: "a non-string entry", text: '{"capClearAuthors": [1]}'},
-		{shape: "an entry with no `@`", text: '{"capClearAuthors": ["ada"]}'},
-		{shape: "an entry naming a nested path", text: '{"capClearAuthors": ["@a/b/c"]}'},
-	])("capClearAuthors refuses the whole set on $shape", ({text}) => {
+		{ shape: "a key that is not an array", text: '{"capClearAuthors": "@ada"}' },
+		{ shape: "a non-string entry", text: '{"capClearAuthors": [1]}' },
+		{ shape: "an entry with no `@`", text: '{"capClearAuthors": ["ada"]}' },
+		{ shape: "an entry naming a nested path", text: '{"capClearAuthors": ["@a/b/c"]}' },
+	])("capClearAuthors refuses the whole set on $shape", ({ text }) => {
 		const resolved = resolve(fromText(text), capClearAuthorsKey);
 		expect(resolved._tag).toBe("Malformed");
 		if (resolved._tag === "Malformed") expect(resolved.reason).toContain("capClearAuthors");
 	});
 
 	it.each([
-		{shape: "a key that is not an array", text: '{"docLeakExempt": "/CLAUDE.md"}'},
-		{shape: "a non-string entry", text: '{"docLeakExempt": [1]}'},
-		{shape: "a blank entry", text: '{"docLeakExempt": ["  "]}'},
-	])("docLeakExempt refuses the whole list on $shape", ({text}) => {
+		{ shape: "a key that is not an array", text: '{"docLeakExempt": "/CLAUDE.md"}' },
+		{ shape: "a non-string entry", text: '{"docLeakExempt": [1]}' },
+		{ shape: "a blank entry", text: '{"docLeakExempt": ["  "]}' },
+	])("docLeakExempt refuses the whole list on $shape", ({ text }) => {
 		expect(resolve(fromText(text), docLeakExemptKey)._tag).toBe("Malformed");
 	});
 
 	it.each([
-		{shape: "a key that is not an array", text: '{"workflowValidators": "actionlint"}'},
-		{shape: "an entry that is a bare string", text: '{"workflowValidators": ["actionlint"]}'},
-		{shape: "a bare argv", text: '{"workflowValidators": [["actionlint"]]}'},
-		{shape: "an empty argv", text: '{"workflowValidators": [{"command": [], "reads": ["a.yml"]}]}'},
-		{shape: "no reads key", text: '{"workflowValidators": [{"command": ["actionlint"]}]}'},
+		{ shape: "a key that is not an array", text: '{"workflowValidators": "actionlint"}' },
+		{ shape: "an entry that is a bare string", text: '{"workflowValidators": ["actionlint"]}' },
+		{ shape: "a bare argv", text: '{"workflowValidators": [["actionlint"]]}' },
+		{
+			shape: "an empty argv",
+			text: '{"workflowValidators": [{"command": [], "reads": ["a.yml"]}]}',
+		},
+		{ shape: "no reads key", text: '{"workflowValidators": [{"command": ["actionlint"]}]}' },
 		{
 			shape: "an empty reads list",
 			text: '{"workflowValidators": [{"command": ["actionlint"], "reads": []}]}',
 		},
-	])("workflowValidators refuses the whole list on $shape", ({text}) => {
+	])("workflowValidators refuses the whole list on $shape", ({ text }) => {
 		expect(resolve(fromText(text), workflowValidatorsKey)._tag).toBe("Malformed");
 	});
 
@@ -165,17 +168,17 @@ describe("a config cannot un-govern itself", () => {
 
 	it("admits the shipped default, which covers it", () => {
 		expect(fromText("{}")._tag).toBe("Config");
-		expect(loadConfig({_tag: "Absent"})._tag).toBe("Config");
+		expect(loadConfig({ _tag: "Absent" })._tag).toBe("Config");
 	});
 
 	it("does not refuse on an unreadable file — that is UNKNOWN, not a bad config", () => {
-		expect(loadConfig({_tag: "Unreadable", reason: "EIO"})._tag).toBe("Config");
+		expect(loadConfig({ _tag: "Unreadable", reason: "EIO" })._tag).toBe("Config");
 	});
 
 	it.each([
-		{shape: "an empty list", text: '{"governedRoots": []}', words: "nothing would be governed"},
-		{shape: "a value that is not an array", text: '{"governedRoots": 42}', words: "not an array"},
-	])("refuses the whole load on $shape, in the decoder's words", ({text, words}) => {
+		{ shape: "an empty list", text: '{"governedRoots": []}', words: "nothing would be governed" },
+		{ shape: "a value that is not an array", text: '{"governedRoots": 42}', words: "not an array" },
+	])("refuses the whole load on $shape, in the decoder's words", ({ text, words }) => {
 		const load = fromText(text);
 		expect(load._tag).toBe("Refused");
 		if (load._tag !== "Refused") return;

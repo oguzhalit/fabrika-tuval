@@ -1,10 +1,10 @@
-import {assert, describe, it} from "@effect/vitest";
-import {Effect, Fiber, Layer} from "effect";
-import {TestClock} from "effect/testing";
-import {ChildProcessSpawner} from "effect/unstable/process";
-import {errOut, type FakeShell, fakeShell, okOut} from "./fakes.test-support.ts";
-import {asksForVersion, SOURCE_READ_BOUND, versionFor} from "./source-version.ts";
-import {VERSION} from "./version.ts";
+import { assert, describe, it } from "@effect/vitest";
+import { Effect, Fiber, Layer } from "effect";
+import { TestClock } from "effect/testing";
+import { ChildProcessSpawner } from "effect/unstable/process";
+import { errOut, type FakeShell, fakeShell, okOut } from "./fakes.test-support.ts";
+import { asksForVersion, SOURCE_READ_BOUND, versionFor } from "./source-version.ts";
+import { VERSION } from "./version.ts";
 
 const SOURCE_URL = "file:///checkout/packages/fabrika-cli/src/source-version.ts";
 const DIST_URL = "file:///repo/node_modules/@kampus/fabrika-cli/dist/source-version.js";
@@ -35,16 +35,16 @@ const run = (
 	argv: ReadonlyArray<string>,
 	moduleUrl: string,
 	shell: FakeShell,
-): Effect.Effect<{readonly version: string; readonly calls: ReadonlyArray<string>}> =>
+): Effect.Effect<{ readonly version: string; readonly calls: ReadonlyArray<string> }> =>
 	versionFor(argv, moduleUrl).pipe(
-		Effect.map((version) => ({version, calls: shell.calls})),
+		Effect.map((version) => ({ version, calls: shell.calls })),
 		Effect.provide(shell.layer),
 	);
 
 describe("versionFor", () => {
 	it.effect("reads the package's own directory, not the cwd", () =>
 		Effect.gen(function* () {
-			const {version, calls} = yield* run(["--version"], SOURCE_URL, cleanCheckout());
+			const { version, calls } = yield* run(["--version"], SOURCE_URL, cleanCheckout());
 			assert.strictEqual(version, `${VERSION}+2b61b57 (source)`);
 			assert.deepStrictEqual(calls, [
 				`git -C ${PACKAGE_DIR} rev-parse --short HEAD`,
@@ -59,14 +59,14 @@ describe("versionFor", () => {
 				[/rev-parse --short HEAD/, okOut("2b61b57\n")],
 				[/status --porcelain/, okOut(" M src/run.ts\n")],
 			]);
-			const {version} = yield* run(["--version"], SOURCE_URL, shell);
+			const { version } = yield* run(["--version"], SOURCE_URL, shell);
 			assert.strictEqual(version, `${VERSION}+2b61b57-dirty (source)`);
 		}),
 	);
 
 	it.effect("spawns no git when argv does not ask for the version", () =>
 		Effect.gen(function* () {
-			const {version, calls} = yield* run(["build", "tree"], SOURCE_URL, cleanCheckout());
+			const { version, calls } = yield* run(["build", "tree"], SOURCE_URL, cleanCheckout());
 			assert.strictEqual(version, VERSION);
 			assert.deepStrictEqual(calls, []);
 		}),
@@ -74,7 +74,7 @@ describe("versionFor", () => {
 
 	it.effect("spawns no git from the published build, even asked for the version", () =>
 		Effect.gen(function* () {
-			const {version, calls} = yield* run(["--version"], DIST_URL, cleanCheckout());
+			const { version, calls } = yield* run(["--version"], DIST_URL, cleanCheckout());
 			assert.strictEqual(version, VERSION);
 			assert.deepStrictEqual(calls, []);
 		}),
@@ -83,7 +83,7 @@ describe("versionFor", () => {
 	it.effect("falls back to the plain version when git exits non-zero", () =>
 		Effect.gen(function* () {
 			const shell = fakeShell([[/rev-parse/, errOut("fatal: not a git repository")]]);
-			const {version} = yield* run(["--version"], SOURCE_URL, shell);
+			const { version } = yield* run(["--version"], SOURCE_URL, shell);
 			assert.strictEqual(version, VERSION);
 		}),
 	);
@@ -94,7 +94,7 @@ describe("versionFor", () => {
 				[/rev-parse/, okOut("2b61b57\n")],
 				[/status/, errOut("fatal: index file corrupt")],
 			]);
-			const {version} = yield* run(["--version"], SOURCE_URL, shell);
+			const { version } = yield* run(["--version"], SOURCE_URL, shell);
 			assert.strictEqual(version, VERSION);
 		}),
 	);

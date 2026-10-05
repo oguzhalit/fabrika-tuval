@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {declaredBoard} from "../status/board.test-support.ts";
+import { describe, expect, it } from "vitest";
+import { declaredBoard } from "../status/board.test-support.ts";
 import {
 	AUDIENCES,
 	type Change,
@@ -16,7 +16,7 @@ import {
 
 /** A repo's declared lanes, as a fixture: the engine ships none, so a lane case needs a board. */
 const LANES = ["wayfinder:backlog", "axis:pipeline-hardening"];
-const declared = declaredBoard({boardVocabulary: {standingLanes: LANES}});
+const declared = declaredBoard({ boardVocabulary: { standingLanes: LANES } });
 if (declared._tag !== "Resolved") throw new Error(declared.reason);
 const BOARD = declared.resolved;
 
@@ -65,7 +65,13 @@ describe("the containment invariant", () => {
 	});
 
 	it.each(AUDIENCES)("keeps ready-for:%s under the facet that owns ready-for:*", (readyFor) => {
-		const facets = triagedFacets({type: "bug", priority: "p2", readyFor, lane: null, classes: []});
+		const facets = triagedFacets({
+			type: "bug",
+			priority: "p2",
+			readyFor,
+			lane: null,
+			classes: [],
+		});
 		const facet = facets.find((f) => f.name === "audience");
 		expect(facet?.keep).toEqual([`ready-for:${readyFor}`]);
 		expect(facet?.owns(`ready-for:${readyFor}`)).toBe(true);
@@ -97,34 +103,36 @@ describe("the containment invariant", () => {
 		expect(facets.find((f) => f.name === "audience")?.keep).toEqual(["ready-for:human"]);
 	});
 
-	it.each(
-		TYPES.filter((type) => type !== "epic"),
-	)("keeps ready-for:agent on %s — the exemption is the epic's alone", (type) => {
-		const facets = triagedFacets({
-			type,
-			priority: "p2",
-			readyFor: "agent",
-			lane: null,
-			classes: [],
-		});
-		expect(facets.find((f) => f.name === "audience")?.keep).toEqual(["ready-for:agent"]);
-	});
+	it.each(TYPES.filter((type) => type !== "epic"))(
+		"keeps ready-for:agent on %s — the exemption is the epic's alone",
+		(type) => {
+			const facets = triagedFacets({
+				type,
+				priority: "p2",
+				readyFor: "agent",
+				lane: null,
+				classes: [],
+			});
+			expect(facets.find((f) => f.name === "audience")?.keep).toEqual(["ready-for:agent"]);
+		},
+	);
 
-	it.each(
-		LANES,
-	)("keeps the declared lane %s under the facet that owns the standing lanes", (lane) => {
-		const facets = triagedFacets(
-			{type: "bug", priority: "p2", readyFor: "agent", lane, classes: []},
-			BOARD,
-		);
-		const facet = facets.find((f) => f.name === "lane");
-		expect(facet?.keep).toEqual([lane]);
-		expect(facet?.owns(lane)).toBe(true);
-	});
+	it.each(LANES)(
+		"keeps the declared lane %s under the facet that owns the standing lanes",
+		(lane) => {
+			const facets = triagedFacets(
+				{ type: "bug", priority: "p2", readyFor: "agent", lane, classes: [] },
+				BOARD,
+			);
+			const facet = facets.find((f) => f.name === "lane");
+			expect(facet?.keep).toEqual([lane]);
+			expect(facet?.owns(lane)).toBe(true);
+		},
+	);
 
 	it("owns no lane label on the shipped board — an undeclared one is preserved, never stripped", () => {
 		const plan = planReconcile(
-			{labels: ["wayfinder:backlog", "p1"], milestone: null},
+			{ labels: ["wayfinder:backlog", "p1"], milestone: null },
 			parkedFacets(),
 			null,
 		);
@@ -209,7 +217,7 @@ describe("decodeMember", () => {
 describe("planReconcile — the #4285 removal mechanism", () => {
 	it("removes a superseded priority and adds the applied one", () => {
 		const plan = planReconcile(
-			{labels: ["p1", "status:needs-triage"], milestone: null},
+			{ labels: ["p1", "status:needs-triage"], milestone: null },
 			triaged,
 			47,
 		);
@@ -220,7 +228,7 @@ describe("planReconcile — the #4285 removal mechanism", () => {
 	it("NEVER removes the label it is applying, even when the facet's pattern matches it", () => {
 		// The delete this guards: `p2` matches /^p\d+$/, so a keep set the removal does not consult
 		// strips the priority the run just asked for while still printing a success line.
-		const plan = planReconcile({labels: ["p2", "type:bug"], milestone: 47}, triaged, 47);
+		const plan = planReconcile({ labels: ["p2", "type:bug"], milestone: 47 }, triaged, 47);
 		expect(plan.removed).not.toContain("p2");
 		expect(plan.removed).not.toContain("type:bug");
 		expect(removedLabels(plan.changes)).toEqual([]);
@@ -228,7 +236,7 @@ describe("planReconcile — the #4285 removal mechanism", () => {
 
 	it("preserves every label no facet owns, and issues no write for it", () => {
 		const plan = planReconcile(
-			{labels: ["area:pipeline", "good first issue", "p1"], milestone: 47},
+			{ labels: ["area:pipeline", "good first issue", "p1"], milestone: 47 },
 			triaged,
 			47,
 		);
@@ -238,12 +246,16 @@ describe("planReconcile — the #4285 removal mechanism", () => {
 	});
 
 	it("plans the milestone FIRST, so the homing guard never sees a triaged un-homed issue", () => {
-		const plan = planReconcile({labels: ["status:needs-triage"], milestone: null}, triaged, 47);
-		expect(plan.changes[0]).toEqual({_tag: "SetMilestone", milestone: 47});
+		const plan = planReconcile({ labels: ["status:needs-triage"], milestone: null }, triaged, 47);
+		expect(plan.changes[0]).toEqual({ _tag: "SetMilestone", milestone: 47 });
 	});
 
 	it("plans every removal before the single add batch", () => {
-		const plan = planReconcile({labels: ["p1", "status:needs-triage"], milestone: 47}, triaged, 47);
+		const plan = planReconcile(
+			{ labels: ["p1", "status:needs-triage"], milestone: 47 },
+			triaged,
+			47,
+		);
 		const lastRemoval = plan.changes.findLastIndex((c) => c._tag === "RemoveLabel");
 		const add = plan.changes.findIndex((c) => c._tag === "AddLabels");
 		expect(lastRemoval).toBeGreaterThanOrEqual(0);
@@ -251,13 +263,13 @@ describe("planReconcile — the #4285 removal mechanism", () => {
 	});
 
 	it("batches the adds into one change, because it is one API call", () => {
-		const plan = planReconcile({labels: [], milestone: 47}, triaged, 47);
+		const plan = planReconcile({ labels: [], milestone: 47 }, triaged, 47);
 		expect(plan.changes.filter((c) => c._tag === "AddLabels")).toHaveLength(1);
 	});
 
 	it("plans nothing at all when the issue already holds the target shape", () => {
 		const plan = planReconcile(
-			{labels: ["type:bug", "p2", "status:triaged", "ready-for:agent"], milestone: 47},
+			{ labels: ["type:bug", "p2", "status:triaged", "ready-for:agent"], milestone: 47 },
 			triaged,
 			47,
 		);
@@ -275,13 +287,13 @@ describe("planReconcile — the #4285 removal mechanism", () => {
 			},
 			BOARD,
 		);
-		const plan = planReconcile({labels: [], milestone: 47}, facets, null);
-		expect(plan.changes[0]).toEqual({_tag: "ClearMilestone"});
+		const plan = planReconcile({ labels: [], milestone: 47 }, facets, null);
+		expect(plan.changes[0]).toEqual({ _tag: "ClearMilestone" });
 		expect(plan.added).toContain("axis:pipeline-hardening");
 	});
 
 	it("touches the milestone not at all when the home already matches", () => {
-		const plan = planReconcile({labels: [], milestone: 47}, triaged, 47);
+		const plan = planReconcile({ labels: [], milestone: 47 }, triaged, 47);
 		expect(plan.changes.some((c) => c._tag === "SetMilestone" || c._tag === "ClearMilestone")).toBe(
 			false,
 		);
@@ -298,7 +310,7 @@ describe("planReconcile — the #4285 removal mechanism", () => {
 			},
 			BOARD,
 		);
-		const plan = planReconcile({labels: ["wayfinder:backlog"], milestone: null}, facets, null);
+		const plan = planReconcile({ labels: ["wayfinder:backlog"], milestone: null }, facets, null);
 		expect(plan.removed).toEqual(["wayfinder:backlog"]);
 		expect(plan.added).toContain("axis:pipeline-hardening");
 	});
@@ -324,17 +336,17 @@ describe("planReconcile — a park", () => {
 			"wayfinder:backlog",
 		]);
 		expect(plan.added).toEqual(["status:needs-info"]);
-		expect(plan.changes[0]).toEqual({_tag: "ClearMilestone"});
+		expect(plan.changes[0]).toEqual({ _tag: "ClearMilestone" });
 	});
 
 	it("preserves an unowned label across a park", () => {
-		const plan = planReconcile({labels: ["area:pipeline"], milestone: null}, parked, null);
+		const plan = planReconcile({ labels: ["area:pipeline"], milestone: null }, parked, null);
 		expect(plan.preserved).toEqual(["area:pipeline"]);
 		expect(removedLabels(plan.changes)).toEqual([]);
 	});
 
 	it("is idempotent on an already-parked issue", () => {
-		const plan = planReconcile({labels: ["status:needs-info"], milestone: null}, parked, null);
+		const plan = planReconcile({ labels: ["status:needs-info"], milestone: null }, parked, null);
 		expect(plan.changes).toEqual([]);
 	});
 });
@@ -349,7 +361,7 @@ describe("shapeViolations — the read-back's positive proof", () => {
 	});
 
 	it("fails a read that sees NOTHING — absence is not a matching shape", () => {
-		expect(shapeViolations({labels: [], milestone: null}, triaged, 47)).toEqual([
+		expect(shapeViolations({ labels: [], milestone: null }, triaged, 47)).toEqual([
 			"type",
 			"priority",
 			"status",
@@ -403,7 +415,7 @@ describe("shapeViolations — the read-back's positive proof", () => {
 	it("fails a park whose read-back still carries a priced facet", () => {
 		const parked = parkedFacets();
 		expect(
-			shapeViolations({labels: ["status:needs-info", "p1"], milestone: null}, parked, null),
+			shapeViolations({ labels: ["status:needs-info", "p1"], milestone: null }, parked, null),
 		).toEqual(["priority"]);
 	});
 
@@ -418,13 +430,13 @@ describe("shapeViolations — the read-back's positive proof", () => {
 
 describe("renderShape", () => {
 	it("reports what was seen facet by facet, including the milestone", () => {
-		const observed = {labels: ["type:bug", "p1", "p2", "area:x"], milestone: 47};
+		const observed = { labels: ["type:bug", "p1", "p2", "area:x"], milestone: 47 };
 		expect(renderShape(observed, triaged)).toBe(
 			"type=[type:bug], priority=[p1, p2], status=[], audience=[], lane=[], class=[], milestone=47",
 		);
 	});
 
 	it("says none for an unhomed issue rather than printing nothing", () => {
-		expect(renderShape({labels: [], milestone: null}, triaged)).toContain("milestone=none");
+		expect(renderShape({ labels: [], milestone: null }, triaged)).toContain("milestone=none");
 	});
 });

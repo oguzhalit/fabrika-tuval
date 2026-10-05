@@ -14,7 +14,7 @@ import {
 	READBACK_MISMATCH as BUILD_READBACK_MISMATCH,
 	WRITE_UNKNOWN as BUILD_WRITE_UNKNOWN,
 } from "../build/codes.ts";
-import {NO_TARGET as DECISION_NO_TARGET} from "../decision/codes.ts";
+import { NO_TARGET as DECISION_NO_TARGET } from "../decision/codes.ts";
 import {
 	LANE_ABSENT,
 	APPEND_UNKNOWN as LANE_APPEND_UNKNOWN,
@@ -24,7 +24,7 @@ import {
 	TASK_UNKNOWN as LANE_TASK_UNKNOWN,
 	LANE_UNREADABLE,
 } from "../lane/codes.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
 import {
 	MALFORMED_RECORD,
 	PRECONDITION_UNKNOWN,

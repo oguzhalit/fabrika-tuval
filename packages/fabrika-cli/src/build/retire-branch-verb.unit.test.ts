@@ -1,7 +1,7 @@
-import {readFileSync} from "node:fs";
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeSeams, okOut, once, type Scripted} from "../fakes.test-support.ts";
+import { readFileSync } from "node:fs";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeSeams, okOut, once, type Scripted } from "../fakes.test-support.ts";
 import {
 	PRECONDITION_UNKNOWN,
 	READBACK_MISMATCH,
@@ -20,8 +20,8 @@ import {
 	SIBLING_UUID,
 	served,
 } from "./fixtures.test-support.ts";
-import {RETIRED_PREFIX} from "./retire-branch.ts";
-import {runRetireBranch} from "./retire-branch-verb.ts";
+import { RETIRED_PREFIX } from "./retire-branch.ts";
+import { runRetireBranch } from "./retire-branch-verb.ts";
 
 const BRANCHES = /^git for-each-ref --format=%\(refname:short\) refs\/heads$/;
 const PRUNE = /^git worktree prune$/;
@@ -37,13 +37,13 @@ const RETIRED = `${RETIRED_PREFIX}6296-editor-focus-loss-${SIBLING_NONCE}`;
 const options = {
 	number: 6296,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r", ...GH_TOKEN_ENV} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r", ...GH_TOKEN_ENV } as Record<string, string | undefined>,
 };
 
 const refs = (...names: ReadonlyArray<string>) => okOut([...names, "main"].join("\n"));
 
 /** `git worktree list --porcelain`, as blocks of `worktree`/`HEAD`/`branch` lines. */
-const trees = (...held: ReadonlyArray<{path: string; branch: string}>) =>
+const trees = (...held: ReadonlyArray<{ path: string; branch: string }>) =>
 	okOut(
 		held
 			.map((tree) => `worktree ${tree.path}\nHEAD 0000000\nbranch refs/heads/${tree.branch}\n`)
@@ -52,8 +52,8 @@ const trees = (...held: ReadonlyArray<{path: string; branch: string}>) =>
 
 /** One authorized claim marker on the target issue, carrying the live lane's nonce. */
 const CLAIMED: ReadonlyArray<Scripted> = [
-	[COMMENTS, comments({id: 1, body: marker("s-9f2e", LANE_UUID)})],
-	[PERM, served({permission: "write"})],
+	[COMMENTS, comments({ id: 1, body: marker("s-9f2e", LANE_UUID) })],
+	[PERM, served({ permission: "write" })],
 ];
 
 const run = (script: ReadonlyArray<Scripted>) => {
@@ -66,11 +66,11 @@ const run = (script: ReadonlyArray<Scripted>) => {
 
 describe("runRetireBranch — the attested survivor", () => {
 	it("renames the unattested branch out of build/ and reads the rename back", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[once(BRANCHES), refs(STALE, LIVE)],
 			...CLAIMED,
 			[PRUNE, okOut("")],
-			[TREES, trees({path: "/repo", branch: "main"})],
+			[TREES, trees({ path: "/repo", branch: "main" })],
 			[RENAME, okOut("")],
 			[BRANCHES, refs(RETIRED, LIVE)],
 		]);
@@ -80,17 +80,17 @@ describe("runRetireBranch — the attested survivor", () => {
 			answer: "retired",
 			number: 6296,
 			survivor: LIVE,
-			retired: [{from: STALE, to: RETIRED}],
+			retired: [{ from: STALE, to: RETIRED }],
 		});
 		expect(calls).toContain(`git branch -m ${STALE} ${RETIRED}`);
 	});
 
 	it("proves no worktree holds a branch it is about to rename, BEFORE renaming it", async () => {
-		const {calls} = await run([
+		const { calls } = await run([
 			[once(BRANCHES), refs(STALE, LIVE)],
 			...CLAIMED,
 			[PRUNE, okOut("")],
-			[TREES, trees({path: "/repo", branch: "main"})],
+			[TREES, trees({ path: "/repo", branch: "main" })],
 			[RENAME, okOut("")],
 			[BRANCHES, refs(RETIRED, LIVE)],
 		]);
@@ -101,11 +101,11 @@ describe("runRetireBranch — the attested survivor", () => {
 	});
 
 	it("refuses a held branch and names the act that clears the hold", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[BRANCHES, refs(STALE, LIVE)],
 			...CLAIMED,
 			[PRUNE, okOut("")],
-			[TREES, trees({path: "/trees/agent-a9bd", branch: STALE})],
+			[TREES, trees({ path: "/trees/agent-a9bd", branch: STALE })],
 		]);
 
 		expect(out.code).toBe(WORKTREE_HELD);
@@ -116,7 +116,7 @@ describe("runRetireBranch — the attested survivor", () => {
 
 describe("runRetireBranch — a survivor nobody attests to is never guessed", () => {
 	it("renames nothing when no authorized marker carries a candidate's lane nonce", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[BRANCHES, refs(STALE, LIVE)],
 			[COMMENTS, comments()],
 		]);
@@ -127,26 +127,26 @@ describe("runRetireBranch — a survivor nobody attests to is never guessed", ()
 	});
 
 	it("counts no marker from an account below write — content is not authority", async () => {
-		const {out} = await run([
+		const { out } = await run([
 			[BRANCHES, refs(STALE, LIVE)],
-			[COMMENTS, comments({id: 1, body: marker("s-9f2e", LANE_UUID)})],
-			[PERM, served({permission: "read"})],
+			[COMMENTS, comments({ id: 1, body: marker("s-9f2e", LANE_UUID) })],
+			[PERM, served({ permission: "read" })],
 		]);
 
 		expect(out.code).toBe(SURVIVOR_UNATTESTED);
 	});
 
 	it("renames nothing when two candidates are each attested by a live claim", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[BRANCHES, refs(STALE, LIVE)],
 			[
 				COMMENTS,
 				comments(
-					{id: 1, body: marker("s-9f2e", LANE_UUID)},
-					{id: 2, body: marker("s-other", SIBLING_UUID)},
+					{ id: 1, body: marker("s-9f2e", LANE_UUID) },
+					{ id: 2, body: marker("s-other", SIBLING_UUID) },
 				),
 			],
-			[PERM, served({permission: "write"})],
+			[PERM, served({ permission: "write" })],
 		]);
 
 		expect(out.code).toBe(SURVIVOR_UNATTESTED);
@@ -154,9 +154,9 @@ describe("runRetireBranch — a survivor nobody attests to is never guessed", ()
 	});
 
 	it("is UNKNOWN when the claim markers cannot be read — never 'nobody attests'", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[BRANCHES, refs(STALE, LIVE)],
-			[COMMENTS, {status: 502, body: '{"message":"Bad gateway"}'}],
+			[COMMENTS, { status: 502, body: '{"message":"Bad gateway"}' }],
 		]);
 
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -167,21 +167,21 @@ describe("runRetireBranch — a survivor nobody attests to is never guessed", ()
 
 describe("runRetireBranch — fewer than two branches is not a deadlock", () => {
 	it("answers none on a single candidate, reading no board state at all", async () => {
-		const {out, calls} = await run([[BRANCHES, refs(LIVE)]]);
+		const { out, calls } = await run([[BRANCHES, refs(LIVE)]]);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "none", survivor: LIVE, retired: []});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "none", survivor: LIVE, retired: [] });
 		expect(calls.some((line) => COMMENTS.test(line))).toBe(false);
 	});
 
 	it("is ZERO_SCOPE when no branch in this clone was cut for the child", async () => {
-		const {out} = await run([[BRANCHES, refs()]]);
+		const { out } = await run([[BRANCHES, refs()]]);
 
 		expect(out.code).toBe(ZERO_SCOPE);
 	});
 
 	it("is UNKNOWN when the local branches cannot be read", async () => {
-		const {out} = await run([[BRANCHES, errOut("not a git repository")]]);
+		const { out } = await run([[BRANCHES, errOut("not a git repository")]]);
 
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 	});
@@ -189,11 +189,11 @@ describe("runRetireBranch — fewer than two branches is not a deadlock", () => 
 
 describe("runRetireBranch — the rename is proven, never reported", () => {
 	it("is WRITE_UNKNOWN when git refuses the rename", async () => {
-		const {out} = await run([
+		const { out } = await run([
 			[BRANCHES, refs(STALE, LIVE)],
 			...CLAIMED,
 			[PRUNE, okOut("")],
-			[TREES, trees({path: "/repo", branch: "main"})],
+			[TREES, trees({ path: "/repo", branch: "main" })],
 			[RENAME, errOut(`a branch named '${RETIRED}' already exists`)],
 		]);
 
@@ -202,11 +202,11 @@ describe("runRetireBranch — the rename is proven, never reported", () => {
 	});
 
 	it("is READBACK_MISMATCH when git exits 0 and the old name survives", async () => {
-		const {out} = await run([
+		const { out } = await run([
 			[once(BRANCHES), refs(STALE, LIVE)],
 			...CLAIMED,
 			[PRUNE, okOut("")],
-			[TREES, trees({path: "/repo", branch: "main"})],
+			[TREES, trees({ path: "/repo", branch: "main" })],
 			[RENAME, okOut("")],
 			[BRANCHES, refs(STALE, LIVE)],
 		]);

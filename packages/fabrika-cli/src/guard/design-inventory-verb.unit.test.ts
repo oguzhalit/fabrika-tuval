@@ -6,25 +6,25 @@
  * produces exactly what it compares against, so the two are asserted against each other rather than
  * each against a hand-written expectation that could drift from the other.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFsOptions, fakeFs} from "../fakes.test-support.ts";
-import {PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE} from "./codes.ts";
-import {INVENTORY_ARTIFACT, NORMATIVE_MANIFEST} from "./design-inventory.ts";
-import {runDesignInventoryCheck, runDesignInventoryGenerate} from "./design-inventory-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFsOptions, fakeFs } from "../fakes.test-support.ts";
+import { PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE } from "./codes.ts";
+import { INVENTORY_ARTIFACT, NORMATIVE_MANIFEST } from "./design-inventory.ts";
+import { runDesignInventoryCheck, runDesignInventoryGenerate } from "./design-inventory-verb.ts";
 
 const ROOT = "/repo";
 const UI = `${ROOT}/packages/design/src`;
 const ARTIFACT = `${ROOT}/${INVENTORY_ARTIFACT}`;
 const MANIFEST = `${ROOT}/${NORMATIVE_MANIFEST}`;
 
-const options = {root: ROOT, cwd: ROOT, env: {}} as const;
+const options = { root: ROOT, cwd: ROOT, env: {} } as const;
 
 const ALERT = "/**\n * @component Alert\n * @whenToUse For an attention message.\n */\n";
 
 const tree = (over: FakeFsOptions = {}): FakeFsOptions => ({
 	directories: [UI],
-	dirs: {[UI]: ["Alert.tsx", "Alert.test.tsx", "Alert.css"]},
+	dirs: { [UI]: ["Alert.tsx", "Alert.test.tsx", "Alert.css"] },
 	files: {
 		[`${UI}/Alert.tsx`]: ALERT,
 		[`${UI}/Alert.test.tsx`]: "/**\n * @component NotAPrimitive\n */\n",
@@ -32,8 +32,8 @@ const tree = (over: FakeFsOptions = {}): FakeFsOptions => ({
 		[MANIFEST]: "# the law\n",
 		...over.files,
 	},
-	...(over.unreadable ? {unreadable: over.unreadable} : {}),
-	...(over.unwritable ? {unwritable: over.unwritable} : {}),
+	...(over.unreadable ? { unreadable: over.unreadable } : {}),
+	...(over.unwritable ? { unwritable: over.unwritable } : {}),
 });
 
 describe("runDesignInventoryGenerate", () => {
@@ -59,7 +59,7 @@ describe("runDesignInventoryGenerate", () => {
 		const outcome = await Effect.runPromise(
 			Effect.provide(
 				runDesignInventoryGenerate(options),
-				fakeFs(tree({files: {[`${UI}/Alert.tsx`]: "export const Alert = () => null;"}})).layer,
+				fakeFs(tree({ files: { [`${UI}/Alert.tsx`]: "export const Alert = () => null;" } })).layer,
 			),
 		);
 		expect(outcome.code).toBe(ZERO_SCOPE);
@@ -69,7 +69,7 @@ describe("runDesignInventoryGenerate", () => {
 		const outcome = await Effect.runPromise(
 			Effect.provide(
 				runDesignInventoryGenerate(options),
-				fakeFs(tree({unwritable: [ARTIFACT]})).layer,
+				fakeFs(tree({ unwritable: [ARTIFACT] })).layer,
 			),
 		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
@@ -91,7 +91,7 @@ describe("runDesignInventoryCheck", () => {
 		const outcome = await Effect.runPromise(
 			Effect.provide(
 				runDesignInventoryCheck(options),
-				fakeFs(tree({files: {[ARTIFACT]: "# stale\n"}})).layer,
+				fakeFs(tree({ files: { [ARTIFACT]: "# stale\n" } })).layer,
 			),
 		);
 		expect(outcome.code).toBe(VIOLATION);
@@ -111,8 +111,8 @@ describe("runDesignInventoryCheck", () => {
 	it("annotates the artifact under Actions", async () => {
 		const outcome = await Effect.runPromise(
 			Effect.provide(
-				runDesignInventoryCheck({...options, env: {GITHUB_ACTIONS: "true"}}),
-				fakeFs(tree({files: {[ARTIFACT]: "# stale\n"}})).layer,
+				runDesignInventoryCheck({ ...options, env: { GITHUB_ACTIONS: "true" } }),
+				fakeFs(tree({ files: { [ARTIFACT]: "# stale\n" } })).layer,
 			),
 		);
 		expect(outcome.stderr.some((l) => l.startsWith(`::error file=${INVENTORY_ARTIFACT}::`))).toBe(
@@ -124,7 +124,7 @@ describe("runDesignInventoryCheck", () => {
 		const outcome = await Effect.runPromise(
 			Effect.provide(
 				runDesignInventoryCheck(options),
-				fakeFs(tree({files: {[`${UI}/Alert.tsx`]: "export const Alert = () => null;"}})).layer,
+				fakeFs(tree({ files: { [`${UI}/Alert.tsx`]: "export const Alert = () => null;" } })).layer,
 			),
 		);
 		expect(outcome.code).toBe(ZERO_SCOPE);
@@ -134,7 +134,7 @@ describe("runDesignInventoryCheck", () => {
 		const outcome = await Effect.runPromise(
 			Effect.provide(
 				runDesignInventoryCheck(options),
-				fakeFs(tree({unreadable: [`${UI}/Alert.tsx`]})).layer,
+				fakeFs(tree({ unreadable: [`${UI}/Alert.tsx`] })).layer,
 			),
 		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);

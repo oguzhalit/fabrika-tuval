@@ -1,4 +1,4 @@
-import {Effect, FileSystem, Path, Result, Stream} from "effect";
+import { Effect, FileSystem, Path, Result, Stream } from "effect";
 import {
 	CodexSessionReader,
 	type CodexWork,
@@ -7,8 +7,8 @@ import {
 	isAccountingRow,
 	type NativeSession,
 } from "./codex-records.ts";
-import {recordUsage} from "./usage-ledger.ts";
-import type {UsageRecord} from "./usage-record.ts";
+import { recordUsage } from "./usage-ledger.ts";
+import type { UsageRecord } from "./usage-record.ts";
 
 export interface CodexCollection {
 	readonly sessions: string;
@@ -71,7 +71,7 @@ export const readCodexInventory = Effect.fn("spend.readCodexInventory")(function
 				.stream(file)
 				.pipe(
 					Stream.runForEach((bytes) =>
-						Effect.sync(() => reader.feed(decoder.decode(bytes, {stream: true}))),
+						Effect.sync(() => reader.feed(decoder.decode(bytes, { stream: true }))),
 					),
 				),
 		);
@@ -80,7 +80,7 @@ export const readCodexInventory = Effect.fn("spend.readCodexInventory")(function
 		if (session === null) notices.push(`Codex session unreadable or unsupported: ${file}`);
 		else sessions.push(session);
 	}
-	return {sessions, notices} satisfies CodexInventory;
+	return { sessions, notices } satisfies CodexInventory;
 });
 export const collectCodex = Effect.fn("spend.collectCodex")(function* (options: CodexCollection) {
 	return yield* collectCodexFrom(
@@ -93,7 +93,7 @@ export const collectCodexFrom = Effect.fn("spend.collectCodexFrom")(function* (
 	inventory: CodexInventory,
 	options: Omit<CodexCollection, "sessions" | "transcripts">,
 ) {
-	const {sessions} = inventory;
+	const { sessions } = inventory;
 	const notices = [...inventory.notices];
 	const included = new Set([options.rootThread, ...(options.expected ?? [])]);
 	let changed = true;
@@ -162,5 +162,5 @@ export const collectCodexFrom = Effect.fn("spend.collectCodexFrom")(function* (
 		if (result.status === "failed") notices.push(result.notice);
 		else if (result.status === "recorded") recorded++;
 	}
-	return {recorded, notices: [...new Set(notices)], participants, coverage: "partial" as const};
+	return { recorded, notices: [...new Set(notices)], participants, coverage: "partial" as const };
 });

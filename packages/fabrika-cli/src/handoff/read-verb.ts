@@ -19,11 +19,11 @@
  * worse than one.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {resolveTrunk, trunkUnresolved} from "../io/trunk.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {PACK_MALFORMED, PRECONDITION_UNKNOWN} from "./codes.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { resolveTrunk, trunkUnresolved } from "../io/trunk.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { PACK_MALFORMED, PRECONDITION_UNKNOWN } from "./codes.ts";
 import {
 	comparableOf,
 	compareGround,
@@ -33,8 +33,8 @@ import {
 	type LiveGround,
 	resolveBranch,
 } from "./ground.ts";
-import {requireIssue, targetRepo} from "./guards.ts";
-import {resolvePack} from "./packs.ts";
+import { requireIssue, targetRepo } from "./guards.ts";
+import { resolvePack } from "./packs.ts";
 
 export interface ReadOptions {
 	readonly issue: number;
@@ -83,7 +83,7 @@ export const runRead = (
 					drift: null,
 					heldBy: null,
 					disregarded: resolved.disregarded,
-					scanned: {comments: resolved.comments},
+					scanned: { comments: resolved.comments },
 				}),
 				[
 					`${VERB}: ${repo}, #${options.issue}, ${resolved.comments} comment(s) scanned, ${resolved.disregarded.length} disregarded, no pack.`,
@@ -91,7 +91,7 @@ export const runRead = (
 			);
 		}
 
-		const {sealed, heldBy, disregarded} = resolved;
+		const { sealed, heldBy, disregarded } = resolved;
 		const packedBranch = yield* resolveBranch(sealed.ground.git.branch);
 		if (packedBranch === "unknown") {
 			return refuse(
@@ -112,12 +112,12 @@ export const runRead = (
 			base = named.value.branch;
 		}
 
-		const board = {state: issue.value.state, labels: issue.value.labels};
+		const board = { state: issue.value.state, labels: issue.value.labels };
 		const branch = sealed.ground.git.branch;
 		const derived =
 			packedBranch === "resolves"
-				? yield* deriveComparable({repo, issue: options.issue, ref: branch, base, board})
-				: yield* deriveLiveBoard({repo, issue: options.issue, branch, board});
+				? yield* deriveComparable({ repo, issue: options.issue, ref: branch, base, board })
+				: yield* deriveLiveBoard({ repo, issue: options.issue, branch, board });
 		if (derived._tag === "Failed") {
 			return refuse(
 				PRECONDITION_UNKNOWN,
@@ -143,11 +143,11 @@ export const runRead = (
 					nextAct: sealed.pack.nextAct,
 					unsure: sealed.pack.unsure,
 				},
-				ground: {packed: sealed.pack.groundDigest},
-				drift: {packedBranch, state: driftState(fields), fields: moved},
+				ground: { packed: sealed.pack.groundDigest },
+				drift: { packedBranch, state: driftState(fields), fields: moved },
 				heldBy,
 				disregarded,
-				scanned: {comments: resolved.comments},
+				scanned: { comments: resolved.comments },
 			}),
 			[
 				`${VERB}: ${repo}, #${options.issue}, ${resolved.comments} comment(s) scanned, ${disregarded.length} disregarded, pack #${sealed.comment}, branch ${branch} ${packedBranch}.`,

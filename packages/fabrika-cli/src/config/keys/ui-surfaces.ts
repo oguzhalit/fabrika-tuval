@@ -22,16 +22,16 @@
  * path the repo gitignores — never the cookies inline.
  */
 
-import {Effect, Result, Schema, SchemaIssue} from "effect";
-import {CONFIG_PATH} from "../document.ts";
-import type {JsonSchema} from "../json-schema.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import { Effect, Result, Schema, SchemaIssue } from "effect";
+import { CONFIG_PATH } from "../document.ts";
+import type { JsonSchema } from "../json-schema.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const UI_SURFACES = "uiSurfaces";
 export const UI_CAPTURE = "uiCapture";
 
 /** The capture viewport in CSS px, when `uiCapture` names none. */
-export const DEFAULT_VIEWPORT = {width: 1280, height: 900} as const;
+export const DEFAULT_VIEWPORT = { width: 1280, height: 900 } as const;
 
 /**
  * The one sentence every reader of an empty list prints — the scope verbs on stderr, `ui render` and
@@ -99,21 +99,21 @@ const PORT_TOKEN = /\{\{port(?::([a-z0-9]+(?:-[a-z0-9]+)*))?\}\}/g;
 export const ORIGIN_PORT = "";
 
 const positiveInt = (message: string) =>
-	Schema.Number.annotate({message})
-		.check(Schema.isInt({message}).abort(), Schema.isGreaterThan(0, {message}))
-		.annotateKey({messageMissingKey: message});
+	Schema.Number.annotate({ message })
+		.check(Schema.isInt({ message }).abort(), Schema.isGreaterThan(0, { message }))
+		.annotateKey({ messageMissingKey: message });
 
 const routePath = (message: string) =>
-	Schema.String.annotate({message})
-		.check(Schema.isStartsWith("/", {message}))
-		.annotateKey({messageMissingKey: message});
+	Schema.String.annotate({ message })
+		.check(Schema.isStartsWith("/", { message }))
+		.annotateKey({ messageMissingKey: message });
 
 const Viewport = Schema.Struct({
 	width: positiveInt(VIOLATION.width),
 	height: positiveInt(VIOLATION.height),
 })
-	.annotate({message: VIOLATION.viewport, messageUnexpectedKey: VIOLATION.unknownKey})
-	.pipe(Schema.withDecodingDefaultTypeKey(Effect.succeed({...DEFAULT_VIEWPORT})));
+	.annotate({ message: VIOLATION.viewport, messageUnexpectedKey: VIOLATION.unknownKey })
+	.pipe(Schema.withDecodingDefaultTypeKey(Effect.succeed({ ...DEFAULT_VIEWPORT })));
 
 /**
  * A repo-relative source root: never absolute, never parent-relative, never padded. A trailing `/`
@@ -127,9 +127,9 @@ const isSourceRoot = (value: string): boolean =>
 
 // The missing-key message is what an empty list reads: `NonEmptyArray` reports it as a missing
 // first element.
-const SourceRoot = Schema.String.annotate({message: VIOLATION.prefix})
-	.check(Schema.makeFilter(isSourceRoot, {message: VIOLATION.prefix}))
-	.annotateKey({messageMissingKey: VIOLATION.prefix});
+const SourceRoot = Schema.String.annotate({ message: VIOLATION.prefix })
+	.check(Schema.makeFilter(isSourceRoot, { message: VIOLATION.prefix }))
+	.annotateKey({ messageMissingKey: VIOLATION.prefix });
 
 /**
  * One root as a bare string (the original shape, decoded unchanged) or a non-empty list, so an app
@@ -137,27 +137,27 @@ const SourceRoot = Schema.String.annotate({message: VIOLATION.prefix})
  * row rather than one row per root under an invented mount.
  */
 const Prefix = Schema.Union([SourceRoot, Schema.NonEmptyArray(SourceRoot)])
-	.annotate({message: VIOLATION.prefix})
-	.annotateKey({messageMissingKey: VIOLATION.prefix});
+	.annotate({ message: VIOLATION.prefix })
+	.annotateKey({ messageMissingKey: VIOLATION.prefix });
 
 const Surface = Schema.Struct({
-	name: Schema.String.annotate({message: VIOLATION.name})
-		.check(Schema.isPattern(KEBAB, {message: VIOLATION.name}))
-		.annotateKey({messageMissingKey: VIOLATION.name}),
-	command: Schema.String.annotate({message: VIOLATION.command})
-		.check(Schema.makeFilter((value) => value.trim() !== "", {message: VIOLATION.command}))
-		.annotateKey({messageMissingKey: VIOLATION.command}),
+	name: Schema.String.annotate({ message: VIOLATION.name })
+		.check(Schema.isPattern(KEBAB, { message: VIOLATION.name }))
+		.annotateKey({ messageMissingKey: VIOLATION.name }),
+	command: Schema.String.annotate({ message: VIOLATION.command })
+		.check(Schema.makeFilter((value) => value.trim() !== "", { message: VIOLATION.command }))
+		.annotateKey({ messageMissingKey: VIOLATION.command }),
 	prefix: Prefix,
 	mount: routePath(VIOLATION.mount),
 	basePath: Schema.NullOr(routePath(VIOLATION.basePath))
-		.annotate({message: VIOLATION.basePath})
+		.annotate({ message: VIOLATION.basePath })
 		.pipe(Schema.withDecodingDefaultTypeKey(Effect.succeed(null))),
 	readyPath: routePath(VIOLATION.readyPath).pipe(
 		Schema.withDecodingDefaultKey(Effect.succeed("/")),
 	),
-}).annotate({message: VIOLATION.list, messageUnexpectedKey: VIOLATION.unknownKey});
+}).annotate({ message: VIOLATION.list, messageUnexpectedKey: VIOLATION.unknownKey });
 
-const SurfaceList = Schema.Array(Surface).annotate({message: VIOLATION.list});
+const SurfaceList = Schema.Array(Surface).annotate({ message: VIOLATION.list });
 
 /** A BCP 47-shaped tag, the form `document.documentElement.lang` reads back in. */
 const LOCALE_TAG = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/;
@@ -168,27 +168,27 @@ const isLocaleList = (values: ReadonlyArray<string>): boolean =>
 	values.every((value) => LOCALE_TAG.test(value));
 
 const Locale = Schema.Struct({
-	storageKey: Schema.String.annotate({message: VIOLATION.storageKey})
-		.check(Schema.makeFilter((value) => value.trim() !== "", {message: VIOLATION.storageKey}))
-		.annotateKey({messageMissingKey: VIOLATION.storageKey}),
+	storageKey: Schema.String.annotate({ message: VIOLATION.storageKey })
+		.check(Schema.makeFilter((value) => value.trim() !== "", { message: VIOLATION.storageKey }))
+		.annotateKey({ messageMissingKey: VIOLATION.storageKey }),
 	values: Schema.Array(Schema.String)
-		.annotate({message: VIOLATION.values})
-		.check(Schema.makeFilter(isLocaleList, {message: VIOLATION.values}))
-		.annotateKey({messageMissingKey: VIOLATION.values}),
-}).annotate({message: VIOLATION.locale, messageUnexpectedKey: VIOLATION.unknownKey});
+		.annotate({ message: VIOLATION.values })
+		.check(Schema.makeFilter(isLocaleList, { message: VIOLATION.values }))
+		.annotateKey({ messageMissingKey: VIOLATION.values }),
+}).annotate({ message: VIOLATION.locale, messageUnexpectedKey: VIOLATION.unknownKey });
 
 /** The attribute-name grammar the scheme proof reads through `getAttribute`, lowercase as HTML stores it. */
 const ATTRIBUTE_NAME = /^[a-z][a-z0-9-]*$/;
 
 const ColorSchemeDeclaration = Schema.Struct({
-	rootAttribute: Schema.String.annotate({message: VIOLATION.rootAttribute})
+	rootAttribute: Schema.String.annotate({ message: VIOLATION.rootAttribute })
 		.check(
 			Schema.makeFilter((value) => ATTRIBUTE_NAME.test(value), {
 				message: VIOLATION.rootAttribute,
 			}),
 		)
-		.annotateKey({messageMissingKey: VIOLATION.rootAttribute}),
-}).annotate({message: VIOLATION.scheme, messageUnexpectedKey: VIOLATION.unknownKey});
+		.annotateKey({ messageMissingKey: VIOLATION.rootAttribute }),
+}).annotate({ message: VIOLATION.scheme, messageUnexpectedKey: VIOLATION.unknownKey });
 
 /** An accent name as an attribute value: a token, so a value never carries whitespace or quoting. */
 const ACCENT_NAME = /^[A-Za-z0-9]+(?:[-_][A-Za-z0-9]+)*$/;
@@ -199,23 +199,23 @@ const isAccentList = (values: ReadonlyArray<string>): boolean =>
 	values.every((value) => ACCENT_NAME.test(value));
 
 const AccentDeclaration = Schema.Struct({
-	rootAttribute: Schema.String.annotate({message: VIOLATION.accentAttribute})
+	rootAttribute: Schema.String.annotate({ message: VIOLATION.accentAttribute })
 		.check(
 			Schema.makeFilter((value) => ATTRIBUTE_NAME.test(value), {
 				message: VIOLATION.accentAttribute,
 			}),
 		)
-		.annotateKey({messageMissingKey: VIOLATION.accentAttribute}),
+		.annotateKey({ messageMissingKey: VIOLATION.accentAttribute }),
 	values: Schema.Array(Schema.String)
-		.annotate({message: VIOLATION.accentValues})
-		.check(Schema.makeFilter(isAccentList, {message: VIOLATION.accentValues}))
-		.annotateKey({messageMissingKey: VIOLATION.accentValues}),
-}).annotate({message: VIOLATION.accent, messageUnexpectedKey: VIOLATION.unknownKey});
+		.annotate({ message: VIOLATION.accentValues })
+		.check(Schema.makeFilter(isAccentList, { message: VIOLATION.accentValues }))
+		.annotateKey({ messageMissingKey: VIOLATION.accentValues }),
+}).annotate({ message: VIOLATION.accent, messageUnexpectedKey: VIOLATION.unknownKey });
 
 const Capture = Schema.Struct({
 	viewport: Viewport,
 	evidenceStore: Schema.NullOr(Schema.String)
-		.annotate({message: VIOLATION.evidenceStore})
+		.annotate({ message: VIOLATION.evidenceStore })
 		.pipe(Schema.withDecodingDefaultTypeKey(Effect.succeed(null))),
 	storageState: Schema.NullOr(
 		Schema.String.check(
@@ -224,26 +224,26 @@ const Capture = Schema.Struct({
 			}),
 		),
 	)
-		.annotate({message: VIOLATION.storageState})
+		.annotate({ message: VIOLATION.storageState })
 		.pipe(Schema.withDecodingDefaultTypeKey(Effect.succeed(null))),
 	locale: Schema.NullOr(Locale)
-		.annotate({message: VIOLATION.locale})
+		.annotate({ message: VIOLATION.locale })
 		.pipe(Schema.withDecodingDefaultTypeKey(Effect.succeed(null))),
 	scheme: Schema.NullOr(ColorSchemeDeclaration)
-		.annotate({message: VIOLATION.scheme})
+		.annotate({ message: VIOLATION.scheme })
 		.pipe(Schema.withDecodingDefaultTypeKey(Effect.succeed(null))),
 	accent: Schema.NullOr(AccentDeclaration)
-		.annotate({message: VIOLATION.accent})
+		.annotate({ message: VIOLATION.accent })
 		.pipe(Schema.withDecodingDefaultTypeKey(Effect.succeed(null))),
-}).annotate({message: VIOLATION.capture, messageUnexpectedKey: VIOLATION.unknownKey});
+}).annotate({ message: VIOLATION.capture, messageUnexpectedKey: VIOLATION.unknownKey });
 
 /** One runnable app: where its source lives, how to start it, and what it serves. */
 export type UiSurface = typeof Surface.Type;
 /** The list-level capture settings — viewport, evidence store, storage state, locale, scheme, accent. */
 export type UiCapture = typeof Capture.Type;
 
-const decodeList = Schema.decodeUnknownResult(SurfaceList, {onExcessProperty: "error"});
-const decodeCapture = Schema.decodeUnknownResult(Capture, {onExcessProperty: "error"});
+const decodeList = Schema.decodeUnknownResult(SurfaceList, { onExcessProperty: "error" });
+const decodeCapture = Schema.decodeUnknownResult(Capture, { onExcessProperty: "error" });
 
 const formatIssues = SchemaIssue.makeFormatterStandardSchemaV1({
 	leafHook: SchemaIssue.defaultLeafHook,
@@ -292,15 +292,15 @@ const listViolation = (surfaces: ReadonlyArray<UiSurface>): string | null => {
 const decodeSurfaces = (raw: unknown): Decoded<ReadonlyArray<UiSurface>> => {
 	// The schema's own array message never fires on a non-array top level, so the shape is checked
 	// here where the key's name can be named in the refusal.
-	if (!Array.isArray(raw)) return {_tag: "Malformed", reason: VIOLATION.list};
+	if (!Array.isArray(raw)) return { _tag: "Malformed", reason: VIOLATION.list };
 	const decoded = decodeList(raw);
 	if (!Result.isSuccess(decoded)) {
-		return {_tag: "Malformed", reason: violationOf(decoded.failure, VIOLATION.list)};
+		return { _tag: "Malformed", reason: violationOf(decoded.failure, VIOLATION.list) };
 	}
 	const listed = listViolation(decoded.success);
 	return listed === null
-		? {_tag: "Value", value: decoded.success}
-		: {_tag: "Malformed", reason: listed};
+		? { _tag: "Value", value: decoded.success }
+		: { _tag: "Malformed", reason: listed };
 };
 
 /**
@@ -345,7 +345,7 @@ const surfaceSchema: JsonSchema = {
 		prefix: {
 			description:
 				"Where the app's rendered source lives: one source root, or a non-empty list of them. A changed file under a directory root, or equal to a file root, raises the ui class.",
-			oneOf: [sourceRootSchema, {type: "array", items: sourceRootSchema, minItems: 1}],
+			oneOf: [sourceRootSchema, { type: "array", items: sourceRootSchema, minItems: 1 }],
 		},
 		mount: {
 			type: "string",
@@ -388,7 +388,7 @@ export const uiSurfacesKey: KeyGroup<ReadonlyArray<UiSurface>> = {
 };
 
 const SHIPPED_CAPTURE: UiCapture = {
-	viewport: {...DEFAULT_VIEWPORT},
+	viewport: { ...DEFAULT_VIEWPORT },
 	evidenceStore: null,
 	storageState: null,
 	locale: null,
@@ -402,8 +402,8 @@ export const uiCaptureKey: KeyGroup<UiCapture> = {
 	decode: (raw) => {
 		const decoded = decodeCapture(raw);
 		return Result.isSuccess(decoded)
-			? {_tag: "Value", value: decoded.success}
-			: {_tag: "Malformed", reason: violationOf(decoded.failure, VIOLATION.capture)};
+			? { _tag: "Value", value: decoded.success }
+			: { _tag: "Malformed", reason: violationOf(decoded.failure, VIOLATION.capture) };
 	},
 	jsonSchema: {
 		type: "object",
@@ -414,8 +414,8 @@ export const uiCaptureKey: KeyGroup<UiCapture> = {
 				type: "object",
 				description: `The capture viewport in CSS px. Defaults to ${DEFAULT_VIEWPORT.width}x${DEFAULT_VIEWPORT.height}.`,
 				properties: {
-					width: {type: "integer", description: "Viewport width in CSS px."},
-					height: {type: "integer", description: "Viewport height in CSS px."},
+					width: { type: "integer", description: "Viewport width in CSS px." },
+					height: { type: "integer", description: "Viewport height in CSS px." },
 				},
 				required: ["width", "height"],
 				additionalProperties: false,
@@ -446,7 +446,7 @@ export const uiCaptureKey: KeyGroup<UiCapture> = {
 						type: "array",
 						description:
 							"The accepted locale values, each the `lang` the page reads back when it renders in it.",
-						items: {type: "string", pattern: "^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$"},
+						items: { type: "string", pattern: "^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$" },
 						minItems: 1,
 						uniqueItems: true,
 					},
@@ -483,7 +483,7 @@ export const uiCaptureKey: KeyGroup<UiCapture> = {
 					values: {
 						type: "array",
 						description: "The accepted accent names, each a value of that attribute.",
-						items: {type: "string", pattern: "^[A-Za-z0-9]+(?:[-_][A-Za-z0-9]+)*$"},
+						items: { type: "string", pattern: "^[A-Za-z0-9]+(?:[-_][A-Za-z0-9]+)*$" },
 						minItems: 1,
 						uniqueItems: true,
 					},

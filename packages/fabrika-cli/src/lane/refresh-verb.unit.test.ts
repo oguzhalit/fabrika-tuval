@@ -2,10 +2,10 @@
  * `lane refresh` — the assembly branch moves onto trunk, and every refusal leaves it proven back at
  * the head the merge found.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import type {AssemblyRefreshSurface} from "../config/keys/assembly-refresh.ts";
-import type {Read} from "../config/read-key.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import type { AssemblyRefreshSurface } from "../config/keys/assembly-refresh.ts";
+import type { Read } from "../config/read-key.ts";
 import {
 	errOut,
 	fakeFs,
@@ -15,7 +15,7 @@ import {
 	once,
 	type Scripted,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
+import type { ExecResult } from "../io/exec.ts";
 import {
 	APPEND_UNKNOWN,
 	ASSEMBLY_DIRTY,
@@ -26,8 +26,8 @@ import {
 	PRIMARY_CHECKOUT,
 	PROOF_ABSENT,
 } from "./codes.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
-import {REFRESH_PARK_CAUSE, type RefreshGate, runRefresh} from "./refresh-verb.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
+import { REFRESH_PARK_CAUSE, type RefreshGate, runRefresh } from "./refresh-verb.ts";
 
 const ROOT = ".fabrika/lanes";
 const EPIC = 8810;
@@ -39,7 +39,7 @@ const BEFORE = "aaaa111";
 const AFTER = "bbbb222";
 const TIP = "cccc333";
 
-const LANE_FILES = {[`${ROOT}/${EPIC}/workflow.json`]: coderTemplateText()};
+const LANE_FILES = { [`${ROOT}/${EPIC}/workflow.json`]: coderTemplateText() };
 
 const LIST = /^git worktree list --porcelain$/;
 const HEAD = /^git -C .* rev-parse HEAD$/;
@@ -64,18 +64,18 @@ const CONSCRIPTED = listing([MAIN, BRANCH]);
 
 const ON: Read<AssemblyRefreshSurface> = {
 	_tag: "Value",
-	value: {onReview: "on", onDispatch: "on"},
+	value: { onReview: "on", onDispatch: "on" },
 	note: "`assemblyRefresh` as declared in .fabrika.jsonc",
 };
 const OFF: Read<AssemblyRefreshSurface> = {
 	_tag: "Value",
-	value: {onReview: "off", onDispatch: "off"},
+	value: { onReview: "off", onDispatch: "off" },
 	note: "the shipped `assemblyRefresh`",
 };
 /** One arm declared on and the other left shipped — the gate must read the arm it was handed. */
 const REVIEW_ONLY: Read<AssemblyRefreshSurface> = {
 	_tag: "Value",
-	value: {onReview: "on", onDispatch: "off"},
+	value: { onReview: "on", onDispatch: "off" },
 	note: "`assemblyRefresh` as declared in .fabrika.jsonc",
 };
 
@@ -97,7 +97,7 @@ const upToMerge = (): ReadonlyArray<readonly [RegExp, ExecResult]> => [
 
 const run = (
 	script: ReadonlyArray<readonly [RegExp, ExecResult]>,
-	options: {readonly gate?: RefreshGate | null; readonly key?: Read<AssemblyRefreshSurface>} = {},
+	options: { readonly gate?: RefreshGate | null; readonly key?: Read<AssemblyRefreshSurface> } = {},
 ) => {
 	const shell = fakeShell(script);
 	return Effect.runPromise(
@@ -112,9 +112,9 @@ const run = (
 				root: ROOT,
 				lane: String(EPIC),
 			}),
-			Layer.merge(shell.layer, fakeFs({files: LANE_FILES}).layer),
+			Layer.merge(shell.layer, fakeFs({ files: LANE_FILES }).layer),
 		),
-	).then((outcome) => ({outcome, calls: shell.calls}));
+	).then((outcome) => ({ outcome, calls: shell.calls }));
 };
 
 /** A run with no `--base`, so the trunk is resolved off GitHub's default branch for `o/r`. */
@@ -126,23 +126,23 @@ const runOnTrunk = (script: ReadonlyArray<Scripted>) => {
 				epic: EPIC,
 				base: null,
 				repo: "o/r",
-				env: {GITHUB_TOKEN: "ghp_scripted"},
+				env: { GITHUB_TOKEN: "ghp_scripted" },
 				gate: null,
 				assemblyRefresh: ON,
 				root: ROOT,
 				lane: String(EPIC),
 			}),
-			Layer.merge(seams.layer, fakeFs({files: LANE_FILES}).layer),
+			Layer.merge(seams.layer, fakeFs({ files: LANE_FILES }).layer),
 		),
-	).then((outcome) => ({outcome, calls: seams.calls}));
+	).then((outcome) => ({ outcome, calls: seams.calls }));
 };
 
 const TRUNK_READ = /^GET \S+\/repos\/o\/r$/;
 
 describe("runRefresh — no --base merges the resolved trunk", () => {
 	it("merges origin/dev in a repo whose default branch is dev", async () => {
-		const {outcome, calls} = await runOnTrunk([
-			[TRUNK_READ, {status: 200, body: JSON.stringify({default_branch: "dev"})}],
+		const { outcome, calls } = await runOnTrunk([
+			[TRUNK_READ, { status: 200, body: JSON.stringify({ default_branch: "dev" }) }],
 			[LIST, SEATED],
 			[once(HEAD), okOut(BEFORE)],
 			[once(STATUS), okOut("")],
@@ -157,8 +157,8 @@ describe("runRefresh — no --base merges the resolved trunk", () => {
 	});
 
 	it("is UNKNOWN on 11 naming the fix when the trunk cannot be read, merging nothing", async () => {
-		const {outcome, calls} = await runOnTrunk([
-			[TRUNK_READ, {status: 502, body: '{"message":"Bad Gateway"}'}],
+		const { outcome, calls } = await runOnTrunk([
+			[TRUNK_READ, { status: 502, body: '{"message":"Bad Gateway"}' }],
 			[LIST, SEATED],
 			[once(HEAD), okOut(BEFORE)],
 		]);
@@ -171,7 +171,11 @@ describe("runRefresh — no --base merges the resolved trunk", () => {
 
 describe("runRefresh", () => {
 	it("merges the trunk in and answers the head it re-read, not the one it merged onto", async () => {
-		const {outcome, calls} = await run([...upToMerge(), [MERGE, okOut("")], [HEAD, okOut(AFTER)]]);
+		const { outcome, calls } = await run([
+			...upToMerge(),
+			[MERGE, okOut("")],
+			[HEAD, okOut(AFTER)],
+		]);
 
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout.trim().split("\n")).toEqual([AFTER, "REFRESH-VERDICT: MERGED"]);
@@ -182,7 +186,7 @@ describe("runRefresh", () => {
 	});
 
 	it("is silent and merges nothing when the branch already carries the trunk", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, SEATED],
 			[once(HEAD), okOut(BEFORE)],
 			[once(STATUS), okOut("")],
@@ -197,7 +201,7 @@ describe("runRefresh", () => {
 	});
 
 	it("aborts a conflict, proves the branch back at its pre-merge head, and names the park cause", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			...upToMerge(),
 			[MERGE, errOut("CONFLICT (content): Merge conflict in src/lane/report.ts")],
 			[ABORT, okOut("")],
@@ -214,7 +218,7 @@ describe("runRefresh", () => {
 	});
 
 	it("reports a restore that did not take as UNKNOWN, never as the clean conflict refusal", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			...upToMerge(),
 			[MERGE, errOut("CONFLICT (content): Merge conflict in src/lane/report.ts")],
 			[ABORT, errOut("fatal: There is no merge to abort")],
@@ -227,7 +231,7 @@ describe("runRefresh", () => {
 	});
 
 	it("reports an unreadable head after the restore as UNKNOWN too", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			...upToMerge(),
 			[MERGE, errOut("CONFLICT")],
 			[ABORT, okOut("")],
@@ -240,14 +244,14 @@ describe("runRefresh", () => {
 	});
 
 	it("refuses a merge that reported success and did not move the head", async () => {
-		const {outcome} = await run([...upToMerge(), [MERGE, okOut("")], [HEAD, okOut(BEFORE)]]);
+		const { outcome } = await run([...upToMerge(), [MERGE, okOut("")], [HEAD, okOut(BEFORE)]]);
 
 		expect(outcome.code).toBe(APPEND_UNKNOWN);
 		expect(outcome.stderr.join("\n")).toContain("never a silent pass");
 	});
 
 	it("refuses a dirty seat before it fetches anything, with the same code lane integrate uses", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, SEATED],
 			[once(HEAD), okOut(BEFORE)],
 			[once(STATUS), okOut(" M src/lane/report.ts")],
@@ -258,19 +262,19 @@ describe("runRefresh", () => {
 	});
 
 	it("refuses the driver's own checkout, with the same code lane integrate uses", async () => {
-		const {outcome} = await run([[LIST, CONSCRIPTED]]);
+		const { outcome } = await run([[LIST, CONSCRIPTED]]);
 
 		expect(outcome.code).toBe(PRIMARY_CHECKOUT);
 	});
 
 	it("refuses an unseated assembly, with the same code lane integrate uses", async () => {
-		const {outcome} = await run([[LIST, UNSEATED]]);
+		const { outcome } = await run([[LIST, UNSEATED]]);
 
 		expect(outcome.code).toBe(ASSEMBLY_UNSEATED);
 	});
 
 	it("is UNKNOWN when the fetch fails, and merges nothing", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, SEATED],
 			[once(HEAD), okOut(BEFORE)],
 			[once(STATUS), okOut("")],
@@ -282,7 +286,7 @@ describe("runRefresh", () => {
 	});
 
 	it("refuses a --base that names no commit after the fetch", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[LIST, SEATED],
 			[once(HEAD), okOut(BEFORE)],
 			[once(STATUS), okOut("")],
@@ -293,40 +297,40 @@ describe("runRefresh", () => {
 		expect(outcome.code).toBe(PROOF_ABSENT);
 	});
 
-	it.each<RefreshGate>([
-		"onReview",
-		"onDispatch",
-	])("declines the %s call under the shipped key, reading nothing at all", async (gate) => {
-		const {outcome, calls} = await run([], {gate, key: OFF});
+	it.each<RefreshGate>(["onReview", "onDispatch"])(
+		"declines the %s call under the shipped key, reading nothing at all",
+		async (gate) => {
+			const { outcome, calls } = await run([], { gate, key: OFF });
 
-		expect(outcome.code).toBe(0);
-		expect(outcome.stdout.trim()).toBe("REFRESH-VERDICT: DECLINED");
-		expect(outcome.stderr.join("\n")).toContain(`\`${gate}\` reads off`);
-		expect(calls).toEqual([]);
-	});
+			expect(outcome.code).toBe(0);
+			expect(outcome.stdout.trim()).toBe("REFRESH-VERDICT: DECLINED");
+			expect(outcome.stderr.join("\n")).toContain(`\`${gate}\` reads off`);
+			expect(calls).toEqual([]);
+		},
+	);
 
-	it.each<RefreshGate>([
-		"onReview",
-		"onDispatch",
-	])("performs the %s call under a repo that declared it on", async (gate) => {
-		const {outcome} = await run([...upToMerge(), [MERGE, okOut("")], [HEAD, okOut(AFTER)]], {
-			gate,
-			key: ON,
-		});
+	it.each<RefreshGate>(["onReview", "onDispatch"])(
+		"performs the %s call under a repo that declared it on",
+		async (gate) => {
+			const { outcome } = await run([...upToMerge(), [MERGE, okOut("")], [HEAD, okOut(AFTER)]], {
+				gate,
+				key: ON,
+			});
 
-		expect(outcome.code).toBe(0);
-		expect(outcome.stdout.trim().split("\n").at(-1)).toBe("REFRESH-VERDICT: MERGED");
-	});
+			expect(outcome.code).toBe(0);
+			expect(outcome.stdout.trim().split("\n").at(-1)).toBe("REFRESH-VERDICT: MERGED");
+		},
+	);
 
 	it("reads the arm it was handed, not whichever one is on", async () => {
-		const {outcome, calls} = await run([], {gate: "onDispatch", key: REVIEW_ONLY});
+		const { outcome, calls } = await run([], { gate: "onDispatch", key: REVIEW_ONLY });
 
 		expect(outcome.stdout.trim()).toBe("REFRESH-VERDICT: DECLINED");
 		expect(calls).toEqual([]);
 	});
 
 	it("is never gated when a driver calls it by hand, whatever the key reads", async () => {
-		const {outcome} = await run([...upToMerge(), [MERGE, okOut("")], [HEAD, okOut(AFTER)]], {
+		const { outcome } = await run([...upToMerge(), [MERGE, okOut("")], [HEAD, okOut(AFTER)]], {
 			gate: null,
 			key: OFF,
 		});
@@ -336,9 +340,9 @@ describe("runRefresh", () => {
 	});
 
 	it("refuses a malformed key as UNKNOWN rather than falling back to the shipped default", async () => {
-		const {outcome, calls} = await run([], {
+		const { outcome, calls } = await run([], {
 			gate: "onReview",
-			key: {_tag: "Refused", reason: "`assemblyRefresh`'s `onReview` is not one of off, on"},
+			key: { _tag: "Refused", reason: "`assemblyRefresh`'s `onReview` is not one of off, on" },
 		});
 
 		expect(outcome.code).toBe(KEY_MALFORMED);

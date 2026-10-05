@@ -13,13 +13,13 @@ import {
 	READBACK_MISMATCH as SHARED_READBACK_MISMATCH,
 	WRITE_UNKNOWN as SHARED_WRITE_UNKNOWN,
 } from "../exit-codes.ts";
-import {PRIMARY_CHECKOUT as LANE_PRIMARY_CHECKOUT} from "../lane/codes.ts";
-import {LABEL_ABSENT as PLAN_LABEL_ABSENT} from "../plan/codes.ts";
+import { PRIMARY_CHECKOUT as LANE_PRIMARY_CHECKOUT } from "../lane/codes.ts";
+import { LABEL_ABSENT as PLAN_LABEL_ABSENT } from "../plan/codes.ts";
 import {
 	INCOMPLETE_SCAN as REVIEW_INCOMPLETE_SCAN,
 	STALE_HEAD as REVIEW_STALE_HEAD,
 } from "../review/codes.ts";
-import {OFF_VOCABULARY as TRIAGE_OFF_VOCABULARY} from "../triage/codes.ts";
+import { OFF_VOCABULARY as TRIAGE_OFF_VOCABULARY } from "../triage/codes.ts";
 
 export const EMPTY_STDIN = SHARED_EMPTY_STDIN;
 export const LEAKED_PATH = SHARED_LEAKED_PATH;

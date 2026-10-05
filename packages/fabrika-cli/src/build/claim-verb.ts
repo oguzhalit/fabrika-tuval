@@ -60,9 +60,9 @@
  * comment is buildable as transcription — so the exemption is read off the target being
  * a PR, never off the pairing being impossible.
  */
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	createComment,
 	deleteComment,
@@ -70,12 +70,12 @@ import {
 	type IssueRecord,
 	listComments,
 } from "../io/issues.ts";
-import {getPullRequest} from "../io/pulls.ts";
-import type {IntegrateFailure} from "../lane/integrate-failure.ts";
-import {type GateResult, ownershipGate} from "../ownership/gate.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {issueRefsOf} from "../review/classes.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { getPullRequest } from "../io/pulls.ts";
+import type { IntegrateFailure } from "../lane/integrate-failure.ts";
+import { type GateResult, ownershipGate } from "../ownership/gate.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { issueRefsOf } from "../review/classes.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	BUILD_CLAIM,
 	type ClaimOverride,
@@ -101,16 +101,16 @@ import {
 	WRONG_LANE,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {readDischargedGate} from "./discharge.ts";
-import {currentBranch, detachHead} from "./git.ts";
+import { readDischargedGate } from "./discharge.ts";
+import { currentBranch, detachHead } from "./git.ts";
 import {
 	type ChildLedger,
 	type IntegrateRound,
 	readIntegrateRound,
 	readLedgerFlags,
 } from "./integrate-round.ts";
-import {composeToken, laneNumber, nonceOf, parseLaneBranch, parseToken} from "./lane.ts";
-import {failing, readRangeVerdicts} from "./range-verdicts.ts";
+import { composeToken, laneNumber, nonceOf, parseLaneBranch, parseToken } from "./lane.ts";
+import { failing, readRangeVerdicts } from "./range-verdicts.ts";
 import {
 	admissionOf,
 	admissionRefusal,
@@ -128,7 +128,7 @@ import {
 	typeAxisOf,
 	typeScopeLine,
 } from "./scope-admission.ts";
-import {openIssue, resolveAdmissionSubject, resolveTargetRepo, scannedLine} from "./target.ts";
+import { openIssue, resolveAdmissionSubject, resolveTargetRepo, scannedLine } from "./target.ts";
 
 export interface ClaimOptions {
 	readonly number: number;
@@ -206,8 +206,8 @@ export type ProtocolOptions = Omit<
 const CLAIM = "build claim";
 
 type OverrideRead =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Read"; readonly override: ClaimOverride | null};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Read"; readonly override: ClaimOverride | null };
 
 /**
  * The override's two required fields, read before anything is written.
@@ -221,7 +221,7 @@ const readOverride = (reason: string | null, lane: string | null): OverrideRead 
 		_tag: "Refused",
 		outcome: refuse(FAILED, `${CLAIM}: ${message}`),
 	});
-	if (reason === null && lane === null) return {_tag: "Read", override: null};
+	if (reason === null && lane === null) return { _tag: "Read", override: null };
 	if (reason === null) {
 		return refusal(
 			"--override-lane was given without --override — a lane names no override on its own.",
@@ -237,11 +237,11 @@ const readOverride = (reason: string | null, lane: string | null): OverrideRead 
 			'--override was given without a lane — pass --override-lane "<lane>" so the escape hatch names who took it.',
 		);
 	}
-	return {_tag: "Read", override: {lane: lane.trim(), reason: reason.trim()}};
+	return { _tag: "Read", override: { lane: lane.trim(), reason: reason.trim() } };
 };
 
 type PriorBuildRead =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
 	| {
 			readonly _tag: "Read";
 			readonly notes: ReadonlyArray<string>;
@@ -287,7 +287,7 @@ const readPriorBuild = (
 	number: number,
 	resume: boolean,
 	lines: ReadonlyArray<string>,
-	round: {readonly ledger: ChildLedger; readonly failure: IntegrateFailure | null} | null,
+	round: { readonly ledger: ChildLedger; readonly failure: IntegrateFailure | null } | null,
 ): Effect.Effect<PriorBuildRead, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		const listed = yield* listComments(repo, number);
@@ -404,9 +404,9 @@ const pullOwnership = (
 		return yield* ownershipGate(
 			CLAIM,
 			repo,
-			{number, author: found.value.authorLogin, baseRef: found.value.baseRef},
+			{ number, author: found.value.authorLogin, baseRef: found.value.baseRef },
 			listComments(repo, number),
-			{notOurs: PR_NOT_OURS, unknown: PRECONDITION_UNKNOWN},
+			{ notOurs: PR_NOT_OURS, unknown: PRECONDITION_UNKNOWN },
 			"nothing was written.",
 		);
 	});
@@ -415,7 +415,7 @@ const preflight = (
 	verb: string,
 	options: Pick<ClaimOptions, "number" | "repo" | "env">,
 ): Effect.Effect<
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
 	| {
 			readonly _tag: "Ready";
 			readonly repo: string;
@@ -427,9 +427,9 @@ const preflight = (
 > =>
 	Effect.gen(function* () {
 		const session = requireSession(verb, options.env);
-		if (session._tag === "Refused") return {_tag: "Refused" as const, outcome: session.outcome};
+		if (session._tag === "Refused") return { _tag: "Refused" as const, outcome: session.outcome };
 		const resolved = yield* resolveTargetRepo(verb, options.repo, options.env);
-		if (resolved._tag === "Refused") return {_tag: "Refused" as const, outcome: resolved.outcome};
+		if (resolved._tag === "Refused") return { _tag: "Refused" as const, outcome: resolved.outcome };
 		const target = yield* openIssue(
 			verb,
 			resolved.repo,
@@ -437,7 +437,7 @@ const preflight = (
 			(reason) =>
 				`${verb}: cannot read #${options.number}: ${reason} — ownership is UNKNOWN, never "unclaimed".`,
 		);
-		if (target._tag === "Refused") return {_tag: "Refused" as const, outcome: target.outcome};
+		if (target._tag === "Refused") return { _tag: "Refused" as const, outcome: target.outcome };
 		return {
 			_tag: "Ready" as const,
 			repo: resolved.repo,
@@ -473,8 +473,8 @@ export const runClaim = (
 
 		const ready = yield* preflight(CLAIM, options);
 		if (ready._tag === "Refused") return ready.outcome;
-		const {repo, session} = ready;
-		const {number} = options;
+		const { repo, session } = ready;
+		const { number } = options;
 		if (options.issue !== null) {
 			if (!Number.isInteger(options.issue) || options.issue <= 0) {
 				return refuse(FAILED, `${CLAIM}: --issue ${options.issue} is not a positive integer.`);
@@ -519,7 +519,7 @@ export const runClaim = (
 			}
 			if (prior.ownership._tag === "Mine") {
 				return answer(
-					JSON.stringify({answer: "won", number, token: prior.ownership.marker.token, purpose}),
+					JSON.stringify({ answer: "won", number, token: prior.ownership.marker.token, purpose }),
 					[
 						`${CLAIM}: #${number} is already held by this lane (comment ${prior.ownership.marker.commentId}) — answered with the marker that owns it; nothing was written.`,
 					],
@@ -576,7 +576,7 @@ export const runClaim = (
 		if (ready.issue.isPullRequest) {
 			const owned = yield* pullOwnership(repo, number);
 			if (owned._tag === "Refused") {
-				return {...owned.outcome, stderr: [...lines, ...owned.outcome.stderr]};
+				return { ...owned.outcome, stderr: [...lines, ...owned.outcome.stderr] };
 			}
 			lines.push(owned.line);
 		}
@@ -600,7 +600,7 @@ export const runClaim = (
 		if (ownTarget && purpose !== "build") {
 			gateNotes.push(purposeBlockednessLine(CLAIM, purpose));
 		} else if (ownTarget) {
-			const {gate, notes} = yield* readDischargedGate(CLAIM, options.env, repo, number);
+			const { gate, notes } = yield* readDischargedGate(CLAIM, options.env, repo, number);
 			if (gate._tag === "Unknown") {
 				return refuse(
 					PRECONDITION_UNKNOWN,
@@ -632,7 +632,7 @@ export const runClaim = (
 					number,
 					options.resume,
 					[...lines, ...(round === null ? [] : round.notes)],
-					ledger === null || round === null ? null : {ledger, failure: round.failure},
+					ledger === null || round === null ? null : { ledger, failure: round.failure },
 				);
 				if (prior._tag === "Refused") return prior.outcome;
 				gateNotes.push(...(round === null ? [] : round.notes), ...prior.notes);
@@ -673,7 +673,7 @@ export const runClaim = (
 
 		// The checkpoint: posting DETECTS a race, this re-read RESOLVES it. It resolves against the token
 		// this run just minted, so a sibling lane of the same session is a co-racer like any other.
-		const {ownership, unauthorized} = yield* resolveOwnership(
+		const { ownership, unauthorized } = yield* resolveOwnership(
 			repo,
 			number,
 			laneCaller(session, nonce, token),
@@ -706,9 +706,9 @@ export const runClaim = (
 					// one that holds the lane is the one a caller may derive a nonce from.
 					token: ownership.marker.token,
 					purpose,
-					...(override === null ? {} : {override}),
-					...(citation._tag === "Cited" ? {cites: citation.url} : {}),
-					...(integrate === null ? {} : {integrate}),
+					...(override === null ? {} : { override }),
+					...(citation._tag === "Cited" ? { cites: citation.url } : {}),
+					...(integrate === null ? {} : { integrate }),
 				}),
 				notes,
 			);
@@ -759,13 +759,13 @@ export const runConfirm = (
 	Effect.gen(function* () {
 		const ready = yield* preflight(CONFIRM, options);
 		if (ready._tag === "Refused") return ready.outcome;
-		const {repo, session} = ready;
-		const {number} = options;
+		const { repo, session } = ready;
+		const { number } = options;
 
 		const asking = requireCallerToken(CONFIRM, session, options.token);
 		if (asking._tag === "Refused") return asking.outcome;
 
-		const {ownership, unauthorized} = yield* resolveOwnership(repo, number, asking.caller);
+		const { ownership, unauthorized } = yield* resolveOwnership(repo, number, asking.caller);
 		const notes = unauthorized.map(
 			(marker) =>
 				`${CONFIRM}: comment ${marker.commentId} carries a claim marker from "${marker.author}", who holds no write permission — counted, never a winner.`,
@@ -820,13 +820,13 @@ export const runRelease = (
 	Effect.gen(function* () {
 		const ready = yield* preflight(RELEASE, options);
 		if (ready._tag === "Refused") return ready.outcome;
-		const {repo, session} = ready;
-		const {number} = options;
+		const { repo, session } = ready;
+		const { number } = options;
 
 		const asking = requireCallerToken(RELEASE, session, options.token);
 		if (asking._tag === "Refused") return asking.outcome;
 
-		const {ownership, unauthorized, unauthorizedAdopts} = yield* resolveOwnership(
+		const { ownership, unauthorized, unauthorizedAdopts } = yield* resolveOwnership(
 			repo,
 			number,
 			asking.caller,
@@ -859,7 +859,7 @@ export const runRelease = (
 						`${RELEASE}: the adopt marker (comment ${ownership.adopt.commentId}) was not retracted: ${cleared.reason} — whether #${number} still reads as adopted is UNKNOWN.`,
 						notes,
 					)
-				: answer(JSON.stringify({answer: "released", number, adopted: ownership.adopt.adopted}), [
+				: answer(JSON.stringify({ answer: "released", number, adopted: ownership.adopt.adopted }), [
 						...notes,
 						`${RELEASE}: no claim stood on #${number} — retracted this lane's stranded adopt marker (comment ${ownership.adopt.commentId}) and nothing else.`,
 					]);
@@ -915,7 +915,7 @@ export const runRelease = (
 		const freed = yield* freeLaneBranch(number, lane.nonce);
 		const adopt = ownership.adopt;
 		if (adopt === null) {
-			return answer(JSON.stringify({answer: "released", number, freed: freed.branch}), [
+			return answer(JSON.stringify({ answer: "released", number, freed: freed.branch }), [
 				...notes,
 				...freed.notes,
 			]);
@@ -955,7 +955,7 @@ const freeLaneBranch = (
 	number: number,
 	nonce: string,
 ): Effect.Effect<
-	{readonly branch: string | null; readonly notes: ReadonlyArray<string>},
+	{ readonly branch: string | null; readonly notes: ReadonlyArray<string> },
 	never,
 	ChildProcessSpawner.ChildProcessSpawner
 > =>
@@ -970,10 +970,10 @@ const freeLaneBranch = (
 			};
 		}
 		const name = held.value;
-		if (name === null) return {branch: null, notes: []};
+		if (name === null) return { branch: null, notes: [] };
 		const lane = parseLaneBranch(name);
 		if (lane === null || laneNumber(lane) !== number || lane.nonce !== nonce) {
-			return {branch: null, notes: []};
+			return { branch: null, notes: [] };
 		}
 		const detached = yield* detachHead;
 		return detached._tag === "Failure"
@@ -1052,8 +1052,8 @@ export const runAdopt = (
 
 		const ready = yield* preflight(ADOPT, options);
 		if (ready._tag === "Refused") return ready.outcome;
-		const {repo, session} = ready;
-		const {number} = options;
+		const { repo, session } = ready;
+		const { number } = options;
 
 		if (adopted === session) {
 			return refuse(
@@ -1080,7 +1080,7 @@ export const runAdopt = (
 				[`${ADOPT}: comment ${posted.value.id} on #${number} is the one to inspect.`],
 			);
 		}
-		return answer(JSON.stringify({answer: "adopted", number, session: adopted, token}), [
+		return answer(JSON.stringify({ answer: "adopted", number, session: adopted, token }), [
 			`${ADOPT}: #${number}'s claim from "${adopted}" is now releasable by the lane this marker names — run "fabrika build release ${number} --token ${token}".`,
 		]);
 	});

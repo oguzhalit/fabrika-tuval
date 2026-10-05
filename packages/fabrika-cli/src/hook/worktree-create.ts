@@ -26,8 +26,8 @@ export interface WorktreeRequest {
 }
 
 export type RequestRead =
-	| {readonly _tag: "Request"; readonly request: WorktreeRequest}
-	| {readonly _tag: "Unplannable"; readonly reason: string};
+	| { readonly _tag: "Request"; readonly request: WorktreeRequest }
+	| { readonly _tag: "Unplannable"; readonly reason: string };
 
 /** Where a hook-provisioned worktree goes, and the repo the git commands run in. */
 export interface WorktreePlan {
@@ -40,8 +40,8 @@ export interface WorktreePlan {
 }
 
 export type PlanRead =
-	| {readonly _tag: "Plan"; readonly plan: WorktreePlan}
-	| {readonly _tag: "Unplannable"; readonly reason: string};
+	| { readonly _tag: "Plan"; readonly plan: WorktreePlan }
+	| { readonly _tag: "Unplannable"; readonly reason: string };
 
 /**
  * A slug that cannot escape `<repoRoot>/.claude/worktrees/`.
@@ -298,11 +298,11 @@ export const readWorktreeRequest = (payload: Record<string, unknown>): RequestRe
 	const cwd = typeof payload.cwd === "string" ? payload.cwd.trim() : "";
 	const name = typeof payload.name === "string" ? payload.name.trim() : "";
 
-	if (cwd === "") return {_tag: "Unplannable", reason: "the payload carries no `cwd`"};
+	if (cwd === "") return { _tag: "Unplannable", reason: "the payload carries no `cwd`" };
 	if (!cwd.startsWith("/")) {
-		return {_tag: "Unplannable", reason: `\`cwd\` is not an absolute path: ${cwd}`};
+		return { _tag: "Unplannable", reason: `\`cwd\` is not an absolute path: ${cwd}` };
 	}
-	if (name === "") return {_tag: "Unplannable", reason: "the payload carries no `name`"};
+	if (name === "") return { _tag: "Unplannable", reason: "the payload carries no `name`" };
 	if (!SAFE_NAME.test(name)) {
 		return {
 			_tag: "Unplannable",
@@ -310,7 +310,7 @@ export const readWorktreeRequest = (payload: Record<string, unknown>): RequestRe
 		};
 	}
 
-	return {_tag: "Request", request: {cwd, name}};
+	return { _tag: "Request", request: { cwd, name } };
 };
 
 /** Run in the request's `cwd`; its stdout is the only directory {@link locateToplevel} accepts. */
@@ -320,8 +320,8 @@ export const showToplevelArgs: ReadonlyArray<string> = ["rev-parse", "--show-top
 export const listWorktreesArgs: ReadonlyArray<string> = ["worktree", "list", "--porcelain", "-z"];
 
 export type ToplevelRead =
-	| {readonly _tag: "Toplevel"; readonly toplevel: string}
-	| {readonly _tag: "Unplannable"; readonly reason: string};
+	| { readonly _tag: "Toplevel"; readonly toplevel: string }
+	| { readonly _tag: "Unplannable"; readonly reason: string };
 
 /**
  * The working tree `cwd` stands in, or a refusal naming the `cwd` that resolved to none.
@@ -333,8 +333,8 @@ export type ToplevelRead =
 export const locateToplevel = (request: WorktreeRequest, toplevel: string | null): ToplevelRead => {
 	const path = toplevel?.trim() ?? "";
 	return path.startsWith("/") && !path.includes("\n")
-		? {_tag: "Toplevel", toplevel: path}
-		: {_tag: "Unplannable", reason: `\`cwd\` resolves to no repository toplevel: ${request.cwd}`};
+		? { _tag: "Toplevel", toplevel: path }
+		: { _tag: "Unplannable", reason: `\`cwd\` resolves to no repository toplevel: ${request.cwd}` };
 };
 
 /**
@@ -372,7 +372,7 @@ export const planAtPrimary = (request: WorktreeRequest, listing: string | null):
 	}
 	return {
 		_tag: "Plan",
-		plan: {repoRoot, name: request.name, worktreePath: worktreePathFor(repoRoot, request.name)},
+		plan: { repoRoot, name: request.name, worktreePath: worktreePathFor(repoRoot, request.name) },
 	};
 };
 
@@ -456,7 +456,7 @@ const nonInteractiveSsh = (inherited: string | undefined): string => {
 export const childEnv = (
 	source: Readonly<Record<string, string | undefined>>,
 ): Record<string, string> => {
-	const env: Record<string, string> = {PATH: toolchainPath(source.PATH, source.HOME)};
+	const env: Record<string, string> = { PATH: toolchainPath(source.PATH, source.HOME) };
 	for (const key of [...INSTALL_KEYS, ...CREDENTIAL_KEYS]) {
 		const value = source[key];
 		if (value !== undefined && value !== "") env[key] = value;

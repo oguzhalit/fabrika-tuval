@@ -26,15 +26,15 @@
  * Every mode asks {@link assertMovable} before it fetches, switches, renames or creates anything:
  * a dirty tree it would carry work off refuses on `13`, a tree on another lane's branch on `14`.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {localBranches} from "../io/git.ts";
-import {resolveTrunk, TRUNK_REMOTE, trunkUnresolved} from "../io/trunk.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {epicBranch} from "../wire/lane-brief.ts";
-import {requireCallerToken, requireClaim, requireSession} from "./claim.ts";
-import {BASE_MISMATCH, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { localBranches } from "../io/git.ts";
+import { resolveTrunk, TRUNK_REMOTE, trunkUnresolved } from "../io/trunk.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { epicBranch } from "../wire/lane-brief.ts";
+import { requireCallerToken, requireClaim, requireSession } from "./claim.ts";
+import { BASE_MISMATCH, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
 import {
 	type BaseRef,
 	baseLabel,
@@ -50,7 +50,7 @@ import {
 	switchToNew,
 	worktreeCheckouts,
 } from "./git.ts";
-import {getParent, getPullHead} from "./github.ts";
+import { getParent, getPullHead } from "./github.ts";
 import {
 	childLaneBranches,
 	createBranchName,
@@ -58,8 +58,8 @@ import {
 	parseLaneBranch,
 	resumeBranchName,
 } from "./lane.ts";
-import {resolveTargetRepo} from "./target.ts";
-import {assertGround, assertMovable} from "./tree.ts";
+import { resolveTargetRepo } from "./target.ts";
+import { assertGround, assertMovable } from "./tree.ts";
 
 const VERB = "build branch";
 
@@ -90,8 +90,8 @@ export interface BranchOptions {
 }
 
 type ResolvedBase =
-	| {readonly _tag: "Resolved"; readonly base: BaseRef; readonly note: string}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Resolved"; readonly base: BaseRef; readonly note: string }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * Which base the create path cuts off, and where that answer came from.
@@ -155,7 +155,7 @@ const resolveBase = (
 					),
 				};
 			}
-			const base: BaseRef = {_tag: "Remote", remote: TRUNK_REMOTE, ref: trunk.value.branch};
+			const base: BaseRef = { _tag: "Remote", remote: TRUNK_REMOTE, ref: trunk.value.branch };
 			return {
 				_tag: "Resolved" as const,
 				base,
@@ -187,8 +187,8 @@ const resolveBase = (
 		// be reading a stale copy, because there is no published tip for it to be behind.
 		const base: BaseRef =
 			published.value === null
-				? {_tag: "LocalOnly", ref: assembly}
-				: {_tag: "Remote", remote: "origin", ref: assembly};
+				? { _tag: "LocalOnly", ref: assembly }
+				: { _tag: "Remote", remote: "origin", ref: assembly };
 		return {
 			_tag: "Resolved" as const,
 			base,
@@ -215,7 +215,7 @@ export const runBranch = (
 	ChildProcessSpawner.ChildProcessSpawner | HttpClient.HttpClient
 > =>
 	Effect.gen(function* () {
-		const {number, slug, resume, resumeLane} = options;
+		const { number, slug, resume, resumeLane } = options;
 		if ((number === null) === (resume === null)) {
 			return refuse(
 				OFF_VOCABULARY,
@@ -266,7 +266,11 @@ export const runBranch = (
 
 		if (resume !== null) {
 			const name = resumeBranchName(resume, nonce);
-			const movable = yield* assertMovable(VERB, {serves: resume, ends: [name], notes: held.notes});
+			const movable = yield* assertMovable(VERB, {
+				serves: resume,
+				ends: [name],
+				notes: held.notes,
+			});
 			if (movable._tag === "Refused") return movable.outcome;
 			const head = yield* getPullHead(options.env, repo, resume);
 			if (head._tag === "Unknown") {
@@ -283,7 +287,7 @@ export const runBranch = (
 					held.notes,
 				);
 			}
-			const fetched = yield* fetchBase({_tag: "Remote", remote: "origin", ref: head.value.ref});
+			const fetched = yield* fetchBase({ _tag: "Remote", remote: "origin", ref: head.value.ref });
 			if (fetched._tag === "Failure") {
 				return refuse(
 					PRECONDITION_UNKNOWN,
@@ -406,13 +410,13 @@ export const runBranch = (
 
 		const issue = number as number;
 		const name = createBranchName(issue, slug as string, nonce);
-		const movable = yield* assertMovable(VERB, {serves: issue, ends: [name], notes: held.notes});
+		const movable = yield* assertMovable(VERB, { serves: issue, ends: [name], notes: held.notes });
 		if (movable._tag === "Refused") return movable.outcome;
 
 		const resolvedBase = yield* resolveBase(options.env, repo, issue, options.base);
 		if (resolvedBase._tag === "Refused")
-			return {...resolvedBase.outcome, stderr: [...held.notes, ...resolvedBase.outcome.stderr]};
-		const {base} = resolvedBase;
+			return { ...resolvedBase.outcome, stderr: [...held.notes, ...resolvedBase.outcome.stderr] };
+		const { base } = resolvedBase;
 		const notes = [...held.notes, resolvedBase.note];
 
 		const label = baseLabel(base);

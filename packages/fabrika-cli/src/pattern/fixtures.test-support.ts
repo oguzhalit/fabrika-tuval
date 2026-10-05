@@ -16,8 +16,8 @@
  * What each fixture is for is stated in the fixture's own opening prose; read the file rather than a
  * gloss of it here.
  */
-import {readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 /** The three fixture directory paths the contract's examples pass to `--dir`. */
 export const FIXTURES = "packages/fabrika-cli/test-fixtures/write-pattern";

@@ -8,7 +8,7 @@
  * bound to a head that moved is `Stale`, and a head that cannot be resolved is `Unbindable`, so
  * neither can be read as a current PASS.
  */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	bindToContent,
 	bindToHead,
@@ -50,7 +50,7 @@ const found = (artifact: string): VerdictMarker => {
 	return result.value;
 };
 
-const drift = (name: string, line: string) => ({name, line});
+const drift = (name: string, line: string) => ({ name, line });
 
 describe("emit", () => {
 	it("composes the one recognizable first line", () => {
@@ -129,7 +129,7 @@ describe("read — the check-epic-plan namespace", () => {
 		expect(sha).not.toBeNull();
 		if (text === null || sha === null) return;
 		const result = read(
-			emit({namespace: "check-epic-plan", polarity: "PASS", sha, content: null, clause: text}),
+			emit({ namespace: "check-epic-plan", polarity: "PASS", sha, content: null, clause: text }),
 		);
 		expect(result._tag).toBe("Found");
 		if (result._tag !== "Found") return;
@@ -205,7 +205,7 @@ describe("read — Malformed: the drifts a lenient reader answers `PASS` for", (
 		drift("a separator with no clause after it", `review-code: PASS @ ${HEAD} —`),
 	];
 
-	for (const {name, line} of DRIFTS) {
+	for (const { name, line } of DRIFTS) {
 		it(`${name} is Malformed — never Found, never Absent`, () => {
 			const result = read(`${line}\n`);
 			expect(result._tag).toBe("Malformed");
@@ -230,12 +230,12 @@ describe("read — Malformed: the drifts a lenient reader answers `PASS` for", (
 
 describe("bindToHead — stale is its own outcome, never a PASS and never an absence", () => {
 	it("answers Current when the marker's SHA is the head", () => {
-		expect(bindToHead(MARKER, HEAD)).toEqual({_tag: "Current", sha: HEAD, via: "head"});
+		expect(bindToHead(MARKER, HEAD)).toEqual({ _tag: "Current", sha: HEAD, via: "head" });
 	});
 
 	it("answers Current across an abbreviation, in either direction", () => {
 		expect(bindToHead(MARKER, "03135b9")._tag).toBe("Current");
-		expect(bindToHead({...MARKER, sha: sha("03135b9")}, HEAD)._tag).toBe("Current");
+		expect(bindToHead({ ...MARKER, sha: sha("03135b9") }, HEAD)._tag).toBe("Current");
 	});
 
 	it("answers Stale for a head that moved under the verdict — the PASS does not survive it", () => {
@@ -256,7 +256,7 @@ describe("parseFields", () => {
 	it("takes the four fields in any order, as `<key>: <value>` or `<key><TAB><value>`", () => {
 		expect(
 			parseFields(`clause: merge-ready\nsha\t${HEAD}\npolarity: PASS\nnamespace: review-code\n`),
-		).toEqual({_tag: "Fields", marker: MARKER});
+		).toEqual({ _tag: "Fields", marker: MARKER });
 	});
 
 	it("refuses a missing field rather than composing a weaker marker than the caller wrote", () => {
@@ -322,8 +322,8 @@ describe("the type forbids the values a lenient reader would invent", () => {
 		const counterexample = {
 			_tag: "Found",
 			// @ts-expect-error — `""` is not a HeadSha, so "found with no binding" is unrepresentable
-			value: {namespace: "review", polarity: "PASS", sha: "", clause: text("ok")},
-		} satisfies {_tag: "Found"; value: VerdictMarker};
+			value: { namespace: "review", polarity: "PASS", sha: "", clause: text("ok") },
+		} satisfies { _tag: "Found"; value: VerdictMarker };
 		expect(counterexample._tag).toBe("Found");
 	});
 
@@ -350,7 +350,7 @@ describe("the type forbids the values a lenient reader would invent", () => {
  */
 describe("the content field", () => {
 	const DIGEST = "2f1a9c4e0b7d";
-	const BOUND: VerdictMarker = {...MARKER, content: DIGEST as VerdictMarker["content"]};
+	const BOUND: VerdictMarker = { ...MARKER, content: DIGEST as VerdictMarker["content"] };
 
 	it("emits after the SHA and reads back as the same field", () => {
 		expect(emit(BOUND)).toBe(`review-code: PASS @ ${HEAD} content:${DIGEST} — merge-ready\n`);
@@ -370,7 +370,7 @@ describe("the content field", () => {
 	it("round-trips through the wire field grammar, in both presence and absence", () => {
 		for (const marker of [BOUND, MARKER]) {
 			const fields = renderMarker(marker).join("\n");
-			expect(emitFromFields(fields)).toEqual({_tag: "Composed", bytes: emit(marker)});
+			expect(emitFromFields(fields)).toEqual({ _tag: "Composed", bytes: emit(marker) });
 		}
 	});
 
@@ -383,10 +383,10 @@ describe("the content field", () => {
 describe("bindToContent — what a moved head survives", () => {
 	const DIGEST = "2f1a9c4e0b7d";
 	const OTHER = "0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f708192";
-	const BOUND: VerdictMarker = {...MARKER, content: DIGEST as VerdictMarker["content"]};
+	const BOUND: VerdictMarker = { ...MARKER, content: DIGEST as VerdictMarker["content"] };
 
 	it("answers Current via head when the head has not moved, needing no digest at all", () => {
-		expect(bindToContent(MARKER, HEAD, null)).toEqual({_tag: "Current", sha: HEAD, via: "head"});
+		expect(bindToContent(MARKER, HEAD, null)).toEqual({ _tag: "Current", sha: HEAD, via: "head" });
 	});
 
 	it("answers Current via content when the head moved and the content did not", () => {
@@ -414,6 +414,6 @@ describe("bindToContent — what a moved head survives", () => {
 	});
 
 	it("never answers Current for a digest that is not 12 hex, however it was smuggled in", () => {
-		expect(bindToContent({sha: HEAD, content: "short"}, OTHER, "short")._tag).toBe("Stale");
+		expect(bindToContent({ sha: HEAD, content: "short" }, OTHER, "short")._tag).toBe("Stale");
 	});
 });

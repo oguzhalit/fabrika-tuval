@@ -16,16 +16,16 @@
  * the holder's run key from it, so both lanes wrote into one directory.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {requireCallerToken, requireClaim, requireSession} from "../build/claim.ts";
-import {badNumber, openIssue, resolveTargetRepo} from "../build/target.ts";
-import {assertGround} from "../build/tree.ts";
-import type {IssueRecord} from "../io/issues.ts";
-import {EPIC_TYPE_LABEL} from "../triage/facets.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {CLAIM_NOT_MINE, OFF_VOCABULARY, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {runDir, runKey, runKeyNonce} from "./run.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { requireCallerToken, requireClaim, requireSession } from "../build/claim.ts";
+import { badNumber, openIssue, resolveTargetRepo } from "../build/target.ts";
+import { assertGround } from "../build/tree.ts";
+import type { IssueRecord } from "../io/issues.ts";
+import { EPIC_TYPE_LABEL } from "../triage/facets.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { CLAIM_NOT_MINE, OFF_VOCABULARY, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { runDir, runKey, runKeyNonce } from "./run.ts";
 
 /** The per-verb halves of the shared refusals — the same facts, each verb's own wording. */
 export interface LedgerMessages {
@@ -47,8 +47,8 @@ export interface Ground {
 }
 
 export type Opened =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| ({readonly _tag: "Ground"} & Ground);
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| ({ readonly _tag: "Ground" } & Ground);
 
 export interface OpenOptions {
 	readonly number: number;
@@ -60,14 +60,14 @@ export interface OpenOptions {
 	readonly env: Readonly<Record<string, string | undefined>>;
 }
 
-const refused = (outcome: VerbOutcome): Opened => ({_tag: "Refused", outcome});
+const refused = (outcome: VerbOutcome): Opened => ({ _tag: "Refused", outcome });
 
 export const openGround = (
 	messages: LedgerMessages,
 	options: OpenOptions,
 ): Effect.Effect<Opened, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {verb} = messages;
+		const { verb } = messages;
 		const epicNumber = options.number;
 
 		const bad = badNumber(verb, "an issue number", epicNumber);

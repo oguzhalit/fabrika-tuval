@@ -19,10 +19,10 @@
  * unread row rather than a closed one — it never shortens the blocking set, and it never seats a
  * pass on its own.
  */
-import {Effect} from "effect";
-import {blockedBy} from "../io/edges.ts";
-import type {Shell} from "../io/git.ts";
-import {getIssue} from "../io/issues.ts";
+import { Effect } from "effect";
+import { blockedBy } from "../io/edges.ts";
+import type { Shell } from "../io/git.ts";
+import { getIssue } from "../io/issues.ts";
 
 /** A blocker whose state could not be read — never counted closed, never counted open. */
 export interface UnreadBlocker {
@@ -39,7 +39,7 @@ export type Blockedness =
 			readonly open: ReadonlyArray<number>;
 			readonly unread: ReadonlyArray<UnreadBlocker>;
 	  }
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * Every open `blocked_by` edge on `issue`.
@@ -52,7 +52,7 @@ export type Blockedness =
 export const readBlockedness = (repo: string, issue: number): Shell<Blockedness> =>
 	Effect.gen(function* () {
 		const edges = yield* blockedBy(repo, issue);
-		if (edges._tag === "Unknown") return {_tag: "Unknown" as const, reason: edges.reason};
+		if (edges._tag === "Unknown") return { _tag: "Unknown" as const, reason: edges.reason };
 		if (edges._tag === "Absent") {
 			return {
 				_tag: "Unknown" as const,
@@ -64,12 +64,12 @@ export const readBlockedness = (repo: string, issue: number): Shell<Blockedness>
 		for (const blocker of edges.value) {
 			const state = yield* getIssue(repo, blocker);
 			if (state._tag === "Unknown") {
-				unread.push({number: blocker, reason: state.reason});
+				unread.push({ number: blocker, reason: state.reason });
 				continue;
 			}
 			if (state._tag === "Absent" || state.value.state === "open") open.push(blocker);
 		}
-		return {_tag: "Read" as const, scanned: edges.value.length, open, unread};
+		return { _tag: "Read" as const, scanned: edges.value.length, open, unread };
 	});
 
 /**
@@ -82,9 +82,9 @@ export const readBlockedness = (repo: string, issue: number): Shell<Blockedness>
  * so the two seams cannot come to disagree about what an unread blocker means.
  */
 export type BlockedGate =
-	| {readonly _tag: "Clear"; readonly scanned: number}
-	| {readonly _tag: "Blocked"; readonly scanned: number; readonly open: ReadonlyArray<number>}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Clear"; readonly scanned: number }
+	| { readonly _tag: "Blocked"; readonly scanned: number; readonly open: ReadonlyArray<number> }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * Seat one blockedness read.
@@ -95,11 +95,11 @@ export type BlockedGate =
  * resolves to "not blocked".
  */
 export const gateOf = (blockedness: Blockedness): BlockedGate => {
-	if (blockedness._tag === "Unknown") return {_tag: "Unknown", reason: blockedness.reason};
-	const {scanned, open, unread} = blockedness;
-	if (open.length > 0) return {_tag: "Blocked", scanned, open};
+	if (blockedness._tag === "Unknown") return { _tag: "Unknown", reason: blockedness.reason };
+	const { scanned, open, unread } = blockedness;
+	if (open.length > 0) return { _tag: "Blocked", scanned, open };
 	return unread.length === 0
-		? {_tag: "Clear", scanned}
+		? { _tag: "Clear", scanned }
 		: {
 				_tag: "Unknown",
 				reason: unread.map((row) => `blocker #${row.number}: ${row.reason}`).join("; "),

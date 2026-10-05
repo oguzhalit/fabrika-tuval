@@ -10,7 +10,7 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9852
  */
 
-import type {KeyGroup} from "../key-group.ts";
+import type { KeyGroup } from "../key-group.ts";
 import {
 	AUTHOR_TEAM,
 	AUTHOR_USER,
@@ -30,6 +30,6 @@ export const campaignAuthorsKey: KeyGroup<ReadonlyArray<GrantAuthor>> = {
 		type: "array",
 		description:
 			"Deprecated and ignored. Who may declare or flip a campaign is the control-plane set `.github/CODEOWNERS` names, holding `write` or above; `fabrika campaign open` / `campaign state` print a notice while this key is declared. Remove it.",
-		items: {type: "string", pattern: `${AUTHOR_USER.source}|${AUTHOR_TEAM.source}`},
+		items: { type: "string", pattern: `${AUTHOR_USER.source}|${AUTHOR_TEAM.source}` },
 	},
 };

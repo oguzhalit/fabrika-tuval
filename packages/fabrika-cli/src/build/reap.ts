@@ -40,8 +40,8 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10342#issuecomment-5973709319
  * @ruling https://github.com/kamp-us/phoenix/issues/10342#issuecomment-5973715141
  */
-import type {Containment} from "../io/containment.ts";
-import {laneNumber, parseLaneBranch} from "./lane.ts";
+import type { Containment } from "../io/containment.ts";
+import { laneNumber, parseLaneBranch } from "./lane.ts";
 
 /**
  * The two namings a harness-provisioned agent worktree arrives under.
@@ -77,8 +77,8 @@ export const isAgentWorktree = (path: string): boolean => {
 
 /** What one tree's own directory answered about uncommitted work. */
 export type Uncommitted =
-	| {readonly _tag: "Read"; readonly paths: number}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Read"; readonly paths: number }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * How long a tree's own directory has to have gone unchanged before its quiet counts as evidence
@@ -122,9 +122,9 @@ export type LiveSignal = {
  * and a `Live` with nothing in it would be a verdict with no reason to print.
  */
 export type Liveness =
-	| {readonly _tag: "Live"; readonly signals: readonly [LiveSignal, ...ReadonlyArray<LiveSignal>]}
-	| {readonly _tag: "Quiet"}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Live"; readonly signals: readonly [LiveSignal, ...ReadonlyArray<LiveSignal>] }
+	| { readonly _tag: "Quiet" }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * Whether the registered directory is still on disk.
@@ -143,9 +143,9 @@ export type Liveness =
  * it keeps the tree. Only a not-found is proof of absence.
  */
 export type Presence =
-	| {readonly _tag: "Present"}
-	| {readonly _tag: "Gone"; readonly because: string}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Present" }
+	| { readonly _tag: "Gone"; readonly because: string }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * The facts a sweep has in hand before it runs a single git read on the tree — the registration's
@@ -173,8 +173,8 @@ export interface CheapFacts {
  * standing on a branch always reads `0`, because that branch reaches its own tip.
  */
 export type Stranded =
-	| {readonly _tag: "Read"; readonly commits: number}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Read"; readonly commits: number }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /** Everything git says about one registered agent worktree. */
 export interface TreeFacts extends CheapFacts {
@@ -192,9 +192,9 @@ export interface TreeFacts extends CheapFacts {
  */
 export type BranchFate =
 	/** `branch` is the one the board was asked about, which is where a salvage lands. */
-	| {readonly _tag: "Ended"; readonly branch: string; readonly because: string}
-	| {readonly _tag: "Live"; readonly because: string}
-	| {readonly _tag: "Unproven"; readonly reason: string};
+	| { readonly _tag: "Ended"; readonly branch: string; readonly because: string }
+	| { readonly _tag: "Live"; readonly because: string }
+	| { readonly _tag: "Unproven"; readonly reason: string };
 
 /** {@link TreeFacts} plus the board's answer, read only for a tree the git arms left open. */
 export interface BoardFacts extends TreeFacts {
@@ -234,8 +234,8 @@ export type Verdict =
 			readonly salvage: Salvage | null;
 	  }
 	/** No tree to remove — only the registration, which `git worktree prune` clears. */
-	| {readonly _tag: "Prune"; readonly because: string}
-	| {readonly _tag: "Keep"; readonly because: string};
+	| { readonly _tag: "Prune"; readonly because: string }
+	| { readonly _tag: "Keep"; readonly because: string };
 
 /**
  * The arms answerable off {@link CheapFacts} alone, or `null` when the git reads are owed.
@@ -253,10 +253,10 @@ export const classifyCheap = (
 	selfPaths: ReadonlySet<string>,
 ): Verdict | null => {
 	if (selfPaths.has(facts.path)) {
-		return {_tag: "Keep", because: "it is the tree this run is standing in"};
+		return { _tag: "Keep", because: "it is the tree this run is standing in" };
 	}
 	if (facts.presence._tag === "Gone") {
-		return {_tag: "Prune", because: facts.presence.because};
+		return { _tag: "Prune", because: facts.presence.because };
 	}
 	if (facts.presence._tag === "Unknown") {
 		return {
@@ -310,7 +310,7 @@ export const classifyGit = (
 	const clean = facts.uncommitted.paths === 0;
 	const license = trunkLicense(facts.landing);
 	if (clean && license !== null) {
-		return {_tag: "Remove", license, because: whyLanded(facts.landing, trunk)};
+		return { _tag: "Remove", license, because: whyLanded(facts.landing, trunk) };
 	}
 	if (facts.stranded._tag === "Unknown") {
 		return {
@@ -357,7 +357,7 @@ export const classify = (
 				_tag: "Remove",
 				license: "branch-ended",
 				because: `${facts.fate.because}, so what it still holds does not keep it: ${held}`,
-				salvage: paths > 0 ? {paths, onto: facts.fate.branch} : null,
+				salvage: paths > 0 ? { paths, onto: facts.fate.branch } : null,
 			};
 		case "Live":
 			return {
@@ -400,7 +400,7 @@ export interface HeadPull {
 export const fateOfPulls = (branch: string, pulls: ReadonlyArray<HeadPull>): BranchFate | null => {
 	const open = pulls.find((pull) => pull.state === "open");
 	if (open !== undefined) {
-		return {_tag: "Live", because: `pull request #${open.number} on ${branch} is open`};
+		return { _tag: "Live", because: `pull request #${open.number} on ${branch} is open` };
 	}
 	const newest = [...pulls].sort((a, b) => b.number - a.number)[0];
 	const last = pulls.find((pull) => pull.merged) ?? newest;
@@ -429,7 +429,7 @@ export const ticketOf = (branch: string): number | null => {
 /** What the number a branch is named for proves, once no pull request has that branch as its head. */
 export const fateOfTicket = (
 	branch: string,
-	ticket: {readonly number: number; readonly state: string},
+	ticket: { readonly number: number; readonly state: string },
 ): BranchFate =>
 	ticket.state === "closed"
 		? {

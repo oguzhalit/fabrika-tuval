@@ -11,17 +11,17 @@
  * cannot fake. When the winner is another lane of this same session the refusal is re-mapped to `14`:
  * inside one session that is a wrong tree to be standing in, not a wrong session.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {currentBranch} from "../io/issues.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {type ClaimMarker, laneCaller, requireClaim} from "./claim.ts";
-import {WRONG_LANE} from "./codes.ts";
-import {type LaneBranch, laneNumber, parseLaneBranch} from "./lane.ts";
-import {assertGround} from "./tree.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { currentBranch } from "../io/issues.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { type ClaimMarker, laneCaller, requireClaim } from "./claim.ts";
+import { WRONG_LANE } from "./codes.ts";
+import { type LaneBranch, laneNumber, parseLaneBranch } from "./lane.ts";
+import { assertGround } from "./tree.ts";
 
 export type Lane =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
 	| {
 			readonly _tag: "Lane";
 			readonly root: string;

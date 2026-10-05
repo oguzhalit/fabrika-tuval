@@ -13,16 +13,16 @@
  * existed.
  */
 
-import {execFileSync} from "node:child_process";
-import {mkdirSync, mkdtempSync, readFileSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {NodeServices} from "@effect/platform-node";
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {LockfileRegenerator} from "../config/keys/assembly-replay.ts";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
-import {replayBranchName, replayChild} from "./replay.ts";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { LockfileRegenerator } from "../config/keys/assembly-replay.ts";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
+import { replayBranchName, replayChild } from "./replay.ts";
 
 const REGISTRY = "flags.ts";
 const BRANCH = "epic";
@@ -50,7 +50,7 @@ interface Repo {
 const openRepo = (): Repo => {
 	const dir = mkdtempSync(join(tmpdir(), "fabrika-replay-"));
 	const git = (...args: ReadonlyArray<string>): string =>
-		execFileSync("git", [...args], {cwd: dir, encoding: "utf8"});
+		execFileSync("git", [...args], { cwd: dir, encoding: "utf8" });
 	git("init", "--quiet", "-b", BRANCH);
 	const settings: ReadonlyArray<readonly [string, string]> = [
 		["user.name", "fixture"],
@@ -97,12 +97,12 @@ const collided = (theirs: string): Repo => {
 const replay = (repo: Repo, tip: string, regenerator: LockfileRegenerator | null = null) =>
 	Effect.runPromise(
 		Effect.provide(
-			replayChild({path: repo.dir, branch: BRANCH, child: "child", tip, regenerator}),
+			replayChild({ path: repo.dir, branch: BRANCH, child: "child", tip, regenerator }),
 			NodeServices.layer,
 		),
 	);
 
-describe("replayChild against real git", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
+describe("replayChild against real git", { timeout: SUBPROCESS_TEST_TIMEOUT_MS }, () => {
 	it("replays a plain keep-both collision onto the tip and merges it", async () => {
 		const repo = collided(registry('existing: "on",', 'laneConcurrencyCap: "4",'));
 		const tip = repo.rev(BRANCH);

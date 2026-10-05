@@ -7,12 +7,12 @@
  * Empty stdin is `3`, never `unclassified`: a verb that classified nothing and a verb that read
  * nothing must not answer the same way.
  */
-import {Effect} from "effect";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {EMPTY_STDIN} from "./codes.ts";
-import {NULL_TOKEN, parseFrames} from "./frames.ts";
-import {classifyLog} from "./signatures.ts";
+import { Effect } from "effect";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { EMPTY_STDIN } from "./codes.ts";
+import { NULL_TOKEN, parseFrames } from "./frames.ts";
+import { classifyLog } from "./signatures.ts";
 
 const VERB = "heal-ci classify";
 

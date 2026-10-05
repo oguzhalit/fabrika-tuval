@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeSeams, okOut, type Scripted} from "../fakes.test-support.ts";
-import {runBranch} from "./branch-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeSeams, okOut, type Scripted } from "../fakes.test-support.ts";
+import { runBranch } from "./branch-verb.ts";
 import {
 	BASE_MISMATCH,
 	CLAIM_NOT_MINE,
@@ -54,10 +54,10 @@ const CLEAN_DETACHED: ReadonlyArray<Scripted> = [
 
 const seams = (script: ReadonlyArray<Scripted>) => fakeSeams([...script, ...CLEAN_DETACHED]);
 
-const MINE = comments({id: 1, body: marker("s-9f2e", LANE_UUID)});
+const MINE = comments({ id: 1, body: marker("s-9f2e", LANE_UUID) });
 
 /** The write permission the marker's author holds — what authorizes a claim. */
-const WRITE = served({permission: "write"});
+const WRITE = served({ permission: "write" });
 
 const options = {
 	number: 4312 as number | null,
@@ -68,7 +68,7 @@ const options = {
 	resumeLane: false,
 	token: LANE_TOKEN,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e", ...GH_TOKEN_ENV} as Record<
+	env: { CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e", ...GH_TOKEN_ENV } as Record<
 		string,
 		string | undefined
 	>,
@@ -82,7 +82,7 @@ const CLAIMED: ReadonlyArray<Scripted> = [
 ];
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runBranch({...options, ...overrides}), seams(script).layer));
+	Effect.runPromise(Effect.provide(runBranch({ ...options, ...overrides }), seams(script).layer));
 
 describe("runBranch — create mode", () => {
 	it("cuts the lane branch off FETCH_HEAD and prints its name", async () => {
@@ -133,7 +133,7 @@ describe("runBranch — create mode", () => {
 	it("refuses a flag-shaped slug on 10, before touching git (#4854)", async () => {
 		const shell = seams([]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, slug: "-rf"}), shell.layer),
+			Effect.provide(runBranch({ ...options, slug: "-rf" }), shell.layer),
 		);
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toBe(
@@ -154,7 +154,7 @@ describe("runBranch — create mode", () => {
 		const shell = seams([
 			[REV_PARSE, GIT_DIRS],
 			[ISSUE, issue()],
-			[COMMENTS, comments({id: 1, body: marker("s-77aa", LANE_UUID)})],
+			[COMMENTS, comments({ id: 1, body: marker("s-77aa", LANE_UUID) })],
 			[PERM, WRITE],
 		]);
 		const out = await Effect.runPromise(Effect.provide(runBranch(options), shell.layer));
@@ -173,9 +173,9 @@ describe("runBranch — create mode", () => {
 	});
 
 	it("refuses both modes at once, and neither mode at all", async () => {
-		const both = await run([], {resume: 4310});
+		const both = await run([], { resume: 4310 });
 		expect(both.code).toBe(OFF_VOCABULARY);
-		const neither = await run([], {number: null, slug: null});
+		const neither = await run([], { number: null, slug: null });
 		expect(neither.code).toBe(OFF_VOCABULARY);
 	});
 });
@@ -184,15 +184,18 @@ describe("runBranch — resume mode", () => {
 	const RESUME_ISSUE = /^GET \S+\/repos\/o\/r\/issues\/4310$/;
 	const RESUME_COMMENTS = /^GET \S+\/repos\/o\/r\/issues\/4310\/comments/;
 	const PULL_HEAD = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/pulls\/4310$/;
-	const resumeOptions = {number: null, slug: null, resume: 4310};
+	const resumeOptions = { number: null, slug: null, resume: 4310 };
 
 	it("checks the PR's head out under this claim's own local lane name, with the upstream set", async () => {
 		const shell = seams([
 			[REV_PARSE, GIT_DIRS],
-			[RESUME_ISSUE, issue({number: 4310})],
+			[RESUME_ISSUE, issue({ number: 4310 })],
 			[RESUME_COMMENTS, MINE],
 			[PERM, WRITE],
-			[PULL_HEAD, served(pullPayload({number: 4310, head: {ref: "umut/fix-focus", sha: HEAD}}))],
+			[
+				PULL_HEAD,
+				served(pullPayload({ number: 4310, head: { ref: "umut/fix-focus", sha: HEAD } })),
+			],
 			[REMOTES, okOut("origin\n")],
 			[/^git fetch --quiet origin umut\/fix-focus$/, okOut("")],
 			[RESOLVE, okOut(`${HEAD}\n`)],
@@ -201,7 +204,7 @@ describe("runBranch — resume mode", () => {
 			[/^git branch --set-upstream-to=origin\/umut\/fix-focus/, okOut("")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...resumeOptions}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...resumeOptions }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(`build/pr-4310-${NONCE}\n`);
@@ -214,7 +217,7 @@ describe("runBranch — resume mode", () => {
 		const out = await run(
 			[
 				[REV_PARSE, GIT_DIRS],
-				[RESUME_ISSUE, issue({number: 4310})],
+				[RESUME_ISSUE, issue({ number: 4310 })],
 				[RESUME_COMMENTS, MINE],
 				[PERM, WRITE],
 				[
@@ -222,7 +225,7 @@ describe("runBranch — resume mode", () => {
 					served(
 						pullPayload({
 							number: 4310,
-							head: {ref: "umut/fix-focus", sha: HEAD},
+							head: { ref: "umut/fix-focus", sha: HEAD },
 							state: "closed",
 							merged: true,
 						}),
@@ -250,7 +253,7 @@ describe("runBranch — --resume-lane", () => {
 	const SHOW_CURRENT = /^git branch --show-current$/;
 	const PRIOR = "build/4312-path-surface-config-c4367b0b";
 	const RESUMED = `build/4312-path-surface-config-${NONCE}`;
-	const resumeLaneOptions = {slug: null, resumeLane: true};
+	const resumeLaneOptions = { slug: null, resumeLane: true };
 
 	/** Only this tree, on `main` — the branch to take over is free. */
 	const FREE = okOut(`worktree /repo\nHEAD ${HEAD}\nbranch refs/heads/main\n`);
@@ -274,7 +277,7 @@ describe("runBranch — --resume-lane", () => {
 			[SWITCH, okOut("")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...resumeLaneOptions}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...resumeLaneOptions }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(`${RESUMED}\n`);
@@ -294,7 +297,7 @@ describe("runBranch — --resume-lane", () => {
 			[SWITCH, okOut("")],
 		]);
 		await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...resumeLaneOptions}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...resumeLaneOptions }), shell.layer),
 		);
 		expect(shell.calls.some((line) => /^git fetch/.test(line))).toBe(false);
 	});
@@ -302,7 +305,7 @@ describe("runBranch — --resume-lane", () => {
 	it("renames nothing on a re-run under the same nonce — the name already resolves", async () => {
 		const shell = seams([...CLAIMED, [FOR_EACH_REF, okOut(`${RESUMED}\n`)], [SWITCH, okOut("")]]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...resumeLaneOptions}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...resumeLaneOptions }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(shell.calls.some((line) => RENAME.test(line))).toBe(false);
@@ -322,7 +325,7 @@ describe("runBranch — --resume-lane", () => {
 	it("refuses on 11 when several branches were cut for the number", async () => {
 		const out = await run(
 			[...CLAIMED, [FOR_EACH_REF, okOut(`${PRIOR}\nbuild/4312-other-shape-11223344\n`)]],
-			{...resumeLaneOptions},
+			{ ...resumeLaneOptions },
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("which one this lane resumes is not derivable here");
@@ -342,7 +345,7 @@ describe("runBranch — --resume-lane", () => {
 			[SHOW_CURRENT, ON_MAIN],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...resumeLaneOptions}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...resumeLaneOptions }), shell.layer),
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("is checked out in the worktree /repo/lane-a");
@@ -360,7 +363,7 @@ describe("runBranch — --resume-lane", () => {
 			[SWITCH, okOut("")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...resumeLaneOptions}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...resumeLaneOptions }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(shell.calls).toContain(`git branch -m ${PRIOR} ${RESUMED}`);
@@ -373,7 +376,7 @@ describe("runBranch — --resume-lane", () => {
 			[WORKTREES, errOut("fatal: not a git repository")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...resumeLaneOptions}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...resumeLaneOptions }), shell.layer),
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("could silently retarget another lane's HEAD");
@@ -389,7 +392,7 @@ describe("runBranch — --resume-lane", () => {
 				[RENAME, okOut("")],
 				[SWITCH, errOut(`fatal: '${RESUMED}' is already checked out at '/repo/lane-b'`)],
 			],
-			{...resumeLaneOptions},
+			{ ...resumeLaneOptions },
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain(`${PRIOR} WAS re-keyed to ${RESUMED}`);
@@ -397,13 +400,13 @@ describe("runBranch — --resume-lane", () => {
 	});
 
 	it("refuses --resume-lane beside --resume on 10 — a child has no PR to resume", async () => {
-		const out = await run([], {number: null, slug: null, resume: 4310, resumeLane: true});
+		const out = await run([], { number: null, slug: null, resume: 4310, resumeLane: true });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toContain("it cannot be combined with --resume <pr>");
 	});
 
 	it("refuses --resume-lane beside --slug on 10 — the slug comes off the branch", async () => {
-		const out = await run([], {resumeLane: true});
+		const out = await run([], { resumeLane: true });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toContain("reads the slug off the branch it takes over");
 	});
@@ -417,10 +420,10 @@ describe("runBranch — create mode derives the base (#6730)", () => {
 	const VERIFY_LANE = /^git rev-parse --verify --quiet refs\/heads\/build\//;
 	const EPIC_TIP = "1c2b3a49f0e1d2c3b4a5968778695a4b3c2d1e0f";
 	/** No `--base`: the whole point is that a builder passing nothing still lands on the right ref. */
-	const derived = {base: null};
+	const derived = { base: null };
 
-	const parented = (): Scripted => [PARENT, served({number: 6505})];
-	const orphan = (): Scripted => [PARENT, {status: 404, body: '{"message":"Not Found"}'}];
+	const parented = (): Scripted => [PARENT, served({ number: 6505 })];
+	const orphan = (): Scripted => [PARENT, { status: 404, body: '{"message":"Not Found"}' }];
 	const published = (): Scripted => [LS_REMOTE, okOut(`${EPIC_TIP}\trefs/heads/epic/6505\n`)];
 
 	it("cuts an epic child off the run's assembly branch, fetched", async () => {
@@ -435,7 +438,7 @@ describe("runBranch — create mode derives the base (#6730)", () => {
 			[SWITCH_NEW, okOut("")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...derived}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...derived }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(shell.calls).toContain("git fetch --quiet origin epic/6505");
@@ -451,7 +454,7 @@ describe("runBranch — create mode derives the base (#6730)", () => {
 		const shell = seams([
 			...CLAIMED,
 			orphan(),
-			[TRUNK_READ, served({default_branch: "main"})],
+			[TRUNK_READ, served({ default_branch: "main" })],
 			[REMOTES, okOut("origin\n")],
 			[FETCH, okOut("")],
 			[RESOLVE, okOut(`${HEAD}\n`)],
@@ -459,7 +462,7 @@ describe("runBranch — create mode derives the base (#6730)", () => {
 			[SWITCH_NEW, okOut("")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...derived}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...derived }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(shell.calls).toContain("git fetch --quiet origin main");
@@ -473,7 +476,7 @@ describe("runBranch — create mode derives the base (#6730)", () => {
 		const shell = seams([
 			...CLAIMED,
 			orphan(),
-			[TRUNK_READ, served({default_branch: "dev"})],
+			[TRUNK_READ, served({ default_branch: "dev" })],
 			[REMOTES, okOut("origin\n")],
 			[/^git fetch --quiet origin dev$/, okOut("")],
 			[/^git fetch --quiet origin main$/, errOut("fatal: couldn't find remote ref main")],
@@ -482,7 +485,7 @@ describe("runBranch — create mode derives the base (#6730)", () => {
 			[SWITCH_NEW, okOut("")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...derived}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...derived }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(shell.calls).toContain("git fetch --quiet origin dev");
@@ -496,10 +499,10 @@ describe("runBranch — create mode derives the base (#6730)", () => {
 		const shell = seams([
 			...CLAIMED,
 			orphan(),
-			[TRUNK_READ, {status: 502, body: '{"message":"Bad Gateway"}'}],
+			[TRUNK_READ, { status: 502, body: '{"message":"Bad Gateway"}' }],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...derived}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...derived }), shell.layer),
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("cannot resolve the trunk");
@@ -517,7 +520,7 @@ describe("runBranch — create mode derives the base (#6730)", () => {
 			[SWITCH_NEW, okOut("")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, base: "origin/release/2"}), shell.layer),
+			Effect.provide(runBranch({ ...options, base: "origin/release/2" }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(shell.calls).toContain("git fetch --quiet origin release/2");
@@ -530,10 +533,10 @@ describe("runBranch — create mode derives the base (#6730)", () => {
 	it("refuses an unreadable parent on 11 — never a fall back to origin/main", async () => {
 		const shell = seams([
 			...CLAIMED,
-			[PARENT, {status: 500, body: '{"message":"upstream is having a moment"}'}],
+			[PARENT, { status: 500, body: '{"message":"upstream is having a moment"}' }],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...derived}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...derived }), shell.layer),
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("whether this is an epic child is UNKNOWN");
@@ -549,7 +552,7 @@ describe("runBranch — create mode derives the base (#6730)", () => {
 			[VERIFY_EPIC, errOut("")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...derived}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...derived }), shell.layer),
 		);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-1)).toContain("assembly branch epic/6505 is proven absent");
@@ -563,7 +566,7 @@ describe("runBranch — create mode derives the base (#6730)", () => {
 			[LS_REMOTE, errOut("fatal: could not read from remote repository")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...derived}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...derived }), shell.layer),
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("which base this child belongs on is UNKNOWN");
@@ -583,7 +586,7 @@ describe("runBranch — create mode derives the base (#6730)", () => {
 			[/^git switch build\//, okOut("")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...derived}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...derived }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(`build/4312-editor-focus-loss-${NONCE}\n`);
@@ -612,7 +615,7 @@ describe("runBranch — create mode proves the base it cut from", () => {
 			[SWITCH_NEW, okOut("")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, base: "epic/7497"}), shell.layer),
+			Effect.provide(runBranch({ ...options, base: "epic/7497" }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(shell.calls).toContain("git fetch --quiet origin epic/7497");
@@ -651,7 +654,7 @@ describe("runBranch — create mode proves the base it cut from", () => {
 			[MERGE_BASE, okOut(`${TRUNK_FORK}\n`)],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, base: "epic/7497"}), shell.layer),
+			Effect.provide(runBranch({ ...options, base: "epic/7497" }), shell.layer),
 		);
 		expect(out.code).toBe(BASE_MISMATCH);
 		expect(out.stderr.at(-1)).toContain(`does not carry origin/epic/7497 at ${EPIC_TIP}`);
@@ -713,14 +716,14 @@ describe("runBranch — create mode proves the base it cut from", () => {
 	it("reads the assembly branch locally only where origin is proven to hold none", async () => {
 		const shell = seams([
 			...CLAIMED,
-			[/^GET \S+\/repos\/o\/r\/issues\/4312\/parent$/, served({number: 6505})],
+			[/^GET \S+\/repos\/o\/r\/issues\/4312\/parent$/, served({ number: 6505 })],
 			[/^git ls-remote origin refs\/heads\/epic\/6505$/, okOut("")],
 			[/^git rev-parse --verify --quiet refs\/heads\/epic\/6505/, okOut(`${EPIC_TIP}\n`)],
 			[VERIFY_BRANCH, errOut("")],
 			[SWITCH_NEW, okOut("")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, base: null}), shell.layer),
+			Effect.provide(runBranch({ ...options, base: null }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(shell.calls.some((line) => /^git fetch/.test(line))).toBe(false);
@@ -732,7 +735,7 @@ describe("runBranch — create mode proves the base it cut from", () => {
 	it("refuses a --base this clone cannot qualify against any remote, cutting nothing", async () => {
 		const shell = seams([...CLAIMED, [REMOTES, okOut("")]]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, base: "epic/7497"}), shell.layer),
+			Effect.provide(runBranch({ ...options, base: "epic/7497" }), shell.layer),
 		);
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toContain("this clone has none to qualify it against");
@@ -754,11 +757,11 @@ describe("runBranch — refuses to move a tree it would carry work off, or take 
 	const RESUME_COMMENTS = /^GET \S+\/repos\/o\/r\/issues\/4310\/comments/;
 	const PULL_HEAD = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/pulls\/4310$/;
 	const DIRTY = okOut(" M src/editor.ts\nA  src/new.ts\n");
-	const resumeOptions = {number: null, slug: null, resume: 4310};
-	const resumeLaneOptions = {slug: null, resumeLane: true};
+	const resumeOptions = { number: null, slug: null, resume: 4310 };
+	const resumeLaneOptions = { slug: null, resumeLane: true };
 	const RESUME_CLAIMED: ReadonlyArray<Scripted> = [
 		[REV_PARSE, GIT_DIRS],
-		[RESUME_ISSUE, issue({number: 4310})],
+		[RESUME_ISSUE, issue({ number: 4310 })],
 		[RESUME_COMMENTS, MINE],
 		[PERM, WRITE],
 	];
@@ -789,11 +792,14 @@ describe("runBranch — refuses to move a tree it would carry work off, or take 
 			...RESUME_CLAIMED,
 			[CURRENT, okOut("main\n")],
 			[STATUS, DIRTY],
-			[PULL_HEAD, served(pullPayload({number: 4310, head: {ref: "umut/fix-focus", sha: HEAD}}))],
+			[
+				PULL_HEAD,
+				served(pullPayload({ number: 4310, head: { ref: "umut/fix-focus", sha: HEAD } })),
+			],
 			...CUT,
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...resumeOptions}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...resumeOptions }), shell.layer),
 		);
 		expect(out.code).toBe(DIRTY_TREE);
 		expect(out.stderr.at(-1)).toContain("2 uncommitted change(s)");
@@ -815,7 +821,7 @@ describe("runBranch — refuses to move a tree it would carry work off, or take 
 			[/^git (switch|branch -m) /, okOut("")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...resumeLaneOptions}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...resumeLaneOptions }), shell.layer),
 		);
 		expect(out.code).toBe(DIRTY_TREE);
 		expect(out.stderr.at(-1)).toContain("2 uncommitted change(s)");
@@ -879,7 +885,7 @@ describe("runBranch — refuses to move a tree it would carry work off, or take 
 			[/^git switch build\//, okOut("")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...resumeLaneOptions}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...resumeLaneOptions }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(shell.calls).toContain(`git branch -m ${PRIOR} ${RESUMED}`);
@@ -900,11 +906,14 @@ describe("runBranch — refuses to move a tree it would carry work off, or take 
 		const shell = seams([
 			...RESUME_CLAIMED,
 			[CURRENT, okOut(`${FOREIGN}\n`)],
-			[PULL_HEAD, served(pullPayload({number: 4310, head: {ref: "umut/fix-focus", sha: HEAD}}))],
+			[
+				PULL_HEAD,
+				served(pullPayload({ number: 4310, head: { ref: "umut/fix-focus", sha: HEAD } })),
+			],
 			...CUT,
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runBranch({...options, ...resumeOptions}), shell.layer),
+			Effect.provide(runBranch({ ...options, ...resumeOptions }), shell.layer),
 		);
 		expect(out.code).toBe(WRONG_LANE);
 		expect(out.stderr.at(-1)).toContain(FOREIGN);

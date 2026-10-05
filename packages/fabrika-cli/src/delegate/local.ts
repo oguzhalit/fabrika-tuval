@@ -21,11 +21,11 @@
  * to operate this aggressively because the _worst_ outcome is that we run global turbo"* — but it is
  * never silent either: the caller warns loudly and names the reason.
  */
-import {Effect, FileSystem, Path} from "effect";
-import {readFile} from "../io/fs.ts";
-import {isRecord, parseJson} from "../io/json.ts";
-import {resolvePackageManifest} from "./node-resolve.ts";
-import {type RepoPredicate, repoPredicate} from "./reason.ts";
+import { Effect, FileSystem, Path } from "effect";
+import { readFile } from "../io/fs.ts";
+import { isRecord, parseJson } from "../io/json.ts";
+import { resolvePackageManifest } from "./node-resolve.ts";
+import { type RepoPredicate, repoPredicate } from "./reason.ts";
 
 /**
  * The npm name the probe resolves, and the bin key inside that package's manifest.
@@ -47,9 +47,9 @@ export interface LocalInstall {
 }
 
 export type LocalProbe =
-	| {readonly _tag: "found"; readonly install: LocalInstall}
-	| {readonly _tag: "absent"}
-	| {readonly _tag: "corrupt"; readonly reason: RepoPredicate};
+	| { readonly _tag: "found"; readonly install: LocalInstall }
+	| { readonly _tag: "absent" }
+	| { readonly _tag: "corrupt"; readonly reason: RepoPredicate };
 
 /**
  * The `version` and resolved bin path declared by a manifest, or why it cannot be trusted.
@@ -60,15 +60,16 @@ export const readInstallManifest = (
 	path: Path.Path,
 	manifestPath: string,
 	text: string,
-): {readonly version: string; readonly bin: string} | {readonly corrupt: string} => {
+): { readonly version: string; readonly bin: string } | { readonly corrupt: string } => {
 	const manifest = parseJson(text);
-	if (!isRecord(manifest)) return {corrupt: `${manifestPath} is not valid JSON`};
+	if (!isRecord(manifest)) return { corrupt: `${manifestPath} is not valid JSON` };
 	if (typeof manifest.version !== "string" || manifest.version === "")
-		return {corrupt: `${manifestPath} declares no "version"`};
+		return { corrupt: `${manifestPath} declares no "version"` };
 	const bin = manifest.bin;
 	const entry = typeof bin === "string" ? bin : isRecord(bin) ? bin[BIN_NAME] : undefined;
-	if (typeof entry !== "string") return {corrupt: `${manifestPath} declares no "${BIN_NAME}" bin`};
-	return {version: manifest.version, bin: path.resolve(path.dirname(manifestPath), entry)};
+	if (typeof entry !== "string")
+		return { corrupt: `${manifestPath} declares no "${BIN_NAME}" bin` };
+	return { version: manifest.version, bin: path.resolve(path.dirname(manifestPath), entry) };
 };
 
 /**
@@ -98,7 +99,7 @@ export const probeLocalInstall = (
 		const fs = yield* FileSystem.FileSystem;
 		const resolved = resolvePackageManifest(path.join(repoRoot, "package.json"), PACKAGE_NAME);
 		if (resolved._tag !== "resolved") return resolved;
-		const {manifestPath} = resolved;
+		const { manifestPath } = resolved;
 
 		// Real paths on both ends of the eventual self-check: pnpm links a workspace package into
 		// `node_modules`, so the symlink and its target are one install under two names. Comparing the
@@ -115,7 +116,7 @@ export const probeLocalInstall = (
 		// this repo's install even when it is perfectly well-formed, so it answers `absent` rather
 		// than being reported as a broken local one.
 		const root = (yield* fs.realPath(repoRoot).pipe(soften)) ?? path.resolve(repoRoot);
-		if (!isInsideRepo(path, root, packageRoot)) return {_tag: "absent"} as const;
+		if (!isInsideRepo(path, root, packageRoot)) return { _tag: "absent" } as const;
 
 		const text = yield* readFile(manifestPath).pipe(Effect.catch(() => Effect.succeed(undefined)));
 		if (text === undefined)
@@ -140,7 +141,7 @@ export const probeLocalInstall = (
 			} as const;
 		return {
 			_tag: "found",
-			install: {packageRoot, manifestPath, binPath, version: manifest.version},
+			install: { packageRoot, manifestPath, binPath, version: manifest.version },
 		} as const;
 	});
 

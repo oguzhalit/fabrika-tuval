@@ -22,17 +22,17 @@
  * Anything else is {@link Unresolvable} — never quietly the whole tree and never an empty diff.
  */
 
-import {type Attempt, diffRangePaths, listTreePaths, type Shell} from "../io/git.ts";
+import { type Attempt, diffRangePaths, listTreePaths, type Shell } from "../io/git.ts";
 
 /** What a change-scoped guard reads its file list out of. */
 export type Basis =
 	/** `<base>...<head>`: the files this change adds or modifies vs where it diverged. */
-	| {readonly _tag: "Range"; readonly base: string}
+	| { readonly _tag: "Range"; readonly base: string }
 	/** No baseline exists on this leg; the scope is every tracked path at `head`. */
-	| {readonly _tag: "WholeTree"};
+	| { readonly _tag: "WholeTree" };
 
 /** A basis, or the named reason there is none. There is no third state and no empty-string base. */
-export type BasisResolution = Basis | {readonly _tag: "Unresolvable"; readonly reason: string};
+export type BasisResolution = Basis | { readonly _tag: "Unresolvable"; readonly reason: string };
 
 /**
  * The event facts a workflow hands in. Each is exactly one GitHub context value, passed as an env
@@ -59,12 +59,12 @@ const present = (value: string | undefined): value is string =>
  * one can never become a base of nothing — the ordering `leak-guard.yml` already relies on.
  */
 export const resolveBasis = (event: CiEvent): BasisResolution => {
-	if (present(event.baseRef)) return {_tag: "Range", base: `origin/${event.baseRef.trim()}`};
+	if (present(event.baseRef)) return { _tag: "Range", base: `origin/${event.baseRef.trim()}` };
 	if (present(event.mergeGroupBaseSha))
-		return {_tag: "Range", base: event.mergeGroupBaseSha.trim()};
-	if (event.eventName === "push") return {_tag: "WholeTree"};
+		return { _tag: "Range", base: event.mergeGroupBaseSha.trim() };
+	if (event.eventName === "push") return { _tag: "WholeTree" };
 	if (event.eventName === "workflow_dispatch")
-		return {_tag: "Range", base: `origin/${event.defaultBranch}`};
+		return { _tag: "Range", base: `origin/${event.defaultBranch}` };
 	return {
 		_tag: "Unresolvable",
 		reason: `no diff basis for event "${event.eventName ?? "<unset>"}": base_ref and merge_group.base_sha are both empty, and the event is neither a push nor a dispatch — the changed-file set is UNKNOWN, never empty.`,

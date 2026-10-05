@@ -14,13 +14,13 @@
  * exists; a session that is present but expired lands the login page, which the surface's own
  * assertions catch.
  */
-import {mkdir, writeFile} from "node:fs/promises";
-import {dirname} from "node:path";
-import {type Browser, chromium} from "@playwright/test";
-import {Effect} from "effect";
-import {isRenderCrash, type PageError, toPageError} from "../capture/page-errors.ts";
-import {legFailed} from "./leg-failed.ts";
-import type {BrowseLeg, ShotOutcome, ShotRequest} from "./render-verb.ts";
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
+import { type Browser, chromium } from "@playwright/test";
+import { Effect } from "effect";
+import { isRenderCrash, type PageError, toPageError } from "../capture/page-errors.ts";
+import { legFailed } from "./leg-failed.ts";
+import type { BrowseLeg, ShotOutcome, ShotRequest } from "./render-verb.ts";
 
 /** The one string an operator is ever asked to run — and only after a provisioning failure. */
 export const PROVISION_REMEDIATION = "pnpm exec playwright install chromium";
@@ -40,13 +40,13 @@ const isProvisionFailure = (message: string): boolean =>
 const shoot = async (browser: Browser, request: ShotRequest): Promise<ShotOutcome> => {
 	const context = await attempt(
 		browser.newContext({
-			viewport: {...request.viewport},
-			...(request.storageState === null ? {} : {storageState: request.storageState}),
+			viewport: { ...request.viewport },
+			...(request.storageState === null ? {} : { storageState: request.storageState }),
 		}),
 	);
-	if (context instanceof Error) return {_tag: "Unknown", reason: context.message};
+	if (context instanceof Error) return { _tag: "Unknown", reason: context.message };
 	const page = await attempt(context.newPage());
-	if (page instanceof Error) return {_tag: "Unknown", reason: page.message};
+	if (page instanceof Error) return { _tag: "Unknown", reason: page.message };
 
 	const pageErrors: PageError[] = [];
 	page.on("pageerror", (err) => pageErrors.push(toPageError("pageerror", String(err))));
@@ -54,28 +54,28 @@ const shoot = async (browser: Browser, request: ShotRequest): Promise<ShotOutcom
 		if (msg.type() === "error") pageErrors.push(toPageError("console.error", msg.text()));
 	});
 	const response = await attempt(
-		page.goto(request.url, {waitUntil: "networkidle", timeout: NAVIGATION_TIMEOUT_MS}),
+		page.goto(request.url, { waitUntil: "networkidle", timeout: NAVIGATION_TIMEOUT_MS }),
 	);
 	if (response instanceof Error) {
 		await attempt(context.close());
-		return {_tag: "Unreachable", reason: `navigation failed: ${response.message}`};
+		return { _tag: "Unreachable", reason: `navigation failed: ${response.message}` };
 	}
 	const status = response?.status() ?? 0;
 	const crash = pageErrors.find(isRenderCrash);
 	const outcome = await (async (): Promise<ShotOutcome> => {
-		if (status === 0) return {_tag: "Unreachable", reason: "the navigation returned no response"};
-		if (status >= 400) return {_tag: "Unreachable", reason: `HTTP ${status}`};
-		if (crash !== undefined) return {_tag: "Crashed", error: crash.text};
-		const buffer = await attempt(page.screenshot({type: "png", fullPage: true}));
-		if (buffer instanceof Error) return {_tag: "Unknown", reason: buffer.message};
+		if (status === 0) return { _tag: "Unreachable", reason: "the navigation returned no response" };
+		if (status >= 400) return { _tag: "Unreachable", reason: `HTTP ${status}` };
+		if (crash !== undefined) return { _tag: "Crashed", error: crash.text };
+		const buffer = await attempt(page.screenshot({ type: "png", fullPage: true }));
+		if (buffer instanceof Error) return { _tag: "Unknown", reason: buffer.message };
 		const written = await attempt(
-			mkdir(dirname(request.outPath), {recursive: true}).then(() =>
+			mkdir(dirname(request.outPath), { recursive: true }).then(() =>
 				writeFile(request.outPath, buffer),
 			),
 		);
 		return written instanceof Error
-			? {_tag: "Unknown", reason: written.message}
-			: {_tag: "Captured"};
+			? { _tag: "Unknown", reason: written.message }
+			: { _tag: "Captured" };
 	})();
 	await attempt(context.close());
 	return outcome;
@@ -100,5 +100,5 @@ export const playwrightBrowse: BrowseLeg = (request) =>
 		},
 		catch: legFailed,
 	}).pipe(
-		Effect.catch((cause) => Effect.succeed<ShotOutcome>({_tag: "Unknown", reason: cause.reason})),
+		Effect.catch((cause) => Effect.succeed<ShotOutcome>({ _tag: "Unknown", reason: cause.reason })),
 	);

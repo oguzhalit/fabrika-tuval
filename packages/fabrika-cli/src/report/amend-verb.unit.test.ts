@@ -1,11 +1,11 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type LeakNames, NO_LEAK_NAMES} from "../config/keys/leak-names.ts";
-import type {Read} from "../config/read-key.ts";
-import {fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {compose} from "./amend.ts";
-import {runAmend} from "./amend-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type LeakNames, NO_LEAK_NAMES } from "../config/keys/leak-names.ts";
+import type { Read } from "../config/read-key.ts";
+import { fakeSeams, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { compose } from "./amend.ts";
+import { runAmend } from "./amend-verb.ts";
 import {
 	BARE_AT_PATH,
 	EMPTY_STDIN,
@@ -16,7 +16,7 @@ import {
 	WRITE_UNKNOWN,
 } from "./codes.ts";
 
-const noNames: Read<LeakNames> = {_tag: "Value", value: NO_LEAK_NAMES, note: "test"};
+const noNames: Read<LeakNames> = { _tag: "Value", value: NO_LEAK_NAMES, note: "test" };
 
 const READ = /^GET .*\/repos\/o\/r\/issues\/4312$/;
 const PATCH = /^PATCH .*\/repos\/o\/r\/issues\/4312$/;
@@ -44,11 +44,11 @@ const pullRequest = (body: string): HttpReply => ({
 	status: 200,
 	body: JSON.stringify({
 		...(JSON.parse(issue(body).body) as Record<string, unknown>),
-		pull_request: {html_url: "https://example.test/pull/4312"},
+		pull_request: { html_url: "https://example.test/pull/4312" },
 	}),
 });
 
-const ACCEPTED: HttpReply = {status: 200, body: "{}"};
+const ACCEPTED: HttpReply = { status: 200, body: "{}" };
 
 const options = {
 	issue: 4312,
@@ -56,13 +56,15 @@ const options = {
 	leakNames: noNames,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
-	stdin: Effect.succeed<StdinRead>({_tag: "Text", text: SECTION}),
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
+	stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: SECTION }),
 	now: () => NOW,
 };
 
 const runScripted = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runAmend({...options, ...overrides}), fakeSeams(script).layer));
+	Effect.runPromise(
+		Effect.provide(runAmend({ ...options, ...overrides }), fakeSeams(script).layer),
+	);
 
 /** The body the PATCH carried, or `null` when the verb wrote nothing. */
 const written = (seams: {
@@ -72,7 +74,7 @@ const written = (seams: {
 	const at = seams.requests.findIndex((line) => PATCH.test(line));
 	if (at < 0) return null;
 	const sent: unknown = JSON.parse(seams.bodies[at] ?? "{}");
-	const body = (sent as {readonly body?: unknown}).body;
+	const body = (sent as { readonly body?: unknown }).body;
 	return typeof body === "string" ? body : null;
 };
 
@@ -88,24 +90,24 @@ const run = async (prior: string, overrides: Partial<typeof options> = {}) => {
 		[PATCH, ACCEPTED],
 	]);
 	const first = await Effect.runPromise(
-		Effect.provide(runAmend({...options, ...overrides}), probe.layer),
+		Effect.provide(runAmend({ ...options, ...overrides }), probe.layer),
 	);
 	const patched = written(probe);
-	if (patched === null) return {outcome: first, body: null};
+	if (patched === null) return { outcome: first, body: null };
 	const echoing = fakeSeams([
 		[once(READ), issue(prior)],
 		[PATCH, ACCEPTED],
 		[READ, issue(patched)],
 	]);
 	const outcome = await Effect.runPromise(
-		Effect.provide(runAmend({...options, ...overrides}), echoing.layer),
+		Effect.provide(runAmend({ ...options, ...overrides }), echoing.layer),
 	);
-	return {outcome, body: patched};
+	return { outcome, body: patched };
 };
 
 describe("runAmend", () => {
 	it("appends without touching the prior body, and prints a tab-separated issue and url", async () => {
-		const {outcome, body} = await run(PRIOR);
+		const { outcome, body } = await run(PRIOR);
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toBe(`4312\t${URL}\n`);
 		expect(body).toBe(compose(PRIOR, SECTION, NOW).body);
@@ -113,12 +115,12 @@ describe("runAmend", () => {
 	});
 
 	it("emits the equivalent object on STDOUT with --json", async () => {
-		const {outcome} = await run(PRIOR, {json: true});
-		expect(JSON.parse(outcome.stdout)).toMatchObject({issue: 4312, url: URL, redactions: []});
+		const { outcome } = await run(PRIOR, { json: true });
+		expect(JSON.parse(outcome.stdout)).toMatchObject({ issue: 4312, url: URL, redactions: [] });
 	});
 
 	it("amends an empty body with the amendment alone", async () => {
-		const {outcome, body} = await run("");
+		const { outcome, body } = await run("");
 		expect(outcome.code).toBe(0);
 		expect(body).toBe(
 			"## Amendment — 2026-08-21\n\nReproduces on the streaming path too, not just the buffered one.\n",
@@ -138,7 +140,7 @@ describe("runAmend", () => {
 
 	it("refuses a FAILED stdin read as UNKNOWN, never as an empty amendment", async () => {
 		const outcome = await runScripted([[READ, issue(PRIOR)]], {
-			stdin: Effect.succeed({_tag: "Failed", reason: "EAGAIN"} satisfies StdinRead),
+			stdin: Effect.succeed({ _tag: "Failed", reason: "EAGAIN" } satisfies StdinRead),
 		});
 		expect(outcome.code).toBe(1);
 		expect(outcome.stderr.at(-1)).toContain("never empty");
@@ -148,7 +150,7 @@ describe("runAmend", () => {
 		const seams = fakeSeams([[READ, issue(PRIOR)]]);
 		const outcome = await Effect.runPromise(
 			Effect.provide(
-				runAmend({...options, stdin: Effect.succeed({_tag: "Text", text: ""})}),
+				runAmend({ ...options, stdin: Effect.succeed({ _tag: "Text", text: "" }) }),
 				seams.layer,
 			),
 		);
@@ -163,7 +165,7 @@ describe("runAmend", () => {
 				runAmend({
 					...options,
 					redact: true,
-					stdin: Effect.succeed({_tag: "Text", text: "@/tmp/correction.md"}),
+					stdin: Effect.succeed({ _tag: "Text", text: "@/tmp/correction.md" }),
 				}),
 				seams.layer,
 			),
@@ -174,16 +176,16 @@ describe("runAmend", () => {
 
 	it("refuses a machine-local path in the appended section", async () => {
 		const outcome = await runScripted([[READ, issue(PRIOR)]], {
-			stdin: Effect.succeed({_tag: "Text", text: "reproduced from /Users/someone/case.md"}),
+			stdin: Effect.succeed({ _tag: "Text", text: "reproduced from /Users/someone/case.md" }),
 		});
 		expect(outcome.code).toBe(LEAKED_PATH);
 		expect(outcome.stderr[0]).toBe("  line 1, absolute home root");
 	});
 
 	it("appends the masked section under --redact", async () => {
-		const {outcome, body} = await run(PRIOR, {
+		const { outcome, body } = await run(PRIOR, {
 			redact: true,
-			stdin: Effect.succeed({_tag: "Text", text: "reproduced from /Users/someone/case.md"}),
+			stdin: Effect.succeed({ _tag: "Text", text: "reproduced from /Users/someone/case.md" }),
 		});
 		expect(outcome.code).toBe(0);
 		expect(body).toContain("reproduced from /Users/<redacted>");
@@ -192,13 +194,13 @@ describe("runAmend", () => {
 
 	it("scans the appended section only — a path in the prior body is preserved, not rewritten", async () => {
 		const leaky = `${PRIOR}\n\nfirst seen at /Users/someone/case.md`;
-		const {outcome, body} = await run(leaky);
+		const { outcome, body } = await run(leaky);
 		expect(outcome.code).toBe(0);
 		expect(body).toContain("/Users/someone/case.md");
 	});
 
 	it("refuses an issue that does not exist", async () => {
-		const outcome = await runScripted([[READ, {status: 404, body: '{"message":"Not Found"}'}]]);
+		const outcome = await runScripted([[READ, { status: 404, body: '{"message":"Not Found"}' }]]);
 		expect(outcome.code).toBe(NO_TARGET);
 		expect(outcome.stderr.at(-1)).toBe("report amend: o/r has no issue #4312.");
 	});
@@ -214,7 +216,7 @@ describe("runAmend", () => {
 	});
 
 	it("separates an UNREADABLE issue from an absent one, and writes nothing", async () => {
-		const seams = fakeSeams([[READ, {status: 502, body: "{}"}]]);
+		const seams = fakeSeams([[READ, { status: 502, body: "{}" }]]);
 		const outcome = await Effect.runPromise(Effect.provide(runAmend(options), seams.layer));
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(seams.requests.some((line) => PATCH.test(line))).toBe(false);
@@ -223,7 +225,7 @@ describe("runAmend", () => {
 	it("reports a failed PATCH as UNKNOWN, with the re-read recovery", async () => {
 		const outcome = await runScripted([
 			[READ, issue(PRIOR)],
-			[PATCH, {status: 500, body: "{}"}],
+			[PATCH, { status: 500, body: "{}" }],
 		]);
 		expect(outcome.code).toBe(WRITE_UNKNOWN);
 		expect(outcome.stdout).toBe("");
@@ -254,7 +256,7 @@ describe("runAmend", () => {
 		const outcome = await runScripted([
 			[once(READ), issue(PRIOR)],
 			[PATCH, ACCEPTED],
-			[READ, {status: 502, body: "{}"}],
+			[READ, { status: 502, body: "{}" }],
 		]);
 		expect(outcome.code).toBe(READBACK_MISMATCH);
 		expect(outcome.stderr.at(-1)).toContain("the read-back is wrong:");
@@ -265,7 +267,7 @@ describe("runAmend", () => {
 		const outcome = await runScripted([
 			[once(READ), issue(PRIOR)],
 			[PATCH, ACCEPTED],
-			[READ, {status: 404, body: "{}"}],
+			[READ, { status: 404, body: "{}" }],
 		]);
 		expect(outcome.code).toBe(READBACK_MISMATCH);
 		expect(outcome.stderr.at(-1)).toContain(

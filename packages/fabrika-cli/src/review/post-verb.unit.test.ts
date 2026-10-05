@@ -1,5 +1,5 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	errOut,
 	fakeSeams,
@@ -8,8 +8,8 @@ import {
 	once,
 	type Scripted,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import type {StdinRead} from "../io/stdin.ts";
+import type { ExecResult } from "../io/exec.ts";
+import type { StdinRead } from "../io/stdin.ts";
 import {
 	APPENDED_THIS_ROUND,
 	BARE_AT_PATH,
@@ -37,8 +37,8 @@ import {
 	paths,
 	pull,
 } from "./fixtures.test-support.ts";
-import {runPost} from "./post-verb.ts";
-import {FENCE, compose as supersedeWith} from "./supersede.ts";
+import { runPost } from "./post-verb.ts";
+import { FENCE, compose as supersedeWith } from "./supersede.ts";
 
 const PULL = /GET .*\/repos\/o\/r\/pulls\/4321$/;
 /**
@@ -56,7 +56,7 @@ const READBACK = /GET .*\/repos\/o\/r\/issues\/comments\/\d+/;
 const NOT_FOUND = '{"message":"Not Found"}';
 
 /** A canned payload as the platform serves it — the fixtures speak `ExecResult`, the seam HTTP. */
-const served = (result: ExecResult, status = 200): HttpReply => ({status, body: result.stdout});
+const served = (result: ExecResult, status = 200): HttpReply => ({ status, body: result.stdout });
 
 /** The linked issue the `18` fence reads on every PASS — `pull()`'s body closes it. */
 const ISSUE = new RegExp(`GET .*/repos/o/r/issues/${LINKED_ISSUE}$`);
@@ -86,7 +86,7 @@ const BODY = "| criterion | verdict |\n|---|---|\n| the first thing | PASS |\n";
 const URL = "https://example.test/pull/4321#issuecomment-5154902211";
 const MARKER = `review-doc: PASS @ ${HEAD} content:${CONTENT} — guide matches shipped behavior`;
 
-const created: HttpReply = {status: 201, body: JSON.stringify({id: 5154902211, html_url: URL})};
+const created: HttpReply = { status: 201, body: JSON.stringify({ id: 5154902211, html_url: URL }) };
 
 /** The instant every run below writes its verdict at, so the stamp the verb emits is predictable. */
 const NOW = Date.parse("2026-08-09T06:30:00.412Z");
@@ -100,7 +100,7 @@ const composedFor = (body: string): string => `${body.replace(/\s+$/, "")}\n\n${
 
 const commentBody = (body: string): HttpReply => ({
 	status: 200,
-	body: JSON.stringify({body: composedFor(body)}),
+	body: JSON.stringify({ body: composedFor(body) }),
 });
 
 /**
@@ -111,7 +111,7 @@ const commentBody = (body: string): HttpReply => ({
  */
 const supersededBody = (prior: string, fresh: string): HttpReply => ({
 	status: 200,
-	body: JSON.stringify({body: supersedeWith(prior, composedFor(fresh), new Date(NOW))}),
+	body: JSON.stringify({ body: supersedeWith(prior, composedFor(fresh), new Date(NOW)) }),
 });
 
 const options = {
@@ -125,8 +125,8 @@ const options = {
 	tip: null,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
-	stdin: Effect.succeed<StdinRead>({_tag: "Text", text: BODY}),
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
+	stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: BODY }),
 	now: Effect.succeed(NOW),
 	supersede: false,
 	round: 1 as number | null,
@@ -138,14 +138,14 @@ const happy = (): ReadonlyArray<Scripted> => [
 	CLEAN_ISSUE,
 	[PATHS_AT(), paths("src/cart.ts", "README.md")],
 	[FILES, served(files("skills/deploy/SKILL.md"))],
-	[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+	[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 	[COMMENTS, served(comments())],
 	[CREATE, created],
 	[READBACK, commentBody(`${MARKER}\n\n${BODY}`)],
 ];
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runPost({...options, ...overrides}), fakeSeams(script).layer));
+	Effect.runPromise(Effect.provide(runPost({ ...options, ...overrides }), fakeSeams(script).layer));
 
 /** {@link happy}, with the linked issue answering `reply` instead of the clean contract. */
 const withIssue = (reply: HttpReply): ReadonlyArray<Scripted> =>
@@ -172,12 +172,12 @@ describe("runPost", () => {
 	// carries a head dimension, so only a re-post at the SAME head takes the edit path at all.
 	it("appends into this namespace's existing comment, keeping the prior verdict verbatim", async () => {
 		const shell = fakeSeams([
-			[PULL, served(pull({comments: 1}))],
+			[PULL, served(pull({ comments: 1 }))],
 			...binding(),
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[
 				COMMENTS,
 				served(
@@ -188,7 +188,7 @@ describe("runPost", () => {
 					}),
 				),
 			],
-			[PATCH, {status: 200, body: JSON.stringify({html_url: URL})}],
+			[PATCH, { status: 200, body: JSON.stringify({ html_url: URL }) }],
 			[
 				READBACK,
 				supersededBody(
@@ -210,15 +210,15 @@ describe("runPost", () => {
 	// blocking verdict, and GitHub keeps no comment-body history to recover it from.
 	it("refuses on 17 a post that would retire the opposite polarity at this head", async () => {
 		const shell = fakeSeams([
-			[PULL, served(pull({comments: 1}))],
+			[PULL, served(pull({ comments: 1 }))],
 			...binding(),
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[
 				COMMENTS,
-				served(comments({id: 42, body: `review-doc: FAIL @ ${HEAD} — the round-1 blocker`})),
+				served(comments({ id: 42, body: `review-doc: FAIL @ ${HEAD} — the round-1 blocker` })),
 			],
 		]);
 		const out = await Effect.runPromise(Effect.provide(runPost(options), shell.layer));
@@ -235,18 +235,18 @@ describe("runPost", () => {
 	it("appends the flip and keeps the retired FAIL verbatim once --supersede is passed", async () => {
 		const prior = `review-doc: FAIL @ ${HEAD} — the round-1 blocker\n\nthe Deviations entry is malformed.`;
 		const shell = fakeSeams([
-			[PULL, served(pull({comments: 1}))],
+			[PULL, served(pull({ comments: 1 }))],
 			...binding(),
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[COMMENTS, served(comments({id: 42, body: prior}))],
-			[PATCH, {status: 200, body: JSON.stringify({html_url: URL})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[COMMENTS, served(comments({ id: 42, body: prior }))],
+			[PATCH, { status: 200, body: JSON.stringify({ html_url: URL }) }],
 			[READBACK, supersededBody(prior, `${MARKER}\n\n${BODY}`)],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runPost({...options, supersede: true}), shell.layer),
+			Effect.provide(runPost({ ...options, supersede: true }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toContain("\tsuperseded\t");
@@ -261,12 +261,12 @@ describe("runPost", () => {
 	// each binds its head on different bytes and a fix to one says nothing about the other.
 	it("leaves a prior head's marker verdict intact and appends at the new head", async () => {
 		const shell = fakeSeams([
-			[PULL, served(pull({comments: 1}))],
+			[PULL, served(pull({ comments: 1 }))],
 			...binding(),
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[
 				COMMENTS,
 				served(
@@ -290,19 +290,19 @@ describe("runPost", () => {
 		const advisoryFor = (sha: string): string =>
 			`review-doc: advisory — blocking-set PR (manual merge)\n\nReviewed-head: @ ${sha}\n\n${BODY}`;
 		const shell = fakeSeams([
-			[PULL, served(pull({comments: 1}))],
+			[PULL, served(pull({ comments: 1 }))],
 			...binding(),
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[COMMENTS, served(comments({id: 42, body: advisoryFor(OLD_HEAD), author: "kampus-bot"}))],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[COMMENTS, served(comments({ id: 42, body: advisoryFor(OLD_HEAD), author: "kampus-bot" }))],
 			[CREATE, created],
 			[READBACK, commentBody(advisoryFor(HEAD))],
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runPost({...options, carrier: "advisory", clause: "blocking-set PR (manual merge)"}),
+				runPost({ ...options, carrier: "advisory", clause: "blocking-set PR (manual merge)" }),
 				shell.layer,
 			),
 		);
@@ -321,17 +321,17 @@ describe("runPost", () => {
 	it("stamps the write-recency line on the comment it supersedes, too", async () => {
 		const prior = `review-doc: FAIL @ ${HEAD} — earlier round at this head`;
 		const shell = fakeSeams([
-			[PULL, served(pull({comments: 1}))],
+			[PULL, served(pull({ comments: 1 }))],
 			...binding(),
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[COMMENTS, served(comments({id: 42, body: prior}))],
-			[PATCH, {status: 200, body: JSON.stringify({html_url: URL})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[COMMENTS, served(comments({ id: 42, body: prior }))],
+			[PATCH, { status: 200, body: JSON.stringify({ html_url: URL }) }],
 			[READBACK, supersededBody(prior, `${MARKER}\n\n${BODY}`)],
 		]);
-		await Effect.runPromise(Effect.provide(runPost({...options, supersede: true}), shell.layer));
+		await Effect.runPromise(Effect.provide(runPost({ ...options, supersede: true }), shell.layer));
 		const write = written(shell, PATCH);
 		expect(write).toContain(STAMP);
 	});
@@ -341,12 +341,12 @@ describe("runPost", () => {
 	// to be reading, and reported success.
 	it("supersedes the NEWEST comment in the namespace when two of this author's already exist", async () => {
 		const shell = fakeSeams([
-			[PULL, served(pull({comments: 2}))],
+			[PULL, served(pull({ comments: 2 }))],
 			...binding(),
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[
 				COMMENTS,
 				served(
@@ -364,14 +364,14 @@ describe("runPost", () => {
 					),
 				),
 			],
-			[PATCH, {status: 200, body: JSON.stringify({html_url: URL})}],
+			[PATCH, { status: 200, body: JSON.stringify({ html_url: URL }) }],
 			[
 				READBACK,
 				supersededBody(`review-doc: FAIL @ ${HEAD} — the newer duplicate`, `${MARKER}\n\n${BODY}`),
 			],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runPost({...options, supersede: true}), shell.layer),
+			Effect.provide(runPost({ ...options, supersede: true }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toContain("\tsuperseded\t");
@@ -384,12 +384,12 @@ describe("runPost", () => {
 	// leaves `created_at` where it was, so only the stamp can say 42 now carries the later verdict.
 	it("ranks by the write-recency stamp, not by when the comment slot was opened", async () => {
 		const shell = fakeSeams([
-			[PULL, served(pull({comments: 2}))],
+			[PULL, served(pull({ comments: 2 }))],
 			...binding(),
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[
 				COMMENTS,
 				served(
@@ -407,7 +407,7 @@ describe("runPost", () => {
 					),
 				),
 			],
-			[PATCH, {status: 200, body: JSON.stringify({html_url: URL})}],
+			[PATCH, { status: 200, body: JSON.stringify({ html_url: URL }) }],
 			[
 				READBACK,
 				supersededBody(
@@ -417,7 +417,7 @@ describe("runPost", () => {
 			],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runPost({...options, supersede: true}), shell.layer),
+			Effect.provide(runPost({ ...options, supersede: true }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(shell.requests.find((request) => PATCH.test(request))).toContain("/issues/comments/42");
@@ -425,13 +425,13 @@ describe("runPost", () => {
 
 	it("does not edit another author's comment in the same namespace", async () => {
 		const shell = fakeSeams([
-			[PULL, served(pull({comments: 1}))],
+			[PULL, served(pull({ comments: 1 }))],
 			...binding(),
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[COMMENTS, served(comments({id: 42, body: MARKER, author: "someone-else"}))],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[COMMENTS, served(comments({ id: 42, body: MARKER, author: "someone-else" }))],
 			[CREATE, created],
 			[READBACK, commentBody(`${MARKER}\n\n${BODY}`)],
 		]);
@@ -440,7 +440,7 @@ describe("runPost", () => {
 	});
 
 	it("refuses a namespace this PR's own diff did not derive, on 10", async () => {
-		const out = await run(happy(), {namespace: "review-skill"});
+		const out = await run(happy(), { namespace: "review-skill" });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toBe(
@@ -449,11 +449,11 @@ describe("runPost", () => {
 	});
 
 	it("refuses a third polarity token, and advisory+FAIL, on 10", async () => {
-		const bad = await run(happy(), {polarity: "MAYBE"});
+		const bad = await run(happy(), { polarity: "MAYBE" });
 		expect(bad.code).toBe(OFF_VOCABULARY);
 		expect(bad.stderr.at(-1)).toContain("A third token is not a polarity");
 
-		const advisoryFail = await run(happy(), {polarity: "FAIL", carrier: "advisory"});
+		const advisoryFail = await run(happy(), { polarity: "FAIL", carrier: "advisory" });
 		expect(advisoryFail.code).toBe(OFF_VOCABULARY);
 		expect(advisoryFail.stderr.at(-1)).toBe(
 			"review post: --carrier advisory is a PASS path only — post the FAIL marker instead.",
@@ -463,7 +463,7 @@ describe("runPost", () => {
 	it("refuses a moved-past head on 12 and writes nothing — re-review, never re-bind", async () => {
 		const shell = fakeSeams(happy());
 		const out = await Effect.runPromise(
-			Effect.provide(runPost({...options, sha: OLD_HEAD}), shell.layer),
+			Effect.provide(runPost({ ...options, sha: OLD_HEAD }), shell.layer),
 		);
 		expect(out.code).toBe(STALE_HEAD);
 		expect(out.stdout).toBe("");
@@ -476,7 +476,7 @@ describe("runPost", () => {
 	});
 
 	it("refuses an empty verdict body on 3 — an empty verdict reads as UNGATED", async () => {
-		const out = await run(happy(), {stdin: Effect.succeed({_tag: "Text", text: "  \n"})});
+		const out = await run(happy(), { stdin: Effect.succeed({ _tag: "Text", text: "  \n" }) });
 		expect(out.code).toBe(EMPTY_STDIN);
 		expect(out.stderr.at(-1)).toBe(
 			"review post: no body on stdin — an empty verdict reads as UNGATED; pipe the verdict body in.",
@@ -485,7 +485,7 @@ describe("runPost", () => {
 
 	it("keeps an UNREAD pipe on 1, never on the read-but-empty code", async () => {
 		const out = await run(happy(), {
-			stdin: Effect.succeed({_tag: "Failed", reason: "EAGAIN"}),
+			stdin: Effect.succeed({ _tag: "Failed", reason: "EAGAIN" }),
 		});
 		expect(out.code).toBe(1);
 		expect(out.code).not.toBe(EMPTY_STDIN);
@@ -493,25 +493,25 @@ describe("runPost", () => {
 
 	it("refuses a bare @ body on 6 and a machine-local path on 5", async () => {
 		const bare = await run(happy(), {
-			stdin: Effect.succeed({_tag: "Text", text: "@notes/verdict.md"}),
+			stdin: Effect.succeed({ _tag: "Text", text: "@notes/verdict.md" }),
 		});
 		expect(bare.code).toBe(BARE_AT_PATH);
 
 		const leaked = await run(happy(), {
-			stdin: Effect.succeed({_tag: "Text", text: "see /Users/someone/scratch/notes.md"}),
+			stdin: Effect.succeed({ _tag: "Text", text: "see /Users/someone/scratch/notes.md" }),
 		});
 		expect(leaked.code).toBe(LEAKED_PATH);
 		expect(leaked.stderr.at(-1)).toContain("cite it repo-relative or by class root.");
 	});
 
 	it("scans the ASSEMBLED comment, so a leak in the clause cannot escape the predicate", async () => {
-		const out = await run(happy(), {clause: "see /Users/someone/scratch/notes.md"});
+		const out = await run(happy(), { clause: "see /Users/someone/scratch/notes.md" });
 		expect(out.code).toBe(LEAKED_PATH);
 	});
 
 	it("refuses an absent PR on 7 and a closed one on 7 with its own reason", async () => {
-		expect((await run([[PULL, {status: 404, body: NOT_FOUND}]])).code).toBe(ZERO_SCOPE);
-		const closed = await run([[PULL, served(pull({state: "closed"}))]]);
+		expect((await run([[PULL, { status: 404, body: NOT_FOUND }]])).code).toBe(ZERO_SCOPE);
+		const closed = await run([[PULL, served(pull({ state: "closed" }))]]);
 		expect(closed.code).toBe(ZERO_SCOPE);
 		expect(closed.stderr.at(-1)).toBe(
 			"review post: PR #4321 is closed — a verdict on a closed PR gates nothing.",
@@ -538,9 +538,9 @@ describe("runPost", () => {
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[COMMENTS, served(comments())],
-			[CREATE, {status: 502, body: "{}"}],
+			[CREATE, { status: 502, body: "{}" }],
 		]);
 		expect(out.code).toBe(WRITE_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -555,7 +555,7 @@ describe("runPost", () => {
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[COMMENTS, served(comments())],
 			[CREATE, created],
 			[READBACK, commentBody("something else entirely")],
@@ -572,7 +572,7 @@ describe("runPost", () => {
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[COMMENTS, served(comments())],
 			[CREATE, created],
 			[READBACK, commentBody(`review-doc: PASS @ ${OLD_HEAD} — guide matches shipped behavior`)],
@@ -589,14 +589,14 @@ describe("runPost", () => {
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[COMMENTS, served(comments())],
 			[CREATE, created],
 			[READBACK, commentBody(advisory)],
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runPost({...options, carrier: "advisory", clause: "blocking-set PR (manual merge)"}),
+				runPost({ ...options, carrier: "advisory", clause: "blocking-set PR (manual merge)" }),
 				shell.layer,
 			),
 		);
@@ -622,7 +622,7 @@ describe("runPost", () => {
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[COMMENTS, served(comments())],
 			[CREATE, created],
 			[READBACK, commentBody(advisoryFor(HEAD))],
@@ -632,14 +632,14 @@ describe("runPost", () => {
 		expect(first.stdout).toContain("\tcreated\t");
 
 		const again = fakeSeams([
-			[PULL, served(pull({comments: 1}))],
+			[PULL, served(pull({ comments: 1 }))],
 			...binding(),
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[COMMENTS, served(comments({id: 42, body: advisoryFor(HEAD), author: "kampus-bot"}))],
-			[PATCH, {status: 200, body: JSON.stringify({html_url: URL})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[COMMENTS, served(comments({ id: 42, body: advisoryFor(HEAD), author: "kampus-bot" }))],
+			[PATCH, { status: 200, body: JSON.stringify({ html_url: URL }) }],
 			[READBACK, supersededBody(advisoryFor(HEAD), advisoryFor(HEAD))],
 		]);
 		const repost = await Effect.runPromise(Effect.provide(runPost(advisoryOptions), again.layer));
@@ -653,13 +653,13 @@ describe("runPost", () => {
 	it("never crosses the carriers: a marker post skips an advisory comment, and the reverse", async () => {
 		const advisory = `review-doc: advisory — blocking-set PR (manual merge)\n\nReviewed-head: @ ${HEAD}\n\n${BODY}`;
 		const overAdvisory = fakeSeams([
-			[PULL, served(pull({comments: 1}))],
+			[PULL, served(pull({ comments: 1 }))],
 			...binding(),
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[COMMENTS, served(comments({id: 42, body: advisory, author: "kampus-bot"}))],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[COMMENTS, served(comments({ id: 42, body: advisory, author: "kampus-bot" }))],
 			[CREATE, created],
 			[READBACK, commentBody(`${MARKER}\n\n${BODY}`)],
 		]);
@@ -668,12 +668,12 @@ describe("runPost", () => {
 		expect(overAdvisory.requests.some((request) => PATCH.test(request))).toBe(false);
 
 		const overMarker = fakeSeams([
-			[PULL, served(pull({comments: 1}))],
+			[PULL, served(pull({ comments: 1 }))],
 			...binding(),
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[
 				COMMENTS,
 				served(
@@ -694,7 +694,7 @@ describe("runPost", () => {
 		]);
 		const advisoryPost = await Effect.runPromise(
 			Effect.provide(
-				runPost({...options, carrier: "advisory", clause: "blocking-set PR (manual merge)"}),
+				runPost({ ...options, carrier: "advisory", clause: "blocking-set PR (manual merge)" }),
 				overMarker.layer,
 			),
 		);
@@ -703,7 +703,7 @@ describe("runPost", () => {
 	});
 
 	it("emits the record with --json", async () => {
-		const out = await run(happy(), {json: true});
+		const out = await run(happy(), { json: true });
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			outcome: "posted",
 			namespace: "review-doc",
@@ -717,10 +717,10 @@ describe("runPost", () => {
 	it("refuses a blank clause and a non-SHA --sha on 10, before any read", async () => {
 		const shell = fakeSeams(happy());
 		const blank = await Effect.runPromise(
-			Effect.provide(runPost({...options, clause: "  "}), shell.layer),
+			Effect.provide(runPost({ ...options, clause: "  " }), shell.layer),
 		);
 		expect(blank.code).toBe(OFF_VOCABULARY);
-		expect((await run(happy(), {sha: "nothex"})).code).toBe(OFF_VOCABULARY);
+		expect((await run(happy(), { sha: "nothex" })).code).toBe(OFF_VOCABULARY);
 		expect(shell.log).toEqual([]);
 	});
 
@@ -731,11 +731,11 @@ describe("runPost", () => {
 			CLEAN_ISSUE,
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 			[FILES, served(files("skills/deploy/SKILL.md"))],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[COMMENTS, served(comments())],
 			[CREATE, created],
 			[once(READBACK), commentBody(`${MARKER}\n\n${BODY}`)],
-			[READBACK, {status: 502, body: "{}"}],
+			[READBACK, { status: 502, body: "{}" }],
 		]);
 		expect(out.code).toBe(0);
 	});
@@ -765,7 +765,7 @@ describe("runPost recomputes its namespace set at the bound commit", () => {
 	it("refuses a namespace only the unbound endpoint derives, and writes nothing", async () => {
 		const shell = fakeSeams(happy());
 		const out = await Effect.runPromise(
-			Effect.provide(runPost({...options, namespace: "review-skill"}), shell.layer),
+			Effect.provide(runPost({ ...options, namespace: "review-skill" }), shell.layer),
 		);
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stdout).toBe("");
@@ -784,7 +784,7 @@ describe("runPost recomputes its namespace set at the bound commit", () => {
 	it("derives the REWOUND commit's set even though the live head matches --sha", async () => {
 		const shell = fakeSeams(happy());
 		const out = await Effect.runPromise(
-			Effect.provide(runPost({...options, namespace: "review-doc"}), shell.layer),
+			Effect.provide(runPost({ ...options, namespace: "review-doc" }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toContain(`\t${HEAD}\t`);
@@ -816,7 +816,7 @@ describe("runPost recomputes its namespace set at the bound commit", () => {
 	it("keeps the 12 refusal on a forward-moved head, before any commit is bound", async () => {
 		const shell = fakeSeams(happy());
 		const out = await Effect.runPromise(
-			Effect.provide(runPost({...options, sha: OLD_HEAD}), shell.layer),
+			Effect.provide(runPost({ ...options, sha: OLD_HEAD }), shell.layer),
 		);
 		expect(out.code).toBe(STALE_HEAD);
 		expect(shell.calls.some((call) => call.startsWith("git diff"))).toBe(false);
@@ -852,7 +852,7 @@ describe("runPost refuses a PASS on the round that appended a criterion", () => 
 	it("passes a later round over a criterion an earlier one appended", async () => {
 		const out = await run(
 			withIssue(issueWith(routed(APPENDED, `<!-- ac:review pr:#4321 round:1 -->`))),
-			{round: 2},
+			{ round: 2 },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toContain("\tcreated\t");
@@ -869,7 +869,7 @@ describe("runPost refuses a PASS on the round that appended a criterion", () => 
 	it("refuses a PASS that names no round on 10, before any read", async () => {
 		const shell = fakeSeams(happy());
 		const out = await Effect.runPromise(
-			Effect.provide(runPost({...options, round: null}), shell.layer),
+			Effect.provide(runPost({ ...options, round: null }), shell.layer),
 		);
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toContain("--round is required on a PASS");
@@ -888,7 +888,7 @@ describe("runPost refuses a PASS on the round that appended a criterion", () => 
 						] as Scripted)
 					: entry,
 			),
-			{polarity: "FAIL", round: null},
+			{ polarity: "FAIL", round: null },
 		);
 		expect(out.code).toBe(0);
 	});
@@ -905,7 +905,7 @@ describe("runPost refuses a PASS on the round that appended a criterion", () => 
 	});
 
 	it("refuses on 11 when the issue body cannot be read at all", async () => {
-		const out = await run(withIssue({status: 502, body: '{"message":"bad gateway"}'}));
+		const out = await run(withIssue({ status: 502, body: '{"message":"bad gateway"}' }));
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain(`cannot read #${LINKED_ISSUE}`);
 	});
@@ -928,7 +928,7 @@ describe("runPost's 18 fence reads the issues a body only names with `Part of`",
 
 	const overPartial = (reply: HttpReply): ReadonlyArray<Scripted> =>
 		withIssue(reply).map((entry) =>
-			entry[0] === PULL ? ([PULL, served(pull({body: PARTIAL}))] as Scripted) : entry,
+			entry[0] === PULL ? ([PULL, served(pull({ body: PARTIAL }))] as Scripted) : entry,
 		);
 
 	it("reads that issue and refuses a row this round appended on it", async () => {

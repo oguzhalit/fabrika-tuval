@@ -40,8 +40,8 @@
 
 /** A reference in the topology: a real issue, or an id local to the ledger. */
 export type Ref =
-	| {readonly _tag: "Issue"; readonly number: number}
-	| {readonly _tag: "Local"; readonly id: string};
+	| { readonly _tag: "Issue"; readonly number: number }
+	| { readonly _tag: "Local"; readonly id: string };
 
 export interface PhaseLine {
 	readonly _tag: "Phase";
@@ -58,11 +58,11 @@ export interface RequiresLine {
 export type Edge = PhaseLine | RequiresLine;
 
 export type Topology =
-	| {readonly _tag: "Parsed"; readonly edges: ReadonlyArray<Edge>}
+	| { readonly _tag: "Parsed"; readonly edges: ReadonlyArray<Edge> }
 	/** The heading is not there at all. */
-	| {readonly _tag: "Absent"}
+	| { readonly _tag: "Absent" }
 	/** The heading is there and something under it does not parse — a defect, not an absence. */
-	| {readonly _tag: "Unparseable"; readonly line: number; readonly text: string};
+	| { readonly _tag: "Unparseable"; readonly line: number; readonly text: string };
 
 const HEADING_RE = /^##\s+Dependencies\s*$/;
 const ANY_HEADING_RE = /^#{1,6}\s+/;
@@ -79,8 +79,8 @@ export const isThematicBreak = (line: string): boolean => THEMATIC_BREAK_RE.test
 const parseRef = (raw: string): Ref | null => {
 	const text = raw.trim();
 	const issue = /^#(\d+)$/.exec(text);
-	if (issue?.[1] !== undefined) return {_tag: "Issue", number: Number.parseInt(issue[1], 10)};
-	return /^C\d+$/.test(text) ? {_tag: "Local", id: text} : null;
+	if (issue?.[1] !== undefined) return { _tag: "Issue", number: Number.parseInt(issue[1], 10) };
+	return /^C\d+$/.test(text) ? { _tag: "Local", id: text } : null;
 };
 
 const parseRefList = (raw: string): ReadonlyArray<Ref> | null => {
@@ -133,7 +133,7 @@ export const topologySpans = (body: string): ReadonlyArray<TopologySpan> => {
 				break;
 			}
 		}
-		spans.push({heading, end});
+		spans.push({ heading, end });
 	}
 	return spans;
 };
@@ -142,7 +142,7 @@ export const topologySpans = (body: string): ReadonlyArray<TopologySpan> => {
 export const readTopology = (body: string): Topology => {
 	const lines = body.split("\n");
 	const span = topologySpans(body)[0];
-	if (span === undefined) return {_tag: "Absent"};
+	if (span === undefined) return { _tag: "Absent" };
 
 	const edges: Edge[] = [];
 	for (let i = span.heading + 1; i < span.end; i++) {
@@ -153,21 +153,21 @@ export const readTopology = (body: string): Topology => {
 		const phase = PHASE_RE.exec(text);
 		if (phase?.[1] !== undefined && phase[2] !== undefined) {
 			const members = parseRefList(phase[2]);
-			if (members === null) return {_tag: "Unparseable", line: i + 1, text};
-			edges.push({_tag: "Phase", phase: Number.parseInt(phase[1], 10), members});
+			if (members === null) return { _tag: "Unparseable", line: i + 1, text };
+			edges.push({ _tag: "Phase", phase: Number.parseInt(phase[1], 10), members });
 			continue;
 		}
 		const requires = REQUIRES_RE.exec(text);
 		if (requires?.[1] !== undefined && requires[2] !== undefined) {
 			const subject = parseRef(requires[1]);
 			const needs = parseRefList(requires[2]);
-			if (subject === null || needs === null) return {_tag: "Unparseable", line: i + 1, text};
-			edges.push({_tag: "Requires", subject, needs});
+			if (subject === null || needs === null) return { _tag: "Unparseable", line: i + 1, text };
+			edges.push({ _tag: "Requires", subject, needs });
 			continue;
 		}
-		return {_tag: "Unparseable", line: i + 1, text};
+		return { _tag: "Unparseable", line: i + 1, text };
 	}
-	return {_tag: "Parsed", edges};
+	return { _tag: "Parsed", edges };
 };
 
 export const sameRef = (a: Ref, b: Ref): boolean =>
@@ -206,19 +206,21 @@ export const renderTopologyBlock = (edges: ReadonlyArray<Edge>): string => {
 export const predecessorsOf = (
 	edges: ReadonlyArray<Edge>,
 	subject: Ref,
-): ReadonlyArray<{readonly kind: "phase" | "requires:"; readonly ref: Ref}> => {
+): ReadonlyArray<{ readonly kind: "phase" | "requires:"; readonly ref: Ref }> => {
 	const explicit = edges.filter(
 		(edge): edge is RequiresLine => edge._tag === "Requires" && sameRef(edge.subject, subject),
 	);
 	if (explicit.length > 0) {
-		return explicit.flatMap((edge) => edge.needs.map((ref) => ({kind: "requires:" as const, ref})));
+		return explicit.flatMap((edge) =>
+			edge.needs.map((ref) => ({ kind: "requires:" as const, ref })),
+		);
 	}
 	const phases = edges.filter((edge): edge is PhaseLine => edge._tag === "Phase");
 	const own = phases.find((edge) => edge.members.some((ref) => sameRef(ref, subject)));
 	if (own === undefined) return [];
 	return phases
 		.filter((edge) => edge.phase < own.phase)
-		.flatMap((edge) => edge.members.map((ref) => ({kind: "phase" as const, ref})));
+		.flatMap((edge) => edge.members.map((ref) => ({ kind: "phase" as const, ref })));
 };
 
 /** One `blocked_by` edge the block requires on the board: `dependent` waits on `prerequisite`. */
@@ -247,7 +249,7 @@ export const requiredEdges = (edges: ReadonlyArray<Edge>): ReadonlyArray<Require
 	const pairs = new Map<string, RequiredEdge>();
 	for (const subject of subjects) {
 		if (subject._tag !== "Issue") continue;
-		for (const {ref} of predecessorsOf(edges, subject)) {
+		for (const { ref } of predecessorsOf(edges, subject)) {
 			if (ref._tag !== "Issue" || ref.number === subject.number) continue;
 			pairs.set(`${subject.number}>${ref.number}`, {
 				dependent: subject.number,

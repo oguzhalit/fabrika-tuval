@@ -9,12 +9,12 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/6881#issuecomment-5519864099
  */
-import {execFileSync} from "node:child_process";
-import {existsSync, mkdtempSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {afterAll, describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
 
 const GIT_ENV = {
 	...process.env,
@@ -27,26 +27,26 @@ const GIT_ENV = {
 };
 
 const git = (cwd: string, ...args: ReadonlyArray<string>): string =>
-	execFileSync("git", [...args], {cwd, env: GIT_ENV, encoding: "utf8", stdio: "pipe"}).trim();
+	execFileSync("git", [...args], { cwd, env: GIT_ENV, encoding: "utf8", stdio: "pipe" }).trim();
 
 /** git's stderr for a command that must refuse, or a thrown error when it did not. */
 const refusal = (cwd: string, ...args: ReadonlyArray<string>): string => {
 	try {
 		git(cwd, ...args);
 	} catch (error) {
-		return String((error as {stderr?: unknown}).stderr ?? "");
+		return String((error as { stderr?: unknown }).stderr ?? "");
 	}
 	throw new Error(`git ${args.join(" ")} succeeded where a refusal was expected`);
 };
 
 const roots: Array<string> = [];
 afterAll(() => {
-	for (const root of roots) rmSync(root, {recursive: true, force: true});
+	for (const root of roots) rmSync(root, { recursive: true, force: true });
 	roots.length = 0;
 });
 
 /** A repo with one linked worktree on its own branch, locked the way the harness locks one. */
-const open = (): {readonly repo: string; readonly tree: string} => {
+const open = (): { readonly repo: string; readonly tree: string } => {
 	const root = mkdtempSync(join(tmpdir(), "fabrika-locked-"));
 	roots.push(root);
 	const repo = join(root, "repo");
@@ -58,14 +58,14 @@ const open = (): {readonly repo: string; readonly tree: string} => {
 	const tree = join(root, "tree");
 	git(repo, "worktree", "add", "--quiet", "-b", "build/4312-lane-a9bd1234", tree, "HEAD");
 	git(repo, "worktree", "lock", "--reason", "claude agent a9bd (pid 4242)", tree);
-	return {repo, tree};
+	return { repo, tree };
 };
 
 describe("a plain git worktree remove on a locked tree, against real git", () => {
 	it(
 		"refuses a clean locked tree outright",
 		() => {
-			const {repo, tree} = open();
+			const { repo, tree } = open();
 
 			expect(refusal(repo, "worktree", "remove", tree)).toMatch(/locked working tree/);
 			expect(existsSync(tree)).toBe(true);
@@ -76,7 +76,7 @@ describe("a plain git worktree remove on a locked tree, against real git", () =>
 	it(
 		"removes it after an unlock, with no --force, and leaves the branch",
 		() => {
-			const {repo, tree} = open();
+			const { repo, tree } = open();
 
 			git(repo, "worktree", "unlock", tree);
 			git(repo, "worktree", "remove", tree);
@@ -91,7 +91,7 @@ describe("a plain git worktree remove on a locked tree, against real git", () =>
 	it(
 		"still refuses a dirty tree once unlocked — the unlock spends no content refusal",
 		() => {
-			const {repo, tree} = open();
+			const { repo, tree } = open();
 			writeFileSync(join(tree, "unsaved.txt"), "work nobody committed\n");
 
 			git(repo, "worktree", "unlock", tree);

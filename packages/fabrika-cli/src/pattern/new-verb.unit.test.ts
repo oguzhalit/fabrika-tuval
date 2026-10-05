@@ -1,20 +1,20 @@
-import {execFileSync} from "node:child_process";
-import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {NodeServices} from "@effect/platform-node";
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFsOptions, fakeFs, fakeShell} from "../fakes.test-support.ts";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFsOptions, fakeFs, fakeShell } from "../fakes.test-support.ts";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
 import {
 	ALREADY_EXISTS,
 	PRECONDITION_UNKNOWN,
 	SOURCE_REPOSITORY_REFUSED,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {ANCHOR_DECLARATION} from "./doc.ts";
-import {type NewOptions, runNew} from "./new-verb.ts";
+import { ANCHOR_DECLARATION } from "./doc.ts";
+import { type NewOptions, runNew } from "./new-verb.ts";
 
 const options: NewOptions = {
 	slug: "worker-queue-retry",
@@ -31,14 +31,14 @@ const run = (opts: Partial<typeof options> = {}, fs: FakeFsOptions = {}) => {
 	const fake = fakeFs(fs);
 	const shell = fakeShell([]);
 	return Effect.runPromise(
-		Effect.provide(runNew({...options, ...opts}), Layer.merge(fake.layer, shell.layer)),
-	).then((outcome) => ({outcome, written: fake.written}));
+		Effect.provide(runNew({ ...options, ...opts }), Layer.merge(fake.layer, shell.layer)),
+	).then((outcome) => ({ outcome, written: fake.written }));
 };
 
 describe("runNew", () => {
 	// The contract's first worked example.
 	it("answers the path written and nothing else", async () => {
-		const {outcome, written} = await run();
+		const { outcome, written } = await run();
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toBe(".patterns/worker-queue-retry.md\n");
 		expect(
@@ -48,9 +48,9 @@ describe("runNew", () => {
 
 	// The contract's second worked example.
 	it("refuses to overwrite an existing doc", async () => {
-		const {outcome, written} = await run(
+		const { outcome, written } = await run(
 			{},
-			{files: {".patterns/worker-queue-retry.md": "# Already here\n"}},
+			{ files: { ".patterns/worker-queue-retry.md": "# Already here\n" } },
 		);
 		expect(outcome.code).toBe(ALREADY_EXISTS);
 		expect(outcome.stdout).toBe("");
@@ -62,16 +62,16 @@ describe("runNew", () => {
 
 	// The contract's third and fourth worked examples.
 	it("carries the write record through --json, with and without an anchor", async () => {
-		expect((await run({json: true})).outcome.stdout).toBe(
+		expect((await run({ json: true })).outcome.stdout).toBe(
 			'{"path":".patterns/worker-queue-retry.md","slug":"worker-queue-retry","title":"Worker queue retry","anchored":null,"decision":null,"sourceEvidence":null}\n',
 		);
-		expect((await run({json: true, anchor: "acme-queue@4.2.0"})).outcome.stdout).toBe(
+		expect((await run({ json: true, anchor: "acme-queue@4.2.0" })).outcome.stdout).toBe(
 			'{"path":".patterns/worker-queue-retry.md","slug":"worker-queue-retry","title":"Worker queue retry","anchored":"acme-queue@4.2.0","decision":null,"sourceEvidence":null}\n',
 		);
 	});
 
 	it("writes the anchor line in the exact bytes pattern anchor parses", async () => {
-		const {written} = await run({anchor: "@nkzw/fate@1.3.1"});
+		const { written } = await run({ anchor: "@nkzw/fate@1.3.1" });
 		const line = (written.get(".patterns/worker-queue-retry.md") ?? "")
 			.trimEnd()
 			.split("\n")
@@ -81,7 +81,7 @@ describe("runNew", () => {
 
 	// The writer and the reader of that line accept exactly the same strings.
 	it("refuses an --anchor that is not <pkg>@<version> as a usage error", async () => {
-		const {outcome, written} = await run({anchor: "acme-queue"});
+		const { outcome, written } = await run({ anchor: "acme-queue" });
 		expect(outcome.code).toBe(1);
 		expect(outcome.stderr.at(-1)).toBe(
 			'pattern new: --anchor "acme-queue" is not <pkg>@<version>.',
@@ -90,7 +90,7 @@ describe("runNew", () => {
 	});
 
 	it("refuses a slug that is not kebab-case", async () => {
-		const {outcome} = await run({slug: "Worker Queue"});
+		const { outcome } = await run({ slug: "Worker Queue" });
 		expect(outcome.code).toBe(1);
 		expect(outcome.stdout).toBe("");
 		expect(outcome.stderr.at(-1)).toContain("is not kebab-case");
@@ -99,7 +99,7 @@ describe("runNew", () => {
 	// A failed write is UNKNOWN, deliberately not 1: whether anything landed is exactly what a caller
 	// cannot tell, and seating it on 1 would fuse it with a broken binary.
 	it("reports a failed write as UNKNOWN rather than as a usage error", async () => {
-		const {outcome} = await run({}, {unwritable: [".patterns/worker-queue-retry.md"]});
+		const { outcome } = await run({}, { unwritable: [".patterns/worker-queue-retry.md"] });
 		expect(outcome.code).toBe(WRITE_UNKNOWN);
 		expect(outcome.code).not.toBe(1);
 		expect(outcome.stdout).toBe("");
@@ -109,20 +109,23 @@ describe("runNew", () => {
 	// A probe that could not RUN is not "absent": answering absent would license a write over a doc
 	// this verb never managed to look at.
 	it("refuses a probe it could not perform, and writes nothing", async () => {
-		const {outcome, written} = await run({}, {unprobeable: [".patterns/worker-queue-retry.md"]});
+		const { outcome, written } = await run(
+			{},
+			{ unprobeable: [".patterns/worker-queue-retry.md"] },
+		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(written.size).toBe(0);
 	});
 
 	it("takes --title verbatim over the derivation", async () => {
-		const {written} = await run({title: "Fate (Effect) server"});
+		const { written } = await run({ title: "Fate (Effect) server" });
 		expect(
 			written.get(".patterns/worker-queue-retry.md")?.startsWith("# Fate (Effect) server\n"),
 		).toBe(true);
 	});
 
 	it("selects the prospective scaffold from a binding-decision citation", async () => {
-		const {written} = await run({decision: "https://forge.example/acme/repo/issues/1"});
+		const { written } = await run({ decision: "https://forge.example/acme/repo/issues/1" });
 		const text = written.get(".patterns/worker-queue-retry.md") ?? "";
 		expect(text).toContain("## Prospective scope");
 		expect(text).toContain("[the binding decision](https://forge.example/acme/repo/issues/1)");
@@ -134,7 +137,7 @@ describe("runNew", () => {
 		const shell = fakeShell([]);
 		const outcome = await Effect.runPromise(
 			Effect.provide(
-				runNew({...options, sourceRepo: "/missing/source"}),
+				runNew({ ...options, sourceRepo: "/missing/source" }),
 				Layer.merge(fake.layer, shell.layer),
 			),
 		);
@@ -148,13 +151,13 @@ describe("runNew", () => {
  * Only real `git` can prove the evidence is read off HEAD: a scripted shell answers whatever it is
  * told, so it cannot tell a tree read from an index read.
  */
-describe("runNew against a real source checkout", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
+describe("runNew against a real source checkout", { timeout: SUBPROCESS_TEST_TIMEOUT_MS }, () => {
 	it("derives portable prospective evidence from HEAD despite a staged index addition", async () => {
 		const root = mkdtempSync(join(tmpdir(), "fabrika-pattern-source-"));
 		const upstream = join(root, "xyflow");
 		const git = (...args: ReadonlyArray<string>) => execFileSync("git", ["-C", upstream, ...args]);
 		try {
-			mkdirSync(join(upstream, "packages/react/src"), {recursive: true});
+			mkdirSync(join(upstream, "packages/react/src"), { recursive: true });
 			writeFileSync(
 				join(upstream, "package.json"),
 				'{"name":"@xyflow/monorepo","version":"0.0.0","private":true}\n',
@@ -178,7 +181,7 @@ describe("runNew against a real source checkout", {timeout: SUBPROCESS_TEST_TIME
 				"-qm",
 				"fixture",
 			);
-			mkdirSync(join(upstream, "packages/index-only"), {recursive: true});
+			mkdirSync(join(upstream, "packages/index-only"), { recursive: true });
 			writeFileSync(
 				join(upstream, "packages/index-only/package.json"),
 				'{"name":"@xyflow/react","version":"99.0.0"}\n',
@@ -209,7 +212,7 @@ describe("runNew against a real source checkout", {timeout: SUBPROCESS_TEST_TIME
 			expect(scaffold).toContain("`@xyflow/react@12.11.5`");
 			expect(scaffold).not.toContain(upstream);
 		} finally {
-			rmSync(root, {recursive: true, force: true});
+			rmSync(root, { recursive: true, force: true });
 		}
 	});
 });

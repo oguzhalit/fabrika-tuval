@@ -28,7 +28,7 @@
  * unbindable marker read as a question nobody asked.
  */
 
-import {createHash} from "node:crypto";
+import { createHash } from "node:crypto";
 import {
 	composeQuestionId,
 	FIELD_SEPARATOR,
@@ -58,9 +58,9 @@ export interface QuestionBlock {
 }
 
 export type BlockParse =
-	| {readonly _tag: "Blocks"; readonly blocks: ReadonlyArray<QuestionBlock>}
+	| { readonly _tag: "Blocks"; readonly blocks: ReadonlyArray<QuestionBlock> }
 	/** A grammar defect: the reason is the verb's stderr line, seated on `BAD_SECTIONS`. */
-	| {readonly _tag: "Invalid"; readonly reason: string};
+	| { readonly _tag: "Invalid"; readonly reason: string };
 
 const HEADING = /^###[ \t]+(.*?)[ \t]*$/;
 const FIELD = /^\*\*(Recommended|Trade-offs):\*\*[ \t]*(.*)$/;
@@ -68,7 +68,7 @@ const FIELD = /^\*\*(Recommended|Trade-offs):\*\*[ \t]*(.*)$/;
 /** `<position> · <kind>` or the stamped `R<round>.<position> · <kind>` a posted comment carries. */
 const headingParts = (
 	text: string,
-): {readonly position: number; readonly kind: string; readonly round: number | null} | null => {
+): { readonly position: number; readonly kind: string; readonly round: number | null } | null => {
 	const [left, ...right] = text.split(FIELD_SEPARATOR);
 	if (right.length === 0) return null;
 	const address = (left ?? "").trim();
@@ -76,9 +76,9 @@ const headingParts = (
 	const stamped = questionId(address);
 	if (stamped !== null) {
 		const [round, position] = stamped.slice(1).split(".");
-		return {position: Number(position), kind, round: Number(round)};
+		return { position: Number(position), kind, round: Number(round) };
 	}
-	return /^[1-9][0-9]*$/.test(address) ? {position: Number(address), kind, round: null} : null;
+	return /^[1-9][0-9]*$/.test(address) ? { position: Number(address), kind, round: null } : null;
 };
 
 const blank = (line: string): boolean => line.trim() === "";
@@ -132,7 +132,7 @@ export const parseQuestionBlocks = (
 			const raw = heading[1] ?? "";
 			const parts = headingParts(raw);
 			if (parts === null) {
-				return {_tag: "Invalid", reason: `heading "${raw}" is not a question block.`};
+				return { _tag: "Invalid", reason: `heading "${raw}" is not a question block.` };
 			}
 			if (!isKind(parts.kind)) {
 				return {
@@ -182,7 +182,7 @@ export const parseQuestionBlocks = (
 	close();
 
 	if (blocks.length === 0) {
-		return {_tag: "Invalid", reason: "the round carries no `### <n> · <kind>` question block."};
+		return { _tag: "Invalid", reason: "the round carries no `### <n> · <kind>` question block." };
 	}
 
 	const positions = blocks.map((block) => block.position);
@@ -194,7 +194,7 @@ export const parseQuestionBlocks = (
 		};
 	}
 
-	return {_tag: "Blocks", blocks};
+	return { _tag: "Blocks", blocks };
 };
 
 /**
@@ -234,14 +234,14 @@ export const addressBlocks = (
 	for (const block of blocks) {
 		const id = composeQuestionId(round, block.position);
 		if (id === null) return null;
-		addressed.push({...block, id, round});
+		addressed.push({ ...block, id, round });
 	}
 	return addressed;
 };
 
 export type DigestResult =
-	| {readonly _tag: "Digest"; readonly digest: RoundDigest}
-	| {readonly _tag: "Unbindable"; readonly reason: string};
+	| { readonly _tag: "Digest"; readonly digest: RoundDigest }
+	| { readonly _tag: "Unbindable"; readonly reason: string };
 
 const DIGEST_LENGTH = 12;
 
@@ -254,7 +254,7 @@ const DIGEST_LENGTH = 12;
  */
 export const digestRound = (questions: ReadonlyArray<Question>): DigestResult => {
 	if (questions.length === 0) {
-		return {_tag: "Unbindable", reason: "the round holds no question block"};
+		return { _tag: "Unbindable", reason: "the round holds no question block" };
 	}
 	const parts: string[] = [];
 	for (const question of questions) {
@@ -285,9 +285,9 @@ export const digestRound = (questions: ReadonlyArray<Question>): DigestResult =>
 	if (digest === null) {
 		// Unreachable: SHA-256 hex is lowercase and 64 characters long. Refused rather than cast,
 		// because a `Digest` carrying something else is the one value the brand exists to forbid.
-		return {_tag: "Unbindable", reason: "the SHA-256 digest did not render as 12 lowercase hex"};
+		return { _tag: "Unbindable", reason: "the SHA-256 digest did not render as 12 lowercase hex" };
 	}
-	return {_tag: "Digest", digest};
+	return { _tag: "Digest", digest };
 };
 
 /** The comment body `grill round` posts: the round key, then one stamped block per question. */
@@ -302,10 +302,10 @@ export const composeRoundComment = (round: number, questions: ReadonlyArray<Ques
 };
 
 export type RoundComment =
-	| {readonly _tag: "Round"; readonly round: number; readonly questions: ReadonlyArray<Question>}
+	| { readonly _tag: "Round"; readonly round: number; readonly questions: ReadonlyArray<Question> }
 	/** The comment opens as a round and its blocks do not parse — visible, never silently skipped. */
-	| {readonly _tag: "Malformed"; readonly round: number; readonly reason: string}
-	| {readonly _tag: "NotARound"};
+	| { readonly _tag: "Malformed"; readonly round: number; readonly reason: string }
+	| { readonly _tag: "NotARound" };
 
 const ROUND_LINE = new RegExp(`^\\*{0,2}\\s*${ROUND_KEY}:[ \\t]*([1-9][0-9]*)\\s*\\*{0,2}$`);
 
@@ -316,10 +316,10 @@ export const readRoundComment = (body: string): RoundComment => {
 		.find((line) => line.trim() !== "")
 		?.trim();
 	const matched = first === undefined ? null : ROUND_LINE.exec(first);
-	if (matched === null) return {_tag: "NotARound"};
+	if (matched === null) return { _tag: "NotARound" };
 	const round = Number(matched[1]);
 	const parsed = parseQuestionBlocks(body, round);
-	if (parsed._tag === "Invalid") return {_tag: "Malformed", round, reason: parsed.reason};
+	if (parsed._tag === "Invalid") return { _tag: "Malformed", round, reason: parsed.reason };
 	const addressed = addressBlocks(round, parsed.blocks);
 	if (addressed === null) {
 		return {
@@ -328,5 +328,5 @@ export const readRoundComment = (body: string): RoundComment => {
 			reason: "a question position does not form an R<round>.<n> id",
 		};
 	}
-	return {_tag: "Round", round, questions: addressed};
+	return { _tag: "Round", round, questions: addressed };
 };

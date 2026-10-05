@@ -2,8 +2,8 @@
  * Review filtering omits content only. Required reviews always use every changed path.
  * @ruling https://github.com/kamp-us/phoenix/issues/9547
  */
-import {classOf, partitionWithUi, type ShipPartition, shipNamespacesOf} from "./classes.ts";
-import {headerPaths} from "./diff.ts";
+import { classOf, partitionWithUi, type ShipPartition, shipNamespacesOf } from "./classes.ts";
+import { headerPaths } from "./diff.ts";
 
 /** One exclusion pattern, with where it came from — a default, a config key, or the caller's `--exclude`. */
 export interface ExclusionPattern {
@@ -16,11 +16,11 @@ export interface ExclusionPattern {
  * build-output shapes this repo's `.gitignore` `# Generated` block already names.
  */
 export const DEFAULT_EXCLUSIONS: ReadonlyArray<ExclusionPattern> = [
-	{pattern: "pnpm-lock.yaml", source: "default"},
-	{pattern: "**/__snapshots__/**", source: "default"},
-	{pattern: "**/__generated__/**", source: "default"},
-	{pattern: "**/schema.graphql.generated", source: "default"},
-	{pattern: "**/__mutation__/**", source: "default"},
+	{ pattern: "pnpm-lock.yaml", source: "default" },
+	{ pattern: "**/__snapshots__/**", source: "default" },
+	{ pattern: "**/__generated__/**", source: "default" },
+	{ pattern: "**/schema.graphql.generated", source: "default" },
+	{ pattern: "**/__mutation__/**", source: "default" },
 ];
 
 /** Omitted placement disables filtering; requested filtering preserves required reviews. */
@@ -85,7 +85,7 @@ export const parseExcludeList = (csv: string): ReadonlyArray<ExclusionPattern> =
 		.split(",")
 		.map((entry) => entry.trim())
 		.filter((entry) => entry !== "")
-		.map((pattern) => ({pattern, source: "caller" as const}));
+		.map((pattern) => ({ pattern, source: "caller" as const }));
 
 /**
  * The defaults the effective set dropped: every default whose pattern string no entry of the set
@@ -96,7 +96,7 @@ export const parseExcludeList = (csv: string): ReadonlyArray<ExclusionPattern> =
 export const unexcludedDefaults = (
 	patterns: ReadonlyArray<ExclusionPattern>,
 ): ReadonlyArray<string> =>
-	DEFAULT_EXCLUSIONS.map(({pattern}) => pattern).filter(
+	DEFAULT_EXCLUSIONS.map(({ pattern }) => pattern).filter(
 		(pattern) => !patterns.some((entry) => entry.pattern === pattern),
 	);
 
@@ -126,16 +126,16 @@ export const effectiveExclusions = (
 	const patterns: ExclusionPattern[] = [];
 	const add = (pattern: string, source: ExclusionPattern["source"]): void => {
 		if (patterns.some((entry) => entry.pattern === pattern)) return;
-		patterns.push({pattern, source});
+		patterns.push({ pattern, source });
 	};
-	for (const {pattern} of DEFAULT_EXCLUSIONS) {
+	for (const { pattern } of DEFAULT_EXCLUSIONS) {
 		if (!removed.has(pattern)) add(pattern, "default");
 	}
 	for (const pattern of configAdditions) add(pattern, "config");
 	if (cliExclude !== null) {
-		for (const {pattern} of parseExcludeList(cliExclude)) add(pattern, "caller");
+		for (const { pattern } of parseExcludeList(cliExclude)) add(pattern, "caller");
 	}
-	return {patterns, unexcluded: unexcludedDefaults(patterns)};
+	return { patterns, unexcluded: unexcludedDefaults(patterns) };
 };
 
 /**
@@ -226,10 +226,10 @@ export const refusalFor = (
 	probes: ReadonlyArray<GuardProbe>,
 ): ReadonlyArray<FilterRefusal> => {
 	const refusals: FilterRefusal[] = [];
-	for (const {pattern} of patterns) {
+	for (const { pattern } of patterns) {
 		const probe = probes.find((candidate) => matchPath(pattern, candidate.path));
 		if (probe !== undefined) {
-			refusals.push({pattern, guard: probe.guard, probe: probe.path});
+			refusals.push({ pattern, guard: probe.guard, probe: probe.path });
 			continue;
 		}
 		const segments = patternSegments(pattern);
@@ -239,7 +239,7 @@ export const refusalFor = (
 				pinsRoot(segments, rootSegments(governedRootOf(candidate.path))),
 		);
 		if (target !== undefined) {
-			refusals.push({pattern, guard: target.guard, probe: target.path});
+			refusals.push({ pattern, guard: target.guard, probe: target.path });
 		}
 	}
 	return refusals;
@@ -277,8 +277,8 @@ export const governedExcluded = (
 			root.endsWith("/") ? path.startsWith(root) : path === root,
 		);
 		if (!underRoot) continue;
-		const hit = patterns.find(({pattern}) => matchPath(pattern, path));
-		if (hit !== undefined) rows.push({pattern: hit.pattern, path});
+		const hit = patterns.find(({ pattern }) => matchPath(pattern, path));
+		if (hit !== undefined) rows.push({ pattern: hit.pattern, path });
 	}
 	return rows;
 };
@@ -296,9 +296,9 @@ export const applyPlacement = (
 	const kept: string[] = [];
 	const excluded: string[] = [];
 	for (const file of files) {
-		(patterns.some(({pattern}) => matchPath(pattern, file)) ? excluded : kept).push(file);
+		(patterns.some(({ pattern }) => matchPath(pattern, file)) ? excluded : kept).push(file);
 	}
-	return {kept, excluded};
+	return { kept, excluded };
 };
 
 /** One `diff --git` section, kept whole so a filtered diff stays a well-formed unified diff. */
@@ -325,7 +325,7 @@ export const diffSections = (diff: string): ReadonlyArray<DiffSection> => {
 	let path: string | null = null;
 	const flush = (): void => {
 		if (current !== null && path !== null) {
-			sections.push({path, text: current.join("\n")});
+			sections.push({ path, text: current.join("\n") });
 		}
 	};
 	for (const line of lines) {
@@ -384,8 +384,8 @@ export interface PreviewResult {
 }
 
 export type Preview =
-	| {_tag: "Refused"; refusals: ReadonlyArray<FilterRefusal>}
-	| {_tag: "Preview"; result: PreviewResult};
+	| { _tag: "Refused"; refusals: ReadonlyArray<FilterRefusal> }
+	| { _tag: "Preview"; result: PreviewResult };
 
 /** Derive required reviews from all paths, then filter content after proving exclusions safe. */
 export const previewOf = (
@@ -397,7 +397,7 @@ export const previewOf = (
 	uiPrefixes: ReadonlyArray<string>,
 ): Preview => {
 	const refusals = refusalFor(patterns, probes);
-	if (refusals.length > 0) return {_tag: "Refused", refusals};
+	if (refusals.length > 0) return { _tag: "Refused", refusals };
 	const unexcluded = unexcludedDefaults(patterns);
 	const sections = diffSections(diff);
 	const paths = sections.map((section) => section.path);

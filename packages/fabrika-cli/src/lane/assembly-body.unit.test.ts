@@ -3,10 +3,10 @@
  * agreement that makes it a guard rather than a second opinion: every body this refuses is one
  * `provenClosure` would later read as partial or as unreadable.
  */
-import {describe, expect, it} from "vitest";
-import {issueRefsOf} from "../review/classes.ts";
-import {tailBodyRead} from "./assembly-body.ts";
-import {provenClosure} from "./reconcile.ts";
+import { describe, expect, it } from "vitest";
+import { issueRefsOf } from "../review/classes.ts";
+import { tailBodyRead } from "./assembly-body.ts";
+import { provenClosure } from "./reconcile.ts";
 
 const EPIC = 4300;
 
@@ -28,7 +28,7 @@ const CHILDREN = "Fixes #4301\nFixes #4302\n";
 
 describe("tailBodyRead", () => {
 	it("reads a body closing the epic beside its children as the run's landing", () => {
-		expect(tailBodyRead(`${CHILDREN}Fixes #${EPIC}\n`, EPIC)).toEqual({_tag: "Closes"});
+		expect(tailBodyRead(`${CHILDREN}Fixes #${EPIC}\n`, EPIC)).toEqual({ _tag: "Closes" });
 	});
 
 	// Membership, not first match: the epic's own reference sits at an arbitrary position among one

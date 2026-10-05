@@ -1,15 +1,15 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFs, fakeFs} from "../fakes.test-support.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFs, fakeFs } from "../fakes.test-support.ts";
 import {
 	INPUT_ABSENT,
 	INPUT_UNREADABLE,
 	NOTHING_MEASURED,
 	WINDOW_SELECTED_NO_ROWS,
 } from "./codes.ts";
-import {encodeSpendRows, type LedgerRow} from "./ledger.ts";
-import {runRollup} from "./rollup-verb.ts";
-import type {RunSpend} from "./token-spend.ts";
+import { encodeSpendRows, type LedgerRow } from "./ledger.ts";
+import { runRollup } from "./rollup-verb.ts";
+import type { RunSpend } from "./token-spend.ts";
 
 const PATH = "/repo/.fabrika/spend-ledger.jsonl";
 
@@ -59,7 +59,7 @@ const run = (fs: FakeFs, options: RunOptions = {}) =>
 		),
 	);
 
-const withText = (text: string | null) => fakeFs({files: {[PATH]: text}});
+const withText = (text: string | null) => fakeFs({ files: { [PATH]: text } });
 
 const withRows = (rows: ReadonlyArray<LedgerRow>) => withText(encodeSpendRows(rows));
 
@@ -77,7 +77,7 @@ const fields = (stdout: string): Map<string, ReadonlyArray<string>> =>
 
 describe("spend rollup — the answer", () => {
 	it("answers the window's totals with no transcript path supplied by the operator", async () => {
-		const out = await run(withRows([row(), row({spend: spendOf(50, 20, 1)})]));
+		const out = await run(withRows([row(), row({ spend: spendOf(50, 20, 1) })]));
 
 		expect(out.code).toBe(0);
 		expect(fields(out.stdout).get("billed")).toEqual(["150"]);
@@ -89,8 +89,8 @@ describe("spend rollup — the answer", () => {
 	it("emits a day, a skill and a stage-arm breakdown in the one answer", async () => {
 		const out = await run(
 			withRows([
-				row({recordedAt: "2026-08-08T10:00:00.000Z"}),
-				row({recordedAt: "2026-08-09T10:00:00.000Z", skillName: "review-code", stage: "review"}),
+				row({ recordedAt: "2026-08-08T10:00:00.000Z" }),
+				row({ recordedAt: "2026-08-09T10:00:00.000Z", skillName: "review-code", stage: "review" }),
 			]),
 		);
 		const lines = out.stdout.split("\n");
@@ -103,8 +103,8 @@ describe("spend rollup — the answer", () => {
 	});
 
 	it("emits the same answer as JSON under --json", async () => {
-		const rows = [row(), row({skillName: "review-code"})];
-		const out = await run(withRows(rows), {json: true});
+		const rows = [row(), row({ skillName: "review-code" })];
+		const out = await run(withRows(rows), { json: true });
 		const parsed = JSON.parse(out.stdout);
 
 		expect(out.code).toBe(0);
@@ -115,7 +115,7 @@ describe("spend rollup — the answer", () => {
 			runs: 2,
 			measuredRuns: 2,
 		});
-		expect(parsed.bySkill.rows.map((b: {skill: string}) => b.skill)).toEqual([
+		expect(parsed.bySkill.rows.map((b: { skill: string }) => b.skill)).toEqual([
 			"review-code",
 			"write-code",
 		]);
@@ -131,7 +131,7 @@ describe("spend rollup — the answer", () => {
 
 		/** One row per day, each day billed one more than the last — so the newest days bill most. */
 		const overCapDays = (): ReadonlyArray<LedgerRow> =>
-			Array.from({length: CAP + 5}, (_, index) =>
+			Array.from({ length: CAP + 5 }, (_, index) =>
 				row({
 					recordedAt: `2026-08-${String(index + 1).padStart(2, "0")}T09:00:00.000Z`,
 					spend: spendOf(100 + index, 40, 3),
@@ -158,7 +158,7 @@ describe("spend rollup — the answer", () => {
 		});
 
 		it("prints a 0 remainder rather than dropping the line when nothing was capped", async () => {
-			const out = await run(withRows([row(), row({skillName: "review-code", stage: "review"})]));
+			const out = await run(withRows([row(), row({ skillName: "review-code", stage: "review" })]));
 
 			expect(fields(out.stdout).get("dayMore")).toEqual(["0"]);
 			expect(fields(out.stdout).get("skillMore")).toEqual(["0"]);
@@ -168,11 +168,11 @@ describe("spend rollup — the answer", () => {
 		it("bounds --json the same way it bounds the line form — the two channels never desync", async () => {
 			const rows = overCapDays();
 			const lineForm = fields((await run(withRows(rows))).stdout);
-			const parsed = JSON.parse((await run(withRows(rows), {json: true})).stdout);
+			const parsed = JSON.parse((await run(withRows(rows), { json: true })).stdout);
 
 			expect(parsed.byDay.rows).toHaveLength(CAP);
 			expect(String(parsed.byDay.more)).toBe(lineForm.get("dayMore")?.[0]);
-			expect(parsed.byDay.rows.map((b: {day: string}) => b.day)).toEqual(
+			expect(parsed.byDay.rows.map((b: { day: string }) => b.day)).toEqual(
 				(await run(withRows(rows))).stdout
 					.split("\n")
 					.filter((l) => l.startsWith("day\t"))
@@ -182,7 +182,7 @@ describe("spend rollup — the answer", () => {
 
 		it("leaves the scalar totals whole — the collapse is evidence-only", async () => {
 			const rows = overCapDays();
-			const parsed = JSON.parse((await run(withRows(rows), {json: true})).stdout);
+			const parsed = JSON.parse((await run(withRows(rows), { json: true })).stdout);
 			const billed = rows.reduce(
 				(sum, r) => sum + (r.spend._tag === "Reconstructed" ? r.spend.spend.billed : 0),
 				0,
@@ -196,19 +196,19 @@ describe("spend rollup — the answer", () => {
 
 	it("bounds the window with --since and --until, inclusive at both edges", async () => {
 		const rows = [
-			row({recordedAt: "2026-08-07T12:00:00.000Z"}),
-			row({recordedAt: "2026-08-08T00:00:00.000Z"}),
-			row({recordedAt: "2026-08-09T23:59:59.999Z"}),
-			row({recordedAt: "2026-08-10T00:00:00.000Z"}),
+			row({ recordedAt: "2026-08-07T12:00:00.000Z" }),
+			row({ recordedAt: "2026-08-08T00:00:00.000Z" }),
+			row({ recordedAt: "2026-08-09T23:59:59.999Z" }),
+			row({ recordedAt: "2026-08-10T00:00:00.000Z" }),
 		];
-		const out = await run(withRows(rows), {since: "2026-08-08", until: "2026-08-09"});
+		const out = await run(withRows(rows), { since: "2026-08-08", until: "2026-08-09" });
 
 		expect(out.code).toBe(0);
 		expect(fields(out.stdout).get("runs")).toEqual(["2"]);
 	});
 
 	it("prints the ledger path and the window on stderr, never on stdout", async () => {
-		const out = await run(withRows([row()]), {since: "2026-08-01"});
+		const out = await run(withRows([row()]), { since: "2026-08-01" });
 
 		expect(out.stderr.join("\n")).toContain(PATH);
 		expect(out.stderr.join("\n")).toContain("2026-08-01");
@@ -217,7 +217,7 @@ describe("spend rollup — the answer", () => {
 
 	/** The no-gate ruling, asserted rather than noted: it fails the moment a threshold appears. */
 	it("exits 0 on an arbitrarily large total — no exit code varies with a spend magnitude", async () => {
-		const out = await run(withRows([row({spend: spendOf(7_489_969_208, 1, 1)})]));
+		const out = await run(withRows([row({ spend: spendOf(7_489_969_208, 1, 1) })]));
 
 		expect(out.code).toBe(0);
 		expect(fields(out.stdout).get("billed")).toEqual(["7489969208"]);
@@ -246,7 +246,7 @@ describe("spend rollup — it never presents a partial read as a whole total", (
 	});
 
 	it("splits damage from a newer row version — one is data loss, the other is upgrade the CLI", async () => {
-		const newer = JSON.stringify({...JSON.parse(encodeSpendRows([row()]).trim()), v: 99});
+		const newer = JSON.stringify({ ...JSON.parse(encodeSpendRows([row()]).trim()), v: 99 });
 		const out = await run(withText(`${encodeSpendRows([row()])}${newer}\nhalf a row`));
 
 		expect(fields(out.stdout).get("skippedMalformed")).toEqual(["1"]);
@@ -255,9 +255,9 @@ describe("spend rollup — it never presents a partial read as a whole total", (
 	});
 
 	it("carries the skipped counts into --json too", async () => {
-		const out = await run(withText(`${encodeSpendRows([row()])}half a row`), {json: true});
+		const out = await run(withText(`${encodeSpendRows([row()])}half a row`), { json: true });
 
-		expect(JSON.parse(out.stdout).skipped).toEqual({total: 1, malformed: 1, newerVersion: 0});
+		expect(JSON.parse(out.stdout).skipped).toEqual({ total: 1, malformed: 1, newerVersion: 0 });
 	});
 
 	it("says so on stderr when there was nothing it could not read", async () => {
@@ -267,7 +267,7 @@ describe("spend rollup — it never presents a partial read as a whole total", (
 	});
 
 	it("names the rows a bounded window could not place in time", async () => {
-		const out = await run(withRows([row(), row({recordedAt: "not a time"})]), {
+		const out = await run(withRows([row(), row({ recordedAt: "not a time" })]), {
 			since: "2026-08-01",
 		});
 
@@ -278,7 +278,7 @@ describe("spend rollup — it never presents a partial read as a whole total", (
 
 describe("spend rollup — the refusals", () => {
 	it("refuses a ledger that is provably not there, with empty stdout", async () => {
-		const out = await run(fakeFs({files: {}}));
+		const out = await run(fakeFs({ files: {} }));
 
 		expect(out.code).toBe(INPUT_ABSENT);
 		expect(out.stdout).toBe("");
@@ -286,7 +286,7 @@ describe("spend rollup — the refusals", () => {
 	});
 
 	it("refuses an unreadable ledger as UNKNOWN, never as absent and never as a zero", async () => {
-		const out = await run(fakeFs({files: {[PATH]: null}, unprobeable: [PATH]}));
+		const out = await run(fakeFs({ files: { [PATH]: null }, unprobeable: [PATH] }));
 
 		expect(out.code).toBe(INPUT_UNREADABLE);
 		expect(out.stdout).toBe("");
@@ -309,7 +309,7 @@ describe("spend rollup — the refusals", () => {
 	});
 
 	it("refuses a window that selects no rows on its OWN code, distinct from an empty ledger", async () => {
-		const out = await run(withRows([row()]), {since: "2027-01-01"});
+		const out = await run(withRows([row()]), { since: "2027-01-01" });
 
 		expect(out.code).toBe(WINDOW_SELECTED_NO_ROWS);
 		expect(out.stdout).toBe("");
@@ -317,7 +317,7 @@ describe("spend rollup — the refusals", () => {
 	});
 
 	it("refuses a --since that is not a time as a usage error, not as an empty window", async () => {
-		const out = await run(withRows([row()]), {since: "yesterday"});
+		const out = await run(withRows([row()]), { since: "yesterday" });
 
 		expect(out.code).toBe(1);
 		expect(out.stdout).toBe("");
@@ -325,7 +325,7 @@ describe("spend rollup — the refusals", () => {
 	});
 
 	it("refuses under --json too — a refusal never puts a payload on stdout", async () => {
-		const out = await run(withText(""), {json: true});
+		const out = await run(withText(""), { json: true });
 
 		expect(out.code).toBe(NOTHING_MEASURED);
 		expect(out.stdout).toBe("");

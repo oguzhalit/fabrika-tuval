@@ -18,14 +18,14 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9508
  */
 
-import {Effect, Option} from "effect";
-import {Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStdin} from "../io/stdin.ts";
-import {passThroughStdin, runAnnotate} from "./annotate-verb.ts";
-import {runChangelog} from "./changelog-verb.ts";
-import {runPrBody} from "./pr-body-verb.ts";
+import { Effect, Option } from "effect";
+import { Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStdin } from "../io/stdin.ts";
+import { passThroughStdin, runAnnotate } from "./annotate-verb.ts";
+import { runChangelog } from "./changelog-verb.ts";
+import { runPrBody } from "./pr-body-verb.ts";
 
 const rootFlag = Flag.string("root").pipe(
 	Flag.optional,
@@ -52,7 +52,7 @@ const changelog = leafCommand(
 			Flag.withDescription("write the changelog here; defaults to stdout"),
 		),
 	},
-	Effect.fn(function* ({entries, version, date, out}) {
+	Effect.fn(function* ({ entries, version, date, out }) {
 		yield* emit(
 			yield* runChangelog({
 				entries,
@@ -75,7 +75,7 @@ const changelog = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika ci changelog --entries entries.json --version 0.3.1 --out CHANGELOG.md"},
+		{ command: "fabrika ci changelog --entries entries.json --version 0.3.1 --out CHANGELOG.md" },
 	]),
 );
 
@@ -83,7 +83,7 @@ const prBody = leafCommand(
 	"pr-body",
 	{},
 	Effect.fn(function* () {
-		yield* emit(yield* runPrBody({stdin: readStdin}));
+		yield* emit(yield* runPrBody({ stdin: readStdin }));
 	}),
 ).pipe(
 	Command.withShortDescription("Neutralize stray HTML tags in a Release PR body, on stdin."),
@@ -96,7 +96,7 @@ const prBody = leafCommand(
 			"  Derivation: packages/fabrika-cli/src/ci/pr-body.ts",
 		].join("\n"),
 	),
-	Command.withExamples([{command: "gh api repos/o/r/pulls/42 --jq .body | fabrika ci pr-body"}]),
+	Command.withExamples([{ command: "gh api repos/o/r/pulls/42 --jq .body | fabrika ci pr-body" }]),
 );
 
 const annotate = leafCommand(
@@ -108,7 +108,7 @@ const annotate = leafCommand(
 		),
 		root: rootFlag,
 	},
-	Effect.fn(function* ({force, root}) {
+	Effect.fn(function* ({ force, root }) {
 		yield* runAnnotate({
 			force,
 			root: Option.getOrNull(root),
@@ -128,7 +128,7 @@ const annotate = leafCommand(
 			"  Derivation: packages/fabrika-cli/src/ci/tsc-annotate.ts",
 		].join("\n"),
 	),
-	Command.withExamples([{command: "pnpm typecheck | fabrika ci annotate"}]),
+	Command.withExamples([{ command: "pnpm typecheck | fabrika ci annotate" }]),
 );
 
 export const ciCommand = Command.make("ci").pipe(

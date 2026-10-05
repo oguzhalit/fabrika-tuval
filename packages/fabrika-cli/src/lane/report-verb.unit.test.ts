@@ -1,11 +1,11 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {ParkCauseSurface} from "../config/keys/park-cause.ts";
-import type {Read} from "../config/read-key.ts";
-import {fakeFs} from "../fakes.test-support.ts";
-import {answer, refuse} from "../verb.ts";
-import {WAIT_FLOOR_SECONDS} from "../wait-budget.ts";
-import type {CloseAct, ClosingMerge, OpenMerge} from "./closing-merge.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { ParkCauseSurface } from "../config/keys/park-cause.ts";
+import type { Read } from "../config/read-key.ts";
+import { fakeFs } from "../fakes.test-support.ts";
+import { answer, refuse } from "../verb.ts";
+import { WAIT_FLOOR_SECONDS } from "../wait-budget.ts";
+import type { CloseAct, ClosingMerge, OpenMerge } from "./closing-merge.ts";
 import {
 	CAUSE_UNRECOGNISED,
 	EVENT_REFUSED,
@@ -21,7 +21,7 @@ import {
 	TOKEN_UNSERVED,
 	WAIT_TOO_SOON,
 } from "./codes.ts";
-import {emitMachine} from "./emit.ts";
+import { emitMachine } from "./emit.ts";
 import {
 	coderTemplateText,
 	fakeProver,
@@ -30,16 +30,16 @@ import {
 	parkCauseDeclared,
 	parkCauseRead,
 } from "./fixtures.test-support.ts";
-import {runHistory} from "./history-verb.ts";
-import {PARK_CAUSE_TOKENS, PROOF_CONDITIONAL_TERMINALS, SHELL_VOCABULARIES} from "./report.ts";
-import {runReport} from "./report-verb.ts";
+import { runHistory } from "./history-verb.ts";
+import { PARK_CAUSE_TOKENS, PROOF_CONDITIONAL_TERMINALS, SHELL_VOCABULARIES } from "./report.ts";
+import { runReport } from "./report-verb.ts";
 
 const ROOT = ".fabrika/lanes";
 const WORKFLOW = `${ROOT}/42/workflow.json`;
 const LOG = `${ROOT}/42/events.jsonl`;
 
 const logLine = (event: string, classes?: ReadonlyArray<string>): string =>
-	`${JSON.stringify({task: "issue", event: `ISSUE.${event}`, at: "2026-08-16T00:00:00.000Z", ...(classes === undefined ? {} : {classes})})}\n`;
+	`${JSON.stringify({ task: "issue", event: `ISSUE.${event}`, at: "2026-08-16T00:00:00.000Z", ...(classes === undefined ? {} : { classes }) })}\n`;
 
 /** The log prefix that folds the coder lane's task into the state each shell reports out of. */
 const LOG_AT: Readonly<Record<"build" | "review" | "review:ui" | "ship", string>> = {
@@ -52,7 +52,7 @@ const LOG_AT: Readonly<Record<"build" | "review" | "review:ui" | "ship", string>
 };
 
 /** A closer the test drives: it records every issue it was asked to close and answers `act`. */
-const fakeCloser = (act: CloseAct = {_tag: "Closed"}) => {
+const fakeCloser = (act: CloseAct = { _tag: "Closed" }) => {
 	const asked: OpenMerge[] = [];
 	return {
 		asked,
@@ -113,7 +113,7 @@ const run = (
 		),
 	);
 
-const laneAt = (log: string) => fakeFs({files: {[WORKFLOW]: coderTemplateText(), [LOG]: log}});
+const laneAt = (log: string) => fakeFs({ files: { [WORKFLOW]: coderTemplateText(), [LOG]: log } });
 
 /** The one line the run appended — `written` carries the whole file, prior log included. */
 const appendedLine = (fs: ReturnType<typeof fakeFs>): string =>
@@ -122,15 +122,15 @@ const appendedLine = (fs: ReturnType<typeof fakeFs>): string =>
 /** A board that refuses the advanced `PASS` and lets the park through — the fall-through shape. */
 const unearned = (why = "unproven — #99 has no verdict that still binds in review-code (absent)") =>
 	fakeProverByEvent({
-		PASS: {outcome: refuse(PROOF_IN_FLIGHT, `fabrika lane prove: ${why}`)},
-		BLOCKED: {outcome: answer(JSON.stringify({proof: "uncontradicted"}))},
+		PASS: { outcome: refuse(PROOF_IN_FLIGHT, `fabrika lane prove: ${why}`) },
+		BLOCKED: { outcome: answer(JSON.stringify({ proof: "uncontradicted" })) },
 	});
 
 /** A board that proves the advanced `PASS` on a route — the completed-review shape. */
 const earned = () =>
 	fakeProverByEvent({
 		PASS: {
-			outcome: answer(JSON.stringify({proof: "proven"})),
+			outcome: answer(JSON.stringify({ proof: "proven" })),
 			routed: ["review-ui"],
 		},
 	});
@@ -160,7 +160,7 @@ describe("lane report — every shell terminal token maps to one operator event"
 				const out = await run(
 					fs,
 					token,
-					PROOF_CONDITIONAL_TERMINALS[token] === undefined ? {} : {prover: unearned()},
+					PROOF_CONDITIONAL_TERMINALS[token] === undefined ? {} : { prover: unearned() },
 				);
 				expect(out.code).toBe(0);
 				expect(JSON.parse(out.stdout)).toMatchObject({
@@ -181,7 +181,7 @@ describe("lane report — every shell terminal token maps to one operator event"
 
 		const out = await run(fs, "already-merged");
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({token: "ALREADY-MERGED", event: "ISSUE.DONE"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ token: "ALREADY-MERGED", event: "ISSUE.DONE" });
 	});
 });
 
@@ -191,20 +191,20 @@ describe("lane report — refs on the event line", () => {
 		const pr = "https://forge.example/o/r/pull/9001";
 		const comment = "https://forge.example/o/r/issues/42#issuecomment-1";
 
-		const out = await run(fs, "SHIPPED-PR", {pr, comment});
+		const out = await run(fs, "SHIPPED-PR", { pr, comment });
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({pr, comment});
+		expect(JSON.parse(out.stdout)).toMatchObject({ pr, comment });
 		const appended = appendedLine(fs);
-		expect(JSON.parse(appended)).toMatchObject({event: "ISSUE.DONE", pr, comment});
+		expect(JSON.parse(appended)).toMatchObject({ event: "ISSUE.DONE", pr, comment });
 
 		const replayed = fakeFs({
-			files: {[WORKFLOW]: coderTemplateText(), [LOG]: `${LOG_AT.build}${appended}\n`},
+			files: { [WORKFLOW]: coderTemplateText(), [LOG]: `${LOG_AT.build}${appended}\n` },
 		});
 		const history = await Effect.runPromise(
-			Effect.provide(runHistory({root: ROOT, lane: "42"}), replayed.layer),
+			Effect.provide(runHistory({ root: ROOT, lane: "42" }), replayed.layer),
 		);
 		expect(history.code).toBe(0);
-		expect(JSON.parse(history.stdout).at(-1)).toMatchObject({event: "ISSUE.DONE", pr, comment});
+		expect(JSON.parse(history.stdout).at(-1)).toMatchObject({ event: "ISSUE.DONE", pr, comment });
 	});
 
 	it("appends an event without refs exactly as transition does — no ref keys on the line", async () => {
@@ -221,15 +221,15 @@ describe("lane report — task addressing, both directions", () => {
 	it("accepts an explicit --task naming the machine's task", async () => {
 		const fs = laneAt(LOG_AT.build);
 
-		const out = await run(fs, "SHIPPED-PR", {task: "issue"});
+		const out = await run(fs, "SHIPPED-PR", { task: "issue" });
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({taskAffected: "issue"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ taskAffected: "issue" });
 	});
 
 	it("refuses a task the machine does not have, nothing written", async () => {
 		const fs = laneAt(LOG_AT.build);
 
-		const out = await run(fs, "SHIPPED-PR", {task: "nope"});
+		const out = await run(fs, "SHIPPED-PR", { task: "nope" });
 		expect(out.code).toBe(TASK_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain('"nope"');
 		expect(fs.written.size).toBe(0);
@@ -249,7 +249,7 @@ describe("lane report — refuse without append", () => {
 	});
 
 	it("refuses a lane that is provably not there", async () => {
-		const fs = fakeFs({files: {}});
+		const fs = fakeFs({ files: {} });
 
 		const out = await run(fs, "SHIPPED-PR");
 		expect(out.code).toBe(LANE_ABSENT);
@@ -267,7 +267,7 @@ describe("lane report — a token is accepted only from a state its shell serves
 		const fs = laneAt(LOG_AT.ship);
 		const prover = fakeProver();
 
-		const out = await run(fs, "SHIPPED-PR", {prover, pr: "https://forge.example/o/r/pull/10080"});
+		const out = await run(fs, "SHIPPED-PR", { prover, pr: "https://forge.example/o/r/pull/10080" });
 
 		expect(out.code).toBe(TOKEN_UNSERVED);
 		expect(out.stdout).toBe("");
@@ -288,7 +288,7 @@ describe("lane report — a token is accepted only from a state its shell serves
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			event: "ISSUE.DONE",
-			current: {pipeline: {issue: "review"}},
+			current: { pipeline: { issue: "review" } },
 		});
 	});
 
@@ -298,7 +298,7 @@ describe("lane report — a token is accepted only from a state its shell serves
 		const out = await run(fs, "LANDED");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(appendedLine(fs))).toMatchObject({event: "ISSUE.DONE"});
+		expect(JSON.parse(appendedLine(fs))).toMatchObject({ event: "ISSUE.DONE" });
 	});
 
 	it("records UNKNOWN out of review and out of ship — the reviewer and shipper both own it", async () => {
@@ -308,7 +308,7 @@ describe("lane report — a token is accepted only from a state its shell serves
 			const out = await run(fs, "UNKNOWN");
 
 			expect(out.code).toBe(0);
-			expect(JSON.parse(appendedLine(fs))).toMatchObject({event: "ISSUE.BLOCKED"});
+			expect(JSON.parse(appendedLine(fs))).toMatchObject({ event: "ISSUE.BLOCKED" });
 		}
 	});
 
@@ -318,7 +318,7 @@ describe("lane report — a token is accepted only from a state its shell serves
 		const out = await run(fs, "SHELL-DEAD");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(appendedLine(fs))).toMatchObject({event: "ISSUE.LAP", cause: "spawn-dead"});
+		expect(JSON.parse(appendedLine(fs))).toMatchObject({ event: "ISSUE.LAP", cause: "spawn-dead" });
 	});
 
 	it("refuses a reviewer's FAIL out of build, naming every owner of the shared token", async () => {
@@ -339,7 +339,7 @@ describe("lane report — the append is proof-gated", () => {
 		const fs = laneAt(LOG_AT.build);
 		const prover = fakeProver();
 
-		const out = await run(fs, "SHIPPED-PR", {prover});
+		const out = await run(fs, "SHIPPED-PR", { prover });
 		expect(out.code).toBe(0);
 		expect(prover.asked).toEqual([
 			{
@@ -365,10 +365,10 @@ describe("lane report — the append is proof-gated", () => {
 		const prover = fakeProver();
 		const pr = "https://forge.example/o/r/pull/7806";
 
-		const out = await run(fs, "SHIPPED-PR", {prover, pr});
+		const out = await run(fs, "SHIPPED-PR", { prover, pr });
 		expect(out.code).toBe(0);
-		expect(prover.asked[0]).toMatchObject({pr});
-		expect(JSON.parse(appendedLine(fs))).toMatchObject({pr});
+		expect(prover.asked[0]).toMatchObject({ pr });
+		expect(JSON.parse(appendedLine(fs))).toMatchObject({ pr });
 	});
 
 	/**
@@ -380,9 +380,9 @@ describe("lane report — the append is proof-gated", () => {
 		const fs = laneAt(LOG_AT.review);
 		const prover = fakeProver();
 
-		const out = await run(fs, "PASS", {prover, classes: ["ui"]});
+		const out = await run(fs, "PASS", { prover, classes: ["ui"] });
 		expect(out.code).toBe(0);
-		expect(prover.asked[0]).toMatchObject({event: "PASS", classes: ["ui"]});
+		expect(prover.asked[0]).toMatchObject({ event: "PASS", classes: ["ui"] });
 	});
 
 	it("refuses on the prover's own code with the log byte-identical", async () => {
@@ -391,7 +391,7 @@ describe("lane report — the append is proof-gated", () => {
 			refuse(PROOF_ABSENT, "fabrika lane prove: unproven — no open PR links #42"),
 		);
 
-		const out = await run(fs, "SHIPPED-PR", {prover});
+		const out = await run(fs, "SHIPPED-PR", { prover });
 		expect(out.code).toBe(PROOF_ABSENT);
 		expect(out.stdout).toBe("");
 		expect(out.stderr).toContain("fabrika lane prove: unproven — no open PR links #42");
@@ -403,7 +403,7 @@ describe("lane report — the append is proof-gated", () => {
 		const fs = laneAt(LOG_AT.build);
 		const prover = fakeProver();
 
-		const out = await run(fs, "MOSTLY-DONE", {prover});
+		const out = await run(fs, "MOSTLY-DONE", { prover });
 		expect(out.code).toBe(TOKEN_UNRECOGNISED);
 		expect(prover.asked).toEqual([]);
 	});
@@ -411,10 +411,10 @@ describe("lane report — the append is proof-gated", () => {
 	it("carries the proof's own diagnostics onto a recorded event", async () => {
 		const fs = laneAt(LOG_AT.build);
 		const prover = fakeProver(
-			answer(JSON.stringify({proof: "proven"}), ["fabrika lane prove: read 3 candidate(s)."]),
+			answer(JSON.stringify({ proof: "proven" }), ["fabrika lane prove: read 3 candidate(s)."]),
 		);
 
-		const out = await run(fs, "SHIPPED-PR", {prover});
+		const out = await run(fs, "SHIPPED-PR", { prover });
 		expect(out.code).toBe(0);
 		expect(out.stderr).toContain("fabrika lane prove: read 3 candidate(s).");
 	});
@@ -424,7 +424,7 @@ describe("lane report — the park cause a BLOCKED carries", () => {
 	it("records a known cause on the event line, where the fold reads it back", async () => {
 		const fs = laneAt(LOG_AT.build);
 
-		const out = await run(fs, "STOPPED", {cause: "worktree-holds-branch"});
+		const out = await run(fs, "STOPPED", { cause: "worktree-holds-branch" });
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(appendedLine(fs))).toMatchObject({
@@ -437,7 +437,7 @@ describe("lane report — the park cause a BLOCKED carries", () => {
 	it("case-folds the cause, so a shell's casing is not a second vocabulary", async () => {
 		const fs = laneAt(LOG_AT.build);
 
-		const out = await run(fs, "STOPPED", {cause: "Worktree-Holds-Branch"});
+		const out = await run(fs, "STOPPED", { cause: "Worktree-Holds-Branch" });
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(appendedLine(fs)).cause).toBe("worktree-holds-branch");
@@ -455,7 +455,7 @@ describe("lane report — the park cause a BLOCKED carries", () => {
 	it("refuses a cause outside the closed set, log unappended — never records an unkeyable one", async () => {
 		const fs = laneAt(LOG_AT.build);
 
-		const out = await run(fs, "STOPPED", {cause: "the-tree-was-busy"});
+		const out = await run(fs, "STOPPED", { cause: "the-tree-was-busy" });
 
 		expect(out.code).toBe(CAUSE_UNRECOGNISED);
 		expect(out.stderr.at(-1)).toContain("log unappended");
@@ -466,7 +466,7 @@ describe("lane report — the park cause a BLOCKED carries", () => {
 		const fs = laneAt(LOG_AT.build);
 		const prover = fakeProver();
 
-		const out = await run(fs, "SHIPPED-PR", {cause: "worktree-holds-branch", prover});
+		const out = await run(fs, "SHIPPED-PR", { cause: "worktree-holds-branch", prover });
 
 		expect(out.code).toBe(CAUSE_UNRECOGNISED);
 		expect(prover.asked).toEqual([]);
@@ -478,7 +478,7 @@ describe("lane report — a cause-less park under the repo's own `.fabrika.jsonc
 	it("is refused unappended where the file declares no `parkCause`, naming the setting", async () => {
 		const fs = laneAt(LOG_AT.build);
 
-		const out = await run(fs, "STOPPED", {parkCause: parkCauseDeclared("{}")});
+		const out = await run(fs, "STOPPED", { parkCause: parkCauseDeclared("{}") });
 
 		expect(out.code).toBe(PARK_UNCAUSED);
 		expect(fs.written.size).toBe(0);
@@ -490,7 +490,7 @@ describe("lane report — a cause-less park under the repo's own `.fabrika.jsonc
 		const fs = laneAt(LOG_AT.build);
 		const declared = parkCauseDeclared('{"parkCause": {"uncaused": "record"}}');
 
-		const out = await run(fs, "STOPPED", {parkCause: declared});
+		const out = await run(fs, "STOPPED", { parkCause: declared });
 
 		expect(out.code).toBe(0);
 		const appended = JSON.parse(appendedLine(fs));
@@ -506,7 +506,7 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 		const fs = laneAt(LOG_AT.build);
 		const prover = fakeProver();
 
-		const out = await run(fs, "STOPPED", {parkCause: strict, prover});
+		const out = await run(fs, "STOPPED", { parkCause: strict, prover });
 
 		expect(out.code).toBe(PARK_UNCAUSED);
 		expect(out.code).not.toBe(CAUSE_UNRECOGNISED);
@@ -519,7 +519,7 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 	it("records the same terminal once it names a cause", async () => {
 		const fs = laneAt(LOG_AT.build);
 
-		const out = await run(fs, "STOPPED", {parkCause: strict, cause: "worktree-holds-branch"});
+		const out = await run(fs, "STOPPED", { parkCause: strict, cause: "worktree-holds-branch" });
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(appendedLine(fs)).cause).toBe("worktree-holds-branch");
@@ -530,10 +530,10 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 	it.each(["tree-hijacked", "claim-stranded"])("records a STOPPED that names %s", async (cause) => {
 		const fs = laneAt(LOG_AT.build);
 
-		const out = await run(fs, "STOPPED", {parkCause: strict, cause});
+		const out = await run(fs, "STOPPED", { parkCause: strict, cause });
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(appendedLine(fs))).toMatchObject({event: "ISSUE.BLOCKED", cause});
+		expect(JSON.parse(appendedLine(fs))).toMatchObject({ event: "ISSUE.BLOCKED", cause });
 	});
 
 	// The shipper's ordinary owner-approval wait: its token has one reason, so it lands caused with
@@ -541,7 +541,7 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 	it("records a shipper's bare AWAITING-CP-APPROVAL under the approval-wait cause", async () => {
 		const fs = laneAt(LOG_AT.ship);
 
-		const out = await run(fs, "AWAITING-CP-APPROVAL", {parkCause: strict});
+		const out = await run(fs, "AWAITING-CP-APPROVAL", { parkCause: strict });
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(appendedLine(fs))).toMatchObject({
@@ -567,7 +567,7 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 	it("records a shipper's bare ROUTED-REVIEW under the verdict-owed cause", async () => {
 		const fs = laneAt(LOG_AT.ship);
 
-		const out = await run(fs, "ROUTED-REVIEW", {parkCause: strict});
+		const out = await run(fs, "ROUTED-REVIEW", { parkCause: strict });
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(appendedLine(fs))).toMatchObject({
@@ -580,7 +580,7 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 	it.each(["REFUSED", "UNKNOWN"])("still refuses a shipper's bare %s", async (token) => {
 		const fs = laneAt(LOG_AT.ship);
 
-		const out = await run(fs, token, {parkCause: strict});
+		const out = await run(fs, token, { parkCause: strict });
 
 		expect(out.code).toBe(PARK_UNCAUSED);
 		expect(fs.written.size).toBe(0);
@@ -590,7 +590,7 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 	it("leaves a non-park terminal alone", async () => {
 		const fs = laneAt(LOG_AT.build);
 
-		const out = await run(fs, "BUILT-NO-PR", {parkCause: strict});
+		const out = await run(fs, "BUILT-NO-PR", { parkCause: strict });
 
 		expect(out.code).toBe(0);
 	});
@@ -600,7 +600,7 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 	it("records a ui-reviewer ESCALATED that names the unlanded write", async () => {
 		const fs = laneAt(LOG_AT["review:ui"]);
 
-		const out = await run(fs, "ESCALATED", {parkCause: strict, cause: "write-unlanded"});
+		const out = await run(fs, "ESCALATED", { parkCause: strict, cause: "write-unlanded" });
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(appendedLine(fs))).toMatchObject({
@@ -612,7 +612,7 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 	it("records a CANT-SEE on a missing render axis with the issue it waits on", async () => {
 		const fs = laneAt(LOG_AT["review:ui"]);
 
-		const out = await run(fs, "CANT-SEE", {cause: "render-axis-missing", axisIssue: 9615});
+		const out = await run(fs, "CANT-SEE", { cause: "render-axis-missing", axisIssue: 9615 });
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(appendedLine(fs))).toMatchObject({
@@ -625,7 +625,7 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 	it("refuses a CANT-SEE on a missing render axis that names no issue, log unappended", async () => {
 		const fs = laneAt(LOG_AT["review:ui"]);
 
-		const out = await run(fs, "CANT-SEE", {cause: "render-axis-missing"});
+		const out = await run(fs, "CANT-SEE", { cause: "render-axis-missing" });
 
 		expect(out.code).toBe(CAUSE_UNRECOGNISED);
 		expect(fs.written.size).toBe(0);
@@ -667,13 +667,13 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 
 	it.each([
 		["ruling-owed", {}],
-		["ruling-owed", {founderAct: "rotate the logins"}],
+		["ruling-owed", { founderAct: "rotate the logins" }],
 		["founder-act-owed", {}],
-		["founder-act-owed", {rulingIssue: 42}],
+		["founder-act-owed", { rulingIssue: 42 }],
 	] as const)("refuses a STOPPED on %s carrying %j, log unappended", async (cause, owed) => {
 		const fs = laneAt(LOG_AT.build);
 
-		const out = await run(fs, "STOPPED", {parkCause: strict, cause, ...owed});
+		const out = await run(fs, "STOPPED", { parkCause: strict, cause, ...owed });
 
 		expect(out.code).toBe(CAUSE_UNRECOGNISED);
 		expect(fs.written.size).toBe(0);
@@ -682,7 +682,7 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 	it("still refuses a ui-reviewer ESCALATED that names no cause", async () => {
 		const fs = laneAt(LOG_AT["review:ui"]);
 
-		const out = await run(fs, "ESCALATED", {parkCause: strict});
+		const out = await run(fs, "ESCALATED", { parkCause: strict });
 
 		expect(out.code).toBe(PARK_UNCAUSED);
 		expect(out.stderr.join(" ")).toContain("write-unlanded");
@@ -693,7 +693,7 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 	it("records a builder ESCALATED that names the spent repair budget", async () => {
 		const fs = laneAt(LOG_AT.build);
 
-		const out = await run(fs, "ESCALATED", {parkCause: strict, cause: "repair-budget-spent"});
+		const out = await run(fs, "ESCALATED", { parkCause: strict, cause: "repair-budget-spent" });
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(appendedLine(fs))).toMatchObject({
@@ -705,7 +705,7 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 	it("still refuses a builder ESCALATED that names no cause", async () => {
 		const fs = laneAt(LOG_AT.build);
 
-		const out = await run(fs, "ESCALATED", {parkCause: strict});
+		const out = await run(fs, "ESCALATED", { parkCause: strict });
 
 		expect(out.code).toBe(PARK_UNCAUSED);
 		expect(out.stderr.join(" ")).toContain("repair-budget-spent");
@@ -717,7 +717,7 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 		const prover = fakeProver();
 
 		const out = await run(fs, "STOPPED", {
-			parkCause: {_tag: "Refused", reason: "EACCES"},
+			parkCause: { _tag: "Refused", reason: "EACCES" },
 			prover,
 		});
 
@@ -735,9 +735,9 @@ describe("lane report — a cause-less park under `parkCause.uncaused: refuse`",
 describe("lane report — the deferral a proven PASS discloses", () => {
 	it("records what the prover deferred on the event line and on stdout", async () => {
 		const fs = laneAt(LOG_AT.review);
-		const prover = fakeProver(answer(JSON.stringify({proof: "proven"})), ["review-ui"]);
+		const prover = fakeProver(answer(JSON.stringify({ proof: "proven" })), ["review-ui"]);
 
-		const out = await run(fs, "PASS", {prover});
+		const out = await run(fs, "PASS", { prover });
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(appendedLine(fs))).toMatchObject({
@@ -768,28 +768,28 @@ describe("lane report — the diagnosis a finished investigation discloses", () 
 	it("records the prover's diagnosis and lands the lane in `diagnosed`, never in `review`", async () => {
 		const fs = laneAt(LOG_AT.build);
 		const prover = fakeProver(
-			answer(JSON.stringify({proof: "proven", evidence: {kind: "diagnosis", commentId: 900}})),
+			answer(JSON.stringify({ proof: "proven", evidence: { kind: "diagnosis", commentId: 900 } })),
 			[],
 			null,
 			[],
 			true,
 		);
 
-		const out = await run(fs, "SUCCESS-NO-PR", {comment: "https://x/#issuecomment-900", prover});
+		const out = await run(fs, "SUCCESS-NO-PR", { comment: "https://x/#issuecomment-900", prover });
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(appendedLine(fs))).toMatchObject({event: "ISSUE.DONE", diagnosis: true});
-		expect(JSON.parse(out.stdout)).toMatchObject({current: "diagnosed", diagnosis: true});
+		expect(JSON.parse(appendedLine(fs))).toMatchObject({ event: "ISSUE.DONE", diagnosis: true });
+		expect(JSON.parse(out.stdout)).toMatchObject({ current: "diagnosed", diagnosis: true });
 	});
 
 	it("leaves a `SHIPPED-PR` on the route it always took, carrying no `diagnosis` at all", async () => {
 		const fs = laneAt(LOG_AT.build);
 
-		const out = await run(fs, "SHIPPED-PR", {pr: "https://x/pull/1"});
+		const out = await run(fs, "SHIPPED-PR", { pr: "https://x/pull/1" });
 
 		expect(out.code).toBe(0);
 		expect(Object.hasOwn(JSON.parse(appendedLine(fs)), "diagnosis")).toBe(false);
-		expect(JSON.parse(out.stdout)).toMatchObject({current: {pipeline: {issue: "review"}}});
+		expect(JSON.parse(out.stdout)).toMatchObject({ current: { pipeline: { issue: "review" } } });
 	});
 
 	it("leaves an epic child's `BUILT-NO-PR` folding to `review` too", async () => {
@@ -799,7 +799,7 @@ describe("lane report — the diagnosis a finished investigation discloses", () 
 
 		expect(out.code).toBe(0);
 		expect(Object.hasOwn(JSON.parse(appendedLine(fs)), "diagnosis")).toBe(false);
-		expect(JSON.parse(out.stdout)).toMatchObject({current: {pipeline: {issue: "review"}}});
+		expect(JSON.parse(out.stdout)).toMatchObject({ current: { pipeline: { issue: "review" } } });
 	});
 });
 
@@ -810,13 +810,13 @@ describe("lane report — the diagnosis a finished investigation discloses", () 
 describe("lane report — the partial merge a shipped lane discloses", () => {
 	it("records the prover's partial and lands the lane back in `queued`", async () => {
 		const fs = laneAt(LOG_AT.ship);
-		const prover = fakeProver(answer(JSON.stringify({proof: "not-required"})), [], true);
+		const prover = fakeProver(answer(JSON.stringify({ proof: "not-required" })), [], true);
 
-		const out = await run(fs, "LANDED", {prover});
+		const out = await run(fs, "LANDED", { prover });
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(appendedLine(fs))).toMatchObject({event: "ISSUE.DONE", partial: true});
-		expect(JSON.parse(out.stdout)).toMatchObject({current: {pipeline: {issue: "queued"}}});
+		expect(JSON.parse(appendedLine(fs))).toMatchObject({ event: "ISSUE.DONE", partial: true });
+		expect(JSON.parse(out.stdout)).toMatchObject({ current: { pipeline: { issue: "queued" } } });
 	});
 
 	/**
@@ -826,9 +826,9 @@ describe("lane report — the partial merge a shipped lane discloses", () => {
 	 */
 	it("records a read closing merge as `partial: false` naming the PRs it stood on", async () => {
 		const fs = laneAt(LOG_AT.ship);
-		const prover = fakeProver(answer(JSON.stringify({proof: "not-required"})), [], false, [7329]);
+		const prover = fakeProver(answer(JSON.stringify({ proof: "not-required" })), [], false, [7329]);
 
-		const out = await run(fs, "LANDED", {prover});
+		const out = await run(fs, "LANDED", { prover });
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(appendedLine(fs))).toMatchObject({
@@ -860,7 +860,7 @@ describe("lane report — the partial merge a shipped lane discloses", () => {
 describe("lane report — the issue a closing merge left open", () => {
 	const closing = (merge: ClosingMerge) =>
 		fakeProver(
-			answer(JSON.stringify({proof: "not-required"})),
+			answer(JSON.stringify({ proof: "not-required" })),
 			[],
 			false,
 			[7329],
@@ -874,13 +874,13 @@ describe("lane report — the issue a closing merge left open", () => {
 		const closer = fakeCloser();
 
 		const out = await run(fs, "LANDED", {
-			prover: closing({_tag: "Open", issue: 42, merged: [7329]}),
+			prover: closing({ _tag: "Open", issue: 42, merged: [7329] }),
 			closer,
 			pr: "https://forge.test/o/r/pull/7329",
 		});
 
 		expect(out.code).toBe(0);
-		expect(closer.asked).toEqual([{_tag: "Open", issue: 42, merged: [7329]}]);
+		expect(closer.asked).toEqual([{ _tag: "Open", issue: 42, merged: [7329] }]);
 		expect(JSON.parse(appendedLine(fs))).toMatchObject({
 			event: "ISSUE.DONE",
 			partial: false,
@@ -895,15 +895,15 @@ describe("lane report — the issue a closing merge left open", () => {
 
 	it("records a failed close as `close-failed`, never as a plain complete", async () => {
 		const fs = laneAt(LOG_AT.ship);
-		const closer = fakeCloser({_tag: "Failed", reason: "HTTP 403"});
+		const closer = fakeCloser({ _tag: "Failed", reason: "HTTP 403" });
 
 		const out = await run(fs, "LANDED", {
-			prover: closing({_tag: "Open", issue: 42, merged: [7329]}),
+			prover: closing({ _tag: "Open", issue: 42, merged: [7329] }),
 			closer,
 		});
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(appendedLine(fs))).toMatchObject({issueClose: "close-failed"});
+		expect(JSON.parse(appendedLine(fs))).toMatchObject({ issueClose: "close-failed" });
 		expect(out.stderr.join("\n")).toContain("HTTP 403");
 	});
 
@@ -911,11 +911,11 @@ describe("lane report — the issue a closing merge left open", () => {
 		const fs = laneAt(LOG_AT.ship);
 		const closer = fakeCloser();
 
-		const out = await run(fs, "LANDED", {prover: closing({_tag: "Closed", issue: 42}), closer});
+		const out = await run(fs, "LANDED", { prover: closing({ _tag: "Closed", issue: 42 }), closer });
 
 		expect(out.code).toBe(0);
 		expect(closer.asked).toEqual([]);
-		expect(JSON.parse(appendedLine(fs))).toMatchObject({issueClose: "already-closed"});
+		expect(JSON.parse(appendedLine(fs))).toMatchObject({ issueClose: "already-closed" });
 	});
 
 	it("names an unread issue on the line and never reaches the closer", async () => {
@@ -923,14 +923,14 @@ describe("lane report — the issue a closing merge left open", () => {
 		const closer = fakeCloser();
 
 		const out = await run(fs, "LANDED", {
-			prover: closing({_tag: "Unread", issue: 42, reason: "cannot read #42: HTTP 502"}),
+			prover: closing({ _tag: "Unread", issue: 42, reason: "cannot read #42: HTTP 502" }),
 			closer,
 		});
 
 		expect(out.code).toBe(0);
 		expect(closer.asked).toEqual([]);
-		expect(JSON.parse(appendedLine(fs))).toMatchObject({issueClose: "unread"});
-		expect(JSON.parse(out.stdout)).toMatchObject({issueClose: "unread"});
+		expect(JSON.parse(appendedLine(fs))).toMatchObject({ issueClose: "unread" });
+		expect(JSON.parse(out.stdout)).toMatchObject({ issueClose: "unread" });
 		expect(out.stderr.join("\n")).toContain("UNKNOWN");
 	});
 
@@ -938,7 +938,7 @@ describe("lane report — the issue a closing merge left open", () => {
 		const fs = laneAt(LOG_AT.ship);
 		const closer = fakeCloser();
 
-		await run(fs, "LANDED", {closer});
+		await run(fs, "LANDED", { closer });
 
 		expect(closer.asked).toEqual([]);
 		expect(Object.hasOwn(JSON.parse(appendedLine(fs)), "issueClose")).toBe(false);
@@ -964,20 +964,20 @@ describe("lane report — a reviewer's terminal is the one its run reached", () 
 	it("records the FAIL, and the lane folds into the repair round rather than a human's park", async () => {
 		const fs = laneAt(LOG_AT.review);
 
-		const out = await run(fs, "FAIL", {pr: "https://forge.example/o/r/pull/6108"});
+		const out = await run(fs, "FAIL", { pr: "https://forge.example/o/r/pull/6108" });
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			event: "ISSUE.FAIL",
-			previous: {pipeline: {issue: "review"}},
-			current: {pipeline: {issue: "build"}},
+			previous: { pipeline: { issue: "review" } },
+			current: { pipeline: { issue: "build" } },
 		});
 	});
 
 	it("refuses the park the run did not reach, log byte-identical, naming the FAIL to record", async () => {
 		const fs = laneAt(LOG_AT.review);
 
-		const out = await run(fs, "UNKNOWN", {prover: contradicted()});
+		const out = await run(fs, "UNKNOWN", { prover: contradicted() });
 
 		expect(out.code).toBe(PROOF_CONTRADICTED);
 		expect(out.stderr.at(-1)).toContain("log unappended");
@@ -990,7 +990,7 @@ describe("lane report — a reviewer's terminal is the one its run reached", () 
 		for (const token of ["STALE", "UNBINDABLE"]) {
 			const fs = laneAt(LOG_AT.review);
 
-			const out = await run(fs, token, {prover: contradicted()});
+			const out = await run(fs, token, { prover: contradicted() });
 
 			expect(out.code).toBe(PROOF_CONTRADICTED);
 			expect(fs.written.size).toBe(0);
@@ -1015,10 +1015,10 @@ describe("lane report — a machinery terminal lands its own cause", () => {
 	it("lets a recorder that knows better name another cause off the routed table", async () => {
 		const fs = laneAt(LOG_AT.ship);
 
-		const out = await run(fs, "BASE-DRIFTED", {cause: "assembly-conflict"});
+		const out = await run(fs, "BASE-DRIFTED", { cause: "assembly-conflict" });
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(appendedLine(fs))).toMatchObject({cause: "assembly-conflict"});
+		expect(JSON.parse(appendedLine(fs))).toMatchObject({ cause: "assembly-conflict" });
 	});
 
 	// A conflicted base is the one machinery cause at `ship` whose round is a builder's: the head owes
@@ -1035,12 +1035,12 @@ describe("lane report — a machinery terminal lands its own cause", () => {
 		expect(JSON.parse(toBuild.stdout)).toMatchObject({
 			event: "ISSUE.LAP",
 			cause: "base-conflicted",
-			current: {pipeline: {issue: "build"}},
+			current: { pipeline: { issue: "build" } },
 		});
 		expect(toShip.code).toBe(0);
 		expect(JSON.parse(toShip.stdout)).toMatchObject({
 			cause: "head-behind-base",
-			current: {pipeline: {issue: "ship"}},
+			current: { pipeline: { issue: "ship" } },
 		});
 	});
 
@@ -1049,16 +1049,16 @@ describe("lane report — a machinery terminal lands its own cause", () => {
 	// with the log untouched is what leaves the shipper its `ROUTED-REPAIR` fallback.
 	it("refuses BASE-CONFLICTED at 12 on a lane whose machine predates the route", async () => {
 		interface Region {
-			readonly states: Record<string, Region & {on?: Record<string, unknown>}>;
+			readonly states: Record<string, Region & { on?: Record<string, unknown> }>;
 		}
-		const stale = JSON.parse(coderTemplateText()) as {machine: Region};
+		const stale = JSON.parse(coderTemplateText()) as { machine: Region };
 		const shipCell = stale.machine.states.pipeline?.states.issue?.states.ship?.on;
 		if (shipCell === undefined) throw new Error("the coder template holds no ship cell");
 		// Drop the leading `lap:base-conflicted` route, leaving the plain budget pair every lane
 		// carried before it.
 		shipCell["ISSUE.LAP"] = (shipCell["ISSUE.LAP"] as ReadonlyArray<unknown>).slice(1);
 		const fs = fakeFs({
-			files: {[WORKFLOW]: JSON.stringify(stale), [LOG]: LOG_AT.ship},
+			files: { [WORKFLOW]: JSON.stringify(stale), [LOG]: LOG_AT.ship },
 		});
 
 		const out = await run(fs, "BASE-CONFLICTED");
@@ -1081,7 +1081,7 @@ describe("lane report — a machinery terminal lands its own cause", () => {
 			cause: "replay-conflict",
 		});
 		const recorded = JSON.parse(appendedLine(content)) as Record<string, unknown>;
-		expect(recorded).toMatchObject({event: "ISSUE.FAIL"});
+		expect(recorded).toMatchObject({ event: "ISSUE.FAIL" });
 		expect(recorded.cause).toBeUndefined();
 	});
 });
@@ -1092,7 +1092,7 @@ describe("lane report — a queue wait is floored on elapsed time, not on driver
 
 	/** The `ship:queued` prefix, with the entering `WIP`'s clock under the test's control. */
 	const queuedSince = (at: string): string =>
-		`${LOG_AT.ship}${JSON.stringify({task: "issue", event: "ISSUE.WIP", at})}\n`;
+		`${LOG_AT.ship}${JSON.stringify({ task: "issue", event: "ISSUE.WIP", at })}\n`;
 
 	it("refuses a re-fold inside the floor, naming the seconds still to run, log byte-identical", async () => {
 		const fs = laneAt(queuedSince(secondsAgo(90)));
@@ -1113,8 +1113,8 @@ describe("lane report — a queue wait is floored on elapsed time, not on driver
 		const out = await run(fs, "UNRESOLVED");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({token: "UNRESOLVED", event: "ISSUE.WIP"});
-		expect(JSON.parse(appendedLine(fs))).toMatchObject({task: "issue", event: "ISSUE.WIP"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ token: "UNRESOLVED", event: "ISSUE.WIP" });
+		expect(JSON.parse(appendedLine(fs))).toMatchObject({ task: "issue", event: "ISSUE.WIP" });
 	});
 
 	/**
@@ -1133,20 +1133,20 @@ describe("lane report — a queue wait is floored on elapsed time, not on driver
 			const out = await run(fs, token);
 
 			expect(out.code).toBe(0);
-			expect(JSON.parse(appendedLine(fs))).toMatchObject({event: `ISSUE.${event}`});
+			expect(JSON.parse(appendedLine(fs))).toMatchObject({ event: `ISSUE.${event}` });
 		}
 	});
 
 	/** Entering the queue is not a re-read of it, so the shipper's own `QUEUED` is never floored. */
 	it("records the enqueue that enters ship:queued however fresh the line before it", async () => {
 		const fs = laneAt(
-			`${LOG_AT.review}${JSON.stringify({task: "issue", event: "ISSUE.PASS", at: secondsAgo(1)})}\n`,
+			`${LOG_AT.review}${JSON.stringify({ task: "issue", event: "ISSUE.PASS", at: secondsAgo(1) })}\n`,
 		);
 
 		const out = await run(fs, "QUEUED");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(appendedLine(fs))).toMatchObject({event: "ISSUE.WIP"});
+		expect(JSON.parse(appendedLine(fs))).toMatchObject({ event: "ISSUE.WIP" });
 	});
 
 	it("refuses a re-fold whose clock reads as no date — an unreadable floor never cleared", async () => {
@@ -1175,14 +1175,14 @@ describe("lane report — a satisfied UI route advances the task it used to stra
 		const fs = laneAt(LOG_AT["review:ui"]);
 		const prover = earned();
 
-		const out = await run(fs, "ROUTED-ELSEWHERE", {prover, cause: "no-rendered-delta"});
+		const out = await run(fs, "ROUTED-ELSEWHERE", { prover, cause: "no-rendered-delta" });
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			token: "ROUTED-ELSEWHERE",
-			previous: {pipeline: {issue: "review:ui"}},
+			previous: { pipeline: { issue: "review:ui" } },
 			event: "ISSUE.PASS",
-			current: {pipeline: {issue: "ship"}},
+			current: { pipeline: { issue: "ship" } },
 		});
 		// The proof it ran is the ordinary one for the event it recorded — nothing bespoke, and no
 		// weaker bar asked for.
@@ -1192,7 +1192,7 @@ describe("lane report — a satisfied UI route advances the task it used to stra
 	it("records the route on the line, so a proven PASS is never mistaken for a rendered verdict", async () => {
 		const fs = laneAt(LOG_AT["review:ui"]);
 
-		const out = await run(fs, "ROUTED-ELSEWHERE", {prover: earned()});
+		const out = await run(fs, "ROUTED-ELSEWHERE", { prover: earned() });
 
 		expect(JSON.parse(appendedLine(fs))).toMatchObject({
 			event: "ISSUE.PASS",
@@ -1205,19 +1205,19 @@ describe("lane report — a satisfied UI route advances the task it used to stra
 		const fs = laneAt(LOG_AT["review:ui"]);
 		const prover = fakeProverByEvent({
 			PASS: {
-				outcome: answer(JSON.stringify({proof: "proven"})),
+				outcome: answer(JSON.stringify({ proof: "proven" })),
 				routed: ["review-ui"],
-				routedBasis: {"review-ui": "hand-check"},
+				routedBasis: { "review-ui": "hand-check" },
 			},
 		});
 
-		const out = await run(fs, "ROUTED-ELSEWHERE", {prover});
+		const out = await run(fs, "ROUTED-ELSEWHERE", { prover });
 
 		expect(JSON.parse(appendedLine(fs))).toMatchObject({
 			routed: ["review-ui"],
-			routedBasis: {"review-ui": "hand-check"},
+			routedBasis: { "review-ui": "hand-check" },
 		});
-		expect(JSON.parse(out.stdout).routedBasis).toEqual({"review-ui": "hand-check"});
+		expect(JSON.parse(out.stdout).routedBasis).toEqual({ "review-ui": "hand-check" });
 	});
 
 	it("drops the park's cause from the advanced line rather than refusing the caller for passing one", async () => {
@@ -1237,12 +1237,12 @@ describe("lane report — a satisfied UI route advances the task it used to stra
 		const fs = laneAt(LOG_AT["review:ui"]);
 		const prover = unearned();
 
-		const out = await run(fs, "ROUTED-ELSEWHERE", {prover, cause: "no-rendered-delta"});
+		const out = await run(fs, "ROUTED-ELSEWHERE", { prover, cause: "no-rendered-delta" });
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			event: "ISSUE.BLOCKED",
-			current: {pipeline: {issue: "blocked"}},
+			current: { pipeline: { issue: "blocked" } },
 			cause: "no-rendered-delta",
 		});
 		// The advance was tried and the park was proven — two reads, in that order.
@@ -1260,7 +1260,7 @@ describe("lane report — a satisfied UI route advances the task it used to stra
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			event: "ISSUE.BLOCKED",
-			current: {pipeline: {issue: "blocked"}},
+			current: { pipeline: { issue: "blocked" } },
 		});
 		expect(Object.hasOwn(JSON.parse(appendedLine(fs)), "routed")).toBe(false);
 	});
@@ -1272,11 +1272,11 @@ describe("lane report — a satisfied UI route advances the task it used to stra
 			"fabrika lane prove: unproven — #99 holds a FAIL that still binds in review-code",
 		);
 		const prover = fakeProverByEvent({
-			PASS: {outcome: contradicted},
-			BLOCKED: {outcome: contradicted},
+			PASS: { outcome: contradicted },
+			BLOCKED: { outcome: contradicted },
 		});
 
-		const out = await run(fs, "ROUTED-ELSEWHERE", {prover, cause: "no-rendered-delta"});
+		const out = await run(fs, "ROUTED-ELSEWHERE", { prover, cause: "no-rendered-delta" });
 
 		expect(out.code).toBe(PROOF_CONTRADICTED);
 		expect(fs.written.has(LOG)).toBe(false);
@@ -1287,11 +1287,11 @@ describe("lane report — a satisfied UI route advances the task it used to stra
 	it("refuses out of any other cell before either arm is proven", async () => {
 		const fs = laneAt(LOG_AT.review);
 		const prover = fakeProverByEvent({
-			PASS: {outcome: answer(JSON.stringify({proof: "proven"}))},
-			BLOCKED: {outcome: answer(JSON.stringify({proof: "uncontradicted"}))},
+			PASS: { outcome: answer(JSON.stringify({ proof: "proven" })) },
+			BLOCKED: { outcome: answer(JSON.stringify({ proof: "uncontradicted" })) },
 		});
 
-		const out = await run(fs, "ROUTED-ELSEWHERE", {prover, cause: "no-rendered-delta"});
+		const out = await run(fs, "ROUTED-ELSEWHERE", { prover, cause: "no-rendered-delta" });
 
 		expect(out.code).toBe(TOKEN_UNSERVED);
 		expect(out.stderr.at(-1)).toContain("ui-reviewer");
@@ -1314,7 +1314,7 @@ describe("lane report — an integrate FAIL carries the exit and head it failed 
 	/** An emitted epic lane whose one child has folded to the leaf the events walk it into. */
 	const epicAt = (events: ReadonlyArray<string>) => {
 		const emitted = emitMachine(Number(EPIC), `## Dependencies\n\n- phase 1: #${CHILD}\n`, [
-			{number: CHILD, state: "open", stateReason: null, classes: []},
+			{ number: CHILD, state: "open", stateReason: null, classes: [] },
 		]);
 		if (emitted._tag !== "Emitted")
 			throw new Error(`the epic fixture did not emit: ${emitted._tag}`);
@@ -1324,7 +1324,7 @@ describe("lane report — an integrate FAIL carries the exit and head it failed 
 				[EPIC_LOG]: events
 					.map(
 						(event) =>
-							`${JSON.stringify({task: TASK, event: `${TASK.toUpperCase()}.${event}`, at: "2026-09-26T00:00:00.000Z"})}\n`,
+							`${JSON.stringify({ task: TASK, event: `${TASK.toUpperCase()}.${event}`, at: "2026-09-26T00:00:00.000Z" })}\n`,
 					)
 					.join(""),
 			},
@@ -1345,17 +1345,17 @@ describe("lane report — an integrate FAIL carries the exit and head it failed 
 		});
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({integrate: {exit: 44, head: HEAD}});
+		expect(JSON.parse(out.stdout)).toMatchObject({ integrate: { exit: 44, head: HEAD } });
 		expect(appendedTo(fs)).toMatchObject({
 			event: `${TASK.toUpperCase()}.FAIL`,
-			integrate: {exit: 44, head: HEAD},
+			integrate: { exit: 44, head: HEAD },
 		});
 	});
 
 	it("refuses a FAIL out of integrate that names neither, log unappended", async () => {
 		const fs = epicAt(AT_INTEGRATE);
 
-		const out = await run(fs, "FAIL", {lane: EPIC, task: TASK});
+		const out = await run(fs, "FAIL", { lane: EPIC, task: TASK });
 
 		expect(out.code).toBe(INTEGRATE_EVIDENCE);
 		expect(out.stderr.at(-1)).toContain("--integrate-exit");

@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {sanitizeReleaseBody} from "./pr-body.ts";
+import { describe, expect, it } from "vitest";
+import { sanitizeReleaseBody } from "./pr-body.ts";
 
 /** The shape release-please writes for a manifest Release PR, trimmed to the parts that matter. */
 const bodyWith = (changelogLine: string): string =>
@@ -20,7 +20,7 @@ const bodyWith = (changelogLine: string): string =>
 describe("sanitizeReleaseBody", () => {
 	it("leaves a body with no stray tag untouched", () => {
 		const body = bodyWith("* **lane:** key a lane by chore name ([#5846](https://x/5846))");
-		expect(sanitizeReleaseBody(body)).toEqual({body, stripped: []});
+		expect(sanitizeReleaseBody(body)).toEqual({ body, stripped: [] });
 	});
 
 	// The shape of the body that broke the release run: a commit subject carried a literal
@@ -50,7 +50,7 @@ describe("sanitizeReleaseBody", () => {
 
 	it("leaves an angle bracket no parser opens a tag on alone", () => {
 		const body = bodyWith("* **guard:** fail when depth < 3 and count > 0");
-		expect(sanitizeReleaseBody(body)).toEqual({body, stripped: []});
+		expect(sanitizeReleaseBody(body)).toEqual({ body, stripped: [] });
 	});
 
 	// A repaired body must not need repairing again, or the workflow would write on every run.
@@ -58,7 +58,7 @@ describe("sanitizeReleaseBody", () => {
 		const once = sanitizeReleaseBody(
 			bodyWith("* **wire:** read criteria outside a `<details>` appendix"),
 		);
-		expect(sanitizeReleaseBody(once.body)).toEqual({body: once.body, stripped: []});
+		expect(sanitizeReleaseBody(once.body)).toEqual({ body: once.body, stripped: [] });
 	});
 
 	it("does not preserve a summary-less line that only looks structural", () => {

@@ -12,11 +12,11 @@
  * it reports on or swallow an input line.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {annotationsEnabled} from "../guard/annotate.ts";
-import {scanWorkspaceMembers} from "../guard/members.ts";
-import {annotationsFor, type WorkspaceMember} from "./tsc-annotate.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { annotationsEnabled } from "../guard/annotate.ts";
+import { scanWorkspaceMembers } from "../guard/members.ts";
+import { annotationsFor, type WorkspaceMember } from "./tsc-annotate.ts";
 
 const VERB = "ci annotate";
 
@@ -64,7 +64,7 @@ const namedMembers = (
 	scanWorkspaceMembers(root).pipe(
 		Effect.map((scan) =>
 			scan.members.flatMap((member) =>
-				member.name === null ? [] : [{name: member.name, dir: member.dir}],
+				member.name === null ? [] : [{ name: member.name, dir: member.dir }],
 			),
 		),
 		Effect.catch(() => Effect.succeed([])),
@@ -94,5 +94,5 @@ export const runAnnotate = (
 				`${VERB}: found no named workspace members under ${root} — diagnostics from turbo-prefixed lines cannot be re-rooted and will not be annotated.`,
 			);
 		}
-		for (const annotation of annotationsFor(output, {members, root})) options.write(annotation);
+		for (const annotation of annotationsFor(output, { members, root })) options.write(annotation);
 	});

@@ -1,14 +1,20 @@
-import {describe, expect, it} from "vitest";
-import {packNonce} from "../wire/handoff-pack.ts";
-import {NONCE} from "./fixtures.test-support.ts";
-import {composeClaimMarker, instant, reachesForClaim, readClaimMarker, stampOf} from "./markers.ts";
+import { describe, expect, it } from "vitest";
+import { packNonce } from "../wire/handoff-pack.ts";
+import { NONCE } from "./fixtures.test-support.ts";
+import {
+	composeClaimMarker,
+	instant,
+	reachesForClaim,
+	readClaimMarker,
+	stampOf,
+} from "./markers.ts";
 
 const nonce = packNonce(NONCE);
 const at = instant("2026-08-09T19:02:11Z");
 if (nonce === null || at === null) throw new Error("fixture does not conform");
 
 describe("the claim marker", () => {
-	const line = composeClaimMarker({nonce, packComment: 9234567891, claimedAt: at});
+	const line = composeClaimMarker({ nonce, packComment: 9234567891, claimedAt: at });
 
 	it("round-trips, keyed on the run nonce and naming the pack comment it claims", () => {
 		expect(readClaimMarker(line)).toEqual({

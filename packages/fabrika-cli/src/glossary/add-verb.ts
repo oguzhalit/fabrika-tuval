@@ -8,10 +8,10 @@
  * (`12`) rather than adding — a caller whose belief about the register is wrong should learn that
  * instead of having it hidden.
  */
-import {Effect, Path, Result} from "effect";
-import {readFile, writeFile} from "../io/fs.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, Path, Result } from "effect";
+import { readFile, writeFile } from "../io/fs.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	EDIT_BEYOND_ROW,
 	EMPTY_STDIN,
@@ -22,7 +22,7 @@ import {
 	TERM_COLLISION,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {appendIndex, linesChangedBeyond, newSectionBlock, placeRow, type Splice} from "./edit.ts";
+import { appendIndex, linesChangedBeyond, newSectionBlock, placeRow, type Splice } from "./edit.ts";
 import {
 	type GlossaryEffect,
 	type Guarded,
@@ -33,7 +33,7 @@ import {
 	resolveDir,
 	selectRegisters,
 } from "./guards.ts";
-import {escapeCell, flattenCell, normalizeKey, parseRegister, renderRow} from "./register.ts";
+import { escapeCell, flattenCell, normalizeKey, parseRegister, renderRow } from "./register.ts";
 
 const VERB = "glossary add";
 
@@ -120,7 +120,7 @@ export const runAdd = (options: AddOptions): GlossaryEffect<VerbOutcome> =>
 				`${VERB}: cannot read ${file.display}: the register does not exist — nothing was written. Run "fabrika glossary init --register ${register}" first.`,
 			);
 		}
-		const {text, parsed} = state.value;
+		const { text, parsed } = state.value;
 
 		const section = parsed.sections.find((candidate) => candidate.name === options.section);
 		if (section === undefined && !(options.createSection && !options.replace)) {
@@ -182,7 +182,7 @@ export const runAdd = (options: AddOptions): GlossaryEffect<VerbOutcome> =>
 		let action: "added" | "replaced";
 
 		if (declared !== undefined) {
-			splice = {at: declared.line - 1, added: 1, replaced: 1};
+			splice = { at: declared.line - 1, added: 1, replaced: 1 };
 			reportLine = declared.line;
 			reportSection = declared.section;
 			action = "replaced";
@@ -200,13 +200,13 @@ export const runAdd = (options: AddOptions): GlossaryEffect<VerbOutcome> =>
 					`${VERB}: section "${section.name}" is not in ascending key order — the row was placed to keep it ordered against its neighbours, and nothing else was moved.`,
 				);
 			}
-			splice = {at: placement.index, added: 1, replaced: 0};
+			splice = { at: placement.index, added: 1, replaced: 0 };
 			reportLine = placement.index + 1;
 			reportSection = section.name;
 			action = "added";
 		} else {
 			const at = appendIndex(lines);
-			splice = {at, added: newSectionBlock(options.section, rowText).length, replaced: 0};
+			splice = { at, added: newSectionBlock(options.section, rowText).length, replaced: 0 };
 			reportLine = at + 5;
 			reportSection = options.section;
 			action = "added";

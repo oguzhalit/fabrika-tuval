@@ -30,8 +30,8 @@
  * {@link coverageGaps} takes the registered names and reds on any it cannot classify.
  */
 
-import {existsSync, readdirSync, readFileSync, realpathSync} from "node:fs";
-import {join} from "node:path";
+import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
+import { join } from "node:path";
 
 /** The group whose table every aligning group seats itself against — retired. The base is now the
  * shared registry, `../exit-codes.ts`; `report` is an ordinary aligned group ({@link REPORT_SEATS}).
@@ -73,7 +73,7 @@ export const SHARED_SEATS: SharedSeats = {
  * ledger section declared twice, so under `SHARED_SEATS` the checker would report `4` as a private
  * code colliding with the base.
  */
-export const BUILD_SEATS: SharedSeats = {...SHARED_SEATS, BAD_SECTIONS: "BAD_SECTIONS"};
+export const BUILD_SEATS: SharedSeats = { ...SHARED_SEATS, BAD_SECTIONS: "BAD_SECTIONS" };
 
 /**
  * `review-ui`'s seats: the same eight, plus `4` under its own name.
@@ -83,7 +83,7 @@ export const BUILD_SEATS: SharedSeats = {...SHARED_SEATS, BAD_SECTIONS: "BAD_SEC
  * whole derived document — a capture set's `manifest.json`, or the declared `uiCapture` at the
  * tier-choice read. Naming the pair is the claim a bare number cannot make.
  */
-export const REVIEW_UI_SEATS: SharedSeats = {...SHARED_SEATS, MALFORMED_DOCUMENT: "BAD_SECTIONS"};
+export const REVIEW_UI_SEATS: SharedSeats = { ...SHARED_SEATS, MALFORMED_DOCUMENT: "BAD_SECTIONS" };
 
 /**
  * `ui`'s seats: `build`'s nine minus the stdin seat.
@@ -93,7 +93,7 @@ export const REVIEW_UI_SEATS: SharedSeats = {...SHARED_SEATS, MALFORMED_DOCUMENT
  * occupied by the base alone.
  */
 export const UI_SEATS: SharedSeats = (() => {
-	const {EMPTY_STDIN: _stdin, ...rest} = BUILD_SEATS;
+	const { EMPTY_STDIN: _stdin, ...rest } = BUILD_SEATS;
 	return rest;
 })();
 
@@ -175,7 +175,7 @@ export const HEAL_CI_SEATS: SharedSeats = SHARED_SEATS;
  * reads both as occupied by the base.
  */
 export const GLOSSARY_SEATS: SharedSeats = (() => {
-	const {LEAKED_PATH: _leak, BARE_AT_PATH: _bare, ...rest} = BUILD_SEATS;
+	const { LEAKED_PATH: _leak, BARE_AT_PATH: _bare, ...rest } = BUILD_SEATS;
 	return rest;
 })();
 
@@ -184,7 +184,7 @@ export const GLOSSARY_SEATS: SharedSeats = (() => {
  * — and everything else it speaks is about a harness envelope rather than about a write, so its two
  * private codes sit above the base's whole table instead of claiming a seat in it.
  */
-export const HOOK_SEATS: SharedSeats = {EMPTY_STDIN: "EMPTY_STDIN"};
+export const HOOK_SEATS: SharedSeats = { EMPTY_STDIN: "EMPTY_STDIN" };
 
 /**
  * `adr`'s seats: two. Its verbs read decision records off disk rather than writing to GitHub, so
@@ -215,8 +215,8 @@ export const SPEND_SEATS: SharedSeats = {
  * writes a classification, so the base's `10` is unreachable here and cannot be claimed at all.
  */
 export const MAP_SEATS: SharedSeats = (() => {
-	const {OFF_VOCABULARY: _classified, ZERO_SCOPE: _zero, ...rest} = BUILD_SEATS;
-	return {...rest, NO_TARGET: "NO_TARGET"};
+	const { OFF_VOCABULARY: _classified, ZERO_SCOPE: _zero, ...rest } = BUILD_SEATS;
+	return { ...rest, NO_TARGET: "NO_TARGET" };
 })();
 
 /**
@@ -605,7 +605,7 @@ export const checkAlignment = (
 		const groupCode = groupValues[groupExport];
 		const baseCode = baseValues[baseExport];
 		if (groupCode !== baseCode || typeof groupCode !== "number") {
-			drifted.push({groupExport, baseExport, groupCode, baseCode});
+			drifted.push({ groupExport, baseExport, groupCode, baseCode });
 		}
 	}
 
@@ -613,10 +613,10 @@ export const checkAlignment = (
 	const collisions: Collision[] = [];
 	for (const [code, groupExports] of privateCodes(group, seats)) {
 		const baseExports = occupied.get(code);
-		if (baseExports !== undefined) collisions.push({code, groupExports, baseExports});
+		if (baseExports !== undefined) collisions.push({ code, groupExports, baseExports });
 	}
 
-	return {drifted, collisions};
+	return { drifted, collisions };
 };
 
 /**
@@ -627,7 +627,7 @@ export const checkAlignment = (
  */
 export const codeTableGroupsIn = (srcDir: string): readonly string[] => {
 	const root = realpathSync(srcDir);
-	return readdirSync(root, {withFileTypes: true})
+	return readdirSync(root, { withFileTypes: true })
 		.filter((entry) => entry.isDirectory())
 		.map((entry) => entry.name)
 		.filter((name) => existsSync(join(root, name, "codes.ts")))
@@ -715,5 +715,5 @@ export const verbSeatedExitCodes = (srcDir: string, groups: readonly string[]): 
 	if (scanned === 0) {
 		throw new ZeroCoverageScope(`no *-verb.ts was found under ${srcDir} — nothing to scan`);
 	}
-	return {scanned, seated: [...seated].sort()};
+	return { scanned, seated: [...seated].sort() };
 };

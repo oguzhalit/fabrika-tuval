@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import type {CommentRecord} from "../io/issues.ts";
-import {failing, readRangeVerdicts} from "./range-verdicts.ts";
+import { describe, expect, it } from "vitest";
+import type { CommentRecord } from "../io/issues.ts";
+import { failing, readRangeVerdicts } from "./range-verdicts.ts";
 
 const BASE = "9f2c1ab4d5e6f708192a3b4c5d6e7f8091a2b3c4";
 const TIP = "03135b917283a4b5c6d7e8f90a1b2c3d4e5f6071";
@@ -32,7 +32,7 @@ describe("readRangeVerdicts folds a child issue's range verdicts", () => {
 			comment(2, marker("review-code", "FAIL"), "2026-08-19T12:30:00Z"),
 		]);
 		expect(read.standing).toEqual([
-			{namespace: "review-code", polarity: "FAIL", commentId: 2, range: `${BASE}..${TIP}`},
+			{ namespace: "review-code", polarity: "FAIL", commentId: 2, range: `${BASE}..${TIP}` },
 		]);
 	});
 

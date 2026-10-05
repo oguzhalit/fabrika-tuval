@@ -20,12 +20,12 @@
  * leaves behind is always collectable.
  */
 
-import {Effect} from "effect";
-import {exists, removeAll} from "../io/fs.ts";
-import {closeCompleted, createComment, getComment, getIssue, listComments} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {forfeitNote, newestCapture} from "./bodies.ts";
+import { Effect } from "effect";
+import { exists, removeAll } from "../io/fs.ts";
+import { closeCompleted, createComment, getComment, getIssue, listComments } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { forfeitNote, newestCapture } from "./bodies.ts";
 import {
 	CAPTURE_STALE,
 	NOT_CAPTURED,
@@ -45,7 +45,7 @@ import {
 	type SpikeEffect,
 	targetRepo,
 } from "./guards.ts";
-import {type EvidenceRecord, workspacePath} from "./workspace.ts";
+import { type EvidenceRecord, workspacePath } from "./workspace.ts";
 
 export interface DisposeOptions {
 	readonly nonce: string;
@@ -141,8 +141,8 @@ export const runDispose = (options: DisposeOptions): SpikeEffect<VerbOutcome> =>
 const first = (lines: ReadonlyArray<string>): string => lines[0] ?? "<none>";
 
 type IssueHalf =
-	| {readonly _tag: "Ok"; readonly forfeited: boolean}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Ok"; readonly forfeited: boolean }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 const resolveIssueHalf = (input: {
 	readonly spike: number;
@@ -158,7 +158,7 @@ const resolveIssueHalf = (input: {
 	readonly scope: string;
 }): SpikeEffect<IssueHalf> =>
 	Effect.gen(function* () {
-		const refused = (outcome: VerbOutcome): IssueHalf => ({_tag: "Refused", outcome});
+		const refused = (outcome: VerbOutcome): IssueHalf => ({ _tag: "Refused", outcome });
 		const target = yield* targetRepo(VERB, input.repo, input.env);
 		if (target._tag === "Refused") return refused(target.outcome);
 		const repo = target.value;
@@ -212,7 +212,7 @@ const resolveIssueHalf = (input: {
 				),
 			);
 		}
-		if (!input.forfeit) return {_tag: "Ok", forfeited: false};
+		if (!input.forfeit) return { _tag: "Ok", forfeited: false };
 
 		const body = forfeitNote({
 			nonce: input.nonce,
@@ -223,7 +223,7 @@ const resolveIssueHalf = (input: {
 		// The run table is masked at composition; what remains is the question the caller wrote at
 		// spike open, which is the only part a refusal here could ask anyone to change.
 		const leaked = leakFree(VERB, "question, as it composes into the forfeit note", body);
-		if (leaked !== null) return refused({...leaked, stderr: [input.scope, ...leaked.stderr]});
+		if (leaked !== null) return refused({ ...leaked, stderr: [input.scope, ...leaked.stderr] });
 
 		const posted = yield* createComment(repo, input.spike, body);
 		if (posted._tag === "Failure") {
@@ -260,5 +260,5 @@ const resolveIssueHalf = (input: {
 				);
 			}
 		}
-		return {_tag: "Ok", forfeited: true};
+		return { _tag: "Ok", forfeited: true };
 	});

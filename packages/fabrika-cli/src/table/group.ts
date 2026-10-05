@@ -43,12 +43,12 @@ export type GroupKind = "epic" | "chain";
 
 export type Group =
 	/** A row that stands for itself alone. */
-	| {readonly _tag: "Single"; readonly head: number}
+	| { readonly _tag: "Single"; readonly head: number }
 	/**
 	 * An epic row. Its members may be empty, once every sub-issue has closed: the row is still the
 	 * epic's, it just sums nothing but itself.
 	 */
-	| {readonly _tag: "Epic"; readonly head: number; readonly members: ReadonlyArray<number>}
+	| { readonly _tag: "Epic"; readonly head: number; readonly members: ReadonlyArray<number> }
 	/** A chain row. A row with no open blocker is `Single`, so a chain always has a member. */
 	| {
 			readonly _tag: "Chain";
@@ -57,9 +57,9 @@ export type Group =
 	  };
 
 export type Membership =
-	| {readonly _tag: "Derived"; readonly group: Group}
+	| { readonly _tag: "Derived"; readonly group: Group }
 	/** The graph lacks these nodes, so membership is not decidable yet. Read them and ask again. */
-	| {readonly _tag: "Incomplete"; readonly missing: ReadonlyArray<number>};
+	| { readonly _tag: "Incomplete"; readonly missing: ReadonlyArray<number> };
 
 export const kindOf = (group: Group): GroupKind | null =>
 	group._tag === "Epic" ? "epic" : group._tag === "Chain" ? "chain" : null;
@@ -82,7 +82,10 @@ const epicOf = (head: IssueNode, graph: IssueGraph, bets: Bets): Membership => {
 	const missing = own.filter((child) => !graph.has(child));
 	if (missing.length > 0) return incomplete(missing);
 	const members = own.filter((child) => graph.get(child)?.open === true);
-	return {_tag: "Derived", group: {_tag: "Epic", head: head.number, members: ascending(members)}};
+	return {
+		_tag: "Derived",
+		group: { _tag: "Epic", head: head.number, members: ascending(members) },
+	};
 };
 
 const chainOf = (head: IssueNode, graph: IssueGraph, bets: Bets): Membership => {
@@ -107,8 +110,8 @@ const chainOf = (head: IssueNode, graph: IssueGraph, bets: Bets): Membership => 
 		_tag: "Derived",
 		group:
 			first === undefined
-				? {_tag: "Single", head: head.number}
-				: {_tag: "Chain", head: head.number, members: [first, ...rest]},
+				? { _tag: "Single", head: head.number }
+				: { _tag: "Chain", head: head.number, members: [first, ...rest] },
 	};
 };
 

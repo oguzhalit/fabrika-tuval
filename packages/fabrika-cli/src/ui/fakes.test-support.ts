@@ -6,8 +6,8 @@
  * `writeFile` too. The encoder exists so a capture fixture is a *real* PNG the production decoder
  * reads — a hand-written byte blob would only prove the decoder agrees with the fixture's author.
  */
-import {deflateSync} from "node:zlib";
-import {Effect, FileSystem, Layer, Path, PlatformError} from "effect";
+import { deflateSync } from "node:zlib";
+import { Effect, FileSystem, Layer, Path, PlatformError } from "effect";
 
 const notFound = (method: string, path: string) =>
 	Effect.fail(
@@ -37,7 +37,7 @@ const asBytes = (value: Uint8Array | string): Uint8Array =>
 	typeof value === "string" ? new TextEncoder().encode(value) : value;
 
 export const fakeBytesFs = (options: FakeBytesFsOptions = {}): FakeBytesFs => {
-	const files: Record<string, Uint8Array | string | null> = {...options.files};
+	const files: Record<string, Uint8Array | string | null> = { ...options.files };
 	const written = new Map<string, Uint8Array>();
 	const read = (method: string, path: string) => {
 		const value = files[path];
@@ -71,7 +71,7 @@ export const fakeBytesFs = (options: FakeBytesFsOptions = {}): FakeBytesFs => {
 		}),
 		Path.layer,
 	);
-	return {layer, written};
+	return { layer, written };
 };
 
 const CRC_TABLE = (() => {

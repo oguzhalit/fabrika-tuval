@@ -44,33 +44,33 @@
  * event a killed shell owed — would otherwise have to re-parse this verb's own stdout to tell them
  * apart, so the label is derived here, once, in the module that writes those bytes.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {resolveTargetRepo} from "../build/target.ts";
-import {newestRulingAt} from "../decision/ruling.ts";
-import {describeUnmarked, standingRulings} from "../decision/standing-rulings.ts";
-import {getIssue, listComments} from "../io/issues.ts";
-import {isRecord, parseJson} from "../io/json.ts";
-import {getPullRequest, listPullFiles} from "../io/pulls.ts";
-import {advisoryPolarity, readAdvisory} from "../review/advisory.ts";
-import {classConfigAtCommits, classConfigOfPull} from "../review/class-config.ts";
-import {partitionWithUi, ROUTED_NAMESPACES, shipNamespacesOf} from "../review/classes.ts";
-import {bindRange, contentDigestAt, rangeContentAt} from "../review/content-binding.ts";
-import {bindHead} from "../review/head.ts";
-import {standingEvidence} from "../review-ui/standing-evidence.ts";
-import {CODEOWNERS_PATH, readBoundary} from "../ship/boundary.ts";
-import {classify} from "../ship/codeowners.ts";
-import {ROUTABLE} from "../ship/gate-verb.ts";
-import {ANSWER, answer, refuse, type VerbOutcome} from "../verb.ts";
-import {read as readRangeMarker} from "../wire/range-verdict-marker.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { resolveTargetRepo } from "../build/target.ts";
+import { newestRulingAt } from "../decision/ruling.ts";
+import { describeUnmarked, standingRulings } from "../decision/standing-rulings.ts";
+import { getIssue, listComments } from "../io/issues.ts";
+import { isRecord, parseJson } from "../io/json.ts";
+import { getPullRequest, listPullFiles } from "../io/pulls.ts";
+import { advisoryPolarity, readAdvisory } from "../review/advisory.ts";
+import { classConfigAtCommits, classConfigOfPull } from "../review/class-config.ts";
+import { partitionWithUi, ROUTED_NAMESPACES, shipNamespacesOf } from "../review/classes.ts";
+import { bindRange, contentDigestAt, rangeContentAt } from "../review/content-binding.ts";
+import { bindHead } from "../review/head.ts";
+import { standingEvidence } from "../review-ui/standing-evidence.ts";
+import { CODEOWNERS_PATH, readBoundary } from "../ship/boundary.ts";
+import { classify } from "../ship/codeowners.ts";
+import { ROUTABLE } from "../ship/gate-verb.ts";
+import { ANSWER, answer, refuse, type VerbOutcome } from "../verb.ts";
+import { read as readRangeMarker } from "../wire/range-verdict-marker.ts";
 import {
 	type RouteBasis,
 	type RoutedBasis,
 	readNamespaced as readRoute,
 } from "../wire/routed-elsewhere.ts";
-import {bindToContent, read as readMarker} from "../wire/verdict-marker.ts";
-import {type ClosingMerge, judgeClosingMerge} from "./closing-merge.ts";
-import {closureReader, issueStateReader} from "./closure.ts";
+import { bindToContent, read as readMarker } from "../wire/verdict-marker.ts";
+import { type ClosingMerge, judgeClosingMerge } from "./closing-merge.ts";
+import { closureReader, issueStateReader } from "./closure.ts";
 import {
 	LANE_UNREADABLE,
 	PROOF_ABSENT,
@@ -80,8 +80,8 @@ import {
 	ROUTE_UNDERIVED,
 	TASK_UNKNOWN,
 } from "./codes.ts";
-import {foldLog, resolveTask, walkOf} from "./fold.ts";
-import {nominatePulls} from "./nominate.ts";
+import { foldLog, resolveTask, walkOf } from "./fold.ts";
+import { nominatePulls } from "./nominate.ts";
 import {
 	basisOfRows,
 	claimOf,
@@ -99,10 +99,10 @@ import {
 	traceUnlinked,
 	type VerdictFact,
 } from "./prove.ts";
-import {type ChildRange, DEEPEN_REMEDY, locateRange} from "./range.ts";
-import {loadRefusal, replayRefusal} from "./refusals.ts";
-import {againstRuling} from "./ruling-currency.ts";
-import {type LaneRef, type LoadedLane, loadLane} from "./store.ts";
+import { type ChildRange, DEEPEN_REMEDY, locateRange } from "./range.ts";
+import { loadRefusal, replayRefusal } from "./refusals.ts";
+import { againstRuling } from "./ruling-currency.ts";
+import { type LaneRef, type LoadedLane, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane prove";
 
@@ -278,7 +278,7 @@ type ProofAnswer = VerbOutcome & {
 	readonly diagnosis?: boolean;
 };
 
-const seat = (proof: Exclude<Proof, {_tag: "Proven"}>, diagnostics: ReadonlyArray<string>) => {
+const seat = (proof: Exclude<Proof, { _tag: "Proven" }>, diagnostics: ReadonlyArray<string>) => {
 	const code = {
 		Absent: PROOF_ABSENT,
 		InFlight: PROOF_IN_FLIGHT,
@@ -313,7 +313,7 @@ export const runProve = (
  */
 const prove = (
 	options: ProveOptions,
-	snapshot?: Extract<LoadedLane, {_tag: "Loaded"}>,
+	snapshot?: Extract<LoadedLane, { _tag: "Loaded" }>,
 ): Effect.Effect<
 	ProofAnswer,
 	never,
@@ -337,7 +337,7 @@ const prove = (
 		const walk = walkOf(loaded.lane, fold.states, taskId, event, options.classes);
 		if (walk._tag === "Unknown" || walk._tag === "NoCell") {
 			return answer(
-				JSON.stringify({proof: "not-walkable", event, task: taskId, state: leaf}, null, 2),
+				JSON.stringify({ proof: "not-walkable", event, task: taskId, state: leaf }, null, 2),
 				[`${VERB}: ${walk.why} — nothing here proves it, and the machine will refuse it.`],
 			);
 		}
@@ -348,7 +348,7 @@ const prove = (
 				return yield* readClosure(options, taskId, leaf, event, claim.why);
 			}
 			return answer(
-				JSON.stringify({proof: "not-required", event, task: taskId, state: leaf}, null, 2),
+				JSON.stringify({ proof: "not-required", event, task: taskId, state: leaf }, null, 2),
 				[`${VERB}: ${claim.why} — nothing to prove, record it.`],
 			);
 		}
@@ -381,7 +381,7 @@ const prove = (
 							kind: "range-commits",
 							epic: claim.epic,
 							branch: read.range.branch,
-							range: {base: read.range.base, tip: read.range.tip},
+							range: { base: read.range.base, tip: read.range.tip },
 							commits: read.range.commits,
 							naming: read.range.naming,
 						},
@@ -408,7 +408,7 @@ const prove = (
 			if (found._tag === "Unknown") return unreadable(`issue #${issue}`, found.reason);
 			if (found._tag === "Absent") {
 				return seat(
-					{_tag: "Absent", what: `#${issue} is not there, so there is no work to rewind`},
+					{ _tag: "Absent", what: `#${issue} is not there, so there is no work to rewind` },
 					[],
 				);
 			}
@@ -430,7 +430,7 @@ const prove = (
 						event,
 						task: taskId,
 						issue,
-						evidence: {kind: "no-linking-pull", scanned: unlinked.scanned},
+						evidence: { kind: "no-linking-pull", scanned: unlinked.scanned },
 					},
 					null,
 					2,
@@ -474,7 +474,7 @@ const prove = (
 							event,
 							task: taskId,
 							issue,
-							evidence: {kind: "open-pull", pr: traced.trace.pr},
+							evidence: { kind: "open-pull", pr: traced.trace.pr },
 						},
 						null,
 						2,
@@ -580,7 +580,7 @@ const readClosure = (
 			return {
 				...answer(
 					JSON.stringify(
-						{proof: "not-required", event, task: taskId, state: leaf, issue, closure: "unknown"},
+						{ proof: "not-required", event, task: taskId, state: leaf, issue, closure: "unknown" },
 						null,
 						2,
 					),
@@ -625,7 +625,7 @@ const readClosure = (
 						issue,
 						closure: closure._tag === "Partial" ? "partial" : "closes",
 						landed: read.landed,
-						...(closingMerge === null ? {} : {issueState: closingMerge._tag.toLowerCase()}),
+						...(closingMerge === null ? {} : { issueState: closingMerge._tag.toLowerCase() }),
 					},
 					null,
 					2,
@@ -634,7 +634,7 @@ const readClosure = (
 			),
 			partial: closure._tag === "Partial",
 			landed: read.landed,
-			...(closingMerge === null ? {} : {closingMerge}),
+			...(closingMerge === null ? {} : { closingMerge }),
 		};
 	});
 
@@ -658,7 +658,7 @@ const traceOpenPull = (
 	repo: string,
 	issue: number,
 ): Effect.Effect<
-	Traced | {readonly _tag: "Refused"; readonly outcome: VerbOutcome},
+	Traced | { readonly _tag: "Refused"; readonly outcome: VerbOutcome },
 	never,
 	ChildProcessSpawner.ChildProcessSpawner
 > =>
@@ -671,7 +671,7 @@ const traceOpenPull = (
 			};
 		}
 		const facts = nominated.pulls;
-		return {_tag: "Traced" as const, trace: tracePulls(issue, facts), scanned: facts.length};
+		return { _tag: "Traced" as const, trace: tracePulls(issue, facts), scanned: facts.length };
 	});
 
 /**
@@ -688,7 +688,7 @@ const proveNoPull = (
 	issue: number,
 	taskId: string,
 	event: string,
-	entries: ReadonlyArray<{readonly task: string; readonly at: string}>,
+	entries: ReadonlyArray<{ readonly task: string; readonly at: string }>,
 	diagnostics: ReadonlyArray<string>,
 	unlinked: string,
 ): Effect.Effect<ProofAnswer, never, ChildProcessSpawner.ChildProcessSpawner> =>
@@ -697,7 +697,7 @@ const proveNoPull = (
 		if (found._tag === "Unknown") return unreadable(`issue #${issue}`, found.reason);
 		if (found._tag === "Absent") {
 			return seat(
-				{_tag: "Absent", what: `${unlinked}, and #${issue} itself is not there`},
+				{ _tag: "Absent", what: `${unlinked}, and #${issue} itself is not there` },
 				diagnostics,
 			);
 		}
@@ -728,7 +728,7 @@ const proveNoPull = (
 						event,
 						task: taskId,
 						issue,
-						evidence: {kind: "diagnosis", commentId: diagnosis.commentId},
+						evidence: { kind: "diagnosis", commentId: diagnosis.commentId },
 					},
 					null,
 					2,
@@ -793,20 +793,20 @@ export const readNamespaceRows = (
 	Effect.gen(function* () {
 		const pull = yield* getPullRequest(repo, pr);
 		if (pull._tag === "Unknown") {
-			return {_tag: "Unread" as const, what: `PR #${pr}`, reason: pull.reason};
+			return { _tag: "Unread" as const, what: `PR #${pr}`, reason: pull.reason };
 		}
 		if (pull._tag === "Absent") {
-			return {_tag: "Gone" as const, what: `PR #${pr} is not there`};
+			return { _tag: "Gone" as const, what: `PR #${pr} is not there` };
 		}
 		const head = pull.value.headSha;
 
 		const files = yield* listPullFiles(repo, pr);
 		if (files._tag === "Failure") {
-			return {_tag: "Unread" as const, what: `the changed files of #${pr}`, reason: files.reason};
+			return { _tag: "Unread" as const, what: `the changed files of #${pr}`, reason: files.reason };
 		}
 		const config = yield* classConfigOfPull(VERB, CLASS_CONFIG_UNREAD, repo, pull.value);
 		if (config._tag === "Refused") {
-			return {_tag: "Unread" as const, what: `the class config of #${pr}`, reason: config.reason};
+			return { _tag: "Unread" as const, what: `the class config of #${pr}`, reason: config.reason };
 		}
 		const derived = shipNamespacesOf(
 			partitionWithUi(files.value, config.config.governedRoots, config.config.uiPrefixes),
@@ -817,19 +817,19 @@ export const readNamespaceRows = (
 		// The head is what decides the round, so a deferral this head derives nothing for is not a
 		// deferral at all — it is the boot-time class still routing after a head exists to replace it.
 		if (defers.length > 0 && deferred.length === 0) {
-			return {_tag: "Underived" as const, head, defers, derived};
+			return { _tag: "Underived" as const, head, defers, derived };
 		}
 
 		const commented = yield* listComments(repo, pr);
 		if (commented._tag === "Failure") {
-			return {_tag: "Unread" as const, what: `the comments on #${pr}`, reason: commented.reason};
+			return { _tag: "Unread" as const, what: `the comments on #${pr}`, reason: commented.reason };
 		}
 
 		// Newest write stamp wins per namespace — the same ordering key `ship gate` folds on, because
 		// a FAIL upserted after a PASS must win.
 		const latest = new Map<string, Claim>();
 		const stamps = new Map<string, string>();
-		const advisories: {readonly claim: Claim; readonly stamp: string}[] = [];
+		const advisories: { readonly claim: Claim; readonly stamp: string }[] = [];
 		const standing = (claim: Claim, stamp: string): void => {
 			const seen = stamps.get(claim.namespace);
 			if (seen !== undefined && seen > stamp) return;
@@ -867,7 +867,7 @@ export const readNamespaceRows = (
 						// route can never gain survival it did not earn.
 						content: null,
 						stamp: comment.updatedAt,
-						...(route.basis === undefined ? {} : {basis: route.basis}),
+						...(route.basis === undefined ? {} : { basis: route.basis }),
 					},
 					comment.updatedAt,
 				);
@@ -917,7 +917,7 @@ export const readNamespaceRows = (
 			}
 			const cp = classify(boundary.rows, files.value);
 			if (cp === "control-plane") {
-				for (const {claim, stamp} of advisories) {
+				for (const { claim, stamp } of advisories) {
 					if (claim.polarity === "FAIL") {
 						notes.push(
 							`${VERB}: #${pr} carries a §CP advisory with a [FAIL] row — an invalid emission; treated as fail, report it.`,
@@ -984,7 +984,7 @@ export const readNamespaceRows = (
 				polarity: claim.polarity,
 				binding: ruled === "superseded" ? "stale" : ruled === "unknown" ? "unknown" : bound,
 				commentId: claim.commentId,
-				...(claim.basis === undefined ? {} : {basis: claim.basis}),
+				...(claim.basis === undefined ? {} : { basis: claim.basis }),
 			};
 		});
 		// A review-ui verdict counts only while its evidence opens — `ship gate`'s re-check, one
@@ -994,7 +994,7 @@ export const readNamespaceRows = (
 				continue;
 			}
 			const body = commented.value.find((comment) => comment.id === fact.commentId)?.body ?? "";
-			const standing = yield* standingEvidence(repo, {id: fact.commentId, body});
+			const standing = yield* standingEvidence(repo, { id: fact.commentId, body });
 			if (standing._tag === "Opens") continue;
 			notes.push(
 				standing._tag === "Unreadable"
@@ -1011,7 +1011,7 @@ export const readNamespaceRows = (
 			`${VERB}: #${pr} at ${head} derives ${required.join(", ")}; read ${commented.value.length} comment(s).`,
 		);
 
-		return {_tag: "Rows" as const, head, rows, deferred, notes};
+		return { _tag: "Rows" as const, head, rows, deferred, notes };
 	});
 
 /** What a head-scoped verdict read produced, before either bar is asked of it. */
@@ -1024,8 +1024,8 @@ export type HeadRead =
 			readonly deferred: ReadonlyArray<string>;
 			readonly notes: ReadonlyArray<string>;
 	  }
-	| {readonly _tag: "Unread"; readonly what: string; readonly reason: string}
-	| {readonly _tag: "Gone"; readonly what: string}
+	| { readonly _tag: "Unread"; readonly what: string; readonly reason: string }
+	| { readonly _tag: "Gone"; readonly what: string }
 	/**
 	 * The event routes into a cell this head owes nothing — the standing class is the ticket's, not
 	 * the head's. `derived` is what the head actually raises, so the refusal can name the relay.
@@ -1072,9 +1072,9 @@ const proveVerdicts = (
 			defers,
 			rulingAt,
 		);
-		if (read._tag === "Unread") return {...unreadable(read.what, read.reason), deferred: []};
+		if (read._tag === "Unread") return { ...unreadable(read.what, read.reason), deferred: [] };
 		if (read._tag === "Gone") {
-			return {...seat({_tag: "Absent", what: read.what}, diagnostics), deferred: []};
+			return { ...seat({ _tag: "Absent", what: read.what }, diagnostics), deferred: [] };
 		}
 		if (read._tag === "Underived") {
 			return {
@@ -1090,7 +1090,7 @@ const proveVerdicts = (
 			};
 		}
 		const proof = foldNamespaces(read.rows, `#${pr}`);
-		if (proof._tag !== "Proven") return {...seat(proof, read.notes), deferred: []};
+		if (proof._tag !== "Proven") return { ...seat(proof, read.notes), deferred: [] };
 		// Read off the rows the fold just accepted rather than off the required set: only a row the
 		// proof actually stood on is evidence, and a namespace that merely *could* be routed is not.
 		const routed = read.rows.filter((row) => row.state === "routed").map((row) => row.namespace);
@@ -1109,7 +1109,7 @@ const proveVerdicts = (
 							head: read.head,
 							namespaces: read.rows,
 							deferred: read.deferred,
-							...(routed.length === 0 ? {} : {routed}),
+							...(routed.length === 0 ? {} : { routed }),
 						},
 					},
 					null,
@@ -1119,7 +1119,7 @@ const proveVerdicts = (
 			),
 			deferred: read.deferred,
 			routed,
-			...(routedBasis === null ? {} : {routedBasis}),
+			...(routedBasis === null ? {} : { routedBasis }),
 		};
 	});
 
@@ -1171,7 +1171,7 @@ const uncontradicted = (
 ): VerbOutcome =>
 	answer(
 		JSON.stringify(
-			{proof: "uncontradicted", event, task: taskId, issue, evidence: {kind: "park", pr}},
+			{ proof: "uncontradicted", event, task: taskId, issue, evidence: { kind: "park", pr } },
 			null,
 			2,
 		),
@@ -1184,7 +1184,7 @@ interface Located {
 	readonly notes: ReadonlyArray<string>;
 }
 
-type Refused = {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+type Refused = { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /** The shared range read (`./range.ts`), seated into this verb's proof codes. */
 const located = (
@@ -1193,7 +1193,7 @@ const located = (
 ): Effect.Effect<Located | Refused, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.map(locateRange(VERB, epic, issue), (location) => {
 		if (location._tag === "Located") {
-			return {_tag: "Located" as const, range: location.range, notes: location.notes};
+			return { _tag: "Located" as const, range: location.range, notes: location.notes };
 		}
 		if (location._tag === "Truncated") {
 			return {
@@ -1205,11 +1205,11 @@ const located = (
 			};
 		}
 		if (location._tag === "Unreadable") {
-			return {_tag: "Refused" as const, outcome: unreadable(location.what, location.reason)};
+			return { _tag: "Refused" as const, outcome: unreadable(location.what, location.reason) };
 		}
 		return {
 			_tag: "Refused" as const,
-			outcome: seat({_tag: location._tag, what: location.why}, location.notes),
+			outcome: seat({ _tag: location._tag, what: location.why }, location.notes),
 		};
 	});
 
@@ -1275,12 +1275,12 @@ const proveRangeVerdicts = (
 ): Effect.Effect<ProofAnswer, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		const read = yield* located(epic, issue);
-		if (read._tag === "Refused") return {...read.outcome, deferred: []};
+		if (read._tag === "Refused") return { ...read.outcome, deferred: [] };
 		const range = `${read.range.base}..${read.range.tip}`;
 
-		const content = yield* rangeContentAt({base: read.range.base, tip: read.range.tip});
+		const content = yield* rangeContentAt({ base: read.range.base, tip: read.range.tip });
 		if (content._tag === "Failure") {
-			return {...unreadable(`the content ${range} changes`, content.reason), deferred: []};
+			return { ...unreadable(`the content ${range} changes`, content.reason), deferred: [] };
 		}
 		// The range's own two ends, read out of the object database this range was located in.
 		const config = yield* classConfigAtCommits(VERB, CLASS_CONFIG_UNREAD, {
@@ -1288,7 +1288,7 @@ const proveRangeVerdicts = (
 			base: read.range.base,
 		});
 		if (config._tag === "Refused") {
-			return {...unreadable(`the class config of ${range}`, config.reason), deferred: []};
+			return { ...unreadable(`the class config of ${range}`, config.reason), deferred: [] };
 		}
 		const derived = shipNamespacesOf(
 			partitionWithUi(content.value.paths, config.config.governedRoots, config.config.uiPrefixes),
@@ -1298,7 +1298,7 @@ const proveRangeVerdicts = (
 
 		const commented = yield* listComments(repo, issue);
 		if (commented._tag === "Failure") {
-			return {...unreadable(`the comments on #${issue}`, commented.reason), deferred: []};
+			return { ...unreadable(`the comments on #${issue}`, commented.reason), deferred: [] };
 		}
 
 		// Newest write stamp wins per namespace — the ordering the PR arm folds on, for the reason it
@@ -1337,7 +1337,7 @@ const proveRangeVerdicts = (
 			const route = readRoute(comment.body, ROUTABLE);
 			if (route === null || !required.includes(route.namespace)) continue;
 			standing(
-				{_tag: "Route", namespace: route.namespace, commentId: comment.id, sha: route.sha},
+				{ _tag: "Route", namespace: route.namespace, commentId: comment.id, sha: route.sha },
 				comment.updatedAt,
 			);
 		}
@@ -1347,7 +1347,7 @@ const proveRangeVerdicts = (
 			if (claim._tag === "Route") {
 				// A route binds the tip it was attested at, never the range digest: the record is a claim
 				// about pixels at one tree, and the child's tip is the only object name that tree has.
-				const binding = bindToContent({sha: claim.sha, content: null}, read.range.tip, null);
+				const binding = bindToContent({ sha: claim.sha, content: null }, read.range.tip, null);
 				return {
 					namespace: claim.namespace,
 					polarity: "ROUTED" as const,
@@ -1356,7 +1356,7 @@ const proveRangeVerdicts = (
 					commentId: claim.commentId,
 				};
 			}
-			const binding = bindRange(claim, {_tag: "Digest", digest: content.value.digest});
+			const binding = bindRange(claim, { _tag: "Digest", digest: content.value.digest });
 			return {
 				namespace: claim.namespace,
 				polarity: claim.polarity,
@@ -1385,7 +1385,7 @@ const proveRangeVerdicts = (
 		];
 
 		const proof = foldNamespaces(rows, `${range} (content ${content.value.digest})`);
-		if (proof._tag !== "Proven") return {...seat(proof, notes), deferred: []};
+		if (proof._tag !== "Proven") return { ...seat(proof, notes), deferred: [] };
 		return {
 			...answer(
 				JSON.stringify(
@@ -1398,7 +1398,7 @@ const proveRangeVerdicts = (
 							kind: "range-verdicts",
 							epic,
 							branch: read.range.branch,
-							range: {base: read.range.base, tip: read.range.tip},
+							range: { base: read.range.base, tip: read.range.tip },
 							content: content.value.digest,
 							namespaces: rows,
 							deferred,
@@ -1416,5 +1416,5 @@ const proveRangeVerdicts = (
 /** Re-read live evidence against the state captured before a dispatched child reported. */
 export const proveDispatched = (
 	options: ProveOptions,
-	snapshot: Extract<LoadedLane, {_tag: "Loaded"}>,
+	snapshot: Extract<LoadedLane, { _tag: "Loaded" }>,
 ) => prove(options, snapshot);

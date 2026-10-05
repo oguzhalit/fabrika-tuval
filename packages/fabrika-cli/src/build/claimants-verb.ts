@@ -16,13 +16,13 @@
  * taken on is precisely the strandedness this verb is for. Absent is still `7` — there is no thread
  * to read — and unreadable is still `11`.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {getIssue, resolveRepo} from "../io/issues.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {type Adopter, type Claimant, type Claimants, readClaimants} from "./claim.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {resolveTargetRepo} from "./target.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { getIssue, resolveRepo } from "../io/issues.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { type Adopter, type Claimant, type Claimants, readClaimants } from "./claim.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { resolveTargetRepo } from "./target.ts";
 
 const CLAIMANTS = "build claimants";
 
@@ -58,8 +58,8 @@ export const runClaimants = (
 	Effect.gen(function* () {
 		const resolved = yield* resolveTargetRepo(CLAIMANTS, options.repo, options.env);
 		if (resolved._tag === "Refused") return resolved.outcome;
-		const {repo} = resolved;
-		const {number} = options;
+		const { repo } = resolved;
+		const { number } = options;
 
 		const found = yield* getIssue(repo, number);
 		if (found._tag === "Absent") {

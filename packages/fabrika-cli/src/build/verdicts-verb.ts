@@ -43,28 +43,28 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9058#issuecomment-5625309255
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {capNote, capReached} from "../cap-clearance.ts";
-import {getIssue, listComments} from "../io/issues.ts";
-import type {PullMergeability} from "../io/pulls.ts";
-import {CAP_ROUND} from "../retry-budget.ts";
-import {type RoutedRow, readEscalationTag} from "../review/append.ts";
-import {headContentFor} from "../review/head-content.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {read as readCriteria} from "../wire/acceptance-criteria.ts";
-import {read as readRangeMarker} from "../wire/range-verdict-marker.ts";
-import {bindToContent, read as readMarker, type VerdictMarker} from "../wire/verdict-marker.ts";
-import {clearancesOn, grantedFrom} from "./clearances.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {contentOf, gate} from "./content-gate.ts";
-import {listReviews} from "./github.ts";
-import {closingTargets, proseOf} from "./pr-body.ts";
-import {readRangeVerdicts} from "./range-verdicts.ts";
-import {requiredChecksAt, requiredChecksNote} from "./required-checks.ts";
-import {countRounds, roundsOn} from "./rounds.ts";
-import {openPull, resolveTargetRepo} from "./target.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { capNote, capReached } from "../cap-clearance.ts";
+import { getIssue, listComments } from "../io/issues.ts";
+import type { PullMergeability } from "../io/pulls.ts";
+import { CAP_ROUND } from "../retry-budget.ts";
+import { type RoutedRow, readEscalationTag } from "../review/append.ts";
+import { headContentFor } from "../review/head-content.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { read as readCriteria } from "../wire/acceptance-criteria.ts";
+import { read as readRangeMarker } from "../wire/range-verdict-marker.ts";
+import { bindToContent, read as readMarker, type VerdictMarker } from "../wire/verdict-marker.ts";
+import { clearancesOn, grantedFrom } from "./clearances.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { contentOf, gate } from "./content-gate.ts";
+import { listReviews } from "./github.ts";
+import { closingTargets, proseOf } from "./pr-body.ts";
+import { readRangeVerdicts } from "./range-verdicts.ts";
+import { requiredChecksAt, requiredChecksNote } from "./required-checks.ts";
+import { countRounds, roundsOn } from "./rounds.ts";
+import { openPull, resolveTargetRepo } from "./target.ts";
 
 const VERB = "build verdicts";
 
@@ -88,7 +88,7 @@ const PROVENANCE_RE = /<!--\s*ac:review\s+pr:#(\d+)\s+round:(\d+)\s*-->/;
  * It is said even at zero, because "no finding was turned away" and "this verb does not look" are
  * different facts, and the second one is what the fold used to print.
  */
-const escalatedNote = (rows: ReadonlyArray<{readonly round: number}>): string =>
+const escalatedNote = (rows: ReadonlyArray<{ readonly round: number }>): string =>
 	rows.length === 0
 		? `${VERB}: no finding was escalated past the acceptance-criteria freeze.`
 		: `${VERB}: ${rows.length} finding(s) escalated past the freeze, from round(s) ${rows.map((row) => row.round).join(", ")} — they are findings of this repair, and no later round grades them.`;
@@ -125,7 +125,7 @@ export const runVerdicts = (
 	ChildProcessSpawner.ChildProcessSpawner | HttpClient.HttpClient
 > =>
 	Effect.gen(function* () {
-		const {pr} = options;
+		const { pr } = options;
 		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
 		if (resolved._tag === "Refused") return resolved.outcome;
 		const repo = resolved.repo;
@@ -157,12 +157,15 @@ export const runVerdicts = (
 
 		// Latest marker per gate namespace. The round count is `roundsOn`'s, so this verb and `build
 		// clear` cannot disagree about how many rounds the PR has been through.
-		const latest = new Map<string, {readonly marker: VerdictMarker; readonly commentId: number}>();
+		const latest = new Map<
+			string,
+			{ readonly marker: VerdictMarker; readonly commentId: number }
+		>();
 		const bodies = new Map<number, string>();
 		for (const comment of listed.value) {
 			const parsed = readMarker(comment.body);
 			if (parsed._tag !== "Found") continue;
-			latest.set(parsed.value.namespace, {marker: parsed.value, commentId: comment.id});
+			latest.set(parsed.value.namespace, { marker: parsed.value, commentId: comment.id });
 			bodies.set(
 				comment.id,
 				contentOf(gate("comment-body", `comment ${comment.id}`, comment.body)),
@@ -177,10 +180,10 @@ export const runVerdicts = (
 			pr,
 			target.pull,
 			null,
-			[...latest.values()].map(({marker}) => marker),
+			[...latest.values()].map(({ marker }) => marker),
 			head,
 		);
-		const rows: Row[] = [...latest.values()].map(({marker, commentId}) => ({
+		const rows: Row[] = [...latest.values()].map(({ marker, commentId }) => ({
 			gate: marker.namespace,
 			polarity: marker.polarity,
 			sha: marker.sha,
@@ -272,7 +275,7 @@ export const runChildVerdicts = (
 	ChildProcessSpawner.ChildProcessSpawner | HttpClient.HttpClient
 > =>
 	Effect.gen(function* () {
-		const {issue} = options;
+		const { issue } = options;
 		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
 		if (resolved._tag === "Refused") return resolved.outcome;
 		const repo = resolved.repo;
@@ -322,7 +325,7 @@ export const runChildVerdicts = (
 			listed.value.flatMap((comment) => {
 				const parsed = readRangeMarker(comment.body);
 				return parsed._tag === "Found" && parsed.value.polarity === "FAIL"
-					? [{sha: parsed.value.range.tip, createdAt: comment.createdAt}]
+					? [{ sha: parsed.value.range.tip, createdAt: comment.createdAt }]
 					: [];
 			}),
 		);
@@ -359,14 +362,14 @@ interface EscalatedFinding {
 type Linked =
 	| {
 			readonly _tag: "Rows";
-			readonly frozen: ReadonlyArray<{text: string; appendedRound: number}>;
+			readonly frozen: ReadonlyArray<{ text: string; appendedRound: number }>;
 			readonly escalated: ReadonlyArray<EscalatedFinding>;
 	  }
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /** The escalation comments on `comments` this subject's round produced, oldest first. */
 const escalatedFrom = (
-	comments: ReadonlyArray<{readonly id: number; readonly body: string}>,
+	comments: ReadonlyArray<{ readonly id: number; readonly body: string }>,
 	mine: (routed: RoutedRow) => boolean,
 ): ReadonlyArray<EscalatedFinding> => {
 	const rows: EscalatedFinding[] = [];
@@ -402,23 +405,23 @@ const linkedFindings = (
 	body: string,
 ): Effect.Effect<Linked, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const empty = {_tag: "Rows" as const, frozen: [], escalated: []};
+		const empty = { _tag: "Rows" as const, frozen: [], escalated: [] };
 		const issue = closingTargets(proseOf(body))[0];
 		if (issue === undefined) return empty;
 		const found = yield* getIssue(repo, issue);
-		if (found._tag === "Unknown") return {_tag: "Unknown" as const, reason: found.reason};
+		if (found._tag === "Unknown") return { _tag: "Unknown" as const, reason: found.reason };
 		if (found._tag === "Absent") return empty;
 		const comments = yield* listComments(repo, issue);
 		if (comments._tag === "Failure") {
-			return {_tag: "Unknown" as const, reason: comments.reason};
+			return { _tag: "Unknown" as const, reason: comments.reason };
 		}
 		const escalated = escalatedFrom(
 			comments.value,
 			(routed) => routed.provenance._tag === "Pull" && routed.provenance.pr === pr,
 		);
 		const read = readCriteria(contentOf(gate("issue-body", `#${issue}`, found.value.body)));
-		if (read._tag !== "Found") return {_tag: "Rows" as const, frozen: [], escalated};
-		const frozen: {text: string; appendedRound: number}[] = [];
+		if (read._tag !== "Found") return { _tag: "Rows" as const, frozen: [], escalated };
+		const frozen: { text: string; appendedRound: number }[] = [];
 		for (const criterion of read.value) {
 			const tag = PROVENANCE_RE.exec(criterion.text);
 			if (tag?.[1] === undefined || tag[2] === undefined) continue;
@@ -431,5 +434,5 @@ const linkedFindings = (
 				});
 			}
 		}
-		return {_tag: "Rows" as const, frozen, escalated};
+		return { _tag: "Rows" as const, frozen, escalated };
 	});

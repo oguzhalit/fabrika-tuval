@@ -13,8 +13,8 @@
  * `epic/<n>..HEAD`, which the *spawned* shell re-resolved in its own worktree to an empty range.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	type Attempt,
 	isShallowClone,
@@ -27,8 +27,8 @@ import {
 	type Shell,
 	traversedParents,
 } from "../io/git.ts";
-import {epicBranch} from "../wire/lane-brief.ts";
-import {type BranchFact, childLaneBranches, integratedFrom, traceRange} from "./prove.ts";
+import { epicBranch } from "../wire/lane-brief.ts";
+import { type BranchFact, childLaneBranches, integratedFrom, traceRange } from "./prove.ts";
 
 /** The located range: the branch it was read off, and the two commits that bound it. */
 export interface ChildRange {
@@ -52,11 +52,11 @@ export interface ChildRange {
  * the run did nothing.
  */
 export type RangeLocation =
-	| {readonly _tag: "Located"; readonly range: ChildRange; readonly notes: ReadonlyArray<string>}
-	| {readonly _tag: "Absent"; readonly why: string; readonly notes: ReadonlyArray<string>}
-	| {readonly _tag: "Ambiguous"; readonly why: string; readonly notes: ReadonlyArray<string>}
-	| {readonly _tag: "Unreadable"; readonly what: string; readonly reason: string}
-	| {readonly _tag: "Truncated"; readonly what: string; readonly sha: string};
+	| { readonly _tag: "Located"; readonly range: ChildRange; readonly notes: ReadonlyArray<string> }
+	| { readonly _tag: "Absent"; readonly why: string; readonly notes: ReadonlyArray<string> }
+	| { readonly _tag: "Ambiguous"; readonly why: string; readonly notes: ReadonlyArray<string> }
+	| { readonly _tag: "Unreadable"; readonly what: string; readonly reason: string }
+	| { readonly _tag: "Truncated"; readonly what: string; readonly sha: string };
 
 /** The one remedy a {@link RangeLocation} `Truncated` takes, named wherever the refusal is printed. */
 export const DEEPEN_REMEDY = "run `git fetch --deepen=25` in this tree and re-run";
@@ -112,7 +112,11 @@ export const locateRange = (
 		const baseRef = epicBranch(epic);
 		const base = yield* resolveCommit(baseRef, " — the epic run's assembly branch");
 		if (base._tag === "Failure") {
-			return {_tag: "Unreadable" as const, what: `"${baseRef}" in this tree`, reason: base.reason};
+			return {
+				_tag: "Unreadable" as const,
+				what: `"${baseRef}" in this tree`,
+				reason: base.reason,
+			};
 		}
 		const shallow = yield* isShallowClone;
 		if (shallow._tag === "Failure") {
@@ -131,7 +135,7 @@ export const locateRange = (
 			};
 		}
 		if (graftedTip.value) {
-			return {_tag: "Truncated" as const, what: `${baseRef}'s tip`, sha: base.value};
+			return { _tag: "Truncated" as const, what: `${baseRef}'s tip`, sha: base.value };
 		}
 		const branches = yield* localBranches;
 		if (branches._tag === "Failure") {
@@ -146,7 +150,7 @@ export const locateRange = (
 		for (const branch of candidates) {
 			const tip = yield* resolveCommit(branch);
 			if (tip._tag === "Failure") {
-				return {_tag: "Unreadable" as const, what: `branch "${branch}"`, reason: tip.reason};
+				return { _tag: "Unreadable" as const, what: `branch "${branch}"`, reason: tip.reason };
 			}
 			const forked = yield* forkPoint(base.value, tip.value);
 			if (forked._tag === "Failure") {
@@ -204,7 +208,7 @@ export const locateRange = (
 				}
 				if (shared.value === other.tip) contains.push(other.tip);
 			}
-			facts.push({...fact, contains});
+			facts.push({ ...fact, contains });
 		}
 
 		const notes = [
@@ -222,7 +226,7 @@ export const locateRange = (
 				);
 			}
 		}
-		if (trace._tag === "None") return {_tag: "Absent" as const, why: trace.why, notes};
+		if (trace._tag === "None") return { _tag: "Absent" as const, why: trace.why, notes };
 		if (trace._tag === "Many") {
 			return {
 				_tag: "Ambiguous" as const,

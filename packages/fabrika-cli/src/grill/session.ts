@@ -21,15 +21,15 @@
  * fail-open direction.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type CommentRecord, getIssue} from "../io/issues.ts";
-import {permissionFor} from "../io/pulls.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type CommentRecord, getIssue } from "../io/issues.ts";
+import { permissionFor } from "../io/pulls.ts";
 import * as grillAnswer from "../wire/grill-answer.ts";
-import type {QuestionId, Stamp} from "../wire/grill-marker.ts";
+import type { QuestionId, Stamp } from "../wire/grill-marker.ts";
 import * as grillRuling from "../wire/grill-ruling.ts";
 import * as grillSupersede from "../wire/grill-supersede.ts";
-import {type Question, readRoundComment} from "./round.ts";
+import { type Question, readRoundComment } from "./round.ts";
 
 /** The label that makes a session findable. A created-but-unlabelled issue is invisible to it. */
 export const SESSION_LABEL = "grilling:session";
@@ -55,8 +55,8 @@ export type SessionRead =
 			readonly body: string;
 	  }
 	/** Proven: no such issue, or an issue that is not a grilling session. */
-	| {readonly _tag: "Absent"}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Absent" }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 export const resolveSession = (
 	repo: string,
@@ -64,8 +64,8 @@ export const resolveSession = (
 ): Effect.Effect<SessionRead, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		const found = yield* getIssue(repo, issue);
-		if (found._tag === "Absent") return {_tag: "Absent" as const};
-		if (found._tag === "Unknown") return {_tag: "Unknown" as const, reason: found.reason};
+		if (found._tag === "Absent") return { _tag: "Absent" as const };
+		if (found._tag === "Unknown") return { _tag: "Unknown" as const, reason: found.reason };
 		return found.value.labels.includes(SESSION_LABEL)
 			? {
 					_tag: "Session" as const,
@@ -73,7 +73,7 @@ export const resolveSession = (
 					url: found.value.url,
 					body: found.value.body,
 				}
-			: {_tag: "Absent" as const};
+			: { _tag: "Absent" as const };
 	});
 
 /** A round comment as it currently reads, with the comment that carries it. */
@@ -103,12 +103,12 @@ export const scanRounds = (comments: ReadonlyArray<CommentRecord>): RoundScan =>
 		const read = readRoundComment(comment.body);
 		if (read._tag === "NotARound") continue;
 		if (read._tag === "Malformed") {
-			broken.push({round: read.round, comment: comment.id, reason: read.reason});
+			broken.push({ round: read.round, comment: comment.id, reason: read.reason });
 			continue;
 		}
-		rounds.push({round: read.round, comment: comment.id, questions: read.questions});
+		rounds.push({ round: read.round, comment: comment.id, questions: read.questions });
 	}
-	return {rounds, broken};
+	return { rounds, broken };
 };
 
 /** The next round number: one past the highest round already posted. Zero rounds is a fact. */
@@ -122,10 +122,10 @@ export const nextRoundNumber = (scan: RoundScan): number =>
 /** `id → the question and the round holding it`, so a verb resolves an id without re-walking. */
 export const questionIndex = (
 	rounds: ReadonlyArray<PostedRound>,
-): ReadonlyMap<string, {readonly question: Question; readonly round: PostedRound}> => {
-	const index = new Map<string, {question: Question; round: PostedRound}>();
+): ReadonlyMap<string, { readonly question: Question; readonly round: PostedRound }> => {
+	const index = new Map<string, { question: Question; round: PostedRound }>();
 	for (const round of rounds) {
-		for (const question of round.questions) index.set(question.id, {question, round});
+		for (const question of round.questions) index.set(question.id, { question, round });
 	}
 	return index;
 };
@@ -162,7 +162,7 @@ export interface MarkerScan {
 }
 
 export type MarkerScanResult =
-	| {readonly _tag: "Scanned"; readonly scan: MarkerScan}
+	| { readonly _tag: "Scanned"; readonly scan: MarkerScan }
 	/**
 	 * A permission read that did not complete. Authority is never granted by a failed lookup, and
 	 * `subject` names the marker left unjudged so the refusal says which question went UNKNOWN.
@@ -221,7 +221,7 @@ export const scanMarkers = (
 						: grillSupersede.read(comment.body);
 			if (read._tag === "Absent") continue;
 			if (read._tag === "Malformed") {
-				disregarded.push({comment: comment.id, reason: "malformed", detail: read.reason});
+				disregarded.push({ comment: comment.id, reason: "malformed", detail: read.reason });
 				continue;
 			}
 
@@ -273,7 +273,7 @@ export const scanMarkers = (
 
 		return {
 			_tag: "Scanned" as const,
-			scan: {rulings, answers, supersedes, disregarded, authorsResolved: permissions.size},
+			scan: { rulings, answers, supersedes, disregarded, authorsResolved: permissions.size },
 		};
 	});
 
@@ -296,4 +296,4 @@ export const retirements = (scan: MarkerScan): ReadonlyMap<QuestionId, number> =
  * taking an `--authorization` file now judges through, and a second declaration here is how two
  * verbs come to disagree about what "dated" means.
  */
-export {ISO_DATE} from "../authorization.ts";
+export { ISO_DATE } from "../authorization.ts";

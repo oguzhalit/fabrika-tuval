@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	anySessionCaller,
 	claimNonceOf,
@@ -29,14 +29,14 @@ const sibling = laneCaller(MINE, SIBLING_LANE);
 
 const at = (iso: string) => Date.parse(iso);
 
-const body = (session: string, nonce: string) => markerBody({session, nonce});
+const body = (session: string, nonce: string) => markerBody({ session, nonce });
 
 const marker = (
 	id: number,
 	session: string,
 	createdAt: string,
 	lane: string | null = session === MINE ? MY_LANE : THEIR_LANE,
-) => ({id, session, lane, createdAt});
+) => ({ id, session, lane, createdAt });
 
 describe("markerBody / sessionOf / laneOf", () => {
 	it("round-trips the exact one-line literal, session and lane both", () => {
@@ -113,15 +113,15 @@ describe("markersOf", () => {
 	it("keeps only the marker comments, in read order, with the lane each names", () => {
 		expect(
 			markersOf([
-				{id: 1, createdAt: "2026-08-02T09:00:00Z", body: "a human comment"},
-				{id: 2, createdAt: "2026-08-02T09:14:02Z", body: body(THEIRS, THEIR_LANE)},
-				{id: 3, createdAt: "2026-08-02T09:15:00Z", body: body(MINE, MY_LANE)},
-				{id: 4, createdAt: "2026-08-02T09:16:00Z", body: `${MARKER_PREFIX}${MINE} -->`},
+				{ id: 1, createdAt: "2026-08-02T09:00:00Z", body: "a human comment" },
+				{ id: 2, createdAt: "2026-08-02T09:14:02Z", body: body(THEIRS, THEIR_LANE) },
+				{ id: 3, createdAt: "2026-08-02T09:15:00Z", body: body(MINE, MY_LANE) },
+				{ id: 4, createdAt: "2026-08-02T09:16:00Z", body: `${MARKER_PREFIX}${MINE} -->` },
 			]),
 		).toEqual([
-			{id: 2, session: THEIRS, lane: THEIR_LANE, createdAt: "2026-08-02T09:14:02Z"},
-			{id: 3, session: MINE, lane: MY_LANE, createdAt: "2026-08-02T09:15:00Z"},
-			{id: 4, session: MINE, lane: null, createdAt: "2026-08-02T09:16:00Z"},
+			{ id: 2, session: THEIRS, lane: THEIR_LANE, createdAt: "2026-08-02T09:14:02Z" },
+			{ id: 3, session: MINE, lane: MY_LANE, createdAt: "2026-08-02T09:15:00Z" },
+			{ id: 4, session: MINE, lane: null, createdAt: "2026-08-02T09:16:00Z" },
 		]);
 	});
 });
@@ -136,7 +136,7 @@ describe("resolveClaim", () => {
 			now,
 			ttlMinutes: 60,
 		});
-		expect(out).toMatchObject({_tag: "Won", live: 1, expired: 0});
+		expect(out).toMatchObject({ _tag: "Won", live: 1, expired: 0 });
 	});
 
 	it("loses to an earlier live marker and names the holder", () => {
@@ -146,7 +146,7 @@ describe("resolveClaim", () => {
 			now,
 			ttlMinutes: 60,
 		});
-		expect(out).toMatchObject({_tag: "Lost"});
+		expect(out).toMatchObject({ _tag: "Lost" });
 		if (out._tag !== "Lost") throw new Error("unreachable");
 		expect(out.holder.session).toBe(THEIRS);
 		expect(out.mine.id).toBe(3);
@@ -170,7 +170,7 @@ describe("resolveClaim", () => {
 			now,
 			ttlMinutes: 60,
 		});
-		expect(out).toMatchObject({_tag: "Won", live: 1, expired: 1});
+		expect(out).toMatchObject({ _tag: "Won", live: 1, expired: 1 });
 	});
 
 	it("keeps a marker exactly at the TTL boundary binding", () => {
@@ -194,7 +194,7 @@ describe("resolveClaim", () => {
 	});
 
 	it("reports MineAbsent — never Won — when no marker of this lane survives", () => {
-		expect(resolveClaim({markers: [], caller: me, now, ttlMinutes: 60})._tag).toBe("MineAbsent");
+		expect(resolveClaim({ markers: [], caller: me, now, ttlMinutes: 60 })._tag).toBe("MineAbsent");
 		expect(
 			resolveClaim({
 				markers: [marker(2, THEIRS, "2026-08-02T09:14:02Z")],
@@ -238,20 +238,20 @@ describe("resolveClaim — two lanes of one session", () => {
 	// Both siblings of a fan-out carry one CLAUDE_CODE_SESSION_ID. Resolved on the session id alone,
 	// each read the other's marker back as its own and BOTH answered `won`.
 	const markers = [
-		{id: 2, session: MINE, lane: SIBLING_LANE, createdAt: "2026-08-02T09:14:02Z"},
-		{id: 3, session: MINE, lane: MY_LANE, createdAt: "2026-08-02T09:50:00Z"},
+		{ id: 2, session: MINE, lane: SIBLING_LANE, createdAt: "2026-08-02T09:14:02Z" },
+		{ id: 3, session: MINE, lane: MY_LANE, createdAt: "2026-08-02T09:50:00Z" },
 	];
 
 	it("hands the claim to exactly one of them — never both", () => {
-		const mine = resolveClaim({markers, caller: me, now, ttlMinutes: 60});
-		const theirs = resolveClaim({markers, caller: sibling, now, ttlMinutes: 60});
+		const mine = resolveClaim({ markers, caller: me, now, ttlMinutes: 60 });
+		const theirs = resolveClaim({ markers, caller: sibling, now, ttlMinutes: 60 });
 		expect([mine._tag, theirs._tag].filter((tag) => tag === "Won")).toHaveLength(1);
 		expect(theirs._tag).toBe("Won");
 		expect(mine._tag).toBe("Lost");
 	});
 
 	it("gives the loser its OWN marker to retract, never the winner's", () => {
-		const mine = resolveClaim({markers, caller: me, now, ttlMinutes: 60});
+		const mine = resolveClaim({ markers, caller: me, now, ttlMinutes: 60 });
 		expect(myMarker(mine)?.id).toBe(3);
 		if (mine._tag !== "Lost") throw new Error("unreachable");
 		expect(mine.holder.id).toBe(2);
@@ -260,19 +260,21 @@ describe("resolveClaim — two lanes of one session", () => {
 
 	it("reads a sibling's marker as absent, not as its own, when it holds none itself", () => {
 		const only = [markers[0] as (typeof markers)[number]];
-		expect(resolveClaim({markers: only, caller: me, now, ttlMinutes: 60})._tag).toBe("MineAbsent");
+		expect(resolveClaim({ markers: only, caller: me, now, ttlMinutes: 60 })._tag).toBe(
+			"MineAbsent",
+		);
 	});
 
 	it("treats a pre-#6132 session-only marker as another claimant's", () => {
-		const legacy = [{id: 2, session: MINE, lane: null, createdAt: "2026-08-02T09:14:02Z"}];
-		expect(resolveClaim({markers: legacy, caller: me, now, ttlMinutes: 60})._tag).toBe(
+		const legacy = [{ id: 2, session: MINE, lane: null, createdAt: "2026-08-02T09:14:02Z" }];
+		expect(resolveClaim({ markers: legacy, caller: me, now, ttlMinutes: 60 })._tag).toBe(
 			"MineAbsent",
 		);
 	});
 
 	it("still resolves on the session alone for a caller that named no lane", () => {
 		// The opt-in the readers with no nonce of their own keep — named, never a default.
-		const out = resolveClaim({markers, caller: anySessionCaller(MINE), now, ttlMinutes: 60});
+		const out = resolveClaim({ markers, caller: anySessionCaller(MINE), now, ttlMinutes: 60 });
 		expect(out._tag).toBe("Won");
 	});
 });
@@ -294,8 +296,8 @@ describe("myMarker", () => {
 		});
 		expect(myMarker(won)?.id).toBe(3);
 		expect(myMarker(lost)?.id).toBe(3);
-		expect(myMarker({_tag: "Unresolvable", reason: "r"})).toBeNull();
-		expect(myMarker({_tag: "MineAbsent", live: 0, expired: 0})).toBeNull();
+		expect(myMarker({ _tag: "Unresolvable", reason: "r" })).toBeNull();
+		expect(myMarker({ _tag: "MineAbsent", live: 0, expired: 0 })).toBeNull();
 	});
 });
 

@@ -22,8 +22,8 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9517#issuecomment-5752597880
  */
 
-import type {StandingRuling} from "../decision/ruling.ts";
-import type {AcceptanceCriterion} from "../wire/acceptance-criteria.ts";
+import type { StandingRuling } from "../decision/ruling.ts";
+import type { AcceptanceCriterion } from "../wire/acceptance-criteria.ts";
 
 /** Which artifact a graded row was read out of. */
 export type RowSource = "body" | "ruling";
@@ -95,7 +95,7 @@ export const gradedSet = (
 ): GradedSet => {
 	const supersededRows = new Set<number>();
 	const dangling: number[] = [];
-	for (const {ruling} of rulings) {
+	for (const { ruling } of rulings) {
 		const position = ruling.ruling.supersedes;
 		if (position === null) continue;
 		if (position > criteria.length) {
@@ -119,7 +119,7 @@ export const gradedSet = (
 		supersedes: null,
 	}));
 
-	const ruled: GradedRow[] = rulings.map(({ruling, text}) => ({
+	const ruled: GradedRow[] = rulings.map(({ ruling, text }) => ({
 		source: "ruling" as const,
 		state: "open" as const,
 		text: text === null ? ruling.ruling.ruling : oneLine(text),

@@ -1,7 +1,7 @@
 /** What lane records add up to: one count per lane, a window from the bet, and honest spend. */
-import {describe, expect, it} from "vitest";
-import type {Instant, LaneRecord, Spent} from "../wire/lane-record.ts";
-import {latestPerLane, tally} from "./tally.ts";
+import { describe, expect, it } from "vitest";
+import type { Instant, LaneRecord, Spent } from "../wire/lane-record.ts";
+import { latestPerLane, tally } from "./tally.ts";
 
 const record = (
 	startedAt: string,
@@ -15,7 +15,7 @@ const record = (
 	terminalAt: terminalAt as Instant,
 	builds: 1,
 	reviews: 1,
-	parks: Array.from({length: founderParks}, () => ({
+	parks: Array.from({ length: founderParks }, () => ({
 		task: "issue",
 		leaf: "blocked",
 		cause: null,
@@ -24,12 +24,12 @@ const record = (
 	})),
 	spent,
 	origin: "driver-pick",
-	waiting: {_tag: "None"},
+	waiting: { _tag: "None" },
 	prs: [],
 	log: [],
 });
 
-const usd = (amount: number): Spent => ({_tag: "Measured", usd: amount});
+const usd = (amount: number): Spent => ({ _tag: "Measured", usd: amount });
 
 describe("the lane tally", () => {
 	it("counts a lane once, by its latest record, because each record carries the whole log", () => {
@@ -43,7 +43,7 @@ describe("the lane tally", () => {
 		expect(tally(records, null)).toEqual({
 			lanes: 2,
 			asks: 2,
-			spend: {_tag: "Measured", usd: 10.25},
+			spend: { _tag: "Measured", usd: 10.25 },
 		});
 	});
 
@@ -56,12 +56,12 @@ describe("the lane tally", () => {
 		expect(tally(records, "2026-09-22T00:00:00Z")).toEqual({
 			lanes: 1,
 			asks: 1,
-			spend: {_tag: "Measured", usd: 6},
+			spend: { _tag: "Measured", usd: 6 },
 		});
 		expect(tally(records, "2026-09-30T00:00:00Z")).toEqual({
 			lanes: 0,
 			asks: 0,
-			spend: {_tag: "Measured", usd: 0},
+			spend: { _tag: "Measured", usd: 0 },
 		});
 	});
 
@@ -74,6 +74,6 @@ describe("the lane tally", () => {
 			}),
 		];
 
-		expect(tally(records, null).spend).toEqual({_tag: "Unmeasured", lanes: 1, measuredUsd: 4});
+		expect(tally(records, null).spend).toEqual({ _tag: "Unmeasured", lanes: 1, measuredUsd: 4 });
 	});
 });

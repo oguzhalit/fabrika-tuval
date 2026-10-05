@@ -1,12 +1,12 @@
-import {Effect, Layer, Redacted} from "effect";
-import {describe, expect, it} from "vitest";
-import type {AccentDeclaration} from "../capture/accent.ts";
-import {LOGINS_VARIABLE, PREVIEW_AUTH_KEY_PATH, signSessionToken} from "../capture/auth.ts";
-import type {SchemeDeclaration} from "../capture/color-scheme.ts";
-import type {LocaleDeclaration} from "../capture/locale-seed.ts";
-import type {UiSurface} from "../config/keys/ui-surfaces.ts";
-import {fakeFs, fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import {type Existence, present, unknown} from "../io/issues.ts";
+import { Effect, Layer, Redacted } from "effect";
+import { describe, expect, it } from "vitest";
+import type { AccentDeclaration } from "../capture/accent.ts";
+import { LOGINS_VARIABLE, PREVIEW_AUTH_KEY_PATH, signSessionToken } from "../capture/auth.ts";
+import type { SchemeDeclaration } from "../capture/color-scheme.ts";
+import type { LocaleDeclaration } from "../capture/locale-seed.ts";
+import type { UiSurface } from "../config/keys/ui-surfaces.ts";
+import { fakeFs, fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import { type Existence, present, unknown } from "../io/issues.ts";
 import {
 	INVALID_CAPTURE,
 	NO_PREVIEW,
@@ -18,9 +18,9 @@ import {
 	WRONG_VIEWPORT,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {parseManifest} from "./manifest.ts";
-import {type CaptureShots, makeCaptureRenderLeg} from "./render-leg.ts";
-import {type FetchLogins, type RenderLeg, runRender, type SurfaceRender} from "./render-verb.ts";
+import { parseManifest } from "./manifest.ts";
+import { type CaptureShots, makeCaptureRenderLeg } from "./render-leg.ts";
+import { type FetchLogins, type RenderLeg, runRender, type SurfaceRender } from "./render-verb.ts";
 
 const HEAD = "03135b91aa04f7e2c9d8b1640a5c22e9f01b7d3c";
 const PREVIEW = "https://pr-4321-web.example.test";
@@ -33,8 +33,8 @@ const pull = (state = "open", head = HEAD): HttpReply => ({
 	body: JSON.stringify({
 		number: 4321,
 		state,
-		head: {sha: head},
-		base: {ref: "main"},
+		head: { sha: head },
+		base: { ref: "main" },
 		body: "",
 		changed_files: 2,
 		comments: 1,
@@ -46,7 +46,7 @@ const announcement = (sha: string = HEAD.slice(0, 7)): HttpReply => ({
 	body: JSON.stringify([
 		{
 			id: 7,
-			user: {login: "kampus-bot"},
+			user: { login: "kampus-bot" },
 			created_at: "2026-08-09T00:00:00Z",
 			updated_at: "2026-08-09T00:00:00Z",
 			body: `<!-- preview-deploy:web -->\n- **web** — Stage \`pr-4321\` → ${PREVIEW} <sub>(${sha})</sub>`,
@@ -68,7 +68,7 @@ const rendered = (
 		width,
 		height: 2140,
 		sha256: "9c41",
-		pageErrors: {rows: [], more: 0},
+		pageErrors: { rows: [], more: 0 },
 	},
 });
 
@@ -82,14 +82,14 @@ const legOf =
 		);
 
 /** A logins variable that answers one way, counting how often the verb went and asked. */
-const loginsOf = (answer: Existence<string>): FetchLogins & {readonly calls: string[]} => {
+const loginsOf = (answer: Existence<string>): FetchLogins & { readonly calls: string[] } => {
 	const calls: string[] = [];
 	const fetch: FetchLogins = (repo) =>
 		Effect.sync(() => {
 			calls.push(repo);
 			return answer._tag === "Present" ? present(Redacted.make(answer.value)) : answer;
 		});
-	return Object.assign(fetch, {calls});
+	return Object.assign(fetch, { calls });
 };
 
 const logins = (entries: Record<string, unknown>): Existence<string> =>
@@ -132,12 +132,12 @@ const options = {
 	// override this with `/repo`, whose fake tree carries the file.
 	cwd: "/work",
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 	tmpRoot: "/tmp",
 	render: legOf({}),
 	// No logins variable on the repository, which is the state every case written before the
 	// variable existed ran under: an unset token stays unset.
-	fetchLogins: loginsOf({_tag: "Absent"}),
+	fetchLogins: loginsOf({ _tag: "Absent" }),
 };
 
 const run = (
@@ -146,13 +146,13 @@ const run = (
 	files: Readonly<Record<string, string>> = {},
 	unreadable: ReadonlyArray<string> = [],
 ) => {
-	const fs = fakeFs({files, unreadable: [...unreadable]});
+	const fs = fakeFs({ files, unreadable: [...unreadable] });
 	return Effect.runPromise(
 		Effect.provide(
-			runRender({...options, ...overrides}),
+			runRender({ ...options, ...overrides }),
 			Layer.merge(fakeSeams(script).layer, fs.layer),
 		),
-	).then((outcome) => ({outcome, written: fs.written}));
+	).then((outcome) => ({ outcome, written: fs.written }));
 };
 
 const happy = (): ReadonlyArray<Scripted> => [
@@ -162,7 +162,7 @@ const happy = (): ReadonlyArray<Scripted> => [
 
 describe("runRender", () => {
 	it("captures the surface, prints the manifest, and writes the same bytes to the set", async () => {
-		const {outcome, written} = await run(happy());
+		const { outcome, written } = await run(happy());
 		expect(outcome.code).toBe(0);
 		const manifest = parseManifest(outcome.stdout);
 		expect(manifest._tag).toBe("Manifest");
@@ -181,15 +181,15 @@ describe("runRender", () => {
 				width: 1280,
 				height: 2140,
 				sha256: "9c41",
-				pageErrors: {rows: [{kind: "console.error", text: "Warning: a"}], more: 12},
+				pageErrors: { rows: [{ kind: "console.error", text: "Warning: a" }], more: 12 },
 			},
 		};
-		const {outcome, written} = await run(happy(), {render: legOf({"/pano": noisy})});
+		const { outcome, written } = await run(happy(), { render: legOf({ "/pano": noisy }) });
 		expect(outcome.code).toBe(0);
 		const read = parseManifest(outcome.stdout);
 		expect(read).toMatchObject({
 			_tag: "Manifest",
-			value: {captures: [{pageErrors: {rows: [{text: "Warning: a"}], more: 12}}]},
+			value: { captures: [{ pageErrors: { rows: [{ text: "Warning: a" }], more: 12 } }] },
 		});
 		expect(outcome.stdout).not.toContain('"pageErrors":[');
 		expect(written.get("/tmp/fabrika-review-ui/4321-03135b91/judged/manifest.json")).toBe(
@@ -202,30 +202,30 @@ describe("runRender", () => {
 	});
 
 	it("enumerates every surface's outcome on stderr, success included", async () => {
-		const {outcome} = await run(happy(), {surfaces: ["/pano", "/pano/yeni"]});
+		const { outcome } = await run(happy(), { surfaces: ["/pano", "/pano/yeni"] });
 		expect(outcome.code).toBe(0);
 		expect(outcome.stderr.filter((line) => line.includes("captured:"))).toHaveLength(2);
 	});
 
 	it("refuses zero surfaces — `rendered nothing, found nothing wrong` is not an answer", async () => {
-		const {outcome} = await run(happy(), {surfaces: []});
+		const { outcome } = await run(happy(), { surfaces: [] });
 		expect(outcome.code).toBe(1);
 	});
 
 	it("refuses a non-kebab --out and an unrealized :state suffix on 10", async () => {
-		expect((await run(happy(), {out: "Judged"})).outcome.code).toBe(OFF_VOCABULARY);
-		expect((await run(happy(), {surfaces: ["/pano:empty"]})).outcome.code).toBe(OFF_VOCABULARY);
+		expect((await run(happy(), { out: "Judged" })).outcome.code).toBe(OFF_VOCABULARY);
+		expect((await run(happy(), { surfaces: ["/pano:empty"] })).outcome.code).toBe(OFF_VOCABULARY);
 	});
 
 	// An `:auth` surface rendered anonymously is the "unseen ground reading as clean" defect, so a
 	// half-set or absent credential pair is UNKNOWN rather than a visitor's shot.
 	it("refuses an :auth surface with no credentials on 11, never the anonymous render", async () => {
-		expect((await run(happy(), {surfaces: ["/pano:auth"]})).outcome.code).toBe(
+		expect((await run(happy(), { surfaces: ["/pano:auth"] })).outcome.code).toBe(
 			PRECONDITION_UNKNOWN,
 		);
 		const halfSet = await run(happy(), {
 			surfaces: ["/pano:auth"],
-			env: {CLAUDE_PIPELINE_REPO: "o/r", PREVIEW_TEST_SESSION_TOKEN: "t".repeat(32)},
+			env: { CLAUDE_PIPELINE_REPO: "o/r", PREVIEW_TEST_SESSION_TOKEN: "t".repeat(32) },
 		});
 		expect(halfSet.outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(halfSet.outcome.stderr.join("\n")).toContain("BETTER_AUTH_SECRET");
@@ -238,7 +238,7 @@ describe("runRender", () => {
 	 * signature and an absent session row are the same bare `null` from better-auth.
 	 */
 	it("refuses a placeholder-prefixed ambient secret on 11 rather than signing a cookie the worker rejects", async () => {
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/pano:auth"],
 			env: {
 				CLAUDE_PIPELINE_REPO: "o/r",
@@ -261,13 +261,13 @@ describe("runRender", () => {
 	 * `:auth` surface, because the key its preview verifies against is committed in the repo.
 	 */
 	it("signs with the committed preview key, with no flag and no ambient secret", async () => {
-		const seen = new Map<string, readonly {name: string; value: string}[]>();
-		const {outcome} = await run(
+		const seen = new Map<string, readonly { name: string; value: string }[]>();
+		const { outcome } = await run(
 			happy(),
 			{
 				surfaces: ["/pano:auth"],
 				cwd: "/repo",
-				env: {CLAUDE_PIPELINE_REPO: "o/r", PREVIEW_TEST_SESSION_TOKEN: "t".repeat(32)},
+				env: { CLAUDE_PIPELINE_REPO: "o/r", PREVIEW_TEST_SESSION_TOKEN: "t".repeat(32) },
 				render: (request) => {
 					seen.set(request.surface, request.cookies);
 					return Effect.succeed(rendered(request.surface, request.outDir));
@@ -285,7 +285,7 @@ describe("runRender", () => {
 	});
 
 	it("prefers the committed preview key over a usable ambient secret", async () => {
-		const seen = new Map<string, readonly {name: string; value: string}[]>();
+		const seen = new Map<string, readonly { name: string; value: string }[]>();
 		await run(
 			happy(),
 			{
@@ -314,14 +314,14 @@ describe("runRender", () => {
 	});
 
 	it("lets --auth-secret-from override the committed preview key", async () => {
-		const seen = new Map<string, readonly {name: string; value: string}[]>();
+		const seen = new Map<string, readonly { name: string; value: string }[]>();
 		await run(
 			happy(),
 			{
 				surfaces: ["/pano:auth"],
 				cwd: "/repo",
 				authSecretFrom: "/run/named-secret",
-				env: {CLAUDE_PIPELINE_REPO: "o/r", PREVIEW_TEST_SESSION_TOKEN: "t".repeat(32)},
+				env: { CLAUDE_PIPELINE_REPO: "o/r", PREVIEW_TEST_SESSION_TOKEN: "t".repeat(32) },
 				render: (request) => {
 					seen.set(request.surface, request.cookies);
 					return Effect.succeed(rendered(request.surface, request.outDir));
@@ -339,8 +339,8 @@ describe("runRender", () => {
 	});
 
 	it("signs with the exported repo-wide secret when --auth-secret-from names it", async () => {
-		const seen = new Map<string, readonly {name: string; value: string}[]>();
-		const {outcome} = await run(
+		const seen = new Map<string, readonly { name: string; value: string }[]>();
+		const { outcome } = await run(
 			happy(),
 			{
 				surfaces: ["/pano:auth"],
@@ -355,7 +355,7 @@ describe("runRender", () => {
 					return Effect.succeed(rendered(request.surface, request.outDir));
 				},
 			},
-			{"/run/preview-secret": `${"d".repeat(32)}\n`},
+			{ "/run/preview-secret": `${"d".repeat(32)}\n` },
 		);
 		expect(outcome.code).toBe(0);
 		// The named source wins over the ambient placeholder, which is the whole point of the flag.
@@ -369,14 +369,14 @@ describe("runRender", () => {
 	 * ambient variable being empty and never mention the directory that actually stopped the read.
 	 */
 	it("refuses on 11 naming the unreadable ancestor when the repo root cannot be located", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			happy(),
 			{
 				surfaces: ["/pano:auth"],
 				cwd: "/repo",
-				env: {CLAUDE_PIPELINE_REPO: "o/r", PREVIEW_TEST_SESSION_TOKEN: "t".repeat(32)},
+				env: { CLAUDE_PIPELINE_REPO: "o/r", PREVIEW_TEST_SESSION_TOKEN: "t".repeat(32) },
 			},
-			{"/repo/package.json": "{}"},
+			{ "/repo/package.json": "{}" },
 			["/repo/package.json"],
 		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
@@ -387,10 +387,10 @@ describe("runRender", () => {
 	});
 
 	it("refuses an unreadable --auth-secret-from on 11, naming the path", async () => {
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/pano:auth"],
 			authSecretFrom: "/run/absent-secret",
-			env: {CLAUDE_PIPELINE_REPO: "o/r", PREVIEW_TEST_SESSION_TOKEN: "t".repeat(32)},
+			env: { CLAUDE_PIPELINE_REPO: "o/r", PREVIEW_TEST_SESSION_TOKEN: "t".repeat(32) },
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.join("\n")).toContain("/run/absent-secret");
@@ -398,15 +398,15 @@ describe("runRender", () => {
 
 	// An anonymous run signs nothing, so a secret it never needs must not be able to refuse it.
 	it("renders an anonymous surface with a placeholder secret in the environment", async () => {
-		const {outcome} = await run(happy(), {
-			env: {CLAUDE_PIPELINE_REPO: "o/r", BETTER_AUTH_SECRET: "insecure_f0fe1c42"},
+		const { outcome } = await run(happy(), {
+			env: { CLAUDE_PIPELINE_REPO: "o/r", BETTER_AUTH_SECRET: "insecure_f0fe1c42" },
 		});
 		expect(outcome.code).toBe(0);
 	});
 
 	it("seeds the session cookie onto the :auth surface only, so the default stays the visitor's", async () => {
 		const seen = new Map<string, number>();
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/pano", "/pano:auth"],
 			env: {
 				CLAUDE_PIPELINE_REPO: "o/r",
@@ -427,7 +427,7 @@ describe("runRender", () => {
 	// preview. Reading it as satisfied by the yazar's token would render the audience the surface
 	// said it was not, and the capture would come back clean.
 	it("refuses a çaylak surface whose tier token is unset, naming it rather than falling back", async () => {
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/hosgeldin:auth-caylak"],
 			env: {
 				CLAUDE_PIPELINE_REPO: "o/r",
@@ -443,14 +443,14 @@ describe("runRender", () => {
 	});
 
 	describe("the logins repository variable", () => {
-		const secretOnly = {CLAUDE_PIPELINE_REPO: "o/r", BETTER_AUTH_SECRET: "s".repeat(32)};
+		const secretOnly = { CLAUDE_PIPELINE_REPO: "o/r", BETTER_AUTH_SECRET: "s".repeat(32) };
 		const fetched = "f".repeat(32);
 
 		/** The seat holds no token at all: repository access is the whole credential. */
 		it("signs a tier's cookie with the token fetched from the variable", async () => {
 			const seen: (string | undefined)[] = [];
-			const fetchLogins = loginsOf(logins({PREVIEW_TEST_SESSION_TOKEN: fetched}));
-			const {outcome} = await run(happy(), {
+			const fetchLogins = loginsOf(logins({ PREVIEW_TEST_SESSION_TOKEN: fetched }));
+			const { outcome } = await run(happy(), {
 				surfaces: ["/pano:auth"],
 				env: secretOnly,
 				fetchLogins,
@@ -467,9 +467,9 @@ describe("runRender", () => {
 
 		it("never asks for the variable when the environment already holds the token", async () => {
 			const fetchLogins = loginsOf(unknown("the variable must not be read"));
-			const {outcome} = await run(happy(), {
+			const { outcome } = await run(happy(), {
 				surfaces: ["/pano:auth"],
-				env: {...secretOnly, PREVIEW_TEST_SESSION_TOKEN: "t".repeat(32)},
+				env: { ...secretOnly, PREVIEW_TEST_SESSION_TOKEN: "t".repeat(32) },
 				fetchLogins,
 			});
 			expect(outcome.code).toBe(0);
@@ -478,13 +478,13 @@ describe("runRender", () => {
 
 		it("never asks for it on a run that names no tier", async () => {
 			const fetchLogins = loginsOf(unknown("the variable must not be read"));
-			const {outcome} = await run(happy(), {fetchLogins});
+			const { outcome } = await run(happy(), { fetchLogins });
 			expect(outcome.code).toBe(0);
 			expect(fetchLogins.calls).toEqual([]);
 		});
 
 		it("refuses on 11 when the variable cannot be read, and never as an absent one", async () => {
-			const {outcome} = await run(happy(), {
+			const { outcome } = await run(happy(), {
 				surfaces: ["/pano:auth"],
 				env: secretOnly,
 				fetchLogins: loginsOf(unknown("HTTP 403: Resource not accessible")),
@@ -496,7 +496,7 @@ describe("runRender", () => {
 		});
 
 		it("refuses a variable that is not the logins object, without printing it", async () => {
-			const {outcome} = await run(happy(), {
+			const { outcome } = await run(happy(), {
 				surfaces: ["/pano:auth"],
 				env: secretOnly,
 				fetchLogins: loginsOf(present(`${fetched} is not json`)),
@@ -507,10 +507,10 @@ describe("runRender", () => {
 		});
 
 		it("names the identity a set variable does not carry, apart from an absent variable", async () => {
-			const {outcome} = await run(happy(), {
+			const { outcome } = await run(happy(), {
 				surfaces: ["/hosgeldin:auth-caylak"],
 				env: secretOnly,
-				fetchLogins: loginsOf(logins({PREVIEW_TEST_SESSION_TOKEN: fetched})),
+				fetchLogins: loginsOf(logins({ PREVIEW_TEST_SESSION_TOKEN: fetched })),
 			});
 			expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 			expect(outcome.stderr.at(-1)).toContain(
@@ -521,7 +521,7 @@ describe("runRender", () => {
 
 	it("seeds each tier's own session, so two tiers are two identities and not one shot twice", async () => {
 		const seen = new Map<string, string | undefined>();
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/hosgeldin:auth", "/hosgeldin:auth-caylak"],
 			env: {
 				CLAUDE_PIPELINE_REPO: "o/r",
@@ -542,7 +542,7 @@ describe("runRender", () => {
 	// shot's own answer, and a shot that came back above the named floor is UNKNOWN — the page
 	// rendered fine, it is just not the audience the surface id named.
 	it("refuses a wrong-tier shot on 11, recording no capture under that surface id", async () => {
-		const {outcome, written} = await run(happy(), {
+		const { outcome, written } = await run(happy(), {
 			surfaces: ["/hosgeldin:auth-caylak"],
 			env: {
 				CLAUDE_PIPELINE_REPO: "o/r",
@@ -550,7 +550,7 @@ describe("runRender", () => {
 				BETTER_AUTH_SECRET: "s".repeat(32),
 			},
 			render: legOf({
-				"/hosgeldin:auth-caylak": {_tag: "WrongTier", wanted: "çaylak", rendered: "yazar"},
+				"/hosgeldin:auth-caylak": { _tag: "WrongTier", wanted: "çaylak", rendered: "yazar" },
 			}),
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
@@ -561,7 +561,7 @@ describe("runRender", () => {
 	// The unverified çaylak shares its tier with the verified one, so the verified çaylak's
 	// token is exactly the fallback that would shoot the write it is refused under its name.
 	it("refuses an unverified-çaylak surface whose own token is unset, never falling back", async () => {
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/hosgeldin:auth-caylak-unverified"],
 			env: {
 				CLAUDE_PIPELINE_REPO: "o/r",
@@ -576,7 +576,7 @@ describe("runRender", () => {
 
 	it("signs the unverified-çaylak surface with its own token, not the verified çaylak's", async () => {
 		const seen = new Map<string, string | undefined>();
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/hosgeldin:auth-caylak", "/hosgeldin:auth-caylak-unverified"],
 			env: {
 				CLAUDE_PIPELINE_REPO: "o/r",
@@ -595,7 +595,7 @@ describe("runRender", () => {
 	});
 
 	it("refuses a verified shot under the unverified name on 11, recording no capture", async () => {
-		const {outcome, written} = await run(happy(), {
+		const { outcome, written } = await run(happy(), {
 			surfaces: ["/hosgeldin:auth-caylak-unverified"],
 			env: {
 				CLAUDE_PIPELINE_REPO: "o/r",
@@ -603,7 +603,7 @@ describe("runRender", () => {
 				BETTER_AUTH_SECRET: "s".repeat(32),
 			},
 			render: legOf({
-				"/hosgeldin:auth-caylak-unverified": {_tag: "WrongVerification", wanted: false},
+				"/hosgeldin:auth-caylak-unverified": { _tag: "WrongVerification", wanted: false },
 			}),
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
@@ -617,7 +617,7 @@ describe("runRender", () => {
 	// the shot's own answer, and a shot that came back a visitor's is UNKNOWN — never a red surface,
 	// because the page rendered fine, and never a Rendered entry under the `:auth` id.
 	it("refuses an :auth shot that did not render signed in on 11, recording no capture", async () => {
-		const {outcome, written} = await run(happy(), {
+		const { outcome, written } = await run(happy(), {
 			surfaces: ["/pano:auth"],
 			env: {
 				CLAUDE_PIPELINE_REPO: "o/r",
@@ -639,7 +639,7 @@ describe("runRender", () => {
 
 	// Routed ahead of the proven-red codes: a fine PNG of the wrong page is not a defect in the PR.
 	it("routes an unauthenticated surface as UNKNOWN even beside a crashed one", async () => {
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/a:auth", "/b"],
 			env: {
 				CLAUDE_PIPELINE_REPO: "o/r",
@@ -647,8 +647,8 @@ describe("runRender", () => {
 				BETTER_AUTH_SECRET: "s".repeat(32),
 			},
 			render: legOf({
-				"/a:auth": {_tag: "Unauthenticated", reason: "probe answered 500"},
-				"/b": {_tag: "Crashed", firstError: "TypeError: x is null"},
+				"/a:auth": { _tag: "Unauthenticated", reason: "probe answered 500" },
+				"/b": { _tag: "Crashed", firstError: "TypeError: x is null" },
 			}),
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
@@ -658,16 +658,16 @@ describe("runRender", () => {
 	// nothing can force and an operand the preview would silently drop are the same defect — the
 	// default state shot under the forced name.
 	it("refuses a malformed --flag operand on 10, naming the token and why", async () => {
-		const {outcome} = await run(happy(), {surfaces: ["/pano:auth"], flags: ["welcome-banner"]});
+		const { outcome } = await run(happy(), { surfaces: ["/pano:auth"], flags: ["welcome-banner"] });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.join("\n")).toContain("no = separating the key from its value");
-		expect((await run(happy(), {surfaces: ["/pano:auth"], flags: ["a=true"]})).outcome.code).toBe(
+		expect((await run(happy(), { surfaces: ["/pano:auth"], flags: ["a=true"] })).outcome.code).toBe(
 			OFF_VOCABULARY,
 		);
 	});
 
 	it("refuses --flag beside an anonymous surface on 10 — the preview would drop the cookie", async () => {
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/pano:auth", "/hosgeldin"],
 			flags: ["welcome-banner=on"],
 		});
@@ -676,8 +676,8 @@ describe("runRender", () => {
 	});
 
 	it("composes the override with the seeded session — one signed-in, flag-on shot", async () => {
-		const seen = new Map<string, {cookies: number; forced: Record<string, boolean>}>();
-		const {outcome} = await run(happy(), {
+		const seen = new Map<string, { cookies: number; forced: Record<string, boolean> }>();
+		const { outcome } = await run(happy(), {
 			surfaces: ["/hosgeldin:auth"],
 			flags: ["welcome-banner=on"],
 			env: {
@@ -697,13 +697,13 @@ describe("runRender", () => {
 		// Two session cookies (prefixed and bare) plus the one override cookie.
 		expect(seen.get("/hosgeldin:auth")).toEqual({
 			cookies: 3,
-			forced: {"welcome-banner": true},
+			forced: { "welcome-banner": true },
 		});
 	});
 
 	it("forces nothing when no --flag is passed, so the default run is untouched", async () => {
 		const seen: Array<Record<string, boolean>> = [];
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			render: (request) => {
 				seen.push(request.forcedFlags);
 				return Effect.succeed(rendered(request.surface, request.outDir));
@@ -715,7 +715,7 @@ describe("runRender", () => {
 
 	// A fine PNG of the flag-off page is not a defect in the PR, so it routes UNKNOWN beside a red one.
 	it("refuses an inert override on 11, recording no capture", async () => {
-		const {outcome, written} = await run(happy(), {
+		const { outcome, written } = await run(happy(), {
 			surfaces: ["/hosgeldin:auth", "/b:auth"],
 			flags: ["welcome-banner=on"],
 			env: {
@@ -728,7 +728,7 @@ describe("runRender", () => {
 					_tag: "OverrideInert",
 					reason: "the preview evaluated welcome-banner at the default",
 				},
-				"/b:auth": {_tag: "Crashed", firstError: "TypeError: x is null"},
+				"/b:auth": { _tag: "Crashed", firstError: "TypeError: x is null" },
 			}),
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
@@ -739,11 +739,11 @@ describe("runRender", () => {
 
 	// The locale operand's own refusals, decided before any read or browser launch, on the same `10`
 	// a malformed --flag takes: both would shoot the default page under the requested name.
-	const LOCALES: LocaleDeclaration = {storageKey: "app.locale", values: ["tr", "en"]};
+	const LOCALES: LocaleDeclaration = { storageKey: "app.locale", values: ["tr", "en"] };
 
 	it("refuses --locale when the repo declares no locale, before anything is read", async () => {
 		const legCalls: string[] = [];
-		const {outcome} = await run([], {
+		const { outcome } = await run([], {
 			locale: "en",
 			render: (request) => {
 				legCalls.push(request.surface);
@@ -757,14 +757,14 @@ describe("runRender", () => {
 	});
 
 	it("refuses a --locale value outside the declared list on 10, naming the list", async () => {
-		const {outcome} = await run([], {locale: "de", localeDeclaration: LOCALES});
+		const { outcome } = await run([], { locale: "de", localeDeclaration: LOCALES });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.join("\n")).toContain("the declared locales are tr, en");
 	});
 
 	it("seeds the declared key in every shot, anonymous and tier-naming alike", async () => {
 		const seen: unknown[] = [];
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/pano", "/b"],
 			viewports: ["desktop", "mobile"],
 			locale: "en",
@@ -777,7 +777,7 @@ describe("runRender", () => {
 			},
 		});
 		expect(outcome.code).toBe(0);
-		expect(seen).toEqual(Array(4).fill({storageKey: "app.locale", value: "en"}));
+		expect(seen).toEqual(Array(4).fill({ storageKey: "app.locale", value: "en" }));
 		expect(outcome.stderr).toContain(
 			'review-ui render: surface "/pano" at desktop in locale en captured: 1280x2140, 0 page error(s)',
 		);
@@ -785,7 +785,7 @@ describe("runRender", () => {
 
 	it("seeds nothing without --locale, even when the repo declares one", async () => {
 		const seen: unknown[] = [];
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			localeDeclaration: LOCALES,
 			render: (request) => {
 				seen.push(request.locale);
@@ -797,13 +797,13 @@ describe("runRender", () => {
 	});
 
 	it("refuses a shot whose lang did not come back as the seeded locale on 11, recording nothing", async () => {
-		const {outcome, written} = await run(happy(), {
+		const { outcome, written } = await run(happy(), {
 			surfaces: ["/pano", "/b"],
 			locale: "en",
 			localeDeclaration: LOCALES,
 			render: legOf({
-				"/pano": {_tag: "WrongLocale", wanted: "en", reason: `the page's lang read back "tr"`},
-				"/b": {_tag: "Crashed", firstError: "TypeError: x is null"},
+				"/pano": { _tag: "WrongLocale", wanted: "en", reason: `the page's lang read back "tr"` },
+				"/b": { _tag: "Crashed", firstError: "TypeError: x is null" },
 			}),
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
@@ -817,11 +817,11 @@ describe("runRender", () => {
 	// The scheme operand's refusals are decided before any read or browser launch, on the `10` a
 	// malformed --viewport takes: each would shoot the default scheme under the requested name, or
 	// overwrite one shot's file with another's.
-	const SCHEMES: SchemeDeclaration = {rootAttribute: "data-theme"};
+	const SCHEMES: SchemeDeclaration = { rootAttribute: "data-theme" };
 
 	it("refuses a --scheme outside light and dark on 10, before anything is read", async () => {
 		const legCalls: string[] = [];
-		const {outcome} = await run([], {
+		const { outcome } = await run([], {
 			schemes: ["dim"],
 			schemeDeclaration: SCHEMES,
 			render: (request) => {
@@ -837,13 +837,13 @@ describe("runRender", () => {
 	});
 
 	it("refuses a --scheme passed twice on 10", async () => {
-		const {outcome} = await run([], {schemes: ["dark", "dark"], schemeDeclaration: SCHEMES});
+		const { outcome } = await run([], { schemes: ["dark", "dark"], schemeDeclaration: SCHEMES });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toContain('--scheme "dark" was passed twice');
 	});
 
 	it("refuses --scheme when the repo declares no uiCapture.scheme — there is nothing to prove it against", async () => {
-		const {outcome} = await run([], {schemes: ["dark"]});
+		const { outcome } = await run([], { schemes: ["dark"] });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toContain('--scheme "dark" cannot be proved');
 		expect(outcome.stderr.at(-1)).toContain("declares no uiCapture.scheme");
@@ -851,7 +851,7 @@ describe("runRender", () => {
 
 	it("crosses every requested scheme with every surface and viewport, never substituting the default", async () => {
 		const seen: string[] = [];
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/pano", "/b"],
 			viewports: ["desktop", "mobile"],
 			schemes: ["light", "dark"],
@@ -883,7 +883,7 @@ describe("runRender", () => {
 
 	it("emulates nothing without --scheme, even when the repo declares one", async () => {
 		const seen: unknown[] = [];
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			schemeDeclaration: SCHEMES,
 			render: (request) => {
 				seen.push(request.scheme);
@@ -898,7 +898,7 @@ describe("runRender", () => {
 	});
 
 	it("refuses a shot that did not resolve to its requested scheme on 11, recording nothing", async () => {
-		const {outcome, written} = await run(happy(), {
+		const { outcome, written } = await run(happy(), {
 			schemes: ["dark"],
 			schemeDeclaration: SCHEMES,
 			render: () =>
@@ -917,7 +917,7 @@ describe("runRender", () => {
 	});
 
 	it("carries each shot's requested and proven scheme into the manifest it writes", async () => {
-		const {outcome, written} = await run(happy(), {
+		const { outcome, written } = await run(happy(), {
 			schemes: ["light", "dark"],
 			schemeDeclaration: SCHEMES,
 			render: (request) => {
@@ -927,12 +927,12 @@ describe("runRender", () => {
 					entry: {
 						surface: request.surface,
 						viewport: request.viewport.label,
-						scheme: {requested: scheme, proven: scheme},
+						scheme: { requested: scheme, proven: scheme },
 						path: `${request.outDir}/pano@desktop-${scheme}.png`,
 						width: 1280,
 						height: 2140,
 						sha256: "9c41",
-						pageErrors: {rows: [], more: 0},
+						pageErrors: { rows: [], more: 0 },
 					},
 				} satisfies SurfaceRender);
 			},
@@ -942,8 +942,8 @@ describe("runRender", () => {
 			written.get("/tmp/fabrika-review-ui/4321-03135b91/judged/manifest.json") ?? "",
 		);
 		expect(manifest._tag === "Manifest" && manifest.value.captures.map((c) => c.scheme)).toEqual([
-			{requested: "light", proven: "light"},
-			{requested: "dark", proven: "dark"},
+			{ requested: "light", proven: "light" },
+			{ requested: "dark", proven: "dark" },
 		]);
 	});
 
@@ -956,7 +956,7 @@ describe("runRender", () => {
 
 	it("refuses --accent when the repo declares no uiCapture.accent on 10, before anything is read", async () => {
 		const legCalls: string[] = [];
-		const {outcome} = await run([], {
+		const { outcome } = await run([], {
 			accent: "amber",
 			render: (request) => {
 				legCalls.push(request.surface);
@@ -971,7 +971,7 @@ describe("runRender", () => {
 	});
 
 	it("refuses an --accent outside the declared list on 10, naming the list", async () => {
-		const {outcome} = await run([], {accent: "jade", accentDeclaration: ACCENTS});
+		const { outcome } = await run([], { accent: "jade", accentDeclaration: ACCENTS });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toBe(
 			'review-ui render: --accent "jade" is not an accent this repo declares — the declared accents are ember, amber.',
@@ -980,7 +980,7 @@ describe("runRender", () => {
 
 	it("sets the accent on every surface, viewport and scheme, never substituting the default", async () => {
 		const seen: string[] = [];
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/pano", "/b"],
 			viewports: ["desktop", "mobile"],
 			schemes: ["light", "dark"],
@@ -1006,7 +1006,7 @@ describe("runRender", () => {
 
 	it("sets nothing without --accent and keeps every line as before, even when the repo declares one", async () => {
 		const seen: unknown[] = [];
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			accentDeclaration: ACCENTS,
 			render: (request) => {
 				seen.push(request.accent);
@@ -1022,7 +1022,7 @@ describe("runRender", () => {
 	});
 
 	it("refuses a shot that did not render in its requested accent on 11, recording nothing", async () => {
-		const {outcome, written} = await run(happy(), {
+		const { outcome, written } = await run(happy(), {
 			surfaces: ["/pano", "/b"],
 			accent: "amber",
 			accentDeclaration: ACCENTS,
@@ -1043,7 +1043,7 @@ describe("runRender", () => {
 	});
 
 	it("carries each shot's requested and proven accent into the manifest it writes", async () => {
-		const {outcome, written} = await run(happy(), {
+		const { outcome, written } = await run(happy(), {
 			accent: "amber",
 			accentDeclaration: ACCENTS,
 			render: (request) =>
@@ -1052,12 +1052,12 @@ describe("runRender", () => {
 					entry: {
 						surface: request.surface,
 						viewport: request.viewport.label,
-						accent: {requested: "amber", proven: "amber"},
+						accent: { requested: "amber", proven: "amber" },
 						path: `${request.outDir}/pano@desktop.png`,
 						width: 1280,
 						height: 2140,
 						sha256: "9c41",
-						pageErrors: {rows: [], more: 0},
+						pageErrors: { rows: [], more: 0 },
 					},
 				} satisfies SurfaceRender),
 		});
@@ -1066,12 +1066,12 @@ describe("runRender", () => {
 			written.get("/tmp/fabrika-review-ui/4321-03135b91/judged/manifest.json") ?? "",
 		);
 		expect(manifest._tag === "Manifest" && manifest.value.captures.map((c) => c.accent)).toEqual([
-			{requested: "amber", proven: "amber"},
+			{ requested: "amber", proven: "amber" },
 		]);
 	});
 
 	it("refuses a closed PR on 7 — a closed PR is provably not reviewable scope", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[PULL, pull("closed")],
 			[COMMENTS, announcement()],
 		]);
@@ -1082,10 +1082,10 @@ describe("runRender", () => {
 		const none: HttpReply = {
 			status: 200,
 			body: JSON.stringify([
-				{id: 1, user: {login: "x"}, created_at: "", updated_at: "", body: "looks fine"},
+				{ id: 1, user: { login: "x" }, created_at: "", updated_at: "", body: "looks fine" },
 			]),
 		};
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[PULL, pull()],
 			[COMMENTS, none],
 		]);
@@ -1097,7 +1097,7 @@ describe("runRender", () => {
 		body: JSON.stringify([
 			{
 				id: 1,
-				user: {login: "github-actions[bot]"},
+				user: { login: "github-actions[bot]" },
 				created_at: "2026-09-29T00:00:00Z",
 				updated_at: "2026-09-29T00:00:00Z",
 				body:
@@ -1111,7 +1111,7 @@ describe("runRender", () => {
 	});
 
 	it("proves CANT-SEE (16) when the only announcement is the no-preview marker at the head", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[PULL, pull()],
 			[COMMENTS, noPreviewComment(HEAD)],
 		]);
@@ -1120,7 +1120,7 @@ describe("runRender", () => {
 	});
 
 	it("calls a no-preview marker for another head UNKNOWN (11), never absent", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[PULL, pull()],
 			[COMMENTS, noPreviewComment("9fd5949747856d37a3604d628b5c16156b060fe8")],
 		]);
@@ -1133,14 +1133,14 @@ describe("runRender", () => {
 			body: JSON.stringify([
 				{
 					id: 1,
-					user: {login: "x"},
+					user: { login: "x" },
 					created_at: "",
 					updated_at: "",
 					body: "<!-- preview-deploy:web -->\n- **web** — the deploy failed",
 				},
 			]),
 		};
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[PULL, pull()],
 			[COMMENTS, malformed],
 		]);
@@ -1148,7 +1148,7 @@ describe("runRender", () => {
 	});
 
 	it("refuses a preview that lags the live head on 12 — old pixels never bind a new head", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[PULL, pull()],
 			[COMMENTS, announcement("0b1c2d3")],
 		]);
@@ -1157,12 +1157,12 @@ describe("runRender", () => {
 	});
 
 	it("routes mixed outcomes by the smallest applicable code, enumerating all of them", async () => {
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/a", "/b", "/c"],
 			render: legOf({
-				"/a": {_tag: "Unreachable", reason: "status 404"},
-				"/b": {_tag: "Crashed", firstError: "TypeError: x is null"},
-				"/c": {_tag: "Invalid", detail: "zero bytes"},
+				"/a": { _tag: "Unreachable", reason: "status 404" },
+				"/b": { _tag: "Crashed", firstError: "TypeError: x is null" },
+				"/c": { _tag: "Invalid", detail: "zero bytes" },
 			}),
 		});
 		expect(outcome.code).toBe(RENDER_CRASHED);
@@ -1175,11 +1175,11 @@ describe("runRender", () => {
 
 	it("seats an unreachable-only set on 14 and an invalid-only set on 15", async () => {
 		const unreachable = await run(happy(), {
-			render: legOf({"/pano": {_tag: "Unreachable", reason: "status 404"}}),
+			render: legOf({ "/pano": { _tag: "Unreachable", reason: "status 404" } }),
 		});
 		expect(unreachable.outcome.code).toBe(SURFACE_UNREACHABLE);
 		const invalid = await run(happy(), {
-			render: legOf({"/pano": {_tag: "Invalid", detail: "zero bytes"}}),
+			render: legOf({ "/pano": { _tag: "Invalid", detail: "zero bytes" } }),
 		});
 		expect(invalid.outcome.code).toBe(INVALID_CAPTURE);
 	});
@@ -1188,7 +1188,7 @@ describe("runRender", () => {
 	// the single desktop shot rather than becoming a cross-product nobody asked for.
 	it("renders at desktop alone when no --viewport is passed", async () => {
 		const seen: string[] = [];
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/pano", "/pano/yeni"],
 			render: (request) => {
 				seen.push(`${request.surface}@${request.viewport.label}`);
@@ -1202,7 +1202,7 @@ describe("runRender", () => {
 	});
 
 	it("crosses viewports with surfaces: two of each is four captures under four file names", async () => {
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/pano", "/pano/yeni"],
 			viewports: ["desktop", "mobile"],
 		});
@@ -1221,13 +1221,13 @@ describe("runRender", () => {
 	});
 
 	it("refuses an off-vocabulary --viewport on 10, listing the names it does render", async () => {
-		const {outcome} = await run(happy(), {viewports: ["tablet"]});
+		const { outcome } = await run(happy(), { viewports: ["tablet"] });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.join("\n")).toContain("the names are desktop, mobile");
 	});
 
 	it("refuses one --viewport passed twice on 10 — the second shot overwrites the first", async () => {
-		const {outcome} = await run(happy(), {viewports: ["mobile", "mobile"]});
+		const { outcome } = await run(happy(), { viewports: ["mobile", "mobile"] });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.join("\n")).toContain('--viewport "mobile" was passed twice');
 	});
@@ -1235,9 +1235,9 @@ describe("runRender", () => {
 	// A desktop-width shot filed under `mobile` answers the narrow half of the law from the wrong
 	// pixels, which no byte check downstream can tell from the real thing.
 	it("refuses a shot whose bytes read back at another width on 19, recording no capture", async () => {
-		const {outcome, written} = await run(happy(), {
+		const { outcome, written } = await run(happy(), {
 			viewports: ["mobile"],
-			render: legOf({"/pano": {_tag: "WrongViewport", wanted: 390, rendered: 1280}}),
+			render: legOf({ "/pano": { _tag: "WrongViewport", wanted: 390, rendered: 1280 } }),
 		});
 		expect(outcome.code).toBe(WRONG_VIEWPORT);
 		expect(outcome.stdout).toBe("");
@@ -1251,7 +1251,7 @@ describe("runRender", () => {
 	// surface came back as web's 404 — a valid PNG the outcome typing recorded as `captured`.
 	it("refuses a surface whose app the preview does not announce on 11, before any shot", async () => {
 		const shot: string[] = [];
-		const {outcome, written} = await run(happy(), {
+		const { outcome, written } = await run(happy(), {
 			surfaces: ["/desk/board"],
 			render: (request) => {
 				shot.push(request.surface);
@@ -1268,16 +1268,16 @@ describe("runRender", () => {
 	});
 
 	it("resolves the surface by longest claiming mount, so /lab stays web's and captures", async () => {
-		const {outcome} = await run(happy(), {surfaces: ["/lab"]});
+		const { outcome } = await run(happy(), { surfaces: ["/lab"] });
 		expect(outcome.code).toBe(0);
 		expect(parseManifest(outcome.stdout)).toMatchObject({
-			value: {captures: [{surface: "/lab"}]},
+			value: { captures: [{ surface: "/lab" }] },
 		});
 	});
 
 	it("refuses the whole set rather than capturing the announced half of a mixed one", async () => {
 		const shot: string[] = [];
-		const {outcome, written} = await run(happy(), {
+		const { outcome, written } = await run(happy(), {
 			surfaces: ["/pano", "/desk/board:auth"],
 			render: (request) => {
 				shot.push(request.surface);
@@ -1293,13 +1293,13 @@ describe("runRender", () => {
 	});
 
 	it("fences nothing when the repo declares no surfaces — the list answers for no surface", async () => {
-		const {outcome} = await run(happy(), {surfaceRows: []});
+		const { outcome } = await run(happy(), { surfaceRows: [] });
 		expect(outcome.code).toBe(0);
 	});
 
 	it("keeps a render that never became answerable UNKNOWN (11), not a bad render", async () => {
-		const {outcome} = await run(happy(), {
-			render: legOf({"/pano": {_tag: "Failed", reason: "the browser provision is broken"}}),
+		const { outcome } = await run(happy(), {
+			render: legOf({ "/pano": { _tag: "Failed", reason: "the browser provision is broken" } }),
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 	});
@@ -1320,14 +1320,14 @@ describe("runRender — the interaction operand", () => {
 		["steps ending on a click", "/pano#x=hover:#a;click:#b", 'end on "click:#b"'],
 		["steps ending on a key press", "/pano#x=press:Escape", 'end on "press:Escape"'],
 	])("refuses %s on 10 before anything is read", async (_what, operand, reason) => {
-		const {outcome} = await run([], {interactions: [operand]});
+		const { outcome } = await run([], { interactions: [operand] });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toContain(`--interact "${operand}" is not <surface>#<label>=`);
 		expect(outcome.stderr.at(-1)).toContain(reason);
 	});
 
 	it("refuses an operand on a surface the run did not ask for on 10", async () => {
-		const {outcome} = await run([], {interactions: ["/sozluk#x=hover:#b"]});
+		const { outcome } = await run([], { interactions: ["/sozluk#x=hover:#b"] });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toBe(
 			'review-ui render: --interact "/sozluk#x=hover:#b" names surface "/sozluk", which no --surface asked for — an interaction runs on a surface of this run.',
@@ -1335,7 +1335,7 @@ describe("runRender — the interaction operand", () => {
 	});
 
 	it("refuses two operands that would write the same PNG on 10", async () => {
-		const {outcome} = await run([], {
+		const { outcome } = await run([], {
 			interactions: ["/pano#x=hover:#a", "/pano#x=focus:#b"],
 		});
 		expect(outcome.code).toBe(OFF_VOCABULARY);
@@ -1346,7 +1346,7 @@ describe("runRender — the interaction operand", () => {
 
 	it("shoots each interaction beside its surface at rest, in order, and names its label on stderr", async () => {
 		const seen: Array<string | null> = [];
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/pano", "/b"],
 			interactions: [MENU, "/pano#focused=focus:#q"],
 			render: (request) => {
@@ -1362,7 +1362,7 @@ describe("runRender — the interaction operand", () => {
 	});
 
 	it("refuses a state the page never reached on 11, naming the label and writing no manifest", async () => {
-		const {outcome, written} = await run(happy(), {
+		const { outcome, written } = await run(happy(), {
 			interactions: [MENU],
 			render: (request) =>
 				Effect.succeed(
@@ -1383,13 +1383,13 @@ describe("runRender — the interaction operand", () => {
 	});
 
 	it("keeps a crashed shot on 13 — the crash outranks the interaction inside the shot", async () => {
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			interactions: [MENU],
 			render: (request) =>
 				Effect.succeed(
 					request.interaction === null
 						? rendered(request.surface, request.outDir)
-						: ({_tag: "Crashed", firstError: "TypeError: x is null"} satisfies SurfaceRender),
+						: ({ _tag: "Crashed", firstError: "TypeError: x is null" } satisfies SurfaceRender),
 				),
 		});
 		expect(outcome.code).toBe(RENDER_CRASHED);
@@ -1398,7 +1398,7 @@ describe("runRender — the interaction operand", () => {
 
 	it("keeps every name, entry and line of a run with no interaction as it was", async () => {
 		const seen: unknown[] = [];
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			render: (request) => {
 				seen.push(request.interaction);
 				return Effect.succeed(rendered(request.surface, request.outDir));
@@ -1439,13 +1439,13 @@ describe("runRender — the interaction operand", () => {
 					pngBytes: pngHeader(shot.viewport.width),
 					pageErrors: [],
 					status: 200,
-					sessionProof: {_tag: "SignedIn", userId: "u1", tier: "yazar", emailVerified: true},
-					overrideProof: {_tag: "Forced"},
-					localeProof: {_tag: "Seeded"},
-					accentProof: {_tag: "Proven", accent: "amber"},
+					sessionProof: { _tag: "SignedIn", userId: "u1", tier: "yazar", emailVerified: true },
+					overrideProof: { _tag: "Forced" },
+					localeProof: { _tag: "Seeded" },
+					accentProof: { _tag: "Proven", accent: "amber" },
 					...(shot.scheme === undefined
 						? {}
-						: {schemeProof: {_tag: "Proven", scheme: shot.scheme.scheme}}),
+						: { schemeProof: { _tag: "Proven", scheme: shot.scheme.scheme } }),
 					...(shot.interaction === undefined
 						? {}
 						: {
@@ -1456,16 +1456,16 @@ describe("runRender — the interaction operand", () => {
 							}),
 				})),
 			);
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			surfaces: ["/pano:auth"],
 			viewports: ["mobile"],
 			flags: ["welcome-banner=on"],
 			locale: "en",
-			localeDeclaration: {storageKey: "app.locale", values: ["tr", "en"]},
+			localeDeclaration: { storageKey: "app.locale", values: ["tr", "en"] },
 			schemes: ["dark"],
-			schemeDeclaration: {rootAttribute: "data-theme"},
+			schemeDeclaration: { rootAttribute: "data-theme" },
 			accent: "amber",
-			accentDeclaration: {rootAttribute: "data-color-theme", values: ["ember", "amber"]},
+			accentDeclaration: { rootAttribute: "data-color-theme", values: ["ember", "amber"] },
 			interactions: [
 				'/pano:auth#sil-highlighted=click:role=button[name="Aç"];hover:role=menuitem[name="Sil"]',
 			],
@@ -1481,8 +1481,8 @@ describe("runRender — the interaction operand", () => {
 		expect(manifest._tag === "Manifest" && manifest.value.captures[1]).toEqual({
 			surface: "/pano:auth",
 			viewport: "mobile",
-			scheme: {requested: "dark", proven: "dark"},
-			accent: {requested: "amber", proven: "amber"},
+			scheme: { requested: "dark", proven: "dark" },
+			accent: { requested: "amber", proven: "amber" },
 			interaction: {
 				label: "sil-highlighted",
 				steps: ['click:role=button[name="Aç"]', 'hover:role=menuitem[name="Sil"]'],
@@ -1492,7 +1492,7 @@ describe("runRender — the interaction operand", () => {
 			width: 390,
 			height: 2140,
 			sha256: expect.any(String),
-			pageErrors: {rows: [], more: 0},
+			pageErrors: { rows: [], more: 0 },
 		});
 		expect(outcome.stderr).toContain(
 			'review-ui render: surface "/pano:auth" at mobile in locale en in scheme dark in accent amber with interaction sil-highlighted captured: 390x2140, 0 page error(s)',

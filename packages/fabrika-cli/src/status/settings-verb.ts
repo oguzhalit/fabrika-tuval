@@ -18,11 +18,11 @@
  * It reads. It writes nothing.
  */
 
-import {CONFIG_PATH, type ConfigLayer, layerPath} from "../config/document.ts";
-import {type ConfigLayers, loadLayeredConfig, type Resolved, resolveAll} from "../config/load.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {type AsOf, asOfToken, detail, row} from "./fields.ts";
+import { CONFIG_PATH, type ConfigLayer, layerPath } from "../config/document.ts";
+import { type ConfigLayers, loadLayeredConfig, type Resolved, resolveAll } from "../config/load.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { type AsOf, asOfToken, detail, row } from "./fields.ts";
 
 const VERB = "status settings";
 
@@ -57,11 +57,11 @@ export type SettingRow =
 			readonly value: unknown;
 			readonly detail: string;
 	  }
-	| {readonly key: string; readonly provenance: "unknown"; readonly detail: string};
+	| { readonly key: string; readonly provenance: "unknown"; readonly detail: string };
 
 export type SettingsState = "resolved" | "unknown";
 
-const rowOf = ({key, resolution}: Resolved): SettingRow => {
+const rowOf = ({ key, resolution }: Resolved): SettingRow => {
 	switch (resolution._tag) {
 		case "Declared":
 			return {
@@ -80,7 +80,7 @@ const rowOf = ({key, resolution}: Resolved): SettingRow => {
 			};
 		case "Malformed":
 		case "Unknown":
-			return {key, provenance: "unknown", detail: detail(resolution.reason)};
+			return { key, provenance: "unknown", detail: detail(resolution.reason) };
 	}
 };
 
@@ -133,7 +133,7 @@ export interface SettingsInput {
 const line = (one: SettingRow, asOf: AsOf): string =>
 	row("setting", one.key, one.provenance, valueCell(one), one.detail, asOfToken(asOf));
 
-export const runSettings = ({layers, rows, asOf, json}: SettingsInput): VerbOutcome => {
+export const runSettings = ({ layers, rows, asOf, json }: SettingsInput): VerbOutcome => {
 	if (rows.length === 0) {
 		return refuse(
 			ZERO_SCOPE,

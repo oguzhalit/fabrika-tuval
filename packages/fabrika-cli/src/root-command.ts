@@ -6,8 +6,8 @@
  * is importable without starting a CLI, which is what lets a test walk the same tree the runner
  * parses instead of a parallel copy of it.
  */
-import {Command} from "effect/unstable/cli";
-import {registeredGroups} from "./registry.ts";
+import { Command } from "effect/unstable/cli";
+import { registeredGroups } from "./registry.ts";
 
 export const fabrikaCommand = Command.make("fabrika").pipe(
 	Command.withSubcommands(registeredGroups),

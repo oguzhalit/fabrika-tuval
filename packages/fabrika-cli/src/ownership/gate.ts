@@ -3,13 +3,13 @@
  * front of their first write, each on its own group's codes.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {Attempt} from "../io/git.ts";
-import type {CommentRecord} from "../io/issues.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {drivable, prOwnershipLine, voidGrantLines} from "./pr-ownership.ts";
-import {type PullFacts, readPrOwnership} from "./read.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { Attempt } from "../io/git.ts";
+import type { CommentRecord } from "../io/issues.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { drivable, prOwnershipLine, voidGrantLines } from "./pr-ownership.ts";
+import { type PullFacts, readPrOwnership } from "./read.ts";
 
 export interface GateCodes {
 	/** Proven: the PR is not ours and no grant hands it over. */
@@ -19,8 +19,8 @@ export interface GateCodes {
 }
 
 export type GateResult =
-	| {readonly _tag: "Pass"; readonly line: string}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Pass"; readonly line: string }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /** The route out of a `notOurs` refusal, stated once so every verb names the same one. */
 export const takeoverRoute = (pr: number): string =>
@@ -46,7 +46,7 @@ export const ownershipGate = <R>(
 			};
 		}
 		const line = prOwnershipLine(verb, pull.number, read.ownership);
-		if (drivable(read.ownership)) return {_tag: "Pass", line};
+		if (drivable(read.ownership)) return { _tag: "Pass", line };
 		return {
 			_tag: "Refused",
 			outcome: refuse(

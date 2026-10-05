@@ -1,9 +1,9 @@
-import {describe, expect, it} from "vitest";
-import type {RequiredEdge} from "../build/dependencies.ts";
-import {SHIPPED_CONTAINMENT_VOCABULARY} from "../config/keys/containment-vocabulary.ts";
-import {DEFECT_TYPES, type DefectType, deriveFloor, refsToProbe} from "./defects.ts";
-import type {LedgerScope} from "./digest.ts";
-import type {ChildLedger} from "./model.ts";
+import { describe, expect, it } from "vitest";
+import type { RequiredEdge } from "../build/dependencies.ts";
+import { SHIPPED_CONTAINMENT_VOCABULARY } from "../config/keys/containment-vocabulary.ts";
+import { DEFECT_TYPES, type DefectType, deriveFloor, refsToProbe } from "./defects.ts";
+import type { LedgerScope } from "./digest.ts";
+import type { ChildLedger } from "./model.ts";
 
 const child = (overrides: Partial<ChildLedger> = {}): ChildLedger => ({
 	number: 4301,
@@ -24,7 +24,7 @@ const scope = (overrides: Partial<LedgerScope> = {}): LedgerScope => ({
 	epicStories: [1],
 	epicCriteria: [],
 	cycleDoc: "present",
-	topology: {phases: [{phase: 1, members: ["#4301"]}], edges: []},
+	topology: { phases: [{ phase: 1, members: ["#4301"] }], edges: [] },
 	dependenciesAbsent: false,
 	...overrides,
 });
@@ -64,25 +64,25 @@ const types = (
 
 describe("a clean plan", () => {
 	it("derives no defects and skips no class", () => {
-		expect(floorOf()).toEqual({defects: [], skipped: []});
+		expect(floorOf()).toEqual({ defects: [], skipped: [] });
 	});
 });
 
 describe("each of the fifteen types fires on its own condition", () => {
 	it("MISSING_DEPS_SECTION", () => {
-		expect(types({dependenciesAbsent: true})).toContain("MISSING_DEPS_SECTION");
+		expect(types({ dependenciesAbsent: true })).toContain("MISSING_DEPS_SECTION");
 	});
 
 	it("DEP_CYCLE, reported once as its sorted member set", () => {
 		const cyclic = floorOf({
 			topology: {
-				phases: [{phase: 1, members: ["#4301"]}],
+				phases: [{ phase: 1, members: ["#4301"] }],
 				edges: [
 					["#4301", "#4302"],
 					["#4302", "#4301"],
 				],
 			},
-			children: [child(), child({number: 4302})],
+			children: [child(), child({ number: 4302 })],
 		});
 		const cycles = cyclic.defects.filter((defect) => defect.type === "DEP_CYCLE");
 		expect(cycles).toHaveLength(1);
@@ -97,7 +97,7 @@ describe("each of the fifteen types fires on its own condition", () => {
 	 */
 	it("DANGLING_DEP only for a ref the probe proved absent", () => {
 		const referenced = {
-			topology: {phases: [{phase: 1, members: ["#4301", "#9999"]}], edges: []},
+			topology: { phases: [{ phase: 1, members: ["#4301", "#9999"] }], edges: [] },
 		};
 		expect(types(referenced, [9999])).toContain("DANGLING_DEP");
 		expect(types(referenced, [])).not.toContain("DANGLING_DEP");
@@ -110,12 +110,15 @@ describe("each of the fifteen types fires on its own condition", () => {
 	 */
 	it("grades a cross-epic requires: reference on the probe and the graph, never on ownership", () => {
 		const external = {
-			topology: {phases: [{phase: 1, members: ["#4301"]}], edges: [["#4301", "#7511"] as const]},
+			topology: {
+				phases: [{ phase: 1, members: ["#4301"] }],
+				edges: [["#4301", "#7511"] as const],
+			},
 		};
-		const required = [{dependent: 4301, prerequisite: 7511}];
-		expect(types(external, [], {required, observed: {4301: [7511]}})).toEqual([]);
-		expect(types(external, [], {required})).toContain("UNENFORCED_DEP");
-		expect(types(external, [7511], {required})).toContain("DANGLING_DEP");
+		const required = [{ dependent: 4301, prerequisite: 7511 }];
+		expect(types(external, [], { required, observed: { 4301: [7511] } })).toEqual([]);
+		expect(types(external, [], { required })).toContain("UNENFORCED_DEP");
+		expect(types(external, [7511], { required })).toContain("DANGLING_DEP");
 	});
 
 	/**
@@ -126,31 +129,33 @@ describe("each of the fifteen types fires on its own condition", () => {
 	 */
 	it("UNENFORCED_DEP when the prose names an edge the graph does not carry", () => {
 		const gated = {
-			children: [child({number: 6597}), child({number: 6598})],
+			children: [child({ number: 6597 }), child({ number: 6598 })],
 			topology: {
 				phases: [
-					{phase: 1, members: ["#6597"]},
-					{phase: 2, members: ["#6598"]},
+					{ phase: 1, members: ["#6597"] },
+					{ phase: 2, members: ["#6598"] },
 				],
 				edges: [["#6598", "#6597"] as const],
 			},
 		};
-		const required: ReadonlyArray<RequiredEdge> = [{dependent: 6598, prerequisite: 6597}];
+		const required: ReadonlyArray<RequiredEdge> = [{ dependent: 6598, prerequisite: 6597 }];
 
-		const blind = floorOf(gated, [], {required});
+		const blind = floorOf(gated, [], { required });
 		const defect = blind.defects.find((row) => row.type === "UNENFORCED_DEP");
 		expect(defect?.refs).toEqual([6597, 6598]);
 		expect(defect?.detail).toBe("#6598 waits on #6597 in prose with no blocked_by edge");
 
-		expect(types(gated, [], {required, observed: {6598: [6597]}})).not.toContain("UNENFORCED_DEP");
+		expect(types(gated, [], { required, observed: { 6598: [6597] } })).not.toContain(
+			"UNENFORCED_DEP",
+		);
 	});
 
 	it("UNENFORCED_DEP yields to DANGLING_DEP when the prerequisite is proven absent", () => {
 		const dangling = {
-			topology: {phases: [{phase: 1, members: ["#4301", "#9999"]}], edges: []},
+			topology: { phases: [{ phase: 1, members: ["#4301", "#9999"] }], edges: [] },
 		};
-		const required: ReadonlyArray<RequiredEdge> = [{dependent: 4301, prerequisite: 9999}];
-		expect(types(dangling, [9999], {required})).not.toContain("UNENFORCED_DEP");
+		const required: ReadonlyArray<RequiredEdge> = [{ dependent: 4301, prerequisite: 9999 }];
+		expect(types(dangling, [9999], { required })).not.toContain("UNENFORCED_DEP");
 	});
 
 	/**
@@ -159,8 +164,8 @@ describe("each of the fifteen types fires on its own condition", () => {
 	 * that carries the ref fences them; one that drops it hands them a contract that has not landed.
 	 */
 	it("DROPPED_EPIC_BLOCKER for each child whose refs omit an open blocker of the epic", () => {
-		const two = {children: [child({number: 4301}), child({number: 4302})]};
-		const dropped = floorOf(two, [], {epicBlockers: [7496]});
+		const two = { children: [child({ number: 4301 }), child({ number: 4302 })] };
+		const dropped = floorOf(two, [], { epicBlockers: [7496] });
 		const rows = dropped.defects.filter((row) => row.type === "DROPPED_EPIC_BLOCKER");
 		expect(rows.map((row) => row.refs)).toEqual([
 			[4301, 7496],
@@ -169,37 +174,37 @@ describe("each of the fifteen types fires on its own condition", () => {
 		expect(rows[0]?.detail).toBe("#4301 does not require #7496, an open blocker of #4300");
 
 		const carried: ReadonlyArray<RequiredEdge> = [
-			{dependent: 4301, prerequisite: 7496},
-			{dependent: 4302, prerequisite: 7496},
+			{ dependent: 4301, prerequisite: 7496 },
+			{ dependent: 4302, prerequisite: 7496 },
 		];
-		expect(types(two, [], {epicBlockers: [7496], required: carried})).not.toContain(
+		expect(types(two, [], { epicBlockers: [7496], required: carried })).not.toContain(
 			"DROPPED_EPIC_BLOCKER",
 		);
 	});
 
 	/** A blocker inside the epic is the plan's own sequencing — carrying it down would demand a cycle. */
 	it("DROPPED_EPIC_BLOCKER never asks a child to require the epic or a sibling", () => {
-		const two = {children: [child({number: 4301}), child({number: 4302})]};
-		expect(types(two, [], {epicBlockers: [4300, 4302]})).not.toContain("DROPPED_EPIC_BLOCKER");
+		const two = { children: [child({ number: 4301 }), child({ number: 4302 })] };
+		expect(types(two, [], { epicBlockers: [4300, 4302] })).not.toContain("DROPPED_EPIC_BLOCKER");
 	});
 
 	/** With no block to read every child drops every blocker; `MISSING_DEPS_SECTION` says the one thing. */
 	it("DROPPED_EPIC_BLOCKER is suppressed on an absent ## Dependencies section", () => {
-		expect(types({dependenciesAbsent: true}, [], {epicBlockers: [7496]})).not.toContain(
+		expect(types({ dependenciesAbsent: true }, [], { epicBlockers: [7496] })).not.toContain(
 			"DROPPED_EPIC_BLOCKER",
 		);
 	});
 
 	it("ORPHAN_CHILD", () => {
-		expect(types({children: [child(), child({number: 4302})]})).toContain("ORPHAN_CHILD");
+		expect(types({ children: [child(), child({ number: 4302 })] })).toContain("ORPHAN_CHILD");
 	});
 
 	it("MISSING_STORIES_SECTION", () => {
-		expect(types({epicStories: []})).toContain("MISSING_STORIES_SECTION");
+		expect(types({ epicStories: [] })).toContain("MISSING_STORIES_SECTION");
 	});
 
 	it("UNCOVERED_STORY", () => {
-		const uncovered = floorOf({epicStories: [1, 2]}).defects.find(
+		const uncovered = floorOf({ epicStories: [1, 2] }).defects.find(
 			(defect) => defect.type === "UNCOVERED_STORY",
 		);
 		expect(uncovered?.detail).toBe("story 2 is claimed by no child");
@@ -209,25 +214,25 @@ describe("each of the fifteen types fires on its own condition", () => {
 		["absent", "acceptance criteria read as absent"],
 		["malformed", "acceptance criteria read as malformed"],
 	] as const)("ZERO_AC on a %s criteria read", (token, detail) => {
-		const found = floorOf({children: [child({criteria: token, criteriaCount: 0})]}).defects.find(
-			(defect) => defect.type === "ZERO_AC",
-		);
+		const found = floorOf({
+			children: [child({ criteria: token, criteriaCount: 0 })],
+		}).defects.find((defect) => defect.type === "ZERO_AC");
 		expect(found?.detail).toBe(detail);
 	});
 
 	it("ZERO_AC on a Found block with zero criteria", () => {
-		expect(types({children: [child({criteriaCount: 0})]})).toContain("ZERO_AC");
+		expect(types({ children: [child({ criteriaCount: 0 })] })).toContain("ZERO_AC");
 	});
 
 	it("MISSING_STORY, quoting a non-conforming value", () => {
 		const found = floorOf({
-			children: [child({stories: null, storiesValue: "1, 3 (see #4021)"})],
+			children: [child({ stories: null, storiesValue: "1, 3 (see #4021)" })],
 		}).defects.find((defect) => defect.type === "MISSING_STORY");
 		expect(found?.detail).toBe('**Stories:** value does not conform: "1, 3 (see #4021)"');
 	});
 
 	it("MISSING_STORY only when the epic declares stories at all", () => {
-		expect(types({epicStories: [], children: [child({stories: null})]})).not.toContain(
+		expect(types({ epicStories: [], children: [child({ stories: null })] })).not.toContain(
 			"MISSING_STORY",
 		);
 	});
@@ -237,7 +242,7 @@ describe("each of the fifteen types fires on its own condition", () => {
 		[["p1", "type:feature"], "missing a status: label"],
 		[["status:planned", "type:feature"], "missing a priority label"],
 	])("MISSING_LABEL for %s", (labels, detail) => {
-		const found = floorOf({children: [child({labels})]}).defects.find(
+		const found = floorOf({ children: [child({ labels })] }).defects.find(
 			(defect) => defect.type === "MISSING_LABEL",
 		);
 		expect(found?.detail).toBe(detail);
@@ -246,7 +251,7 @@ describe("each of the fifteen types fires on its own condition", () => {
 	/** `p3` was ruled retired, not widened — it does not satisfy the priority slot. */
 	it("MISSING_LABEL does not admit p3 as a priority", () => {
 		expect(
-			types({children: [child({labels: ["p3", "status:planned", "type:feature"]})]}),
+			types({ children: [child({ labels: ["p3", "status:planned", "type:feature"] })] }),
 		).toContain("MISSING_LABEL");
 	});
 
@@ -254,7 +259,7 @@ describe("each of the fifteen types fires on its own condition", () => {
 		[null, "type:feature with containment unset"],
 		["none" as const, "type:feature with containment none"],
 	])("MISSING_CONTAINMENT for %s", (containment, detail) => {
-		const found = floorOf({children: [child({containment})]}).defects.find(
+		const found = floorOf({ children: [child({ containment })] }).defects.find(
 			(defect) => defect.type === "MISSING_CONTAINMENT",
 		);
 		expect(found?.detail).toBe(detail);
@@ -262,7 +267,7 @@ describe("each of the fifteen types fires on its own condition", () => {
 
 	it("NEEDS_TRIAGE_LABEL", () => {
 		expect(
-			types({children: [child({labels: ["p1", "status:needs-triage", "type:feature"]})]}),
+			types({ children: [child({ labels: ["p1", "status:needs-triage", "type:feature"] })] }),
 		).toContain("NEEDS_TRIAGE_LABEL");
 	});
 
@@ -272,16 +277,16 @@ describe("each of the fifteen types fires on its own condition", () => {
 	 * firing on children nobody looked at.
 	 */
 	it("UNVERIFIABLE_ASSIGNEE when the payload carried no assignees key", () => {
-		expect(types({children: [child({assignees: null, assigneesObserved: false})]})).toContain(
+		expect(types({ children: [child({ assignees: null, assigneesObserved: false })] })).toContain(
 			"UNVERIFIABLE_ASSIGNEE",
 		);
 	});
 
 	it("HELD_CHILD_UNASSIGNED on an observed-empty slot, never on an unobserved one", () => {
 		const held = ["p1", "status:planned", "type:feature", "ready-for:human"];
-		expect(types({children: [child({labels: held})]})).toContain("HELD_CHILD_UNASSIGNED");
+		expect(types({ children: [child({ labels: held })] })).toContain("HELD_CHILD_UNASSIGNED");
 		expect(
-			types({children: [child({labels: held, assignees: null, assigneesObserved: false})]}),
+			types({ children: [child({ labels: held, assignees: null, assigneesObserved: false })] }),
 		).not.toContain("HELD_CHILD_UNASSIGNED");
 	});
 });
@@ -293,24 +298,24 @@ describe("skipped", () => {
 	 * exactly like a repo with no cycle doc.
 	 */
 	it("names MISSING_CONTAINMENT only when the cycle-doc probe failed", () => {
-		expect(floorOf({cycleDoc: "unknown"}).skipped).toEqual(["MISSING_CONTAINMENT"]);
-		expect(floorOf({cycleDoc: "absent"}).skipped).toEqual([]);
+		expect(floorOf({ cycleDoc: "unknown" }).skipped).toEqual(["MISSING_CONTAINMENT"]);
+		expect(floorOf({ cycleDoc: "absent" }).skipped).toEqual([]);
 	});
 
 	it("does not derive the class on an unknown probe", () => {
-		expect(types({cycleDoc: "unknown", children: [child({containment: null})]})).not.toContain(
+		expect(types({ cycleDoc: "unknown", children: [child({ containment: null })] })).not.toContain(
 			"MISSING_CONTAINMENT",
 		);
 	});
 
 	it("derives the class and evaluates it false on an absent cycle doc", () => {
-		expect(types({cycleDoc: "absent", children: [child({containment: null})]})).not.toContain(
+		expect(types({ cycleDoc: "absent", children: [child({ containment: null })] })).not.toContain(
 			"MISSING_CONTAINMENT",
 		);
 	});
 
 	it("a skipped class never makes a defective floor clean", () => {
-		const floor = floorOf({cycleDoc: "unknown", children: [child({criteria: "absent"})]});
+		const floor = floorOf({ cycleDoc: "unknown", children: [child({ criteria: "absent" })] });
 		expect(floor.skipped).toEqual(["MISSING_CONTAINMENT"]);
 		expect(floor.defects.map((defect) => defect.type)).toContain("ZERO_AC");
 	});
@@ -321,10 +326,10 @@ describe("the list is sorted by emission order, then by the lowest ref", () => {
 		const floor = floorOf({
 			epicStories: [],
 			children: [
-				child({number: 4303, criteria: "absent"}),
-				child({number: 4302, criteria: "absent"}),
+				child({ number: 4303, criteria: "absent" }),
+				child({ number: 4302, criteria: "absent" }),
 			],
-			topology: {phases: [{phase: 1, members: ["#4302", "#4303"]}], edges: []},
+			topology: { phases: [{ phase: 1, members: ["#4302", "#4303"] }], edges: [] },
 		});
 		const emitted = floor.defects.map((defect) => `${defect.type}:${defect.refs[0]}`);
 		expect(emitted).toEqual(["MISSING_STORIES_SECTION:4300", "ZERO_AC:4302", "ZERO_AC:4303"]);
@@ -332,7 +337,7 @@ describe("the list is sorted by emission order, then by the lowest ref", () => {
 
 	it("every emitted type is in the closed enum", () => {
 		const closed = new Set<DefectType>(DEFECT_TYPES);
-		for (const type of types({dependenciesAbsent: true, epicStories: []})) {
+		for (const type of types({ dependenciesAbsent: true, epicStories: [] })) {
 			expect(closed.has(type)).toBe(true);
 		}
 	});
@@ -344,7 +349,7 @@ describe("refsToProbe", () => {
 			refsToProbe(
 				scope({
 					topology: {
-						phases: [{phase: 1, members: ["#4301", "#4300", "#9999", "C1"]}],
+						phases: [{ phase: 1, members: ["#4301", "#4300", "#9999", "C1"] }],
 						edges: [],
 					},
 				}),

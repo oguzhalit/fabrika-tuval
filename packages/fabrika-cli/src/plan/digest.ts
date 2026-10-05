@@ -17,9 +17,9 @@
  * — the gap between deciding and writing is closed by re-deciding, not by trusting a cached decision.
  */
 
-import {createHash} from "node:crypto";
-import type {StatusNames} from "../config/board.ts";
-import type {ChildLedger, Ledger} from "./model.ts";
+import { createHash } from "node:crypto";
+import type { StatusNames } from "../config/board.ts";
+import type { ChildLedger, Ledger } from "./model.ts";
 
 /** Everything the digest is taken over — the ledger minus the digest it is about to carry. */
 export type LedgerScope = Omit<Ledger, "digest">;

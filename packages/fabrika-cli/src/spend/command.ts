@@ -6,16 +6,16 @@
  * lives in `read-verb.ts` beside it, which is what makes each refusal testable without spawning a
  * process.
  */
-import {Effect} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStdin} from "../io/stdin.ts";
-import {refuse} from "../verb.ts";
-import {DEFAULT_SPEND_LEDGER_PATH} from "./ledger.ts";
-import {runLedgerRead, runRead} from "./read-verb.ts";
-import {runRecord} from "./record-verb.ts";
-import {runRollup} from "./rollup-verb.ts";
+import { Effect } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStdin } from "../io/stdin.ts";
+import { refuse } from "../verb.ts";
+import { DEFAULT_SPEND_LEDGER_PATH } from "./ledger.ts";
+import { runLedgerRead, runRead } from "./read-verb.ts";
+import { runRecord } from "./record-verb.ts";
+import { runRollup } from "./rollup-verb.ts";
 
 const read = leafCommand(
 	"read",
@@ -37,9 +37,9 @@ const read = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({transcript, ledger, json}) {
+	Effect.fn(function* ({ transcript, ledger, json }) {
 		if (transcript._tag === "Some" && ledger._tag === "None") {
-			yield* emit(yield* runRead({transcript: transcript.value, json}));
+			yield* emit(yield* runRead({ transcript: transcript.value, json }));
 		} else if (ledger._tag === "Some" && transcript._tag === "None") {
 			yield* emit(yield* runLedgerRead(ledger.value));
 		} else yield* emit(refuse(1, "spend read: supply either a transcript or --ledger"));
@@ -105,7 +105,7 @@ const rollup = leafCommand(
 			Flag.withDescription("emit the same answer as JSON on stdout instead of the line grammar"),
 		),
 	},
-	Effect.fn(function* ({ledger, since, until, issue, run, repo, json}) {
+	Effect.fn(function* ({ ledger, since, until, issue, run, repo, json }) {
 		yield* emit(
 			yield* runRollup({
 				ledger,
@@ -131,7 +131,7 @@ const rollup = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "node packages/fabrika-cli/src/bin.ts spend rollup --issue 42 --json"},
+		{ command: "node packages/fabrika-cli/src/bin.ts spend rollup --issue 42 --json" },
 	]),
 );
 
@@ -143,8 +143,8 @@ const record = leafCommand(
 			Flag.withDescription("versioned usage ledger path"),
 		),
 	},
-	Effect.fn(function* ({ledger}) {
-		yield* emit(yield* runRecord({ledger, stdin: Effect.sync(readStdin)}));
+	Effect.fn(function* ({ ledger }) {
+		yield* emit(yield* runRecord({ ledger, stdin: Effect.sync(readStdin) }));
 	}),
 ).pipe(
 	Command.withShortDescription("Record one native model and token usage envelope."),

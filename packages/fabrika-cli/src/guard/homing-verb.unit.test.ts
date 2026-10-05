@@ -5,19 +5,19 @@
  * The scoping reads are asserted by the requests the verb issues: the sweep must narrow at the
  * endpoint, and the label-set read must happen only on the fork that needs it.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {Read} from "../config/read-key.ts";
-import {errOut, fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import {FAILED} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE} from "./codes.ts";
-import {runHomingGuard} from "./homing-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { Read } from "../config/read-key.ts";
+import { errOut, fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import { FAILED } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE } from "./codes.ts";
+import { runHomingGuard } from "./homing-verb.ts";
 
 const BACKLOG = /^GET .*\/repos\/o\/r\/issues\?state=open&labels=status%3Atriaged/;
 const ONE = /^GET .*\/repos\/o\/r\/issues\/9$/;
 const LABELS = /^GET .*\/repos\/o\/r\/labels/;
 
-const ENV = {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>;
+const ENV = { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>;
 
 interface IssueShape {
 	readonly number: number;
@@ -31,10 +31,10 @@ const body = (shape: IssueShape) => ({
 	title: `issue ${shape.number}`,
 	body: "",
 	state: "open",
-	labels: (shape.labels ?? ["status:triaged"]).map((name) => ({name})),
+	labels: (shape.labels ?? ["status:triaged"]).map((name) => ({ name })),
 	html_url: `https://example.test/issues/${shape.number}`,
-	milestone: shape.milestone == null ? null : {number: shape.milestone},
-	...(shape.pull === true ? {pull_request: {url: "https://example.test/pulls/9"}} : {}),
+	milestone: shape.milestone == null ? null : { number: shape.milestone },
+	...(shape.pull === true ? { pull_request: { url: "https://example.test/pulls/9" } } : {}),
 });
 
 const board = (...shapes: ReadonlyArray<IssueShape>): HttpReply => ({
@@ -42,11 +42,11 @@ const board = (...shapes: ReadonlyArray<IssueShape>): HttpReply => ({
 	body: JSON.stringify(shapes.map(body)),
 });
 
-const one = (shape: IssueShape): HttpReply => ({status: 200, body: JSON.stringify(body(shape))});
+const one = (shape: IssueShape): HttpReply => ({ status: 200, body: JSON.stringify(body(shape)) });
 
 const labels = (...names: ReadonlyArray<string>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(names.map((name) => ({name}))),
+	body: JSON.stringify(names.map((name) => ({ name }))),
 });
 
 /** The delivery layer's config read, as a fixture: this repo declares the two lanes below. */
@@ -76,17 +76,17 @@ const run = (
 			}),
 			seams.layer,
 		),
-	).then((outcome) => ({outcome, calls: seams.calls, requests: seams.requests}));
+	).then((outcome) => ({ outcome, calls: seams.calls, requests: seams.requests }));
 };
 
 describe("runHomingGuard — the backlog sweep", () => {
 	it("passes and reports what it scanned when every triaged issue is homed or exempt", async () => {
-		const {outcome, requests} = await run([
+		const { outcome, requests } = await run([
 			[
 				BACKLOG,
 				board(
-					{number: 1, milestone: 17},
-					{number: 2, labels: ["status:triaged", "wayfinder:backlog"]},
+					{ number: 1, milestone: 17 },
+					{ number: 2, labels: ["status:triaged", "wayfinder:backlog"] },
 				),
 			],
 		]);
@@ -98,13 +98,13 @@ describe("runHomingGuard — the backlog sweep", () => {
 	});
 
 	it("narrows at the endpoint rather than paging the whole open board", async () => {
-		const {requests} = await run([[BACKLOG, board({number: 1, milestone: 17})]]);
+		const { requests } = await run([[BACKLOG, board({ number: 1, milestone: 17 })]]);
 		expect(requests[0]).toContain("labels=status%3Atriaged");
 		expect(requests[0]).toContain("state=open");
 	});
 
 	it("reds 12 on an un-homed issue and prints the three home-or-exempt-or-kill outcomes", async () => {
-		const {outcome} = await run([[BACKLOG, board({number: 1, milestone: 17}, {number: 2})]]);
+		const { outcome } = await run([[BACKLOG, board({ number: 1, milestone: 17 }, { number: 2 })]]);
 		expect(outcome.code).toBe(VIOLATION);
 		expect(outcome.stdout).toBe("");
 		const report = outcome.stderr.join("\n");
@@ -116,8 +116,11 @@ describe("runHomingGuard — the backlog sweep", () => {
 	});
 
 	it("reds 12 on a double-marked issue, naming the exactly-one mark to drop", async () => {
-		const {outcome} = await run([
-			[BACKLOG, board({number: 2, milestone: 24, labels: ["status:triaged", "wayfinder:backlog"]})],
+		const { outcome } = await run([
+			[
+				BACKLOG,
+				board({ number: 2, milestone: 24, labels: ["status:triaged", "wayfinder:backlog"] }),
+			],
 		]);
 		expect(outcome.code).toBe(VIOLATION);
 		const report = outcome.stderr.join("\n");
@@ -129,9 +132,9 @@ describe("runHomingGuard — the backlog sweep", () => {
 	});
 
 	it("exempts nothing where the repo declares no lane — the label alone is not a home", async () => {
-		const {outcome} = await run(
-			[[BACKLOG, board({number: 2, labels: ["status:triaged", "wayfinder:backlog"]})]],
-			{standingLanes: {_tag: "Value", value: [], note: "shipped"}},
+		const { outcome } = await run(
+			[[BACKLOG, board({ number: 2, labels: ["status:triaged", "wayfinder:backlog"] })]],
+			{ standingLanes: { _tag: "Value", value: [], note: "shipped" } },
 		);
 		expect(outcome.code).toBe(VIOLATION);
 		const report = outcome.stderr.join("\n");
@@ -140,8 +143,8 @@ describe("runHomingGuard — the backlog sweep", () => {
 	});
 
 	it("is UNKNOWN on a lane declaration nobody could read, and scans nothing", async () => {
-		const {outcome, requests} = await run([], {
-			standingLanes: {_tag: "Refused", reason: "`boardVocabulary` is not an object."},
+		const { outcome, requests } = await run([], {
+			standingLanes: { _tag: "Refused", reason: "`boardVocabulary` is not an object." },
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.join("\n")).toContain("`boardVocabulary` is not an object");
@@ -149,21 +152,21 @@ describe("runHomingGuard — the backlog sweep", () => {
 	});
 
 	it("reds 7 on an empty sweep — a vacuous pass would hide every floater", async () => {
-		const {outcome} = await run([[BACKLOG, {status: 200, body: "[]"}]]);
+		const { outcome } = await run([[BACKLOG, { status: 200, body: "[]" }]]);
 		expect(outcome.code).toBe(ZERO_SCOPE);
 		expect(outcome.stderr.join("\n")).toContain("ZERO status:triaged issues");
 		expect(outcome.stderr.join("\n")).toContain("fail-closed");
 	});
 
 	it("reds 11 when the board cannot be read — never clean, never a violation", async () => {
-		const {outcome} = await run([[BACKLOG, {status: 502, body: "{}"}]]);
+		const { outcome } = await run([[BACKLOG, { status: 502, body: "{}" }]]);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.join("\n")).toContain("UNKNOWN");
 	});
 
 	it("emits a ::error annotation for every refusal under Actions", async () => {
-		const {outcome} = await run([[BACKLOG, {status: 200, body: "[]"}]], {
-			env: {...ENV, GITHUB_ACTIONS: "true"},
+		const { outcome } = await run([[BACKLOG, { status: 200, body: "[]" }]], {
+			env: { ...ENV, GITHUB_ACTIONS: "true" },
 		});
 		expect(outcome.stderr.some((line) => line.startsWith("::error"))).toBe(true);
 	});
@@ -171,37 +174,37 @@ describe("runHomingGuard — the backlog sweep", () => {
 
 describe("runHomingGuard — the --issue seam", () => {
 	it("scans just that issue and reds it when it left triage un-homed", async () => {
-		const {outcome, requests} = await run([[ONE, one({number: 9})]], {issue: 9});
+		const { outcome, requests } = await run([[ONE, one({ number: 9 })]], { issue: 9 });
 		expect(outcome.code).toBe(VIOLATION);
 		expect(outcome.stderr.join("\n")).toContain("#9 issue 9");
 		expect(requests).toEqual(["GET https://api.github.com/repos/o/r/issues/9"]);
 	});
 
 	it("passes a triaged, milestone-homed issue", async () => {
-		const {outcome} = await run([[ONE, one({number: 9, milestone: 17})]], {issue: 9});
+		const { outcome } = await run([[ONE, one({ number: 9, milestone: 17 })]], { issue: 9 });
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toContain("issue #9 is fully homed");
 	});
 
 	it("passes an issue that is simply not triaged — a scan of one, never zero scope", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			[
-				[ONE, one({number: 9, labels: ["type:chore"]})],
+				[ONE, one({ number: 9, labels: ["type:chore"] })],
 				[LABELS, labels("status:triaged", "type:chore")],
 			],
-			{issue: 9},
+			{ issue: 9 },
 		);
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toContain("issue #9 is not status:triaged");
 	});
 
 	it("reds 11 on that same empty scan when the repo never defined the label (#4272)", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			[
-				[ONE, one({number: 9, labels: ["type:chore"]})],
+				[ONE, one({ number: 9, labels: ["type:chore"] })],
 				[LABELS, labels("type:chore")],
 			],
-			{issue: 9},
+			{ issue: 9 },
 		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		const report = outcome.stderr.join("\n");
@@ -211,23 +214,23 @@ describe("runHomingGuard — the --issue seam", () => {
 	});
 
 	it("reds 11 when the label set itself cannot be read", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			[
-				[ONE, one({number: 9, labels: ["type:chore"]})],
-				[LABELS, {status: 502, body: "{}"}],
+				[ONE, one({ number: 9, labels: ["type:chore"] })],
+				[LABELS, { status: 502, body: "{}" }],
 			],
-			{issue: 9},
+			{ issue: 9 },
 		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 	});
 
 	it("skips the label read entirely when the issue carries the label", async () => {
-		const {requests} = await run([[ONE, one({number: 9, milestone: 17})]], {issue: 9});
+		const { requests } = await run([[ONE, one({ number: 9, milestone: 17 })]], { issue: 9 });
 		expect(requests.some((line) => LABELS.test(line))).toBe(false);
 	});
 
 	it("reds 11 on an issue that does not exist", async () => {
-		const {outcome} = await run([[ONE, {status: 404, body: '{"message":"Not Found"}'}]], {
+		const { outcome } = await run([[ONE, { status: 404, body: '{"message":"Not Found"}' }]], {
 			issue: 9,
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
@@ -235,13 +238,13 @@ describe("runHomingGuard — the --issue seam", () => {
 	});
 
 	it("reds 11 rather than reading a pull request as an un-homed issue (#5562)", async () => {
-		const {outcome} = await run([[ONE, one({number: 9, pull: true})]], {issue: 9});
+		const { outcome } = await run([[ONE, one({ number: 9, pull: true })]], { issue: 9 });
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.join("\n")).toContain("pull request");
 	});
 
 	it("refuses a non-positive issue number as usage, before any read", async () => {
-		const {outcome, requests} = await run([], {issue: 0});
+		const { outcome, requests } = await run([], { issue: 0 });
 		expect(outcome.code).toBe(FAILED);
 		expect(requests).toEqual([]);
 	});
@@ -249,15 +252,15 @@ describe("runHomingGuard — the --issue seam", () => {
 
 describe("runHomingGuard — the repo", () => {
 	it("reds 11 when no target repo resolves", async () => {
-		const {outcome} = await run([[/^git remote/, errOut("not a repo")]], {env: {}});
+		const { outcome } = await run([[/^git remote/, errOut("not a repo")]], { env: {} });
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.join("\n")).toContain("cannot resolve a target repo");
 	});
 
 	it("honours an explicit --repo over the environment", async () => {
-		const {requests} = await run(
-			[[/^GET .*\/repos\/other\/x\/issues/, {status: 200, body: "[]"}]],
-			{repo: "other/x"},
+		const { requests } = await run(
+			[[/^GET .*\/repos\/other\/x\/issues/, { status: 200, body: "[]" }]],
+			{ repo: "other/x" },
 		);
 		expect(requests[0]).toContain("repos/other/x/issues");
 	});

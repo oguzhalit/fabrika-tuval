@@ -7,10 +7,10 @@
  * that cannot fail reports green over a registry that has stopped conforming, which is precisely the
  * plausible-negative failure the wire group exists to remove.
  */
-import {describe, expect, it} from "vitest";
-import {conformFormat, conformRegistry, describeFindings, LAWS} from "./conformance.ts";
-import {type BrandedKeys, brandWitnesses, type WireFormat, type WireReadLines} from "./format.ts";
-import {registeredFormats} from "./registry.ts";
+import { describe, expect, it } from "vitest";
+import { conformFormat, conformRegistry, describeFindings, LAWS } from "./conformance.ts";
+import { type BrandedKeys, brandWitnesses, type WireFormat, type WireReadLines } from "./format.ts";
+import { registeredFormats } from "./registry.ts";
 import type * as verdictMarker from "./verdict-marker.ts";
 
 describe("the registry conforms", () => {
@@ -40,7 +40,7 @@ describe("the registry conforms", () => {
  * here is the checker.
  */
 declare const TOY: unique symbol;
-type ToyText = string & {readonly [TOY]: true};
+type ToyText = string & { readonly [TOY]: true };
 
 interface ToyValue {
 	readonly value: ToyText;
@@ -49,10 +49,10 @@ interface ToyValue {
 
 const toyRead = (artifact: string): WireReadLines => {
 	const line = artifact.trim();
-	if (line === "") return {_tag: "Absent", reason: "nothing to judge"};
-	if (line.startsWith("toy: ")) return {_tag: "Found", value: [`value\t${line.slice(5)}`]};
-	if (line.startsWith("toy")) return {_tag: "Malformed", reason: "drifted", evidence: line};
-	return {_tag: "Absent", reason: "no marker of this format"};
+	if (line === "") return { _tag: "Absent", reason: "nothing to judge" };
+	if (line.startsWith("toy: ")) return { _tag: "Found", value: [`value\t${line.slice(5)}`] };
+	if (line.startsWith("toy")) return { _tag: "Malformed", reason: "drifted", evidence: line };
+	return { _tag: "Absent", reason: "no marker of this format" };
 };
 
 const TOY_FORMAT: WireFormat = {
@@ -61,20 +61,24 @@ const TOY_FORMAT: WireFormat = {
 	module: "packages/fabrika-cli/src/wire/toy.ts",
 	producers: ["nobody"],
 	consumers: ["nobody"],
-	emit: (fields) => ({_tag: "Composed", bytes: `toy: ${fields.trim()}\n`}),
+	emit: (fields) => ({ _tag: "Composed", bytes: `toy: ${fields.trim()}\n` }),
 	read: toyRead,
 	fixtures: {
-		roundTrip: {fields: "alpha", values: ["alpha"]},
+		roundTrip: { fields: "alpha", values: ["alpha"] },
 		found: [
-			{shape: "authored with surrounding blank lines", artifact: "\ntoy: beta\n", values: ["beta"]},
+			{
+				shape: "authored with surrounding blank lines",
+				artifact: "\ntoy: beta\n",
+				values: ["beta"],
+			},
 		],
 		absent: "prose that reaches for nothing\n",
-		malformed: [{drift: "the key drifted", artifact: "toyish: alpha\n"}],
+		malformed: [{ drift: "the key drifted", artifact: "toyish: alpha\n" }],
 	},
-	brands: brandWitnesses<ToyValue>({value: true}),
+	brands: brandWitnesses<ToyValue>({ value: true }),
 };
 
-const broken = (mutation: Partial<WireFormat>): WireFormat => ({...TOY_FORMAT, ...mutation});
+const broken = (mutation: Partial<WireFormat>): WireFormat => ({ ...TOY_FORMAT, ...mutation });
 
 const lawsBrokenBy = (format: WireFormat): ReadonlyArray<string> =>
 	conformFormat(format).map((finding) => finding.law);
@@ -85,24 +89,24 @@ describe("the laws bite — each mutation is caught", () => {
 	});
 
 	it("catches an emit that cannot compose its own fixture", () => {
-		const format = broken({emit: () => ({_tag: "Unusable", reason: "no fields"})});
+		const format = broken({ emit: () => ({ _tag: "Unusable", reason: "no fields" }) });
 		expect(lawsBrokenBy(format)).toContain(LAWS.emits);
 	});
 
 	it("catches a read that does not find its own emitted bytes", () => {
-		const format = broken({read: () => ({_tag: "Absent", reason: "never finds anything"})});
+		const format = broken({ read: () => ({ _tag: "Absent", reason: "never finds anything" }) });
 		expect(lawsBrokenBy(format)).toContain(LAWS.roundTrip);
 	});
 
 	it("catches a read that finds the block but drops a field", () => {
-		const format = broken({read: () => ({_tag: "Found", value: ["value\t"]})});
+		const format = broken({ read: () => ({ _tag: "Found", value: ["value\t"] }) });
 		expect(lawsBrokenBy(format)).toContain(LAWS.recovers);
 	});
 
 	it("catches empty bytes answered as Found — the plausible empty value itself", () => {
 		const format = broken({
 			read: (artifact) =>
-				artifact.trim() === "" ? {_tag: "Found", value: ["value\t"]} : toyRead(artifact),
+				artifact.trim() === "" ? { _tag: "Found", value: ["value\t"] } : toyRead(artifact),
 		});
 		expect(lawsBrokenBy(format)).toContain(LAWS.emptyIsAbsent);
 	});
@@ -111,7 +115,7 @@ describe("the laws bite — each mutation is caught", () => {
 		const format = broken({
 			read: (artifact) =>
 				artifact.startsWith("prose")
-					? {_tag: "Malformed", reason: "over-eager", evidence: artifact}
+					? { _tag: "Malformed", reason: "over-eager", evidence: artifact }
 					: toyRead(artifact),
 		});
 		expect(lawsBrokenBy(format)).toContain(LAWS.absentIsAbsent);
@@ -121,7 +125,7 @@ describe("the laws bite — each mutation is caught", () => {
 		const format = broken({
 			read: (artifact) =>
 				artifact.startsWith("toyish")
-					? {_tag: "Absent", reason: "read it as nothing"}
+					? { _tag: "Absent", reason: "read it as nothing" }
 					: toyRead(artifact),
 		});
 		expect(lawsBrokenBy(format)).toContain(LAWS.driftIsMalformed);
@@ -131,7 +135,7 @@ describe("the laws bite — each mutation is caught", () => {
 		const format = broken({
 			read: (artifact) =>
 				artifact.startsWith("toyish")
-					? {_tag: "Found", value: ["value\talpha"]}
+					? { _tag: "Found", value: ["value\talpha"] }
 					: toyRead(artifact),
 		});
 		expect(lawsBrokenBy(format)).toContain(LAWS.driftIsMalformed);
@@ -141,7 +145,7 @@ describe("the laws bite — each mutation is caught", () => {
 		const format = broken({
 			read: (artifact) =>
 				artifact.includes("beta")
-					? {_tag: "Absent", reason: "read it as nothing"}
+					? { _tag: "Absent", reason: "read it as nothing" }
 					: toyRead(artifact),
 		});
 		expect(lawsBrokenBy(format)).toContain(LAWS.foundIsFound);
@@ -150,13 +154,13 @@ describe("the laws bite — each mutation is caught", () => {
 	it("catches an authored artifact read as Found with part of its content dropped", () => {
 		const format = broken({
 			read: (artifact) =>
-				artifact.includes("beta") ? {_tag: "Found", value: ["value\t"]} : toyRead(artifact),
+				artifact.includes("beta") ? { _tag: "Found", value: ["value\t"] } : toyRead(artifact),
 		});
 		expect(lawsBrokenBy(format)).toContain(LAWS.foundRecovers);
 	});
 
 	it("catches two rows registered under one key", () => {
-		const report = conformRegistry([TOY_FORMAT, broken({purpose: "the shadowing row"})]);
+		const report = conformRegistry([TOY_FORMAT, broken({ purpose: "the shadowing row" })]);
 		expect(report._tag).toBe("Scanned");
 		if (report._tag !== "Scanned") return;
 		expect(report.findings.map((finding) => finding.law)).toContain(LAWS.keysUnique);
@@ -235,7 +239,7 @@ describe("the witness binds the field name to that field's own type", () => {
 
 		// @ts-expect-error — the counterexample itself: this compiled before the exclusion and yielded
 		// a witness naming nothing. Every key is blank, so the parameter type is now `never`.
-		brandWitnesses<{readonly "": verdictMarker.HeadSha}>({"": true});
+		brandWitnesses<{ readonly "": verdictMarker.HeadSha }>({ "": true });
 
 		expect([blank, nonBlank]).toEqual([false, true]);
 	});
@@ -251,7 +255,7 @@ describe("the witness binds the field name to that field's own type", () => {
 
 		// @ts-expect-error — this compiled while `Whitespace` was the four ASCII characters, and the
 		// witness it built named nothing. Every key is blank, so the parameter type is now `never`.
-		brandWitnesses<{readonly "\u00A0": verdictMarker.HeadSha}>({"\u00A0": true});
+		brandWitnesses<{ readonly "\u00A0": verdictMarker.HeadSha }>({ "\u00A0": true });
 
 		expect([nbsp, verticalTab, formFeed, byteOrderMark, ideographicSpace, nonBlank]).toEqual([
 			false,
@@ -278,9 +282,9 @@ describe("the witness binds the field name to that field's own type", () => {
 			namespace: true,
 		});
 		// @ts-expect-error — a witness per branded field, not one per row: `clause` is missing.
-		brandWitnesses<verdictMarker.VerdictMarker>({sha: true, polarity: true});
+		brandWitnesses<verdictMarker.VerdictMarker>({ sha: true, polarity: true });
 		// @ts-expect-error — weakened to bare `string`, `clause` is no longer a field this can witness.
-		brandWitnesses<WeakenedMarker>({sha: true, clause: true, polarity: true});
+		brandWitnesses<WeakenedMarker>({ sha: true, clause: true, polarity: true });
 
 		expect(witnessed.map((witness) => witness.field)).toEqual(["sha", "clause", "polarity"]);
 	});
@@ -288,6 +292,6 @@ describe("the witness binds the field name to that field's own type", () => {
 	it("refuses a value type with no branded field — zero scope is not an empty brands list", () => {
 		// @ts-expect-error — the parameter type is `never`, so the call is unwritable. The
 		// runtime throw below is what a caller that reached it anyway gets: a refusal, never `[]`.
-		expect(() => brandWitnesses<{readonly onlyBare: string}>({})).toThrow(/no branded field/);
+		expect(() => brandWitnesses<{ readonly onlyBare: string }>({})).toThrow(/no branded field/);
 	});
 });

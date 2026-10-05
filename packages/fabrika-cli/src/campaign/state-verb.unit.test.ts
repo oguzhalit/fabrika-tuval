@@ -1,6 +1,6 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {FakeFsOptions, Scripted} from "../fakes.test-support.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { FakeFsOptions, Scripted } from "../fakes.test-support.ts";
 import {
 	approving,
 	CITES,
@@ -19,12 +19,12 @@ import {
 	TWO_ROWS,
 	tree,
 } from "./fixtures.test-support.ts";
-import {runState} from "./state-verb.ts";
+import { runState } from "./state-verb.ts";
 
 const run = (
 	script: ReadonlyArray<Scripted>,
 	fs: FakeFsOptions = tree(),
-	options: {selector?: string; to?: string; json?: boolean} = {},
+	options: { selector?: string; to?: string; json?: boolean } = {},
 ) => {
 	const io = seams(script, fs);
 	return Effect.runPromise(
@@ -41,56 +41,56 @@ const run = (
 			}),
 			io.layer,
 		),
-	).then((outcome) => ({outcome, written: io.written, requests: io.requests}));
+	).then((outcome) => ({ outcome, written: io.written, requests: io.requests }));
 };
 
 const APPROVED = approving(42, "active");
 
 describe("campaign state — the answer", () => {
 	it("rewrites the selected row's cell and prints it back", async () => {
-		const {outcome, written} = await run(APPROVED);
+		const { outcome, written } = await run(APPROVED);
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toBe("#42\tactive\tTaste-Skill Library\n");
 		expect(written.get(ROADMAP_PATH)).toContain("| Taste-Skill Library | #42 | active |");
 	});
 
 	it("leaves every other line byte-identical", async () => {
-		const {written} = await run(APPROVED);
+		const { written } = await run(APPROVED);
 		const before = TWO_ROWS.split("\n");
 		const after = (written.get(ROADMAP_PATH) ?? "").split("\n");
 		expect(after.filter((line, at) => line !== before[at])).toHaveLength(1);
 	});
 
 	it("names the flip and claims no lane opens on it — a campaign gates nothing", async () => {
-		const {outcome} = await run(APPROVED);
+		const { outcome } = await run(APPROVED);
 		expect(outcome.stderr).toEqual([
 			`campaign state: cited ${CITES} by @usirin (control plane: @usirin; write on o/r); "Taste-Skill Library" #42 paused → active in ROADMAP.md.`,
 		]);
 	});
 
 	it("reads a flip to done the same way", async () => {
-		const {outcome} = await run(approving(42, "done"), tree(), {to: "done"});
+		const { outcome } = await run(approving(42, "done"), tree(), { to: "done" });
 		expect(outcome.stderr.at(-1)).toContain("paused → done in ROADMAP.md.");
 	});
 
 	it("emits the documented object under --json, carrying the state it came from", async () => {
-		const {outcome} = await run(APPROVED, tree(), {json: true});
+		const { outcome } = await run(APPROVED, tree(), { json: true });
 		expect(JSON.parse(outcome.stdout)).toEqual({
-			row: {milestone: 42, state: "active", name: "Taste-Skill Library"},
+			row: { milestone: 42, state: "active", name: "Taste-Skill Library" },
 			from: "paused",
 			file: FILE,
 		});
 	});
 
 	it("selects by exact name as readily as by pin", async () => {
-		const {outcome} = await run(APPROVED, tree(), {selector: "Taste-Skill Library"});
+		const { outcome } = await run(APPROVED, tree(), { selector: "Taste-Skill Library" });
 		expect(outcome.code).toBe(0);
 	});
 });
 
 describe("campaign state — the selector", () => {
 	it("refuses a selector matching no row on 7, reading no comment", async () => {
-		const {outcome, requests} = await run(APPROVED, tree(), {selector: "#999"});
+		const { outcome, requests } = await run(APPROVED, tree(), { selector: "#999" });
 		expect(outcome.code).toBe(7);
 		expect(outcome.stderr.at(-1)).toBe(
 			'campaign state: ROADMAP.md has no campaign row matching "#999" — NOTHING was written.',
@@ -100,7 +100,7 @@ describe("campaign state — the selector", () => {
 
 	it("refuses a selector matching two rows on 18 rather than picking the first", async () => {
 		const twins = TWO_ROWS.replace("| fabrika everywhere |", "| Taste-Skill Library |");
-		const {outcome, written} = await run(approving(42, "active"), tree(twins), {
+		const { outcome, written } = await run(approving(42, "active"), tree(twins), {
 			selector: "Taste-Skill Library",
 		});
 		expect(outcome.code).toBe(18);
@@ -109,7 +109,7 @@ describe("campaign state — the selector", () => {
 	});
 
 	it("refuses a no-op flip on 20 rather than answering 0 over a cell nobody moved", async () => {
-		const {outcome, written} = await run(APPROVED, tree(), {selector: "#47"});
+		const { outcome, written } = await run(APPROVED, tree(), { selector: "#47" });
 		expect(outcome.code).toBe(20);
 		expect(outcome.stderr.at(-1)).toBe(
 			'campaign state: "fabrika everywhere" #47 already holds active — NOTHING was written.',
@@ -118,7 +118,7 @@ describe("campaign state — the selector", () => {
 	});
 
 	it("refuses a --to outside the three values as a usage error", async () => {
-		const {outcome} = await run(APPROVED, tree(), {to: "archived"});
+		const { outcome } = await run(APPROVED, tree(), { to: "archived" });
 		expect(outcome.code).toBe(1);
 		expect(outcome.stderr.at(-1)).toBe(
 			'campaign state: --to "archived" is not one of active, paused, done.',
@@ -128,25 +128,25 @@ describe("campaign state — the selector", () => {
 
 describe("campaign state — the approval trace binds to the selected row", () => {
 	it("refuses a marker approving another campaign on 15", async () => {
-		const {outcome} = await run([[GET_COMMENT, comment(marker(47, "active"))]]);
+		const { outcome } = await run([[GET_COMMENT, comment(marker(47, "active"))]]);
 		expect(outcome.code).toBe(15);
 		expect(outcome.stderr.at(-1)).toContain("approves #47 active, not #42 active");
 	});
 
 	it("refuses a marker approving another state on 15", async () => {
-		const {outcome} = await run([[GET_COMMENT, comment(marker(42, "done"))]]);
+		const { outcome } = await run([[GET_COMMENT, comment(marker(42, "done"))]]);
 		expect(outcome.code).toBe(15);
 		expect(outcome.stderr.at(-1)).toContain("approves #42 done, not #42 active");
 	});
 
 	it("refuses a CODEOWNERS naming nobody on 17, in this verb's own words", async () => {
-		const {outcome} = await run([[CODEOWNERS, codeowners()], ...APPROVED]);
+		const { outcome } = await run([[CODEOWNERS, codeowners()], ...APPROVED]);
 		expect(outcome.code).toBe(17);
 		expect(outcome.stderr.at(-1)).toContain("nobody may flip a campaign in this repo");
 	});
 
 	it("refuses a control-plane author below the write floor on 21, writing nothing", async () => {
-		const {outcome, written} = await run([
+		const { outcome, written } = await run([
 			[GET_COMMENT, comment(marker(42, "active"))],
 			[PERMISSION, permission("triage")],
 		]);
@@ -157,20 +157,20 @@ describe("campaign state — the approval trace binds to the selected row", () =
 
 describe("campaign state — the write and its read-back", () => {
 	it("refuses a failed write on 8, saying the row may be half-written", async () => {
-		const {outcome} = await run(APPROVED, {...tree(), unwritable: [ROADMAP_PATH]});
+		const { outcome } = await run(APPROVED, { ...tree(), unwritable: [ROADMAP_PATH] });
 		expect(outcome.code).toBe(8);
 		expect(outcome.stderr.at(-1)).toContain("the row may be half-written; re-read it.");
 	});
 
 	it("refuses an unreadable table on 12, saying nothing was written", async () => {
-		const {outcome} = await run(APPROVED, tree(TWO_ROWS.replace("| paused |", "| snoozed |")));
+		const { outcome } = await run(APPROVED, tree(TWO_ROWS.replace("| paused |", "| snoozed |")));
 		expect(outcome.code).toBe(12);
 		expect(outcome.stderr.at(-1)).toContain("table is unreadable. NOTHING was written.");
 	});
 
 	it("flips a row carrying no trailing pipe, which the parse reads and campaign list prints", async () => {
 		const open = TWO_ROWS.replace("| #42 | paused |", "| #42 | paused");
-		const {outcome, written} = await run(APPROVED, tree(open));
+		const { outcome, written } = await run(APPROVED, tree(open));
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toBe("#42\tactive\tTaste-Skill Library\n");
 		expect(written.get(ROADMAP_PATH)).toContain("| Taste-Skill Library | #42 | active\n");

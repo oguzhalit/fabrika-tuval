@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
-import type {DocumentRead} from "./answer-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
+import type { DocumentRead } from "./answer-verb.ts";
 import {
 	AUTHORIZATION_ABSENT,
 	BARE_AT_PATH,
@@ -25,7 +25,7 @@ import {
 	sessionPayload,
 	supersedeComment,
 } from "./fixtures.test-support.ts";
-import {runRule} from "./rule-verb.ts";
+import { runRule } from "./rule-verb.ts";
 
 const VIEWER = /^GET .*\/user$/;
 const PERMISSION = /^GET .*\/repos\/o\/r\/collaborators\/[a-z-]+\/permission$/;
@@ -34,29 +34,29 @@ const COMMENTS = /^GET .*\/repos\/o\/r\/issues\/9412\/comments\?/;
 const POST = /^POST .*\/repos\/o\/r\/issues\/9412\/comments$/;
 const READBACK = /^GET .*\/repos\/o\/r\/issues\/comments\/\d+$/;
 
-const served = (body: string, status = 200): HttpReply => ({status, body});
-const granted = (permission: string): HttpReply => served(JSON.stringify({permission}));
-const NOT_FOUND: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
-const GATEWAY: HttpReply = {status: 502, body: '{"message":"Bad gateway"}'};
+const served = (body: string, status = 200): HttpReply => ({ status, body });
+const granted = (permission: string): HttpReply => served(JSON.stringify({ permission }));
+const NOT_FOUND: HttpReply = { status: 404, body: '{"message":"Not Found"}' };
+const GATEWAY: HttpReply = { status: 502, body: '{"message":"Bad gateway"}' };
 
 const BOUND = roundDigestOf(1);
-const ROUND_ONE = commentsPayload([{id: 1, author: "acme-founder", body: roundComment(1)}]);
+const ROUND_ONE = commentsPayload([{ id: 1, author: "acme-founder", body: roundComment(1) }]);
 
 const options = {
 	session: 9412,
 	question: "R1.2",
 	authorizationPath: "authorization.md",
-	authorization: Effect.succeed<DocumentRead>({_tag: "Text", text: AUTHORIZATION}),
+	authorization: Effect.succeed<DocumentRead>({ _tag: "Text", text: AUTHORIZATION }),
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 	now: () => new Date("2026-08-09T18:36:48.000Z"),
 };
 
 const postedAs = (id: number) =>
-	served(JSON.stringify({id, html_url: `https://example.test/#${id}`}), 201);
+	served(JSON.stringify({ id, html_url: `https://example.test/#${id}` }), 201);
 
 const identity: ReadonlyArray<Scripted> = [
-	[VIEWER, served(JSON.stringify({login: "acme-founder"}))],
+	[VIEWER, served(JSON.stringify({ login: "acme-founder" }))],
 	[PERMISSION, granted("write")],
 ];
 
@@ -66,11 +66,11 @@ const happy: ReadonlyArray<Scripted> = [
 	[COMMENTS, served(ROUND_ONE)],
 	[once(POST), postedAs(5234567893)],
 	[POST, postedAs(5234567892)],
-	[READBACK, served(JSON.stringify({body: rulingComment("R1.2", BOUND)}))],
+	[READBACK, served(JSON.stringify({ body: rulingComment("R1.2", BOUND) }))],
 ];
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runRule({...options, ...overrides}), fakeSeams(script).layer));
+	Effect.runPromise(Effect.provide(runRule({ ...options, ...overrides }), fakeSeams(script).layer));
 
 describe("runRule records a bound ruling", () => {
 	it("answers with both comment ids and resolvesTo ruled", async () => {
@@ -119,7 +119,10 @@ describe("runRule refuses without a quoted, dated authorization", () => {
 		const seams = fakeSeams(happy);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runRule({...options, authorization: Effect.succeed<DocumentRead>({_tag: "Text", text})}),
+				runRule({
+					...options,
+					authorization: Effect.succeed<DocumentRead>({ _tag: "Text", text }),
+				}),
 				seams.layer,
 			),
 		);
@@ -131,7 +134,7 @@ describe("runRule refuses without a quoted, dated authorization", () => {
 describe("runRule never grants authority from a failed lookup", () => {
 	it("refuses a permission read that could not complete as UNKNOWN", async () => {
 		const out = await run([
-			[VIEWER, served(JSON.stringify({login: "acme-founder"}))],
+			[VIEWER, served(JSON.stringify({ login: "acme-founder" }))],
 			[PERMISSION, GATEWAY],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -139,7 +142,7 @@ describe("runRule never grants authority from a failed lookup", () => {
 
 	it("refuses a token below write on its own code, distinct from UNKNOWN", async () => {
 		const out = await run([
-			[VIEWER, served(JSON.stringify({login: "acme-founder"}))],
+			[VIEWER, served(JSON.stringify({ login: "acme-founder" }))],
 			[PERMISSION, granted("read")],
 		]);
 		expect(out.code).toBe(TOKEN_UNAUTHORIZED);
@@ -147,7 +150,7 @@ describe("runRule never grants authority from a failed lookup", () => {
 
 	it("refuses a token that is no collaborator at all", async () => {
 		const out = await run([
-			[VIEWER, served(JSON.stringify({login: "acme-founder"}))],
+			[VIEWER, served(JSON.stringify({ login: "acme-founder" }))],
 			[PERMISSION, NOT_FOUND],
 		]);
 		expect(out.code).toBe(TOKEN_UNAUTHORIZED);
@@ -155,7 +158,7 @@ describe("runRule never grants authority from a failed lookup", () => {
 
 	it("resolves the ACL before it reads the session, so nothing is read on an unauthorized token", async () => {
 		const seams = fakeSeams([
-			[VIEWER, served(JSON.stringify({login: "acme-founder"}))],
+			[VIEWER, served(JSON.stringify({ login: "acme-founder" }))],
 			[PERMISSION, granted("read")],
 		]);
 		await Effect.runPromise(Effect.provide(runRule(options), seams.layer));
@@ -190,8 +193,8 @@ describe("runRule seats every other refusal on its own code", () => {
 			},
 		],
 		["an absent session", NO_TARGET, [...identity, [ISSUE, NOT_FOUND]], {}],
-		["an id that names no question", QUESTION_UNKNOWN, happy, {question: "R9.9"}],
-		["a fact question", KIND_MISMATCH, happy, {question: "R1.1"}],
+		["an id that names no question", QUESTION_UNKNOWN, happy, { question: "R9.9" }],
+		["a fact question", KIND_MISMATCH, happy, { question: "R1.1" }],
 		[
 			"a retired question",
 			QUESTION_RETIRED,
@@ -202,11 +205,11 @@ describe("runRule seats every other refusal on its own code", () => {
 					COMMENTS,
 					served(
 						commentsPayload([
-							{id: 1, author: "acme-founder", body: roundComment(1)},
+							{ id: 1, author: "acme-founder", body: roundComment(1) },
 							{
 								id: 2,
 								author: "acme-founder",
-								body: supersedeComment([{question: "R1.2", digest: BOUND, round: 2}]),
+								body: supersedeComment([{ question: "R1.2", digest: BOUND, round: 2 }]),
 							},
 						]),
 					),
@@ -247,7 +250,7 @@ describe("runRule seats every other refusal on its own code", () => {
 				[COMMENTS, served(ROUND_ONE)],
 				[once(POST), postedAs(5234567893)],
 				[POST, postedAs(5234567892)],
-				[READBACK, served(JSON.stringify({body: "something else"}))],
+				[READBACK, served(JSON.stringify({ body: "something else" }))],
 			],
 			{},
 		],

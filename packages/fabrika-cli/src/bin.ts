@@ -17,13 +17,13 @@
 // The one static import this file may carry: `verb.ts` imports nothing itself, so it cannot be the
 // unlinked dependency the catch below exists for, and the exit code stays a named seat instead of a
 // numeral no exit table can see.
-import {NO_IMPLEMENTATION} from "./verb.ts";
+import { NO_IMPLEMENTATION } from "./verb.ts";
 
 // The `try/catch` here is deliberate and stays native: this is a pre-runtime bootstrap — the module
 // graph is being loaded to BUILD the CLI, so there is no Effect runtime yet to carry it in an `E`
 // channel. Nothing in this file imports `effect`, which is what keeps that honest.
 try {
-	const {delegateOrRunHere} = await import("./delegate/entry.ts");
+	const { delegateOrRunHere } = await import("./delegate/entry.ts");
 	await delegateOrRunHere();
 	await import("./run.ts");
 } catch (err) {

@@ -1,10 +1,10 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {NO_RECIPE, PARK_HOLDS, PARK_NOVEL} from "./codes.ts";
-import {runRoute} from "./route-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { NO_RECIPE, PARK_HOLDS, PARK_NOVEL } from "./codes.ts";
+import { runRoute } from "./route-verb.ts";
 
 const route = (state: string, exit: number | null = null) =>
-	Effect.runSync(runRoute({state, exit}));
+	Effect.runSync(runRoute({ state, exit }));
 
 const answered = (state: string, exit: number | null = null): Record<string, unknown> => {
 	const outcome = route(state, exit);
@@ -14,8 +14,8 @@ const answered = (state: string, exit: number | null = null): Record<string, unk
 
 describe("recipe route — the routing half", () => {
 	it("names the verb a chore state applies and what it is pointed at", () => {
-		expect(answered("unpark")).toMatchObject({state: "unpark", verb: "unpark", target: "lane"});
-		expect(answered("rerun")).toMatchObject({state: "rerun", verb: "rerun", target: "pull"});
+		expect(answered("unpark")).toMatchObject({ state: "unpark", verb: "unpark", target: "lane" });
+		expect(answered("rerun")).toMatchObject({ state: "rerun", verb: "rerun", target: "pull" });
 	});
 
 	it("refuses a state that applies no recipe, and lists the ones that do", () => {
@@ -35,7 +35,7 @@ describe("recipe route — the folding half", () => {
 	it("answers one machine event for the exit, with the reading that justifies it", () => {
 		const folded = answered("unpark", PARK_NOVEL);
 
-		expect(folded).toMatchObject({verb: "unpark", exit: PARK_NOVEL, event: "BLOCKED"});
+		expect(folded).toMatchObject({ verb: "unpark", exit: PARK_NOVEL, event: "BLOCKED" });
 		expect(String(folded.why)).toMatch(/outside the recipe table/);
 	});
 

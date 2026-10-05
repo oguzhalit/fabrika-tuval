@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import {read as readCriteria} from "../wire/acceptance-criteria.ts";
-import {headSha} from "../wire/verdict-marker.ts";
+import { describe, expect, it } from "vitest";
+import { read as readCriteria } from "../wire/acceptance-criteria.ts";
+import { headSha } from "../wire/verdict-marker.ts";
 import {
 	appendOnly,
 	type CriterionProvenance,
@@ -54,10 +54,10 @@ describe("criterionRow", () => {
 		if (value === null) throw new Error(`fixture is not a revision: ${raw}`);
 		return value;
 	};
-	const pull: CriterionProvenance = {_tag: "Pull", pr: 4321};
+	const pull: CriterionProvenance = { _tag: "Pull", pr: 4321 };
 	const ranged: CriterionProvenance = {
 		_tag: "Ranged",
-		range: {base: sha("9f2c1ab"), tip: sha("03135b9")},
+		range: { base: sha("9f2c1ab"), tip: sha("03135b9") },
 	};
 
 	it("carries the provenance tag that makes a routed row auditable", () => {
@@ -201,10 +201,10 @@ describe("readProvenanceTag", () => {
 	};
 	const BASE_SHA = "0f1e2d3c4b5a69788796a5b4c3d2e1f009182736";
 	const TIP_SHA = "03135b91aa04f7e2c9d8b1640a5c22e9f01b7d3c";
-	const pull: CriterionProvenance = {_tag: "Pull", pr: 4321};
+	const pull: CriterionProvenance = { _tag: "Pull", pr: 4321 };
 	const ranged: CriterionProvenance = {
 		_tag: "Ranged",
-		range: {base: sha(BASE_SHA), tip: sha(TIP_SHA)},
+		range: { base: sha(BASE_SHA), tip: sha(TIP_SHA) },
 	};
 
 	it("reads back every subject the writer can emit, with its round", () => {
@@ -216,7 +216,7 @@ describe("readProvenanceTag", () => {
 	});
 
 	it("tells two subjects of the same kind apart, and two of different kinds", () => {
-		expect(sameSubject(pull, {_tag: "Pull", pr: 9999})).toBe(false);
+		expect(sameSubject(pull, { _tag: "Pull", pr: 9999 })).toBe(false);
 		expect(sameSubject(pull, ranged)).toBe(false);
 	});
 
@@ -225,7 +225,7 @@ describe("readProvenanceTag", () => {
 	it("matches an abbreviated range against the full one", () => {
 		const short: CriterionProvenance = {
 			_tag: "Ranged",
-			range: {base: sha(BASE_SHA.slice(0, 7)), tip: sha(TIP_SHA.slice(0, 7))},
+			range: { base: sha(BASE_SHA.slice(0, 7)), tip: sha(TIP_SHA.slice(0, 7)) },
 		};
 		expect(sameSubject(short, ranged)).toBe(true);
 	});

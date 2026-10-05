@@ -10,7 +10,7 @@
  * empty shortlist: an ADR that disagrees with the subject about what a *label means*, sharing no
  * distinctive vocabulary, never appears at all, and the skill reads the domain by hand regardless.
  */
-import {frontmatterBlock, idSortKey, isLive, statusOf, titleOf} from "./records.ts";
+import { frontmatterBlock, idSortKey, isLive, statusOf, titleOf } from "./records.ts";
 
 /** Below this many live-accepted records, rarity is not measurable and the run carries no information. */
 const RARITY_FLOOR = 10;
@@ -106,7 +106,7 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
  * ranked.
  */
 export const sweep = (
-	subject: {readonly id: string | null; readonly text: string},
+	subject: { readonly id: string | null; readonly text: string },
 	corpus: ReadonlyArray<SweepCandidate>,
 	limit: number,
 ): SweepResult => {
@@ -164,7 +164,12 @@ export const sweep = (
 			const terms = docTerms.get(record.id) ?? new Set<string>();
 			let score = 0;
 			for (const [term, weight] of idf) if (terms.has(term)) score += weight;
-			return {id: record.id, score: round2(score), file: record.file, title: titleOf(record.text)};
+			return {
+				id: record.id,
+				score: round2(score),
+				file: record.file,
+				title: titleOf(record.text),
+			};
 		})
 		.filter((entry) => entry.score > 0)
 		.sort((a, b) => {

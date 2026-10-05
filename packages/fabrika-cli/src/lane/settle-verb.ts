@@ -36,15 +36,15 @@
  * a lane whose own flow really does reach its ship stage still folds through the machine it always
  * did, and a terminal recorded here says by name that the pipeline did not drive it.
  */
-import {Effect, FileSystem, Path, Result} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type Claimants, readClaimants} from "../build/claim.ts";
-import {appendText} from "../io/fs.ts";
-import {getIssue, resolveRepo} from "../io/issues.ts";
-import {getPullRequest} from "../io/pulls.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {lockedRefusal, withLedgerLock} from "./append-lock.ts";
-import {LANE_CLAIM} from "./claim.ts";
+import { Effect, FileSystem, Path, Result } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type Claimants, readClaimants } from "../build/claim.ts";
+import { appendText } from "../io/fs.ts";
+import { getIssue, resolveRepo } from "../io/issues.ts";
+import { getPullRequest } from "../io/pulls.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { lockedRefusal, withLedgerLock } from "./append-lock.ts";
+import { LANE_CLAIM } from "./claim.ts";
 import {
 	APPEND_UNKNOWN,
 	CLAIM_NOT_MINE,
@@ -57,21 +57,21 @@ import {
 	PROOF_IN_FLIGHT,
 	TASK_UNKNOWN,
 } from "./codes.ts";
-import {applyBoardTerminal, foldLog, resolveTask, type SettlementEvidence} from "./fold.ts";
-import type {KeyIssue} from "./key.ts";
-import {CANCELLED_EVENT} from "./machine.ts";
-import {type Nomination, nominatePulls} from "./nominate.ts";
-import type {PullFact} from "./prove.ts";
-import {loadRefusal, replayRefusal} from "./refusals.ts";
-import {type AssertedPull, entitlement} from "./settle.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { applyBoardTerminal, foldLog, resolveTask, type SettlementEvidence } from "./fold.ts";
+import type { KeyIssue } from "./key.ts";
+import { CANCELLED_EVENT } from "./machine.ts";
+import { type Nomination, nominatePulls } from "./nominate.ts";
+import type { PullFact } from "./prove.ts";
+import { loadRefusal, replayRefusal } from "./refusals.ts";
+import { type AssertedPull, entitlement } from "./settle.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane settle";
 
 /** One issue's closure as the board states it — `reason` is GitHub's own `state_reason`. */
 export type IssueClosure =
-	| {readonly _tag: "Read"; readonly state: "open" | "closed"; readonly reason: string | null}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Read"; readonly state: "open" | "closed"; readonly reason: string | null }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 export type ClosureReader<R> = (issue: number) => Effect.Effect<IssueClosure, never, R>;
 
@@ -91,7 +91,7 @@ export type ShaReader<R> = (pr: number) => Effect.Effect<string | null, never, R
  */
 export type AssertedReader<R> = (
 	pr: number,
-) => Effect.Effect<AssertedPull | {readonly _tag: "Unknown"; readonly reason: string}, never, R>;
+) => Effect.Effect<AssertedPull | { readonly _tag: "Unknown"; readonly reason: string }, never, R>;
 
 /**
  * The board-backed readers.
@@ -123,7 +123,7 @@ export const boardReaders = (
 		closure: (issue) =>
 			Effect.gen(function* () {
 				const name = yield* target;
-				if (name === null) return {_tag: "Unknown" as const, reason: noRepo};
+				if (name === null) return { _tag: "Unknown" as const, reason: noRepo };
 				const record = yield* getIssue(name, issue);
 				if (record._tag !== "Present") {
 					return {
@@ -144,14 +144,14 @@ export const boardReaders = (
 			Effect.gen(function* () {
 				const name = yield* target;
 				if (name === null) {
-					return {_tag: "Unreadable" as const, what: "the target repo", reason: noRepo};
+					return { _tag: "Unreadable" as const, what: "the target repo", reason: noRepo };
 				}
 				return yield* nominatePulls(name, issue, "open-or-merged");
 			}),
 		claims: (issue) =>
 			Effect.gen(function* () {
 				const name = yield* target;
-				if (name === null) return {_tag: "Unknown" as const, reason: noRepo};
+				if (name === null) return { _tag: "Unknown" as const, reason: noRepo };
 				return yield* readClaimants(name, issue, LANE_CLAIM);
 			}),
 		// A merge commit is evidence and never an entitlement, so a read that cannot answer leaves the
@@ -166,15 +166,15 @@ export const boardReaders = (
 		asserted: (pr) =>
 			Effect.gen(function* () {
 				const name = yield* target;
-				if (name === null) return {_tag: "Unknown" as const, reason: noRepo};
+				if (name === null) return { _tag: "Unknown" as const, reason: noRepo };
 				const record = yield* getPullRequest(name, pr);
-				if (record._tag === "Absent") return {_tag: "Absent" as const, number: pr};
+				if (record._tag === "Absent") return { _tag: "Absent" as const, number: pr };
 				if (record._tag !== "Present") {
-					return {_tag: "Unknown" as const, reason: `cannot read #${pr}: ${record.reason}`};
+					return { _tag: "Unknown" as const, reason: `cannot read #${pr}: ${record.reason}` };
 				}
 				return record.value.merged
-					? {_tag: "Merged" as const, number: pr, sha: record.value.mergeCommitSha}
-					: {_tag: "Unmerged" as const, number: pr, state: record.value.state};
+					? { _tag: "Merged" as const, number: pr, sha: record.value.mergeCommitSha }
+					: { _tag: "Unmerged" as const, number: pr, state: record.value.state };
 			}),
 	};
 };
@@ -238,7 +238,7 @@ export const runSettle = <R = never>(
 			fold.states,
 			task.taskId,
 			CANCELLED_EVENT,
-			{outcome: "not_planned"},
+			{ outcome: "not_planned" },
 			at,
 		);
 		if (dry._tag === "Refused") {
@@ -323,7 +323,7 @@ export const runSettle = <R = never>(
 			);
 		}
 
-		let evidence: SettlementEvidence = {outcome: entitled.outcome};
+		let evidence: SettlementEvidence = { outcome: entitled.outcome };
 		if (entitled._tag === "Landed") {
 			const first = entitled.landed[0];
 			// An asserted landing was read in full a moment ago, so its merge commit is already
@@ -337,13 +337,13 @@ export const runSettle = <R = never>(
 			evidence = {
 				outcome: entitled.outcome,
 				landed: entitled.landed,
-				...(sha === null ? {} : {sha}),
-				...(entitled.assertedBy === undefined ? {} : {assertedBy: entitled.assertedBy}),
+				...(sha === null ? {} : { sha }),
+				...(entitled.assertedBy === undefined ? {} : { assertedBy: entitled.assertedBy }),
 			};
 		}
 
 		return yield* withLedgerLock(
-			{fs, path, dir: loaded.dir, verb: VERB},
+			{ fs, path, dir: loaded.dir, verb: VERB },
 			Effect.gen(function* () {
 				// Re-load and re-derive under the lock: between the judgement above and this append a
 				// concurrent writer may have moved the lane, and a terminal validated against a fold
@@ -389,9 +389,9 @@ export const runSettle = <R = never>(
 							current: applied.current.stateValue,
 							taskAffected: freshTask.taskId,
 							outcome: entitled.outcome,
-							...(evidence.landed === undefined ? {} : {landed: evidence.landed}),
-							...(evidence.sha === undefined ? {} : {sha: evidence.sha}),
-							...(evidence.assertedBy === undefined ? {} : {assertedBy: evidence.assertedBy}),
+							...(evidence.landed === undefined ? {} : { landed: evidence.landed }),
+							...(evidence.sha === undefined ? {} : { sha: evidence.sha }),
+							...(evidence.assertedBy === undefined ? {} : { assertedBy: evidence.assertedBy }),
 						},
 						null,
 						2,
@@ -411,7 +411,7 @@ export const runSettle = <R = never>(
 				);
 			}),
 			{
-				onAbsent: (dir) => loadRefusal(VERB, {_tag: "Absent", dir}),
+				onAbsent: (dir) => loadRefusal(VERB, { _tag: "Absent", dir }),
 				onLocked: (lockDir) => refuse(CONCURRENT_WRITE, lockedRefusal(VERB, lockDir)),
 			},
 		);

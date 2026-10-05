@@ -1,11 +1,11 @@
 /**
  * `guard decisions-index validate`'s IO boundary and exit taxonomy, over a scripted filesystem.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFsOptions, fakeFs} from "../fakes.test-support.ts";
-import {PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE} from "./codes.ts";
-import {runDecisionsIndexGuard} from "./decisions-number-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFsOptions, fakeFs } from "../fakes.test-support.ts";
+import { PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE } from "./codes.ts";
+import { runDecisionsIndexGuard } from "./decisions-number-verb.ts";
 
 const ROOT = "/repo";
 const CORPUS = ".decisions";
@@ -13,7 +13,7 @@ const DIR = `${ROOT}/${CORPUS}`;
 
 const run = (options: FakeFsOptions, env: Record<string, string | undefined> = {}) =>
 	Effect.runPromise(
-		Effect.provide(runDecisionsIndexGuard({root: ROOT, cwd: ROOT, env}), fakeFs(options).layer),
+		Effect.provide(runDecisionsIndexGuard({ root: ROOT, cwd: ROOT, env }), fakeFs(options).layer),
 	);
 
 const body = (id: string) =>
@@ -21,19 +21,19 @@ const body = (id: string) =>
 
 const corpus = (records: Readonly<Record<string, string>>): FakeFsOptions => ({
 	directories: [DIR],
-	dirs: {[DIR]: Object.keys(records)},
+	dirs: { [DIR]: Object.keys(records) },
 	files: Object.fromEntries(Object.entries(records).map(([n, t]) => [`${DIR}/${n}`, t])),
 });
 
 describe("runDecisionsIndexGuard", () => {
 	it("passes a corpus with no collision or mismatch", async () => {
-		const outcome = await run(corpus({"0001-a.md": body("0001"), "0002-b.md": body("0002")}));
+		const outcome = await run(corpus({ "0001-a.md": body("0001"), "0002-b.md": body("0002") }));
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toContain("no duplicate id");
 	});
 
 	it("seats a duplicate id on the violation code with nothing on stdout", async () => {
-		const outcome = await run(corpus({"0284-a.md": body("0284"), "0284-b.md": body("0284")}));
+		const outcome = await run(corpus({ "0284-a.md": body("0284"), "0284-b.md": body("0284") }));
 		expect(outcome.code).toBe(VIOLATION);
 		expect(outcome.stdout).toBe("");
 		expect(outcome.stderr.join("\n")).toContain("duplicate ADR id 0284");
@@ -41,7 +41,7 @@ describe("runDecisionsIndexGuard", () => {
 
 	// A duplicate is annotated on every colliding record: neither is the offender on its own.
 	it("annotates each colliding record under Actions", async () => {
-		const outcome = await run(corpus({"0284-a.md": body("0284"), "0284-b.md": body("0284")}), {
+		const outcome = await run(corpus({ "0284-a.md": body("0284"), "0284-b.md": body("0284") }), {
 			GITHUB_ACTIONS: "true",
 		});
 		const errors = outcome.stderr.filter((l) => l.startsWith("::error"));
@@ -53,13 +53,13 @@ describe("runDecisionsIndexGuard", () => {
 	// filter dropped such a name entirely, so a record whose NAME is broken could claim a taken
 	// number and leave the guard's sight — the exact collision the lock exists to catch.
 	it("catches a collision claimed by a malformed record name", async () => {
-		const outcome = await run(corpus({"0284-a.md": body("0284"), "0284 -bad.md": body("0284")}));
+		const outcome = await run(corpus({ "0284-a.md": body("0284"), "0284 -bad.md": body("0284") }));
 		expect(outcome.code).toBe(VIOLATION);
 		expect(outcome.stderr.join("\n")).toContain("0284 -bad.md");
 	});
 
 	it("ignores a non-record file beside the records", async () => {
-		const outcome = await run(corpus({"0001-a.md": body("0001"), "README.md": "# not a record"}));
+		const outcome = await run(corpus({ "0001-a.md": body("0001"), "README.md": "# not a record" }));
 		expect(outcome.code).toBe(0);
 	});
 
@@ -73,7 +73,7 @@ describe("runDecisionsIndexGuard", () => {
 	// A zero-scope red here would make a valid config a permanent CI failure, and its wording
 	// ("Is the repo root correct?") would send the reader after a defect that is not there.
 	it("skips a repo that declines decisionsDir on exit 0, offering no override", async () => {
-		const outcome = await run({files: {[`${ROOT}/.fabrika.jsonc`]: '{"decisionsDir": null}'}});
+		const outcome = await run({ files: { [`${ROOT}/.fabrika.jsonc`]: '{"decisionsDir": null}' } });
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toContain("declines `decisionsDir`");
 		// This verb has no corpus flag, so the skip must not send the reader after `adr`'s `--dir`.
@@ -83,7 +83,7 @@ describe("runDecisionsIndexGuard", () => {
 
 	it("is UNKNOWN when a record cannot be read", async () => {
 		const outcome = await run({
-			...corpus({"0001-a.md": body("0001")}),
+			...corpus({ "0001-a.md": body("0001") }),
 			unreadable: [`${DIR}/0001-a.md`],
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);

@@ -38,7 +38,7 @@
  * Every arm is a generic structural shape. None of them names an operator, a machine or a repo.
  */
 
-import {DECISIONS_ROOT} from "../review/classes.ts";
+import { DECISIONS_ROOT } from "../review/classes.ts";
 
 /** A machine-local path shape, and the report line it produces. */
 export interface PathPattern {
@@ -126,7 +126,7 @@ export const docLeaks = (
 	const leaks: DocLeak[] = [];
 	const seen = new Set<string>();
 	for (const [index, line] of text.split("\n").entries()) {
-		for (const {pattern, reason} of DOC_PATH_PATTERNS) {
+		for (const { pattern, reason } of DOC_PATH_PATTERNS) {
 			for (const match of line.matchAll(pattern)) {
 				// Two arms legitimately claim one span — `~/code/` is both the named clone root and the
 				// generic `~/<root>/<host>/<user>/<repo>` shape — and reporting the same bytes twice
@@ -134,7 +134,7 @@ export const docLeaks = (
 				const key = `${index}\t${match.index}\t${match[0]}`;
 				if (seen.has(key)) continue;
 				seen.add(key);
-				leaks.push({line: index + 1, matched: match[0], reason});
+				leaks.push({ line: index + 1, matched: match[0], reason });
 			}
 		}
 	}

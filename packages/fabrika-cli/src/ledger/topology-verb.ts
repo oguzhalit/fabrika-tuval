@@ -18,15 +18,15 @@
  * issues endpoint serves PRs too — so the 404 arm never fires for one and only this check catches it.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {readAuthored} from "../build/authored.ts";
-import {scannedLine} from "../build/target.ts";
-import {capAndCount} from "../evidence.ts";
-import {edgeTarget} from "../io/edges.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { readAuthored } from "../build/authored.ts";
+import { scannedLine } from "../build/target.ts";
+import { capAndCount } from "../evidence.ts";
+import { edgeTarget } from "../io/edges.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	BAD_SECTIONS,
 	OFF_VOCABULARY,
@@ -34,10 +34,10 @@ import {
 	TOPOLOGY_INVALID,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {type LedgerMessages, type OpenOptions, openGround} from "./preconditions.ts";
-import {topologyPath} from "./run.ts";
-import {loadManifest, loadRun, stage} from "./run-io.ts";
-import {checkTopology, type DeclaredLine, parseLine} from "./topology-doc.ts";
+import { type LedgerMessages, type OpenOptions, openGround } from "./preconditions.ts";
+import { topologyPath } from "./run.ts";
+import { loadManifest, loadRun, stage } from "./run-io.ts";
+import { checkTopology, type DeclaredLine, parseLine } from "./topology-doc.ts";
 
 const VERB = "ledger topology";
 
@@ -81,7 +81,7 @@ export const runTopology = (
 
 		const ground = yield* openGround(MESSAGES, options);
 		if (ground._tag === "Refused") return ground.outcome;
-		const {repo, epic, dir, notes} = ground;
+		const { repo, epic, dir, notes } = ground;
 
 		const run = yield* loadRun(MESSAGES, dir, notes);
 		if (run._tag === "Refused") return run.outcome;
@@ -129,7 +129,7 @@ export const runTopology = (
 		const probed = yield* Effect.forEach(
 			checked.external,
 			(number) => edgeTarget(repo, number).pipe(Effect.map((found) => [number, found] as const)),
-			{concurrency: FAN_OUT},
+			{ concurrency: FAN_OUT },
 		);
 		for (const [number, found] of probed) {
 			if (found._tag === "Absent") {

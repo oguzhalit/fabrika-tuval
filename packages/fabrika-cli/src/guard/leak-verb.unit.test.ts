@@ -2,11 +2,11 @@
  * `guard leak-guard scan`'s file boundary and exit taxonomy, over a scripted filesystem — including
  * the two seats v1 did not have: an empty file list reds, and an unreadable handed file is UNKNOWN.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFsOptions, fakeFs} from "../fakes.test-support.ts";
-import {PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE} from "./codes.ts";
-import {runLeakGuard} from "./leak-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFsOptions, fakeFs } from "../fakes.test-support.ts";
+import { PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE } from "./codes.ts";
+import { runLeakGuard } from "./leak-verb.ts";
 
 const ROOT = "/repo";
 
@@ -15,7 +15,7 @@ const run = (
 	options: FakeFsOptions,
 	env: Record<string, string | undefined> = {},
 ) =>
-	Effect.runPromise(Effect.provide(runLeakGuard({files, cwd: ROOT, env}), fakeFs(options).layer));
+	Effect.runPromise(Effect.provide(runLeakGuard({ files, cwd: ROOT, env }), fakeFs(options).layer));
 
 const tree = (files: Readonly<Record<string, string>>): FakeFsOptions => ({
 	files: Object.fromEntries(Object.entries(files).map(([name, text]) => [`${ROOT}/${name}`, text])),
@@ -40,7 +40,7 @@ describe("runLeakGuard", () => {
 	it("reds a leaking doc on the violation seat, with nothing on stdout", async () => {
 		const outcome = await run(
 			["docs/guide.md"],
-			tree({"docs/guide.md": "notes at /Users/alice/vault"}),
+			tree({ "docs/guide.md": "notes at /Users/alice/vault" }),
 		);
 		expect(outcome.code).toBe(VIOLATION);
 		expect(outcome.stdout).toBe("");
@@ -50,13 +50,13 @@ describe("runLeakGuard", () => {
 	it("reds a leaking shell script — the surface that used to walk off the scan", async () => {
 		const outcome = await run(
 			["scripts/run.sh"],
-			tree({"scripts/run.sh": "# from ~/code/github.com/acme/thing"}),
+			tree({ "scripts/run.sh": "# from ~/code/github.com/acme/thing" }),
 		);
 		expect(outcome.code).toBe(VIOLATION);
 	});
 
 	it("leaves a self-exempt doc alone", async () => {
-		const outcome = await run(["CLAUDE.md"], tree({"CLAUDE.md": "rebuilt from ~/code/x/y/z"}));
+		const outcome = await run(["CLAUDE.md"], tree({ "CLAUDE.md": "rebuilt from ~/code/x/y/z" }));
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toContain("1 self-exempt");
 	});
@@ -64,8 +64,8 @@ describe("runLeakGuard", () => {
 	it("annotates each finding on its own file under Actions", async () => {
 		const outcome = await run(
 			["docs/guide.md"],
-			tree({"docs/guide.md": "notes at /Users/alice/vault"}),
-			{GITHUB_ACTIONS: "true"},
+			tree({ "docs/guide.md": "notes at /Users/alice/vault" }),
+			{ GITHUB_ACTIONS: "true" },
 		);
 		expect(outcome.stderr.some((line) => line.startsWith("::error file=docs/guide.md::"))).toBe(
 			true,
@@ -88,7 +88,7 @@ describe("runLeakGuard", () => {
 	// v1 skipped an unreadable file silently, which reads exactly like a clean one.
 	it("answers UNKNOWN when a handed file exists and cannot be read", async () => {
 		const outcome = await run(["docs/guide.md"], {
-			...tree({"docs/guide.md": "x"}),
+			...tree({ "docs/guide.md": "x" }),
 			unreadable: [`${ROOT}/docs/guide.md`],
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);

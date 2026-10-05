@@ -24,10 +24,10 @@ export interface Caveat {
 }
 
 export type CaveatRead =
-	| {readonly _tag: "Caveats"; readonly caveats: ReadonlyArray<Caveat>}
+	| { readonly _tag: "Caveats"; readonly caveats: ReadonlyArray<Caveat> }
 	/** A line that is not a caveat at all — refused, never dropped. */
-	| {readonly _tag: "Unparseable"; readonly line: string}
-	| {readonly _tag: "OffEnum"; readonly kind: string};
+	| { readonly _tag: "Unparseable"; readonly line: string }
+	| { readonly _tag: "OffEnum"; readonly kind: string };
 
 const CAVEAT_LINE = /^caveat:\s*([a-z-]+)\s+#(\d+)\s*(?:—|–|--)\s*(.+)$/i;
 
@@ -42,13 +42,13 @@ export const readCaveats = (text: string): CaveatRead => {
 		if (line === "") continue;
 		const matched = CAVEAT_LINE.exec(line);
 		if (matched?.[1] === undefined || matched[2] === undefined || matched[3] === undefined) {
-			return {_tag: "Unparseable", line};
+			return { _tag: "Unparseable", line };
 		}
 		const kind = matched[1].toLowerCase();
-		if (!isKind(kind)) return {_tag: "OffEnum", kind};
-		caveats.push({kind, ref: Number.parseInt(matched[2], 10), text: matched[3].trim()});
+		if (!isKind(kind)) return { _tag: "OffEnum", kind };
+		caveats.push({ kind, ref: Number.parseInt(matched[2], 10), text: matched[3].trim() });
 	}
-	return {_tag: "Caveats", caveats};
+	return { _tag: "Caveats", caveats };
 };
 
 /** The caveats rendered verbatim under their kinds, in the closed set's order. */

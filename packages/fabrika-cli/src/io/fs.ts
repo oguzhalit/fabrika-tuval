@@ -11,7 +11,7 @@
  * discrimination rides the `E` channel — a caller cannot reach the value without deciding what to do
  * with the failure, where a `null` sentinel could simply go untested.
  */
-import {Effect, FileSystem, Path, type PlatformError} from "effect";
+import { Effect, FileSystem, Path, type PlatformError } from "effect";
 import * as Schema from "effect/Schema";
 
 /** A path could not be read — never conflated with a path that was read and held nothing. */
@@ -112,10 +112,10 @@ export const appendFile = (
 	Effect.gen(function* () {
 		const fs = yield* FileSystem.FileSystem;
 		const pathService = yield* Path.Path;
-		yield* fs.makeDirectory(pathService.dirname(path), {recursive: true});
+		yield* fs.makeDirectory(pathService.dirname(path), { recursive: true });
 		yield* Effect.scoped(
 			Effect.gen(function* () {
-				const file = yield* fs.open(path, {flag: "a+"});
+				const file = yield* fs.open(path, { flag: "a+" });
 				const size = (yield* file.stat).size;
 				let separator = "";
 				if (size > 0n) {
@@ -127,7 +127,7 @@ export const appendFile = (
 			}),
 		);
 	}).pipe(
-		Effect.catchTag("PlatformError", (cause) => new WriteFailed({path, reason: cause.message})),
+		Effect.catchTag("PlatformError", (cause) => new WriteFailed({ path, reason: cause.message })),
 	);
 
 /**
@@ -149,9 +149,9 @@ export const makeDirectory = (
 ): Effect.Effect<void, WriteFailed, FileSystem.FileSystem> =>
 	Effect.gen(function* () {
 		const fs = yield* FileSystem.FileSystem;
-		yield* fs.makeDirectory(path, {recursive: true});
+		yield* fs.makeDirectory(path, { recursive: true });
 	}).pipe(
-		Effect.catchTag("PlatformError", (cause) => new WriteFailed({path, reason: cause.message})),
+		Effect.catchTag("PlatformError", (cause) => new WriteFailed({ path, reason: cause.message })),
 	);
 
 /**
@@ -165,9 +165,9 @@ export const makeDirectory = (
 export const removeAll = (path: string): Effect.Effect<void, WriteFailed, FileSystem.FileSystem> =>
 	Effect.gen(function* () {
 		const fs = yield* FileSystem.FileSystem;
-		yield* fs.remove(path, {recursive: true, force: true});
+		yield* fs.remove(path, { recursive: true, force: true });
 	}).pipe(
-		Effect.catchTag("PlatformError", (cause) => new WriteFailed({path, reason: cause.message})),
+		Effect.catchTag("PlatformError", (cause) => new WriteFailed({ path, reason: cause.message })),
 	);
 
 /**
@@ -186,10 +186,10 @@ export const appendText = (
 	Effect.gen(function* () {
 		const fs = yield* FileSystem.FileSystem;
 		const pathService = yield* Path.Path;
-		yield* fs.makeDirectory(pathService.dirname(path), {recursive: true});
-		yield* fs.writeFileString(path, text, {flag: "a"});
+		yield* fs.makeDirectory(pathService.dirname(path), { recursive: true });
+		yield* fs.writeFileString(path, text, { flag: "a" });
 	}).pipe(
-		Effect.catchTag("PlatformError", (cause) => new WriteFailed({path, reason: cause.message})),
+		Effect.catchTag("PlatformError", (cause) => new WriteFailed({ path, reason: cause.message })),
 	);
 
 /** Write raw bytes to `path`, creating its parent directory — for content a digest is taken over. */
@@ -200,10 +200,10 @@ export const writeBytes = (
 	Effect.gen(function* () {
 		const fs = yield* FileSystem.FileSystem;
 		const pathService = yield* Path.Path;
-		yield* fs.makeDirectory(pathService.dirname(path), {recursive: true});
+		yield* fs.makeDirectory(pathService.dirname(path), { recursive: true });
 		yield* fs.writeFile(path, data);
 	}).pipe(
-		Effect.catchTag("PlatformError", (cause) => new WriteFailed({path, reason: cause.message})),
+		Effect.catchTag("PlatformError", (cause) => new WriteFailed({ path, reason: cause.message })),
 	);
 
 /** Write `text` to `path`, creating its parent directory. */
@@ -214,10 +214,10 @@ export const writeFile = (
 	Effect.gen(function* () {
 		const fs = yield* FileSystem.FileSystem;
 		const pathService = yield* Path.Path;
-		yield* fs.makeDirectory(pathService.dirname(path), {recursive: true});
+		yield* fs.makeDirectory(pathService.dirname(path), { recursive: true });
 		yield* fs.writeFileString(path, text);
 	}).pipe(
-		Effect.catchTag("PlatformError", (cause) => new WriteFailed({path, reason: cause.message})),
+		Effect.catchTag("PlatformError", (cause) => new WriteFailed({ path, reason: cause.message })),
 	);
 
 /**
@@ -236,8 +236,8 @@ export const rename = (
 	Effect.gen(function* () {
 		const fs = yield* FileSystem.FileSystem;
 		const pathService = yield* Path.Path;
-		yield* fs.makeDirectory(pathService.dirname(to), {recursive: true});
+		yield* fs.makeDirectory(pathService.dirname(to), { recursive: true });
 		yield* fs.rename(path, to);
 	}).pipe(
-		Effect.catchTag("PlatformError", (cause) => new WriteFailed({path, reason: cause.message})),
+		Effect.catchTag("PlatformError", (cause) => new WriteFailed({ path, reason: cause.message })),
 	);

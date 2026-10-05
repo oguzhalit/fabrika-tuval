@@ -14,7 +14,7 @@ export interface JsonLayout {
 }
 
 /** The layout of a file written from nothing: tab-indented, `\n` line endings, a final newline. */
-export const FRESH_JSON_LAYOUT: JsonLayout = {indent: "\t", eol: "\n", finalNewline: true};
+export const FRESH_JSON_LAYOUT: JsonLayout = { indent: "\t", eol: "\n", finalNewline: true };
 
 /** `JSON.stringify` silently truncates a longer indent string, so a longer one cannot round-trip. */
 const MAX_INDENT = 10;

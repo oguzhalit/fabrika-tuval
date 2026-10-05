@@ -10,12 +10,12 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/10340
  */
-import {Effect, FileSystem, Path, Result} from "effect";
-import {appendText} from "../io/fs.ts";
-import type {Attempt} from "../io/git.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {instant} from "../wire/lane-record.ts";
-import {lockedRefusal, withLedgerLock} from "./append-lock.ts";
+import { Effect, FileSystem, Path, Result } from "effect";
+import { appendText } from "../io/fs.ts";
+import type { Attempt } from "../io/git.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { instant } from "../wire/lane-record.ts";
+import { lockedRefusal, withLedgerLock } from "./append-lock.ts";
 import {
 	APPEND_UNKNOWN,
 	CONCURRENT_WRITE,
@@ -24,9 +24,9 @@ import {
 	MALFORMED_RECORD,
 	TASK_UNKNOWN,
 } from "./codes.ts";
-import {loadRefusal} from "./refusals.ts";
-import {type LaneRef, loadLane} from "./store.ts";
-import {encodeWorktree, handedTrees, loadWorktrees} from "./worktrees.ts";
+import { loadRefusal } from "./refusals.ts";
+import { type LaneRef, loadLane } from "./store.ts";
+import { encodeWorktree, handedTrees, loadWorktrees } from "./worktrees.ts";
 
 const VERB = "fabrika lane worktree";
 
@@ -52,7 +52,7 @@ export const handTree = (
 			);
 		}
 		return yield* withLedgerLock(
-			{fs, path, dir: path.join(ref.root, ref.lane), verb},
+			{ fs, path, dir: path.join(ref.root, ref.lane), verb },
 			Effect.gen(function* () {
 				const loaded = yield* loadLane(ref);
 				if (loaded._tag !== "Loaded") return loadRefusal(verb, loaded);
@@ -77,7 +77,7 @@ export const handTree = (
 					);
 				}
 				const told = (recorded: boolean): VerbOutcome =>
-					answer(JSON.stringify({answer: "handed", lane: ref.lane, task, worktree, recorded}), [
+					answer(JSON.stringify({ answer: "handed", lane: ref.lane, task, worktree, recorded }), [
 						recorded
 							? `${verb}: lane ${ref.lane} now holds ${worktree}.`
 							: `${verb}: lane ${ref.lane} already holds ${worktree} — nothing was appended.`,
@@ -90,7 +90,7 @@ export const handTree = (
 					return refuse(FACT_REFUSED, `${verb}: the clock gave no instant — nothing was appended.`);
 				}
 				const wrote = yield* Effect.result(
-					appendText(standing.path, encodeWorktree({kind: "handed", worktree, task, at})),
+					appendText(standing.path, encodeWorktree({ kind: "handed", worktree, task, at })),
 				);
 				if (Result.isFailure(wrote)) {
 					return refuse(
@@ -101,7 +101,7 @@ export const handTree = (
 				return told(true);
 			}),
 			{
-				onAbsent: (absentDir) => loadRefusal(verb, {_tag: "Absent", dir: absentDir}),
+				onAbsent: (absentDir) => loadRefusal(verb, { _tag: "Absent", dir: absentDir }),
 				onLocked: (lockDir) => refuse(CONCURRENT_WRITE, lockedRefusal(verb, lockDir)),
 			},
 		);

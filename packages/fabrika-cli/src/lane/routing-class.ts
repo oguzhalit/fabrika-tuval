@@ -13,7 +13,7 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/6900
  */
-import {CLASS_NAMES} from "../review/classes.ts";
+import { CLASS_NAMES } from "../review/classes.ts";
 
 export const MIXED_CLASS = "mixed";
 

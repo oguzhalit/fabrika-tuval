@@ -1,6 +1,6 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeSeams, okOut, once, type Scripted} from "../fakes.test-support.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeSeams, okOut, once, type Scripted } from "../fakes.test-support.ts";
 import {
 	PRECONDITION_UNKNOWN,
 	READBACK_MISMATCH,
@@ -20,7 +20,7 @@ import {
 	pull,
 	served,
 } from "./fixtures.test-support.ts";
-import {runRetire} from "./retire-verb.ts";
+import { runRetire } from "./retire-verb.ts";
 
 const PRUNE = /^git worktree prune$/;
 const TREES = /^git worktree list --porcelain$/;
@@ -39,7 +39,7 @@ const CLEAN: ReadonlyArray<Scripted> = [[STATUS, okOut("")]];
 const ISSUE = /^GET \S+\/repos\/o\/r\/issues\/4312$/;
 const COMMENTS = /^GET \S+\/repos\/o\/r\/issues\/4312\/comments/;
 const PERM = /^GET \S+\/repos\/o\/r\/collaborators\/agent\/permission/;
-const WRITE = served({permission: "write"});
+const WRITE = served({ permission: "write" });
 
 const BRANCH = `build/4312-editor-focus-loss-${NONCE}`;
 const ORPHAN = "/trees/agent-a9bd";
@@ -48,14 +48,14 @@ const HERE = "/trees/agent-self";
 const options = {
 	number: 4312,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r", ...GH_TOKEN_ENV} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r", ...GH_TOKEN_ENV } as Record<string, string | undefined>,
 };
 
 /**
  * `git worktree list --porcelain`, as blocks of `worktree`/`HEAD`/`branch` lines, plus git's own
  * `locked [<reason>]` line for a tree whose `locked` is set.
  */
-const trees = (...held: ReadonlyArray<{path: string; branch: string; locked?: string}>) =>
+const trees = (...held: ReadonlyArray<{ path: string; branch: string; locked?: string }>) =>
 	okOut(
 		held
 			.map(
@@ -80,16 +80,16 @@ const run = (script: ReadonlyArray<Scripted>) => {
 
 /** The board with one authorized claim marker on the served issue and no adopt — the live lane. */
 const CLAIMED: ReadonlyArray<Scripted> = [
-	[COMMENTS, comments({id: 1, body: marker("s-9f2e", LANE_UUID)})],
+	[COMMENTS, comments({ id: 1, body: marker("s-9f2e", LANE_UUID) })],
 	[PERM, WRITE],
 ];
 
 describe("runRetire — the terminal-ticket license", () => {
 	it("retires the tree holding the branch of a closed issue and reads the removal back", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[once(TREES), trees({path: ORPHAN, branch: BRANCH})],
-			[ISSUE, issue({state: "closed"})],
+			[once(TREES), trees({ path: ORPHAN, branch: BRANCH })],
+			[ISSUE, issue({ state: "closed" })],
 			...CLAIMED,
 			[SELF, here],
 			[REMOVE, okOut("")],
@@ -100,17 +100,17 @@ describe("runRetire — the terminal-ticket license", () => {
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			answer: "retired",
 			number: 4312,
-			retired: [{path: ORPHAN, branch: BRANCH, license: "ticket-terminal", salvaged: false}],
+			retired: [{ path: ORPHAN, branch: BRANCH, license: "ticket-terminal", salvaged: false }],
 			held: [],
 		});
 		expect(calls).toContain(`git worktree remove ${ORPHAN}`);
 	});
 
 	it("removes WITHOUT --force on any path — it is banned for every tree", async () => {
-		const {calls} = await run([
+		const { calls } = await run([
 			[PRUNE, okOut("")],
-			[once(TREES), trees({path: ORPHAN, branch: BRANCH})],
-			[ISSUE, issue({state: "closed"})],
+			[once(TREES), trees({ path: ORPHAN, branch: BRANCH })],
+			[ISSUE, issue({ state: "closed" })],
 			...CLAIMED,
 			[SELF, here],
 			[REMOVE, okOut("")],
@@ -122,11 +122,11 @@ describe("runRetire — the terminal-ticket license", () => {
 	});
 
 	it("holds a pull request's tree until the PR MERGED — a closed-unmerged PR can reopen", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: ORPHAN, branch: `build/pr-4312-${NONCE}`})],
-			[ISSUE, issue({state: "closed", pull_request: {url: "…"}})],
-			[/^GET \S+\/repos\/o\/r\/pulls\/4312$/, pull({state: "closed", merged: false})],
+			[TREES, trees({ path: ORPHAN, branch: `build/pr-4312-${NONCE}` })],
+			[ISSUE, issue({ state: "closed", pull_request: { url: "…" } })],
+			[/^GET \S+\/repos\/o\/r\/pulls\/4312$/, pull({ state: "closed", merged: false })],
 			...CLAIMED,
 			[SELF, here],
 		]);
@@ -136,11 +136,11 @@ describe("runRetire — the terminal-ticket license", () => {
 	});
 
 	it("retires a merged pull request's tree", async () => {
-		const {out} = await run([
+		const { out } = await run([
 			[PRUNE, okOut("")],
-			[once(TREES), trees({path: ORPHAN, branch: `build/pr-4312-${NONCE}`})],
-			[ISSUE, issue({state: "closed", pull_request: {url: "…"}})],
-			[/^GET \S+\/repos\/o\/r\/pulls\/4312$/, pull({state: "closed", merged: true})],
+			[once(TREES), trees({ path: ORPHAN, branch: `build/pr-4312-${NONCE}` })],
+			[ISSUE, issue({ state: "closed", pull_request: { url: "…" } })],
+			[/^GET \S+\/repos\/o\/r\/pulls\/4312$/, pull({ state: "closed", merged: true })],
 			...CLAIMED,
 			[SELF, here],
 			[REMOVE, okOut("")],
@@ -154,15 +154,15 @@ describe("runRetire — the terminal-ticket license", () => {
 
 describe("runRetire — the adopted-session license", () => {
 	it("retires the tree when an authorized adopt on the number names the holding lane's session", async () => {
-		const {out} = await run([
+		const { out } = await run([
 			[PRUNE, okOut("")],
-			[once(TREES), trees({path: ORPHAN, branch: BRANCH})],
+			[once(TREES), trees({ path: ORPHAN, branch: BRANCH })],
 			[ISSUE, issue()],
 			[
 				COMMENTS,
 				comments(
-					{id: 1, body: marker("s-9f2e", LANE_UUID)},
-					{id: 2, body: adoptMarker("s-9f2e", "s-next", LANE_UUID)},
+					{ id: 1, body: marker("s-9f2e", LANE_UUID) },
+					{ id: 2, body: adoptMarker("s-9f2e", "s-next", LANE_UUID) },
 				),
 			],
 			[PERM, WRITE],
@@ -172,23 +172,23 @@ describe("runRetire — the adopted-session license", () => {
 		]);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout).retired).toMatchObject([{license: "session-adopted"}]);
+		expect(JSON.parse(out.stdout).retired).toMatchObject([{ license: "session-adopted" }]);
 	});
 
 	it("counts no adopt from an account below write — content is not authority", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: ORPHAN, branch: BRANCH})],
+			[TREES, trees({ path: ORPHAN, branch: BRANCH })],
 			[ISSUE, issue()],
 			[
 				COMMENTS,
 				comments(
-					{id: 1, body: marker("s-9f2e", LANE_UUID)},
-					{id: 2, body: adoptMarker("s-9f2e", "s-next", LANE_UUID), author: "drive-by"},
+					{ id: 1, body: marker("s-9f2e", LANE_UUID) },
+					{ id: 2, body: adoptMarker("s-9f2e", "s-next", LANE_UUID), author: "drive-by" },
 				),
 			],
 			[PERM, WRITE],
-			[/collaborators\/drive-by\/permission/, served({permission: "read"})],
+			[/collaborators\/drive-by\/permission/, served({ permission: "read" })],
 			[SELF, here],
 		]);
 
@@ -202,9 +202,9 @@ describe("runRetire — the unclaimed-lane license", () => {
 	const RELEASED: ReadonlyArray<Scripted> = [[COMMENTS, comments()]];
 
 	it("retires an unclaimed tree that is clean and strands nothing — the #7027 residue", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[once(TREES), trees({path: ORPHAN, branch: BRANCH})],
+			[once(TREES), trees({ path: ORPHAN, branch: BRANCH })],
 			[ISSUE, issue()],
 			...RELEASED,
 			[SELF, here],
@@ -216,7 +216,7 @@ describe("runRetire — the unclaimed-lane license", () => {
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			answer: "retired",
-			retired: [{path: ORPHAN, branch: BRANCH, license: "lane-unclaimed", salvaged: false}],
+			retired: [{ path: ORPHAN, branch: BRANCH, license: "lane-unclaimed", salvaged: false }],
 		});
 		expect(calls).toContain(
 			`git -C ${ORPHAN} rev-list --count HEAD --not --branches --remotes --tags`,
@@ -224,9 +224,9 @@ describe("runRetire — the unclaimed-lane license", () => {
 	});
 
 	it("holds an unclaimed tree with uncommitted work, naming what blocks the removal", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: ORPHAN, branch: BRANCH})],
+			[TREES, trees({ path: ORPHAN, branch: BRANCH })],
 			[ISSUE, issue()],
 			...RELEASED,
 			[SELF, here],
@@ -240,9 +240,9 @@ describe("runRetire — the unclaimed-lane license", () => {
 	});
 
 	it("holds an unclaimed tree carrying commits no ref reaches — a detached HEAD's orphans", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: ORPHAN, branch: BRANCH})],
+			[TREES, trees({ path: ORPHAN, branch: BRANCH })],
 			[ISSUE, issue()],
 			...RELEASED,
 			[SELF, here],
@@ -257,9 +257,9 @@ describe("runRetire — the unclaimed-lane license", () => {
 	});
 
 	it("is UNKNOWN when what a removal would strand cannot be counted — never 'it carries nothing'", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: ORPHAN, branch: BRANCH})],
+			[TREES, trees({ path: ORPHAN, branch: BRANCH })],
 			[ISSUE, issue()],
 			...RELEASED,
 			[SELF, here],
@@ -272,9 +272,9 @@ describe("runRetire — the unclaimed-lane license", () => {
 	});
 
 	it("holds a tree whose lane a live claim still carries, without reading the tree at all", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: ORPHAN, branch: BRANCH})],
+			[TREES, trees({ path: ORPHAN, branch: BRANCH })],
 			[ISSUE, issue()],
 			...CLAIMED,
 			[SELF, here],
@@ -287,10 +287,10 @@ describe("runRetire — the unclaimed-lane license", () => {
 
 describe("runRetire — what it refuses to touch", () => {
 	it("never removes the tree this run is standing in, however terminal the ticket", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: HERE, branch: BRANCH})],
-			[ISSUE, issue({state: "closed"})],
+			[TREES, trees({ path: HERE, branch: BRANCH })],
+			[ISSUE, issue({ state: "closed" })],
 			...CLAIMED,
 			[SELF, here],
 		]);
@@ -301,19 +301,19 @@ describe("runRetire — what it refuses to touch", () => {
 	});
 
 	it("answers none — never a refusal — when no tree holds the number's lane branch", async () => {
-		const {out} = await run([
+		const { out } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: "/repo", branch: "main"})],
+			[TREES, trees({ path: "/repo", branch: "main" })],
 		]);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "none", retired: [], held: []});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "none", retired: [], held: [] });
 	});
 
 	it("is ZERO_SCOPE on a number the board proves absent — there is nothing to license a release", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: ORPHAN, branch: BRANCH})],
+			[TREES, trees({ path: ORPHAN, branch: BRANCH })],
 			[ISSUE, NOT_FOUND],
 		]);
 
@@ -322,11 +322,11 @@ describe("runRetire — what it refuses to touch", () => {
 	});
 
 	it("is UNKNOWN when the claim markers cannot be read — never 'not adopted'", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: ORPHAN, branch: BRANCH})],
+			[TREES, trees({ path: ORPHAN, branch: BRANCH })],
 			[ISSUE, issue()],
-			[COMMENTS, {status: 502, body: '{"message":"Bad gateway"}'}],
+			[COMMENTS, { status: 502, body: '{"message":"Bad gateway"}' }],
 		]);
 
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -335,10 +335,10 @@ describe("runRetire — what it refuses to touch", () => {
 	});
 
 	it("is UNKNOWN when this run cannot recognise its own tree — it must remove nothing then", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: ORPHAN, branch: BRANCH})],
-			[ISSUE, issue({state: "closed"})],
+			[TREES, trees({ path: ORPHAN, branch: BRANCH })],
+			[ISSUE, issue({ state: "closed" })],
 			...CLAIMED,
 			[SELF, errOut("not a git repository")],
 		]);
@@ -350,10 +350,10 @@ describe("runRetire — what it refuses to touch", () => {
 
 describe("runRetire — the salvage runs before the tree goes", () => {
 	it("commits a dirty tree's work onto its own branch, then removes it", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[once(TREES), trees({path: ORPHAN, branch: BRANCH})],
-			[ISSUE, issue({state: "closed"})],
+			[once(TREES), trees({ path: ORPHAN, branch: BRANCH })],
+			[ISSUE, issue({ state: "closed" })],
 			...CLAIMED,
 			[SELF, here],
 			[STATUS, okOut(" M worker/app.ts\n?? notes.md\n")],
@@ -364,17 +364,17 @@ describe("runRetire — the salvage runs before the tree goes", () => {
 		]);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout).retired).toMatchObject([{salvaged: true}]);
+		expect(JSON.parse(out.stdout).retired).toMatchObject([{ salvaged: true }]);
 		expect(calls.findIndex((line) => SALVAGE.test(line))).toBeLessThan(
 			calls.findIndex((line) => REMOVE.test(line)),
 		);
 	});
 
 	it("commits nothing in a clean tree", async () => {
-		const {calls} = await run([
+		const { calls } = await run([
 			[PRUNE, okOut("")],
-			[once(TREES), trees({path: ORPHAN, branch: BRANCH})],
-			[ISSUE, issue({state: "closed"})],
+			[once(TREES), trees({ path: ORPHAN, branch: BRANCH })],
+			[ISSUE, issue({ state: "closed" })],
 			...CLAIMED,
 			[SELF, here],
 			[REMOVE, okOut("")],
@@ -385,10 +385,10 @@ describe("runRetire — the salvage runs before the tree goes", () => {
 	});
 
 	it("leaves the tree standing when the salvage fails — removing it would destroy the only copy", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: ORPHAN, branch: BRANCH})],
-			[ISSUE, issue({state: "closed"})],
+			[TREES, trees({ path: ORPHAN, branch: BRANCH })],
+			[ISSUE, issue({ state: "closed" })],
 			...CLAIMED,
 			[SELF, here],
 			[STATUS, okOut(" M worker/app.ts\n")],
@@ -401,10 +401,10 @@ describe("runRetire — the salvage runs before the tree goes", () => {
 	});
 
 	it("is UNKNOWN when the tree's own status cannot be read — it salvages and removes nothing", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: ORPHAN, branch: BRANCH})],
-			[ISSUE, issue({state: "closed"})],
+			[TREES, trees({ path: ORPHAN, branch: BRANCH })],
+			[ISSUE, issue({ state: "closed" })],
 			...CLAIMED,
 			[SELF, here],
 			[STATUS, errOut("not a git repository")],
@@ -420,10 +420,10 @@ describe("runRetire — a released tree's harness lock", () => {
 	const HARNESS_LOCK = "claude agent a9bd (pid 4242)";
 
 	it("unlocks a released locked tree, then removes it plainly and reports it under its license", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[once(TREES), trees({path: ORPHAN, branch: BRANCH, locked: HARNESS_LOCK})],
-			[ISSUE, issue({state: "closed"})],
+			[once(TREES), trees({ path: ORPHAN, branch: BRANCH, locked: HARNESS_LOCK })],
+			[ISSUE, issue({ state: "closed" })],
 			...CLAIMED,
 			[SELF, here],
 			[UNLOCK, okOut("")],
@@ -434,7 +434,7 @@ describe("runRetire — a released tree's harness lock", () => {
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			answer: "retired",
-			retired: [{path: ORPHAN, license: "ticket-terminal", unlocked: true}],
+			retired: [{ path: ORPHAN, license: "ticket-terminal", unlocked: true }],
 			held: [],
 		});
 		const stderr = out.stderr.join("\n");
@@ -448,9 +448,9 @@ describe("runRetire — a released tree's harness lock", () => {
 	});
 
 	it("unlocks a locked tree the unclaimed-lane license released, once its residue is read", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[once(TREES), trees({path: ORPHAN, branch: BRANCH, locked: ""})],
+			[once(TREES), trees({ path: ORPHAN, branch: BRANCH, locked: "" })],
 			[ISSUE, issue()],
 			[COMMENTS, comments()],
 			[SELF, here],
@@ -462,7 +462,7 @@ describe("runRetire — a released tree's harness lock", () => {
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).retired).toMatchObject([
-			{license: "lane-unclaimed", unlocked: true},
+			{ license: "lane-unclaimed", unlocked: true },
 		]);
 		expect(calls.findIndex((line) => REVLIST.test(line))).toBeLessThan(
 			calls.findIndex((line) => UNLOCK.test(line)),
@@ -470,24 +470,24 @@ describe("runRetire — a released tree's harness lock", () => {
 	});
 
 	it("unlocks nothing on a released tree that carries no lock", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[once(TREES), trees({path: ORPHAN, branch: BRANCH})],
-			[ISSUE, issue({state: "closed"})],
+			[once(TREES), trees({ path: ORPHAN, branch: BRANCH })],
+			[ISSUE, issue({ state: "closed" })],
 			...CLAIMED,
 			[SELF, here],
 			[REMOVE, okOut("")],
 			[TREES, trees()],
 		]);
 
-		expect(JSON.parse(out.stdout).retired).toMatchObject([{unlocked: false}]);
+		expect(JSON.parse(out.stdout).retired).toMatchObject([{ unlocked: false }]);
 		expect(calls.some((line) => UNLOCK.test(line))).toBe(false);
 	});
 
 	it("never unlocks a held tree — the lock comes off only under a Release verdict", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: ORPHAN, branch: BRANCH, locked: HARNESS_LOCK})],
+			[TREES, trees({ path: ORPHAN, branch: BRANCH, locked: HARNESS_LOCK })],
 			[ISSUE, issue()],
 			...CLAIMED,
 			[SELF, here],
@@ -498,10 +498,10 @@ describe("runRetire — a released tree's harness lock", () => {
 	});
 
 	it("removes nothing when git refuses the unlock", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: ORPHAN, branch: BRANCH, locked: HARNESS_LOCK})],
-			[ISSUE, issue({state: "closed"})],
+			[TREES, trees({ path: ORPHAN, branch: BRANCH, locked: HARNESS_LOCK })],
+			[ISSUE, issue({ state: "closed" })],
 			...CLAIMED,
 			[SELF, here],
 			[UNLOCK, errOut("fatal: permission denied")],
@@ -515,10 +515,10 @@ describe("runRetire — a released tree's harness lock", () => {
 
 describe("runRetire — the removal is proven, never reported", () => {
 	it("reports a refused removal as an incident rather than overriding it with --force", async () => {
-		const {out} = await run([
+		const { out } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: ORPHAN, branch: BRANCH})],
-			[ISSUE, issue({state: "closed"})],
+			[TREES, trees({ path: ORPHAN, branch: BRANCH })],
+			[ISSUE, issue({ state: "closed" })],
 			...CLAIMED,
 			[SELF, here],
 			[REMOVE, errOut("fatal: '/trees/agent-a9bd' contains modified or untracked files")],
@@ -530,14 +530,14 @@ describe("runRetire — the removal is proven, never reported", () => {
 	});
 
 	it("is READBACK_MISMATCH when git exits 0 and the registration survives", async () => {
-		const {out} = await run([
+		const { out } = await run([
 			[PRUNE, okOut("")],
-			[once(TREES), trees({path: ORPHAN, branch: BRANCH})],
-			[ISSUE, issue({state: "closed"})],
+			[once(TREES), trees({ path: ORPHAN, branch: BRANCH })],
+			[ISSUE, issue({ state: "closed" })],
 			...CLAIMED,
 			[SELF, here],
 			[REMOVE, okOut("")],
-			[TREES, trees({path: ORPHAN, branch: BRANCH})],
+			[TREES, trees({ path: ORPHAN, branch: BRANCH })],
 		]);
 
 		expect(out.code).toBe(READBACK_MISMATCH);
@@ -545,9 +545,9 @@ describe("runRetire — the removal is proven, never reported", () => {
 	});
 
 	it("prunes the registrations whose directory is gone before it reads which trees hold what", async () => {
-		const {calls} = await run([
+		const { calls } = await run([
 			[PRUNE, okOut("")],
-			[TREES, trees({path: "/repo", branch: "main"})],
+			[TREES, trees({ path: "/repo", branch: "main" })],
 		]);
 
 		expect(calls.findIndex((line) => PRUNE.test(line))).toBeLessThan(

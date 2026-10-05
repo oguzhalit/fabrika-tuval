@@ -1,10 +1,10 @@
-import {Effect, FileSystem, Layer, Path, PlatformError} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
-import {classifyProbe} from "../io/attachment-read-back.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {FENCE, compose as supersedeWith} from "../review/supersede.ts";
-import {read as readMarker} from "../wire/verdict-marker.ts";
+import { Effect, FileSystem, Layer, Path, PlatformError } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
+import { classifyProbe } from "../io/attachment-read-back.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { FENCE, compose as supersedeWith } from "../review/supersede.ts";
+import { read as readMarker } from "../wire/verdict-marker.ts";
 import {
 	EMPTY_STDIN,
 	INVALID_CAPTURE,
@@ -18,8 +18,8 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {read as readGallery} from "./evidence-gallery.ts";
-import {type CaptureManifest, serializeManifest, sha256Hex} from "./manifest.ts";
+import { read as readGallery } from "./evidence-gallery.ts";
+import { type CaptureManifest, serializeManifest, sha256Hex } from "./manifest.ts";
 import {
 	type EvidenceCheck,
 	galleryTitle,
@@ -55,7 +55,7 @@ const manifest = (overrides: Partial<CaptureManifest> = {}): CaptureManifest => 
 			width: 1280,
 			height: 2140,
 			sha256: sha256Hex(BYTES),
-			pageErrors: {rows: [], more: 0},
+			pageErrors: { rows: [], more: 0 },
 		},
 	],
 	...overrides,
@@ -95,8 +95,8 @@ const fs = (shape: FsShape): Layer.Layer<FileSystem.FileSystem | Path.Path> =>
 
 const world = (overrides: FsShape = {}): Layer.Layer<FileSystem.FileSystem | Path.Path> =>
 	fs({
-		strings: {[MANIFEST_PATH]: serializeManifest(manifest()), ...overrides.strings},
-		bytes: {[CAPTURE_PATH]: BYTES, ...overrides.bytes},
+		strings: { [MANIFEST_PATH]: serializeManifest(manifest()), ...overrides.strings },
+		bytes: { [CAPTURE_PATH]: BYTES, ...overrides.bytes },
 	});
 
 const PULL = /GET .*\/repos\/o\/r\/pulls\/4321\b/;
@@ -111,8 +111,8 @@ const pull = (state = "open", head = HEAD): HttpReply => ({
 	body: JSON.stringify({
 		number: 4321,
 		state,
-		head: {sha: head},
-		base: {ref: "main"},
+		head: { sha: head },
+		base: { ref: "main" },
 		body: "",
 		changed_files: 1,
 		comments: 0,
@@ -120,13 +120,13 @@ const pull = (state = "open", head = HEAD): HttpReply => ({
 });
 
 const comments = (
-	...rows: ReadonlyArray<{id: number; body: string; author?: string; updatedAt?: string}>
+	...rows: ReadonlyArray<{ id: number; body: string; author?: string; updatedAt?: string }>
 ): HttpReply => ({
 	status: 200,
 	body: JSON.stringify(
 		rows.map((row) => ({
 			id: row.id,
-			user: {login: row.author ?? "kampus-bot"},
+			user: { login: row.author ?? "kampus-bot" },
 			created_at: "2026-08-08T00:00:00Z",
 			updated_at: row.updatedAt ?? "2026-08-08T00:00:00Z",
 			body: row.body,
@@ -134,9 +134,9 @@ const comments = (
 	),
 });
 
-const hostingLeg: UploadLeg = () => Effect.succeed({_tag: "Hosted", url: HOSTED});
-const failingLeg: UploadLeg = () => Effect.succeed({_tag: "Failed", reason: "HTTP 500"});
-const opensCheck: EvidenceCheck = () => Effect.succeed({_tag: "Resolved"});
+const hostingLeg: UploadLeg = () => Effect.succeed({ _tag: "Hosted", url: HOSTED });
+const failingLeg: UploadLeg = () => Effect.succeed({ _tag: "Failed", reason: "HTTP 500" });
+const opensCheck: EvidenceCheck = () => Effect.succeed({ _tag: "Resolved" });
 const broken: EvidenceCheck = () =>
 	Effect.succeed({
 		_tag: "Unresolved",
@@ -153,8 +153,8 @@ const options = {
 	evidence: "judged",
 	carrier: "marker",
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
-	stdin: Effect.succeed<StdinRead>({_tag: "Text", text: BODY}),
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
+	stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: BODY }),
 	tmpRoot: "/tmp",
 	cwd: "/repo",
 	upload: hostingLeg,
@@ -164,7 +164,7 @@ const options = {
 };
 
 /** The comment as the verb will have posted it, echoed back by the read-back read. */
-const posted = (body: string): HttpReply => ({status: 200, body: JSON.stringify({body})});
+const posted = (body: string): HttpReply => ({ status: 200, body: JSON.stringify({ body }) });
 
 /**
  * The bytes a re-post lands: the fresh verdict on top, `prior` retired below the fence. Built
@@ -180,8 +180,8 @@ const run = (
 ) => {
 	const seams = fakeSeams(script);
 	return Effect.runPromise(
-		Effect.provide(runPost({...options, ...overrides}), Layer.merge(seams.layer, layer)),
-	).then((outcome) => ({outcome, requests: seams.requests, bodies: seams.bodies}));
+		Effect.provide(runPost({ ...options, ...overrides }), Layer.merge(seams.layer, layer)),
+	).then((outcome) => ({ outcome, requests: seams.requests, bodies: seams.bodies }));
 };
 
 const SHOT = "/pano @ desktop";
@@ -190,9 +190,9 @@ const COMPOSED = `review-ui: FAIL @ ${HEAD} — changes-requested\n\n${BODY.trim
 
 const happy = (): ReadonlyArray<Scripted> => [
 	[PULL, pull()],
-	[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+	[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 	[COMMENTS, comments()],
-	[CREATE, {status: 201, body: JSON.stringify({id: 5154902211, html_url: URL})}],
+	[CREATE, { status: 201, body: JSON.stringify({ id: 5154902211, html_url: URL }) }],
 	[READBACK, posted(COMPOSED)],
 ];
 
@@ -204,7 +204,7 @@ describe("galleryTitle", () => {
 		width: 1280,
 		height: 2140,
 		sha256: "9c41",
-		pageErrors: {rows: [], more: 0},
+		pageErrors: { rows: [], more: 0 },
 	};
 
 	it("keeps the surface @ viewport heading for a set rendered without --scheme", () => {
@@ -212,7 +212,7 @@ describe("galleryTitle", () => {
 	});
 
 	it("names the requested and the proven scheme, so a dark shot never heads as the default", () => {
-		expect(galleryTitle({...entry, scheme: {requested: "dark", proven: "dark"}})).toBe(
+		expect(galleryTitle({ ...entry, scheme: { requested: "dark", proven: "dark" } })).toBe(
 			"/pano @ desktop, scheme requested dark, proven dark",
 		);
 	});
@@ -221,8 +221,8 @@ describe("galleryTitle", () => {
 		expect(
 			galleryTitle({
 				...entry,
-				scheme: {requested: "light", proven: "light"},
-				accent: {requested: "amber", proven: "amber"},
+				scheme: { requested: "light", proven: "light" },
+				accent: { requested: "amber", proven: "amber" },
 			}),
 		).toBe(
 			"/pano @ desktop, scheme requested light, proven light, accent requested amber, proven amber",
@@ -235,18 +235,18 @@ describe("galleryTitle", () => {
 			steps: ["hover:#sil"],
 			proven: ["#sil matches :hover"],
 		} as const;
-		expect(galleryTitle({...entry, interaction})).toBe(
+		expect(galleryTitle({ ...entry, interaction })).toBe(
 			"/pano @ desktop, interaction sil-highlighted",
 		);
-		expect(galleryTitle({...entry, scheme: {requested: "dark", proven: "dark"}, interaction})).toBe(
-			"/pano @ desktop, scheme requested dark, proven dark, interaction sil-highlighted",
-		);
+		expect(
+			galleryTitle({ ...entry, scheme: { requested: "dark", proven: "dark" }, interaction }),
+		).toBe("/pano @ desktop, scheme requested dark, proven dark, interaction sil-highlighted");
 	});
 });
 
 describe("runPost", () => {
 	it("posts one marker-first comment with the verified evidence gallery under it", async () => {
-		const {outcome, requests, bodies} = await run(happy());
+		const { outcome, requests, bodies } = await run(happy());
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout)).toEqual({
 			answer: "posted",
@@ -267,74 +267,74 @@ describe("runPost", () => {
 	});
 
 	it("refuses an empty verdict body on 3 — an empty verdict reads as ungated", async () => {
-		const {outcome} = await run(happy(), {
-			stdin: Effect.succeed<StdinRead>({_tag: "NoStdin", reason: "nothing was piped in"}),
+		const { outcome } = await run(happy(), {
+			stdin: Effect.succeed<StdinRead>({ _tag: "NoStdin", reason: "nothing was piped in" }),
 		});
 		expect(outcome.code).toBe(EMPTY_STDIN);
 	});
 
 	it("refuses a bad polarity, a bad carrier, and advisory+FAIL on 10", async () => {
-		expect((await run(happy(), {polarity: "MAYBE"})).outcome.code).toBe(OFF_VOCABULARY);
-		expect((await run(happy(), {carrier: "letter"})).outcome.code).toBe(OFF_VOCABULARY);
-		expect((await run(happy(), {carrier: "advisory"})).outcome.code).toBe(OFF_VOCABULARY);
+		expect((await run(happy(), { polarity: "MAYBE" })).outcome.code).toBe(OFF_VOCABULARY);
+		expect((await run(happy(), { carrier: "letter" })).outcome.code).toBe(OFF_VOCABULARY);
+		expect((await run(happy(), { carrier: "advisory" })).outcome.code).toBe(OFF_VOCABULARY);
 	});
 
 	it("refuses a closed PR on 7", async () => {
-		const {outcome} = await run([[PULL, pull("closed")], ...happy().slice(1)]);
+		const { outcome } = await run([[PULL, pull("closed")], ...happy().slice(1)]);
 		expect(outcome.code).toBe(ZERO_SCOPE);
 	});
 
 	it("refuses on 12 when the live head moved past --sha, and posts nothing", async () => {
-		const {outcome, requests} = await run([[PULL, pull("open", OLD_HEAD)], ...happy().slice(1)]);
+		const { outcome, requests } = await run([[PULL, pull("open", OLD_HEAD)], ...happy().slice(1)]);
 		expect(outcome.code).toBe(STALE_TREE);
 		expect(requests.some((request) => CREATE.test(request))).toBe(false);
 	});
 
 	it("refuses on 12 when the evidence set was rendered at another head", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			happy(),
 			{},
-			world({strings: {[MANIFEST_PATH]: serializeManifest(manifest({head: OLD_HEAD}))}}),
+			world({ strings: { [MANIFEST_PATH]: serializeManifest(manifest({ head: OLD_HEAD })) } }),
 		);
 		expect(outcome.code).toBe(STALE_TREE);
 	});
 
 	it("refuses on 4 when the set has no readable manifest — a set without one is not a set", async () => {
-		const absent = await run(happy(), {}, fs({bytes: {[CAPTURE_PATH]: BYTES}}));
+		const absent = await run(happy(), {}, fs({ bytes: { [CAPTURE_PATH]: BYTES } }));
 		expect(absent.outcome.code).toBe(MALFORMED_DOCUMENT);
-		const unparseable = await run(happy(), {}, world({strings: {[MANIFEST_PATH]: "{"}}));
+		const unparseable = await run(happy(), {}, world({ strings: { [MANIFEST_PATH]: "{" } }));
 		expect(unparseable.outcome.code).toBe(MALFORMED_DOCUMENT);
 	});
 
 	it("refuses on 4 when the declared uiCapture violates its schema", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			happy(),
 			{},
-			world({strings: {[CONFIG]: '{"uiCapture":{"evidenceStore":{}}}'}}),
+			world({ strings: { [CONFIG]: '{"uiCapture":{"evidenceStore":{}}}' } }),
 		);
 		expect(outcome.code).toBe(MALFORMED_DOCUMENT);
 	});
 
 	it("refuses on 15 when a capture no longer matches its manifest sha", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			happy(),
 			{},
-			world({bytes: {[CAPTURE_PATH]: new TextEncoder().encode("other bytes")}}),
+			world({ bytes: { [CAPTURE_PATH]: new TextEncoder().encode("other bytes") } }),
 		);
 		expect(outcome.code).toBe(INVALID_CAPTURE);
 	});
 
 	it("keeps an unreadable capture UNKNOWN (11) rather than calling it invalid", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			happy(),
 			{},
-			fs({strings: {[MANIFEST_PATH]: serializeManifest(manifest())}}),
+			fs({ strings: { [MANIFEST_PATH]: serializeManifest(manifest()) } }),
 		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 	});
 
 	it("posts NOTHING when an evidence upload fails — 17 is this verb's reason to exist", async () => {
-		const {outcome, requests} = await run(happy(), {upload: failingLeg});
+		const { outcome, requests } = await run(happy(), { upload: failingLeg });
 		expect(outcome.code).toBe(UPLOAD_FAILED);
 		expect(requests.some((request) => CREATE.test(request))).toBe(false);
 		expect(outcome.stderr.at(-1)).toMatch(/broken evidence channel/);
@@ -342,8 +342,8 @@ describe("runPost", () => {
 
 	it("still refuses when the AUTHENTICATED probe reads 404 — #6520 does not soften #3925", async () => {
 		const notResolving: UploadLeg = () =>
-			Effect.succeed({_tag: "Failed", reason: classifyProbe(404) ?? ""});
-		const {outcome, requests} = await run(happy(), {upload: notResolving});
+			Effect.succeed({ _tag: "Failed", reason: classifyProbe(404) ?? "" });
+		const { outcome, requests } = await run(happy(), { upload: notResolving });
 		expect(outcome.code).toBe(UPLOAD_FAILED);
 		expect(requests.some((request) => CREATE.test(request))).toBe(false);
 		expect(outcome.stderr.join("\n")).toMatch(/probed back HTTP 404/);
@@ -353,17 +353,17 @@ describe("runPost", () => {
 		const seen: Array<Parameters<EvidenceCheck>[0]> = [];
 		const recording: EvidenceCheck = (request) => {
 			seen.push(request);
-			return Effect.succeed({_tag: "Resolved"});
+			return Effect.succeed({ _tag: "Resolved" });
 		};
-		const {outcome} = await run(happy(), {confirm: recording});
+		const { outcome } = await run(happy(), { confirm: recording });
 		expect(outcome.code).toBe(0);
 		expect(seen).toEqual([
-			{repo: "o/r", commentId: 5154902211, evidence: [{url: HOSTED, bytes: BYTES}]},
+			{ repo: "o/r", commentId: 5154902211, evidence: [{ url: HOSTED, bytes: BYTES }] },
 		]);
 	});
 
 	it("never reports success when the POSTED comment's evidence does not open — 9, said loudly", async () => {
-		const {outcome, requests} = await run(happy(), {confirm: broken});
+		const { outcome, requests } = await run(happy(), { confirm: broken });
 		expect(outcome.code).toBe(READBACK_MISMATCH);
 		expect(outcome.stdout).toBe("");
 		expect(requests.some((request) => CREATE.test(request))).toBe(true);
@@ -379,7 +379,7 @@ describe("runPost", () => {
 		const writes = (requests: ReadonlyArray<string>, bodies: ReadonlyArray<string>) =>
 			requests.flatMap((request, index) =>
 				CREATE.test(request) || PATCH.test(request)
-					? [{request, body: String(JSON.parse(bodies[index] ?? "{}").body)}]
+					? [{ request, body: String(JSON.parse(bodies[index] ?? "{}").body) }]
 					: [],
 			);
 
@@ -390,7 +390,7 @@ describe("runPost", () => {
 		};
 
 		it("on the create path: the verdict stays as written, a note says why it does not count", async () => {
-			const {outcome, requests, bodies} = await run(happy(), {confirm: broken});
+			const { outcome, requests, bodies } = await run(happy(), { confirm: broken });
 			expect(outcome.code).toBe(READBACK_MISMATCH);
 			expect(outcome.stdout).toBe("");
 			const landed = writes(requests, bodies);
@@ -401,7 +401,7 @@ describe("runPost", () => {
 			// The gallery the gates re-check carries the judged bytes' digest.
 			expect(readGallery(landed[0]?.body ?? "")).toEqual({
 				_tag: "Found",
-				evidence: [{url: HOSTED, sha256: sha256Hex(BYTES)}],
+				evidence: [{ url: HOSTED, sha256: sha256Hex(BYTES) }],
 			});
 			expect(CREATE.test(landed[1]?.request ?? "")).toBe(true);
 			pinNote(landed[1]?.body ?? "");
@@ -410,16 +410,16 @@ describe("runPost", () => {
 
 		it("on the supersede path: the prior verdict stays below the fence, never overwritten", async () => {
 			const prior = `review-ui: PASS @ ${OLD_HEAD} — older round`;
-			const {outcome, requests, bodies} = await run(
+			const { outcome, requests, bodies } = await run(
 				[
 					[PULL, pull()],
-					[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-					[COMMENTS, comments({id: 42, body: prior, author: "kampus-bot"})],
-					[PATCH, {status: 200, body: JSON.stringify({html_url: URL})}],
+					[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+					[COMMENTS, comments({ id: 42, body: prior, author: "kampus-bot" })],
+					[PATCH, { status: 200, body: JSON.stringify({ html_url: URL }) }],
 					[READBACK, posted(supersededBody(prior))],
-					[CREATE, {status: 201, body: JSON.stringify({id: 77, html_url: `${URL}-note`})}],
+					[CREATE, { status: 201, body: JSON.stringify({ id: 77, html_url: `${URL}-note` }) }],
 				],
-				{confirm: broken},
+				{ confirm: broken },
 			);
 			expect(outcome.code).toBe(READBACK_MISMATCH);
 			expect(outcome.stdout).toBe("");
@@ -436,16 +436,16 @@ describe("runPost", () => {
 		});
 
 		it("still exits 9 and says so when the note itself does not land", async () => {
-			const {outcome} = await run(
+			const { outcome } = await run(
 				[
 					[PULL, pull()],
-					[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+					[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 					[COMMENTS, comments()],
-					[once(CREATE), {status: 201, body: JSON.stringify({id: 5154902211, html_url: URL})}],
+					[once(CREATE), { status: 201, body: JSON.stringify({ id: 5154902211, html_url: URL }) }],
 					[READBACK, posted(COMPOSED)],
-					[CREATE, {status: 502, body: "{}"}],
+					[CREATE, { status: 502, body: "{}" }],
 				],
-				{confirm: broken},
+				{ confirm: broken },
 			);
 			expect(outcome.code).toBe(READBACK_MISMATCH);
 			expect(outcome.stderr.join("\n")).toMatch(/did not land/);
@@ -456,20 +456,20 @@ describe("runPost", () => {
 		let ran = false;
 		const tracking: EvidenceCheck = () => {
 			ran = true;
-			return Effect.succeed({_tag: "Resolved"});
+			return Effect.succeed({ _tag: "Resolved" });
 		};
-		const {outcome} = await run(happy(), {upload: failingLeg, confirm: tracking});
+		const { outcome } = await run(happy(), { upload: failingLeg, confirm: tracking });
 		expect(outcome.code).toBe(UPLOAD_FAILED);
 		expect(ran).toBe(false);
 	});
 
 	it("appends into this namespace's own comment instead of stacking a second marker", async () => {
 		const prior = `review-ui: PASS @ ${OLD_HEAD} — older round`;
-		const {outcome, requests, bodies} = await run([
+		const { outcome, requests, bodies } = await run([
 			[PULL, pull()],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[COMMENTS, comments({id: 42, body: prior, author: "kampus-bot"})],
-			[PATCH, {status: 200, body: JSON.stringify({html_url: URL})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[COMMENTS, comments({ id: 42, body: prior, author: "kampus-bot" })],
+			[PATCH, { status: 200, body: JSON.stringify({ html_url: URL }) }],
 			[READBACK, posted(supersededBody(prior))],
 		]);
 		expect(outcome.code).toBe(0);
@@ -482,10 +482,10 @@ describe("runPost", () => {
 
 	it("supersedes the NEWEST of two markers at one SHA, not whichever came back first (#4881)", async () => {
 		const prior = `review-ui: PASS @ ${HEAD} — after the body-only repair`;
-		const {outcome, requests} = await run(
+		const { outcome, requests } = await run(
 			[
 				[PULL, pull()],
-				[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+				[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 				[
 					COMMENTS,
 					comments(
@@ -494,13 +494,13 @@ describe("runPost", () => {
 							body: `review-ui: FAIL @ ${HEAD} — first round`,
 							updatedAt: "2026-08-09T09:56:43Z",
 						},
-						{id: 42, body: prior, updatedAt: "2026-08-09T10:10:48Z"},
+						{ id: 42, body: prior, updatedAt: "2026-08-09T10:10:48Z" },
 					),
 				],
-				[PATCH, {status: 200, body: JSON.stringify({html_url: URL})}],
+				[PATCH, { status: 200, body: JSON.stringify({ html_url: URL }) }],
 				[READBACK, posted(supersededBody(prior))],
 			],
-			{supersede: true},
+			{ supersede: true },
 		);
 		expect(outcome.code).toBe(0);
 		expect(requests.find((request) => PATCH.test(request))).toContain("issues/comments/42");
@@ -509,9 +509,9 @@ describe("runPost", () => {
 	// The erasure itself: a PASS landing over a standing FAIL at one head is the write that
 	// erased a blocking verdict with nothing on the record.
 	it("refuses on 18 a post that would retire the opposite polarity at this head", async () => {
-		const {outcome, requests} = await run([
+		const { outcome, requests } = await run([
 			[PULL, pull()],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[
 				COMMENTS,
 				comments({
@@ -528,21 +528,21 @@ describe("runPost", () => {
 	});
 
 	it("refuses on 8 when the write itself failed — UNKNOWN, never 1", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[PULL, pull()],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[COMMENTS, comments()],
-			[CREATE, {status: 502, body: "{}"}],
+			[CREATE, { status: 502, body: "{}" }],
 		]);
 		expect(outcome.code).toBe(WRITE_UNKNOWN);
 	});
 
 	it("refuses on 9 when the read-back does not yield this marker", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[PULL, pull()],
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 			[COMMENTS, comments()],
-			[CREATE, {status: 201, body: JSON.stringify({id: 1, html_url: URL})}],
+			[CREATE, { status: 201, body: JSON.stringify({ id: 1, html_url: URL }) }],
 			[once(READBACK), posted("someone else's comment entirely")],
 		]);
 		expect(outcome.code).toBe(READBACK_MISMATCH);
@@ -566,16 +566,16 @@ describe("runPostFlags", () => {
 					upload: recordingLeg,
 					stdin: Effect.sync<StdinRead>(() => {
 						stdinRead = true;
-						return {_tag: "Text", text: BODY};
+						return { _tag: "Text", text: BODY };
 					}),
 				}),
 				Layer.merge(seams.layer, world()),
 			),
-		).then((outcome) => ({outcome, uploads, stdinRead, requests: seams.requests}));
+		).then((outcome) => ({ outcome, uploads, stdinRead, requests: seams.requests }));
 	};
 
 	it("refuses two --evidence sets on 10, naming both, before any read, upload or write", async () => {
-		const {outcome, uploads, stdinRead, requests} = await runFlags(["judged", "long-host"]);
+		const { outcome, uploads, stdinRead, requests } = await runFlags(["judged", "long-host"]);
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stdout).toBe("");
 		const reason = outcome.stderr.join("\n");
@@ -587,9 +587,9 @@ describe("runPostFlags", () => {
 	});
 
 	it("posts a single --evidence set exactly as runPost does", async () => {
-		const {outcome, uploads} = await runFlags(["judged"]);
+		const { outcome, uploads } = await runFlags(["judged"]);
 		expect(outcome.code).toBe(0);
-		expect(JSON.parse(outcome.stdout)).toMatchObject({answer: "posted", surfaces: 1});
+		expect(JSON.parse(outcome.stdout)).toMatchObject({ answer: "posted", surfaces: 1 });
 		expect(uploads).toHaveLength(1);
 	});
 });

@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import {read as readMarker} from "../wire/verdict-marker.ts";
-import {archived, compose, FENCE, heading, split} from "./supersede.ts";
+import { describe, expect, it } from "vitest";
+import { read as readMarker } from "../wire/verdict-marker.ts";
+import { archived, compose, FENCE, heading, split } from "./supersede.ts";
 
 const HEAD = "03135b91aa04f7e2c9d8b1640a5c22e9f01b7d3c";
 const FAIL = `review-doc: FAIL @ ${HEAD} — the round-1 blocker\n\none change asked for.\n`;
@@ -33,11 +33,11 @@ describe("compose", () => {
 
 describe("split", () => {
 	it("reads a comment carrying no fence as all live", () => {
-		expect(split(PASS)).toEqual({live: PASS, archive: ""});
+		expect(split(PASS)).toEqual({ live: PASS, archive: "" });
 	});
 
 	it("cuts the live verdict off at the fence", () => {
-		const {live, archive} = split(compose(FAIL, PASS, DAY));
+		const { live, archive } = split(compose(FAIL, PASS, DAY));
 		expect(live).toContain("merge-ready");
 		expect(live).not.toContain("round-1 blocker");
 		expect(archive).toContain("round-1 blocker");

@@ -11,15 +11,15 @@
  * The lane comes from ./lane.ts so the scheduled workflow relays the route instead of deriving it
  * in shell. See ./command.ts help for the row format.
  */
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {resolveCi} from "../config/ci-producer.ts";
-import {resolveTargetRepo, scannedLine} from "../ship/target.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {type Diagnosis, diagnoseOne} from "./diagnose-verb.ts";
-import {listOpenPulls, readRateLimit} from "./github.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { resolveCi } from "../config/ci-producer.ts";
+import { resolveTargetRepo, scannedLine } from "../ship/target.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { INCOMPLETE_SCAN, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { type Diagnosis, diagnoseOne } from "./diagnose-verb.ts";
+import { listOpenPulls, readRateLimit } from "./github.ts";
 
 const VERB = "heal-ci sweep";
 

@@ -22,7 +22,7 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9989
  */
 
-import {Effect} from "effect";
+import { Effect } from "effect";
 import {
 	type Api,
 	ambientToken,
@@ -33,8 +33,8 @@ import {
 	refusalText,
 	restWrite,
 } from "./gh-api.ts";
-import {type Attempt, fail, ok, type Shell} from "./git.ts";
-import {isRecord} from "./json.ts";
+import { type Attempt, fail, ok, type Shell } from "./git.ts";
+import { isRecord } from "./json.ts";
 
 /** The exact command that grants the scope. A plain `gh auth refresh` fails in a non-interactive shell. */
 export const PROJECT_SCOPE_FIX = "gh auth refresh -h github.com -s project";
@@ -42,14 +42,14 @@ export const PROJECT_SCOPE_FIX = "gh auth refresh -h github.com -s project";
 export const PROJECT_SCOPE = "project";
 
 export type ProjectsAnswer<A> =
-	| {readonly _tag: "Ok"; readonly value: A}
+	| { readonly _tag: "Ok"; readonly value: A }
 	/** The token lacks the `project` scope; the reason already names {@link PROJECT_SCOPE_FIX}. */
-	| {readonly _tag: "MissingScope"; readonly reason: string}
+	| { readonly _tag: "MissingScope"; readonly reason: string }
 	/** GitHub was not reached, refused, or answered a shape nobody asked for. UNKNOWN. */
-	| {readonly _tag: "Failed"; readonly reason: string};
+	| { readonly _tag: "Failed"; readonly reason: string };
 
-const done = <A>(value: A): ProjectsAnswer<A> => ({_tag: "Ok", value});
-const failed = <A>(reason: string): ProjectsAnswer<A> => ({_tag: "Failed", reason});
+const done = <A>(value: A): ProjectsAnswer<A> => ({ _tag: "Ok", value });
+const failed = <A>(reason: string): ProjectsAnswer<A> => ({ _tag: "Failed", reason });
 
 export const missingScope = <A>(detail: string): ProjectsAnswer<A> => ({
 	_tag: "MissingScope",
@@ -93,7 +93,7 @@ export type ProjectField =
 			readonly startDay: number;
 	  })
 	/** Every other field, built-in or custom, by its `dataType` (`TEXT`, `NUMBER`, `DATE`, `TITLE`, …). */
-	| (FieldIds & {readonly _tag: "Plain"; readonly dataType: string});
+	| (FieldIds & { readonly _tag: "Plain"; readonly dataType: string });
 
 export interface ProjectView {
 	readonly id: string;
@@ -137,7 +137,7 @@ export interface ProjectRef {
 
 export interface RepositoryNode {
 	readonly id: string;
-	readonly owner: {readonly id: string; readonly login: string};
+	readonly owner: { readonly id: string; readonly login: string };
 	readonly linkedProjects: ReadonlyArray<ProjectRef>;
 }
 
@@ -146,14 +146,14 @@ export type NewOption = Omit<SelectOption, "id">;
 
 /** What a new field is created as. Single-select options carry no id until GitHub mints one. */
 export type FieldSpec =
-	| {readonly _tag: "Text"; readonly name: string}
-	| {readonly _tag: "Number"; readonly name: string}
+	| { readonly _tag: "Text"; readonly name: string }
+	| { readonly _tag: "Number"; readonly name: string }
 	| {
 			readonly _tag: "SingleSelect";
 			readonly name: string;
 			readonly options: ReadonlyArray<NewOption>;
 	  }
-	| {readonly _tag: "Date"; readonly name: string};
+	| { readonly _tag: "Date"; readonly name: string };
 
 export interface ViewUpdate {
 	readonly layout?: ViewLayout;
@@ -163,22 +163,22 @@ export interface ViewUpdate {
 
 /** One value to write into an item's field. */
 export type FieldValue =
-	| {readonly _tag: "Text"; readonly text: string}
-	| {readonly _tag: "Number"; readonly number: number}
-	| {readonly _tag: "Date"; readonly date: string}
-	| {readonly _tag: "Option"; readonly optionId: string}
-	| {readonly _tag: "Iteration"; readonly iterationId: string};
+	| { readonly _tag: "Text"; readonly text: string }
+	| { readonly _tag: "Number"; readonly number: number }
+	| { readonly _tag: "Date"; readonly date: string }
+	| { readonly _tag: "Option"; readonly optionId: string }
+	| { readonly _tag: "Iteration"; readonly iterationId: string };
 
 /** A field value as read back, with who last set it and when — what the decider check reads. */
 export interface ItemFieldValue {
 	readonly fieldId: string;
 	readonly fieldName: string;
 	readonly value:
-		| {readonly _tag: "Text"; readonly text: string}
-		| {readonly _tag: "Number"; readonly number: number}
-		| {readonly _tag: "Date"; readonly date: string}
-		| {readonly _tag: "Option"; readonly optionId: string; readonly name: string}
-		| {readonly _tag: "Iteration"; readonly iterationId: string; readonly title: string};
+		| { readonly _tag: "Text"; readonly text: string }
+		| { readonly _tag: "Number"; readonly number: number }
+		| { readonly _tag: "Date"; readonly date: string }
+		| { readonly _tag: "Option"; readonly optionId: string; readonly name: string }
+		| { readonly _tag: "Iteration"; readonly iterationId: string; readonly title: string };
 	/** The login of whoever set the value, or `null` when GitHub names no actor (a deleted account). */
 	readonly creator: string | null;
 	readonly updatedAt: string;
@@ -304,7 +304,7 @@ const readField = (node: unknown): ProjectField | null => {
 	if (!isRecord(node) || !str(node.id) || !str(node.name) || typeof node.databaseId !== "number") {
 		return null;
 	}
-	const ids = {id: node.id, databaseId: node.databaseId, name: node.name};
+	const ids = { id: node.id, databaseId: node.databaseId, name: node.name };
 	if (node.__typename === "ProjectV2SingleSelectField") {
 		if (!Array.isArray(node.options)) return null;
 		const options: SelectOption[] = [];
@@ -317,7 +317,7 @@ const readField = (node: unknown): ProjectField | null => {
 				description: str(option.description) ? option.description : "",
 			});
 		}
-		return {_tag: "SingleSelect", ...ids, options};
+		return { _tag: "SingleSelect", ...ids, options };
 	}
 	if (node.__typename === "ProjectV2IterationField") {
 		const config = isRecord(node.configuration) ? node.configuration : null;
@@ -329,7 +329,7 @@ const readField = (node: unknown): ProjectField | null => {
 			startDay: typeof config.startDay === "number" ? config.startDay : 0,
 		};
 	}
-	return {_tag: "Plain", ...ids, dataType: str(node.dataType) ? node.dataType : "UNKNOWN"};
+	return { _tag: "Plain", ...ids, dataType: str(node.dataType) ? node.dataType : "UNKNOWN" };
 };
 
 const LAYOUTS: ReadonlyArray<ViewLayout> = ["TABLE_LAYOUT", "BOARD_LAYOUT", "ROADMAP_LAYOUT"];
@@ -365,7 +365,7 @@ const readOwner = (node: unknown): ProjectOwner | null =>
 	isRecord(node) &&
 	(node.__typename === "Organization" || node.__typename === "User") &&
 	str(node.login)
-		? {kind: node.__typename, login: node.login}
+		? { kind: node.__typename, login: node.login }
 		: null;
 
 export const readSnapshot = (node: unknown): Attempt<ProjectSnapshot> => {
@@ -426,7 +426,12 @@ const readRefs = (nodes: ReadonlyArray<unknown>, what: string): Attempt<ProjectR
 		if (!isRecord(node) || !str(node.id) || typeof node.number !== "number" || !str(node.title)) {
 			return fail(`GitHub answered 200 but one ${what} is not a project`);
 		}
-		refs.push({id: node.id, number: node.number, title: node.title, closed: node.closed === true});
+		refs.push({
+			id: node.id,
+			number: node.number,
+			title: node.title,
+			closed: node.closed === true,
+		});
 	}
 	return ok(refs);
 };
@@ -458,15 +463,15 @@ export const readRepository = (token: string, repo: string): Api<ProjectsAnswer<
 		const [owner, name] = repo.split("/");
 		if (owner === undefined || name === undefined) return failed(`\`${repo}\` is not owner/name`);
 		const linked: ProjectRef[] = [];
-		let head: {id: string; owner: {id: string; login: string}} | null = null;
+		let head: { id: string; owner: { id: string; login: string } } | null = null;
 		let cursor: string | null = null;
 		for (let page = 0; page < PAGE_CAP; page++) {
 			const answer: ProjectsAnswer<{
 				readonly id: string;
-				readonly owner: {readonly id: string; readonly login: string};
+				readonly owner: { readonly id: string; readonly login: string };
 				readonly refs: ReadonlyArray<ProjectRef>;
 				readonly next: string | null;
-			}> = yield* exchange(token, REPOSITORY_QUERY, {owner, name, cursor}, (data) => {
+			}> = yield* exchange(token, REPOSITORY_QUERY, { owner, name, cursor }, (data) => {
 				const repository = isRecord(data.repository) ? data.repository : null;
 				if (repository === null) return fail(`GitHub knows no repository ${repo}`);
 				const ownerNode = isRecord(repository.owner) ? repository.owner : null;
@@ -487,16 +492,16 @@ export const readRepository = (token: string, repo: string): Api<ProjectsAnswer<
 				if (next._tag === "Failure") return next;
 				return ok({
 					id: repository.id,
-					owner: {id: ownerNode.id, login: ownerNode.login},
+					owner: { id: ownerNode.id, login: ownerNode.login },
 					refs: refs.value,
 					next: next.value,
 				});
 			});
 			if (answer._tag !== "Ok") return answer;
-			head = {id: answer.value.id, owner: answer.value.owner};
+			head = { id: answer.value.id, owner: answer.value.owner };
 			linked.push(...answer.value.refs);
 			if (answer.value.next === null) {
-				return done({id: head.id, owner: head.owner, linkedProjects: linked});
+				return done({ id: head.id, owner: head.owner, linkedProjects: linked });
 			}
 			cursor = answer.value.next;
 		}
@@ -533,7 +538,7 @@ export const readOwnerProjects = (token: string, login: string): Api<ProjectsAns
 				readonly id: string;
 				readonly refs: ReadonlyArray<ProjectRef>;
 				readonly next: string | null;
-			}> = yield* exchange(token, OWNER_PROJECTS_QUERY, {login, cursor}, (data) => {
+			}> = yield* exchange(token, OWNER_PROJECTS_QUERY, { login, cursor }, (data) => {
 				const owner = isRecord(data.repositoryOwner) ? data.repositoryOwner : null;
 				if (owner === null) return fail(`GitHub knows no user or organization named ${login}`);
 				const connection = isRecord(owner.projectsV2) ? owner.projectsV2 : null;
@@ -545,11 +550,11 @@ export const readOwnerProjects = (token: string, login: string): Api<ProjectsAns
 				const next = nextCursor(connection);
 				return next._tag === "Failure"
 					? next
-					: ok({id: owner.id, refs: refs.value, next: next.value});
+					: ok({ id: owner.id, refs: refs.value, next: next.value });
 			});
 			if (answer._tag !== "Ok") return answer;
 			projects.push(...answer.value.refs);
-			if (answer.value.next === null) return done({id: answer.value.id, projects});
+			if (answer.value.next === null) return done({ id: answer.value.id, projects });
 			cursor = answer.value.next;
 		}
 		return failed(`${login} owns more projects than ${PAGE_CAP} pages hold`);
@@ -568,7 +573,7 @@ export const linkProject = (
 	projectId: string,
 	repositoryId: string,
 ): Api<ProjectsAnswer<string>> =>
-	exchange(token, LINK_PROJECT, {projectId, repositoryId}, (data) => {
+	exchange(token, LINK_PROJECT, { projectId, repositoryId }, (data) => {
 		const payload = isRecord(data.linkProjectV2ToRepository)
 			? data.linkProjectV2ToRepository
 			: null;
@@ -595,7 +600,7 @@ export const readProjectByNumber = (
 	exchange(
 		token,
 		BY_NUMBER_QUERY,
-		{login, number},
+		{ login, number },
 		(data) => {
 			const owner = isRecord(data.repositoryOwner) ? data.repositoryOwner : null;
 			if (owner === null) return fail(`GitHub knows no user or organization named ${login}`);
@@ -612,7 +617,7 @@ query TableProjectById($id: ID!) {
 ${PROJECT_FRAGMENT}`;
 
 export const readProject = (token: string, id: string): Api<ProjectsAnswer<ProjectSnapshot>> =>
-	exchange(token, BY_ID_QUERY, {id}, (data) => readSnapshot(data.node));
+	exchange(token, BY_ID_QUERY, { id }, (data) => readSnapshot(data.node));
 
 const CREATE_PROJECT = `
 mutation TableCreateProject($ownerId: ID!, $title: String!, $repositoryId: ID) {
@@ -624,7 +629,7 @@ mutation TableCreateProject($ownerId: ID!, $title: String!, $repositoryId: ID) {
 /** A new project under `ownerId`, linked to `repositoryId` when one is given. Answers its node id. */
 export const createProject = (
 	token: string,
-	input: {readonly ownerId: string; readonly title: string; readonly repositoryId: string | null},
+	input: { readonly ownerId: string; readonly title: string; readonly repositoryId: string | null },
 ): Api<ProjectsAnswer<string>> =>
 	exchange(token, CREATE_PROJECT, input, (data) => {
 		const payload = isRecord(data.createProjectV2) ? data.createProjectV2 : null;
@@ -644,9 +649,9 @@ mutation TableUpdateProject($projectId: ID!, $readme: String, $shortDescription:
 export const updateProject = (
 	token: string,
 	projectId: string,
-	change: {readonly readme?: string; readonly shortDescription?: string},
+	change: { readonly readme?: string; readonly shortDescription?: string },
 ): Api<ProjectsAnswer<string>> =>
-	exchange(token, UPDATE_PROJECT, {projectId, ...change}, (data) => {
+	exchange(token, UPDATE_PROJECT, { projectId, ...change }, (data) => {
 		const payload = isRecord(data.updateProjectV2) ? data.updateProjectV2 : null;
 		const project = payload !== null && isRecord(payload.projectV2) ? payload.projectV2 : null;
 		return project !== null && str(project.id)
@@ -673,9 +678,9 @@ mutation TableCreateField($input: CreateProjectV2FieldInput!) {
 const fieldInput = (projectId: string, spec: FieldSpec): Record<string, unknown> => {
 	switch (spec._tag) {
 		case "Text":
-			return {projectId, name: spec.name, dataType: "TEXT"};
+			return { projectId, name: spec.name, dataType: "TEXT" };
 		case "Number":
-			return {projectId, name: spec.name, dataType: "NUMBER"};
+			return { projectId, name: spec.name, dataType: "NUMBER" };
 		case "SingleSelect":
 			return {
 				projectId,
@@ -684,7 +689,7 @@ const fieldInput = (projectId: string, spec: FieldSpec): Record<string, unknown>
 				singleSelectOptions: spec.options,
 			};
 		case "Date":
-			return {projectId, name: spec.name, dataType: "DATE"};
+			return { projectId, name: spec.name, dataType: "DATE" };
 	}
 };
 
@@ -697,7 +702,7 @@ export const createField = (
 	exchange(
 		token,
 		CREATE_FIELD,
-		{input: fieldInput(projectId, spec)},
+		{ input: fieldInput(projectId, spec) },
 		fieldIdOf("createProjectV2Field"),
 	);
 
@@ -729,8 +734,13 @@ export const updateFieldOptions = (
 			input: {
 				fieldId,
 				singleSelectOptions: [
-					...list.kept.map(({id, name, color, description}) => ({id, name, color, description})),
-					...list.added.map(({name, color, description}) => ({name, color, description})),
+					...list.kept.map(({ id, name, color, description }) => ({
+						id,
+						name,
+						color,
+						description,
+					})),
+					...list.added.map(({ name, color, description }) => ({ name, color, description })),
 				],
 			},
 		},
@@ -752,9 +762,9 @@ const viewOf =
  * columns are its grouping, so a board never takes `Rows`.
  */
 export type NewViewGrouping =
-	| {readonly _tag: "None"}
-	| {readonly _tag: "Rows"; readonly fieldId: number}
-	| {readonly _tag: "Columns"; readonly fieldId: number};
+	| { readonly _tag: "None" }
+	| { readonly _tag: "Rows"; readonly fieldId: number }
+	| { readonly _tag: "Columns"; readonly fieldId: number };
 
 /** A view to create, every field named by its numeric id as the REST API takes it. */
 export interface NewView {
@@ -780,8 +790,8 @@ export const newViewBody = (view: NewView): Record<string, unknown> => ({
 	layout: REST_LAYOUT[view.layout],
 	filter: view.filter,
 	visible_fields: view.visibleFields,
-	...(view.grouping._tag === "Rows" ? {group_by: [view.grouping.fieldId]} : {}),
-	...(view.grouping._tag === "Columns" ? {vertical_group_by: [view.grouping.fieldId]} : {}),
+	...(view.grouping._tag === "Rows" ? { group_by: [view.grouping.fieldId] } : {}),
+	...(view.grouping._tag === "Columns" ? { vertical_group_by: [view.grouping.fieldId] } : {}),
 });
 
 /**
@@ -790,7 +800,7 @@ export const newViewBody = (view: NewView): Record<string, unknown> => ({
  */
 export const createView = (
 	token: string,
-	project: {readonly owner: ProjectOwner; readonly number: number},
+	project: { readonly owner: ProjectOwner; readonly number: number },
 	view: NewView,
 ): Api<ProjectsAnswer<string>> =>
 	Effect.map(
@@ -824,10 +834,10 @@ export const updateView = (
 		{
 			input: {
 				viewId,
-				...(change.layout !== undefined ? {layout: change.layout} : {}),
-				...(change.filter !== undefined ? {filter: change.filter} : {}),
+				...(change.layout !== undefined ? { layout: change.layout } : {}),
+				...(change.filter !== undefined ? { filter: change.filter } : {}),
 				...(change.visibleFieldIds !== undefined
-					? {configuration: {visibleFieldIds: change.visibleFieldIds}}
+					? { configuration: { visibleFieldIds: change.visibleFieldIds } }
 					: {}),
 			},
 		},
@@ -845,7 +855,7 @@ export const addItem = (
 	projectId: string,
 	contentId: string,
 ): Api<ProjectsAnswer<string>> =>
-	exchange(token, ADD_ITEM, {projectId, contentId}, (data) => {
+	exchange(token, ADD_ITEM, { projectId, contentId }, (data) => {
 		const payload = isRecord(data.addProjectV2ItemById) ? data.addProjectV2ItemById : null;
 		const item = payload !== null && isRecord(payload.item) ? payload.item : null;
 		return item !== null && str(item.id)
@@ -861,24 +871,24 @@ mutation TableSetValue($input: UpdateProjectV2ItemFieldValueInput!) {
 const valueInput = (value: FieldValue): Record<string, unknown> => {
 	switch (value._tag) {
 		case "Text":
-			return {text: value.text};
+			return { text: value.text };
 		case "Number":
-			return {number: value.number};
+			return { number: value.number };
 		case "Date":
-			return {date: value.date};
+			return { date: value.date };
 		case "Option":
-			return {singleSelectOptionId: value.optionId};
+			return { singleSelectOptionId: value.optionId };
 		case "Iteration":
-			return {iterationId: value.iterationId};
+			return { iterationId: value.iterationId };
 	}
 };
 
 export const setFieldValue = (
 	token: string,
-	target: {readonly projectId: string; readonly itemId: string; readonly fieldId: string},
+	target: { readonly projectId: string; readonly itemId: string; readonly fieldId: string },
 	value: FieldValue,
 ): Api<ProjectsAnswer<string>> =>
-	exchange(token, SET_VALUE, {input: {...target, value: valueInput(value)}}, (data) => {
+	exchange(token, SET_VALUE, { input: { ...target, value: valueInput(value) } }, (data) => {
 		const payload = isRecord(data.updateProjectV2ItemFieldValue)
 			? data.updateProjectV2ItemFieldValue
 			: null;
@@ -923,18 +933,18 @@ const TABLE_VALUE_TYPES: ReadonlySet<unknown> = new Set([
 const readValue = (node: Record<string, unknown>): ItemFieldValue["value"] | null => {
 	switch (node.__typename) {
 		case "ProjectV2ItemFieldTextValue":
-			return str(node.text) ? {_tag: "Text", text: node.text} : null;
+			return str(node.text) ? { _tag: "Text", text: node.text } : null;
 		case "ProjectV2ItemFieldNumberValue":
-			return typeof node.number === "number" ? {_tag: "Number", number: node.number} : null;
+			return typeof node.number === "number" ? { _tag: "Number", number: node.number } : null;
 		case "ProjectV2ItemFieldDateValue":
-			return str(node.date) ? {_tag: "Date", date: node.date} : null;
+			return str(node.date) ? { _tag: "Date", date: node.date } : null;
 		case "ProjectV2ItemFieldSingleSelectValue":
 			return str(node.optionId) && str(node.name)
-				? {_tag: "Option", optionId: node.optionId, name: node.name}
+				? { _tag: "Option", optionId: node.optionId, name: node.name }
 				: null;
 		case "ProjectV2ItemFieldIterationValue":
 			return str(node.iterationId) && str(node.title)
-				? {_tag: "Iteration", iterationId: node.iterationId, title: node.title}
+				? { _tag: "Iteration", iterationId: node.iterationId, title: node.title }
 				: null;
 		default:
 			return null;
@@ -948,7 +958,7 @@ const readValue = (node: Record<string, unknown>): ItemFieldValue["value"] | nul
  * fails the read instead of leaving the list short, so an absent value always means unset.
  */
 export const readItemValues = (token: string, itemId: string): Api<ProjectsAnswer<ItemValues>> =>
-	exchange(token, ITEM_VALUES, {id: itemId}, (data) => {
+	exchange(token, ITEM_VALUES, { id: itemId }, (data) => {
 		const item = isRecord(data.node) ? data.node : null;
 		if (item === null || !str(item.id) || !isRecord(item.fieldValues)) {
 			return fail(`GitHub knows no project item ${itemId}`);
@@ -964,9 +974,9 @@ mutation TableClearValue($input: ClearProjectV2ItemFieldValueInput!) {
 /** Unset one field on one item. */
 export const clearFieldValue = (
 	token: string,
-	target: {readonly projectId: string; readonly itemId: string; readonly fieldId: string},
+	target: { readonly projectId: string; readonly itemId: string; readonly fieldId: string },
 ): Api<ProjectsAnswer<string>> =>
-	exchange(token, CLEAR_VALUE, {input: target}, (data) => {
+	exchange(token, CLEAR_VALUE, { input: target }, (data) => {
 		const payload = isRecord(data.clearProjectV2ItemFieldValue)
 			? data.clearProjectV2ItemFieldValue
 			: null;
@@ -1062,7 +1072,7 @@ const readItemNode = (item: Record<string, unknown>): Attempt<ProjectItem> => {
 	const read = readItemValuesNode(item);
 	if (read._tag === "Failure") return read;
 	const content = isRecord(item.content) ? item.content : null;
-	if (content === null) return ok({...read.value, contentType: "Redacted", repository: null});
+	if (content === null) return ok({ ...read.value, contentType: "Redacted", repository: null });
 	if (!isContentType(content.__typename)) {
 		return fail(
 			`GitHub answered 200 but item ${read.value.itemId} stands for no issue, pull request or draft`,
@@ -1072,13 +1082,13 @@ const readItemNode = (item: Record<string, unknown>): Attempt<ProjectItem> => {
 		isRecord(content.repository) && str(content.repository.nameWithOwner)
 			? content.repository.nameWithOwner
 			: null;
-	return ok({...read.value, contentType: content.__typename, repository});
+	return ok({ ...read.value, contentType: content.__typename, repository });
 };
 
 /** One page of a project's items, parsed; exported so a recorded page can prove the parse. */
 export const readItemsPage = (
 	data: Record<string, unknown>,
-): Attempt<{readonly items: ReadonlyArray<ProjectItem>; readonly next: string | null}> => {
+): Attempt<{ readonly items: ReadonlyArray<ProjectItem>; readonly next: string | null }> => {
 	const project = isRecord(data.node) ? data.node : null;
 	const connection = project !== null && isRecord(project.items) ? project.items : null;
 	if (connection === null || !Array.isArray(connection.nodes)) {
@@ -1092,7 +1102,7 @@ export const readItemsPage = (
 		items.push(item.value);
 	}
 	const next = nextCursor(connection);
-	return next._tag === "Failure" ? next : ok({items, next: next.value});
+	return next._tag === "Failure" ? next : ok({ items, next: next.value });
 };
 
 /** Every item on the project with its table values, read to the last page. */
@@ -1107,7 +1117,7 @@ export const readItems = (
 			const answer: ProjectsAnswer<{
 				readonly items: ReadonlyArray<ProjectItem>;
 				readonly next: string | null;
-			}> = yield* exchange(token, ITEMS_QUERY, {id: projectId, cursor}, readItemsPage);
+			}> = yield* exchange(token, ITEMS_QUERY, { id: projectId, cursor }, readItemsPage);
 			if (answer._tag !== "Ok") return answer;
 			items.push(...answer.value.items);
 			if (answer.value.next === null) return done(items);
@@ -1200,7 +1210,7 @@ export const readBoard = (
 			const answer: ProjectsAnswer<{
 				readonly items: ReadonlyArray<BoardItem>;
 				readonly next: string | null;
-			}> = yield* exchange(token, BOARD_QUERY, {...variables, cursor}, (data) => {
+			}> = yield* exchange(token, BOARD_QUERY, { ...variables, cursor }, (data) => {
 				const project = isRecord(data.node) ? data.node : null;
 				const connection = project !== null && isRecord(project.items) ? project.items : null;
 				if (project === null || connection === null || !Array.isArray(connection.nodes)) {
@@ -1214,11 +1224,11 @@ export const readBoard = (
 				}
 				const next = nextCursor(connection);
 				if (next._tag === "Failure") return next;
-				return ok({items: pageItems, next: next.value});
+				return ok({ items: pageItems, next: next.value });
 			});
 			if (answer._tag !== "Ok") return answer;
 			items.push(...answer.value.items);
-			if (answer.value.next === null) return done({items});
+			if (answer.value.next === null) return done({ items });
 			cursor = answer.value.next;
 		}
 		return failed(`project ${projectId} holds more items than ${PAGE_CAP} pages hold`);
@@ -1299,7 +1309,7 @@ export const readWeekField = (data: Record<string, unknown>): Attempt<IterationH
 	if (running._tag === "Failure") return running;
 	const completed = iterationList(config.completedIterations);
 	if (completed._tag === "Failure") return completed;
-	return ok({running: running.value, completed: completed.value});
+	return ok({ running: running.value, completed: completed.value });
 };
 
 /** The iteration field `week` names, read only: every iteration it runs, and every one it has finished. */
@@ -1308,7 +1318,7 @@ export const readIterationHistory = (
 	projectId: string,
 	week: string,
 ): Api<ProjectsAnswer<IterationHistory | null>> =>
-	exchange(token, WEEK_QUERY, {id: projectId, week}, readWeekField);
+	exchange(token, WEEK_QUERY, { id: projectId, week }, readWeekField);
 
 const STATUS_UPDATE = `
 mutation TableStatusUpdate($input: CreateProjectV2StatusUpdateInput!) {
@@ -1321,7 +1331,7 @@ export const postStatusUpdate = (
 	projectId: string,
 	update: StatusUpdateInput,
 ): Api<ProjectsAnswer<string>> =>
-	exchange(token, STATUS_UPDATE, {input: {projectId, ...update}}, (data) => {
+	exchange(token, STATUS_UPDATE, { input: { projectId, ...update } }, (data) => {
 		const payload = isRecord(data.createProjectV2StatusUpdate)
 			? data.createProjectV2StatusUpdate
 			: null;
@@ -1354,7 +1364,7 @@ query TableStatusUpdates($id: ID!, $cursor: String) {
 /** One page of a project's status updates, parsed; exported so a recorded page can prove the parse. */
 export const readStatusUpdatesPage = (
 	data: Record<string, unknown>,
-): Attempt<{readonly updates: ReadonlyArray<StatusUpdate>; readonly next: string | null}> => {
+): Attempt<{ readonly updates: ReadonlyArray<StatusUpdate>; readonly next: string | null }> => {
 	const project = isRecord(data.node) ? data.node : null;
 	const connection =
 		project !== null && isRecord(project.statusUpdates) ? project.statusUpdates : null;
@@ -1373,7 +1383,7 @@ export const readStatusUpdatesPage = (
 		});
 	}
 	const next = nextCursor(connection);
-	return next._tag === "Failure" ? next : ok({updates, next: next.value});
+	return next._tag === "Failure" ? next : ok({ updates, next: next.value });
 };
 
 /** Every status update posted on the project, read to the last page. */
@@ -1391,7 +1401,7 @@ export const readStatusUpdates = (
 			}> = yield* exchange(
 				token,
 				STATUS_UPDATES_QUERY,
-				{id: projectId, cursor},
+				{ id: projectId, cursor },
 				readStatusUpdatesPage,
 			);
 			if (answer._tag !== "Ok") return answer;
@@ -1413,7 +1423,7 @@ export const deleteItem = (
 	projectId: string,
 	itemId: string,
 ): Api<ProjectsAnswer<string>> =>
-	exchange(token, DELETE_ITEM, {projectId, itemId}, (data) => {
+	exchange(token, DELETE_ITEM, { projectId, itemId }, (data) => {
 		const payload = isRecord(data.deleteProjectV2Item) ? data.deleteProjectV2Item : null;
 		return payload !== null && str(payload.deletedItemId)
 			? ok(payload.deletedItemId)

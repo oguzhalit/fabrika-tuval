@@ -15,9 +15,9 @@ import {
 	type NoPreviewMode,
 	type NoPreviewRule,
 } from "../config/keys/review-ui.ts";
-import {matchPath} from "../review/filter-spike.ts";
+import { matchPath } from "../review/filter-spike.ts";
 
-export type {NoPreviewMode, NoPreviewRule} from "../config/keys/review-ui.ts";
+export type { NoPreviewMode, NoPreviewRule } from "../config/keys/review-ui.ts";
 
 /** The mode a file resolves to when no rule matches it. */
 export const UNMATCHED: NoPreviewMode = "require-render";

@@ -11,7 +11,7 @@
  * touches disk and never decides what a scan covered.
  */
 
-import {type Annotation, atFile, atLine} from "./annotate.ts";
+import { type Annotation, atFile, atLine } from "./annotate.ts";
 
 /** One dependency entry from a manifest, reduced to the facts the decision needs. */
 export interface DepEntry {
@@ -66,7 +66,7 @@ export const manifestDeps = (pkg: Record<string, unknown>): ReadonlyArray<DepEnt
 		const block = pkg[field];
 		if (block === null || typeof block !== "object") continue;
 		for (const [name, value] of Object.entries(block as Record<string, unknown>)) {
-			if (typeof value === "string") out.push({field, name, value});
+			if (typeof value === "string") out.push({ field, name, value });
 		}
 	}
 	return out;
@@ -93,7 +93,7 @@ export const findViolations = (
 		for (const dep of m.deps) {
 			if (isCompliantValue(dep.value)) continue;
 			if (isAllowlisted(dep, m.path, allowlist)) continue;
-			violations.push({path: m.path, field: dep.field, name: dep.name, value: dep.value});
+			violations.push({ path: m.path, field: dep.field, name: dep.name, value: dep.value });
 		}
 	}
 	return violations;

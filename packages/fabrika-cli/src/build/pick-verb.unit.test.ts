@@ -1,7 +1,7 @@
-import {Effect, Layer} from "effect";
+import { Effect, Layer } from "effect";
 import * as HttpClient from "effect/unstable/http/HttpClient";
 import * as HttpClientResponse from "effect/unstable/http/HttpClientResponse";
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	errOut,
 	fakeFs,
@@ -13,17 +13,17 @@ import {
 	okOut,
 	type Scripted,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {PROJECT_SCOPE_FIX} from "../io/projects.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { PROJECT_SCOPE_FIX } from "../io/projects.ts";
 import {
 	blankProject,
 	type FakeProject,
 	type FakeProjectsOptions,
 	fakeProjects,
 } from "../io/projects-fake.test-support.ts";
-import {ROADMAP_FILE} from "../triage/roadmap.ts";
-import {FAILED} from "../verb.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
+import { ROADMAP_FILE } from "../triage/roadmap.ts";
+import { FAILED } from "../verb.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
 import {
 	blockedBy,
 	CRITERIA_BODY,
@@ -37,7 +37,7 @@ import {
 	NOT_FOUND,
 	served,
 } from "./fixtures.test-support.ts";
-import {runPick} from "./pick-verb.ts";
+import { runPick } from "./pick-verb.ts";
 
 const bucket = (priority: string) =>
 	new RegExp(
@@ -56,12 +56,12 @@ const options = {
 	repo: null,
 	limit: 20,
 	cwd: "/repo",
-	env: {CLAUDE_PIPELINE_REPO: "o/r", ...GH_TOKEN_ENV} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r", ...GH_TOKEN_ENV } as Record<string, string | undefined>,
 	now: () => NOW,
 };
 
 /** No `.fabrika.jsonc` and no `ROADMAP.md`: the zero-config repository. */
-const NO_CONFIG = fakeFs({files: {}});
+const NO_CONFIG = fakeFs({ files: {} });
 
 const run = (
 	script: ReadonlyArray<Scripted>,
@@ -70,16 +70,16 @@ const run = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runPick({...options, ...overrides}),
+			runPick({ ...options, ...overrides }),
 			Layer.merge(fakeSeams([...script, NO_BLOCKERS, NO_TABLE]).layer, fs.layer),
 		),
 	);
 
-const pool = (out: {stdout: string}) =>
-	JSON.parse(out.stdout).pool as ReadonlyArray<{number: number}>;
+const pool = (out: { stdout: string }) =>
+	JSON.parse(out.stdout).pool as ReadonlyArray<{ number: number }>;
 
 /** The reason histogram `excluded` collapses to — counts, never rows. */
-const excluded = (out: {stdout: string}) =>
+const excluded = (out: { stdout: string }) =>
 	JSON.parse(out.stdout).excluded as Readonly<Record<string, number>>;
 
 describe("runPick", () => {
@@ -88,11 +88,11 @@ describe("runPick", () => {
 			[
 				bucket("p0"),
 				candidatePage(
-					{number: 500, labels: [...TRIAGED, "p0"], milestone: 44},
-					{number: 400, labels: [...TRIAGED, "p0"], milestone: null},
+					{ number: 500, labels: [...TRIAGED, "p0"], milestone: 44 },
+					{ number: 400, labels: [...TRIAGED, "p0"], milestone: null },
 				),
 			],
-			[bucket("p1"), candidatePage({number: 300, labels: [...TRIAGED, "p1"]})],
+			[bucket("p1"), candidatePage({ number: 300, labels: [...TRIAGED, "p1"] })],
 			[bucket("p2"), EMPTY],
 		]);
 		expect(out.code).toBe(0);
@@ -101,12 +101,12 @@ describe("runPick", () => {
 
 	it("excludes an issue with NO ready-for: label — absence is an unknown audience (#4780)", async () => {
 		const out = await run([
-			[bucket("p0"), candidatePage({number: 500, labels: ["status:triaged", "type:bug", "p0"]})],
+			[bucket("p0"), candidatePage({ number: 500, labels: ["status:triaged", "type:bug", "p0"] })],
 			[bucket("p1"), EMPTY],
 			[bucket("p2"), EMPTY],
 		]);
 		expect(pool(out)).toEqual([]);
-		expect(excluded(out)).toEqual({"audience-not-agent": 1});
+		expect(excluded(out)).toEqual({ "audience-not-agent": 1 });
 	});
 
 	/**
@@ -115,13 +115,13 @@ describe("runPick", () => {
 	 */
 	it("excludes a candidate whose body carries no acceptance-criteria block, with its axis", async () => {
 		const out = await run([
-			[bucket("p0"), candidatePage({number: 500, labels: [...TRIAGED, "p0"], body: REPORT_BODY})],
+			[bucket("p0"), candidatePage({ number: 500, labels: [...TRIAGED, "p0"], body: REPORT_BODY })],
 			[bucket("p1"), EMPTY],
 			[bucket("p2"), EMPTY],
 		]);
 		expect(out.code).toBe(0);
 		expect(pool(out)).toEqual([]);
-		expect(excluded(out)).toEqual({"no-acceptance-criteria": 1});
+		expect(excluded(out)).toEqual({ "no-acceptance-criteria": 1 });
 	});
 
 	it("excludes a candidate whose criteria heading has drifted — malformed is not a contract", async () => {
@@ -137,7 +137,7 @@ describe("runPick", () => {
 			[bucket("p1"), EMPTY],
 			[bucket("p2"), EMPTY],
 		]);
-		expect(excluded(out)).toEqual({"no-acceptance-criteria": 1});
+		expect(excluded(out)).toEqual({ "no-acceptance-criteria": 1 });
 	});
 
 	it("admits a criteria-bearing candidate — the axis excludes the contract-less one only", async () => {
@@ -145,15 +145,15 @@ describe("runPick", () => {
 			[
 				bucket("p0"),
 				candidatePage(
-					{number: 500, labels: [...TRIAGED, "p0"]},
-					{number: 501, labels: [...TRIAGED, "p0"], body: REPORT_BODY},
+					{ number: 500, labels: [...TRIAGED, "p0"] },
+					{ number: 501, labels: [...TRIAGED, "p0"], body: REPORT_BODY },
 				),
 			],
 			[bucket("p1"), EMPTY],
 			[bucket("p2"), EMPTY],
 		]);
 		expect(pool(out).map((row) => row.number)).toEqual([500]);
-		expect(excluded(out)).toEqual({"no-acceptance-criteria": 1});
+		expect(excluded(out)).toEqual({ "no-acceptance-criteria": 1 });
 	});
 
 	/**
@@ -165,8 +165,8 @@ describe("runPick", () => {
 			[
 				bucket("p0"),
 				candidatePage(
-					{number: 500, labels: [...TRIAGED, "p0"], body: REPORT_BODY},
-					{number: 501, labels: ["status:triaged", "p0"]},
+					{ number: 500, labels: [...TRIAGED, "p0"], body: REPORT_BODY },
+					{ number: 501, labels: ["status:triaged", "p0"] },
 				),
 			],
 			[bucket("p1"), EMPTY],
@@ -186,7 +186,7 @@ describe("runPick", () => {
 			[
 				bucket("p0"),
 				candidatePage(
-					{number: 500, labels: [...TRIAGED, "p0"]},
+					{ number: 500, labels: [...TRIAGED, "p0"] },
 					...[501, 502, 503].map((number) => ({
 						number,
 						labels: ["status:triaged", "type:bug", "p0"],
@@ -202,7 +202,7 @@ describe("runPick", () => {
 			[bucket("p2"), EMPTY],
 		]);
 		expect(pool(out).map((row) => row.number)).toEqual([500]);
-		expect(excluded(out)).toEqual({"audience-not-agent": 3, "no-acceptance-criteria": 2});
+		expect(excluded(out)).toEqual({ "audience-not-agent": 3, "no-acceptance-criteria": 2 });
 		expect(Object.keys(excluded(out))).toEqual(["audience-not-agent", "no-acceptance-criteria"]);
 	});
 
@@ -210,7 +210,7 @@ describe("runPick", () => {
 		const out = await run([
 			[
 				bucket("p0"),
-				candidatePage({number: 500, labels: [...TRIAGED, "p0"], assignees: ["usirin"]}),
+				candidatePage({ number: 500, labels: [...TRIAGED, "p0"], assignees: ["usirin"] }),
 			],
 			[bucket("p1"), EMPTY],
 			[bucket("p2"), EMPTY],
@@ -223,8 +223,8 @@ describe("runPick", () => {
 			[
 				bucket("p0"),
 				candidatePage(
-					{number: 500, labels: ["status:triaged", "ready-for:agent", "type:epic", "p0"]},
-					{number: 501, labels: [...TRIAGED, "p0"], pull: true},
+					{ number: 500, labels: ["status:triaged", "ready-for:agent", "type:epic", "p0"] },
+					{ number: 501, labels: [...TRIAGED, "p0"], pull: true },
 				),
 			],
 			[bucket("p1"), EMPTY],
@@ -237,7 +237,7 @@ describe("runPick", () => {
 	const LANE_CANDIDATE: ReadonlyArray<Scripted> = [
 		[
 			bucket("p0"),
-			candidatePage({number: 500, labels: [...TRIAGED, "p0", "axis:pipeline-hardening"]}),
+			candidatePage({ number: 500, labels: [...TRIAGED, "p0", "axis:pipeline-hardening"] }),
 		],
 		[bucket("p1"), EMPTY],
 		[bucket("p2"), EMPTY],
@@ -250,7 +250,7 @@ describe("runPick", () => {
 			fakeFs({
 				files: {
 					"/repo/.fabrika.jsonc": JSON.stringify({
-						boardVocabulary: {standingLanes: ["axis:pipeline-hardening"]},
+						boardVocabulary: { standingLanes: ["axis:pipeline-hardening"] },
 					}),
 				},
 			}),
@@ -266,7 +266,7 @@ describe("runPick", () => {
 	it("refuses a lane declaration nobody could read on 11 — never ranked as a repo with no lane", async () => {
 		const seams = fakeSeams([...LANE_CANDIDATE, NO_BLOCKERS, NO_TABLE]);
 		const fs = fakeFs({
-			files: {"/repo/.fabrika.jsonc": JSON.stringify({boardVocabulary: "wayfinder:backlog"})},
+			files: { "/repo/.fabrika.jsonc": JSON.stringify({ boardVocabulary: "wayfinder:backlog" }) },
 		});
 		const out = await Effect.runPromise(
 			Effect.provide(runPick(options), Layer.merge(seams.layer, fs.layer)),
@@ -286,7 +286,7 @@ describe("runPick", () => {
 		const RENAMED = fakeFs({
 			files: {
 				"/repo/.fabrika.jsonc": JSON.stringify({
-					boardVocabulary: {statuses: {triaged: "state:ready"}},
+					boardVocabulary: { statuses: { triaged: "state:ready" } },
 				}),
 			},
 		});
@@ -304,7 +304,7 @@ describe("runPick", () => {
 		it("returns the issues carrying the renamed label instead of an empty pool", async () => {
 			const out = await run(
 				[
-					[renamedBucket("p0"), candidatePage({number: 500, labels: [...READY, "p0"]})],
+					[renamedBucket("p0"), candidatePage({ number: 500, labels: [...READY, "p0"] })],
 					[renamedBucket("p1"), EMPTY],
 					[renamedBucket("p2"), EMPTY],
 				],
@@ -320,7 +320,7 @@ describe("runPick", () => {
 				[
 					[
 						renamedBucket("p0"),
-						candidatePage({number: 500, labels: [...READY, "status:needs-info", "p0"]}),
+						candidatePage({ number: 500, labels: [...READY, "status:needs-info", "p0"] }),
 					],
 					[renamedBucket("p1"), EMPTY],
 					[renamedBucket("p2"), EMPTY],
@@ -337,15 +337,15 @@ describe("runPick", () => {
 		const out = await run([
 			[bucket("p0"), EMPTY],
 			[bucket("p1"), EMPTY],
-			[bucket("p2"), candidatePage({number: 9, labels: ["status:triaged", "p2"]})],
+			[bucket("p2"), candidatePage({ number: 9, labels: ["status:triaged", "p2"] })],
 		]);
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toEqual({
 			pool: [],
-			excluded: {"audience-not-agent": 1},
+			excluded: { "audience-not-agent": 1 },
 			unread: 0,
-			scanned: {p0: 0, p1: 0, p2: 1},
-			bets: {state: "none"},
+			scanned: { p0: 0, p1: 0, p2: 1 },
+			bets: { state: "none" },
 		});
 	});
 
@@ -376,7 +376,7 @@ describe("runPick", () => {
 	});
 
 	it("refuses a non-positive --limit as a plain usage error", async () => {
-		const out = await run([], {limit: 0});
+		const out = await run([], { limit: 0 });
 		expect(out.code).toBe(FAILED);
 		expect(out.stderr.at(-1)).toBe('build pick: --limit "0" is not a positive integer.');
 	});
@@ -386,7 +386,7 @@ describe("runPick", () => {
 	// and the pool refuses rather than answering "no p0s" over a board it only partly read.
 	it("refuses a bucket whose pagination never reaches a terminal page on 11 — a partial board never reads as the whole board", async () => {
 		const page = {
-			...candidatePage({number: 1, labels: [...TRIAGED, "p0"]}),
+			...candidatePage({ number: 1, labels: [...TRIAGED, "p0"] }),
 			headers: linkNext("https://api.github.com/repos/o/r/issues?page=2"),
 		};
 		const out = await run([
@@ -406,16 +406,16 @@ describe("runPick", () => {
 				[
 					bucket("p0"),
 					candidatePage(
-						{number: 500, labels: [...TRIAGED, "p0"], milestone: 44},
-						{number: 400, labels: [...TRIAGED, "p0"], milestone: 39},
-						{number: 300, labels: [...TRIAGED, "p0"], milestone: null},
+						{ number: 500, labels: [...TRIAGED, "p0"], milestone: 44 },
+						{ number: 400, labels: [...TRIAGED, "p0"], milestone: 39 },
+						{ number: 300, labels: [...TRIAGED, "p0"], milestone: null },
 					),
 				],
 				[bucket("p1"), EMPTY],
 				[bucket("p2"), EMPTY],
 			],
 			{},
-			fakeFs({files: {[ROADMAP_FILE]: campaignsTable(44)}}),
+			fakeFs({ files: { [ROADMAP_FILE]: campaignsTable(44) } }),
 		);
 		expect(out.code).toBe(0);
 		expect(pool(out).map((row) => row.number)).toEqual([400, 500, 300]);
@@ -425,12 +425,12 @@ describe("runPick", () => {
 	it("never reads the campaigns table — a malformed one refuses nothing", async () => {
 		const out = await run(
 			[
-				[bucket("p0"), candidatePage({number: 500, labels: [...TRIAGED, "p0"], milestone: 39})],
+				[bucket("p0"), candidatePage({ number: 500, labels: [...TRIAGED, "p0"], milestone: 39 })],
 				[bucket("p1"), EMPTY],
 				[bucket("p2"), EMPTY],
 			],
 			{},
-			fakeFs({files: {[ROADMAP_FILE]: campaignsTable(44).replace("| active |", "| activ |")}}),
+			fakeFs({ files: { [ROADMAP_FILE]: campaignsTable(44).replace("| active |", "| activ |") } }),
 		);
 		expect(out.code).toBe(0);
 		expect(pool(out).map((row) => row.number)).toEqual([500]);
@@ -454,14 +454,14 @@ describe("runPick", () => {
 				[
 					bucket("p0"),
 					candidatePage(
-						{number: 1, labels: [...TRIAGED, "p0"]},
-						{number: 2, labels: [...TRIAGED, "p0"]},
+						{ number: 1, labels: [...TRIAGED, "p0"] },
+						{ number: 2, labels: [...TRIAGED, "p0"] },
 					),
 				],
 				[bucket("p1"), EMPTY],
 				[bucket("p2"), EMPTY],
 			],
-			{limit: 1},
+			{ limit: 1 },
 		);
 		expect(pool(out).map((row) => row.number)).toEqual([1]);
 	});
@@ -480,26 +480,26 @@ describe("runPick — the blocked_by graph", () => {
 
 	it("excludes a candidate with an open blocker, with `blocked` as its named reason", async () => {
 		const out = await run([
-			[bucket("p0"), candidatePage({number: 500, labels: [...TRIAGED, "p0"]})],
+			[bucket("p0"), candidatePage({ number: 500, labels: [...TRIAGED, "p0"] })],
 			[bucket("p1"), EMPTY],
 			[bucket("p2"), EMPTY],
 			[edges(500), blockedBy(210)],
-			[blocker(210), issue({number: 210, state: "open"})],
+			[blocker(210), issue({ number: 210, state: "open" })],
 			[parent(500), NOT_FOUND],
 		]);
 		expect(out.code).toBe(0);
 		expect(pool(out)).toEqual([]);
-		expect(excluded(out)).toEqual({blocked: 1});
+		expect(excluded(out)).toEqual({ blocked: 1 });
 		expect(out.stderr.join("\n")).toContain("#500 is blocked by #210");
 	});
 
 	it("keeps a candidate whose every blocker is closed", async () => {
 		const out = await run([
-			[bucket("p0"), candidatePage({number: 500, labels: [...TRIAGED, "p0"]})],
+			[bucket("p0"), candidatePage({ number: 500, labels: [...TRIAGED, "p0"] })],
 			[bucket("p1"), EMPTY],
 			[bucket("p2"), EMPTY],
 			[edges(500), blockedBy(210)],
-			[blocker(210), issue({number: 210, state: "closed"})],
+			[blocker(210), issue({ number: 210, state: "closed" })],
 		]);
 		expect(pool(out).map((row) => row.number)).toEqual([500]);
 		expect(excluded(out)).toEqual({});
@@ -507,14 +507,14 @@ describe("runPick — the blocked_by graph", () => {
 
 	it("excludes a candidate whose edge list could not be read, naming why on stderr", async () => {
 		const out = await run([
-			[bucket("p0"), candidatePage({number: 500, labels: [...TRIAGED, "p0"]})],
+			[bucket("p0"), candidatePage({ number: 500, labels: [...TRIAGED, "p0"] })],
 			[bucket("p1"), EMPTY],
 			[bucket("p2"), EMPTY],
 			[edges(500), GATEWAY],
 		]);
 		expect(out.code).toBe(0);
 		expect(pool(out)).toEqual([]);
-		expect(excluded(out)).toEqual({unreadable: 1});
+		expect(excluded(out)).toEqual({ unreadable: 1 });
 		expect(out.stderr.join("\n")).toContain("cannot read the blocked_by edges of #500");
 	});
 
@@ -537,7 +537,7 @@ describe("runPick — the blocked_by graph", () => {
 		/** The three reads that bound the assembly range — tip, trunk, merge base. */
 		const RANGE_ENDPOINTS: ReadonlyArray<Scripted> = [
 			[ASSEMBLY, okOut(`${TIP}\n`)],
-			[TRUNK, served({default_branch: "main"})],
+			[TRUNK, served({ default_branch: "main" })],
 			[MERGE_BASE, okOut(`${BASE}\n`)],
 		];
 
@@ -546,17 +546,17 @@ describe("runPick — the blocked_by graph", () => {
 
 		/** One p0 child with one open blocker on the board, and nothing in the other two buckets. */
 		const BOARD: ReadonlyArray<Scripted> = [
-			[bucket("p0"), candidatePage({number: CHILD, labels: [...TRIAGED, "p0"]})],
+			[bucket("p0"), candidatePage({ number: CHILD, labels: [...TRIAGED, "p0"] })],
 			[bucket("p1"), EMPTY],
 			[bucket("p2"), EMPTY],
 			[edges(CHILD), blockedBy(BLOCKER)],
-			[blocker(BLOCKER), issue({number: BLOCKER, state: "open"})],
+			[blocker(BLOCKER), issue({ number: BLOCKER, state: "open" })],
 		];
 
 		it("admits a child whose blocker's work landed on the parent epic's assembly branch", async () => {
 			const out = await run([
 				...BOARD,
-				[parent(CHILD), served({number: EPIC})],
+				[parent(CHILD), served({ number: EPIC })],
 				...RANGE_ENDPOINTS,
 				[ASSEMBLY_LOG, commitLog(`feat(tracer): the first tracer (#${BLOCKER})`)],
 			]);
@@ -569,37 +569,37 @@ describe("runPick — the blocked_by graph", () => {
 		it("still excludes an open edge the branch does not carry — discharge only ever admits", async () => {
 			const out = await run([
 				...BOARD,
-				[parent(CHILD), served({number: EPIC})],
+				[parent(CHILD), served({ number: EPIC })],
 				...RANGE_ENDPOINTS,
 				[ASSEMBLY_LOG, commitLog("chore(epic): assembly branch cut (#6768)")],
 			]);
 			expect(pool(out)).toEqual([]);
-			expect(excluded(out)).toEqual({blocked: 1});
+			expect(excluded(out)).toEqual({ blocked: 1 });
 			expect(out.stderr.join("\n")).toContain(`#${CHILD} is blocked by #${BLOCKER}`);
 		});
 
 		it("keeps the board's state when the assembly branch cannot be read", async () => {
 			const out = await run([
 				...BOARD,
-				[parent(CHILD), served({number: EPIC})],
+				[parent(CHILD), served({ number: EPIC })],
 				[ASSEMBLY, errOut(`fatal: ambiguous argument 'epic/${EPIC}'`)],
 			]);
 			expect(pool(out)).toEqual([]);
-			expect(excluded(out)).toEqual({blocked: 1});
+			expect(excluded(out)).toEqual({ blocked: 1 });
 			expect(out.stderr.join("\n")).toContain(`cannot read epic/${EPIC} in this tree`);
 		});
 
 		it("leaves a parentless candidate exactly as the board read it — no branch is derivable", async () => {
 			const out = await run([...BOARD, [parent(CHILD), NOT_FOUND]]);
 			expect(pool(out)).toEqual([]);
-			expect(excluded(out)).toEqual({blocked: 1});
+			expect(excluded(out)).toEqual({ blocked: 1 });
 			expect(out.stderr.join("\n")).not.toContain("assembly branch");
 		});
 
 		it("excludes a candidate whose parent could not be read — an unread parent is never an admission", async () => {
 			const out = await run([...BOARD, [parent(CHILD), GATEWAY]]);
 			expect(pool(out)).toEqual([]);
-			expect(excluded(out)).toEqual({unreadable: 1});
+			expect(excluded(out)).toEqual({ unreadable: 1 });
 			expect(out.stderr.join("\n")).toContain(`the parent of #${CHILD} could not be read`);
 		});
 
@@ -610,17 +610,17 @@ describe("runPick — the blocked_by graph", () => {
 				[
 					bucket("p0"),
 					candidatePage(
-						{number: CHILD, labels: [...TRIAGED, "p0"]},
-						{number: SECOND, labels: [...TRIAGED, "p0"]},
+						{ number: CHILD, labels: [...TRIAGED, "p0"] },
+						{ number: SECOND, labels: [...TRIAGED, "p0"] },
 					),
 				],
 				[bucket("p1"), EMPTY],
 				[bucket("p2"), EMPTY],
 				[edges(CHILD), blockedBy(BLOCKER)],
 				[edges(SECOND), blockedBy(BLOCKER)],
-				[blocker(BLOCKER), issue({number: BLOCKER, state: "open"})],
-				[parent(CHILD), served({number: EPIC})],
-				[parent(SECOND), served({number: EPIC})],
+				[blocker(BLOCKER), issue({ number: BLOCKER, state: "open" })],
+				[parent(CHILD), served({ number: EPIC })],
+				[parent(SECOND), served({ number: EPIC })],
 				...RANGE_ENDPOINTS,
 				[ASSEMBLY_LOG, commitLog("chore(epic): assembly branch cut (#6768)")],
 				NO_BLOCKERS,
@@ -629,7 +629,7 @@ describe("runPick — the blocked_by graph", () => {
 			const out = await Effect.runPromise(
 				Effect.provide(runPick(options), Layer.merge(seams.layer, NO_CONFIG.layer)),
 			);
-			expect(excluded(out)).toEqual({blocked: 2});
+			expect(excluded(out)).toEqual({ blocked: 2 });
 			expect(seams.calls.filter((line) => /rev-parse --verify/.test(line))).toHaveLength(2);
 			expect(seams.requests.filter((line) => TRUNK.test(line))).toHaveLength(1);
 		});
@@ -637,7 +637,7 @@ describe("runPick — the blocked_by graph", () => {
 		/** The cost fence: an all-clear pool pays for neither the parent resolve nor the branch read. */
 		it("resolves no parent and reads no branch for a pool whose candidates are all clear", async () => {
 			const seams = fakeSeams([
-				[bucket("p0"), candidatePage({number: CHILD, labels: [...TRIAGED, "p0"]})],
+				[bucket("p0"), candidatePage({ number: CHILD, labels: [...TRIAGED, "p0"] })],
 				[bucket("p1"), EMPTY],
 				[bucket("p2"), EMPTY],
 				NO_BLOCKERS,
@@ -658,8 +658,8 @@ describe("runPick — the blocked_by graph", () => {
 			[
 				bucket("p0"),
 				candidatePage(
-					{number: 500, labels: ["status:triaged", "type:bug", "p0"]},
-					{number: 501, labels: [...TRIAGED, "p0"], body: REPORT_BODY},
+					{ number: 500, labels: ["status:triaged", "type:bug", "p0"] },
+					{ number: 501, labels: [...TRIAGED, "p0"], body: REPORT_BODY },
 				),
 			],
 			[bucket("p1"), EMPTY],
@@ -684,23 +684,23 @@ describe("runPick — the early stop", () => {
 	const EDGE_READ = /dependencies\/blocked_by/;
 
 	const agentReady = (priority: string, numbers: ReadonlyArray<number>) =>
-		candidatePage(...numbers.map((number) => ({number, labels: [...TRIAGED, priority]})));
+		candidatePage(...numbers.map((number) => ({ number, labels: [...TRIAGED, priority] })));
 
 	const range = (from: number, count: number) =>
-		Array.from({length: count}, (_, index) => from + index);
+		Array.from({ length: count }, (_, index) => from + index);
 
 	const runCounting = (script: ReadonlyArray<Scripted>, limit: number) =>
 		Effect.gen(function* () {
 			const seams = fakeSeams([...script, NO_BLOCKERS, NO_TABLE]);
 			const out = yield* Effect.provide(
-				runPick({...options, limit}),
+				runPick({ ...options, limit }),
 				Layer.merge(seams.layer, NO_CONFIG.layer),
 			);
-			return {out, requests: seams.requests};
+			return { out, requests: seams.requests };
 		}).pipe(Effect.runPromise);
 
 	it("reads exactly --limit edge lists over 100 admitted, unblocked candidates", async () => {
-		const {out, requests} = await runCounting(
+		const { out, requests } = await runCounting(
 			[
 				[bucket("p0"), EMPTY],
 				[bucket("p1"), agentReady("p1", range(1000, 60))],
@@ -717,20 +717,20 @@ describe("runPick — the early stop", () => {
 	});
 
 	it("excludes blocked and unreadable candidates ahead of the stop and keeps walking to fill --limit", async () => {
-		const {out, requests} = await runCounting(
+		const { out, requests } = await runCounting(
 			[
 				[bucket("p0"), agentReady("p0", range(1, 10))],
 				[bucket("p1"), EMPTY],
 				[bucket("p2"), EMPTY],
 				[edges(1), blockedBy(210)],
-				[/^GET \S+\/repos\/o\/r\/issues\/210$/, issue({number: 210, state: "open"})],
+				[/^GET \S+\/repos\/o\/r\/issues\/210$/, issue({ number: 210, state: "open" })],
 				[/^GET \S+\/repos\/o\/r\/issues\/1\/parent$/, NOT_FOUND],
 				[edges(2), GATEWAY],
 			],
 			3,
 		);
 		expect(pool(out).map((row) => row.number)).toEqual([3, 4, 5]);
-		expect(excluded(out)).toEqual({blocked: 1, unreadable: 1});
+		expect(excluded(out)).toEqual({ blocked: 1, unreadable: 1 });
 		expect(JSON.parse(out.stdout).unread).toBe(5);
 		expect(requests.filter((line) => EDGE_READ.test(line))).toHaveLength(5);
 		expect(out.stderr.join("\n")).toContain("#1 is blocked by #210");
@@ -738,7 +738,7 @@ describe("runPick — the early stop", () => {
 	});
 
 	it("counts nothing unread when the ranked pool runs out before --limit fills", async () => {
-		const {out} = await runCounting(
+		const { out } = await runCounting(
 			[
 				[bucket("p0"), agentReady("p0", [1, 2])],
 				[bucket("p1"), EMPTY],
@@ -760,8 +760,8 @@ describe("runPick — bets first", () => {
 	const THIS_TABLE = "2026-09-28";
 	const LAST_TABLE = "2026-09-21";
 
-	const STAGE = {proposed: "st-proposed", bet: "st-bet"};
-	const SECTION = {Tails: "se-tails", Customers: "se-customers", "New bets": "se-new"};
+	const STAGE = { proposed: "st-proposed", bet: "st-bet" };
+	const SECTION = { Tails: "se-tails", Customers: "se-customers", "New bets": "se-new" };
 
 	/** The table project `table setup` would leave, holding the given rows. */
 	const table = (
@@ -800,16 +800,16 @@ describe("runPick — bets first", () => {
 						description: "",
 					})),
 				},
-				{id: "F_day", name: "Table day", dataType: "DATE"},
+				{ id: "F_day", name: "Table day", dataType: "DATE" },
 			],
 			items: rows.map((row, index) => ({
 				id: `PVTI_${index}`,
 				contentId: `I_${row.issue}`,
 				number: row.issue,
 				values: {
-					F_stage: {singleSelectOptionId: STAGE[row.stage]},
-					F_section: {singleSelectOptionId: SECTION[row.section]},
-					F_day: {date: row.tableDay ?? THIS_TABLE},
+					F_stage: { singleSelectOptionId: STAGE[row.stage] },
+					F_section: { singleSelectOptionId: SECTION[row.section] },
+					F_day: { date: row.tableDay ?? THIS_TABLE },
 				},
 			})),
 			...over,
@@ -846,7 +846,7 @@ describe("runPick — bets first", () => {
 	) =>
 		Effect.runPromise(
 			Effect.provide(
-				runPick({...options, limit}),
+				runPick({ ...options, limit }),
 				Layer.mergeAll(
 					fakeShell([]).layer,
 					routed(fakeHttp([...script, NO_BLOCKERS]).layer, graph),
@@ -860,7 +860,7 @@ describe("runPick — bets first", () => {
 		github: FakeProjectsOptions,
 		fs = NO_CONFIG,
 		limit = options.limit,
-	) => runWithGraph(script, fakeProjects({repo: "o/r", ...github}).layer, fs, limit);
+	) => runWithGraph(script, fakeProjects({ repo: "o/r", ...github }).layer, fs, limit);
 
 	/** A Projects API that answers every read with GitHub's secondary rate limit. */
 	const RATE_LIMITED = Layer.succeed(HttpClient.HttpClient)(
@@ -868,9 +868,9 @@ describe("runPick — bets first", () => {
 			Effect.succeed(
 				HttpClientResponse.fromWeb(
 					request,
-					new Response(JSON.stringify({message: "You have exceeded a secondary rate limit."}), {
+					new Response(JSON.stringify({ message: "You have exceeded a secondary rate limit." }), {
 						status: 403,
-						headers: {"content-type": "application/json"},
+						headers: { "content-type": "application/json" },
 					}),
 				),
 			),
@@ -879,18 +879,24 @@ describe("runPick — bets first", () => {
 
 	const buckets = (p0: ReadonlyArray<number>, p2: ReadonlyArray<number>) =>
 		[
-			[bucket("p0"), candidatePage(...p0.map((number) => ({number, labels: [...TRIAGED, "p0"]})))],
+			[
+				bucket("p0"),
+				candidatePage(...p0.map((number) => ({ number, labels: [...TRIAGED, "p0"] }))),
+			],
 			[bucket("p1"), EMPTY],
-			[bucket("p2"), candidatePage(...p2.map((number) => ({number, labels: [...TRIAGED, "p2"]})))],
+			[
+				bucket("p2"),
+				candidatePage(...p2.map((number) => ({ number, labels: [...TRIAGED, "p2"] }))),
+			],
 		] as const;
 
 	it("offers a bet ahead of any un-bet issue, whatever its priority", async () => {
 		const out = await runWithTable(buckets([500, 400], [300]), {
-			projects: [table([{issue: 300, stage: "bet", section: "New bets"}])],
+			projects: [table([{ issue: 300, stage: "bet", section: "New bets" }])],
 		});
 		expect(out.code).toBe(0);
 		expect(
-			JSON.parse(out.stdout).pool.map((row: {number: number; bet: boolean}) => [
+			JSON.parse(out.stdout).pool.map((row: { number: number; bet: boolean }) => [
 				row.number,
 				row.bet,
 			]),
@@ -915,9 +921,9 @@ describe("runPick — bets first", () => {
 		const out = await runWithTable(buckets([500], [301, 302]), {
 			projects: [
 				table([
-					{issue: 500, stage: "bet", section: "New bets"},
-					{issue: 301, stage: "bet", section: "Customers"},
-					{issue: 302, stage: "bet", section: "Tails"},
+					{ issue: 500, stage: "bet", section: "New bets" },
+					{ issue: 301, stage: "bet", section: "Customers" },
+					{ issue: 302, stage: "bet", section: "Tails" },
 				]),
 			],
 		});
@@ -928,34 +934,34 @@ describe("runPick — bets first", () => {
 		const out = await runWithTable(buckets([500], [301, 302]), {
 			projects: [
 				table([
-					{issue: 301, stage: "proposed", section: "Tails"},
-					{issue: 302, stage: "bet", section: "Tails", tableDay: LAST_TABLE},
+					{ issue: 301, stage: "proposed", section: "Tails" },
+					{ issue: 302, stage: "bet", section: "Tails", tableDay: LAST_TABLE },
 				]),
 			],
 		});
 		expect(pool(out).map((row) => row.number)).toEqual([500, 301, 302]);
-		expect(JSON.parse(out.stdout).bets).toMatchObject({bets: 0, inPool: 0});
+		expect(JSON.parse(out.stdout).bets).toMatchObject({ bets: 0, inPool: 0 });
 	});
 
 	it("never offers a bet the admission test refused — bets reorder, they never admit", async () => {
 		const out = await runWithTable(
 			[
-				[bucket("p0"), candidatePage({number: 500, labels: [...TRIAGED, "p0"]})],
+				[bucket("p0"), candidatePage({ number: 500, labels: [...TRIAGED, "p0"] })],
 				[bucket("p1"), EMPTY],
 				[
 					bucket("p2"),
-					candidatePage({number: 300, labels: ["status:triaged", "ready-for:human", "p2"]}),
+					candidatePage({ number: 300, labels: ["status:triaged", "ready-for:human", "p2"] }),
 				],
 			],
-			{projects: [table([{issue: 300, stage: "bet", section: "Tails"}])]},
+			{ projects: [table([{ issue: 300, stage: "bet", section: "Tails" }])] },
 		);
 		expect(pool(out).map((row) => row.number)).toEqual([500]);
-		expect(JSON.parse(out.stdout).bets).toMatchObject({bets: 1, inPool: 0});
+		expect(JSON.parse(out.stdout).bets).toMatchObject({ bets: 1, inPool: 0 });
 	});
 
 	it("keeps its own order when the token lacks the project scope and no table is declared", async () => {
 		const out = await runWithTable(buckets([500], [300]), {
-			projects: [table([{issue: 300, stage: "bet", section: "Tails"}])],
+			projects: [table([{ issue: 300, stage: "bet", section: "Tails" }])],
 			insufficientScopes: true,
 		});
 		expect(out.code).toBe(0);
@@ -968,7 +974,7 @@ describe("runPick — bets first", () => {
 
 		expect(out.code).toBe(0);
 		expect(pool(out).map((row) => row.number)).toEqual([500, 300]);
-		expect(JSON.parse(out.stdout).bets).toEqual({state: "none"});
+		expect(JSON.parse(out.stdout).bets).toEqual({ state: "none" });
 		expect(out.stderr.join("\n")).toContain("build pick: bets: no table read — the table project:");
 	});
 
@@ -976,7 +982,7 @@ describe("runPick — bets first", () => {
 		const out = await runWithGraph(
 			buckets([500], [300]),
 			RATE_LIMITED,
-			fakeFs({files: {"/repo/.fabrika.jsonc": JSON.stringify({table: {stuckDays: 4}})}}),
+			fakeFs({ files: { "/repo/.fabrika.jsonc": JSON.stringify({ table: { stuckDays: 4 } }) } }),
 		);
 
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -986,12 +992,15 @@ describe("runPick — bets first", () => {
 	it("keeps its own order on a token without the project scope, even with a table block declared", async () => {
 		const out = await runWithTable(
 			buckets([500], [300]),
-			{projects: [table([{issue: 300, stage: "bet", section: "Tails"}])], insufficientScopes: true},
-			fakeFs({files: {"/repo/.fabrika.jsonc": JSON.stringify({table: {stuckDays: 4}})}}),
+			{
+				projects: [table([{ issue: 300, stage: "bet", section: "Tails" }])],
+				insufficientScopes: true,
+			},
+			fakeFs({ files: { "/repo/.fabrika.jsonc": JSON.stringify({ table: { stuckDays: 4 } }) } }),
 		);
 		expect(out.code).toBe(0);
 		expect(pool(out).map((row) => row.number)).toEqual([500, 300]);
-		expect(JSON.parse(out.stdout).bets).toEqual({state: "none"});
+		expect(JSON.parse(out.stdout).bets).toEqual({ state: "none" });
 		const scopeLines = out.stderr.filter((line) => line.includes(PROJECT_SCOPE_FIX));
 		expect(scopeLines).toHaveLength(1);
 		expect(scopeLines[0]).toContain("lacks the `project` scope");
@@ -1005,8 +1014,8 @@ describe("runPick — bets first", () => {
 			buckets([500], [300]),
 			{
 				projects: [
-					table([{issue: 500, stage: "bet", section: "Tails"}]),
-					table([{issue: 300, stage: "bet", section: "Tails"}], {
+					table([{ issue: 500, stage: "bet", section: "Tails" }]),
+					table([{ issue: 300, stage: "bet", section: "Tails" }], {
 						id: "PVT_12",
 						number: 12,
 						title: "our bets",
@@ -1014,10 +1023,12 @@ describe("runPick — bets first", () => {
 					}),
 				],
 			},
-			fakeFs({files: {"/repo/.fabrika.jsonc": JSON.stringify({table: {project: {number: 12}}})}}),
+			fakeFs({
+				files: { "/repo/.fabrika.jsonc": JSON.stringify({ table: { project: { number: 12 } } }) },
+			}),
 		);
 		expect(pool(out).map((row) => row.number)).toEqual([300, 500]);
-		expect(JSON.parse(out.stdout).bets).toMatchObject({project: "o#12"});
+		expect(JSON.parse(out.stdout).bets).toMatchObject({ project: "o#12" });
 	});
 
 	/**
@@ -1027,28 +1038,28 @@ describe("runPick — bets first", () => {
 	 */
 	describe("the early stop prints the pool a full read would", () => {
 		const BOARD: ReadonlyArray<readonly [RegExp, HttpReply]> = [
-			[bucket("p0"), candidatePage({number: 500, labels: [...TRIAGED, "p0"]})],
+			[bucket("p0"), candidatePage({ number: 500, labels: [...TRIAGED, "p0"] })],
 			[
 				bucket("p1"),
 				candidatePage(
-					{number: 400, labels: [...TRIAGED, "p1"], milestone: 44},
-					{number: 401, labels: [...TRIAGED, "p1"], milestone: 39},
-					{number: 402, labels: [...TRIAGED, "p1"], milestone: 39},
+					{ number: 400, labels: [...TRIAGED, "p1"], milestone: 44 },
+					{ number: 401, labels: [...TRIAGED, "p1"], milestone: 39 },
+					{ number: 402, labels: [...TRIAGED, "p1"], milestone: 39 },
 				),
 			],
 			[
 				bucket("p2"),
 				candidatePage(
-					{number: 300, labels: [...TRIAGED, "p2"]},
-					{number: 301, labels: [...TRIAGED, "p2"]},
+					{ number: 300, labels: [...TRIAGED, "p2"] },
+					{ number: 301, labels: [...TRIAGED, "p2"] },
 				),
 			],
 			[/^GET \S+\/repos\/o\/r\/issues\/402\/dependencies\/blocked_by/, blockedBy(210)],
-			[/^GET \S+\/repos\/o\/r\/issues\/210$/, issue({number: 210, state: "open"})],
+			[/^GET \S+\/repos\/o\/r\/issues\/210$/, issue({ number: 210, state: "open" })],
 			[/^GET \S+\/repos\/o\/r\/issues\/402\/parent$/, NOT_FOUND],
 		];
 		const PROJECTS = {
-			projects: [table([{issue: 300, stage: "bet" as const, section: "Tails" as const}])],
+			projects: [table([{ issue: 300, stage: "bet" as const, section: "Tails" as const }])],
 		};
 		const FULL = [300, 500, 401, 400, 301];
 
@@ -1056,15 +1067,16 @@ describe("runPick — bets first", () => {
 			const out = await runWithTable(BOARD, PROJECTS);
 			expect(pool(out).map((row) => row.number)).toEqual(FULL);
 			expect(JSON.parse(out.stdout).unread).toBe(0);
-			expect(excluded(out)).toEqual({blocked: 1});
+			expect(excluded(out)).toEqual({ blocked: 1 });
 		});
 
-		it.each(
-			FULL.map((_, index) => index + 1),
-		)("prints the full-read pool's first %i at that --limit", async (limit) => {
-			const out = await runWithTable(BOARD, PROJECTS, NO_CONFIG, limit);
-			expect(pool(out).map((row) => row.number)).toEqual(FULL.slice(0, limit));
-		});
+		it.each(FULL.map((_, index) => index + 1))(
+			"prints the full-read pool's first %i at that --limit",
+			async (limit) => {
+				const out = await runWithTable(BOARD, PROJECTS, NO_CONFIG, limit);
+				expect(pool(out).map((row) => row.number)).toEqual(FULL.slice(0, limit));
+			},
+		);
 	});
 
 	it("counts in inPool only the bets whose graph was read and survived", async () => {
@@ -1073,8 +1085,8 @@ describe("runPick — bets first", () => {
 			{
 				projects: [
 					table([
-						{issue: 300, stage: "bet", section: "Tails"},
-						{issue: 301, stage: "bet", section: "Tails"},
+						{ issue: 300, stage: "bet", section: "Tails" },
+						{ issue: 301, stage: "bet", section: "Tails" },
 					]),
 				],
 			},
@@ -1083,7 +1095,7 @@ describe("runPick — bets first", () => {
 		);
 		expect(pool(out).map((row) => row.number)).toEqual([300]);
 		expect(JSON.parse(out.stdout).unread).toBe(2);
-		expect(JSON.parse(out.stdout).bets).toMatchObject({bets: 2, inPool: 1});
+		expect(JSON.parse(out.stdout).bets).toMatchObject({ bets: 2, inPool: 1 });
 		expect(out.stderr.at(-1)).toBe(
 			`build pick: bets: 2 bet(s) at the ${THIS_TABLE} table on project o#7, 1 in the pool and first in it.`,
 		);

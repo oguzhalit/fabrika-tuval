@@ -39,21 +39,21 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9322#issuecomment-5703498377
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {isRecord, parseJson} from "../io/json.ts";
-import {listPullFiles} from "../io/pulls.ts";
-import {classConfigOfPull} from "../review/class-config.ts";
-import {touchesGovernanceRoot} from "../review/classes.ts";
-import {platformCapLine, platformFileSet} from "../review/local-file-set.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { isRecord, parseJson } from "../io/json.ts";
+import { listPullFiles } from "../io/pulls.ts";
+import { classConfigOfPull } from "../review/class-config.ts";
+import { touchesGovernanceRoot } from "../review/classes.ts";
+import { platformCapLine, platformFileSet } from "../review/local-file-set.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	GOVERNANCE_FLOOR_UNMET,
 	INCOMPLETE_SCAN,
 	PRECONDITION_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {runGate} from "./gate-verb.ts";
+import { runGate } from "./gate-verb.ts";
 import {
 	badNumber,
 	inspectedSha,
@@ -129,9 +129,9 @@ export type FloorResolution =
 			readonly stderr: ReadonlyArray<string>;
 	  }
 	/** Nothing was proven. The refusal carries its own code and its own reason — UNKNOWN, never n/a. */
-	| {readonly _tag: "Unresolved"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Unresolved"; readonly outcome: VerbOutcome };
 
-const unresolved = (outcome: VerbOutcome): FloorResolution => ({_tag: "Unresolved", outcome});
+const unresolved = (outcome: VerbOutcome): FloorResolution => ({ _tag: "Unresolved", outcome });
 
 /** The floor itself, answered once, for every interface that seats it. */
 export const resolveFloor = (
@@ -142,7 +142,7 @@ export const resolveFloor = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
-		const {pr} = options;
+		const { pr } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return unresolved(bad);
 		const bound = inspectedSha(VERB, options.sha);
@@ -247,7 +247,7 @@ export const resolveFloor = (
 		});
 		const relayed = [...scanned, ...gated.stderr];
 		if (gated.code !== 0) {
-			return unresolved({...gated, stderr: relayed});
+			return unresolved({ ...gated, stderr: relayed });
 		}
 
 		const state = governanceState(gated.stdout);
@@ -260,7 +260,7 @@ export const resolveFloor = (
 				),
 			);
 		}
-		return {_tag: "Bound", state, sha: bound, scanned: changed.length, stderr: relayed};
+		return { _tag: "Bound", state, sha: bound, scanned: changed.length, stderr: relayed };
 	});
 
 /** Why a blocking state blocks, in the words the person reading the check needs. */

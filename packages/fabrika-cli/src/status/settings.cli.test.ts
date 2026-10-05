@@ -7,13 +7,13 @@
  * no-file and unreadable arms read a real directory in-process in `./settings-verb.unit.test.ts`
  * (`.patterns/subprocess-test-budget.md`).
  */
-import {execFileSync} from "node:child_process";
-import {mkdtempSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {afterAll, beforeAll, describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
 
 const BIN = fileURLToPath(new URL("../bin.ts", import.meta.url));
 
@@ -28,18 +28,22 @@ const settings = (root: string): Run => {
 	try {
 		const stdout = execFileSync(process.execPath, [BIN, "status", "settings", "--root", root], {
 			encoding: "utf8",
-			env: {...process.env, FABRIKA_SKIP_INFER: "1"},
+			env: { ...process.env, FABRIKA_SKIP_INFER: "1" },
 			input: "",
 			stdio: ["pipe", "pipe", "pipe"],
 		});
-		return {code: 0, stdout, stderr: ""};
+		return { code: 0, stdout, stderr: "" };
 	} catch (err) {
-		const failure = err as {status?: number; stdout?: string; stderr?: string};
-		return {code: failure.status ?? -1, stdout: failure.stdout ?? "", stderr: failure.stderr ?? ""};
+		const failure = err as { status?: number; stdout?: string; stderr?: string };
+		return {
+			code: failure.status ?? -1,
+			stdout: failure.stdout ?? "",
+			stderr: failure.stderr ?? "",
+		};
 	}
 };
 
-describe("fabrika status settings, end to end", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
+describe("fabrika status settings, end to end", { timeout: SUBPROCESS_TEST_TIMEOUT_MS }, () => {
 	let root = "";
 
 	beforeAll(() => {
@@ -55,7 +59,7 @@ describe("fabrika status settings, end to end", {timeout: SUBPROCESS_TEST_TIMEOU
 	});
 
 	afterAll(() => {
-		if (root !== "") rmSync(root, {recursive: true, force: true});
+		if (root !== "") rmSync(root, { recursive: true, force: true });
 	});
 
 	it("names the machine-local file on a key that machine declared", () => {

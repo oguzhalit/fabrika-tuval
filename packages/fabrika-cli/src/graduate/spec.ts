@@ -20,7 +20,7 @@
  * one caller that is not intake.
  */
 
-import type {DecisionRow, Provenance} from "./trail.ts";
+import type { DecisionRow, Provenance } from "./trail.ts";
 
 /** The three sections the caller authors, in the one order a spec body may carry them. */
 export const AUTHORED_SECTIONS: ReadonlyArray<string> = [
@@ -41,9 +41,9 @@ export const SPEC_SECTIONS: ReadonlyArray<string> = [
 ];
 
 export type SectionProblem =
-	| {readonly _tag: "Missing"; readonly heading: string}
-	| {readonly _tag: "Empty"; readonly heading: string}
-	| {readonly _tag: "OutOfOrder"; readonly heading: string; readonly after: string};
+	| { readonly _tag: "Missing"; readonly heading: string }
+	| { readonly _tag: "Empty"; readonly heading: string }
+	| { readonly _tag: "OutOfOrder"; readonly heading: string; readonly after: string };
 
 interface Seen {
 	readonly heading: string;
@@ -52,13 +52,13 @@ interface Seen {
 
 /** The `##` sections of a markdown body, in the order they appear, with their content. */
 export const sectionsOf = (body: string): ReadonlyArray<Seen> => {
-	const seen: {heading: string; content: string[]}[] = [];
+	const seen: { heading: string; content: string[] }[] = [];
 	for (const line of body.split("\n")) {
 		const matched = /^##\s+(.*?)\s*$/.exec(line);
-		if (matched?.[1] !== undefined) seen.push({heading: `## ${matched[1]}`, content: []});
+		if (matched?.[1] !== undefined) seen.push({ heading: `## ${matched[1]}`, content: [] });
 		else seen.at(-1)?.content.push(line);
 	}
-	return seen.map((section) => ({heading: section.heading, content: section.content.join("\n")}));
+	return seen.map((section) => ({ heading: section.heading, content: section.content.join("\n") }));
 };
 
 /**
@@ -75,7 +75,7 @@ export const checkSections = (
 	const headings = seen.map((section) => section.heading);
 
 	for (const heading of required) {
-		if (!headings.includes(heading)) return {_tag: "Missing", heading};
+		if (!headings.includes(heading)) return { _tag: "Missing", heading };
 	}
 
 	const ordered = headings.filter((heading) => required.includes(heading));
@@ -84,20 +84,20 @@ export const checkSections = (
 		const current = ordered[index];
 		if (previous === undefined || current === undefined) continue;
 		if (required.indexOf(current) < required.indexOf(previous)) {
-			return {_tag: "OutOfOrder", heading: current, after: previous};
+			return { _tag: "OutOfOrder", heading: current, after: previous };
 		}
 	}
 
 	for (const heading of required) {
 		const section = seen.find((row) => row.heading === heading);
-		if (section === undefined || section.content.trim() === "") return {_tag: "Empty", heading};
+		if (section === undefined || section.content.trim() === "") return { _tag: "Empty", heading };
 	}
 	return null;
 };
 
 export type Unplaced =
-	| {readonly _tag: "Preamble"}
-	| {readonly _tag: "Heading"; readonly heading: string};
+	| { readonly _tag: "Preamble" }
+	| { readonly _tag: "Heading"; readonly heading: string };
 
 /**
  * The first authored bytes `composeSpec` would not carry into the spec, or `null`.
@@ -110,9 +110,9 @@ export const unplacedContent = (body: string, allowed: ReadonlyArray<string>): U
 	const lines = body.split("\n");
 	const firstHeading = lines.findIndex((line) => /^##\s+/.test(line));
 	const preamble = (firstHeading === -1 ? lines : lines.slice(0, firstHeading)).join("\n");
-	if (preamble.trim() !== "") return {_tag: "Preamble"};
+	if (preamble.trim() !== "") return { _tag: "Preamble" };
 	const stray = sectionsOf(body).find((section) => !allowed.includes(section.heading));
-	return stray === undefined ? null : {_tag: "Heading", heading: stray.heading};
+	return stray === undefined ? null : { _tag: "Heading", heading: stray.heading };
 };
 
 /** Whether the authored body reaches for the section this group owns. */
@@ -141,12 +141,12 @@ export const renderDecisions = (rows: ReadonlyArray<DecisionRow>): string =>
 const DECISION_LINE = /^- (.+) — \*\*(ruled|established)\*\* · (.+)$/;
 
 export type DecisionLineRead =
-	| {readonly _tag: "Decision"; readonly value: DecisionRow}
-	| {readonly _tag: "Unparseable"; readonly line: string};
+	| { readonly _tag: "Decision"; readonly value: DecisionRow }
+	| { readonly _tag: "Unparseable"; readonly line: string };
 
 export const readDecisionLine = (line: string): DecisionLineRead => {
 	const matched = DECISION_LINE.exec(line.trimEnd());
-	if (matched === null) return {_tag: "Unparseable", line};
+	if (matched === null) return { _tag: "Unparseable", line };
 	return {
 		_tag: "Decision",
 		value: {
@@ -158,8 +158,8 @@ export const readDecisionLine = (line: string): DecisionLineRead => {
 };
 
 export type DecisionsSectionRead =
-	| {readonly _tag: "Decisions"; readonly value: ReadonlyArray<DecisionRow>}
-	| {readonly _tag: "Unparseable"; readonly line: string};
+	| { readonly _tag: "Decisions"; readonly value: ReadonlyArray<DecisionRow> }
+	| { readonly _tag: "Unparseable"; readonly line: string };
 
 /**
  * Every decision the spec body states, read back off its own rendered section.
@@ -176,7 +176,7 @@ export const readDecisionsSection = (body: string): DecisionsSectionRead => {
 		if (read._tag === "Unparseable") return read;
 		rows.push(read.value);
 	}
-	return {_tag: "Decisions", value: rows};
+	return { _tag: "Decisions", value: rows };
 };
 
 /** The composed four-section body: the authored sections with `## Decisions` spliced into place. */

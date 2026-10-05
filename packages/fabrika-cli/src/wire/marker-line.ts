@@ -9,7 +9,7 @@
  * both readers would still round-trip their own bytes while disagreeing about what a human wrote.
  */
 
-import type {WireAbsent, WireMalformed} from "./format.ts";
+import type { WireAbsent, WireMalformed } from "./format.ts";
 
 declare const HEAD_SHA: unique symbol;
 declare const CLAUSE: unique symbol;
@@ -22,10 +22,10 @@ declare const CONTENT_DIGEST: unique symbol;
  * itself abbreviates to and what v1's scanner accepted; shorter is ambiguous across a real
  * repository, and an ambiguous binding is not a binding.
  */
-export type HeadSha = string & {readonly [HEAD_SHA]: true};
+export type HeadSha = string & { readonly [HEAD_SHA]: true };
 
 /** The trailing human clause. Branded for the same reason: a blank clause is not a clause. */
-export type Clause = string & {readonly [CLAUSE]: true};
+export type Clause = string & { readonly [CLAUSE]: true };
 
 /**
  * The digest of the content a verdict was formed over: exactly 12 lowercase hex.
@@ -34,7 +34,7 @@ export type Clause = string & {readonly [CLAUSE]: true};
  * that print it, whereas this value only ever comes from `../review/content-binding.ts`, so a
  * shorter-or-longer one is a drift and reads as `Malformed`, never as a value to compare loosely.
  */
-export type ContentDigest = string & {readonly [CONTENT_DIGEST]: true};
+export type ContentDigest = string & { readonly [CONTENT_DIGEST]: true };
 
 /** The reviewer's go/no-go. A third token is not a polarity — it is a drift. */
 export type Polarity = "PASS" | "FAIL";
@@ -117,12 +117,12 @@ export const malformed = (reason: string, evidence: string): WireMalformed => ({
 const firstNonBlankLine = (artifact: string): string | null =>
 	artifact.split("\n").find((line) => line.trim() !== "") ?? null;
 
-export const takeToken = (rest: string): {readonly token: string; readonly after: string} => {
+export const takeToken = (rest: string): { readonly token: string; readonly after: string } => {
 	const trimmed = rest.trimStart();
 	const end = trimmed.search(/\s/);
 	return end === -1
-		? {token: trimmed, after: ""}
-		: {token: trimmed.slice(0, end), after: trimmed.slice(end)};
+		? { token: trimmed, after: "" }
+		: { token: trimmed.slice(0, end), after: trimmed.slice(end) };
 };
 
 /** A line that opens a marker of this family: its emphasis, its namespace, and what follows. */
@@ -142,7 +142,7 @@ export type MarkerLineRead = OpenedMarkerLine | WireAbsent | WireMalformed;
 export const openMarkerLine = (artifact: string): MarkerLineRead => {
 	const line = firstNonBlankLine(artifact);
 	if (line === null) {
-		return {_tag: "Absent", reason: "the artifact holds no non-blank line to carry a marker"};
+		return { _tag: "Absent", reason: "the artifact holds no non-blank line to carry a marker" };
 	}
 	const matched = MARKER_LINE.exec(line);
 	const namespace = matched?.[2]?.toLowerCase() ?? "";
@@ -156,7 +156,7 @@ export const openMarkerLine = (artifact: string): MarkerLineRead => {
 	}
 	const evidence = `first line: "${line.trim()}"`;
 	return isGateNamespace(namespace)
-		? {_tag: "Open", evidence, emphasis: matched[1] ?? "", namespace, rest: matched[3] ?? ""}
+		? { _tag: "Open", evidence, emphasis: matched[1] ?? "", namespace, rest: matched[3] ?? "" }
 		: malformed(
 				`the gate namespace "${namespace}" is not kebab-case ${NAMESPACE_PHRASE}`,
 				evidence,

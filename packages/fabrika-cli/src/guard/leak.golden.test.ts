@@ -11,11 +11,11 @@
  * The second pin is the markdown half of {@link DOC_SELF_EXEMPT} against `.fabrika.jsonc`'s
  * `docLeakExempt` — one policy this repo declares twice, held equal here rather than in a comment.
  */
-import {readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
-import {loadGoldenPayload} from "../golden-fixture.ts";
-import {DOC_SELF_EXEMPT, MACHINE_LOCAL_PATH_PATTERNS, surfaceOf} from "./leak.ts";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import { loadGoldenPayload } from "../golden-fixture.ts";
+import { DOC_SELF_EXEMPT, MACHINE_LOCAL_PATH_PATTERNS, surfaceOf } from "./leak.ts";
 
 const FIXTURE = "../build/__fixtures__/doc-leak-patterns.golden.json";
 const REPO_CONFIG = "../../../../.fabrika.jsonc";
@@ -41,7 +41,7 @@ const declaredExempt = (): ReadonlyArray<string> => {
 		.split("\n")
 		.filter((line) => !line.trimStart().startsWith("//"))
 		.join("\n");
-	return (JSON.parse(json) as {docLeakExempt?: ReadonlyArray<string>}).docLeakExempt ?? [];
+	return (JSON.parse(json) as { docLeakExempt?: ReadonlyArray<string> }).docLeakExempt ?? [];
 };
 
 const sorted = (paths: ReadonlyArray<string>): ReadonlyArray<string> => [...paths].sort();
@@ -49,7 +49,7 @@ const sorted = (paths: ReadonlyArray<string>): ReadonlyArray<string> => [...path
 describe("the gate conforms to the pinned doc-leak vocabulary", () => {
 	it("carries the pinned path arms, in the pinned order", () => {
 		expect(
-			MACHINE_LOCAL_PATH_PATTERNS.map(({pattern}) => ({
+			MACHINE_LOCAL_PATH_PATTERNS.map(({ pattern }) => ({
 				source: pattern.source,
 				flags: pattern.flags,
 			})),

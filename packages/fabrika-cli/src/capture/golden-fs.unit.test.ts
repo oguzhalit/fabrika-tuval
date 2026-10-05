@@ -2,12 +2,12 @@
  * The golden-pointer fs boundary: a missing file is an empty pointer, a malformed
  * entry fails loud, and serialize→load round-trips with sorted, stable output.
  */
-import {mkdtempSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {assert, describe, it} from "@effect/vitest";
-import {loadGoldenPointer, serializeGoldenPointer} from "./golden-fs.ts";
-import type {GoldenPointer} from "./golden-pointer.ts";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { assert, describe, it } from "@effect/vitest";
+import { loadGoldenPointer, serializeGoldenPointer } from "./golden-fs.ts";
+import type { GoldenPointer } from "./golden-pointer.ts";
 
 const tmpFile = (name: string, contents?: string): string => {
 	const dir = mkdtempSync(join(tmpdir(), "golden-fs-"));
@@ -25,16 +25,21 @@ describe("loadGoldenPointer", () => {
 		const path = tmpFile(
 			"golden-pointer.json",
 			JSON.stringify({
-				surfaces: {"/catalog": {sha256: "a".repeat(64), blessedDate: "2026-07-14", intent: "home"}},
+				surfaces: {
+					"/catalog": { sha256: "a".repeat(64), blessedDate: "2026-07-14", intent: "home" },
+				},
 			}),
 		);
 		assert.deepStrictEqual(loadGoldenPointer(path), {
-			"/catalog": {sha256: "a".repeat(64), blessedDate: "2026-07-14", intent: "home"},
+			"/catalog": { sha256: "a".repeat(64), blessedDate: "2026-07-14", intent: "home" },
 		});
 	});
 
 	it("fails loud on a malformed entry (never a half-filled pointer a resolve mis-reads)", () => {
-		const path = tmpFile("golden-pointer.json", JSON.stringify({surfaces: {"/x": {sha256: 123}}}));
+		const path = tmpFile(
+			"golden-pointer.json",
+			JSON.stringify({ surfaces: { "/x": { sha256: 123 } } }),
+		);
 		assert.throws(() => loadGoldenPointer(path), /malformed/);
 	});
 });
@@ -42,8 +47,8 @@ describe("loadGoldenPointer", () => {
 describe("serializeGoldenPointer", () => {
 	it("sorts surface-ids and round-trips through load", () => {
 		const pointer: GoldenPointer = {
-			"/catalog:empty": {sha256: "b".repeat(64), blessedDate: "2026-07-14", intent: "empty"},
-			"/catalog": {sha256: "a".repeat(64), blessedDate: "2026-07-14", intent: "home"},
+			"/catalog:empty": { sha256: "b".repeat(64), blessedDate: "2026-07-14", intent: "empty" },
+			"/catalog": { sha256: "a".repeat(64), blessedDate: "2026-07-14", intent: "home" },
 		};
 		const serialized = serializeGoldenPointer(pointer);
 		// sorted: "/catalog" appears before "/catalog:empty"

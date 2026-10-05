@@ -1,8 +1,8 @@
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type Scripted} from "../fakes.test-support.ts";
-import {FAILED} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type Scripted } from "../fakes.test-support.ts";
+import { FAILED } from "../verb.ts";
 import {
 	anySessionCaller,
 	laneCaller,
@@ -10,7 +10,7 @@ import {
 	requireClaim,
 	resolveOwnership,
 } from "./claim.ts";
-import {CLAIM_NOT_MINE} from "./codes.ts";
+import { CLAIM_NOT_MINE } from "./codes.ts";
 import {
 	adoptMarker,
 	comments,
@@ -33,7 +33,7 @@ import {
 const COMMENTS = /GET .*\/repos\/o\/r\/issues\/4312\/comments/;
 const PERM = /GET .*\/repos\/o\/r\/collaborators\/agent\/permission/;
 
-const WRITE = served({permission: "write"});
+const WRITE = served({ permission: "write" });
 
 const run = <A>(
 	effect: Effect.Effect<A, never, ChildProcessSpawner.ChildProcessSpawner>,
@@ -48,8 +48,8 @@ const BOTH_LANES: ReadonlyArray<Scripted> = [
 	[
 		COMMENTS,
 		comments(
-			{id: 9001, body: marker("s-9f2e", LANE_UUID)},
-			{id: 9002, body: marker("s-9f2e", SIBLING_UUID)},
+			{ id: 9001, body: marker("s-9f2e", LANE_UUID) },
+			{ id: 9002, body: marker("s-9f2e", SIBLING_UUID) },
 		),
 	],
 	[PERM, WRITE],
@@ -57,7 +57,7 @@ const BOTH_LANES: ReadonlyArray<Scripted> = [
 
 describe("resolveOwnership", () => {
 	it("gives the winning marker's own lane Mine", async () => {
-		const {ownership} = await run(
+		const { ownership } = await run(
 			resolveOwnership("o/r", 4312, laneCaller("s-9f2e", NONCE, LANE_TOKEN)),
 			BOTH_LANES,
 		);
@@ -66,7 +66,7 @@ describe("resolveOwnership", () => {
 	});
 
 	it("gives the sibling lane of the SAME session Foreign, not Mine", async () => {
-		const {ownership} = await run(
+		const { ownership } = await run(
 			resolveOwnership("o/r", 4312, laneCaller("s-9f2e", SIBLING_NONCE, SIBLING_TOKEN)),
 			BOTH_LANES,
 		);
@@ -76,10 +76,10 @@ describe("resolveOwnership", () => {
 	});
 
 	it("marks a genuinely other session's win as not same-session, so no caller re-maps it to a wrong lane", async () => {
-		const {ownership} = await run(
+		const { ownership } = await run(
 			resolveOwnership("o/r", 4312, laneCaller("s-9f2e", NONCE, LANE_TOKEN)),
 			[
-				[COMMENTS, comments({id: 9001, body: marker("s-77aa", LANE_UUID)})],
+				[COMMENTS, comments({ id: 9001, body: marker("s-77aa", LANE_UUID) })],
 				[PERM, WRITE],
 			],
 		);
@@ -87,10 +87,10 @@ describe("resolveOwnership", () => {
 	});
 
 	it("still answers Mine on the one-lane-per-session path, unchanged", async () => {
-		const {ownership} = await run(
+		const { ownership } = await run(
 			resolveOwnership("o/r", 4312, laneCaller("s-9f2e", NONCE, LANE_TOKEN)),
 			[
-				[COMMENTS, comments({id: 9001, body: marker("s-9f2e", LANE_UUID)})],
+				[COMMENTS, comments({ id: 9001, body: marker("s-9f2e", LANE_UUID) })],
 				[PERM, WRITE],
 			],
 		);
@@ -98,7 +98,7 @@ describe("resolveOwnership", () => {
 	});
 
 	it("lets an AnySession caller hold any lane of its session — the namespaces that have no nonce", async () => {
-		const {ownership} = await run(
+		const { ownership } = await run(
 			resolveOwnership("o/r", 4312, anySessionCaller("s-9f2e")),
 			BOTH_LANES,
 		);
@@ -112,15 +112,15 @@ describe("resolveOwnership — the adopt fence (#7010)", () => {
 		[
 			COMMENTS,
 			comments(
-				{id: 9101, body: marker("s-gone", GONE_UUID)},
-				{id: 9102, body: adoptMarker("s-gone", "s-heir", HEIR_UUID)},
+				{ id: 9101, body: marker("s-gone", GONE_UUID) },
+				{ id: 9102, body: adoptMarker("s-gone", "s-heir", HEIR_UUID) },
 			),
 		],
 		[PERM, WRITE],
 	];
 
 	it("reads Foreign for the resumed dead lane — never Mine across one succession", async () => {
-		const {ownership} = await run(
+		const { ownership } = await run(
 			resolveOwnership("o/r", 4312, laneCaller("s-gone", GONE_NONCE, GONE_TOKEN)),
 			SUCCEEDED,
 		);
@@ -128,7 +128,7 @@ describe("resolveOwnership — the adopt fence (#7010)", () => {
 	});
 
 	it("still reads Mine for the heir the adopt names, carrying the adopt", async () => {
-		const {ownership} = await run(
+		const { ownership } = await run(
 			resolveOwnership("o/r", 4312, laneCaller("s-heir", HEIR_NONCE, HEIR_TOKEN)),
 			SUCCEEDED,
 		);
@@ -145,7 +145,7 @@ describe("resolveOwnership — the adopt fence (#7010)", () => {
 		["a sibling lane of the heir's session", laneCaller("s-heir", SIBLING_NONCE)],
 		["a third session on the heir's nonce", laneCaller("s-3rd", HEIR_NONCE)],
 	])("confers the claim on the named lane only — %s reads Foreign", async (_who, caller) => {
-		const {ownership} = await run(resolveOwnership("o/r", 4312, caller), SUCCEEDED);
+		const { ownership } = await run(resolveOwnership("o/r", 4312, caller), SUCCEEDED);
 		expect(ownership._tag).toBe("Foreign");
 		expect(ownership._tag === "Foreign" && ownership.marker.token).toBe(GONE_TOKEN);
 	});
@@ -160,15 +160,15 @@ describe("resolveOwnership — the adopt fence (#7010)", () => {
 		[
 			COMMENTS,
 			comments(
-				{id: 9102, body: adoptMarker("s-gone", "s-heir", HEIR_UUID)},
-				{id: 9101, body: marker("s-gone", GONE_UUID), createdAt: "2026-08-10T00:00:00Z"},
+				{ id: 9102, body: adoptMarker("s-gone", "s-heir", HEIR_UUID) },
+				{ id: 9101, body: marker("s-gone", GONE_UUID), createdAt: "2026-08-10T00:00:00Z" },
 			),
 		],
 		[PERM, WRITE],
 	];
 
 	it("does not fence on an adopt OLDER than the marker it would fence — it adopted some earlier claim", async () => {
-		const {ownership} = await run(
+		const { ownership } = await run(
 			resolveOwnership("o/r", 4312, laneCaller("s-gone", GONE_NONCE, GONE_TOKEN)),
 			ADOPT_PREDATES_MARKER,
 		);
@@ -192,13 +192,13 @@ describe("resolveOwnership — the adopt fence (#7010)", () => {
 	});
 
 	it("does not fence on an unauthorized adoption — the succession never legally happened", async () => {
-		const {ownership, unauthorizedAdopts} = await run(
+		const { ownership, unauthorizedAdopts } = await run(
 			resolveOwnership("o/r", 4312, laneCaller("s-gone", GONE_NONCE, GONE_TOKEN)),
 			[
 				[
 					COMMENTS,
 					comments(
-						{id: 9101, body: marker("s-gone", GONE_UUID)},
+						{ id: 9101, body: marker("s-gone", GONE_UUID) },
 						{
 							id: 9102,
 							body: adoptMarker("s-gone", "s-heir", HEIR_UUID),
@@ -207,7 +207,7 @@ describe("resolveOwnership — the adopt fence (#7010)", () => {
 					),
 				],
 				[PERM, WRITE],
-				[/GET .*\/repos\/o\/r\/collaborators\/ghost\/permission/, served({permission: "read"})],
+				[/GET .*\/repos\/o\/r\/collaborators\/ghost\/permission/, served({ permission: "read" })],
 			],
 		);
 		expect(ownership._tag).toBe("Mine");
@@ -215,13 +215,13 @@ describe("resolveOwnership — the adopt fence (#7010)", () => {
 	});
 
 	it("confers nothing on the heir an unauthorized adoption names — content is not authority", async () => {
-		const {ownership, unauthorizedAdopts} = await run(
+		const { ownership, unauthorizedAdopts } = await run(
 			resolveOwnership("o/r", 4312, laneCaller("s-heir", HEIR_NONCE, HEIR_TOKEN)),
 			[
 				[
 					COMMENTS,
 					comments(
-						{id: 9101, body: marker("s-gone", GONE_UUID)},
+						{ id: 9101, body: marker("s-gone", GONE_UUID) },
 						{
 							id: 9102,
 							body: adoptMarker("s-gone", "s-heir", HEIR_UUID),
@@ -230,7 +230,7 @@ describe("resolveOwnership — the adopt fence (#7010)", () => {
 					),
 				],
 				[PERM, WRITE],
-				[/GET .*\/repos\/o\/r\/collaborators\/ghost\/permission/, served({permission: "read"})],
+				[/GET .*\/repos\/o\/r\/collaborators\/ghost\/permission/, served({ permission: "read" })],
 			],
 		);
 		expect(ownership._tag).toBe("Foreign");
@@ -246,12 +246,12 @@ describe("resolveOwnership — the adopt fence (#7010)", () => {
 describe("resolveOwnership — a stranded adopt", () => {
 	/** The heir's adopt, with the claim it adopted no longer on the thread. */
 	const STRANDED: ReadonlyArray<Scripted> = [
-		[COMMENTS, comments({id: 9102, body: adoptMarker("s-gone", "s-heir", HEIR_UUID)})],
+		[COMMENTS, comments({ id: 9102, body: adoptMarker("s-gone", "s-heir", HEIR_UUID) })],
 		[PERM, WRITE],
 	];
 
 	it("gives the adopting lane AdoptOnly, so release has something to reach", async () => {
-		const {ownership} = await run(
+		const { ownership } = await run(
 			resolveOwnership("o/r", 4312, laneCaller("s-heir", HEIR_NONCE, HEIR_TOKEN)),
 			STRANDED,
 		);
@@ -260,7 +260,7 @@ describe("resolveOwnership — a stranded adopt", () => {
 	});
 
 	it("gives any OTHER lane Unclaimed — a stranded adopt is retractable only by the lane that wrote it", async () => {
-		const {ownership} = await run(
+		const { ownership } = await run(
 			resolveOwnership("o/r", 4312, laneCaller("s-9f2e", NONCE, LANE_TOKEN)),
 			STRANDED,
 		);
@@ -268,7 +268,7 @@ describe("resolveOwnership — a stranded adopt", () => {
 	});
 
 	it("counts an unauthorized stranded adopt and never resolves it — content is not authority", async () => {
-		const {ownership, unauthorizedAdopts} = await run(
+		const { ownership, unauthorizedAdopts } = await run(
 			resolveOwnership("o/r", 4312, laneCaller("s-heir", HEIR_NONCE, HEIR_TOKEN)),
 			[
 				[
@@ -279,7 +279,7 @@ describe("resolveOwnership — a stranded adopt", () => {
 						author: "ghost",
 					}),
 				],
-				[/GET .*\/repos\/o\/r\/collaborators\/ghost\/permission/, served({permission: "read"})],
+				[/GET .*\/repos\/o\/r\/collaborators\/ghost\/permission/, served({ permission: "read" })],
 			],
 		);
 		expect(ownership._tag).toBe("Unclaimed");
@@ -316,8 +316,8 @@ describe("requireClaim", () => {
 				[
 					COMMENTS,
 					comments(
-						{id: 9101, body: marker("s-gone", GONE_UUID)},
-						{id: 9102, body: adoptMarker("s-gone", "s-heir", HEIR_UUID)},
+						{ id: 9101, body: marker("s-gone", GONE_UUID) },
+						{ id: 9102, body: adoptMarker("s-gone", "s-heir", HEIR_UUID) },
 					),
 				],
 				[PERM, WRITE],
@@ -331,7 +331,7 @@ describe("requireClaim", () => {
 		const held = await run(
 			requireClaim("build note", "o/r", 4312, laneCaller("s-heir", HEIR_NONCE, HEIR_TOKEN)),
 			[
-				[COMMENTS, comments({id: 9102, body: adoptMarker("s-gone", "s-heir", HEIR_UUID)})],
+				[COMMENTS, comments({ id: 9102, body: adoptMarker("s-gone", "s-heir", HEIR_UUID) })],
 				[PERM, WRITE],
 			],
 		);
@@ -350,8 +350,8 @@ describe("requireClaim", () => {
 				[
 					COMMENTS,
 					comments(
-						{id: 9101, body: marker("s-gone", GONE_UUID)},
-						{id: 9102, body: adoptMarker("s-gone", "s-heir", HEIR_UUID)},
+						{ id: 9101, body: marker("s-gone", GONE_UUID) },
+						{ id: 9102, body: adoptMarker("s-gone", "s-heir", HEIR_UUID) },
 					),
 				],
 				[PERM, WRITE],

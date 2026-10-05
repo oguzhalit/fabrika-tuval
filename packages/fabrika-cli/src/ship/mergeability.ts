@@ -23,9 +23,9 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9032
  */
-import {Effect} from "effect";
-import type {Attempt, Shell} from "../io/git.ts";
-import {isIndefinite, type Mergeability, readMergeability} from "./github.ts";
+import { Effect } from "effect";
+import type { Attempt, Shell } from "../io/git.ts";
+import { isIndefinite, type Mergeability, readMergeability } from "./github.ts";
 
 /** The whole wall-clock an indefinite value gets to settle before it is called UNKNOWN. */
 export const MERGEABILITY_WINDOW_SECONDS = 60;
@@ -56,9 +56,9 @@ export const pollWaits = (windowSeconds: number): ReadonlyArray<number> => {
 };
 
 export type MergeabilityRead =
-	| {readonly _tag: "Definite"; readonly value: Mergeability}
-	| {readonly _tag: "Indefinite"; readonly polls: number; readonly seconds: number}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Definite"; readonly value: Mergeability }
+	| { readonly _tag: "Indefinite"; readonly polls: number; readonly seconds: number }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 const definiteOf = (
 	attempt: Attempt<Mergeability>,
@@ -66,10 +66,10 @@ const definiteOf = (
 	seconds: number,
 ): MergeabilityRead =>
 	attempt._tag === "Failure"
-		? {_tag: "Unreadable", reason: attempt.reason}
+		? { _tag: "Unreadable", reason: attempt.reason }
 		: isIndefinite(attempt.value)
-			? {_tag: "Indefinite", polls, seconds}
-			: {_tag: "Definite", value: attempt.value};
+			? { _tag: "Indefinite", polls, seconds }
+			: { _tag: "Definite", value: attempt.value };
 
 export const readDefiniteMergeability = (
 	repo: string,

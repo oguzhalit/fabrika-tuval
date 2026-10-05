@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import {CHANNEL_THRESHOLD, diffAgainstGolden, mergeBoxes, REGION_CAP} from "./diff.ts";
-import {solid} from "./fakes.test-support.ts";
-import type {RasterImage} from "./png.ts";
+import { describe, expect, it } from "vitest";
+import { CHANNEL_THRESHOLD, diffAgainstGolden, mergeBoxes, REGION_CAP } from "./diff.ts";
+import { solid } from "./fakes.test-support.ts";
+import type { RasterImage } from "./png.ts";
 
 const image = (width: number, height: number, pixels: Uint8Array): RasterImage => ({
 	width,
@@ -26,7 +26,7 @@ describe("diffAgainstGolden", () => {
 			image(2, 2, solid(2, 2, [0, 0, 0, 255])),
 			image(2, 3, solid(2, 3, [0, 0, 0, 255])),
 		).diff;
-		expect(diff).toEqual({magnitude: 1, regions: [], dimensionMismatch: true});
+		expect(diff).toEqual({ magnitude: 1, regions: [], dimensionMismatch: true });
 		const matched = diffAgainstGolden(
 			image(2, 2, solid(2, 2, [0, 0, 0, 255])),
 			image(2, 2, solid(2, 2, [0, 0, 0, 255])),
@@ -63,7 +63,7 @@ describe("diffAgainstGolden", () => {
 				[255, 255, 255, 255],
 			),
 		);
-		expect(diffAgainstGolden(golden, candidate).diff.regions).toEqual([{x: 0, y: 0, w: 2, h: 2}]);
+		expect(diffAgainstGolden(golden, candidate).diff.regions).toEqual([{ x: 0, y: 0, w: 2, h: 2 }]);
 	});
 });
 
@@ -71,14 +71,14 @@ describe("mergeBoxes", () => {
 	it("merges boxes within 16px and leaves distant ones alone", () => {
 		expect(
 			mergeBoxes([
-				{x: 0, y: 0, w: 10, h: 10},
-				{x: 20, y: 0, w: 10, h: 10},
+				{ x: 0, y: 0, w: 10, h: 10 },
+				{ x: 20, y: 0, w: 10, h: 10 },
 			]),
-		).toEqual([{x: 0, y: 0, w: 30, h: 10}]);
+		).toEqual([{ x: 0, y: 0, w: 30, h: 10 }]);
 		expect(
 			mergeBoxes([
-				{x: 0, y: 0, w: 10, h: 10},
-				{x: 40, y: 0, w: 10, h: 10},
+				{ x: 0, y: 0, w: 10, h: 10 },
+				{ x: 40, y: 0, w: 10, h: 10 },
 			]),
 		).toHaveLength(2);
 	});
@@ -86,11 +86,11 @@ describe("mergeBoxes", () => {
 	it("merges to a fixpoint — a merge can bring two previously-distant boxes into range", () => {
 		expect(
 			mergeBoxes([
-				{x: 0, y: 0, w: 10, h: 10},
-				{x: 60, y: 0, w: 10, h: 10},
-				{x: 25, y: 0, w: 20, h: 10},
+				{ x: 0, y: 0, w: 10, h: 10 },
+				{ x: 60, y: 0, w: 10, h: 10 },
+				{ x: 25, y: 0, w: 20, h: 10 },
 			]),
-		).toEqual([{x: 0, y: 0, w: 70, h: 10}]);
+		).toEqual([{ x: 0, y: 0, w: 70, h: 10 }]);
 	});
 });
 
@@ -98,7 +98,7 @@ describe("the region cap", () => {
 	it(`truncates at ${REGION_CAP} regions and reports how many were found`, () => {
 		// One differing pixel every 32px: further apart than the 16px merge distance, so each stays
 		// its own region and the count crosses the cap.
-		const spots = Array.from({length: REGION_CAP + 1}, (_, i) => [i * 32, 0] as const);
+		const spots = Array.from({ length: REGION_CAP + 1 }, (_, i) => [i * 32, 0] as const);
 		const width = (REGION_CAP + 1) * 32;
 		const outcome = diffAgainstGolden(
 			image(width, 1, solid(width, 1, [0, 0, 0, 255])),

@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	evidenceRecord,
 	manifest,
@@ -47,7 +47,7 @@ describe("the in-tree test compares resolved paths", () => {
 describe("the manifest is refused whole-file", () => {
 	it("round-trips a well-formed one", () => {
 		const parsed = parseManifest(manifestText());
-		expect(parsed).toEqual({_tag: "Parsed", value: manifest()});
+		expect(parsed).toEqual({ _tag: "Parsed", value: manifest() });
 	});
 
 	it.each([
@@ -61,7 +61,7 @@ describe("the manifest is refused whole-file", () => {
 	});
 
 	it("admits the provisional window, where the spike is null", () => {
-		expect(parseManifest(manifestText({spike: null}))._tag).toBe("Parsed");
+		expect(parseManifest(manifestText({ spike: null }))._tag).toBe("Parsed");
 	});
 });
 
@@ -95,7 +95,7 @@ describe("the evidence log is pinned, so its digest is reproducible", () => {
 	});
 
 	it("reads an empty log as zero records — the caller decides absent versus empty", () => {
-		expect(parseEvidence("")).toEqual({_tag: "Parsed", value: []});
+		expect(parseEvidence("")).toEqual({ _tag: "Parsed", value: [] });
 	});
 });
 

@@ -7,12 +7,12 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9460
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeFs, fakeShell, okOut} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import type {VerbOutcome} from "../verb.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeFs, fakeShell, okOut } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import type { VerbOutcome } from "../verb.ts";
 import {
 	EMPTY_STDIN,
 	ENVELOPE_UNKNOWN,
@@ -23,7 +23,7 @@ import {
 	SYNC_REFUSED,
 	WRONG_EVENT,
 } from "./codes.ts";
-import {runPluginSync} from "./plugin-sync-verb.ts";
+import { runPluginSync } from "./plugin-sync-verb.ts";
 
 const ROOT = "/src";
 const HEAD = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -40,7 +40,7 @@ const envelope = (event = "SessionStart"): string =>
 		cwd: `${ROOT}/packages/fabrika-cli`,
 	});
 
-const piped = (text: string): StdinRead => ({_tag: "Text", text});
+const piped = (text: string): StdinRead => ({ _tag: "Text", text });
 
 type Script = ReadonlyArray<readonly [RegExp, ExecResult]>;
 
@@ -67,12 +67,12 @@ const reachesThePlan = (dirty: string | null): Script => [
 /** Harness records that name two installs still copied from commits before {@link HEAD}. */
 const LAGGING_RECORDS = {
 	"/config/plugins/known_marketplaces.json": JSON.stringify({
-		local: {source: {source: "directory", path: ROOT}},
+		local: { source: { source: "directory", path: ROOT } },
 	}),
 	"/config/plugins/installed_plugins.json": JSON.stringify({
 		plugins: {
-			"fabrika@local": [{gitCommitSha: STALE}, {gitCommitSha: STALE}],
-			"toolkit@local": [{gitCommitSha: OLDER}],
+			"fabrika@local": [{ gitCommitSha: STALE }, { gitCommitSha: STALE }],
+			"toolkit@local": [{ gitCommitSha: OLDER }],
 		},
 	}),
 };
@@ -86,13 +86,13 @@ const run = (
 	} = {},
 ): Promise<VerbOutcome> => {
 	const shell = fakeShell([...(options.script ?? reachesThePlan(null))]);
-	const fs = fakeFs({files: {...options.files}});
+	const fs = fakeFs({ files: { ...options.files } });
 	return Effect.runPromise(
 		Effect.provide(
 			runPluginSync({
 				stdin: Effect.succeed(options.stdin ?? piped(envelope())),
 				dryRun: options.dryRun ?? false,
-				env: {CLAUDE_CONFIG_DIR: "/config", PATH: "/usr/bin"},
+				env: { CLAUDE_CONFIG_DIR: "/config", PATH: "/usr/bin" },
 			}),
 			Layer.mergeAll(shell.layer, fs.layer),
 		),
@@ -105,31 +105,31 @@ const paths = [
 		"stdin held nothing",
 		EMPTY_STDIN,
 		"stdin was read and held no SessionStart envelope",
-		{stdin: piped("")},
+		{ stdin: piped("") },
 	],
 	[
 		"fd 0 could not be read",
 		ENVELOPE_UNKNOWN,
 		"envelope UNKNOWN — the pipe stalled",
-		{stdin: {_tag: "Failed", reason: "the pipe stalled"} as StdinRead},
+		{ stdin: { _tag: "Failed", reason: "the pipe stalled" } as StdinRead },
 	],
 	[
 		"the bytes are not an envelope",
 		MALFORMED_ENVELOPE,
 		"not a hook envelope — not JSON",
-		{stdin: piped("{nope")},
+		{ stdin: piped("{nope") },
 	],
 	[
 		"the envelope is another event",
 		WRONG_EVENT,
 		"judges SessionStart and the envelope is PreToolUse",
-		{stdin: piped(envelope("PreToolUse"))},
+		{ stdin: piped(envelope("PreToolUse")) },
 	],
 	[
 		"the cwd names no clone",
 		GROUND_UNKNOWN,
 		"names no clone whose primary worktree this verb can read",
-		{script: [[/--git-common-dir/, errOut("fatal: not a git repository")] as const]},
+		{ script: [[/--git-common-dir/, errOut("fatal: not a git repository")] as const] },
 	],
 	[
 		"the remote could not be fetched",
@@ -154,7 +154,7 @@ const paths = [
 		"the checkout is in no state to advance",
 		SYNC_REFUSED,
 		"carries uncommitted changes",
-		{script: reachesThePlan("skills/build/SKILL.md"), files: LAGGING_RECORDS},
+		{ script: reachesThePlan("skills/build/SKILL.md"), files: LAGGING_RECORDS },
 	],
 	[
 		"the planned fast-forward failed",
@@ -191,7 +191,7 @@ describe("a plugin-sync refusal", () => {
 	});
 
 	it("carries the evidence line it quotes, behind the reason", async () => {
-		const outcome = await run({stdin: piped("{nope")});
+		const outcome = await run({ stdin: piped("{nope") });
 		expect(outcome.stderr).toHaveLength(2);
 		expect(outcome.stderr[1]).toContain("{nope");
 	});
@@ -199,7 +199,7 @@ describe("a plugin-sync refusal", () => {
 
 describe("a plugin-sync answer", () => {
 	it("still prints scope, then the plan line, then the install lines", async () => {
-		const outcome = await run({files: LAGGING_RECORDS});
+		const outcome = await run({ files: LAGGING_RECORDS });
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toBe(`advanced\tmain\t${REMOTE.slice(0, 12)}\n`);
 		expect(outcome.stderr[0]).toBe(SCOPE);
@@ -217,7 +217,7 @@ describe("a plugin-sync answer", () => {
 	 * @ruling https://github.com/kamp-us/phoenix/issues/9459#issuecomment-5745160952
 	 */
 	it("advances over dirt the incoming commits never touch", async () => {
-		const outcome = await run({script: reachesThePlan(".fabrika.jsonc")});
+		const outcome = await run({ script: reachesThePlan(".fabrika.jsonc") });
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toBe(`advanced\tmain\t${REMOTE.slice(0, 12)}\n`);
 	});

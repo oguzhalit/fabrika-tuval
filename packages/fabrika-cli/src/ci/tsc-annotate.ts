@@ -60,16 +60,16 @@ const strip = (raw: string): string => raw.replace(ANSI_SGR, "").trimEnd();
 const stripTurboPrefix = (
 	line: string,
 	members: ReadonlyArray<WorkspaceMember>,
-): {readonly text: string; readonly base: string | undefined} => {
+): { readonly text: string; readonly base: string | undefined } => {
 	for (const member of members) {
 		const marker = `${member.name}:`;
 		if (!line.startsWith(marker)) continue;
 		const rest = line.slice(marker.length);
 		const taskEnd = rest.indexOf(": ");
 		if (taskEnd === -1) continue;
-		return {text: rest.slice(taskEnd + 2), base: member.dir};
+		return { text: rest.slice(taskEnd + 2), base: member.dir };
 	}
-	return {text: line, base: undefined};
+	return { text: line, base: undefined };
 };
 
 /**
@@ -116,7 +116,7 @@ export const parseDiagnostic = (
 	context: AnnotateContext,
 	groupBase = "",
 ): TscDiagnostic | undefined => {
-	const {text, base} = stripTurboPrefix(strip(raw), context.members);
+	const { text, base } = stripTurboPrefix(strip(raw), context.members);
 	const match = PLAIN.exec(text) ?? PRETTY.exec(text);
 	if (match === null) return undefined;
 	// Every group is non-optional in both patterns, so a match populates all seven; `?? ""`

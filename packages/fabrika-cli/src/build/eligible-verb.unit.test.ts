@@ -1,10 +1,10 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeSeams, type HttpReply, okOut, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {BLOCKED, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {runEligible} from "./eligible-verb.ts";
-import {GATEWAY, GH_TOKEN_ENV, issue, NOT_FOUND, served} from "./fixtures.test-support.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeSeams, type HttpReply, okOut, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { BLOCKED, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { runEligible } from "./eligible-verb.ts";
+import { GATEWAY, GH_TOKEN_ENV, issue, NOT_FOUND, served } from "./fixtures.test-support.ts";
 
 const ISSUE = /^GET \S+\/repos\/o\/r\/issues\/4312$/;
 const PARENT = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4312\/parent$/;
@@ -13,12 +13,12 @@ const BLOCKER = (n: number) => new RegExp(`^GET \\S+/repos/o/r/issues/${n}$`);
 
 /** The `blocked_by` payload, shaped like the endpoint's rows rather than like the parser. */
 const edges = (...numbers: ReadonlyArray<number>): HttpReply =>
-	served(numbers.map((number) => ({number, state: "open"})));
+	served(numbers.map((number) => ({ number, state: "open" })));
 
 const options = {
 	number: 4312,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r", ...GH_TOKEN_ENV} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r", ...GH_TOKEN_ENV } as Record<string, string | undefined>,
 };
 
 const run = (script: ReadonlyArray<Scripted>) =>
@@ -28,7 +28,7 @@ const run = (script: ReadonlyArray<Scripted>) =>
 const runWatched = async (script: ReadonlyArray<Scripted>) => {
 	const seams = fakeSeams(script);
 	const out = await Effect.runPromise(Effect.provide(runEligible(options), seams.layer));
-	return {out, calls: seams.calls, requests: seams.requests};
+	return { out, calls: seams.calls, requests: seams.requests };
 };
 
 const ASSEMBLY = /^git rev-parse --verify --quiet epic\/4300\^\{commit\}$/;
@@ -42,7 +42,7 @@ const BASE = "0123456789abcdef0123456789abcdef01234567";
 /** The three reads that bound the assembly range, scripted together — tip, trunk, merge base. */
 const RANGE_ENDPOINTS: ReadonlyArray<Scripted> = [
 	[ASSEMBLY, okOut(`${TIP}\n`)],
-	[TRUNK, served({default_branch: "main"})],
+	[TRUNK, served({ default_branch: "main" })],
 	[MERGE_BASE, okOut(`${BASE}\n`)],
 ];
 
@@ -58,16 +58,16 @@ describe("runEligible", () => {
 			[EDGES, edges()],
 		]);
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toEqual({answer: "eligible", number: 4312, parent: null});
+		expect(JSON.parse(out.stdout)).toEqual({ answer: "eligible", number: 4312, parent: null });
 		expect(out.stderr.at(-1)).toBe("build eligible: scanned 0 blocked_by edges; standalone.");
 	});
 
 	it("answers eligible when every blocker the graph names is closed", async () => {
 		const out = await run([
 			[ISSUE, issue()],
-			[PARENT, served({number: 4300})],
+			[PARENT, served({ number: 4300 })],
 			[EDGES, edges(210)],
-			[BLOCKER(210), issue({number: 210, state: "closed"})],
+			[BLOCKER(210), issue({ number: 210, state: "closed" })],
 		]);
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).parent).toBe(4300);
@@ -80,11 +80,11 @@ describe("runEligible", () => {
 	 * for this child and answer `eligible`.
 	 */
 	it("holds back a child blocked by a native edge no prose row names", async () => {
-		const {out, requests} = await runWatched([
+		const { out, requests } = await runWatched([
 			[ISSUE, issue()],
-			[PARENT, served({number: 4300})],
+			[PARENT, served({ number: 4300 })],
 			[EDGES, edges(210)],
-			[BLOCKER(210), issue({number: 210, state: "open"})],
+			[BLOCKER(210), issue({ number: 210, state: "open" })],
 			...RANGE_ENDPOINTS,
 			[ASSEMBLY_LOG, commitLog("chore: unrelated")],
 		]);
@@ -100,7 +100,7 @@ describe("runEligible", () => {
 			[ISSUE, issue()],
 			[PARENT, NOT_FOUND],
 			[EDGES, edges(210)],
-			[BLOCKER(210), issue({number: 210, state: "open"})],
+			[BLOCKER(210), issue({ number: 210, state: "open" })],
 		]);
 		expect(out.code).toBe(BLOCKED);
 		expect(out.stderr.at(-1)).toBe("build eligible: blocked by 1 open blocked_by edge: #210.");
@@ -111,8 +111,8 @@ describe("runEligible", () => {
 			[ISSUE, issue()],
 			[PARENT, NOT_FOUND],
 			[EDGES, edges(210, 211)],
-			[BLOCKER(210), issue({number: 210, state: "open"})],
-			[BLOCKER(211), issue({number: 211, state: "open"})],
+			[BLOCKER(210), issue({ number: 210, state: "open" })],
+			[BLOCKER(211), issue({ number: 211, state: "open" })],
 		]);
 		expect(out.code).toBe(BLOCKED);
 		expect(out.stderr.at(-1)).toBe(
@@ -210,34 +210,34 @@ describe("runEligible", () => {
 		it("discharges an OPEN blocker whose work landed on the assembly branch", async () => {
 			const out = await run([
 				[ISSUE, issue()],
-				[PARENT, served({number: 4300})],
+				[PARENT, served({ number: 4300 })],
 				[EDGES, edges(210)],
-				[BLOCKER(210), issue({number: 210, state: "open"})],
+				[BLOCKER(210), issue({ number: 210, state: "open" })],
 				...RANGE_ENDPOINTS,
 				[ASSEMBLY_LOG, commitLog("feat(guide): the front door (#210)\n\nPart of #4300")],
 			]);
 			expect(out.code).toBe(0);
-			expect(JSON.parse(out.stdout)).toEqual({answer: "eligible", number: 4312, parent: 4300});
+			expect(JSON.parse(out.stdout)).toEqual({ answer: "eligible", number: 4312, parent: 4300 });
 			expect(out.stderr.at(-1)).toContain("origin/main..epic/4300 adds a commit that lands #210");
 		});
 
 		it("reads no branch at all when every blocker is already closed", async () => {
-			const {out, calls} = await runWatched([
+			const { out, calls } = await runWatched([
 				[ISSUE, issue()],
-				[PARENT, served({number: 4300})],
+				[PARENT, served({ number: 4300 })],
 				[EDGES, edges(210)],
-				[BLOCKER(210), issue({number: 210, state: "closed"})],
+				[BLOCKER(210), issue({ number: 210, state: "closed" })],
 			]);
 			expect(out.code).toBe(0);
 			expect(calls.some((line) => line.startsWith("git"))).toBe(false);
 		});
 
 		it("reads no branch for a standalone issue, which has no assembly branch", async () => {
-			const {out, calls} = await runWatched([
+			const { out, calls } = await runWatched([
 				[ISSUE, issue()],
 				[PARENT, NOT_FOUND],
 				[EDGES, edges(210)],
-				[BLOCKER(210), issue({number: 210, state: "open"})],
+				[BLOCKER(210), issue({ number: 210, state: "open" })],
 			]);
 			expect(out.code).toBe(BLOCKED);
 			expect(calls.some((line) => line.startsWith("git"))).toBe(false);
@@ -246,9 +246,9 @@ describe("runEligible", () => {
 		it("stays blocked when the branch names no commit for the open blocker", async () => {
 			const out = await run([
 				[ISSUE, issue()],
-				[PARENT, served({number: 4300})],
+				[PARENT, served({ number: 4300 })],
 				[EDGES, edges(210)],
-				[BLOCKER(210), issue({number: 210, state: "open"})],
+				[BLOCKER(210), issue({ number: 210, state: "open" })],
 				...RANGE_ENDPOINTS,
 				[ASSEMBLY_LOG, commitLog("feat(guide): some other child (#211)")],
 			]);
@@ -259,9 +259,9 @@ describe("runEligible", () => {
 		it("never discharges off a branch it could not read — absent epic/<n> stays 16", async () => {
 			const out = await run([
 				[ISSUE, issue()],
-				[PARENT, served({number: 4300})],
+				[PARENT, served({ number: 4300 })],
 				[EDGES, edges(210)],
-				[BLOCKER(210), issue({number: 210, state: "open"})],
+				[BLOCKER(210), issue({ number: 210, state: "open" })],
 				[ASSEMBLY, errOut("fatal: ambiguous argument 'epic/4300'")],
 			]);
 			expect(out.code).toBe(BLOCKED);
@@ -274,9 +274,9 @@ describe("runEligible", () => {
 		it("never discharges when the trunk to bound the range against cannot be named", async () => {
 			const out = await run([
 				[ISSUE, issue()],
-				[PARENT, served({number: 4300})],
+				[PARENT, served({ number: 4300 })],
 				[EDGES, edges(210)],
-				[BLOCKER(210), issue({number: 210, state: "open"})],
+				[BLOCKER(210), issue({ number: 210, state: "open" })],
 				[ASSEMBLY, okOut(`${TIP}\n`)],
 				[TRUNK, GATEWAY],
 			]);
@@ -287,11 +287,11 @@ describe("runEligible", () => {
 		it("never discharges when the range has no merge base with the trunk", async () => {
 			const out = await run([
 				[ISSUE, issue()],
-				[PARENT, served({number: 4300})],
+				[PARENT, served({ number: 4300 })],
 				[EDGES, edges(210)],
-				[BLOCKER(210), issue({number: 210, state: "open"})],
+				[BLOCKER(210), issue({ number: 210, state: "open" })],
 				[ASSEMBLY, okOut(`${TIP}\n`)],
-				[TRUNK, served({default_branch: "main"})],
+				[TRUNK, served({ default_branch: "main" })],
 				[MERGE_BASE, errOut("fatal: refusing to merge unrelated histories")],
 			]);
 			expect(out.code).toBe(BLOCKED);
@@ -301,7 +301,7 @@ describe("runEligible", () => {
 		it("never discharges off a log that failed — an unread blocker stays 11", async () => {
 			const out = await run([
 				[ISSUE, issue()],
-				[PARENT, served({number: 4300})],
+				[PARENT, served({ number: 4300 })],
 				[EDGES, edges(210)],
 				[BLOCKER(210), GATEWAY],
 				...RANGE_ENDPOINTS,
@@ -321,7 +321,7 @@ describe("runEligible", () => {
 			[PARENT, NOT_FOUND],
 			[EDGES, edges(210, 211)],
 			[BLOCKER(210), GATEWAY],
-			[BLOCKER(211), issue({number: 211, state: "open"})],
+			[BLOCKER(211), issue({ number: 211, state: "open" })],
 		]);
 		expect(out.code).toBe(BLOCKED);
 		expect(out.stderr.at(-1)).toBe("build eligible: blocked by 1 open blocked_by edge: #211.");

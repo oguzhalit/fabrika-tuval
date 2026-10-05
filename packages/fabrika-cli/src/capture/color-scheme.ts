@@ -37,28 +37,28 @@ export interface SchemeRequest {
  * the first's file.
  */
 export type SchemeOperandsRead =
-	| {readonly _tag: "Default"}
-	| {readonly _tag: "Requested"; readonly requests: readonly [SchemeRequest, ...SchemeRequest[]]}
-	| {readonly _tag: "Unknown"; readonly value: string}
-	| {readonly _tag: "Repeated"; readonly value: string}
-	| {readonly _tag: "Undeclared"; readonly value: string};
+	| { readonly _tag: "Default" }
+	| { readonly _tag: "Requested"; readonly requests: readonly [SchemeRequest, ...SchemeRequest[]] }
+	| { readonly _tag: "Unknown"; readonly value: string }
+	| { readonly _tag: "Repeated"; readonly value: string }
+	| { readonly _tag: "Undeclared"; readonly value: string };
 
 export const parseSchemeOperands = (
 	operands: readonly string[],
 	declared: SchemeDeclaration | null,
 ): SchemeOperandsRead => {
 	const unknown = operands.find((value) => !isColorScheme(value));
-	if (unknown !== undefined) return {_tag: "Unknown", value: unknown};
+	if (unknown !== undefined) return { _tag: "Unknown", value: unknown };
 	const repeated = operands.find((value, index) => operands.indexOf(value) !== index);
-	if (repeated !== undefined) return {_tag: "Repeated", value: repeated};
+	if (repeated !== undefined) return { _tag: "Repeated", value: repeated };
 	const [first, ...rest] = operands.filter(isColorScheme);
-	if (first === undefined) return {_tag: "Default"};
-	if (declared === null) return {_tag: "Undeclared", value: first};
+	if (first === undefined) return { _tag: "Default" };
+	if (declared === null) return { _tag: "Undeclared", value: first };
 	const request = (scheme: ColorScheme): SchemeRequest => ({
 		scheme,
 		rootAttribute: declared.rootAttribute,
 	});
-	return {_tag: "Requested", requests: [request(first), ...rest.map(request)]};
+	return { _tag: "Requested", requests: [request(first), ...rest.map(request)] };
 };
 
 /**
@@ -67,9 +67,9 @@ export const parseSchemeOperands = (
  * `Unreadable` stays apart from `Mismatch`: both refuse, but only one is a fact about the page.
  */
 export type SchemeProof =
-	| {readonly _tag: "Proven"; readonly scheme: ColorScheme}
-	| {readonly _tag: "Mismatch"; readonly rendered: string}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Proven"; readonly scheme: ColorScheme }
+	| { readonly _tag: "Mismatch"; readonly rendered: string }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 export const readSchemeProof = (requested: SchemeRequest, attributeValue: unknown): SchemeProof => {
 	if (typeof attributeValue !== "string") {
@@ -79,6 +79,6 @@ export const readSchemeProof = (requested: SchemeRequest, attributeValue: unknow
 		};
 	}
 	return attributeValue === requested.scheme
-		? {_tag: "Proven", scheme: requested.scheme}
-		: {_tag: "Mismatch", rendered: attributeValue};
+		? { _tag: "Proven", scheme: requested.scheme }
+		: { _tag: "Mismatch", rendered: attributeValue };
 };

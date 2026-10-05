@@ -13,22 +13,22 @@
  * proven nothing about it.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	clearsWriteFloor,
 	controlPlaneMembership,
 	expandAuthors,
 	permissionsFor,
 } from "../build/clearances.ts";
-import {grantAuthorText} from "../config/keys/cap-clear-authors.ts";
-import {OWN_ACCOUNTS, ownAccountsKey} from "../config/keys/own-accounts.ts";
-import {loadConfig, resolve} from "../config/load.ts";
-import type {Attempt} from "../io/git.ts";
-import type {CommentRecord, Existence} from "../io/issues.ts";
-import {viewerLogin} from "../io/pulls.ts";
-import {CONFIG_PATH} from "../repo-config.ts";
-import {readFileAtRef} from "../ship/github.ts";
+import { grantAuthorText } from "../config/keys/cap-clear-authors.ts";
+import { OWN_ACCOUNTS, ownAccountsKey } from "../config/keys/own-accounts.ts";
+import { loadConfig, resolve } from "../config/load.ts";
+import type { Attempt } from "../io/git.ts";
+import type { CommentRecord, Existence } from "../io/issues.ts";
+import { viewerLogin } from "../io/pulls.ts";
+import { CONFIG_PATH } from "../repo-config.ts";
+import { readFileAtRef } from "../ship/github.ts";
 import {
 	type Grantors,
 	grantMarkers,
@@ -41,8 +41,8 @@ import {
 } from "./pr-ownership.ts";
 
 export type PrOwnershipRead =
-	| {readonly _tag: "Read"; readonly ownership: PrOwnership}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Read"; readonly ownership: PrOwnership }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /** The PR facts ownership is judged over — every caller already holds these off its own PR read. */
 export interface PullFacts {
@@ -52,8 +52,8 @@ export interface PullFacts {
 }
 
 type OwnSetRead =
-	| {readonly _tag: "Own"; readonly own: OwnSet}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Own"; readonly own: OwnSet }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /** `ownAccounts` off the base-ref bytes, falling back to the running account when none applies. */
 const ownSetFrom = (
@@ -62,14 +62,17 @@ const ownSetFrom = (
 ): Effect.Effect<OwnSetRead, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		if (file._tag === "Unknown") {
-			return {_tag: "Unknown" as const, reason: `${CONFIG_PATH} at ${baseRef}: ${file.reason}`};
+			return { _tag: "Unknown" as const, reason: `${CONFIG_PATH} at ${baseRef}: ${file.reason}` };
 		}
 		const resolved = resolve(
-			loadConfig(file._tag === "Absent" ? {_tag: "Absent"} : {_tag: "Text", text: file.value}),
+			loadConfig(file._tag === "Absent" ? { _tag: "Absent" } : { _tag: "Text", text: file.value }),
 			ownAccountsKey,
 		);
 		if (resolved._tag === "Unknown") {
-			return {_tag: "Unknown" as const, reason: `${CONFIG_PATH} at ${baseRef}: ${resolved.reason}`};
+			return {
+				_tag: "Unknown" as const,
+				reason: `${CONFIG_PATH} at ${baseRef}: ${resolved.reason}`,
+			};
 		}
 		if (resolved._tag === "Declared" && resolved.value.length > 0) {
 			const expanded = yield* expandAuthors(resolved.value);
@@ -91,11 +94,11 @@ const ownSetFrom = (
 					: `no \`${OWN_ACCOUNTS}\` is declared at ${baseRef}`;
 		const viewer = yield* viewerLogin;
 		if (viewer._tag === "Failure") {
-			return {_tag: "Unknown" as const, reason: `the running account: ${viewer.reason}`};
+			return { _tag: "Unknown" as const, reason: `the running account: ${viewer.reason}` };
 		}
 		return {
 			_tag: "Own" as const,
-			own: {_tag: "RunningAccount" as const, login: viewer.value, why},
+			own: { _tag: "RunningAccount" as const, login: viewer.value, why },
 		};
 	});
 
@@ -115,7 +118,7 @@ export const readPrOwnership = <R>(
 		const own = yield* ownSetFrom(file, pull.baseRef);
 		if (own._tag === "Unknown") return own;
 		if (pull.author.trim() !== "" && ownSetHolds(own.own, pull.author)) {
-			return {_tag: "Read" as const, ownership: prOwnershipOf(pull.author, own.own, [])};
+			return { _tag: "Read" as const, ownership: prOwnershipOf(pull.author, own.own, []) };
 		}
 
 		const listed = yield* comments;
@@ -127,13 +130,13 @@ export const readPrOwnership = <R>(
 		}
 		const markers = grantMarkers(listed.value);
 		if (markers.length === 0) {
-			return {_tag: "Read" as const, ownership: prOwnershipOf(pull.author, own.own, [])};
+			return { _tag: "Read" as const, ownership: prOwnershipOf(pull.author, own.own, []) };
 		}
 
 		const membership = yield* controlPlaneMembership(repo);
 		if (membership._tag === "Unknown") return membership;
 		const grantors: Grantors =
-			membership._tag === "Set" ? {_tag: "Set", holds: membership.holds} : membership;
+			membership._tag === "Set" ? { _tag: "Set", holds: membership.holds } : membership;
 		// Only a grant author the control-plane set already names, and who is not the PR's author, is worth an
 		// ACL read: any other marker is void on a clause that cost nothing, and a hiccup reading an
 		// irrelevant login must not turn a plainly void grant into an UNKNOWN gate.
@@ -154,5 +157,5 @@ export const readPrOwnership = <R>(
 			grantors,
 			writes: (login) => clearsWriteFloor(permissions.levelOf(login)),
 		});
-		return {_tag: "Read" as const, ownership: prOwnershipOf(pull.author, own.own, rows)};
+		return { _tag: "Read" as const, ownership: prOwnershipOf(pull.author, own.own, rows) };
 	});

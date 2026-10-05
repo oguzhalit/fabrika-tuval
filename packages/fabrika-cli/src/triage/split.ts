@@ -12,7 +12,7 @@
  * lost split, which is the direction this verb is least allowed to fail in.
  */
 
-import {composeBody} from "../report/compose.ts";
+import { composeBody } from "../report/compose.ts";
 
 /**
  * The title, reduced to the form the key compares — **Unicode-aware**, not ASCII.

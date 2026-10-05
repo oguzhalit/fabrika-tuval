@@ -1,9 +1,9 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeFs, fakeSeams, okOut, once, type Scripted} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {scanBody} from "../report/leaks.ts";
-import type {VerbOutcome} from "../verb.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeFs, fakeSeams, okOut, once, type Scripted } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { scanBody } from "../report/leaks.ts";
+import type { VerbOutcome } from "../verb.ts";
 import {
 	BAD_SECTIONS,
 	CLAIM_NOT_MINE,
@@ -16,7 +16,7 @@ import {
 	WRONG_LANE,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {runCommit} from "./commit-verb.ts";
+import { runCommit } from "./commit-verb.ts";
 import {
 	comments,
 	GIT_DIRS,
@@ -29,10 +29,10 @@ import {
 	pull,
 	served,
 } from "./fixtures.test-support.ts";
-import {laneScratchDir} from "./scratch-verb.ts";
+import { laneScratchDir } from "./scratch-verb.ts";
 
 /** The write permission the marker's author holds — what authorizes a claim. */
-const WRITE = served({permission: "write"});
+const WRITE = served({ permission: "write" });
 
 const REV_PARSE = /^git rev-parse --path-format=absolute/;
 const BRANCH = /^git rev-parse --abbrev-ref HEAD$/;
@@ -58,7 +58,7 @@ const LANE_OK: ReadonlyArray<Scripted> = [
 	[REV_PARSE, GIT_DIRS],
 	[BRANCH, okOut(`${LANE}\n`)],
 	[ISSUE, issue()],
-	[COMMENTS, comments({id: 1, body: marker(SESSION, LANE_UUID)})],
+	[COMMENTS, comments({ id: 1, body: marker(SESSION, LANE_UUID) })],
 	[PERM, WRITE],
 ];
 
@@ -78,11 +78,11 @@ const ready = (): ReadonlyArray<Scripted> => [
 const options = {
 	messageFile: null as string | null,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: SESSION} as Record<
+	env: { CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: SESSION } as Record<
 		string,
 		string | undefined
 	>,
-	stdin: Effect.succeed({_tag: "Text", text: MESSAGE} as StdinRead),
+	stdin: Effect.succeed({ _tag: "Text", text: MESSAGE } as StdinRead),
 	tmpRoot: TMP_ROOT,
 };
 
@@ -102,8 +102,8 @@ const runWith = (
 ): Promise<VerbOutcome> =>
 	Effect.runPromise(
 		Effect.provide(
-			runCommit({...options, ...overrides}),
-			Layer.merge(shell.layer, fakeFs({files}).layer),
+			runCommit({ ...options, ...overrides }),
+			Layer.merge(shell.layer, fakeFs({ files }).layer),
 		),
 	);
 
@@ -135,7 +135,7 @@ describe("runCommit — the carrying path", () => {
 	it("accepts a plain UNKEYED leaf under this lane's scratch directory (§SP rule 2)", async () => {
 		const path = `${SCRATCH}/commit-message`;
 		const shell = shellFor([...ready(), [COMMIT, okOut("")], [LOG, okOut(MESSAGE)]]);
-		const out = await runWith(shell, {messageFile: path}, {[path]: MESSAGE});
+		const out = await runWith(shell, { messageFile: path }, { [path]: MESSAGE });
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).carried).toBe("scratch-leaf");
 		expect(shell.calls).toContain(`git commit --cleanup=verbatim -F ${path}`);
@@ -153,7 +153,7 @@ describe("runCommit — the carrying path", () => {
 		["a sibling lane's directory", `${SCRATCH}-other/commit-message`],
 	])("refuses %s on 10, and commits nothing", async (_name, path) => {
 		const shell = shellFor([...ready(), [COMMIT, okOut("")], [LOG, okOut(MESSAGE)]]);
-		const out = await runWith(shell, {messageFile: path}, {[path]: MESSAGE});
+		const out = await runWith(shell, { messageFile: path }, { [path]: MESSAGE });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stdout).toBe("");
 		expect(shell.calls.some((line) => COMMIT.test(line))).toBe(false);
@@ -165,20 +165,20 @@ describe("runCommit — the carrying path", () => {
 	});
 
 	it("refuses a --message-file that could not be read on 11 — UNKNOWN, never empty", async () => {
-		const out = await run([...ready()], {messageFile: `${SCRATCH}/commit-message`});
+		const out = await run([...ready()], { messageFile: `${SCRATCH}/commit-message` });
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("the message is UNKNOWN, never empty");
 	});
 
 	it("refuses an empty --message-file on 4, which is not the same fact as an unreadable one", async () => {
 		const path = `${SCRATCH}/commit-message`;
-		const out = await run([...ready()], {messageFile: path}, {[path]: "\n \n"});
+		const out = await run([...ready()], { messageFile: path }, { [path]: "\n \n" });
 		expect(out.code).toBe(BAD_SECTIONS);
 	});
 
 	it("refuses an empty stdin on 3", async () => {
 		const out = await run([...ready()], {
-			stdin: Effect.succeed({_tag: "Text", text: ""} as StdinRead),
+			stdin: Effect.succeed({ _tag: "Text", text: "" } as StdinRead),
 		});
 		expect(out.code).toBe(3);
 	});
@@ -190,7 +190,7 @@ describe("runCommit — the message names only what this lane holds", () => {
 	it("refuses on 4 a message naming an issue this lane holds no claim on, and commits nothing", async () => {
 		const shell = shellFor([...ready(), [COMMIT, okOut("")], [LOG, okOut(BORROWED)]]);
 		const out = await runWith(shell, {
-			stdin: Effect.succeed({_tag: "Text", text: BORROWED} as StdinRead),
+			stdin: Effect.succeed({ _tag: "Text", text: BORROWED } as StdinRead),
 		});
 		expect(out.code).toBe(BAD_SECTIONS);
 		expect(out.stdout).toBe("");
@@ -205,10 +205,10 @@ describe("runCommit — the message names only what this lane holds", () => {
 		const shell = shellFor([
 			[REV_PARSE, GIT_DIRS],
 			[BRANCH, okOut(`${resume}\n`)],
-			[/^GET \S+\/repos\/o\/r\/issues\/4318$/, issue({number: 4318})],
+			[/^GET \S+\/repos\/o\/r\/issues\/4318$/, issue({ number: 4318 })],
 			[
 				/^GET \S+\/repos\/o\/r\/issues\/4318\/comments/,
-				comments({id: 1, body: marker(SESSION, LANE_UUID)}),
+				comments({ id: 1, body: marker(SESSION, LANE_UUID) }),
 			],
 			[PERM, WRITE],
 			[/^GET \S+\/repos\/o\/r\/pulls\/4318$/, pull()],
@@ -312,7 +312,7 @@ describe("runCommit — preconditions", () => {
 			[REV_PARSE, GIT_DIRS],
 			[BRANCH, okOut(`${LANE}\n`)],
 			[ISSUE, issue()],
-			[COMMENTS, comments({id: 1, body: marker("s-77aa", LANE_UUID)})],
+			[COMMENTS, comments({ id: 1, body: marker("s-77aa", LANE_UUID) })],
 			[PERM, WRITE],
 			[COMMIT, okOut("")],
 		]);
@@ -327,9 +327,9 @@ describe("runCommit — preconditions", () => {
 describe("runCommit — no refusal repeats a machine-local path", () => {
 	it("holds across every refusal this verb can reach", async () => {
 		const outcomes = await Promise.all([
-			run([...ready()], {messageFile: "/Users/someone/notes/msg.txt"}),
-			run([...ready()], {messageFile: `${SCRATCH}/commit-message`}),
-			run([...ready()], {messageFile: `${SCRATCH}/x`}, {[`${SCRATCH}/x`]: " "}),
+			run([...ready()], { messageFile: "/Users/someone/notes/msg.txt" }),
+			run([...ready()], { messageFile: `${SCRATCH}/commit-message` }),
+			run([...ready()], { messageFile: `${SCRATCH}/x` }, { [`${SCRATCH}/x`]: " " }),
 			run([...LANE_OK, [STAGED, okOut("")]]),
 			run([...LANE_OK, [STAGED, errOut(`fatal: cannot read ${SCRATCH}/index`)]]),
 			run([

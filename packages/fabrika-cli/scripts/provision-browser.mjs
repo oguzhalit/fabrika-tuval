@@ -18,8 +18,8 @@
  *     every job of every workflow is a cost no job asked for. The run-time `11` covers the case
  *     where a CI job really did need it.
  */
-import {spawnSync} from "node:child_process";
-import {existsSync} from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 
 const skip = (reason) => {
 	process.stderr.write(`fabrika: skipping headless-browser provisioning — ${reason}.\n`);
@@ -33,7 +33,7 @@ if ((process.env.CI ?? "") !== "") skip("CI images prebake their browsers");
 
 let installed = false;
 try {
-	const {chromium} = await import("@playwright/test");
+	const { chromium } = await import("@playwright/test");
 	installed = existsSync(chromium.executablePath());
 } catch {
 	installed = false;

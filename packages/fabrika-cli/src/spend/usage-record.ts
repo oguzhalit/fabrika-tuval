@@ -1,4 +1,4 @@
-import {Result, Schema} from "effect";
+import { Result, Schema } from "effect";
 
 const Id = Schema.String.check(Schema.isNonEmpty());
 const KnownId = Schema.NullOr(Id);
@@ -26,14 +26,14 @@ export const Counter = Schema.Struct({
 		"other",
 	]),
 	value: Schema.Union([
-		Schema.Struct({state: Schema.Literal("measured"), tokens: Tokens}),
+		Schema.Struct({ state: Schema.Literal("measured"), tokens: Tokens }),
 		Schema.Struct({
 			state: Schema.Literals(["absent", "unsupported", "unavailable", "not-applicable"]),
 		}),
 	]),
 	meaning: Schema.Union([
-		Schema.Struct({kind: Schema.Literals(["additive", "unknown"])}),
-		Schema.Struct({kind: Schema.Literal("subset"), of: Id}),
+		Schema.Struct({ kind: Schema.Literals(["additive", "unknown"]) }),
+		Schema.Struct({ kind: Schema.Literal("subset"), of: Id }),
 		Schema.Struct({
 			kind: Schema.Literal("aggregate"),
 			of: Schema.Array(Id).check(Schema.isNonEmpty()),
@@ -83,7 +83,7 @@ const counterRelationships = (counters: ReadonlyArray<typeof Counter.Type>): boo
 const common = {
 	v: Schema.Literal(USAGE_RECORD_VERSION),
 	recordId: Id,
-	source: Schema.Struct({host: Id, format: Id, version: Id}),
+	source: Schema.Struct({ host: Id, format: Id, version: Id }),
 	work: Schema.Struct({
 		repo: KnownId,
 		issue: Schema.NullOr(Tokens.check(Schema.isGreaterThanOrEqualTo(1))),
@@ -95,8 +95,8 @@ const common = {
 		nativeSession: KnownId,
 		rootSession: KnownId,
 		parent: Schema.Union([
-			Schema.Struct({kind: Schema.Literals(["root", "unknown"])}),
-			Schema.Struct({kind: Schema.Literal("known"), session: Id}),
+			Schema.Struct({ kind: Schema.Literals(["root", "unknown"]) }),
+			Schema.Struct({ kind: Schema.Literal("known"), session: Id }),
 		]),
 	}),
 };
@@ -111,7 +111,7 @@ export const Measurement = Schema.Struct({
 	provider: KnownId,
 	model: KnownId,
 	basis: Schema.Union([
-		Schema.Struct({kind: Schema.Literal("response")}),
+		Schema.Struct({ kind: Schema.Literal("response") }),
 		Schema.Struct({
 			kind: Schema.Literal("cumulative"),
 			snapshot: Id,
@@ -194,9 +194,9 @@ const canonical = (value: unknown): string => {
 };
 
 export const sameRecord = (left: UsageRecord, right: UsageRecord): boolean => {
-	const content = ({recordId: _, ...record}: UsageRecord) =>
+	const content = ({ recordId: _, ...record }: UsageRecord) =>
 		record.kind === "measurement"
-			? {...record, counters: [...record.counters].sort((a, b) => a.field.localeCompare(b.field))}
+			? { ...record, counters: [...record.counters].sort((a, b) => a.field.localeCompare(b.field)) }
 			: record;
 	return canonical(content(left)) === canonical(content(right));
 };
@@ -205,14 +205,14 @@ export const refinesIssue = (candidate: UsageRecord, prior: UsageRecord): boolea
 	prior.work.issue === null &&
 	candidate.work.issue !== null &&
 	recordKey(candidate) === recordKey(prior) &&
-	sameRecord(candidate, {...prior, work: {...prior.work, issue: candidate.work.issue}});
+	sameRecord(candidate, { ...prior, work: { ...prior.work, issue: candidate.work.issue } });
 
 export const decodeUsageRecord = Schema.decodeUnknownResult(UsageRecord, {
 	onExcessProperty: "error",
 });
 
 export const parseUsageRecord = (text: string): Result.Result<UsageRecord, string> => {
-	const parsed = Result.try({try: (): unknown => JSON.parse(text), catch: () => "invalid JSON"});
+	const parsed = Result.try({ try: (): unknown => JSON.parse(text), catch: () => "invalid JSON" });
 	if (Result.isFailure(parsed)) return Result.fail(parsed.failure);
 	return decodeUsageRecord(parsed.success).pipe(Result.mapError(() => "invalid usage record"));
 };

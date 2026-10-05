@@ -19,7 +19,7 @@
  * declares nothing keeps the path it already has.
  */
 
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const ASSEMBLY_REFRESH = "assemblyRefresh";
 
@@ -50,7 +50,7 @@ const KNOWN: ReadonlyArray<string> = ["onReview", "onDispatch"];
 
 const decodeArm = (name: string, raw: unknown): Decoded<OnReview> =>
 	typeof raw === "string" && (ON_REVIEW_VALUES as ReadonlyArray<string>).includes(raw.trim())
-		? {_tag: "Value", value: raw.trim() as OnReview}
+		? { _tag: "Value", value: raw.trim() as OnReview }
 		: {
 				_tag: "Malformed",
 				reason: `${named(name)} is not one of ${ON_REVIEW_VALUES.join(", ")}`,
@@ -59,7 +59,7 @@ const decodeArm = (name: string, raw: unknown): Decoded<OnReview> =>
 const decode = (raw: unknown): Decoded<AssemblyRefreshSurface> => {
 	const record = asRecord(raw);
 	if (record === null) {
-		return {_tag: "Malformed", reason: `\`${ASSEMBLY_REFRESH}\` is not an object`};
+		return { _tag: "Malformed", reason: `\`${ASSEMBLY_REFRESH}\` is not an object` };
 	}
 	const stray = Object.keys(record).find((key) => !KNOWN.includes(key));
 	if (stray !== undefined) {
@@ -71,17 +71,17 @@ const decode = (raw: unknown): Decoded<AssemblyRefreshSurface> => {
 
 	const onReview =
 		record.onReview === undefined
-			? ({_tag: "Value", value: SHIPPED_ASSEMBLY_REFRESH.onReview} as const)
+			? ({ _tag: "Value", value: SHIPPED_ASSEMBLY_REFRESH.onReview } as const)
 			: decodeArm("onReview", record.onReview);
 	if (onReview._tag === "Malformed") return onReview;
 
 	const onDispatch =
 		record.onDispatch === undefined
-			? ({_tag: "Value", value: SHIPPED_ASSEMBLY_REFRESH.onDispatch} as const)
+			? ({ _tag: "Value", value: SHIPPED_ASSEMBLY_REFRESH.onDispatch } as const)
 			: decodeArm("onDispatch", record.onDispatch);
 	if (onDispatch._tag === "Malformed") return onDispatch;
 
-	return {_tag: "Value", value: {onReview: onReview.value, onDispatch: onDispatch.value}};
+	return { _tag: "Value", value: { onReview: onReview.value, onDispatch: onDispatch.value } };
 };
 
 export const assemblyRefreshKey: KeyGroup<AssemblyRefreshSurface> = {

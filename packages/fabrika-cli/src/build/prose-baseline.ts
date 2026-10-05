@@ -42,7 +42,7 @@
  * diff deletes or moves its target. Baselining that would green the PR that broke every link in the
  * repo, which is the one defect the resolver exists to catch.
  */
-import type {DocLeak} from "./doc-leaks.ts";
+import type { DocLeak } from "./doc-leaks.ts";
 
 /**
  * A leak's identity across an edit: the reason and the bytes, never the line an edit above shifts.

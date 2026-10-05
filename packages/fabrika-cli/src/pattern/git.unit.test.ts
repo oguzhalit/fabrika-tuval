@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeShell, okOut} from "../fakes.test-support.ts";
-import type {Shell} from "../io/git.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeShell, okOut } from "../fakes.test-support.ts";
+import type { Shell } from "../io/git.ts";
 import {
 	commitsTouchingRange,
 	lastCommitTouching,
@@ -26,21 +26,21 @@ const run = <A>(
 describe("presence is a fact, and a failed read is not", () => {
 	it("reads an empty listing as absent, at Ok rather than Failure", async () => {
 		const out = await run(pathPresentAt(SHA, "no/such/dir"), [[/^git ls-tree/, okOut("")]]);
-		expect(out).toEqual({_tag: "Ok", value: false});
+		expect(out).toEqual({ _tag: "Ok", value: false });
 	});
 
 	it("reads the path echoed back as present", async () => {
 		const out = await run(pathPresentAt(SHA, ".patterns"), [
 			[/^git ls-tree/, okOut(".patterns\n")],
 		]);
-		expect(out).toEqual({_tag: "Ok", value: true});
+		expect(out).toEqual({ _tag: "Ok", value: true });
 	});
 
 	it("reads a non-zero exit as a FAILURE, never as absence", async () => {
 		const out = await run(pathPresentAt(SHA, ".patterns"), [
 			[/^git ls-tree/, errOut("fatal: not a tree object")],
 		]);
-		expect(out).toMatchObject({_tag: "Failure"});
+		expect(out).toMatchObject({ _tag: "Failure" });
 	});
 
 	// An empty pathspec list would make `git ls-tree <sha> --` list the whole root tree, which would
@@ -48,7 +48,7 @@ describe("presence is a fact, and a failed read is not", () => {
 	it("spawns nothing for an empty path set", async () => {
 		const shell = fakeShell([]);
 		const out = await Effect.runPromise(Effect.provide(presentPathsAt(SHA, []), shell.layer));
-		expect(out).toEqual({_tag: "Ok", value: new Set()});
+		expect(out).toEqual({ _tag: "Ok", value: new Set() });
 		expect(shell.calls).toEqual([]);
 	});
 
@@ -56,7 +56,7 @@ describe("presence is a fact, and a failed read is not", () => {
 		const out = await run(presentPathsAt(SHA, ["apps/a.ts", "gone/b.ts"]), [
 			[/^git ls-tree/, okOut("apps/a.ts\n")],
 		]);
-		expect(out).toEqual({_tag: "Ok", value: new Set(["apps/a.ts"])});
+		expect(out).toEqual({ _tag: "Ok", value: new Set(["apps/a.ts"]) });
 	});
 });
 
@@ -65,7 +65,7 @@ describe("history reads", () => {
 		const out = await run(lastCommitTouching(SHA, ".patterns/a.md"), [
 			[/^git log/, okOut(`${OTHER}\t2026-08-01\n`)],
 		]);
-		expect(out).toEqual({_tag: "Ok", value: {sha: OTHER, date: "2026-08-01"}});
+		expect(out).toEqual({ _tag: "Ok", value: { sha: OTHER, date: "2026-08-01" } });
 	});
 
 	// A path with no commit at or before the base is a fact the caller decides on; it is not a
@@ -77,7 +77,7 @@ describe("history reads", () => {
 		});
 		expect(
 			await run(lastCommitTouching(SHA, "x"), [[/^git log/, errOut("fatal: bad revision")]]),
-		).toMatchObject({_tag: "Failure"});
+		).toMatchObject({ _tag: "Failure" });
 	});
 
 	it("counts every commit in the range, newest first", async () => {
@@ -87,8 +87,8 @@ describe("history reads", () => {
 		expect(out).toEqual({
 			_tag: "Ok",
 			value: [
-				{sha: SHA, date: "2026-08-05"},
-				{sha: OTHER, date: "2026-08-01"},
+				{ sha: SHA, date: "2026-08-05" },
+				{ sha: OTHER, date: "2026-08-01" },
 			],
 		});
 	});
@@ -97,7 +97,7 @@ describe("history reads", () => {
 		const out = await run(commitsTouchingRange(OTHER, SHA, "apps/a.ts"), [
 			[/^git log/, okOut("just-a-sha\n")],
 		]);
-		expect(out).toEqual({_tag: "Ok", value: []});
+		expect(out).toEqual({ _tag: "Ok", value: [] });
 	});
 });
 
@@ -106,6 +106,6 @@ describe("topLevelEntriesAt", () => {
 		const out = await run(topLevelEntriesAt(SHA), [
 			[/^git ls-tree/, okOut("apps\npackages\nREADME.md\n")],
 		]);
-		expect(out).toEqual({_tag: "Ok", value: new Set(["apps", "packages", "README.md"])});
+		expect(out).toEqual({ _tag: "Ok", value: new Set(["apps", "packages", "README.md"]) });
 	});
 });

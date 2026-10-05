@@ -19,8 +19,8 @@
  * pointing at a different section.
  */
 
-import {readEpicStories, sectionCount, unfencedLines} from "../plan/ledger.ts";
-import {read as readAcceptanceCriteria} from "../wire/acceptance-criteria.ts";
+import { readEpicStories, sectionCount, unfencedLines } from "../plan/ledger.ts";
+import { read as readAcceptanceCriteria } from "../wire/acceptance-criteria.ts";
 
 /** The line the block must open with. */
 export const PLAN_HEADING = "## Plan (plan-epic)";
@@ -55,7 +55,7 @@ const normalize = (text: string): string => text.toLowerCase().replace(/[^a-z0-9
  */
 const lineAfterCriteriaHeading = (text: string): string | undefined => {
 	const unfenced = unfencedLines(text);
-	const at = unfenced.findIndex(({text: line}) => line.trim() === ACCEPTANCE_CRITERIA);
+	const at = unfenced.findIndex(({ text: line }) => line.trim() === ACCEPTANCE_CRITERIA);
 	const heading = unfenced[at];
 	const next = unfenced[at + 1];
 	if (at === -1 || heading === undefined || next === undefined) return undefined;
@@ -65,7 +65,7 @@ const lineAfterCriteriaHeading = (text: string): string | undefined => {
 /** The `###` headings the block carries, in the order they appear, outside every fence. */
 const headingOrder = (text: string): ReadonlyArray<string> => {
 	const seen: string[] = [];
-	for (const {text: line} of unfencedLines(text)) {
+	for (const { text: line } of unfencedLines(text)) {
 		const matched = ATX_HEADING.exec(line);
 		if (matched?.[1] === undefined || matched[2] === undefined) continue;
 		if (matched[1].length !== 3) continue;
@@ -80,9 +80,9 @@ export type PlanBlockCheck =
 			readonly sections: number;
 			readonly stories: ReadonlyArray<number>;
 	  }
-	| {readonly _tag: "Bad"; readonly reason: string};
+	| { readonly _tag: "Bad"; readonly reason: string };
 
-const bad = (reason: string): PlanBlockCheck => ({_tag: "Bad", reason});
+const bad = (reason: string): PlanBlockCheck => ({ _tag: "Bad", reason });
 
 /**
  * Check the authored plan block. Every `Bad` names exactly one correctable thing, so a second attempt
@@ -146,5 +146,5 @@ export const checkPlanBlock = (text: string): PlanBlockCheck => {
 		);
 	}
 
-	return {_tag: "Ok", sections: PLAN_SECTIONS.length, stories: stories.ids};
+	return { _tag: "Ok", sections: PLAN_SECTIONS.length, stories: stories.ids };
 };

@@ -33,7 +33,7 @@
  */
 
 import * as deviations from "./deviations.ts";
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
 
 export interface BuildDeviations {
 	/** The child issue this comment discloses for — the issue the comment sits on. */
@@ -90,16 +90,16 @@ export const read = (artifact: string): BuildDeviationsRead => {
 		);
 	}
 	if (section._tag === "Malformed") return section;
-	return {_tag: "Found", value: {issue, disclosure: section.value}};
+	return { _tag: "Found", value: { issue, disclosure: section.value } };
 };
 
 /** Compose the comment's bytes. Round-trips through {@link read}. */
-export const emit = ({issue, disclosure}: BuildDeviations): string =>
+export const emit = ({ issue, disclosure }: BuildDeviations): string =>
 	`${KEY_PREFIX} #${issue}\n\n${deviations.emit(disclosure)}`;
 
 export type BuildDeviationsFields =
-	| {readonly _tag: "Fields"; readonly value: BuildDeviations}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly value: BuildDeviations }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 const ISSUE_LINE = /^issue[ \t]*[:\t][ \t]*(.*)$/i;
 
@@ -119,13 +119,13 @@ export const parseFields = (fields: string): BuildDeviationsFields => {
 	}
 	const raw = (head[1] ?? "").trim().replace(/^#/, "");
 	if (!/^\d+$/.test(raw)) {
-		return {_tag: "Unusable", reason: `"${head[1]}" is not an issue number`};
+		return { _tag: "Unusable", reason: `"${head[1]}" is not an issue number` };
 	}
 	const section = deviations.parseFields(lines.slice(at + 1).join("\n"));
 	if (section._tag === "Unusable") return section;
 	return {
 		_tag: "Fields",
-		value: {issue: Number.parseInt(raw, 10), disclosure: section.disclosure},
+		value: { issue: Number.parseInt(raw, 10), disclosure: section.disclosure },
 	};
 };
 
@@ -139,12 +139,12 @@ export const render = (value: BuildDeviations): NonEmptyReadonlyArray<string> =>
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.value)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.value) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: render(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: render(result.value) } : result;
 };

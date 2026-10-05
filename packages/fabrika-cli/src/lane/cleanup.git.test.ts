@@ -6,34 +6,34 @@
  * a local one, whether a recorded path still matches git's list when the temp directory sits
  * behind a symlinked prefix, and that git calls a tree prunable while its directory still stands.
  */
-import {execFileSync} from "node:child_process";
-import {existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {NodeServices} from "@effect/platform-node";
-import {Effect} from "effect";
-import {afterEach, describe, expect, it} from "vitest";
-import {ok} from "../io/git.ts";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
-import {runCleanup} from "./cleanup-verb.ts";
-import {TREES_KEPT} from "./codes.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
+import { afterEach, describe, expect, it } from "vitest";
+import { ok } from "../io/git.ts";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
+import { runCleanup } from "./cleanup-verb.ts";
+import { TREES_KEPT } from "./codes.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
 
 const LANE = "42";
 
 const git = (cwd: string, ...args: ReadonlyArray<string>) =>
-	execFileSync("git", args, {cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"]}).trim();
+	execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
 
 const runnerCwd = process.cwd();
 afterEach(() => process.chdir(runnerCwd));
 
-describe("lane cleanup over a real clone", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
+describe("lane cleanup over a real clone", { timeout: SUBPROCESS_TEST_TIMEOUT_MS }, () => {
 	it("removes the clean and the pushed tree, keeps the dirty, local-only, stranded and in-flight ones, and leaves its own and the driver's", async () => {
 		const home = mkdtempSync(join(tmpdir(), "lane-cleanup-"));
 		const origin = join(home, "origin.git");
 		const root = join(home, "checkout");
 		execFileSync("git", ["init", "--bare", "--initial-branch=main", origin]);
-		execFileSync("git", ["clone", origin, root], {stdio: "ignore"});
+		execFileSync("git", ["clone", origin, root], { stdio: "ignore" });
 		git(root, "config", "user.email", "cleanup@example.test");
 		git(root, "config", "user.name", "cleanup");
 		writeFileSync(join(root, ".gitignore"), ".fabrika/\nnode_modules/\n");
@@ -73,7 +73,7 @@ describe("lane cleanup over a real clone", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}
 		expect(git(root, "worktree", "list", "--porcelain")).toContain("prunable");
 
 		const dir = join(root, ".fabrika", "lanes", LANE);
-		mkdirSync(dir, {recursive: true});
+		mkdirSync(dir, { recursive: true });
 		writeFileSync(join(dir, "workflow.json"), coderTemplateText());
 		writeFileSync(
 			join(dir, "worktrees.jsonl"),
@@ -93,7 +93,7 @@ describe("lane cleanup over a real clone", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}
 		// handed after, which no terminal has answered, says its shell is still running.
 		writeFileSync(
 			join(dir, "in-flight.jsonl"),
-			`${JSON.stringify({kind: "dispatched", task: "issue", state: "review", at: "2026-10-03T06:00:00.000Z"})}\n`,
+			`${JSON.stringify({ kind: "dispatched", task: "issue", state: "review", at: "2026-10-03T06:00:00.000Z" })}\n`,
 		);
 
 		process.chdir(tree("shipper"));
@@ -103,7 +103,7 @@ describe("lane cleanup over a real clone", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}
 					root: join(root, ".fabrika", "lanes"),
 					lane: LANE,
 					caller: ok(tree("shipper")),
-					pull: () => Effect.succeed({_tag: "Unmerged"} as const),
+					pull: () => Effect.succeed({ _tag: "Unmerged" } as const),
 				}),
 				NodeServices.layer,
 			),

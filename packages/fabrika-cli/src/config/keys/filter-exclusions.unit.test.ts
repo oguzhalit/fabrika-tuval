@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {loadConfig, resolve} from "../load.ts";
+import { describe, expect, it } from "vitest";
+import { loadConfig, resolve } from "../load.ts";
 import {
 	REVIEW_FILTER_EXCLUSIONS,
 	REVIEW_FILTER_UNEXCLUDE,
@@ -8,21 +8,21 @@ import {
 } from "./filter-exclusions.ts";
 
 const load = (config: Record<string, unknown>) =>
-	loadConfig({_tag: "Text", text: JSON.stringify(config)});
+	loadConfig({ _tag: "Text", text: JSON.stringify(config) });
 
 const added = (rows: ReadonlyArray<unknown>) =>
-	resolve(load({[REVIEW_FILTER_EXCLUSIONS]: rows}), reviewFilterExclusionsKey);
+	resolve(load({ [REVIEW_FILTER_EXCLUSIONS]: rows }), reviewFilterExclusionsKey);
 
 const removed = (rows: ReadonlyArray<unknown>) =>
-	resolve(load({[REVIEW_FILTER_UNEXCLUDE]: rows}), reviewFilterUnexcludeKey);
+	resolve(load({ [REVIEW_FILTER_UNEXCLUDE]: rows }), reviewFilterUnexcludeKey);
 
 describe("the shipped defaults", () => {
 	it("are the empty list on both no-file and no-key — a repo that declares nothing filters as before", () => {
-		expect(resolve(loadConfig({_tag: "Absent"}), reviewFilterExclusionsKey)).toMatchObject({
+		expect(resolve(loadConfig({ _tag: "Absent" }), reviewFilterExclusionsKey)).toMatchObject({
 			_tag: "Default",
 			value: [],
 		});
-		expect(resolve(loadConfig({_tag: "Absent"}), reviewFilterUnexcludeKey)).toMatchObject({
+		expect(resolve(loadConfig({ _tag: "Absent" }), reviewFilterUnexcludeKey)).toMatchObject({
 			_tag: "Default",
 			value: [],
 		});
@@ -30,12 +30,15 @@ describe("the shipped defaults", () => {
 			_tag: "Default",
 			value: [],
 		});
-		expect(resolve(load({}), reviewFilterUnexcludeKey)).toMatchObject({_tag: "Default", value: []});
+		expect(resolve(load({}), reviewFilterUnexcludeKey)).toMatchObject({
+			_tag: "Default",
+			value: [],
+		});
 	});
 
 	it("admit a declared empty list — a repo declaring no change to the set is a declaration", () => {
-		expect(added([])).toMatchObject({_tag: "Declared", value: []});
-		expect(removed([])).toMatchObject({_tag: "Declared", value: []});
+		expect(added([])).toMatchObject({ _tag: "Declared", value: [] });
+		expect(removed([])).toMatchObject({ _tag: "Declared", value: [] });
 	});
 });
 
@@ -49,7 +52,7 @@ describe(`a declared ${REVIEW_FILTER_EXCLUSIONS}`, () => {
 
 	it("refuses a value that is not an array whole-value", () => {
 		expect(
-			resolve(load({[REVIEW_FILTER_EXCLUSIONS]: "src/**"}), reviewFilterExclusionsKey),
+			resolve(load({ [REVIEW_FILTER_EXCLUSIONS]: "src/**" }), reviewFilterExclusionsKey),
 		).toMatchObject({
 			_tag: "Malformed",
 			reason: `\`${REVIEW_FILTER_EXCLUSIONS}\` is not an array of pattern strings`,
@@ -61,7 +64,7 @@ describe(`a declared ${REVIEW_FILTER_EXCLUSIONS}`, () => {
 		["an empty string", ""],
 		["a whitespace-only string", "   "],
 		["null", null],
-		["an object", {pattern: "src/**"}],
+		["an object", { pattern: "src/**" }],
 	])("refuses an entry that is %s whole-value, naming the key", (_label, entry) => {
 		expect(added([entry])).toMatchObject({
 			_tag: "Malformed",
@@ -113,7 +116,7 @@ describe(`a declared ${REVIEW_FILTER_UNEXCLUDE}`, () => {
 
 	it("refuses a value that is not an array whole-value", () => {
 		expect(
-			resolve(load({[REVIEW_FILTER_UNEXCLUDE]: "pnpm-lock.yaml"}), reviewFilterUnexcludeKey),
+			resolve(load({ [REVIEW_FILTER_UNEXCLUDE]: "pnpm-lock.yaml" }), reviewFilterUnexcludeKey),
 		).toMatchObject({
 			_tag: "Malformed",
 			reason: `\`${REVIEW_FILTER_UNEXCLUDE}\` is not an array of pattern strings`,

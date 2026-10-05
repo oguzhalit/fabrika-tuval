@@ -5,8 +5,8 @@
  * A guard that reds a markdown heading or a hex colour is one somebody turns off, and a guard that
  * reds the synthetic ticket number a test asserts against would force the test to stop naming it.
  */
-import {describe, expect, it} from "vitest";
-import {judge, type PortabilityConfig, scanFile} from "./portability.ts";
+import { describe, expect, it } from "vitest";
+import { judge, type PortabilityConfig, scanFile } from "./portability.ts";
 
 const PLUGIN = "claude-plugins/fabrika/skills/build/SKILL.md";
 
@@ -81,7 +81,7 @@ describe("scanFile", () => {
 
 	it("reports the line a reference sits on", () => {
 		expect(scanFile(PLUGIN, "clean\nclean\ncarrying #4312\n", [])).toEqual([
-			{line: 3, pattern: "issue", matched: "#4312"},
+			{ line: 3, pattern: "issue", matched: "#4312" },
 		]);
 	});
 });
@@ -94,7 +94,7 @@ const config = (over: Partial<PortabilityConfig> = {}): PortabilityConfig => ({
 
 const file = (path: string, hits: number) => ({
 	path,
-	hits: Array.from({length: hits}, (_, i) => ({
+	hits: Array.from({ length: hits }, (_, i) => ({
 		line: i + 1,
 		pattern: "issue" as const,
 		matched: "#4312",
@@ -103,7 +103,7 @@ const file = (path: string, hits: number) => ({
 
 describe("judge", () => {
 	it("reds a scan that covered nothing rather than calling it clean", () => {
-		expect(judge({files: [], config: config()})._tag).toBe("ZeroScope");
+		expect(judge({ files: [], config: config() })._tag).toBe("ZeroScope");
 	});
 
 	it("passes a floor row whose count equals its ceiling, and reds one over it", () => {
@@ -114,8 +114,10 @@ describe("judge", () => {
 				paths: ["claude-plugins/fabrika/skills/build"],
 			},
 		};
-		expect(judge({files: [file(PLUGIN, 2)], config: config({unmigrated})})._tag).toBe("Clean");
-		expect(judge({files: [file(PLUGIN, 3)], config: config({unmigrated})})._tag).toBe("Violation");
+		expect(judge({ files: [file(PLUGIN, 2)], config: config({ unmigrated }) })._tag).toBe("Clean");
+		expect(judge({ files: [file(PLUGIN, 3)], config: config({ unmigrated }) })._tag).toBe(
+			"Violation",
+		);
 	});
 
 	it("gives a file to the longest matching prefix, so a catch-all row cannot swallow a unit", () => {
@@ -128,7 +130,7 @@ describe("judge", () => {
 						why: "swept later",
 						paths: ["claude-plugins/fabrika/skills/build"],
 					},
-					"plugin-tail": {ceiling: 1, why: "swept later", paths: ["claude-plugins/fabrika"]},
+					"plugin-tail": { ceiling: 1, why: "swept later", paths: ["claude-plugins/fabrika"] },
 				},
 			}),
 		});
@@ -138,8 +140,8 @@ describe("judge", () => {
 	});
 
 	it("caps an exempt file rather than ratcheting it, so a permanent row may hold fewer", () => {
-		const exempt = {[PLUGIN]: {ceiling: 3, why: "the manifest says where it is published"}};
-		expect(judge({files: [file(PLUGIN, 1)], config: config({exempt})})._tag).toBe("Clean");
-		expect(judge({files: [file(PLUGIN, 4)], config: config({exempt})})._tag).toBe("Violation");
+		const exempt = { [PLUGIN]: { ceiling: 3, why: "the manifest says where it is published" } };
+		expect(judge({ files: [file(PLUGIN, 1)], config: config({ exempt }) })._tag).toBe("Clean");
+		expect(judge({ files: [file(PLUGIN, 4)], config: config({ exempt }) })._tag).toBe("Violation");
 	});
 });

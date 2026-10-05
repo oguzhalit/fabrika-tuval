@@ -26,15 +26,15 @@
  * fail to `11`.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type CommentRecord, listCommentsReconciled, resolveRepo} from "../io/issues.ts";
-import {getPullRequest, permissionFor} from "../io/pulls.ts";
-import {listReviewThreads} from "../ship/github.ts";
-import {FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {readNamespaced} from "../wire/verdict-marker.ts";
-import {judge} from "./unresolved-threads.ts";
-import {emitVerdict, type GuardVerdict, unknown, zeroScope} from "./verdict.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type CommentRecord, listCommentsReconciled, resolveRepo } from "../io/issues.ts";
+import { getPullRequest, permissionFor } from "../io/pulls.ts";
+import { listReviewThreads } from "../ship/github.ts";
+import { FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { readNamespaced } from "../wire/verdict-marker.ts";
+import { judge } from "./unresolved-threads.ts";
+import { emitVerdict, type GuardVerdict, unknown, zeroScope } from "./verdict.ts";
 
 const VERB = "guard unresolved-threads check";
 
@@ -114,7 +114,7 @@ const gather = (
 		if (listed._tag === "Failure") {
 			return unreadable(`#${pr}'s review threads`, listed.reason);
 		}
-		const {declared, threads} = listed.value;
+		const { declared, threads } = listed.value;
 		if (threads.length < declared) {
 			return unknown(
 				`${VERB}: received ${threads.length} of ${declared} review threads on #${pr} — a partial sweep proves nothing, so the verdict is UNKNOWN.`,
@@ -131,7 +131,7 @@ const gather = (
 
 		// Zero live threads is answered before the ACL sweep: with nothing to account for, no verdict
 		// body can change the outcome, and probing collaborator permissions would be pure cost.
-		if (threads.every((thread) => thread.isResolved)) return judge({threads, verdictBody: null});
+		if (threads.every((thread) => thread.isResolved)) return judge({ threads, verdictBody: null });
 		return judge({
 			threads,
 			verdictBody: yield* latestVerdictBody(repo, commented.value.comments),
@@ -142,7 +142,7 @@ export const runUnresolvedThreadsGuard = (
 	options: UnresolvedThreadsOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr, env} = options;
+		const { pr, env } = options;
 		if (!Number.isInteger(pr) || pr <= 0) {
 			return refuse(FAILED, `${VERB}: ${pr} is not a pull-request number.`);
 		}

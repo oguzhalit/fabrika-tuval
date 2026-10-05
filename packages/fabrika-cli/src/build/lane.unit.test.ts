@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	composeToken,
 	createBranchName,
@@ -14,7 +14,7 @@ const UUID = "c1a4d6f8-3b7e-4a19-9c2d-5e8f0a1b2c3d";
 
 describe("the token shape is pinned", () => {
 	it("splits a well-formed token into its session and uuid halves", () => {
-		expect(parseToken(`build:s-9f2e:${UUID}`)).toEqual({session: "s-9f2e", uuid: UUID});
+		expect(parseToken(`build:s-9f2e:${UUID}`)).toEqual({ session: "s-9f2e", uuid: UUID });
 	});
 
 	it("refuses a token that is not this group's — a comment id is not a session id (#4428)", () => {

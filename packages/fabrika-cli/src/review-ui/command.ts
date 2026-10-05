@@ -9,23 +9,23 @@
  * **Every leaf is declared with `leafCommand`, never a bare `Command.make`** — the bare form
  * silently opts out of the excess-operand guard.
  */
-import {tmpdir} from "node:os";
-import {Effect, Option} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {LOGINS_VARIABLE} from "../capture/auth.ts";
-import {noPreviewRulesOr, uiCaptureOr, uiSurfacesOr} from "../config/paths.ts";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStdin} from "../io/stdin.ts";
-import {getRepoVariable} from "../io/variables.ts";
-import {refuse} from "../verb.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {runNote} from "./note-verb.ts";
-import {runPostFlags} from "./post-verb.ts";
-import {captureRenderLeg} from "./render-leg.ts";
-import {runRender} from "./render-verb.ts";
-import {type NoPreviewRequest, runRoute} from "./route-verb.ts";
-import {githubAttachmentUploadLeg, githubPostedEvidenceCheck} from "./upload-leg.ts";
+import { tmpdir } from "node:os";
+import { Effect, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { LOGINS_VARIABLE } from "../capture/auth.ts";
+import { noPreviewRulesOr, uiCaptureOr, uiSurfacesOr } from "../config/paths.ts";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStdin } from "../io/stdin.ts";
+import { getRepoVariable } from "../io/variables.ts";
+import { refuse } from "../verb.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { runNote } from "./note-verb.ts";
+import { runPostFlags } from "./post-verb.ts";
+import { captureRenderLeg } from "./render-leg.ts";
+import { runRender } from "./render-verb.ts";
+import { type NoPreviewRequest, runRoute } from "./route-verb.ts";
+import { githubAttachmentUploadLeg, githubPostedEvidenceCheck } from "./upload-leg.ts";
 
 const repoFlag = Flag.string("repo").pipe(
 	Flag.optional,
@@ -251,7 +251,7 @@ const post = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({pr, polarity, sha, clause, evidence, carrier, supersede, repo}) {
+	Effect.fn(function* ({ pr, polarity, sha, clause, evidence, carrier, supersede, repo }) {
 		yield* emit(
 			yield* runPostFlags({
 				pr,
@@ -306,8 +306,8 @@ const post = leafCommand(
 
 const note = leafCommand(
 	"note",
-	{pr: prArg, repo: repoFlag},
-	Effect.fn(function* ({pr, repo}) {
+	{ pr: prArg, repo: repoFlag },
+	Effect.fn(function* ({ pr, repo }) {
 		yield* emit(
 			yield* runNote({
 				pr,
@@ -371,7 +371,7 @@ const route = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({pr, sha, clause, verifiedAt, noPreview, handCheck, repo}) {
+	Effect.fn(function* ({ pr, sha, clause, verifiedAt, noPreview, handCheck, repo }) {
 		const offered = Option.getOrNull(handCheck);
 		let request: NoPreviewRequest | undefined;
 		if (noPreview || offered !== null) {
@@ -384,7 +384,7 @@ const route = leafCommand(
 				yield* emit(refuse(PRECONDITION_UNKNOWN, rules.message));
 				return;
 			}
-			request = {rules: rules.rules, handCheck: offered};
+			request = { rules: rules.rules, handCheck: offered };
 		}
 		yield* emit(
 			yield* runRoute({
@@ -392,7 +392,7 @@ const route = leafCommand(
 				sha,
 				clause,
 				verifiedAt: Option.getOrNull(verifiedAt),
-				...(request === undefined ? {} : {noPreview: request}),
+				...(request === undefined ? {} : { noPreview: request }),
 				repo: Option.getOrNull(repo),
 				env: process.env,
 				stdin: Effect.sync(readStdin),

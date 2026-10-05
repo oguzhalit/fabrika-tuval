@@ -1,7 +1,7 @@
-import {Effect, Layer} from "effect";
-import {beforeAll, describe, expect, it} from "vitest";
-import {fakeHttp, fakeShell, type HttpReply, linkNext} from "../fakes.test-support.ts";
-import {claimedIdOf, idsClaimedByPr, openPullRequests} from "./github.ts";
+import { Effect, Layer } from "effect";
+import { beforeAll, describe, expect, it } from "vitest";
+import { fakeHttp, fakeShell, type HttpReply, linkNext } from "../fakes.test-support.ts";
+import { claimedIdOf, idsClaimedByPr, openPullRequests } from "./github.ts";
 
 /**
  * The credential is resolved off the process environment (`ambientToken`), so the tests name one
@@ -19,7 +19,7 @@ const served = (status: number, body: unknown, headers?: Record<string, string>)
 
 const wired = (script: ReadonlyArray<readonly [RegExp, HttpReply]>) => {
 	const http = fakeHttp(script);
-	return {http, layer: Layer.merge(http.layer, fakeShell([]).layer)};
+	return { http, layer: Layer.merge(http.layer, fakeShell([]).layer) };
 };
 
 describe("claimedIdOf", () => {
@@ -39,56 +39,56 @@ describe("claimedIdOf", () => {
 
 describe("openPullRequests", () => {
 	it("refuses a 200 whose payload is not a list of pull requests, never reading it empty", async () => {
-		const {layer} = wired([[/pulls/, served(200, [{title: "no number here"}])]]);
+		const { layer } = wired([[/pulls/, served(200, [{ title: "no number here" }])]]);
 		const result = await Effect.runPromise(Effect.provide(openPullRequests("o/r"), layer));
 		expect(result._tag).toBe("Failure");
 	});
 
 	it("refuses a 200 that is not a list at all — the in-flight set is never guessed empty", async () => {
-		const {layer} = wired([[/pulls/, served(200, {message: "Not Found"})]]);
+		const { layer } = wired([[/pulls/, served(200, { message: "Not Found" })]]);
 		const result = await Effect.runPromise(Effect.provide(openPullRequests("o/r"), layer));
 		expect(result._tag).toBe("Failure");
 	});
 
 	it("pages — a second page's pull requests are not dropped (#725)", async () => {
-		const {http, layer} = wired([
-			[/&page=1$/, served(200, [{number: 11}], linkNext("https://api.github.com/x?page=2"))],
-			[/&page=2$/, served(200, [{number: 12}])],
+		const { http, layer } = wired([
+			[/&page=1$/, served(200, [{ number: 11 }], linkNext("https://api.github.com/x?page=2"))],
+			[/&page=2$/, served(200, [{ number: 12 }])],
 		]);
 		const result = await Effect.runPromise(Effect.provide(openPullRequests("o/r"), layer));
-		expect(result).toEqual({_tag: "Ok", value: [11, 12]});
+		expect(result).toEqual({ _tag: "Ok", value: [11, 12] });
 		expect(http.calls[0]).toContain("per_page=100");
 		expect(http.calls).toHaveLength(2);
 	});
 
 	it("reads an empty list as an empty FACT, not a failure", async () => {
-		const {layer} = wired([[/pulls/, served(200, [])]]);
+		const { layer } = wired([[/pulls/, served(200, [])]]);
 		const result = await Effect.runPromise(Effect.provide(openPullRequests("o/r"), layer));
-		expect(result).toEqual({_tag: "Ok", value: []});
+		expect(result).toEqual({ _tag: "Ok", value: [] });
 	});
 });
 
 describe("idsClaimedByPr", () => {
 	it("counts only ADDED record files", async () => {
-		const {layer} = wired([
+		const { layer } = wired([
 			[
 				/files/,
 				served(200, [
-					{status: "added", filename: "records/0239-x.md"},
-					{status: "modified", filename: "records/0126-y.md"},
-					{status: "added", filename: "README.md"},
+					{ status: "added", filename: "records/0239-x.md" },
+					{ status: "modified", filename: "records/0126-y.md" },
+					{ status: "added", filename: "README.md" },
 				]),
 			],
 		]);
 		const result = await Effect.runPromise(
 			Effect.provide(idsClaimedByPr("o/r", 4711, "records"), layer),
 		);
-		expect(result).toEqual({_tag: "Ok", value: [{id: "0239", file: "0239-x.md", pr: 4711}]});
+		expect(result).toEqual({ _tag: "Ok", value: [{ id: "0239", file: "0239-x.md", pr: 4711 }] });
 	});
 
 	it("refuses an entry whose status is outside the allowed set", async () => {
-		const {layer} = wired([
-			[/files/, served(200, [{status: "teleported", filename: "records/0239-x.md"}])],
+		const { layer } = wired([
+			[/files/, served(200, [{ status: "teleported", filename: "records/0239-x.md" }])],
 		]);
 		const result = await Effect.runPromise(
 			Effect.provide(idsClaimedByPr("o/r", 1, "records"), layer),
@@ -97,7 +97,7 @@ describe("idsClaimedByPr", () => {
 	});
 
 	it("refuses an entry carrying no filename", async () => {
-		const {layer} = wired([[/files/, served(200, [{status: "added"}])]]);
+		const { layer } = wired([[/files/, served(200, [{ status: "added" }])]]);
 		const result = await Effect.runPromise(
 			Effect.provide(idsClaimedByPr("o/r", 1, "records"), layer),
 		);

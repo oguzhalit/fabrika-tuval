@@ -30,23 +30,23 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9725#issuecomment-5800916149
  */
-import {Effect, type FileSystem, type Path, Result} from "effect";
+import { Effect, type FileSystem, type Path, Result } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {CONFIG_PATH} from "../config/document.ts";
-import {UI_CAPTURE, uiCaptureKey} from "../config/keys/ui-surfaces.ts";
-import {resolve} from "../config/load.ts";
-import {loadRepoConfig} from "../config/working-root.ts";
-import {readFile} from "../io/fs.ts";
-import {createComment, getComment, listComments} from "../io/issues.ts";
-import {patchComment, viewerLogin} from "../io/pulls.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {emitAdvisory, readAdvisory, reviewedHeadLine} from "../review/advisory.ts";
-import {type AuthoredSurface, leakRefusal, readAuthored} from "../review/authored.ts";
-import {compose as supersedeWith} from "../review/supersede.ts";
-import {openPull, resolveTargetRepo, scannedLine} from "../review/target.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { CONFIG_PATH } from "../config/document.ts";
+import { UI_CAPTURE, uiCaptureKey } from "../config/keys/ui-surfaces.ts";
+import { resolve } from "../config/load.ts";
+import { loadRepoConfig } from "../config/working-root.ts";
+import { readFile } from "../io/fs.ts";
+import { createComment, getComment, listComments } from "../io/issues.ts";
+import { patchComment, viewerLogin } from "../io/pulls.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { emitAdvisory, readAdvisory, reviewedHeadLine } from "../review/advisory.ts";
+import { type AuthoredSurface, leakRefusal, readAuthored } from "../review/authored.ts";
+import { compose as supersedeWith } from "../review/supersede.ts";
+import { openPull, resolveTargetRepo, scannedLine } from "../review/target.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	emit as emitMarker,
 	headSha,
@@ -65,7 +65,7 @@ import {
 	UPLOAD_FAILED,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {emit as emitGallery} from "./evidence-gallery.ts";
+import { emit as emitGallery } from "./evidence-gallery.ts";
 import {
 	type CaptureEntry,
 	manifestPath,
@@ -92,8 +92,8 @@ export type Carrier = "marker" | "advisory";
 
 /** One capture's upload, verified — or the reason it is not evidence anybody can see. */
 export type UploadResult =
-	| {readonly _tag: "Hosted"; readonly url: string}
-	| {readonly _tag: "Failed"; readonly reason: string};
+	| { readonly _tag: "Hosted"; readonly url: string }
+	| { readonly _tag: "Failed"; readonly reason: string };
 
 export interface UploadRequest {
 	readonly repo: string;
@@ -109,8 +109,8 @@ export interface HostedEvidence {
 
 /** Whether every embedded capture of a posted comment opens as its judged bytes. */
 export type EvidenceCheckResult =
-	| {readonly _tag: "Resolved"}
-	| {readonly _tag: "Unresolved"; readonly reasons: readonly [string, ...string[]]};
+	| { readonly _tag: "Resolved" }
+	| { readonly _tag: "Unresolved"; readonly reasons: readonly [string, ...string[]] };
 
 /**
  * The after-post seam: re-read the posted comment as a reader renders it and hold every embedded
@@ -209,7 +209,7 @@ const standingPolarityAt = (body: string, carrier: Carrier, sha: string): Polari
 /** Why the read-back does not show what was posted, or `null` when it does. */
 const mismatchOf = (
 	body: string,
-	posted: {readonly polarity: string; readonly sha: string; readonly clause: string},
+	posted: { readonly polarity: string; readonly sha: string; readonly clause: string },
 	carrier: Carrier,
 	composed: string,
 ): string | null => {
@@ -300,10 +300,10 @@ export const unopenedNote = (verdictUrl: string, reasons: readonly [string, ...s
  * collapses malformed and unreadable into one refusal.
  */
 type TierChoice =
-	| {readonly _tag: "Attachment"}
-	| {readonly _tag: "DeclaredStore"; readonly kind: string}
-	| {readonly _tag: "Malformed"; readonly reason: string}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Attachment" }
+	| { readonly _tag: "DeclaredStore"; readonly kind: string }
+	| { readonly _tag: "Malformed"; readonly reason: string }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 const readTierChoice = (
 	cwd: string,
@@ -311,15 +311,15 @@ const readTierChoice = (
 	Effect.gen(function* () {
 		const resolved = resolve(yield* loadRepoConfig(cwd), uiCaptureKey);
 		if (resolved._tag === "Unknown") {
-			return {_tag: "Unreadable" as const, reason: resolved.reason};
+			return { _tag: "Unreadable" as const, reason: resolved.reason };
 		}
 		if (resolved._tag === "Malformed") {
-			return {_tag: "Malformed" as const, reason: resolved.reason};
+			return { _tag: "Malformed" as const, reason: resolved.reason };
 		}
 		const store = resolved.value.evidenceStore;
 		return store === null
-			? {_tag: "Attachment" as const}
-			: {_tag: "DeclaredStore" as const, kind: store};
+			? { _tag: "Attachment" as const }
+			: { _tag: "DeclaredStore" as const, kind: store };
 	});
 
 export const runPost = (
@@ -333,7 +333,7 @@ export const runPost = (
 	| Path.Path
 > =>
 	Effect.gen(function* () {
-		const {pr} = options;
+		const { pr } = options;
 		if (!Number.isInteger(pr) || pr <= 0) {
 			return refuse(FAILED, `${VERB}: ${pr} is not a pull-request number.`);
 		}
@@ -469,7 +469,7 @@ export const runPost = (
 			});
 			if (outcome._tag === "Hosted") {
 				hosted.push([entry, outcome.url]);
-				evidence.push({url: outcome.url, bytes});
+				evidence.push({ url: outcome.url, bytes });
 			} else failures.push(`${entry.surface}: ${outcome.reason}`);
 		}
 		if (failures.length > 0) {
@@ -538,16 +538,16 @@ export const runPost = (
 				? composed
 				: supersedeWith(mine.body, composed, new Date(yield* options.now));
 
-		let landed: {readonly id: number; readonly url: string} | null = null;
+		let landed: { readonly id: number; readonly url: string } | null = null;
 		let failure: string | null = null;
 		if (mine === undefined) {
 			const created = yield* createComment(repo, pr, envelope);
 			if (created._tag === "Failure") failure = created.reason;
-			else landed = {id: created.value.id, url: created.value.url};
+			else landed = { id: created.value.id, url: created.value.url };
 		} else {
 			const edited = yield* patchComment(repo, mine.id, envelope);
 			if (edited._tag === "Failure") failure = edited.reason;
-			else landed = {id: mine.id, url: edited.value};
+			else landed = { id: mine.id, url: edited.value };
 		}
 		if (landed === null) {
 			return refuse(
@@ -562,7 +562,7 @@ export const runPost = (
 		const mismatch =
 			back._tag === "Failure"
 				? back.reason
-				: mismatchOf(back.value, {polarity, sha: inspected, clause}, carrier, envelope);
+				: mismatchOf(back.value, { polarity, sha: inspected, clause }, carrier, envelope);
 		if (mismatch !== null) {
 			return refuse(
 				READBACK_MISMATCH,
@@ -573,7 +573,7 @@ export const runPost = (
 
 		// Step 9 — the verdict is only posted if a reader can open its evidence, so it is re-read the
 		// way a reader's browser renders it rather than trusted from the step-4 read-back.
-		const opened = yield* options.confirm({repo, commentId: landed.id, evidence});
+		const opened = yield* options.confirm({ repo, commentId: landed.id, evidence });
 		if (opened._tag === "Unresolved") {
 			const noted = yield* createComment(repo, pr, unopenedNote(landed.url, opened.reasons));
 			return refuse(
@@ -635,5 +635,5 @@ export const runPostFlags = (flags: PostFlags): ReturnType<typeof runPost> => {
 			),
 		);
 	}
-	return runPost({...flags, evidence: set});
+	return runPost({ ...flags, evidence: set });
 };

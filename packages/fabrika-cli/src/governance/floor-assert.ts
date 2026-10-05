@@ -24,12 +24,12 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9034
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {getWorkflowRun, rerunRun} from "../heal-ci/github.ts";
-import {type Attempt, ok} from "../io/git.ts";
-import {CHECK_RUN_NAME} from "../ship/floor-check.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { getWorkflowRun, rerunRun } from "../heal-ci/github.ts";
+import { type Attempt, ok } from "../io/git.ts";
+import { CHECK_RUN_NAME } from "../ship/floor-check.ts";
 import {
 	latestPerContext,
 	listRunsAtHead,
@@ -95,7 +95,7 @@ export type FloorAssertion =
 	 * The repository does carry an active `governance-floor` workflow here; where it carries none the
 	 * answer is `NoFloor`.
 	 */
-	| {readonly _tag: "NoRun"; readonly runsAtHead: number}
+	| { readonly _tag: "NoRun"; readonly runsAtHead: number }
 	/**
 	 * The repository's complete workflow inventory holds no active `governance-floor` workflow, so it
 	 * runs no floor and there is nothing to re-fire. Proven from that inventory, never from an empty
@@ -104,23 +104,23 @@ export type FloorAssertion =
 	 *
 	 * @ruling https://github.com/kamp-us/phoenix/issues/10053
 	 */
-	| {readonly _tag: "NoFloor"}
+	| { readonly _tag: "NoFloor" }
 	/** The run at this head already concluded green — the check reflects the gate's state. */
-	| {readonly _tag: "Green"; readonly run: number}
+	| { readonly _tag: "Green"; readonly run: number }
 	/** The run is still going, so it may yet judge state older than the verdict just written. */
-	| {readonly _tag: "InFlight"; readonly run: number}
+	| { readonly _tag: "InFlight"; readonly run: number }
 	/** A new attempt exists and is re-deriving `ship floor` against live comment state. */
-	| {readonly _tag: "Refired"; readonly run: number; readonly attempt: number}
+	| { readonly _tag: "Refired"; readonly run: number; readonly attempt: number }
 	/**
 	 * The re-fire took but GitHub has not published its attempt number yet: the run this verb read as
 	 * completed-and-red a moment ago is running again under the same id. That transition is proof from
 	 * run state, so it is a re-fire to wait on rather than an unread one to escalate.
 	 */
-	| {readonly _tag: "Restarting"; readonly run: number; readonly status: string}
+	| { readonly _tag: "Restarting"; readonly run: number; readonly status: string }
 	/** The floor state could not be read or the re-fire could not be proven. Never a pass. */
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
-const unknown = (reason: string): FloorAssertion => ({_tag: "Unknown", reason});
+const unknown = (reason: string): FloorAssertion => ({ _tag: "Unknown", reason });
 
 /**
  * Re-fire the red governance-floor run at `sha`, and prove a new attempt exists.
@@ -164,17 +164,17 @@ export const assertFloorAt = (
 				);
 			}
 			return inventory.value.active.some((workflow) => workflow.name === FLOOR_WORKFLOW_NAME)
-				? {_tag: "NoRun", runsAtHead: listed.value.runs.length}
-				: {_tag: "NoFloor"};
+				? { _tag: "NoRun", runsAtHead: listed.value.runs.length }
+				: { _tag: "NoFloor" };
 		}
 		// The newest run at this head, by id. A head can carry several — a re-created PR, a retriggered
 		// workflow — and the check the PR shows is the last one.
 		const latest = floors.reduce((held, run) => (run.id > held.id ? run : held));
-		if (latest.status !== "completed") return {_tag: "InFlight", run: latest.id};
+		if (latest.status !== "completed") return { _tag: "InFlight", run: latest.id };
 
 		const standing = yield* floorCheckRun(repo, sha);
 		if (standing._tag === "Failure") return unknown(standing.reason);
-		if (!needsRefire(latest.conclusion, standing.value)) return {_tag: "Green", run: latest.id};
+		if (!needsRefire(latest.conclusion, standing.value)) return { _tag: "Green", run: latest.id };
 
 		const before = yield* getWorkflowRun(repo, latest.id);
 		if (before._tag !== "Present") {
@@ -202,9 +202,9 @@ export const assertFloorAt = (
 				? unknown(
 						`the re-fire was requested and run ${latest.id} stayed at attempt ${after.value.runAttempt}, still completed — UNKNOWN whether it re-ran`,
 					)
-				: {_tag: "Restarting", run: latest.id, status: after.value.status};
+				: { _tag: "Restarting", run: latest.id, status: after.value.status };
 		}
-		return {_tag: "Refired", run: latest.id, attempt: after.value.runAttempt};
+		return { _tag: "Refired", run: latest.id, attempt: after.value.runAttempt };
 	});
 
 /** The one-token closed vocabulary a caller emits under `--json`. */

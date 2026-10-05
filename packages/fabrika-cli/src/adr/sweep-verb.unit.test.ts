@@ -1,8 +1,8 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFs, fakeFs, record} from "../fakes.test-support.ts";
-import {DIR_UNREADABLE, NO_SUBJECT} from "./codes.ts";
-import {runSweep} from "./sweep-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFs, fakeFs, record } from "../fakes.test-support.ts";
+import { DIR_UNREADABLE, NO_SUBJECT } from "./codes.ts";
+import { runSweep } from "./sweep-verb.ts";
 
 const dir = ".decisions";
 
@@ -21,12 +21,12 @@ const corpus = (): Record<string, string> => {
 };
 
 const fsWith = (files: Record<string, string | null>) =>
-	fakeFs({dirs: {[dir]: Object.keys(files).map((p) => p.slice(dir.length + 1))}, files});
+	fakeFs({ dirs: { [dir]: Object.keys(files).map((p) => p.slice(dir.length + 1)) }, files });
 
-const options = {new: "0240", dir, limit: 8, json: false};
+const options = { new: "0240", dir, limit: 8, json: false };
 
 const run = (fs: FakeFs, overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runSweep({...options, ...overrides}), fs.layer));
+	Effect.runPromise(Effect.provide(runSweep({ ...options, ...overrides }), fs.layer));
 
 describe("runSweep", () => {
 	it("exits 0 WITH a shortlist — the informative case is not a failure", async () => {
@@ -37,7 +37,7 @@ describe("runSweep", () => {
 	});
 
 	it("puts the --json payload on STDOUT, not stderr (#4723)", async () => {
-		const out = await run(fsWith(corpus()), {json: true});
+		const out = await run(fsWith(corpus()), { json: true });
 		expect(out.code).toBe(0);
 		const payload = JSON.parse(out.stdout);
 		expect(payload.outcome).toBe("shortlist");
@@ -76,7 +76,7 @@ describe("runSweep", () => {
 	});
 
 	it("refuses an unreadable corpus — UNKNOWN, never no-overlap", async () => {
-		const out = await run(fakeFs({dirs: {[dir]: null}}));
+		const out = await run(fakeFs({ dirs: { [dir]: null } }));
 		expect(out.code).toBe(DIR_UNREADABLE);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain('never "no-overlap"');
@@ -94,10 +94,10 @@ describe("runSweep", () => {
 	// adopter sweeping their very first draft gets an answer.
 	it("answers indeterminate against a readable-but-empty --dir", async () => {
 		const io = fakeFs({
-			dirs: {[dir]: []},
-			files: {"drafts/0001-draft.md": record("0001", "proposed", "reticulate the splines")},
+			dirs: { [dir]: [] },
+			files: { "drafts/0001-draft.md": record("0001", "proposed", "reticulate the splines") },
 		});
-		const out = await run(io, {new: "drafts/0001-draft.md"});
+		const out = await run(io, { new: "drafts/0001-draft.md" });
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("indeterminate\n");
 		expect(out.stderr.join("\n")).toContain("rarity floor");
@@ -105,7 +105,7 @@ describe("runSweep", () => {
 	});
 
 	it("refuses when --new names no readable ADR", async () => {
-		const out = await run(fsWith(corpus()), {new: "9999"});
+		const out = await run(fsWith(corpus()), { new: "9999" });
 		expect(out.code).toBe(NO_SUBJECT);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toBe("adr sweep: no readable ADR for --new 9999.");
@@ -115,16 +115,16 @@ describe("runSweep", () => {
 		const files: Record<string, string | null> = corpus();
 		files["/drafts/0300-draft.md"] = record("0300", "proposed", "reticulate the splines");
 		const io = fakeFs({
-			dirs: {[dir]: Object.keys(corpus()).map((p) => p.slice(dir.length + 1))},
+			dirs: { [dir]: Object.keys(corpus()).map((p) => p.slice(dir.length + 1)) },
 			files,
 		});
-		const out = await run(io, {new: "/drafts/0300-draft.md"});
+		const out = await run(io, { new: "/drafts/0300-draft.md" });
 		expect(out.code).toBe(0);
 		expect(out.stdout.split("\n")[0]).toBe("shortlist");
 	});
 
 	it("honours --limit", async () => {
-		const out = await run(fsWith(corpus()), {limit: 1});
+		const out = await run(fsWith(corpus()), { limit: 1 });
 		expect(out.stdout.split("\n").filter((l) => l !== "")).toHaveLength(2);
 	});
 });

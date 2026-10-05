@@ -1,10 +1,10 @@
-import {describe, expect, it} from "vitest";
-import {CAVEAT_KINDS, readCaveats, renderCaveats} from "./caveats.ts";
+import { describe, expect, it } from "vitest";
+import { CAVEAT_KINDS, readCaveats, renderCaveats } from "./caveats.ts";
 
 describe("readCaveats", () => {
 	it("reads an empty input as zero caveats — an ordinary answer, not a refusal", () => {
-		expect(readCaveats("")).toEqual({_tag: "Caveats", caveats: []});
-		expect(readCaveats("\n\n")).toEqual({_tag: "Caveats", caveats: []});
+		expect(readCaveats("")).toEqual({ _tag: "Caveats", caveats: [] });
+		expect(readCaveats("\n\n")).toEqual({ _tag: "Caveats", caveats: [] });
 	});
 
 	it("reads one caveat per line, kind, ref and tail apart", () => {

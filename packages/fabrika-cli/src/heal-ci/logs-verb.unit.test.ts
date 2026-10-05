@@ -1,8 +1,8 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {INCOMPLETE_SCAN, LOGS_EXPIRED, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { INCOMPLETE_SCAN, LOGS_EXPIRED, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
 import {
 	checkRuns,
 	ENV,
@@ -20,14 +20,14 @@ import {
 	runsAtHead,
 	UNDECLARED,
 } from "./fixtures.test-support.ts";
-import {runLogs, tailBytes} from "./logs-verb.ts";
+import { runLogs, tailBytes } from "./logs-verb.ts";
 
 const PULL = /^GET .*\/repos\/o\/r\/pulls\/4321$/;
 const CHECK_RUNS = /^GET .*\/repos\/o\/r\/commits\/[0-9a-f]+\/check-runs\?/;
 const RUNS_AT_HEAD = /^GET .*\/repos\/o\/r\/actions\/runs\?head_sha=/;
 
 /** The shared payload fixtures speak `gh`'s `ExecResult`; the seam now serves the same bytes. */
-const reply = (result: ExecResult, status = 200): HttpReply => ({status, body: result.stdout});
+const reply = (result: ExecResult, status = 200): HttpReply => ({ status, body: result.stdout });
 
 const options = {
 	pr: 4321,
@@ -42,20 +42,20 @@ const options = {
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
 		Effect.provide(
-			runLogs({...options, ...overrides}),
+			runLogs({ ...options, ...overrides }),
 			fakeSeams([...script, ...UNDECLARED]).layer,
 		),
 	);
 
 /** A served log body: the bytes GitHub's signed URL answers with, not JSON. */
-const logText = (text: string): HttpReply => ({status: 200, body: text});
+const logText = (text: string): HttpReply => ({ status: 200, body: text });
 
-const failed = (name: string) => ({name, status: "completed", conclusion: "failure"});
-const passed = (name: string) => ({name, status: "completed", conclusion: "success"});
+const failed = (name: string) => ({ name, status: "completed", conclusion: "failure" });
+const passed = (name: string) => ({ name, status: "completed", conclusion: "success" });
 
 describe("tailBytes", () => {
 	it("keeps the LAST n bytes, because the failure is at the end", () => {
-		expect(tailBytes("abcdef", 3)).toEqual({text: "def", bytes: 3, truncated: true});
+		expect(tailBytes("abcdef", 3)).toEqual({ text: "def", bytes: 3, truncated: true });
 	});
 
 	it("declares nothing truncated when the whole log fits", () => {
@@ -71,12 +71,12 @@ describe("runLogs reads every failing gating context, not the first", () => {
 				CHECK_RUNS,
 				reply(checkRuns(3, [failed("unit tests"), failed("typecheck"), passed("lint")])),
 			],
-			[RUNS_AT_HEAD, reply(runsAtHead(1, [{id: 77}]))],
+			[RUNS_AT_HEAD, reply(runsAtHead(1, [{ id: 77 }]))],
 			[
 				JOBS,
 				jobs(2, [
-					{id: 441, name: "unit tests"},
-					{id: 442, name: "typecheck"},
+					{ id: 441, name: "unit tests" },
+					{ id: 442, name: "typecheck" },
 				]),
 			],
 			[JOB_LOG, logText("AssertionError: expected 3 to be 2")],
@@ -114,8 +114,8 @@ describe("runLogs reads every failing gating context, not the first", () => {
 			[PROTECTION, protection()],
 			[PULL, reply(pull())],
 			[CHECK_RUNS, reply(checkRuns(2, [failed("ci-required"), failed("Analyze (python)")]))],
-			[RUNS_AT_HEAD, reply(runsAtHead(1, [{id: 77}]))],
-			[JOBS, jobs(1, [{id: 441, name: "ci-required"}])],
+			[RUNS_AT_HEAD, reply(runsAtHead(1, [{ id: 77 }]))],
+			[JOBS, jobs(1, [{ id: 441, name: "ci-required" }])],
 			[JOB_LOG, logText("boom")],
 		]);
 		expect(out.code).toBe(0);
@@ -142,8 +142,8 @@ describe("runLogs reads every failing gating context, not the first", () => {
 			[RULES, planGated],
 			[PULL, reply(pull())],
 			[CHECK_RUNS, reply(checkRuns(1, [failed("unit tests")]))],
-			[RUNS_AT_HEAD, reply(runsAtHead(1, [{id: 77}]))],
-			[JOBS, jobs(1, [{id: 441, name: "unit tests"}])],
+			[RUNS_AT_HEAD, reply(runsAtHead(1, [{ id: 77 }]))],
+			[JOBS, jobs(1, [{ id: 441, name: "unit tests" }])],
 			[JOB_LOG, logText("AssertionError")],
 		]);
 		expect(out.code).toBe(0);
@@ -157,8 +157,8 @@ describe("runLogs reads every failing gating context, not the first", () => {
 		const out = await run([
 			[PULL, reply(pull())],
 			[CHECK_RUNS, reply(checkRuns(2, [failed("external scan"), failed("unit tests")]))],
-			[RUNS_AT_HEAD, reply(runsAtHead(1, [{id: 77}]))],
-			[JOBS, jobs(1, [{id: 441, name: "unit tests"}])],
+			[RUNS_AT_HEAD, reply(runsAtHead(1, [{ id: 77 }]))],
+			[JOBS, jobs(1, [{ id: 441, name: "unit tests" }])],
 			[JOB_LOG, logText("AssertionError")],
 		]);
 		expect(out.code).toBe(0);
@@ -172,11 +172,11 @@ describe("runLogs reads every failing gating context, not the first", () => {
 			[
 				[PULL, reply(pull())],
 				[CHECK_RUNS, reply(checkRuns(1, [failed("unit tests")]))],
-				[RUNS_AT_HEAD, reply(runsAtHead(1, [{id: 77}]))],
-				[JOBS, jobs(1, [{id: 441, name: "unit tests"}])],
+				[RUNS_AT_HEAD, reply(runsAtHead(1, [{ id: 77 }]))],
+				[JOBS, jobs(1, [{ id: 441, name: "unit tests" }])],
 				[JOB_LOG, logText("0123456789")],
 			],
-			{maxBytes: 4},
+			{ maxBytes: 4 },
 		);
 		expect(out.stdout).toContain("bytes 4 truncated true");
 		expect(out.stderr.join("\n")).toContain("truncated to the last 4 bytes of 10");
@@ -188,8 +188,8 @@ describe("runLogs refuses rather than answering `no failed steps`", () => {
 		const out = await run([
 			[PULL, reply(pull())],
 			[CHECK_RUNS, reply(checkRuns(1, [failed("unit tests")]))],
-			[RUNS_AT_HEAD, reply(runsAtHead(1, [{id: 77}]))],
-			[JOBS, jobs(1, [{id: 441, name: "unit tests"}])],
+			[RUNS_AT_HEAD, reply(runsAtHead(1, [{ id: 77 }]))],
+			[JOBS, jobs(1, [{ id: 441, name: "unit tests" }])],
 			[JOB_LOG, httpError(410, "Gone")],
 		]);
 		expect(out.code).toBe(LOGS_EXPIRED);
@@ -200,8 +200,8 @@ describe("runLogs refuses rather than answering `no failed steps`", () => {
 		const out = await run([
 			[PULL, reply(pull())],
 			[CHECK_RUNS, reply(checkRuns(1, [failed("unit tests")]))],
-			[RUNS_AT_HEAD, reply(runsAtHead(1, [{id: 77}]))],
-			[JOBS, jobs(1, [{id: 441, name: "unit tests"}])],
+			[RUNS_AT_HEAD, reply(runsAtHead(1, [{ id: 77 }]))],
+			[JOBS, jobs(1, [{ id: 441, name: "unit tests" }])],
 			[JOB_LOG, httpError(404, "Not Found")],
 		]);
 		expect(out.code).toBe(LOGS_EXPIRED);
@@ -212,8 +212,8 @@ describe("runLogs refuses rather than answering `no failed steps`", () => {
 		const out = await run([
 			[PULL, reply(pull())],
 			[CHECK_RUNS, reply(checkRuns(1, [failed("unit tests")]))],
-			[RUNS_AT_HEAD, reply(runsAtHead(1, [{id: 77}]))],
-			[JOBS, jobs(1, [{id: 441, name: "unit tests"}])],
+			[RUNS_AT_HEAD, reply(runsAtHead(1, [{ id: 77 }]))],
+			[JOBS, jobs(1, [{ id: 441, name: "unit tests" }])],
 			[JOB_LOG, httpError(500, "Server Error")],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -224,9 +224,9 @@ describe("runLogs refuses rather than answering `no failed steps`", () => {
 		const out = await run([
 			[PULL, reply(pull())],
 			[CHECK_RUNS, reply(checkRuns(1, [failed("unit tests")]))],
-			[RUNS_AT_HEAD, reply(runsAtHead(1, [{id: 77}]))],
-			[JOBS, jobs(1, [{id: 441, name: "unit tests"}])],
-			[JOB_LOG, {status: 500, body: "{}"}],
+			[RUNS_AT_HEAD, reply(runsAtHead(1, [{ id: 77 }]))],
+			[JOBS, jobs(1, [{ id: 441, name: "unit tests" }])],
+			[JOB_LOG, { status: 500, body: "{}" }],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("GitHub answered HTTP 500");
@@ -246,8 +246,8 @@ describe("runLogs refuses rather than answering `no failed steps`", () => {
 		const out = await run([
 			[PULL, reply(pull())],
 			[CHECK_RUNS, reply(checkRuns(1, [failed("unit tests")]))],
-			[RUNS_AT_HEAD, reply(runsAtHead(1, [{id: 77}]))],
-			[JOBS, jobs(9, [{id: 441, name: "unit tests"}])],
+			[RUNS_AT_HEAD, reply(runsAtHead(1, [{ id: 77 }]))],
+			[JOBS, jobs(9, [{ id: 441, name: "unit tests" }])],
 		]);
 		expect(out.code).toBe(INCOMPLETE_SCAN);
 	});
@@ -258,7 +258,7 @@ describe("runLogs refuses rather than answering `no failed steps`", () => {
 				[PULL, reply(pull())],
 				[CHECK_RUNS, reply(checkRuns(1, [failed("unit tests")]))],
 			],
-			{context: "typecheck"},
+			{ context: "typecheck" },
 		);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-1)).toContain("failing contexts are: unit tests");

@@ -7,14 +7,14 @@
  * Outside-diff evidence stays attached to its criterion so builders know what proof to produce.
  * @ruling https://github.com/kamp-us/phoenix/issues/9301
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {marked, quoteRows} from "../review/outside-diff-evidence.ts";
-import {answer, type VerbOutcome} from "../verb.ts";
-import type {AcceptanceCriterion} from "../wire/acceptance-criteria.ts";
-import {read as readCriteria} from "../wire/acceptance-criteria.ts";
-import {contentOf, gate} from "./content-gate.ts";
-import {openIssue, resolveTargetRepo} from "./target.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { marked, quoteRows } from "../review/outside-diff-evidence.ts";
+import { answer, type VerbOutcome } from "../verb.ts";
+import type { AcceptanceCriterion } from "../wire/acceptance-criteria.ts";
+import { read as readCriteria } from "../wire/acceptance-criteria.ts";
+import { contentOf, gate } from "./content-gate.ts";
+import { openIssue, resolveTargetRepo } from "./target.ts";
 
 const VERB = "build issue";
 
@@ -27,26 +27,26 @@ export interface IssueOptions {
 const criteriaOf = (
 	body: string,
 ):
-	| {readonly state: "found"; readonly items: ReadonlyArray<AcceptanceCriterion>}
-	| {readonly state: "absent"; readonly reason: string}
-	| {readonly state: "malformed"; readonly reason: string} => {
+	| { readonly state: "found"; readonly items: ReadonlyArray<AcceptanceCriterion> }
+	| { readonly state: "absent"; readonly reason: string }
+	| { readonly state: "malformed"; readonly reason: string } => {
 	const read = readCriteria(body);
 	if (read._tag === "Found") {
 		return {
 			state: "found",
-			items: read.value.map(({text, checked, evidence}) => ({text, checked, evidence})),
+			items: read.value.map(({ text, checked, evidence }) => ({ text, checked, evidence })),
 		};
 	}
 	return read._tag === "Absent"
-		? {state: "absent", reason: read.reason}
-		: {state: "malformed", reason: read.reason};
+		? { state: "absent", reason: read.reason }
+		: { state: "malformed", reason: read.reason };
 };
 
 export const runIssue = (
 	options: IssueOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {number} = options;
+		const { number } = options;
 		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
 		if (resolved._tag === "Refused") return resolved.outcome;
 

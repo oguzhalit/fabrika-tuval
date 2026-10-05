@@ -1,10 +1,10 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type HttpReply, okOut, type Scripted} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {renderFooter} from "../report/compose.ts";
-import {SHIPPED_BOARD} from "../status/board.test-support.ts";
-import {COMMENTS, claimPage, guardedShell, LIVE} from "./claim-fixtures.test-support.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type HttpReply, okOut, type Scripted } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { renderFooter } from "../report/compose.ts";
+import { SHIPPED_BOARD } from "../status/board.test-support.ts";
+import { COMMENTS, claimPage, guardedShell, LIVE } from "./claim-fixtures.test-support.ts";
 import {
 	EMPTY_STDIN,
 	LEAKED_PATH,
@@ -13,8 +13,8 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {composeChildBody} from "./split.ts";
-import {runSplit} from "./split-verb.ts";
+import { composeChildBody } from "./split.ts";
+import { runSplit } from "./split-verb.ts";
 
 const BRANCH = /^git rev-parse/;
 const PARENT = /GET .*\/repos\/o\/r\/issues\/4312$/;
@@ -25,30 +25,30 @@ const CREATE = /POST .*\/repos\/o\/r\/issues$/;
 const CROSSLINK = /POST .*\/repos\/o\/r\/issues\/4312\/comments$/;
 const issueRead = (n: number) => new RegExp(`GET .*/repos/o/r/issues/${n}$`);
 
-const UNREADABLE: HttpReply = {status: 502, body: "{}"};
-const NOT_FOUND: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
-const WRITE_FAILED: HttpReply = {status: 500, body: "{}"};
+const UNREADABLE: HttpReply = { status: 502, body: "{}" };
+const NOT_FOUND: HttpReply = { status: 404, body: '{"message":"Not Found"}' };
+const WRITE_FAILED: HttpReply = { status: 500, body: "{}" };
 
 const labels = (...names: ReadonlyArray<string>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(names.map((name) => ({name}))),
+	body: JSON.stringify(names.map((name) => ({ name }))),
 });
 
 /** Open issues carrying the queue label, as the list endpoint answers them. */
 const queue = (
-	...rows: ReadonlyArray<{readonly number: number; readonly title: string}>
-): HttpReply => ({status: 200, body: JSON.stringify(rows)});
+	...rows: ReadonlyArray<{ readonly number: number; readonly title: string }>
+): HttpReply => ({ status: 200, body: JSON.stringify(rows) });
 
 /** `cross-referenced` timeline entries — the only event shape the adapter reads. */
 const timeline = (
-	...refs: ReadonlyArray<{readonly number: number; readonly pull?: boolean}>
+	...refs: ReadonlyArray<{ readonly number: number; readonly pull?: boolean }>
 ): HttpReply => ({
 	status: 200,
 	body: JSON.stringify(
 		refs.map((ref) => ({
 			event: "cross-referenced",
 			source: {
-				issue: {number: ref.number, ...(ref.pull === true ? {pull_request: {url: "x"}} : {})},
+				issue: { number: ref.number, ...(ref.pull === true ? { pull_request: { url: "x" } } : {}) },
 			},
 		})),
 	),
@@ -85,20 +85,20 @@ const issue = (over: Record<string, unknown>): HttpReply => ({
 		title: TITLE,
 		body: COMPOSED,
 		state: "open",
-		labels: [{name: "status:needs-triage"}],
+		labels: [{ name: "status:needs-triage" }],
 		html_url: "https://example.test/issues/4321",
 		...over,
 	}),
 });
 
-const parentIssue = issue({number: 4312, title: "Two unrelated bugs", body: "a\nb"});
+const parentIssue = issue({ number: 4312, title: "Two unrelated bugs", body: "a\nb" });
 const created: HttpReply = {
 	status: 201,
-	body: JSON.stringify({number: 4321, html_url: "https://example.test/issues/4321"}),
+	body: JSON.stringify({ number: 4321, html_url: "https://example.test/issues/4321" }),
 };
 const posted: HttpReply = {
 	status: 201,
-	body: JSON.stringify({id: 7, html_url: "https://example.test/c/7"}),
+	body: JSON.stringify({ id: 7, html_url: "https://example.test/c/7" }),
 };
 
 const options = {
@@ -107,9 +107,9 @@ const options = {
 	token: null as string | null,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 	board: SHIPPED_BOARD,
-	stdin: Effect.succeed<StdinRead>({_tag: "Text", text: BODY}),
+	stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: BODY }),
 	now: () => new Date("2026-01-01T00:00:00.000Z"),
 };
 
@@ -132,7 +132,7 @@ const script = (...overrides: ReadonlyArray<Scripted>): ReadonlyArray<Scripted> 
 
 const run = (steps: ReadonlyArray<Scripted> = base, over: Partial<typeof options> = {}) => {
 	const shell = guardedShell(steps);
-	return Effect.runPromise(Effect.provide(runSplit({...options, ...over}), shell.layer)).then(
+	return Effect.runPromise(Effect.provide(runSplit({ ...options, ...over }), shell.layer)).then(
 		(outcome) => ({
 			outcome,
 			calls: shell.calls,
@@ -144,13 +144,13 @@ const run = (steps: ReadonlyArray<Scripted> = base, over: Partial<typeof options
 
 describe("runSplit — the created path", () => {
 	it("prints the outcome token, the number and the url, tab-separated", async () => {
-		const {outcome} = await run();
+		const { outcome } = await run();
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toBe("created\t4321\thttps://example.test/issues/4321\n");
 	});
 
 	it("creates the child carrying the back-reference and the queue label", async () => {
-		const {requests, bodies} = await run();
+		const { requests, bodies } = await run();
 		const create = bodyOf(requests, bodies, CREATE);
 		expect(create).toContain("split from #4312");
 		expect(create).toContain("Filed by an agent");
@@ -158,12 +158,12 @@ describe("runSplit — the created path", () => {
 	});
 
 	it("cross-links the parent as part of the same operation", async () => {
-		const {requests, bodies} = await run();
+		const { requests, bodies } = await run();
 		expect(bodyOf(requests, bodies, CROSSLINK)).toContain("split into #4321");
 	});
 
 	it("reports the object with --json", async () => {
-		const {outcome} = await run(base, {json: true});
+		const { outcome } = await run(base, { json: true });
 		expect(JSON.parse(outcome.stdout)).toEqual({
 			outcome: "created",
 			number: 4321,
@@ -174,14 +174,14 @@ describe("runSplit — the created path", () => {
 	});
 
 	it("reports the scanned count of both list reads", async () => {
-		const {outcome} = await run();
+		const { outcome } = await run();
 		const stderr = outcome.stderr.join("\n");
 		expect(stderr).toContain("scanned 0 open status:needs-triage issues in o/r");
 		expect(stderr).toContain("scanned 0 timeline cross-references in o/r");
 	});
 
 	it("still exits 0 when the cross-link fails — the child demonstrably exists", async () => {
-		const {outcome} = await run(script([CROSSLINK, WRITE_FAILED]), {json: true});
+		const { outcome } = await run(script([CROSSLINK, WRITE_FAILED]), { json: true });
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout).crossLinked).toBe(false);
 		expect(outcome.stderr.join("\n")).toContain("add the comment by hand");
@@ -189,12 +189,12 @@ describe("runSplit — the created path", () => {
 });
 
 describe("runSplit — the create-once key", () => {
-	const sibling = issue({number: 4400, title: "Autosave drops the draft"});
-	const foreign = issue({number: 4400, body: "unrelated\n\nsplit from #9999\n"});
+	const sibling = issue({ number: 4400, title: "Autosave drops the draft" });
+	const foreign = issue({ number: 4400, body: "unrelated\n\nsplit from #9999\n" });
 
 	it("reuses a child matching BOTH halves of the key, and writes nothing", async () => {
-		const {outcome, requests} = await run(
-			script([QUEUE, queue({number: 4321, title: TITLE})], [issueRead(4321), issue({})]),
+		const { outcome, requests } = await run(
+			script([QUEUE, queue({ number: 4321, title: TITLE })], [issueRead(4321), issue({})]),
 		);
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toBe("reused\t4321\thttps://example.test/issues/4321\n");
@@ -203,9 +203,9 @@ describe("runSplit — the create-once key", () => {
 	});
 
 	it("names the key it matched on, and never claims a cross-link it did not make", async () => {
-		const {outcome} = await run(
-			script([QUEUE, queue({number: 4321, title: TITLE})], [issueRead(4321), issue({})]),
-			{json: true},
+		const { outcome } = await run(
+			script([QUEUE, queue({ number: 4321, title: TITLE })], [issueRead(4321), issue({})]),
+			{ json: true },
 		);
 		expect(JSON.parse(outcome.stdout)).toMatchObject({
 			outcome: "reused",
@@ -215,8 +215,8 @@ describe("runSplit — the create-once key", () => {
 	});
 
 	it("does NOT reuse on the title alone — a same-titled child of another parent is not this child", async () => {
-		const {outcome} = await run(
-			script([QUEUE, queue({number: 4400, title: TITLE})], [issueRead(4400), foreign]),
+		const { outcome } = await run(
+			script([QUEUE, queue({ number: 4400, title: TITLE })], [issueRead(4400), foreign]),
 		);
 		expect(outcome.stdout).toBe("created\t4321\thttps://example.test/issues/4321\n");
 	});
@@ -225,28 +225,30 @@ describe("runSplit — the create-once key", () => {
 	// is fetched and tested, and the AND is the only thing standing between this sibling and a false
 	// reuse. Through the queue the title narrowing would reject it before the key ran at all.
 	it("does NOT reuse on the back-reference alone — a sibling split is not this child", async () => {
-		const {outcome} = await run(
-			script([TIMELINE, timeline({number: 4400})], [issueRead(4400), sibling]),
+		const { outcome } = await run(
+			script([TIMELINE, timeline({ number: 4400 })], [issueRead(4400), sibling]),
 		);
 		expect(outcome.stdout).toBe("created\t4321\thttps://example.test/issues/4321\n");
 	});
 
 	it("reaches a child already triaged out of the queue, through the timeline", async () => {
-		const {outcome} = await run(
-			script([TIMELINE, timeline({number: 4321})], [issueRead(4321), issue({})]),
+		const { outcome } = await run(
+			script([TIMELINE, timeline({ number: 4321 })], [issueRead(4321), issue({})]),
 		);
 		expect(outcome.stdout).toBe("reused\t4321\thttps://example.test/issues/4321\n");
 	});
 
 	it("ignores pull requests in the timeline", async () => {
-		const {outcome, requests} = await run(script([TIMELINE, timeline({number: 9001, pull: true})]));
+		const { outcome, requests } = await run(
+			script([TIMELINE, timeline({ number: 9001, pull: true })]),
+		);
 		expect(outcome.stdout).toBe("created\t4321\thttps://example.test/issues/4321\n");
 		expect(requests.some((c) => issueRead(9001).test(c))).toBe(false);
 	});
 
 	it("narrows on the title before fetching, so an unrelated queue row costs no read", async () => {
-		const {requests} = await run(
-			script([QUEUE, queue({number: 4400, title: "Something else entirely"})]),
+		const { requests } = await run(
+			script([QUEUE, queue({ number: 4400, title: "Something else entirely" })]),
 		);
 		expect(requests.some((c) => issueRead(4400).test(c))).toBe(false);
 	});
@@ -254,8 +256,8 @@ describe("runSplit — the create-once key", () => {
 
 describe("runSplit — a read that cannot see is never an answer", () => {
 	it("exits 11 on an UNKNOWN candidate body, and creates nothing", async () => {
-		const {outcome, requests} = await run(
-			script([QUEUE, queue({number: 4400, title: TITLE})], [issueRead(4400), UNREADABLE]),
+		const { outcome, requests } = await run(
+			script([QUEUE, queue({ number: 4400, title: TITLE })], [issueRead(4400), UNREADABLE]),
 		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stdout).toBe("");
@@ -266,8 +268,8 @@ describe("runSplit — a read that cannot see is never an answer", () => {
 	// The same refusal on the second loop. The timeline read carries no titles, so it fetches every
 	// cross-reference — an UNKNOWN one there is just as likely to BE the child as an UNKNOWN queue row.
 	it("exits 11 on an UNKNOWN timeline candidate too, not only a queue one", async () => {
-		const {outcome, requests} = await run(
-			script([TIMELINE, timeline({number: 4400})], [issueRead(4400), UNREADABLE]),
+		const { outcome, requests } = await run(
+			script([TIMELINE, timeline({ number: 4400 })], [issueRead(4400), UNREADABLE]),
 		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stdout).toBe("");
@@ -275,13 +277,13 @@ describe("runSplit — a read that cannot see is never an answer", () => {
 	});
 
 	it("exits 11 on an unreadable queue, never on a silent create", async () => {
-		const {outcome, requests} = await run(script([QUEUE, UNREADABLE]));
+		const { outcome, requests } = await run(script([QUEUE, UNREADABLE]));
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(requests.some((c) => CREATE.test(c))).toBe(false);
 	});
 
 	it("exits 11 on an unreadable timeline", async () => {
-		const {outcome, requests} = await run(script([TIMELINE, UNREADABLE]));
+		const { outcome, requests } = await run(script([TIMELINE, UNREADABLE]));
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(requests.some((c) => CREATE.test(c))).toBe(false);
 	});
@@ -295,12 +297,12 @@ describe("runSplit — a read that cannot see is never an answer", () => {
 	});
 
 	it("exits 11 on an unreadable label set", async () => {
-		const {outcome} = await run(script([LABELS, UNREADABLE]));
+		const { outcome } = await run(script([LABELS, UNREADABLE]));
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 	});
 
 	it("exits 7 when the queue label does not exist — a 200 over [] is not a proven negative", async () => {
-		const {outcome, requests} = await run(script([LABELS, labels("type:bug", "p0")]));
+		const { outcome, requests } = await run(script([LABELS, labels("type:bug", "p0")]));
 		expect(outcome.code).toBe(ZERO_SCOPE);
 		expect(outcome.stderr.at(-1)).toContain("a queue that would scan nothing");
 		expect(outcome.stderr.at(-1)).toContain("fabrika status bootstrap label-taxonomy");
@@ -310,14 +312,14 @@ describe("runSplit — a read that cannot see is never an answer", () => {
 
 describe("runSplit — the write and its read-back", () => {
 	it("exits 8 with the re-run recovery when the create fails", async () => {
-		const {outcome} = await run(script([CREATE, WRITE_FAILED]));
+		const { outcome } = await run(script([CREATE, WRITE_FAILED]));
 		expect(outcome.code).toBe(WRITE_UNKNOWN);
 		expect(outcome.stdout).toBe("");
 		expect(outcome.stderr.at(-1)).toContain("which will reuse it if it did");
 	});
 
 	it("exits 9 when the landed child is not what was composed", async () => {
-		const {outcome} = await run(script([issueRead(4321), issue({body: "something else"})]));
+		const { outcome } = await run(script([issueRead(4321), issue({ body: "something else" })]));
 		expect(outcome.code).toBe(READBACK_MISMATCH);
 		expect(outcome.stderr.at(-1)).toBe(
 			"triage split: child #4321 created but its body read back changed — inspect before splitting further.",
@@ -325,13 +327,13 @@ describe("runSplit — the write and its read-back", () => {
 	});
 
 	it("exits 9 when the read-back itself fails", async () => {
-		const {outcome} = await run(script([issueRead(4321), UNREADABLE]));
+		const { outcome } = await run(script([issueRead(4321), UNREADABLE]));
 		expect(outcome.code).toBe(READBACK_MISMATCH);
 	});
 
 	it("tolerates a trailing-newline difference — the normalised comparison owns that", async () => {
-		const {outcome} = await run(
-			script([issueRead(4321), issue({body: `${COMPOSED.trimEnd()}\n\n\n`})]),
+		const { outcome } = await run(
+			script([issueRead(4321), issue({ body: `${COMPOSED.trimEnd()}\n\n\n` })]),
 		);
 		expect(outcome.code).toBe(0);
 	});
@@ -339,15 +341,15 @@ describe("runSplit — the write and its read-back", () => {
 
 describe("runSplit — the authored-text guard", () => {
 	it("refuses an empty body before any network read", async () => {
-		const {outcome, requests} = await run(base, {
-			stdin: Effect.succeed({_tag: "Text", text: ""} satisfies StdinRead),
+		const { outcome, requests } = await run(base, {
+			stdin: Effect.succeed({ _tag: "Text", text: "" } satisfies StdinRead),
 		});
 		expect(outcome.code).toBe(EMPTY_STDIN);
 		expect(requests).toEqual([]);
 	});
 
 	it("scans the COMPOSED body, so nothing the verb appends can escape the predicate", async () => {
-		const {outcome, requests} = await run(base, {
+		const { outcome, requests } = await run(base, {
 			stdin: Effect.succeed({
 				_tag: "Text",
 				text: "reproduced from /Users/someone/scratch/case.md",
@@ -358,7 +360,7 @@ describe("runSplit — the authored-text guard", () => {
 	});
 
 	it("refuses a non-issue-number parent without touching the network", async () => {
-		const {outcome, calls, requests} = await run(base, {parent: 0});
+		const { outcome, calls, requests } = await run(base, { parent: 0 });
 		expect(outcome.code).toBe(1);
 		expect(calls).toEqual([]);
 		expect(requests).toEqual([]);
@@ -368,7 +370,7 @@ describe("runSplit — the authored-text guard", () => {
 /** The guard reads the PARENT — the issue this verb mutates by cross-linking it. */
 describe("runSplit — the parent guard", () => {
 	const MINE = "session-mine";
-	const mine = {CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: MINE} as Record<
+	const mine = { CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: MINE } as Record<
 		string,
 		string | undefined
 	>;
@@ -376,13 +378,13 @@ describe("runSplit — the parent guard", () => {
 	// The composed child body carries the session in its footer, so a run under a session id cannot
 	// match COMPOSED's read-back. What the guard decides is whether the create was reached at all.
 	const guard = async (steps: ReadonlyArray<Scripted>) => {
-		const {outcome, requests} = await run(steps, {env: mine});
-		return {outcome, created: requests.some((line) => CREATE.test(line))};
+		const { outcome, requests } = await run(steps, { env: mine });
+		return { outcome, created: requests.some((line) => CREATE.test(line)) };
 	};
 
 	it("refuses a closed parent on 7 and creates nothing", async () => {
-		const {outcome, created} = await guard(
-			script([PARENT, issue({number: 4312, title: "Two unrelated bugs", state: "closed"})]),
+		const { outcome, created } = await guard(
+			script([PARENT, issue({ number: 4312, title: "Two unrelated bugs", state: "closed" })]),
 		);
 		expect(outcome.code).toBe(ZERO_SCOPE);
 		expect(outcome.stderr.at(-1)).toContain("parent #4312 is already closed.");
@@ -390,7 +392,9 @@ describe("runSplit — the parent guard", () => {
 	});
 
 	it("creates when the live claim is this session's own", async () => {
-		const {created} = await guard(script([COMMENTS, claimPage({session: MINE, createdAt: LIVE})]));
+		const { created } = await guard(
+			script([COMMENTS, claimPage({ session: MINE, createdAt: LIVE })]),
+		);
 		expect(created).toBe(true);
 	});
 });

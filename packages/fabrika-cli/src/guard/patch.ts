@@ -44,13 +44,13 @@ export interface PinAudit {
  * (e.g. `@nkzw/fate@1.3.1` → `@nkzw/fate` + `1.3.1`). Returns `null` when there is no separating
  * `@` after index 0 — the caller treats that as a malformed marker, never a match.
  */
-export const parsePatchKey = (token: string): {name: string; version: string} | null => {
+export const parsePatchKey = (token: string): { name: string; version: string } | null => {
 	const at = token.lastIndexOf("@");
 	if (at <= 0) return null;
 	const name = token.slice(0, at);
 	const version = token.slice(at + 1);
 	if (name === "" || version === "") return null;
-	return {name, version};
+	return { name, version };
 };
 
 /**
@@ -75,7 +75,7 @@ export const parsePatchedDependencies = (yaml: string): ReadonlyArray<PatchedDep
 		const token = m?.[1] ?? m?.[2] ?? m?.[3];
 		if (token === undefined) continue;
 		const parsed = parsePatchKey(token.trim());
-		if (parsed) out.push({key: `${parsed.name}@${parsed.version}`, ...parsed});
+		if (parsed) out.push({ key: `${parsed.name}@${parsed.version}`, ...parsed });
 	}
 	return out;
 };
@@ -96,8 +96,8 @@ export const parsePinMarkers = (source: string, path: string): ReadonlyArray<Pin
 		const parsed = parsePatchKey(token);
 		out.push(
 			parsed
-				? {key: `${parsed.name}@${parsed.version}`, ...parsed, path}
-				: {key: token, name: token, version: "", path},
+				? { key: `${parsed.name}@${parsed.version}`, ...parsed, path }
+				: { key: token, name: token, version: "", path },
 		);
 	}
 	return out;

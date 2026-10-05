@@ -40,8 +40,8 @@
  * driver's own and retracts it alone, and an adopt fences and confers only over a claim marker it postdates.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	composeAdoptMarker,
 	composeMarker,
@@ -54,14 +54,14 @@ import {
 	requireSession,
 	resolveOwnership,
 } from "../build/claim.ts";
-import {composeToken, nonceOf, parseToken} from "../build/lane.ts";
-import {resolveTargetRepo} from "../build/target.ts";
-import {createComment, deleteComment, getComment, listComments} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {claimTarget, LANE_CLAIM} from "./claim.ts";
-import {APPEND_UNKNOWN, CLAIM_NOT_MINE, LANE_UNREADABLE, MARKER_READBACK} from "./codes.ts";
-import type {LaneKey} from "./key.ts";
+import { composeToken, nonceOf, parseToken } from "../build/lane.ts";
+import { resolveTargetRepo } from "../build/target.ts";
+import { createComment, deleteComment, getComment, listComments } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { claimTarget, LANE_CLAIM } from "./claim.ts";
+import { APPEND_UNKNOWN, CLAIM_NOT_MINE, LANE_UNREADABLE, MARKER_READBACK } from "./codes.ts";
+import type { LaneKey } from "./key.ts";
 
 export interface ProtocolOptions {
 	readonly key: LaneKey;
@@ -85,8 +85,8 @@ export interface LaneClaimOptions extends ProtocolOptions {
 }
 
 type Preflight =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Inert"; readonly outcome: VerbOutcome}
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Inert"; readonly outcome: VerbOutcome }
 	| {
 			readonly _tag: "Ready";
 			readonly repo: string;
@@ -101,18 +101,18 @@ const preflight = (
 ): Effect.Effect<Preflight, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		const session = requireSession(verb, options.env);
-		if (session._tag === "Refused") return {_tag: "Refused" as const, outcome: session.outcome};
+		if (session._tag === "Refused") return { _tag: "Refused" as const, outcome: session.outcome };
 		const target = claimTarget(options.key);
 		if (target._tag === "Inert") {
 			return {
 				_tag: "Inert" as const,
-				outcome: answer(JSON.stringify({answer: kind, lane: options.lane, why: target.why}), [
+				outcome: answer(JSON.stringify({ answer: kind, lane: options.lane, why: target.why }), [
 					`${verb}: ${target.why} — nothing was written, and no second driver can be detected here.`,
 				]),
 			};
 		}
 		const resolved = yield* resolveTargetRepo(verb, options.repo, options.env);
-		if (resolved._tag === "Refused") return {_tag: "Refused" as const, outcome: resolved.outcome};
+		if (resolved._tag === "Refused") return { _tag: "Refused" as const, outcome: resolved.outcome };
 		return {
 			_tag: "Ready" as const,
 			repo: resolved.repo,
@@ -125,7 +125,7 @@ const CLAIM = "lane claim";
 
 const unauthorizedNotes = (
 	verb: string,
-	markers: ReadonlyArray<{readonly commentId: number; readonly author: string}>,
+	markers: ReadonlyArray<{ readonly commentId: number; readonly author: string }>,
 ): ReadonlyArray<string> =>
 	markers.map(
 		(marker) =>
@@ -143,7 +143,7 @@ const siblingNote = (verb: string, token: string): string =>
  * one to re-spawn — the two verbs contradicting each other over one lane, with only a hand-composed
  * `--token` release in between.
  */
-const successionNote = (verb: string, holder: {readonly session: string}, lane: string): string =>
+const successionNote = (verb: string, holder: { readonly session: string }, lane: string): string =>
 	`${verb}: if that seat is gone, take the lane back through succession rather than a hand-composed token — fabrika lane adopt ${lane} --session ${holder.session} --reason "<why>", then fabrika lane release ${lane} --token <the token adopt printed>.`;
 
 export const runLaneClaim = (
@@ -152,7 +152,7 @@ export const runLaneClaim = (
 	Effect.gen(function* () {
 		const ready = yield* preflight(CLAIM, "unclaimable", options);
 		if (ready._tag !== "Ready") return ready.outcome;
-		const {repo, session, number} = ready;
+		const { repo, session, number } = ready;
 
 		// Already THIS DRIVER's: answer with the marker that owns it and write nothing. A second marker
 		// would leave `claim` printing one nonce while `release` deleted the earliest, so each release
@@ -233,7 +233,7 @@ export const runLaneClaim = (
 		// The checkpoint: posting DETECTS a race, this re-read RESOLVES it. It resolves against the
 		// token this run just minted, so a sibling driver of the same session is a co-racer like any
 		// other rather than this run reading its neighbour's marker as its own.
-		const {ownership, unauthorized} = yield* resolveOwnership(
+		const { ownership, unauthorized } = yield* resolveOwnership(
 			repo,
 			number,
 			laneCaller(session, nonce, token),
@@ -242,7 +242,12 @@ export const runLaneClaim = (
 		const notes = unauthorizedNotes(CLAIM, unauthorized);
 		if (ownership._tag === "Mine") {
 			return answer(
-				JSON.stringify({answer: "won", lane: options.lane, number, token: ownership.marker.token}),
+				JSON.stringify({
+					answer: "won",
+					lane: options.lane,
+					number,
+					token: ownership.marker.token,
+				}),
 				notes,
 			);
 		}
@@ -290,7 +295,7 @@ export const runLaneRelease = (
 	Effect.gen(function* () {
 		const ready = yield* preflight(RELEASE, "inert", options);
 		if (ready._tag !== "Ready") return ready.outcome;
-		const {repo, session, number} = ready;
+		const { repo, session, number } = ready;
 
 		if (options.token === null) {
 			return refuse(
@@ -302,7 +307,7 @@ export const runLaneRelease = (
 		if (asking._tag === "Refused") return asking.outcome;
 		const lane = asking.caller;
 
-		const {ownership, unauthorized, unauthorizedAdopts} = yield* resolveOwnership(
+		const { ownership, unauthorized, unauthorizedAdopts } = yield* resolveOwnership(
 			repo,
 			number,
 			lane,
@@ -397,7 +402,7 @@ export const runLaneRelease = (
 		}
 		const adopt = ownership.adopt;
 		if (adopt === null) {
-			return answer(JSON.stringify({answer: "released", lane: options.lane, number}), notes);
+			return answer(JSON.stringify({ answer: "released", lane: options.lane, number }), notes);
 		}
 		// The adopt outlives nothing: it exists to authorize this release, so it goes with the claim.
 		const cleared = yield* deleteComment(repo, adopt.commentId);
@@ -488,7 +493,7 @@ export const runLaneAdopt = (
 
 		const ready = yield* preflight(ADOPT, "inert", options);
 		if (ready._tag !== "Ready") return ready.outcome;
-		const {repo, session, number} = ready;
+		const { repo, session, number } = ready;
 
 		const token = composeToken(session, options.uuid, LANE_CLAIM.prefix);
 		const body = composeAdoptMarker(adopted, token, options.at, reason, LANE_CLAIM);
@@ -512,7 +517,7 @@ export const runLaneAdopt = (
 			);
 		}
 		return answer(
-			JSON.stringify({answer: "adopted", lane: options.lane, number, session: adopted, token}),
+			JSON.stringify({ answer: "adopted", lane: options.lane, number, session: adopted, token }),
 			[
 				`${ADOPT}: #${number}'s lane claim from "${adopted}" is now releasable by the driver this marker names — run "fabrika lane release ${options.lane} --token ${token}".`,
 			],

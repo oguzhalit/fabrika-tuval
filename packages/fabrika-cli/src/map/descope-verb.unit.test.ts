@@ -1,9 +1,9 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs, fakeSeams, once, type Scripted} from "../fakes.test-support.ts";
-import {renderOutOfScope, spliceSection} from "./body.ts";
-import {ALREADY_DESCOPED, BAD_SECTIONS, DIGEST_STALE, TICKET_UNKNOWN} from "./codes.ts";
-import {runDescope} from "./descope-verb.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs, fakeSeams, once, type Scripted } from "../fakes.test-support.ts";
+import { renderOutOfScope, spliceSection } from "./body.ts";
+import { ALREADY_DESCOPED, BAD_SECTIONS, DIGEST_STALE, TICKET_UNKNOWN } from "./codes.ts";
+import { runDescope } from "./descope-verb.ts";
 import {
 	commentsJson,
 	digestFor,
@@ -16,7 +16,7 @@ import {
 	REPO,
 	TICKET,
 } from "./fixtures.test-support.ts";
-import {composeTicketMarker} from "./markers.ts";
+import { composeTicketMarker } from "./markers.ts";
 
 const PERMISSION = /collaborators\/.*\/permission/;
 const CHILDREN = /issues\/9140\/sub_issues/;
@@ -28,7 +28,7 @@ const MAP_ISSUE = /issues\/9140$/;
 const PATCH_MAP = /PATCH .*\/issues\/9140/;
 const PATCH_TICKET = /PATCH .*\/issues\/9142/;
 
-const served = (body: string) => ({status: 200, body}) as const;
+const served = (body: string) => ({ status: 200, body }) as const;
 
 const REASON = "reason.md";
 const DIRECTION = "a per-topic weight multiplier";
@@ -41,42 +41,42 @@ const options = {
 	reason: REASON,
 	ticket: null as number | null,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: REPO},
+	env: { CLAUDE_PIPELINE_REPO: REPO },
 	now: () => new Date("2026-08-10T00:00:00Z"),
 };
 
 const run = (
 	script: ReadonlyArray<Scripted>,
 	over: Partial<typeof options> = {},
-	files: Readonly<Record<string, string | null>> = {[REASON]: `${WHY}\n`},
+	files: Readonly<Record<string, string | null>> = { [REASON]: `${WHY}\n` },
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runDescope({...options, ...over}),
-			Layer.merge(fakeSeams(script).layer, fakeFs({files}).layer),
+			runDescope({ ...options, ...over }),
+			Layer.merge(fakeSeams(script).layer, fakeFs({ files }).layer),
 		),
 	);
 
 const appended = spliceSection(
 	parsed(MAP_BODY),
 	"Out of scope",
-	renderOutOfScope({direction: DIRECTION, reason: WHY, recordedAt: "2026-08-10"}),
+	renderOutOfScope({ direction: DIRECTION, reason: WHY, recordedAt: "2026-08-10" }),
 );
 
 const mapOk = (body = MAP_BODY): Scripted => [
 	MAP_ISSUE,
-	served(issueJson({number: MAP, body, labels: ["wayfinding:map"]})),
+	served(issueJson({ number: MAP, body, labels: ["wayfinding:map"] })),
 ];
 
 describe("runDescope", () => {
 	it("exits 4 on an empty reason — an entry with none is one the next session re-proposes", async () => {
-		const out = await run([], {}, {[REASON]: "  \n"});
+		const out = await run([], {}, { [REASON]: "  \n" });
 		expect(out.code).toBe(BAD_SECTIONS);
 		expect(out.stdout).toBe("");
 	});
 
 	it("exits 12 when the body moved since --digest", async () => {
-		const out = await run([mapOk()], {digest: "000000000000"});
+		const out = await run([mapOk()], { digest: "000000000000" });
 		expect(out.code).toBe(DIGEST_STALE);
 		expect(out.stdout).toBe("");
 	});
@@ -99,15 +99,15 @@ describe("runDescope", () => {
 					TICKET_COMMENTS,
 					served(
 						commentsJson([
-							{id: 1, body: composeTicketMarker({map: MAP, kind: "research", nonce: NONCE})},
+							{ id: 1, body: composeTicketMarker({ map: MAP, kind: "research", nonce: NONCE }) },
 						]),
 					),
 				],
 				[EDGES, served("[]")],
-				[TICKET_ISSUE, served(issueJson({number: TICKET}))],
+				[TICKET_ISSUE, served(issueJson({ number: TICKET }))],
 				mapOk(),
 			],
-			{ticket: 9999},
+			{ ticket: 9999 },
 		);
 		expect(out.code).toBe(TICKET_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -118,12 +118,12 @@ describe("runDescope", () => {
 			[PATCH_MAP, served("{}")],
 			[
 				once(MAP_ISSUE),
-				served(issueJson({number: MAP, body: MAP_BODY, labels: ["wayfinding:map"]})),
+				served(issueJson({ number: MAP, body: MAP_BODY, labels: ["wayfinding:map"] })),
 			],
-			[MAP_ISSUE, served(issueJson({number: MAP, body: appended, labels: ["wayfinding:map"]}))],
+			[MAP_ISSUE, served(issueJson({ number: MAP, body: appended, labels: ["wayfinding:map"] }))],
 		]);
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({map: MAP, direction: DIRECTION, entries: 1});
+		expect(JSON.parse(out.stdout)).toMatchObject({ map: MAP, direction: DIRECTION, entries: 1 });
 	});
 
 	it("appends rather than rewriting — every prior entry survives byte-identically", async () => {
@@ -144,9 +144,11 @@ describe("runDescope", () => {
 			[PATCH_MAP, served("{}")],
 			[
 				once(MAP_ISSUE),
-				served(issueJson({number: MAP, body: MAP_BODY_WITH_REJECTION, labels: ["wayfinding:map"]})),
+				served(
+					issueJson({ number: MAP, body: MAP_BODY_WITH_REJECTION, labels: ["wayfinding:map"] }),
+				),
 			],
-			[MAP_ISSUE, served(issueJson({number: MAP, body: twoEntries, labels: ["wayfinding:map"]}))],
+			[MAP_ISSUE, served(issueJson({ number: MAP, body: twoEntries, labels: ["wayfinding:map"] }))],
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
@@ -157,7 +159,7 @@ describe("runDescope", () => {
 				}),
 				Layer.merge(
 					seams.layer,
-					fakeFs({files: {[REASON]: "the old score counted post volume\n"}}).layer,
+					fakeFs({ files: { [REASON]: "the old score counted post volume\n" } }).layer,
 				),
 			),
 		);
@@ -178,20 +180,20 @@ describe("runDescope", () => {
 		const descoped = spliceSection(
 			parsed(MAP_BODY),
 			"Out of scope",
-			renderOutOfScope({direction: DIRECTION, reason: folded, recordedAt: "2026-08-10"}),
+			renderOutOfScope({ direction: DIRECTION, reason: folded, recordedAt: "2026-08-10" }),
 		);
 		const seams = fakeSeams([
 			[PATCH_MAP, served("{}")],
 			[
 				once(MAP_ISSUE),
-				served(issueJson({number: MAP, body: MAP_BODY, labels: ["wayfinding:map"]})),
+				served(issueJson({ number: MAP, body: MAP_BODY, labels: ["wayfinding:map"] })),
 			],
-			[MAP_ISSUE, served(issueJson({number: MAP, body: descoped, labels: ["wayfinding:map"]}))],
+			[MAP_ISSUE, served(issueJson({ number: MAP, body: descoped, labels: ["wayfinding:map"] }))],
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
 				runDescope(options),
-				Layer.merge(seams.layer, fakeFs({files: {[REASON]: `${reason}\n`}}).layer),
+				Layer.merge(seams.layer, fakeFs({ files: { [REASON]: `${reason}\n` } }).layer),
 			),
 		);
 		expect(out.code).toBe(0);
@@ -203,7 +205,7 @@ describe("runDescope", () => {
 	it("retires the named ticket off the frontier and closes it", async () => {
 		const retired = spliceSection(parsed(appended), "Frontier", "");
 		const seams = fakeSeams([
-			[POST_TICKET, {status: 201, body: '{"id":3,"html_url":"u"}'}],
+			[POST_TICKET, { status: 201, body: '{"id":3,"html_url":"u"}' }],
 			[PATCH_TICKET, served("{}")],
 			[PATCH_MAP, served("{}")],
 			[PERMISSION, served('{"permission":"write"}')],
@@ -212,22 +214,22 @@ describe("runDescope", () => {
 				TICKET_COMMENTS,
 				served(
 					commentsJson([
-						{id: 1, body: composeTicketMarker({map: MAP, kind: "research", nonce: NONCE})},
+						{ id: 1, body: composeTicketMarker({ map: MAP, kind: "research", nonce: NONCE }) },
 					]),
 				),
 			],
 			[EDGES, served("[]")],
-			[TICKET_ISSUE, served(issueJson({number: TICKET}))],
+			[TICKET_ISSUE, served(issueJson({ number: TICKET }))],
 			[
 				once(MAP_ISSUE),
-				served(issueJson({number: MAP, body: MAP_BODY, labels: ["wayfinding:map"]})),
+				served(issueJson({ number: MAP, body: MAP_BODY, labels: ["wayfinding:map"] })),
 			],
-			[MAP_ISSUE, served(issueJson({number: MAP, body: retired, labels: ["wayfinding:map"]}))],
+			[MAP_ISSUE, served(issueJson({ number: MAP, body: retired, labels: ["wayfinding:map"] }))],
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runDescope({...options, ticket: TICKET}),
-				Layer.merge(seams.layer, fakeFs({files: {[REASON]: `${WHY}\n`}}).layer),
+				runDescope({ ...options, ticket: TICKET }),
+				Layer.merge(seams.layer, fakeFs({ files: { [REASON]: `${WHY}\n` } }).layer),
 			),
 		);
 		expect(out.code).toBe(0);

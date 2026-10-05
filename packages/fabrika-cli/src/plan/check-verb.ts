@@ -10,15 +10,15 @@
  * never saw the plan a verdict over it.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {badNumber, resolveTargetRepo} from "../build/target.ts";
-import {cycleDocOr} from "../config/paths.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {requireApproval} from "./approval.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import type {Floor} from "./defects.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { badNumber, resolveTargetRepo } from "../build/target.ts";
+import { cycleDocOr } from "../config/paths.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { requireApproval } from "./approval.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import type { Floor } from "./defects.ts";
 import {
 	deriveFloorFor,
 	loadLedger,
@@ -28,7 +28,7 @@ import {
 	requireEpic,
 	scannedChildren,
 } from "./load.ts";
-import type {Ledger} from "./model.ts";
+import type { Ledger } from "./model.ts";
 
 const VERB = "plan check";
 

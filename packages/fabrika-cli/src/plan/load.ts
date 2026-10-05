@@ -10,10 +10,10 @@
  * `plan flip`. The codes are identical; only the sentence moves.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {readBlockedness} from "../build/blockedness.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { readBlockedness } from "../build/blockedness.ts";
 import {
 	type PhaseLine,
 	type RequiredEdge,
@@ -22,28 +22,28 @@ import {
 	renderRef,
 	requiredEdges,
 } from "../build/dependencies.ts";
-import {openIssue} from "../build/target.ts";
-import type {StatusNames} from "../config/board.ts";
-import {CONFIG_PATH} from "../config/document.ts";
+import { openIssue } from "../build/target.ts";
+import type { StatusNames } from "../config/board.ts";
+import { CONFIG_PATH } from "../config/document.ts";
 import {
 	CONTAINMENT_VOCABULARY,
 	type ContainmentVocabulary,
 	containmentVocabularyKey,
 	readContainment,
 } from "../config/keys/containment-vocabulary.ts";
-import {resolve} from "../config/load.ts";
-import type {BoardRead} from "../config/resolve-board.ts";
-import {loadRepoConfig} from "../config/working-root.ts";
-import {blockedBy} from "../io/edges.ts";
-import {getIssue, type IssueRecord} from "../io/issues.ts";
-import {BOARD_SUBJECT, readBoard, refusalReason} from "../status/repo-board.ts";
-import {EPIC_TYPE_LABEL} from "../triage/facets.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {read as readAcceptanceCriteria} from "../wire/acceptance-criteria.ts";
-import {BAD_SECTIONS, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {deriveFloor, edgesToEnforce, type Floor, refsToProbe} from "./defects.ts";
-import {type LedgerScope, scopeDigest} from "./digest.ts";
-import {getChild, listSubIssues, probeCycleDoc} from "./github.ts";
+import { resolve } from "../config/load.ts";
+import type { BoardRead } from "../config/resolve-board.ts";
+import { loadRepoConfig } from "../config/working-root.ts";
+import { blockedBy } from "../io/edges.ts";
+import { getIssue, type IssueRecord } from "../io/issues.ts";
+import { BOARD_SUBJECT, readBoard, refusalReason } from "../status/repo-board.ts";
+import { EPIC_TYPE_LABEL } from "../triage/facets.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { read as readAcceptanceCriteria } from "../wire/acceptance-criteria.ts";
+import { BAD_SECTIONS, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { deriveFloor, edgesToEnforce, type Floor, refsToProbe } from "./defects.ts";
+import { type LedgerScope, scopeDigest } from "./digest.ts";
+import { getChild, listSubIssues, probeCycleDoc } from "./github.ts";
 import {
 	CONTAINMENT_FIELD,
 	fieldLines,
@@ -53,7 +53,7 @@ import {
 	sectionCount,
 	USER_STORIES_HEADING,
 } from "./ledger.ts";
-import type {ChildLedger, CriteriaToken, Ledger, Phase} from "./model.ts";
+import type { ChildLedger, CriteriaToken, Ledger, Phase } from "./model.ts";
 
 /** Child reads and child writes run bounded. v1 spawned one `gh api` per child, unbounded. */
 export const FAN_OUT = 8;
@@ -79,8 +79,8 @@ export interface PlanMessages {
  * any other repo that declared nothing.
  */
 export type VocabularyRead =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Vocabulary"; readonly vocabulary: ContainmentVocabulary};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Vocabulary"; readonly vocabulary: ContainmentVocabulary };
 
 export const readContainmentVocabulary = (
 	messages: PlanMessages,
@@ -91,7 +91,7 @@ export const readContainmentVocabulary = (
 		switch (resolved._tag) {
 			case "Declared":
 			case "Default":
-				return {_tag: "Vocabulary" as const, vocabulary: resolved.value};
+				return { _tag: "Vocabulary" as const, vocabulary: resolved.value };
 			case "Malformed":
 			case "Unknown":
 				return {
@@ -112,8 +112,8 @@ export const readContainmentVocabulary = (
  * verdict and approval bound to it — UNKNOWN rather than computed over the shipped names.
  */
 export type BoardVocabularyRead =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Board"; readonly read: Extract<BoardRead, {readonly _tag: "Resolved"}>};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Board"; readonly read: Extract<BoardRead, { readonly _tag: "Resolved" }> };
 
 export const readBoardVocabulary = (
 	messages: PlanMessages,
@@ -128,12 +128,12 @@ export const readBoardVocabulary = (
 						messages.unreadable(BOARD_SUBJECT, refusalReason(read)),
 					),
 				}
-			: {_tag: "Board" as const, read},
+			: { _tag: "Board" as const, read },
 	);
 
 export type EpicTarget =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Epic"; readonly issue: IssueRecord};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Epic"; readonly issue: IssueRecord };
 
 /** The precondition every verb runs: an open issue that is a `type:epic`. */
 export const requireEpic = (
@@ -145,18 +145,18 @@ export const requireEpic = (
 		const target = yield* openIssue(messages.verb, repo, number, (reason) =>
 			messages.unreadable(`#${number}`, reason),
 		);
-		if (target._tag === "Refused") return {_tag: "Refused" as const, outcome: target.outcome};
+		if (target._tag === "Refused") return { _tag: "Refused" as const, outcome: target.outcome };
 		if (!target.issue.labels.includes(EPIC_TYPE_LABEL)) {
 			return {
 				_tag: "Refused" as const,
 				outcome: refuse(OFF_VOCABULARY, messages.notAnEpic(number)),
 			};
 		}
-		return {_tag: "Epic" as const, issue: target.issue};
+		return { _tag: "Epic" as const, issue: target.issue };
 	});
 
 export type LedgerRead =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
 	| {
 			readonly _tag: "Ledger";
 			readonly ledger: Ledger;
@@ -168,10 +168,10 @@ export type LedgerRead =
 			readonly required: ReadonlyArray<RequiredEdge>;
 	  };
 
-const criteriaOf = (body: string): {token: CriteriaToken; count: number} => {
+const criteriaOf = (body: string): { token: CriteriaToken; count: number } => {
 	const read = readAcceptanceCriteria(body);
-	if (read._tag === "Found") return {token: "found", count: read.value.length};
-	return {token: read._tag === "Absent" ? "absent" : "malformed", count: 0};
+	if (read._tag === "Found") return { token: "found", count: read.value.length };
+	return { token: read._tag === "Absent" ? "absent" : "malformed", count: 0 };
 };
 
 /** The epic's own criteria texts, in body order — empty on anything but a `Found`. */
@@ -246,13 +246,16 @@ export const loadLedger = (
 			};
 		}
 		if (listed.value.length === 0) {
-			return {_tag: "Refused" as const, outcome: refuse(ZERO_SCOPE, messages.zeroChildren(number))};
+			return {
+				_tag: "Refused" as const,
+				outcome: refuse(ZERO_SCOPE, messages.zeroChildren(number)),
+			};
 		}
 
 		const fetched = yield* Effect.forEach(
 			listed.value.map((link) => link.number).sort((a, b) => a - b),
 			(child) => getChild(repo, child, env).pipe(Effect.map((found) => [child, found] as const)),
-			{concurrency: FAN_OUT},
+			{ concurrency: FAN_OUT },
 		);
 
 		const children: ChildLedger[] = [];
@@ -299,7 +302,7 @@ export const loadLedger = (
 		const parsed = topology._tag === "Parsed" ? topology.edges : [];
 		const phases: Phase[] = parsed
 			.filter((edge): edge is PhaseLine => edge._tag === "Phase")
-			.map((edge) => ({phase: edge.phase, members: edge.members.map(renderRef)}));
+			.map((edge) => ({ phase: edge.phase, members: edge.members.map(renderRef) }));
 		// Only `requires:` lines become edges. A phase boundary is a total order and cannot cycle, so
 		// `DEP_CYCLE` can only ever arise from an explicit requirement — see the `deps=` vs `edges=`
 		// split in the scope digest, which carries the phase spine separately.
@@ -317,12 +320,12 @@ export const loadLedger = (
 			epicStories: stories.ids,
 			epicCriteria: epicCriteriaOf(epic.body),
 			cycleDoc: yield* probeCycleDoc(repo, cycleDocPath, env),
-			topology: {phases, edges},
+			topology: { phases, edges },
 			dependenciesAbsent: topology._tag === "Absent",
 		};
 		return {
 			_tag: "Ledger" as const,
-			ledger: {...scope, digest: scopeDigest(scope, statuses)},
+			ledger: { ...scope, digest: scopeDigest(scope, statuses) },
 			required: requiredEdges(parsed),
 		};
 	});
@@ -340,8 +343,8 @@ export const scannedChildren = (verb: string, numbers: ReadonlyArray<number>): s
 		.join(", ")}.`;
 
 export type FloorRead =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Floor"; readonly floor: Floor};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Floor"; readonly floor: Floor };
 
 /**
  * The floor over a loaded ledger, including the three reads it needs: the 404-discriminating probe
@@ -370,7 +373,7 @@ export const deriveFloorFor = (
 		const probed = yield* Effect.forEach(
 			refsToProbe(ledger),
 			(ref) => getIssue(repo, ref).pipe(Effect.map((found) => [ref, found] as const)),
-			{concurrency: FAN_OUT},
+			{ concurrency: FAN_OUT },
 		);
 		const provenAbsent = new Set<number>();
 		for (const [ref, found] of probed) {
@@ -392,7 +395,7 @@ export const deriveFloorFor = (
 		const graph = yield* Effect.forEach(
 			dependents,
 			(number) => blockedBy(repo, number).pipe(Effect.map((found) => [number, found] as const)),
-			{concurrency: FAN_OUT},
+			{ concurrency: FAN_OUT },
 		);
 		const observed = new Map<number, ReadonlySet<number>>();
 		for (const [number, found] of graph) {

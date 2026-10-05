@@ -7,12 +7,12 @@
  * `./no-gh.ts`.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {isDirectory, type ReadFailed, readDir, readFile, realPath} from "../io/fs.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {atLine} from "./annotate.ts";
-import {isZeroScope, type ScanFile, scanPackage} from "./no-gh.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { isDirectory, type ReadFailed, readDir, readFile, realPath } from "../io/fs.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { atLine } from "./annotate.ts";
+import { isZeroScope, type ScanFile, scanPackage } from "./no-gh.ts";
 import {
 	annotationsOrNone,
 	clean,
@@ -98,7 +98,7 @@ const judge = (
 		}
 		const corpus: Array<ScanFile> = [];
 		for (const file of files) {
-			corpus.push({file, content: yield* readFile(path.join(root, file))});
+			corpus.push({ file, content: yield* readFile(path.join(root, file)) });
 		}
 		const result = scanPackage(corpus);
 		if (isZeroScope(result)) {

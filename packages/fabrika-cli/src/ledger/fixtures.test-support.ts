@@ -16,9 +16,9 @@ import {
 	NONCE,
 	served,
 } from "../build/fixtures.test-support.ts";
-import type {HttpReply} from "../fakes.test-support.ts";
-import {PLAN_SECTIONS} from "./plan-block.ts";
-import {runDir, runKey} from "./run.ts";
+import type { HttpReply } from "../fakes.test-support.ts";
+import { PLAN_SECTIONS } from "./plan-block.ts";
+import { runDir, runKey } from "./run.ts";
 
 export const EPIC = 4300;
 export const SESSION = "s-9f2e";
@@ -41,7 +41,7 @@ export const epic = (overrides: Record<string, unknown> = {}): HttpReply =>
 		title: "The moderation queue epic",
 		body: "An epic brief about the moderation queue.\n",
 		state: "open",
-		labels: [{name: "type:epic"}, {name: "status:triaged"}],
+		labels: [{ name: "type:epic" }, { name: "status:triaged" }],
 		html_url: "https://forge.example/o/r/issues/4300",
 		milestone: null,
 		state_reason: null,
@@ -63,7 +63,7 @@ export const subIssues = (...rows: ReadonlyArray<SubIssueFixture>): HttpReply =>
 			number: row.number,
 			id: row.id ?? row.number * 1000,
 			title: row.title ?? `child ${row.number}`,
-			labels: (row.labels ?? ["type:feature", "p1"]).map((name) => ({name})),
+			labels: (row.labels ?? ["type:feature", "p1"]).map((name) => ({ name })),
 			state: row.state ?? "open",
 			state_reason: row.stateReason ?? null,
 		})),
@@ -84,15 +84,15 @@ export const childIssue = (options: {
 		body: options.body ?? "a child body\n",
 		state: options.state ?? "open",
 		state_reason: options.stateReason ?? null,
-		labels: (options.labels ?? []).map((name) => ({name})),
-		assignees: (options.assignees ?? []).map((login) => ({login})),
-		milestone: options.milestone == null ? null : {number: 44, title: options.milestone},
+		labels: (options.labels ?? []).map((name) => ({ name })),
+		assignees: (options.assignees ?? []).map((login) => ({ login })),
+		milestone: options.milestone == null ? null : { number: 44, title: options.milestone },
 		html_url: `https://forge.example/o/r/issues/${options.number}`,
 	});
 
 /** A plan block that clears the section set and the story grammar. */
 export const planBlock = (
-	overrides: {stories?: string; drop?: string; criteria?: string} = {},
+	overrides: { stories?: string; drop?: string; criteria?: string } = {},
 ): string =>
 	[
 		"## Plan (plan-epic)",
@@ -120,7 +120,7 @@ export const planBlock = (
 
 /** A child body that clears the field and criteria readers. */
 export const childBody = (
-	overrides: {stories?: string; containment?: string | null; criteria?: string} = {},
+	overrides: { stories?: string; containment?: string | null; criteria?: string } = {},
 ): string =>
 	[
 		`**Stories:** ${overrides.stories ?? "1, 2"}`,
@@ -139,7 +139,7 @@ export const childBody = (
 	].join("\n");
 
 export const labelSet = (...names: ReadonlyArray<string>): HttpReply =>
-	served(names.map((name) => ({name})));
+	served(names.map((name) => ({ name })));
 
 export const DEFAULT_LABELS: ReadonlyArray<string> = [
 	"type:feature",
@@ -154,32 +154,32 @@ export const DEFAULT_LABELS: ReadonlyArray<string> = [
 ];
 
 export const milestones = (...rows: ReadonlyArray<readonly [number, string]>): HttpReply =>
-	served(rows.map(([number, title]) => ({number, title})));
+	served(rows.map(([number, title]) => ({ number, title })));
 
 /** One page of the `search/issues` envelope — the dedup index's own shape, count and all. */
 export const issueRows = (...rows: ReadonlyArray<readonly [number, string]>): HttpReply =>
 	served({
 		total_count: rows.length,
-		items: rows.map(([number, title]) => ({number, title})),
+		items: rows.map(([number, title]) => ({ number, title })),
 	});
 
 /** The same rows as one served page of `issues?state=open` — the backlog dedup source. */
 export const backlogPage = (...rows: ReadonlyArray<readonly [number, string]>): HttpReply =>
-	served(rows.map(([number, title]) => ({number, title})));
+	served(rows.map(([number, title]) => ({ number, title })));
 
 /** The claim on the epic, held by the lane `TOKEN` names — the one the run key is derived from. */
 export const CLAIMED: ReadonlyArray<readonly [RegExp, HttpReply]> = [
 	[
 		new RegExp(`^GET .*/repos/${REPO}/issues/${EPIC}/comments\\?`),
-		comments({id: 1, body: marker(SESSION, LANE_UUID)}),
+		comments({ id: 1, body: marker(SESSION, LANE_UUID) }),
 	],
 	[
 		new RegExp(`^GET .*/repos/${REPO}/collaborators/agent/permission`),
-		served({permission: "write"}),
+		served({ permission: "write" }),
 	],
 ];
 
 /** The `--token` the fixture lane passes: the claim `CLAIMED` posts, read back as an identity. */
 export const TOKEN = LANE_TOKEN;
 
-export {NONCE};
+export { NONCE };

@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import {DECISIONS_ROOT} from "../review/classes.ts";
-import {docLeaks, isDocLeakExempt, isDocSurface} from "./doc-leaks.ts";
+import { describe, expect, it } from "vitest";
+import { DECISIONS_ROOT } from "../review/classes.ts";
+import { docLeaks, isDocLeakExempt, isDocSurface } from "./doc-leaks.ts";
 
 /**
  * The three ways the body scanner disagreed with the committed-file gate. Each fixture is bytes

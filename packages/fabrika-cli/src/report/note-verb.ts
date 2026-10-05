@@ -8,13 +8,13 @@
  * creates.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {LEAK_NAMES, type LeakNames} from "../config/keys/leak-names.ts";
-import type {Read} from "../config/read-key.ts";
-import {createComment, getComment, getIssue, resolveRepo} from "../io/issues.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { LEAK_NAMES, type LeakNames } from "../config/keys/leak-names.ts";
+import type { Read } from "../config/read-key.ts";
+import { createComment, getComment, getIssue, resolveRepo } from "../io/issues.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	BARE_AT_PATH,
 	EMPTY_STDIN,
@@ -24,8 +24,8 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {normalizeForReadback} from "./compose.ts";
-import {isBareAtReference, redactionTally, renderLeaks, scanBody} from "./leaks.ts";
+import { normalizeForReadback } from "./compose.ts";
+import { isBareAtReference, redactionTally, renderLeaks, scanBody } from "./leaks.ts";
 
 export interface NoteOptions {
 	readonly issue: number;
@@ -42,7 +42,7 @@ export const runNote = (
 	options: NoteOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {issue, json} = options;
+		const { issue, json } = options;
 
 		if (!Number.isInteger(issue) || issue <= 0) {
 			return refuse(FAILED, `report note: --issue ${issue} is not an issue number.`);

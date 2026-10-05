@@ -1,6 +1,6 @@
 /** The lane key — which kind an argument names, where it lands, and the names it refuses. */
-import {describe, expect, it} from "vitest";
-import {claimTarget} from "./claim.ts";
+import { describe, expect, it } from "vitest";
+import { claimTarget } from "./claim.ts";
 import {
 	CHORE_NAME_LIMIT,
 	keyIssue,
@@ -11,7 +11,7 @@ import {
 	resolveRawIssue,
 	templateFile,
 } from "./key.ts";
-import {DEFAULT_CHORES_ROOT, DEFAULT_LANES_ROOT} from "./store.ts";
+import { DEFAULT_CHORES_ROOT, DEFAULT_LANES_ROOT } from "./store.ts";
 
 const key = (raw: string) => {
 	const parsed = parseKey(raw);
@@ -27,12 +27,12 @@ const reasonFor = (raw: string): string => {
 
 describe("the lane key", () => {
 	it("reads a bare argument as the issue lane it drives", () => {
-		expect(key("5673")).toEqual({_tag: "Issue", lane: "5673"});
-		expect(laneRef(key("5673"), null)).toEqual({root: DEFAULT_LANES_ROOT, lane: "5673"});
+		expect(key("5673")).toEqual({ _tag: "Issue", lane: "5673" });
+		expect(laneRef(key("5673"), null)).toEqual({ root: DEFAULT_LANES_ROOT, lane: "5673" });
 	});
 
 	it("reads a `chore:` argument as a chore lane under the chores root", () => {
-		expect(key("chore:park-sweep")).toEqual({_tag: "Chore", name: "park-sweep"});
+		expect(key("chore:park-sweep")).toEqual({ _tag: "Chore", name: "park-sweep" });
 		expect(laneRef(key("chore:park-sweep"), null)).toEqual({
 			root: DEFAULT_CHORES_ROOT,
 			lane: "park-sweep",
@@ -108,7 +108,7 @@ describe("the issue a lane key drives", () => {
 
 describe("which of the two ways a key names no issue", () => {
 	it("resolves a numbered key to the issue itself", () => {
-		expect(resolveKeyIssue(key("8012"))).toEqual({_tag: "Issue", number: 8012});
+		expect(resolveKeyIssue(key("8012"))).toEqual({ _tag: "Issue", number: 8012 });
 		expect(resolveKeyIssue(key("8012.frozen-deadlock-20260905T194736"))).toEqual({
 			_tag: "Issue",
 			number: 8012,
@@ -116,9 +116,9 @@ describe("which of the two ways a key names no issue", () => {
 	});
 
 	it("separates a chore lane, which names none by construction, from one that names none by accident", () => {
-		expect(resolveKeyIssue(key("chore:park-sweep"))).toEqual({_tag: "Chore"});
-		expect(resolveKeyIssue(key("frozen-deadlock"))).toEqual({_tag: "Unnumbered"});
-		expect(resolveKeyIssue(key("8012abc"))).toEqual({_tag: "Unnumbered"});
+		expect(resolveKeyIssue(key("chore:park-sweep"))).toEqual({ _tag: "Chore" });
+		expect(resolveKeyIssue(key("frozen-deadlock"))).toEqual({ _tag: "Unnumbered" });
+		expect(resolveKeyIssue(key("8012abc"))).toEqual({ _tag: "Unnumbered" });
 	});
 });
 
@@ -132,15 +132,15 @@ describe("a padded issue number is one identity, not several", () => {
 
 	it("gives every spelling the same canonical directory leaf under either root", () => {
 		for (const raw of SPELLINGS) {
-			expect(laneRef(key(raw), null)).toEqual({root: DEFAULT_LANES_ROOT, lane: "5673"});
-			expect(laneRef(key(raw), "/tmp/lanes")).toEqual({root: "/tmp/lanes", lane: "5673"});
+			expect(laneRef(key(raw), null)).toEqual({ root: DEFAULT_LANES_ROOT, lane: "5673" });
+			expect(laneRef(key(raw), "/tmp/lanes")).toEqual({ root: "/tmp/lanes", lane: "5673" });
 		}
 	});
 
 	it("addresses the same board issue and the same claim target from every spelling", () => {
 		for (const raw of SPELLINGS) {
 			expect(keyIssue(key(raw))).toBe(5673);
-			expect(claimTarget(key(raw))).toEqual({_tag: "Number", number: 5673});
+			expect(claimTarget(key(raw))).toEqual({ _tag: "Number", number: 5673 });
 		}
 	});
 
@@ -150,7 +150,7 @@ describe("a padded issue number is one identity, not several", () => {
 
 			expect(laneRef(spelled, null).lane).toBe("5673");
 			expect(keyIssue(spelled)).toBe(5673);
-			expect(claimTarget(spelled)).toEqual({_tag: "Number", number: 5673});
+			expect(claimTarget(spelled)).toEqual({ _tag: "Number", number: 5673 });
 		}
 	});
 
@@ -162,9 +162,9 @@ describe("a padded issue number is one identity, not several", () => {
 	});
 
 	it("canonicalizes a directory name a sweep read off a root the same way", () => {
-		expect(resolveRawIssue("05673")).toEqual({_tag: "Issue", number: 5673});
+		expect(resolveRawIssue("05673")).toEqual({ _tag: "Issue", number: 5673 });
 		expect(rawKeyIssue("0005673")).toBe(5673);
-		expect(resolveRawIssue("../chores/park-sweep")).toEqual({_tag: "Unnumbered"});
+		expect(resolveRawIssue("../chores/park-sweep")).toEqual({ _tag: "Unnumbered" });
 	});
 });
 
@@ -177,7 +177,7 @@ describe("an issue key is one directory leaf", () => {
 	});
 
 	it("keeps chore addressing and the chore refusals it already had", () => {
-		expect(key("chore:park-sweep")).toEqual({_tag: "Chore", name: "park-sweep"});
+		expect(key("chore:park-sweep")).toEqual({ _tag: "Chore", name: "park-sweep" });
 		expect(parseKey("chore:../../etc")._tag).toBe("Malformed");
 		expect(reasonFor("chore:Park-Sweep")).toContain("lowercase kebab");
 	});

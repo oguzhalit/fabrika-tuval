@@ -1,11 +1,11 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {CAP_ROUND} from "../retry-budget.ts";
-import {readEscalationTag} from "./append.ts";
-import {runAppendCriterion} from "./append-criterion-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { CAP_ROUND } from "../retry-budget.ts";
+import { readEscalationTag } from "./append.ts";
+import { runAppendCriterion } from "./append-criterion-verb.ts";
 import {
 	ACL_DENIED,
 	BARE_AT_PATH,
@@ -17,7 +17,7 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {issue} from "./fixtures.test-support.ts";
+import { issue } from "./fixtures.test-support.ts";
 
 const USER = /GET .*api\.github\.com\/user$/;
 const PERMISSION = /GET .*\/repos\/o\/r\/collaborators\/kampus-bot\/permission$/;
@@ -28,7 +28,7 @@ const COMMENT = /POST .*\/repos\/o\/r\/issues\/4287\/comments/;
 const NOT_FOUND = '{"message":"Not Found"}';
 
 /** A canned payload as the platform serves it — the fixtures speak `ExecResult`, the seam HTTP. */
-const served = (result: ExecResult, status = 200): HttpReply => ({status, body: result.stdout});
+const served = (result: ExecResult, status = 200): HttpReply => ({ status, body: result.stdout });
 
 /** The body the PATCH carried, as text — the successor to reading it off a `-f body=` argv. */
 const patched = (seams: {
@@ -72,21 +72,21 @@ const options = {
 	round: 1,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
-	stdin: Effect.succeed<StdinRead>({_tag: "Text", text: TEXT}),
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
+	stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: TEXT }),
 };
 
 const happy = (): ReadonlyArray<Scripted> => [
-	[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-	[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
+	[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+	[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
 	[once(ISSUE), served(issue())],
 	[ISSUE, served(issue(APPENDED))],
-	[PATCH, {status: 200, body: "{}"}],
+	[PATCH, { status: 200, body: "{}" }],
 ];
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
-		Effect.provide(runAppendCriterion({...options, ...overrides}), fakeSeams(script).layer),
+		Effect.provide(runAppendCriterion({ ...options, ...overrides }), fakeSeams(script).layer),
 	);
 
 describe("runAppendCriterion", () => {
@@ -106,8 +106,8 @@ describe("runAppendCriterion", () => {
 	// Fence 1 — the ACL, fail-closed.
 	it("refuses a token below write on 14, and writes nothing", async () => {
 		const shell = fakeSeams([
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[PERMISSION, {status: 200, body: JSON.stringify({permission: "read"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[PERMISSION, { status: 200, body: JSON.stringify({ permission: "read" }) }],
 		]);
 		const out = await Effect.runPromise(Effect.provide(runAppendCriterion(options), shell.layer));
 		expect(out.code).toBe(ACL_DENIED);
@@ -120,29 +120,29 @@ describe("runAppendCriterion", () => {
 
 	it("refuses a FAILED ACL lookup on 14 too — authority never comes from a failed read", async () => {
 		const lookupFailed = await run([
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[PERMISSION, {status: 502, body: "{}"}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[PERMISSION, { status: 502, body: "{}" }],
 		]);
 		expect(lookupFailed.code).toBe(ACL_DENIED);
 
-		const noIdentity = await run([[USER, {status: 502, body: "{}"}]]);
+		const noIdentity = await run([[USER, { status: 502, body: "{}" }]]);
 		expect(noIdentity.code).toBe(ACL_DENIED);
 	});
 
 	it("admits admin and maintain, which resolve above write", async () => {
 		for (const permission of ["admin", "maintain", "write"]) {
 			const out = await run([
-				[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-				[PERMISSION, {status: 200, body: JSON.stringify({permission})}],
+				[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+				[PERMISSION, { status: 200, body: JSON.stringify({ permission }) }],
 				[once(ISSUE), served(issue())],
 				[ISSUE, served(issue(APPENDED))],
-				[PATCH, {status: 200, body: "{}"}],
+				[PATCH, { status: 200, body: "{}" }],
 			]);
 			expect(out.code).toBe(0);
 		}
 		const triage = await run([
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[PERMISSION, {status: 200, body: JSON.stringify({permission: "triage"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[PERMISSION, { status: 200, body: JSON.stringify({ permission: "triage" }) }],
 		]);
 		expect(triage.code).toBe(ACL_DENIED);
 	});
@@ -153,13 +153,16 @@ describe("runAppendCriterion", () => {
 	// Fence 3 — frozen at CAP_ROUND, read off the one declared budget rather than a literal.
 	it("escalates instead of appending at the freeze, and appends NOTHING", async () => {
 		const shell = fakeSeams([
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
 			[ISSUE, served(issue())],
-			[COMMENT, {status: 201, body: JSON.stringify({id: 1, html_url: "https://example.test/c/1"})}],
+			[
+				COMMENT,
+				{ status: 201, body: JSON.stringify({ id: 1, html_url: "https://example.test/c/1" }) },
+			],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runAppendCriterion({...options, round: CAP_ROUND}), shell.layer),
+			Effect.provide(runAppendCriterion({ ...options, round: CAP_ROUND }), shell.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(`escalated-frozen\t4287\t${CAP_ROUND}\n`);
@@ -174,20 +177,23 @@ describe("runAppendCriterion", () => {
 	 */
 	it("tags the escalation comment with the subject and round a later fold reads it by", async () => {
 		const shell = fakeSeams([
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
 			[ISSUE, served(issue())],
-			[COMMENT, {status: 201, body: JSON.stringify({id: 1, html_url: "https://example.test/c/1"})}],
+			[
+				COMMENT,
+				{ status: 201, body: JSON.stringify({ id: 1, html_url: "https://example.test/c/1" }) },
+			],
 		]);
 		await Effect.runPromise(
-			Effect.provide(runAppendCriterion({...options, round: CAP_ROUND}), shell.layer),
+			Effect.provide(runAppendCriterion({ ...options, round: CAP_ROUND }), shell.layer),
 		);
 		const escalation = String(
 			JSON.parse(shell.bodies[shell.requests.findIndex((request) => COMMENT.test(request))] ?? "{}")
 				.body ?? "",
 		);
 		expect(readEscalationTag(escalation)).toEqual({
-			provenance: {_tag: "Pull", pr: 4321},
+			provenance: { _tag: "Pull", pr: 4321 },
 			round: CAP_ROUND,
 		});
 		expect(escalation).toContain("A human is asked only once the round budget is spent.");
@@ -196,12 +202,12 @@ describe("runAppendCriterion", () => {
 	it("reports a failed escalation comment as 8, naming which write it was", async () => {
 		const out = await run(
 			[
-				[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-				[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
+				[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+				[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
 				[ISSUE, served(issue())],
-				[COMMENT, {status: 502, body: "{}"}],
+				[COMMENT, { status: 502, body: "{}" }],
 			],
-			{round: CAP_ROUND},
+			{ round: CAP_ROUND },
 		);
 		expect(out.code).toBe(WRITE_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("the escalation comment failed");
@@ -211,15 +217,15 @@ describe("runAppendCriterion", () => {
 	// The target's own preconditions.
 	it("refuses an absent issue on 7 and a CLOSED one on 7 — a row there enters no cycle", async () => {
 		const absent = await run([
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
-			[ISSUE, {status: 404, body: NOT_FOUND}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
+			[ISSUE, { status: 404, body: NOT_FOUND }],
 		]);
 		expect(absent.code).toBe(ZERO_SCOPE);
 
 		const closed = await run([
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
 			[ISSUE, served(issue(undefined, "closed"))],
 		]);
 		expect(closed.code).toBe(ZERO_SCOPE);
@@ -228,8 +234,8 @@ describe("runAppendCriterion", () => {
 
 	it("refuses an issue with no conforming block on 7, naming absent vs malformed", async () => {
 		const out = await run([
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
 			[ISSUE, served(issue("nothing to append under"))],
 		]);
 		expect(out.code).toBe(ZERO_SCOPE);
@@ -239,9 +245,9 @@ describe("runAppendCriterion", () => {
 
 	it("refuses an unreadable issue on 11 — nothing was written", async () => {
 		const out = await run([
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
-			[ISSUE, {status: 502, body: "{}"}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
+			[ISSUE, { status: 502, body: "{}" }],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("nothing was written");
@@ -249,10 +255,10 @@ describe("runAppendCriterion", () => {
 
 	it("reports a failed PATCH as 8 — UNKNOWN whether the row landed", async () => {
 		const out = await run([
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
 			[ISSUE, served(issue())],
-			[PATCH, {status: 502, body: "{}"}],
+			[PATCH, { status: 502, body: "{}" }],
 		]);
 		expect(out.code).toBe(WRITE_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -261,11 +267,11 @@ describe("runAppendCriterion", () => {
 
 	it("refuses on 9 when the read-back does not show the prior rows plus this one", async () => {
 		const out = await run([
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
 			[once(ISSUE), served(issue())],
 			[ISSUE, served(issue())],
-			[PATCH, {status: 200, body: "{}"}],
+			[PATCH, { status: 200, body: "{}" }],
 		]);
 		expect(out.code).toBe(READBACK_MISMATCH);
 		expect(out.stdout).toBe("");
@@ -274,15 +280,17 @@ describe("runAppendCriterion", () => {
 
 	// The stdin guard.
 	it("refuses empty stdin on 3, a bare @ on 6, and a machine-local path on 5", async () => {
-		const empty = await run(happy(), {stdin: Effect.succeed({_tag: "Text", text: " \n"})});
+		const empty = await run(happy(), { stdin: Effect.succeed({ _tag: "Text", text: " \n" }) });
 		expect(empty.code).toBe(EMPTY_STDIN);
 		expect(empty.stderr.at(-1)).toBe("review append-criterion: no criterion on stdin.");
 
-		const bare = await run(happy(), {stdin: Effect.succeed({_tag: "Text", text: "@notes/ac.md"})});
+		const bare = await run(happy(), {
+			stdin: Effect.succeed({ _tag: "Text", text: "@notes/ac.md" }),
+		});
 		expect(bare.code).toBe(BARE_AT_PATH);
 
 		const leaked = await run(happy(), {
-			stdin: Effect.succeed({_tag: "Text", text: "cover /Users/someone/scratch/case.md"}),
+			stdin: Effect.succeed({ _tag: "Text", text: "cover /Users/someone/scratch/case.md" }),
 		});
 		expect(leaked.code).toBe(LEAKED_PATH);
 		expect(leaked.stderr.at(-1)).toContain("rewrite it repo-relative.");
@@ -292,7 +300,7 @@ describe("runAppendCriterion", () => {
 		const shell = fakeSeams(happy());
 		await Effect.runPromise(
 			Effect.provide(
-				runAppendCriterion({...options, stdin: Effect.succeed({_tag: "Text", text: ""})}),
+				runAppendCriterion({ ...options, stdin: Effect.succeed({ _tag: "Text", text: "" }) }),
 				shell.layer,
 			),
 		);
@@ -300,7 +308,7 @@ describe("runAppendCriterion", () => {
 	});
 
 	it("emits the record with --json, naming the ACL it resolved", async () => {
-		const out = await run(happy(), {json: true});
+		const out = await run(happy(), { json: true });
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			outcome: "appended",
 			issue: 4287,
@@ -315,20 +323,20 @@ describe("runAppendCriterion", () => {
 	 * so the range is the subject the round was judged over and the tag names it.
 	 */
 	describe("over a range, with no PR", () => {
-		const ranged = {pr: null, base: BASE, tip: TIP};
+		const ranged = { pr: null, base: BASE, tip: TIP };
 
 		const rangeHappy = (): ReadonlyArray<Scripted> => [
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
 			[once(ISSUE), served(issue())],
 			[ISSUE, served(issue(RANGE_APPENDED))],
-			[PATCH, {status: 200, body: "{}"}],
+			[PATCH, { status: 200, body: "{}" }],
 		];
 
 		it("appends one row whose tag names the range, not a PR", async () => {
 			const shell = fakeSeams(rangeHappy());
 			const out = await Effect.runPromise(
-				Effect.provide(runAppendCriterion({...options, ...ranged}), shell.layer),
+				Effect.provide(runAppendCriterion({ ...options, ...ranged }), shell.layer),
 			);
 			expect(out.code).toBe(0);
 			expect(out.stdout).toBe("appended\t4287\t3\n");
@@ -339,19 +347,19 @@ describe("runAppendCriterion", () => {
 
 		it("runs the ACL, block and read-back fences unchanged", async () => {
 			const belowWrite = fakeSeams([
-				[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-				[PERMISSION, {status: 200, body: JSON.stringify({permission: "read"})}],
+				[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+				[PERMISSION, { status: 200, body: JSON.stringify({ permission: "read" }) }],
 			]);
 			const denied = await Effect.runPromise(
-				Effect.provide(runAppendCriterion({...options, ...ranged}), belowWrite.layer),
+				Effect.provide(runAppendCriterion({ ...options, ...ranged }), belowWrite.layer),
 			);
 			expect(denied.code).toBe(ACL_DENIED);
 			expect(belowWrite.requests.some((request) => PATCH.test(request))).toBe(false);
 
 			const noBlock = await run(
 				[
-					[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-					[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
+					[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+					[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
 					[ISSUE, served(issue("no block here"))],
 				],
 				ranged,
@@ -360,11 +368,11 @@ describe("runAppendCriterion", () => {
 
 			const readBack = await run(
 				[
-					[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-					[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
+					[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+					[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
 					[once(ISSUE), served(issue())],
 					[ISSUE, served(issue())],
-					[PATCH, {status: 200, body: "{}"}],
+					[PATCH, { status: 200, body: "{}" }],
 				],
 				ranged,
 			);
@@ -373,16 +381,19 @@ describe("runAppendCriterion", () => {
 
 		it("escalates at the freeze, naming the range there is no PR to name", async () => {
 			const shell = fakeSeams([
-				[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-				[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
+				[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+				[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
 				[ISSUE, served(issue())],
 				[
 					COMMENT,
-					{status: 201, body: JSON.stringify({id: 1, html_url: "https://example.test/c/1"})},
+					{ status: 201, body: JSON.stringify({ id: 1, html_url: "https://example.test/c/1" }) },
 				],
 			]);
 			const out = await Effect.runPromise(
-				Effect.provide(runAppendCriterion({...options, ...ranged, round: CAP_ROUND}), shell.layer),
+				Effect.provide(
+					runAppendCriterion({ ...options, ...ranged, round: CAP_ROUND }),
+					shell.layer,
+				),
 			);
 			expect(out.code).toBe(0);
 			expect(out.stdout).toBe(`escalated-frozen\t4287\t${CAP_ROUND}\n`);
@@ -397,19 +408,19 @@ describe("runAppendCriterion", () => {
 		});
 
 		it("refuses on 10 when the flags name no subject, or two", async () => {
-			const none = await run(happy(), {pr: null});
+			const none = await run(happy(), { pr: null });
 			expect(none.code).toBe(OFF_VOCABULARY);
 			expect(none.stderr.at(-1)).toContain("name the subject the round was judged over");
 
-			const both = await run(happy(), {pr: 4321, base: BASE, tip: TIP});
+			const both = await run(happy(), { pr: 4321, base: BASE, tip: TIP });
 			expect(both.code).toBe(OFF_VOCABULARY);
 			expect(both.stderr.at(-1)).toContain("--pr does not combine with --base/--tip");
 
-			const loneBase = await run(happy(), {pr: null, base: BASE});
+			const loneBase = await run(happy(), { pr: null, base: BASE });
 			expect(loneBase.code).toBe(OFF_VOCABULARY);
 			expect(loneBase.stderr.at(-1)).toContain("a range has two ends");
 
-			const notARevision = await run(happy(), {pr: null, base: "main", tip: TIP});
+			const notARevision = await run(happy(), { pr: null, base: "main", tip: TIP });
 			expect(notARevision.code).toBe(OFF_VOCABULARY);
 			expect(notARevision.stderr.at(-1)).toContain("is not a revision");
 		});
@@ -417,7 +428,7 @@ describe("runAppendCriterion", () => {
 		it("writes nothing on a flag refusal — the subject is read before the ACL", async () => {
 			const shell = fakeSeams(happy());
 			await Effect.runPromise(
-				Effect.provide(runAppendCriterion({...options, pr: null}), shell.layer),
+				Effect.provide(runAppendCriterion({ ...options, pr: null }), shell.layer),
 			);
 			expect(shell.log).toEqual([]);
 		});

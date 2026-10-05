@@ -28,32 +28,32 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/10340
  */
-import type {Instant} from "../wire/lane-record.ts";
-import type {WorkingTrees} from "./assembly.ts";
-import type {LogEntry} from "./fold.ts";
-import type {HandedTree} from "./worktrees.ts";
+import type { Instant } from "../wire/lane-record.ts";
+import type { WorkingTrees } from "./assembly.ts";
+import type { LogEntry } from "./fold.ts";
+import type { HandedTree } from "./worktrees.ts";
 
 /** Where a tree's commits live, judged against the remote and the lane's merged pull requests. */
 export type Commits =
 	/** Every commit `HEAD` reaches is reachable from a remote ref. */
-	| {readonly _tag: "Published"}
+	| { readonly _tag: "Published" }
 	/** Some commits are on no remote ref, and merged pull request `pull` carries all of them. */
-	| {readonly _tag: "Merged"; readonly pull: number}
+	| { readonly _tag: "Merged"; readonly pull: number }
 	/** `count` commits are on no remote ref and no merged pull request of the lane carries them. */
-	| {readonly _tag: "LocalOnly"; readonly count: number; readonly why: string};
+	| { readonly _tag: "LocalOnly"; readonly count: number; readonly why: string };
 
 export type TreeState =
 	/** No directory stands at the path, and git holds no live registration for it. */
-	| {readonly _tag: "Gone"}
+	| { readonly _tag: "Gone" }
 	/** A directory stands at the path and git holds no live registration for it. */
-	| {readonly _tag: "Stranded"; readonly prunable: boolean}
-	| {readonly _tag: "Main"}
-	| {readonly _tag: "Caller"}
+	| { readonly _tag: "Stranded"; readonly prunable: boolean }
+	| { readonly _tag: "Main" }
+	| { readonly _tag: "Caller" }
 	/** A driver recorded this tree and is not the one running the verb. */
-	| {readonly _tag: "Driver"}
-	| {readonly _tag: "InFlight"; readonly by: FlightProof}
-	| {readonly _tag: "Unreadable"; readonly reason: string}
-	| {readonly _tag: "Read"; readonly uncommitted: number; readonly commits: Commits};
+	| { readonly _tag: "Driver" }
+	| { readonly _tag: "InFlight"; readonly by: FlightProof }
+	| { readonly _tag: "Unreadable"; readonly reason: string }
+	| { readonly _tag: "Read"; readonly uncommitted: number; readonly commits: Commits };
 
 /** What says a shell is still in the tree: a builder's seat, or a dispatch no terminal has answered. */
 export type FlightProof = "working" | "dispatch";
@@ -74,24 +74,24 @@ export type KeptReason =
 	| "remove-refused";
 
 export type Disposition =
-	| {readonly _tag: "Remove"}
-	| {readonly _tag: "Gone"}
+	| { readonly _tag: "Remove" }
+	| { readonly _tag: "Gone" }
 	/** Not the lane's to remove from here, and no fault: it changes no exit code. */
-	| {readonly _tag: "Left"; readonly reason: "caller" | "main-working-tree" | "driver"}
-	| {readonly _tag: "Kept"; readonly reason: KeptReason; readonly detail: string};
+	| { readonly _tag: "Left"; readonly reason: "caller" | "main-working-tree" | "driver" }
+	| { readonly _tag: "Kept"; readonly reason: KeptReason; readonly detail: string };
 
 const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? "" : "s"}`;
 
 export const dispose = (state: TreeState): Disposition => {
 	switch (state._tag) {
 		case "Gone":
-			return {_tag: "Gone"};
+			return { _tag: "Gone" };
 		case "Main":
-			return {_tag: "Left", reason: "main-working-tree"};
+			return { _tag: "Left", reason: "main-working-tree" };
 		case "Caller":
-			return {_tag: "Left", reason: "caller"};
+			return { _tag: "Left", reason: "caller" };
 		case "Driver":
-			return {_tag: "Left", reason: "driver"};
+			return { _tag: "Left", reason: "driver" };
 		case "Stranded":
 			return {
 				_tag: "Kept",
@@ -101,9 +101,9 @@ export const dispose = (state: TreeState): Disposition => {
 					: "git lists no working tree there and the directory still stands",
 			};
 		case "InFlight":
-			return {_tag: "Kept", reason: "in-flight", detail: IN_FLIGHT_BECAUSE[state.by]};
+			return { _tag: "Kept", reason: "in-flight", detail: IN_FLIGHT_BECAUSE[state.by] };
 		case "Unreadable":
-			return {_tag: "Kept", reason: "unreadable", detail: state.reason};
+			return { _tag: "Kept", reason: "unreadable", detail: state.reason };
 		case "Read": {
 			if (state.uncommitted > 0) {
 				return {
@@ -119,7 +119,7 @@ export const dispose = (state: TreeState): Disposition => {
 					detail: `${plural(state.commits.count, "commit")} on no remote ref — ${state.commits.why}`,
 				};
 			}
-			return {_tag: "Remove"};
+			return { _tag: "Remove" };
 		}
 	}
 };
@@ -127,13 +127,13 @@ export const dispose = (state: TreeState): Disposition => {
 /** Where a recorded path sits among this clone's working trees, before any read inside it. */
 export type Seat =
 	/** Git holds no live registration; whether the directory stands is the verb's probe to make. */
-	| {readonly _tag: "Unregistered"; readonly prunable: boolean}
-	| {readonly _tag: "Main"}
-	| {readonly _tag: "Caller"}
-	| {readonly _tag: "Driver"}
-	| {readonly _tag: "InFlight"; readonly by: FlightProof}
+	| { readonly _tag: "Unregistered"; readonly prunable: boolean }
+	| { readonly _tag: "Main" }
+	| { readonly _tag: "Caller" }
+	| { readonly _tag: "Driver" }
+	| { readonly _tag: "InFlight"; readonly by: FlightProof }
 	/** A live linked worktree; `path` is the spelling git lists it under. */
-	| {readonly _tag: "Linked"; readonly path: string};
+	| { readonly _tag: "Linked"; readonly path: string };
 
 /** The lane's standing in-flight records, as far as a tree's seat asks. */
 export interface Flight {
@@ -154,24 +154,24 @@ export interface Flight {
  * ordered, and keeping is the answer that loses nothing.
  */
 export const seatOf = (
-	{worktree, task, at}: HandedTree,
+	{ worktree, task, at }: HandedTree,
 	trees: WorkingTrees,
 	caller: string,
 	flight: Flight,
 ): Seat => {
-	if (worktree === trees.main.path) return {_tag: "Main"};
+	if (worktree === trees.main.path) return { _tag: "Main" };
 	const entry = trees.linked.find((linked) => linked.path === worktree);
 	if (entry === undefined || entry.prunable) {
-		return {_tag: "Unregistered", prunable: entry !== undefined};
+		return { _tag: "Unregistered", prunable: entry !== undefined };
 	}
-	if (worktree === caller) return {_tag: "Caller"};
-	if (task === null) return {_tag: "Driver"};
-	if (flight.working.has(worktree)) return {_tag: "InFlight", by: "working"};
+	if (worktree === caller) return { _tag: "Caller" };
+	if (task === null) return { _tag: "Driver" };
+	if (flight.working.has(worktree)) return { _tag: "InFlight", by: "working" };
 	const dispatched = flight.dispatched.get(task);
 	if (dispatched !== undefined && Date.parse(at) >= Date.parse(dispatched)) {
-		return {_tag: "InFlight", by: "dispatch"};
+		return { _tag: "InFlight", by: "dispatch" };
 	}
-	return {_tag: "Linked", path: entry.path};
+	return { _tag: "Linked", path: entry.path };
 };
 
 const PULL_URL = /\/pull\/(\d+)\/?(?:[?#].*)?$/;

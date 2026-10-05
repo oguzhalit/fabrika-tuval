@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	basisOfRows,
 	childLaneBranches,
@@ -17,9 +17,9 @@ import {
 	traceUnlinked,
 } from "./prove.ts";
 
-const SINGLE = {_tag: "Single"} as const;
-const CHILD = {_tag: "Child", epic: 5800} as const;
-const TAIL = {_tag: "Tail", epic: 5800} as const;
+const SINGLE = { _tag: "Single" } as const;
+const CHILD = { _tag: "Child", epic: 5800 } as const;
+const TAIL = { _tag: "Tail", epic: 5800 } as const;
 
 describe("epicOf and roleOf", () => {
 	it("reads the epic off the tail task's own name, and calls every other task a child", () => {
@@ -37,7 +37,7 @@ describe("epicOf and roleOf", () => {
 
 describe("claimOf", () => {
 	it("claims a pull request for a DONE out of build, verdicts for a PASS out of review", () => {
-		expect(claimOf("DONE", "build", SINGLE)).toEqual({_tag: "OpenPull"});
+		expect(claimOf("DONE", "build", SINGLE)).toEqual({ _tag: "OpenPull" });
 		expect(claimOf("PASS", "review", SINGLE, "review:ui")).toEqual({
 			_tag: "HeadVerdicts",
 			defers: ["review-ui"],
@@ -67,20 +67,20 @@ describe("claimOf", () => {
 	 * hands the work to, and `ship gate` was left as the only thing still asking.
 	 */
 	it("defers nothing out of `review` when the event does not route into `review:ui`", () => {
-		expect(claimOf("PASS", "review", SINGLE, "ship")).toEqual({_tag: "HeadVerdicts", defers: []});
-		expect(claimOf("PASS", "review", TAIL, null)).toEqual({_tag: "HeadVerdicts", defers: []});
+		expect(claimOf("PASS", "review", SINGLE, "ship")).toEqual({ _tag: "HeadVerdicts", defers: [] });
+		expect(claimOf("PASS", "review", TAIL, null)).toEqual({ _tag: "HeadVerdicts", defers: [] });
 	});
 
 	// Spelled out rather than read off `BUILD_STATES`, so dropping a cell from that set reds here: a
 	// `DONE` out of `build:ui` recorded on the ui-builder's word alone is the gap this pins shut.
 	describe.each(["build", "build:ui"])("a DONE out of the %s leaf", (leaf) => {
 		it("claims the open PR on a single lane and on an epic tail", () => {
-			expect(claimOf("DONE", leaf, SINGLE)).toEqual({_tag: "OpenPull"});
-			expect(claimOf("DONE", leaf, TAIL)).toEqual({_tag: "OpenPull"});
+			expect(claimOf("DONE", leaf, SINGLE)).toEqual({ _tag: "OpenPull" });
+			expect(claimOf("DONE", leaf, TAIL)).toEqual({ _tag: "OpenPull" });
 		});
 
 		it("claims the child's range on an epic child", () => {
-			expect(claimOf("DONE", leaf, CHILD)).toEqual({_tag: "RangeCommits", epic: 5800});
+			expect(claimOf("DONE", leaf, CHILD)).toEqual({ _tag: "RangeCommits", epic: 5800 });
 		});
 	});
 
@@ -90,7 +90,7 @@ describe("claimOf", () => {
 	});
 
 	it("claims the same two artifacts for an epic tail — the tail is the one PR", () => {
-		expect(claimOf("DONE", "build", TAIL)).toEqual({_tag: "OpenPull"});
+		expect(claimOf("DONE", "build", TAIL)).toEqual({ _tag: "OpenPull" });
 		expect(claimOf("PASS", "review", TAIL, "review:ui")).toEqual({
 			_tag: "HeadVerdicts",
 			defers: ["review-ui"],
@@ -98,7 +98,7 @@ describe("claimOf", () => {
 	});
 
 	it("claims a range for a child, which never opens a PR to claim", () => {
-		expect(claimOf("DONE", "build", CHILD)).toEqual({_tag: "RangeCommits", epic: 5800});
+		expect(claimOf("DONE", "build", CHILD)).toEqual({ _tag: "RangeCommits", epic: 5800 });
 		expect(claimOf("PASS", "review", CHILD)).toEqual({
 			_tag: "RangeVerdict",
 			epic: 5800,
@@ -133,7 +133,7 @@ describe("claimOf", () => {
 	 * stands on the whole set its one PR derives — which is where the child's rendered files are.
 	 */
 	it("leaves the tail owing the whole set, so a child's deferral lands on a cell that pays it", () => {
-		expect(claimOf("PASS", "review", TAIL, "ship")).toEqual({_tag: "HeadVerdicts", defers: []});
+		expect(claimOf("PASS", "review", TAIL, "ship")).toEqual({ _tag: "HeadVerdicts", defers: [] });
 	});
 
 	/**
@@ -141,17 +141,17 @@ describe("claimOf", () => {
 	 * through, and one still-binding FAIL falsifies it. A child's park has no PR to read.
 	 */
 	it("claims the park a reviewer records out of either review cell, and none for a child", () => {
-		expect(claimOf("BLOCKED", "review", SINGLE, "blocked")).toEqual({_tag: "ParkUncontradicted"});
+		expect(claimOf("BLOCKED", "review", SINGLE, "blocked")).toEqual({ _tag: "ParkUncontradicted" });
 		expect(claimOf("BLOCKED", "review:ui", SINGLE, "blocked")).toEqual({
 			_tag: "ParkUncontradicted",
 		});
-		expect(claimOf("BLOCKED", "review", TAIL, "blocked")).toEqual({_tag: "ParkUncontradicted"});
+		expect(claimOf("BLOCKED", "review", TAIL, "blocked")).toEqual({ _tag: "ParkUncontradicted" });
 		expect(claimOf("BLOCKED", "review", CHILD, "blocked")._tag).toBe("None");
 	});
 
 	it("claims the rewind out of either review cell, and none for a child", () => {
-		expect(claimOf("WIP", "review", SINGLE, "queued")).toEqual({_tag: "Unlinked"});
-		expect(claimOf("WIP", "review:ui", SINGLE, "queued")).toEqual({_tag: "Unlinked"});
+		expect(claimOf("WIP", "review", SINGLE, "queued")).toEqual({ _tag: "Unlinked" });
+		expect(claimOf("WIP", "review:ui", SINGLE, "queued")).toEqual({ _tag: "Unlinked" });
 		expect(claimOf("WIP", "review", CHILD, "queued")._tag).toBe("None");
 	});
 
@@ -209,8 +209,8 @@ describe("integratedFrom", () => {
 	it("reads the epic branch as it stood off the integrating merge's first parent", () => {
 		expect(
 			integratedFrom(TIP, [
-				{sha: "aaaa1111", parents: ["ec3894d3", "sibling1"]},
-				{sha: "ec3894d3", parents: [EPIC_BEFORE, TIP]},
+				{ sha: "aaaa1111", parents: ["ec3894d3", "sibling1"] },
+				{ sha: "ec3894d3", parents: [EPIC_BEFORE, TIP] },
 			]),
 		).toBe(EPIC_BEFORE);
 	});
@@ -218,14 +218,14 @@ describe("integratedFrom", () => {
 	it("answers nothing for a tip no merge took in — a branch cut and never built on", () => {
 		// The never-built tip IS an epic commit, so a later sibling merge names it as its FIRST
 		// parent. Answering with that merge's second parent would hand back a sibling's fork point.
-		expect(integratedFrom(TIP, [{sha: "aaaa1111", parents: [TIP, "sibling1"]}])).toBe(null);
+		expect(integratedFrom(TIP, [{ sha: "aaaa1111", parents: [TIP, "sibling1"] }])).toBe(null);
 	});
 
 	it("takes the oldest merge when a tip was taken in twice", () => {
 		expect(
 			integratedFrom(TIP, [
-				{sha: "bbbb2222", parents: ["later", TIP]},
-				{sha: "ec3894d3", parents: [EPIC_BEFORE, TIP]},
+				{ sha: "bbbb2222", parents: ["later", TIP] },
+				{ sha: "ec3894d3", parents: [EPIC_BEFORE, TIP] },
 			]),
 		).toBe(EPIC_BEFORE);
 	});
@@ -274,17 +274,17 @@ describe("traceRange", () => {
 	});
 
 	it("keeps a cut-and-never-built branch apart from one carrying another child's work", () => {
-		const empty = traceRange(5829, "epic/5800", [{...carrying, messages: []}]);
+		const empty = traceRange(5829, "epic/5800", [{ ...carrying, messages: [] }]);
 		expect(empty._tag === "None" && empty.why).toContain("cut and not built on");
 
-		const foreign = traceRange(5829, "epic/5800", [{...carrying, messages: [commit(5824)]}]);
+		const foreign = traceRange(5829, "epic/5800", [{ ...carrying, messages: [commit(5824)] }]);
 		expect(foreign._tag === "None" && foreign.why).toContain("names #5829");
 	});
 
 	it("keeps a genuine fork as its own answer rather than picking one", () => {
 		const traced = traceRange(5829, "epic/5800", [
 			carrying,
-			{...carrying, branch: "build/5829-second-try-deadbeef", tip: "9b51636"},
+			{ ...carrying, branch: "build/5829-second-try-deadbeef", tip: "9b51636" },
 		]);
 		expect(traced).toEqual({
 			_tag: "Many",
@@ -329,8 +329,8 @@ describe("traceRange", () => {
 	});
 
 	it("stays ambiguous when two candidates each contain the other", () => {
-		const twin = {...carrying, branch: "build/5829-twin-deadbeef", contains: [carrying.tip]};
-		const traced = traceRange(5829, "epic/5800", [{...carrying, contains: [twin.tip]}, twin]);
+		const twin = { ...carrying, branch: "build/5829-twin-deadbeef", contains: [carrying.tip] };
+		const traced = traceRange(5829, "epic/5800", [{ ...carrying, contains: [twin.tip] }, twin]);
 		expect(traced._tag).toBe("Many");
 	});
 
@@ -366,7 +366,7 @@ describe("tracePulls", () => {
 	};
 
 	it("traces the one open PR whose body links the issue", () => {
-		expect(tracePulls(4312, [linking])).toEqual({_tag: "One", pr: 4318});
+		expect(tracePulls(4312, [linking])).toEqual({ _tag: "One", pr: 4318 });
 	});
 
 	/**
@@ -383,8 +383,8 @@ describe("tracePulls", () => {
 			linkKind: "fixes" as const,
 			referencedIssues: [6642, 6643, 6648, 6629, 6630, 6631, 7497],
 		};
-		expect(tracePulls(7497, [tail])).toEqual({_tag: "One", pr: 7861});
-		expect(tracePulls(6642, [tail])).toEqual({_tag: "One", pr: 7861});
+		expect(tracePulls(7497, [tail])).toEqual({ _tag: "One", pr: 7861 });
+		expect(tracePulls(6642, [tail])).toEqual({ _tag: "One", pr: 7861 });
 	});
 
 	/**
@@ -401,8 +401,8 @@ describe("tracePulls", () => {
 			linkKind: "fixes" as const,
 			referencedIssues: [6642, 6643, 6648, 6629],
 		};
-		expect(tracePulls(6629, [tail])).toEqual({_tag: "One", pr: 6690});
-		expect(tracePulls(6642, [tail])).toEqual({_tag: "One", pr: 6690});
+		expect(tracePulls(6629, [tail])).toEqual({ _tag: "One", pr: 6690 });
+		expect(tracePulls(6642, [tail])).toEqual({ _tag: "One", pr: 6690 });
 	});
 
 	it("does not count a PR that only mentions the number, or one that has closed", () => {
@@ -420,15 +420,15 @@ describe("tracePulls", () => {
 		).toMatchObject({
 			_tag: "None",
 		});
-		expect(tracePulls(4312, [{...linking, open: false}])).toMatchObject({_tag: "None"});
+		expect(tracePulls(4312, [{ ...linking, open: false }])).toMatchObject({ _tag: "None" });
 	});
 
 	/** The queue-stall recipe's clearing case is a landed PR, which is closed. */
 	it("counts a merged PR only at open-or-merged scope, and never a rejected one", () => {
-		const landed = {...linking, open: false, merged: true};
-		expect(tracePulls(4312, [landed], "open-or-merged")).toEqual({_tag: "One", pr: 4318});
-		expect(tracePulls(4312, [landed])).toMatchObject({_tag: "None"});
-		expect(tracePulls(4312, [{...linking, open: false}], "open-or-merged")).toEqual({
+		const landed = { ...linking, open: false, merged: true };
+		expect(tracePulls(4312, [landed], "open-or-merged")).toEqual({ _tag: "One", pr: 4318 });
+		expect(tracePulls(4312, [landed])).toMatchObject({ _tag: "None" });
+		expect(tracePulls(4312, [{ ...linking, open: false }], "open-or-merged")).toEqual({
 			_tag: "None",
 			why: "read #4318 — every candidate has closed since it was nominated",
 		});
@@ -446,7 +446,7 @@ describe("tracePulls", () => {
 				referencedIssues: [4312],
 			},
 		]);
-		expect(trace).toEqual({_tag: "Many", prs: [4318, 4319]});
+		expect(trace).toEqual({ _tag: "Many", prs: [4318, 4319] });
 	});
 
 	it("tells a candidate that was read and discarded from one that was never nominated", () => {
@@ -461,9 +461,9 @@ describe("tracePulls", () => {
 				referencedIssues: [4000],
 			},
 		]);
-		const closed = tracePulls(4312, [{...linking, open: false}]);
-		expect(nothing).toEqual({_tag: "None", why: "no open PR links #4312"});
-		expect(read).toEqual({_tag: "None", why: "read #4400 — no candidate's body links #4312"});
+		const closed = tracePulls(4312, [{ ...linking, open: false }]);
+		expect(nothing).toEqual({ _tag: "None", why: "no open PR links #4312" });
+		expect(read).toEqual({ _tag: "None", why: "read #4400 — no candidate's body links #4312" });
 		expect(closed).toEqual({
 			_tag: "None",
 			why: "read #4318 — every candidate has closed since it was nominated",
@@ -472,10 +472,10 @@ describe("tracePulls", () => {
 });
 
 describe("traceUnlinked", () => {
-	const REPOINTED = {_tag: "None", why: "read #9905 — no candidate's body links #7057"} as const;
+	const REPOINTED = { _tag: "None", why: "read #9905 — no candidate's body links #7057" } as const;
 
 	it("proves the rewind when the issue is open and no candidate links it", () => {
-		expect(traceUnlinked(7057, "open", REPOINTED)).toMatchObject({_tag: "Proven"});
+		expect(traceUnlinked(7057, "open", REPOINTED)).toMatchObject({ _tag: "Proven" });
 	});
 
 	it("is contradicted by a closed issue, which is finished work for lane settle", () => {
@@ -486,11 +486,11 @@ describe("traceUnlinked", () => {
 	});
 
 	it("is contradicted by one linking PR, and by several", () => {
-		expect(traceUnlinked(7057, "open", {_tag: "One", pr: 9905})).toMatchObject({
+		expect(traceUnlinked(7057, "open", { _tag: "One", pr: 9905 })).toMatchObject({
 			_tag: "Contradicted",
 			what: expect.stringContaining("#9905 still links #7057"),
 		});
-		expect(traceUnlinked(7057, "open", {_tag: "Many", prs: [9905, 9906]})).toMatchObject({
+		expect(traceUnlinked(7057, "open", { _tag: "Many", prs: [9905, 9906] })).toMatchObject({
 			_tag: "Contradicted",
 			what: expect.stringContaining("#9905, #9906 still link #7057"),
 		});
@@ -516,7 +516,7 @@ describe("traceClosure", () => {
 
 	/** A PR merged as `Part of #N` used to fold its lane to `complete`. */
 	it("reads a `Part of #N` merge as leaving the issue open", () => {
-		expect(traceClosure(6980, [merged("part-of")])).toEqual({_tag: "Partial", prs: [7328]});
+		expect(traceClosure(6980, [merged("part-of")])).toEqual({ _tag: "Partial", prs: [7328] });
 	});
 
 	/**
@@ -534,7 +534,7 @@ describe("traceClosure", () => {
 			linkKind: "fixes" as const,
 			referencedIssues: [6642, 6643, 7497],
 		};
-		expect(traceClosure(7497, [tail])).toEqual({_tag: "Partial", prs: [7861]});
+		expect(traceClosure(7497, [tail])).toEqual({ _tag: "Partial", prs: [7861] });
 		expect(traceClosure(6642, [tail])).toEqual({
 			_tag: "Closes",
 			why: "#7861 closes #6642 on merge",
@@ -544,8 +544,8 @@ describe("traceClosure", () => {
 	// Only positive evidence diverts, so every reading short of one answers what the machine already
 	// did — an unread board never reaches here, because the nominator refuses first.
 	it("answers Closes on an open PR, a merge linking elsewhere, and nothing nominated", () => {
-		const open = {...merged("part-of"), open: true, merged: false};
-		const elsewhere = {...merged("part-of"), linkedIssues: [6979], referencedIssues: [6979]};
+		const open = { ...merged("part-of"), open: true, merged: false };
+		const elsewhere = { ...merged("part-of"), linkedIssues: [6979], referencedIssues: [6979] };
 
 		expect(traceClosure(6980, [open])._tag).toBe("Closes");
 		expect(traceClosure(6980, [elsewhere])._tag).toBe("Closes");
@@ -558,20 +558,20 @@ describe("traceClosure", () => {
 	// Where `tracePulls` keeps `Many` because picking one PR is underivable, nothing is picked here:
 	// every candidate says the same thing about the issue, so one closing merge among them settles it.
 	it("takes one closing merge over any number of partials", () => {
-		const second = {...merged("part-of"), number: 7400};
+		const second = { ...merged("part-of"), number: 7400 };
 
 		expect(traceClosure(6980, [merged("part-of"), second])).toEqual({
 			_tag: "Partial",
 			prs: [7328, 7400],
 		});
 		expect(
-			traceClosure(6980, [merged("part-of"), {...second, linkKind: "fixes" as const}]),
-		).toEqual({_tag: "Closes", why: "#7400 closes #6980 on merge"});
+			traceClosure(6980, [merged("part-of"), { ...second, linkKind: "fixes" as const }]),
+		).toEqual({ _tag: "Closes", why: "#7400 closes #6980 on merge" });
 	});
 });
 
 describe("traceDiagnosis", () => {
-	const comment = {id: 900, createdAt: "2026-08-16T02:00:00Z"};
+	const comment = { id: 900, createdAt: "2026-08-16T02:00:00Z" };
 
 	it("proves a no-PR outcome from a comment written since the task entered build", () => {
 		expect(traceDiagnosis(4312, [comment], "2026-08-16T01:00:00Z")).toEqual({
@@ -582,7 +582,7 @@ describe("traceDiagnosis", () => {
 
 	it("proves it with no build entry on record, off the newest comment", () => {
 		expect(
-			traceDiagnosis(4312, [{id: 800, createdAt: "2026-08-15T00:00:00Z"}, comment], null),
+			traceDiagnosis(4312, [{ id: 800, createdAt: "2026-08-15T00:00:00Z" }, comment], null),
 		).toEqual({
 			_tag: "Posted",
 			commentId: 900,
@@ -612,8 +612,8 @@ describe("judgeVerdicts", () => {
 
 	it("rows every required namespace, including the ones nothing was written for", () => {
 		expect(judgeVerdicts(["review-code", "governance"], [pass])).toEqual([
-			{namespace: "review-code", state: "pass", commentId: 1},
-			{namespace: "governance", state: "absent", commentId: null},
+			{ namespace: "review-code", state: "pass", commentId: 1 },
+			{ namespace: "governance", state: "absent", commentId: null },
 		]);
 	});
 
@@ -621,8 +621,8 @@ describe("judgeVerdicts", () => {
 		const rows = judgeVerdicts(
 			["review-code", "review-doc"],
 			[
-				{...pass, binding: "stale"},
-				{...pass, namespace: "review-doc", binding: "unknown"},
+				{ ...pass, binding: "stale" },
+				{ ...pass, namespace: "review-doc", binding: "unknown" },
 			],
 		);
 		expect(rows.map((row) => row.state)).toEqual(["stale", "unknown"]);
@@ -637,21 +637,21 @@ describe("judgeVerdicts", () => {
 			basis: "hand-check",
 		} as const;
 		expect(judgeVerdicts(["review-ui"], [routed])).toEqual([
-			{namespace: "review-ui", state: "routed", commentId: 2, basis: "hand-check"},
+			{ namespace: "review-ui", state: "routed", commentId: 2, basis: "hand-check" },
 		]);
-		expect(judgeVerdicts(["review-ui"], [{...routed, binding: "stale"}])).toEqual([
-			{namespace: "review-ui", state: "stale", commentId: 2},
+		expect(judgeVerdicts(["review-ui"], [{ ...routed, binding: "stale" }])).toEqual([
+			{ namespace: "review-ui", state: "stale", commentId: 2 },
 		]);
 	});
 
 	it("collects each flagged routed row's basis for the event line, and nothing without one", () => {
 		expect(
 			basisOfRows([
-				{namespace: "review-code", state: "pass", commentId: 1},
-				{namespace: "review-ui", state: "routed", commentId: 2, basis: "skip"},
+				{ namespace: "review-code", state: "pass", commentId: 1 },
+				{ namespace: "review-ui", state: "routed", commentId: 2, basis: "skip" },
 			]),
-		).toEqual({"review-ui": "skip"});
-		expect(basisOfRows([{namespace: "review-ui", state: "routed", commentId: 2}])).toBeNull();
+		).toEqual({ "review-ui": "skip" });
+		expect(basisOfRows([{ namespace: "review-ui", state: "routed", commentId: 2 }])).toBeNull();
 	});
 });
 

@@ -7,9 +7,9 @@
  * What is added below is only what this group reads that `review` does not — the `--name-status`
  * stream and the tree listing.
  */
-import {okOut} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {BASE, HEAD} from "../review/fixtures.test-support.ts";
+import { okOut } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { BASE, HEAD } from "../review/fixtures.test-support.ts";
 
 export {
 	BASE,

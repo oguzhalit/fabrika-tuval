@@ -31,19 +31,19 @@
  * branch exists to remove.
  */
 
-import type {FileSystem, Path} from "effect";
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {capNote, effectiveCap} from "../cap-clearance.ts";
-import {createComment, getComment, listComments} from "../io/issues.ts";
-import {viewerLogin} from "../io/pulls.ts";
-import {recordClearedRound} from "../lane/clearance.ts";
-import {laneRef, parseKey} from "../lane/key.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import type { FileSystem, Path } from "effect";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { capNote, effectiveCap } from "../cap-clearance.ts";
+import { createComment, getComment, listComments } from "../io/issues.ts";
+import { viewerLogin } from "../io/pulls.ts";
+import { recordClearedRound } from "../lane/clearance.ts";
+import { laneRef, parseKey } from "../lane/key.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import * as capClearance from "../wire/cap-clearance.ts";
-import {stampOf} from "../wire/grill-marker.ts";
+import { stampOf } from "../wire/grill-marker.ts";
 import {
 	capClearAuthorsNotices,
 	clearancesOn,
@@ -63,9 +63,9 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {closingTargets, proseOf} from "./pr-body.ts";
-import {roundsOn} from "./rounds.ts";
-import {openPull, resolveTargetRepo} from "./target.ts";
+import { closingTargets, proseOf } from "./pr-body.ts";
+import { roundsOn } from "./rounds.ts";
+import { openPull, resolveTargetRepo } from "./target.ts";
 
 const VERB = "build clear";
 
@@ -74,8 +74,8 @@ const ISO_DATE = /\d{4}-\d{2}-\d{2}/;
 
 /** A file the adapter read for the verb, so the verb itself touches no filesystem for it. */
 export type DocumentRead =
-	| {readonly _tag: "Text"; readonly text: string}
-	| {readonly _tag: "Failed"; readonly reason: string};
+	| { readonly _tag: "Text"; readonly text: string }
+	| { readonly _tag: "Failed"; readonly reason: string };
 
 export interface ClearOptions<R = never> {
 	readonly pr: number;
@@ -98,7 +98,7 @@ export const runClear = <R = never>(
 	R | ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
-		const {pr, authorizationPath} = options;
+		const { pr, authorizationPath } = options;
 		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
 		if (resolved._tag === "Refused") return resolved.outcome;
 		const repo = resolved.repo;
@@ -276,7 +276,7 @@ export const runClear = <R = never>(
 				lines,
 			);
 		}
-		const markerBody = capClearance.emit({round, at: stamped});
+		const markerBody = capClearance.emit({ round, at: stamped });
 		const marker = yield* createComment(repo, pr, markerBody);
 		if (marker._tag === "Failure") {
 			return refuse(
@@ -323,8 +323,8 @@ export const runClear = <R = never>(
 	});
 
 type LaneBump =
-	| {readonly _tag: "Note"; readonly note: string}
-	| {readonly _tag: "Unwritten"; readonly path: string; readonly reason: string};
+	| { readonly _tag: "Note"; readonly note: string }
+	| { readonly _tag: "Unwritten"; readonly path: string; readonly reason: string };
 
 /**
  * Carry the grant into the local lane, if one is there.
@@ -340,10 +340,10 @@ const bumpLane = <R>(
 ): Effect.Effect<LaneBump, never, FileSystem.FileSystem | Path.Path> =>
 	Effect.gen(function* () {
 		const issue = closingTargets(proseOf(body))[0];
-		if (issue === undefined) return {_tag: "Note" as const, note: "no linked issue, so no lane"};
+		if (issue === undefined) return { _tag: "Note" as const, note: "no linked issue, so no lane" };
 		const key = parseKey(String(issue));
 		if (key._tag === "Malformed") {
-			return {_tag: "Note" as const, note: `#${issue} is not a lane key`};
+			return { _tag: "Note" as const, note: `#${issue} is not a lane key` };
 		}
 		const written = yield* recordClearedRound(
 			laneRef(key.key, options.laneRoot),
@@ -351,10 +351,10 @@ const bumpLane = <R>(
 			round,
 		);
 		if (written._tag === "NoLane") {
-			return {_tag: "Note" as const, note: `no lane at ${written.dir}`};
+			return { _tag: "Note" as const, note: `no lane at ${written.dir}` };
 		}
 		if (written._tag === "Unusable") {
-			return {_tag: "Unwritten" as const, path: written.path, reason: written.reason};
+			return { _tag: "Unwritten" as const, path: written.path, reason: written.reason };
 		}
 		return {
 			_tag: "Note" as const,

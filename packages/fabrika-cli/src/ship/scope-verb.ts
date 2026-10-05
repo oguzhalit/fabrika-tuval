@@ -59,24 +59,29 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9322#issuecomment-5703498377
  * @ruling https://github.com/kamp-us/phoenix/issues/10034#issuecomment-5974043005
  */
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {CONFIG_PATH} from "../config/document.ts";
-import {SHIP_SCOPE_ALLOW_DECLARATION, shipScopeKey} from "../config/keys/ship-scope.ts";
-import {noUiSurfaces} from "../config/paths.ts";
-import {readKey} from "../config/read-key.ts";
-import {listPullFiles} from "../io/pulls.ts";
-import {standingInLinkedWorktree} from "../lane/assembly.ts";
-import {classConfigOfPull} from "../review/class-config.ts";
-import {issueRefOf, partitionWithUi, renderIssueRef, shipNamespacesOf} from "../review/classes.ts";
-import {platformCapLine, platformFileSet} from "../review/local-file-set.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {readBoundary} from "./boundary.ts";
-import {classify} from "./codeowners.ts";
-import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, PRIMARY_CHECKOUT, ZERO_SCOPE} from "./codes.ts";
-import {readLanding} from "./landing.ts";
-import {badNumber, NULL_TOKEN, resolvePull, resolveTargetRepo, scannedLine} from "./target.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { CONFIG_PATH } from "../config/document.ts";
+import { SHIP_SCOPE_ALLOW_DECLARATION, shipScopeKey } from "../config/keys/ship-scope.ts";
+import { noUiSurfaces } from "../config/paths.ts";
+import { readKey } from "../config/read-key.ts";
+import { listPullFiles } from "../io/pulls.ts";
+import { standingInLinkedWorktree } from "../lane/assembly.ts";
+import { classConfigOfPull } from "../review/class-config.ts";
+import {
+	issueRefOf,
+	partitionWithUi,
+	renderIssueRef,
+	shipNamespacesOf,
+} from "../review/classes.ts";
+import { platformCapLine, platformFileSet } from "../review/local-file-set.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { readBoundary } from "./boundary.ts";
+import { classify } from "./codeowners.ts";
+import { INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, PRIMARY_CHECKOUT, ZERO_SCOPE } from "./codes.ts";
+import { readLanding } from "./landing.ts";
+import { badNumber, NULL_TOKEN, resolvePull, resolveTargetRepo, scannedLine } from "./target.ts";
 
 const VERB = "ship scope";
 
@@ -96,8 +101,8 @@ const VERB = "ship scope";
  * field answers and a default is how a future caller inherits an answer nobody chose.
  */
 export type ScopeCaller =
-	| {readonly _tag: "shipper"; readonly cwd: string}
-	| {readonly _tag: "relay"};
+	| { readonly _tag: "shipper"; readonly cwd: string }
+	| { readonly _tag: "relay" };
 
 export interface ScopeOptions {
 	readonly pr: number;
@@ -110,10 +115,10 @@ export interface ScopeOptions {
 
 /** A caller's seat, settled: the refusal to return, or the notices a permitted read carries. */
 type Seat =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Seated"; readonly notices: ReadonlyArray<string>};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Seated"; readonly notices: ReadonlyArray<string> };
 
-const SEATED: Seat = {_tag: "Seated", notices: []};
+const SEATED: Seat = { _tag: "Seated", notices: [] };
 
 /**
  * Where a shipper's own run stands, and whether it may read from there.
@@ -183,7 +188,7 @@ export const runScope = (
 	| Path.Path
 > =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -286,7 +291,7 @@ export const runScope = (
 				`${VERB}: cannot read ${pull.baseRef}'s landing path: ${read.reason} — reporting it unknown; \`ship merge\` refuses on the same read rather than landing.`,
 			);
 		}
-		const landing = read._tag === "Failure" ? {path: "unknown", method: null} : read.value;
+		const landing = read._tag === "Failure" ? { path: "unknown", method: null } : read.value;
 
 		if (json) {
 			return answer(

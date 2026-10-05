@@ -13,15 +13,15 @@
  * rides along on that same principle: the claim step's decision arm is the one admission a child
  * repair can need, so the value is carried to it unchanged and judged only there.
  */
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {isRecord, parseJson} from "../io/json.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {runBranch} from "./branch-verb.ts";
-import {runClaim, runConfirm} from "./claim-verb.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {runTree} from "./tree-verb.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { isRecord, parseJson } from "../io/json.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { runBranch } from "./branch-verb.ts";
+import { runClaim, runConfirm } from "./claim-verb.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { runTree } from "./tree-verb.ts";
 
 const VERB = "build resume-child";
 
@@ -100,7 +100,7 @@ export const runResumeChild = (
 	options: ResumeChildOptions,
 ): Effect.Effect<VerbOutcome, never, Requirements> =>
 	Effect.gen(function* () {
-		const {issue, repo, env} = options;
+		const { issue, repo, env } = options;
 
 		// `--resume` is what makes this a repair rather than a rebuild, and `build claim` checks it
 		// against the child's own standing verdicts: no standing FAIL refuses on 31 here, before any
@@ -142,13 +142,13 @@ export const runResumeChild = (
 			`${VERB}: the repair claim on #${issue} stands — continue it with "fabrika build resume-child ${issue} --token ${won}", or retract it with "fabrika build release ${issue} --token ${won}". A re-run without --token mints a second claim and refuses on 15.`,
 		];
 
-		const confirmed = yield* runConfirm({number: issue, repo, env, token: won});
+		const confirmed = yield* runConfirm({ number: issue, repo, env, token: won });
 		if (confirmed.code !== 0) return stopped("confirm", confirmed, notes, held);
 		notes.push(...confirmed.stderr);
 
 		// Unarmed on purpose: no lane branch is checked out yet, so there is no lane identity to prove
 		// and asking for one here is the very inversion this verb exists to make unavailable.
-		const clean = yield* runTree({requireClean: true, issue: null, repair: null, repo, env});
+		const clean = yield* runTree({ requireClean: true, issue: null, repair: null, repo, env });
 		if (clean.code !== 0) return stopped("clean-tree", clean, notes, held);
 		notes.push(...clean.stderr);
 
@@ -168,7 +168,7 @@ export const runResumeChild = (
 		notes.push(...branched.stderr);
 		const branch = branched.stdout.trim();
 
-		const proven = yield* runTree({requireClean: false, issue, repair: null, repo, env});
+		const proven = yield* runTree({ requireClean: false, issue, repair: null, repo, env });
 		if (proven.code !== 0) return stopped("armed-tree", proven, notes, held);
 		notes.push(...proven.stderr);
 		const root = field(proven.stdout, "root");
@@ -189,7 +189,7 @@ export const runResumeChild = (
 				branch,
 				root,
 				claim,
-				...(integrate === null ? {} : {integrate}),
+				...(integrate === null ? {} : { integrate }),
 			}),
 			[
 				...notes,

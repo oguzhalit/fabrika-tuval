@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {bodyDefect, classificationIn, deviationsDefect, proseOf} from "./pr-body.ts";
+import { describe, expect, it } from "vitest";
+import { bodyDefect, classificationIn, deviationsDefect, proseOf } from "./pr-body.ts";
 
 const body = (extra: string) => `Fixes #4312\n\nsome prose.\n${extra}\n## Deviations\n\nNone.\n`;
 
@@ -48,7 +48,7 @@ describe("the closing keyword", () => {
 	});
 
 	it("refuses a body with no link at all", () => {
-		expect(bodyDefect("## Deviations\nNone.\n", 4312, false)).toEqual({_tag: "NoLink"});
+		expect(bodyDefect("## Deviations\nNone.\n", 4312, false)).toEqual({ _tag: "NoLink" });
 	});
 
 	it("refuses a duplicated keyword aimed at the same issue", () => {
@@ -58,7 +58,7 @@ describe("the closing keyword", () => {
 	});
 
 	it("refuses an auto-close under --partial, and accepts Part of instead", () => {
-		expect(bodyDefect(body(""), 4312, true)).toEqual({_tag: "ClosesWhilePartial", target: 4312});
+		expect(bodyDefect(body(""), 4312, true)).toEqual({ _tag: "ClosesWhilePartial", target: 4312 });
 		expect(bodyDefect("Part of #4312\n\n## Deviations\nNone.\n", 4312, true)).toBeNull();
 	});
 

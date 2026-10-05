@@ -79,8 +79,8 @@ export interface DarkShip {
 
 export const detect = (diff: string, body: string, registry: string): DarkShip => {
 	const declared = declaredKeyOf(body);
-	if (declared !== null) return {dark: true, key: declared};
+	if (declared !== null) return { dark: true, key: declared };
 	const referenced = referencedKeyOf(body, declaredKeysIn(registry));
-	if (referenced !== null) return {dark: true, key: referenced};
-	return addsDeclaration(diff) ? {dark: true, key: null} : {dark: false, key: null};
+	if (referenced !== null) return { dark: true, key: referenced };
+	return addsDeclaration(diff) ? { dark: true, key: null } : { dark: false, key: null };
 };

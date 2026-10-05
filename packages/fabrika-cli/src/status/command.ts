@@ -8,29 +8,29 @@
  * **Every leaf is declared with `leafCommand`, never a bare `Command.make`** — the bare form
  * silently opts out of the excess-operand guard, which `../excess-operand.unit.test.ts` reds on.
  */
-import {homedir} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {Effect, type FileSystem, Option, type Path} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {CONFIG_PATH} from "../config/document.ts";
-import type {ConfigLayers} from "../config/load.ts";
-import {readConfigLayers} from "../config/source.ts";
-import {repoConfigLayers, repoConfigSource} from "../config/working-root.ts";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import type {Attempt} from "../io/git.ts";
-import {resolveRepo} from "../io/issues.ts";
-import {readStdin} from "../io/stdin.ts";
-import {readOriginHead, resolveTrunk} from "../io/trunk.ts";
-import {runStale} from "../lane/stale-verb.ts";
-import {DEFAULT_CHORES_ROOT, DEFAULT_LANES_ROOT} from "../lane/store.ts";
-import {readBoard, runBoard} from "./board-verb.ts";
-import {knownIds, runBootstrap} from "./bootstrap-verb.ts";
-import {instant, readNow} from "./fields.ts";
-import {runMenu} from "./menu-verb.ts";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { Effect, type FileSystem, Option, type Path } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { CONFIG_PATH } from "../config/document.ts";
+import type { ConfigLayers } from "../config/load.ts";
+import { readConfigLayers } from "../config/source.ts";
+import { repoConfigLayers, repoConfigSource } from "../config/working-root.ts";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import type { Attempt } from "../io/git.ts";
+import { resolveRepo } from "../io/issues.ts";
+import { readStdin } from "../io/stdin.ts";
+import { readOriginHead, resolveTrunk } from "../io/trunk.ts";
+import { runStale } from "../lane/stale-verb.ts";
+import { DEFAULT_CHORES_ROOT, DEFAULT_LANES_ROOT } from "../lane/store.ts";
+import { readBoard, runBoard } from "./board-verb.ts";
+import { knownIds, runBootstrap } from "./bootstrap-verb.ts";
+import { instant, readNow } from "./fields.ts";
+import { runMenu } from "./menu-verb.ts";
 import {
 	badFieldRefusal,
 	boardField,
@@ -46,10 +46,10 @@ import {
 	trunkField,
 	wiringField,
 } from "./open-verb.ts";
-import {badIssueRefusal, issueNumberOf, readReadout, runReadout} from "./readout-verb.ts";
-import {type RosterSources, readRoster} from "./roster.ts";
-import {runSettings, settingRows} from "./settings-verb.ts";
-import {readWiringSource, repoWiringSource, runWiring, wiringOf} from "./wiring-verb.ts";
+import { badIssueRefusal, issueNumberOf, readReadout, runReadout } from "./readout-verb.ts";
+import { type RosterSources, readRoster } from "./roster.ts";
+import { runSettings, settingRows } from "./settings-verb.ts";
+import { readWiringSource, repoWiringSource, runWiring, wiringOf } from "./wiring-verb.ts";
 
 const repoFlag = Flag.string("repo").pipe(
 	Flag.optional,
@@ -123,7 +123,7 @@ const readTrunkState = (
 ): Effect.Effect<TrunkRead, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		const trunk = yield* resolveTrunk(process.env, repo);
-		if (trunk._tag === "Failure") return {_tag: "Failed" as const, repo, reason: trunk.reason};
+		if (trunk._tag === "Failure") return { _tag: "Failed" as const, repo, reason: trunk.reason };
 		return {
 			_tag: "Resolved" as const,
 			repo,
@@ -134,10 +134,10 @@ const readTrunkState = (
 
 const menu = leafCommand(
 	"menu",
-	{skillsDir: skillsDirFlag, json: jsonFlag},
-	Effect.fn(function* ({skillsDir, json}) {
+	{ skillsDir: skillsDirFlag, json: jsonFlag },
+	Effect.fn(function* ({ skillsDir, json }) {
 		const roster = yield* readRoster(rosterSources(Option.getOrNull(skillsDir)));
-		yield* emit(runMenu({roster, asOf: readNow(instant(new Date())), json}));
+		yield* emit(runMenu({ roster, asOf: readNow(instant(new Date())), json }));
 	}),
 ).pipe(
 	Command.withShortDescription("The landed skill roster, derived from the installed plugin."),
@@ -151,7 +151,7 @@ const menu = leafCommand(
 			'  Derivation: the front-door skill\'s contract.md, "status menu"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika status menu"}]),
+	Command.withExamples([{ command: "fabrika status menu" }]),
 );
 
 const settings = leafCommand(
@@ -165,7 +165,7 @@ const settings = leafCommand(
 		),
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({root, json}) {
+	Effect.fn(function* ({ root, json }) {
 		const layers = yield* configSurface(Option.getOrNull(root));
 		yield* emit(
 			runSettings({
@@ -188,7 +188,7 @@ const settings = leafCommand(
 			'  Derivation: the front-door skill\'s contract.md, "status settings"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika status settings"}]),
+	Command.withExamples([{ command: "fabrika status settings" }]),
 );
 
 const wiring = leafCommand(
@@ -202,12 +202,12 @@ const wiring = leafCommand(
 		),
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({root, json}) {
+	Effect.fn(function* ({ root, json }) {
 		const named = Option.getOrNull(root);
 		const source =
 			named === null ? yield* repoWiringSource(process.cwd()) : yield* readWiringSource(named);
 		yield* emit(
-			runWiring({source, read: wiringOf(source), asOf: readNow(instant(new Date())), json}),
+			runWiring({ source, read: wiringOf(source), asOf: readNow(instant(new Date())), json }),
 		);
 	}),
 ).pipe(
@@ -220,25 +220,25 @@ const wiring = leafCommand(
 			'  Derivation: the front-door skill\'s contract.md, "status wiring"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika status wiring"}]),
+	Command.withExamples([{ command: "fabrika status wiring" }]),
 );
 
 const board = leafCommand(
 	"board",
-	{repo: repoFlag, json: jsonFlag},
-	Effect.fn(function* ({repo, json}) {
+	{ repo: repoFlag, json: jsonFlag },
+	Effect.fn(function* ({ repo, json }) {
 		const target = yield* resolveTarget(Option.getOrNull(repo));
 		if (target._tag === "Failure") {
 			yield* emit(
 				runBoard({
-					read: {_tag: "Failed", repo: "the target repo", reason: target.reason},
+					read: { _tag: "Failed", repo: "the target repo", reason: target.reason },
 					json,
 				}),
 			);
 			return;
 		}
 		yield* emit(
-			runBoard({read: yield* readBoard(target.value, process.cwd(), () => new Date()), json}),
+			runBoard({ read: yield* readBoard(target.value, process.cwd(), () => new Date()), json }),
 		);
 	}),
 ).pipe(
@@ -255,7 +255,7 @@ const board = leafCommand(
 			'  Derivation: the front-door skill\'s contract.md, "status board"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika status board"}]),
+	Command.withExamples([{ command: "fabrika status board" }]),
 );
 
 const readout = leafCommand(
@@ -270,7 +270,7 @@ const readout = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({issue, repo, json}) {
+	Effect.fn(function* ({ issue, repo, json }) {
 		const supplied = Option.getOrNull(issue);
 		const number = supplied === null ? null : issueNumberOf(supplied);
 		if (supplied !== null && number === null) {
@@ -283,7 +283,7 @@ const readout = leafCommand(
 			issue: number,
 			env: process.env,
 		});
-		yield* emit(runReadout({read, json}));
+		yield* emit(runReadout({ read, json }));
 	}),
 ).pipe(
 	Command.withShortDescription("The landed-decision digest from the durable artifact."),
@@ -296,7 +296,7 @@ const readout = leafCommand(
 			'  Derivation: the front-door skill\'s contract.md, "status readout"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika status readout"}]),
+	Command.withExamples([{ command: "fabrika status readout" }]),
 );
 
 const bootstrap = leafCommand(
@@ -314,7 +314,7 @@ const bootstrap = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({surface, path, repo, json}) {
+	Effect.fn(function* ({ surface, path, repo, json }) {
 		yield* emit(
 			yield* runBootstrap({
 				surfaceId: surface,
@@ -345,7 +345,7 @@ const bootstrap = leafCommand(
 			'  Derivation: the front-door skill\'s contract.md, "status bootstrap"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika status bootstrap readout-artifact"}]),
+	Command.withExamples([{ command: "fabrika status bootstrap readout-artifact" }]),
 );
 
 const open = leafCommand(
@@ -359,7 +359,7 @@ const open = leafCommand(
 		skillsDir: skillsDirFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({field, repo, skillsDir, json}) {
+	Effect.fn(function* ({ field, repo, skillsDir, json }) {
 		const only = Option.getOrNull(field);
 		if (only !== null && !isFieldName(only)) {
 			yield* emit(badFieldRefusal(only));
@@ -390,7 +390,7 @@ const open = leafCommand(
 					boardField(
 						target._tag === "Ok"
 							? yield* readBoard(target.value, process.cwd(), () => new Date())
-							: {_tag: "Failed", repo: repoName, reason: target.reason},
+							: { _tag: "Failed", repo: repoName, reason: target.reason },
 					),
 				);
 			}
@@ -398,8 +398,8 @@ const open = leafCommand(
 				fields.push(
 					readoutField(
 						target._tag === "Ok"
-							? yield* readReadout({repo: target.value, issue: null, env: process.env})
-							: {_tag: "Unfetchable", repo: repoName, issue: null, reason: target.reason},
+							? yield* readReadout({ repo: target.value, issue: null, env: process.env })
+							: { _tag: "Unfetchable", repo: repoName, issue: null, reason: target.reason },
 					),
 				);
 			}
@@ -408,7 +408,7 @@ const open = leafCommand(
 					trunkField(
 						target._tag === "Ok"
 							? yield* readTrunkState(target.value)
-							: {_tag: "Failed", repo: repoName, reason: target.reason},
+							: { _tag: "Failed", repo: repoName, reason: target.reason },
 						asOf,
 					),
 				);
@@ -436,7 +436,7 @@ const open = leafCommand(
 			roster === null
 				? "roster not read"
 				: `roster ${roster.display}${roster._tag === "Resolved" ? ` (${roster.tier})` : " (unresolved)"}`;
-		yield* emit(runOpen({fields, json, scope: `${rosterScope}; repo ${repoName}`}));
+		yield* emit(runOpen({ fields, json, scope: `${rosterScope}; repo ${repoName}` }));
 	}),
 ).pipe(
 	Command.withShortDescription(
@@ -450,7 +450,7 @@ const open = leafCommand(
 			'  Derivation: the front-door skill\'s contract.md, "status open"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika status open"}]),
+	Command.withExamples([{ command: "fabrika status open" }]),
 );
 
 export const statusCommand = Command.make("status").pipe(

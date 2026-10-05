@@ -12,7 +12,7 @@
  * "the agent label is on it" as success would report a flip that also left the human label standing.
  */
 
-import {audienceLabel} from "../config/board.ts";
+import { audienceLabel } from "../config/board.ts";
 
 /** The one audience an agent lane may open against. */
 export const READY_FOR_AGENT = audienceLabel("agent");
@@ -24,7 +24,7 @@ export const READY_FOR_PREFIX = "ready-for:";
 /** The audience writes an issue is owed, read off its observed labels. */
 export const audienceWrites = (
 	labels: ReadonlyArray<string>,
-): {readonly add: boolean; readonly remove: boolean} => ({
+): { readonly add: boolean; readonly remove: boolean } => ({
 	add: !labels.includes(READY_FOR_AGENT),
 	remove: labels.includes(READY_FOR_HUMAN),
 });

@@ -39,7 +39,7 @@ export interface SurfacePageErrors {
 /** Normalize a raw page-event string into a {@link PageError}, defaulting empty text. */
 export const toPageError = (kind: PageError["kind"], text: string): PageError => {
 	const trimmed = text.trim();
-	return {kind, text: trimmed.length === 0 ? "(no message)" : trimmed};
+	return { kind, text: trimmed.length === 0 ? "(no message)" : trimmed };
 };
 
 export const isRenderCrash = (error: PageError): boolean => error.kind === "pageerror";

@@ -1,9 +1,9 @@
 /** `lane push` — the assembly branch is derived, the push is proven, and no force path exists. */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {HEAD, OLD_HEAD} from "../build/fixtures.test-support.ts";
-import {errOut, fakeFs, fakeShell, okOut, once} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { HEAD, OLD_HEAD } from "../build/fixtures.test-support.ts";
+import { errOut, fakeFs, fakeShell, okOut, once } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
 import {
 	APPEND_UNKNOWN,
 	LANE_ABSENT,
@@ -14,13 +14,13 @@ import {
 	UNSAFE_PUSH,
 	WRONG_BRANCH,
 } from "./codes.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
-import {runPush} from "./push-verb.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
+import { runPush } from "./push-verb.ts";
 
 const ROOT = ".fabrika/lanes";
 const EPIC = 5680;
 const BRANCH = `epic/${EPIC}`;
-const LANE_FILES = {[`${ROOT}/${EPIC}/workflow.json`]: coderTemplateText()};
+const LANE_FILES = { [`${ROOT}/${EPIC}/workflow.json`]: coderTemplateText() };
 
 const CURRENT_BRANCH = /^git rev-parse --abbrev-ref HEAD$/;
 const GIT_DIRS = /^git rev-parse --path-format=absolute --git-dir --git-common-dir$/;
@@ -72,10 +72,10 @@ const run = (
 	const shell = fakeShell(script);
 	return Effect.runPromise(
 		Effect.provide(
-			runPush({epic: EPIC, root: ROOT, lane: String(EPIC)}),
-			Layer.merge(shell.layer, fakeFs({files}).layer),
+			runPush({ epic: EPIC, root: ROOT, lane: String(EPIC) }),
+			Layer.merge(shell.layer, fakeFs({ files }).layer),
 		),
-	).then((outcome) => ({outcome, calls: shell.calls}));
+	).then((outcome) => ({ outcome, calls: shell.calls }));
 };
 
 const pushed = (calls: ReadonlyArray<string>): boolean =>
@@ -83,7 +83,7 @@ const pushed = (calls: ReadonlyArray<string>): boolean =>
 
 describe("runPush", () => {
 	it("pushes the derived assembly branch and reports MOVED once the remote reads back at HEAD", async () => {
-		const {outcome, calls} = await run([...remote(refRow(OLD_HEAD), refRow(HEAD)), ...GROUND]);
+		const { outcome, calls } = await run([...remote(refRow(OLD_HEAD), refRow(HEAD)), ...GROUND]);
 
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout.trimEnd().split("\n").at(-1)).toBe("PUSH-VERDICT: MOVED");
@@ -91,7 +91,7 @@ describe("runPush", () => {
 	});
 
 	it("publishes a branch the remote does not carry yet, with no containment to prove", async () => {
-		const {outcome, calls} = await run([...remote(refRow(null), refRow(HEAD)), ...GROUND]);
+		const { outcome, calls } = await run([...remote(refRow(null), refRow(HEAD)), ...GROUND]);
 
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toContain(`remote ref read back: ${HEAD}`);
@@ -99,7 +99,7 @@ describe("runPush", () => {
 	});
 
 	it("refuses a push from the repository's main working tree — the assembly seat is never it", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[GIT_DIRS, IN_MAIN_CHECKOUT],
 			...remote(refRow(OLD_HEAD), refRow(HEAD)),
 			...GROUND,
@@ -112,7 +112,7 @@ describe("runPush", () => {
 	});
 
 	it("is UNKNOWN, never a push, when whether this tree is linked cannot be read", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[GIT_DIRS, errOut("fatal: not a git repository")],
 			...remote(refRow(OLD_HEAD), refRow(HEAD)),
 			...GROUND,
@@ -123,7 +123,7 @@ describe("runPush", () => {
 	});
 
 	it("refuses a checked-out branch that is not this epic's assembly branch, pushing nothing", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[CURRENT_BRANCH, okOut("build/5729-child-a1b2c3d4\n")],
 			...remote(refRow(OLD_HEAD), refRow(HEAD)),
 			...GROUND,
@@ -136,7 +136,7 @@ describe("runPush", () => {
 	});
 
 	it("refuses a detached HEAD as a wrong branch, not as an unreadable tree", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[CURRENT_BRANCH, okOut("HEAD\n")],
 			...remote(refRow(OLD_HEAD), refRow(HEAD)),
 			...GROUND,
@@ -148,7 +148,7 @@ describe("runPush", () => {
 	});
 
 	it("refuses a push that would drop the published assembly head, naming the commits", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[ANCESTOR, errOut("not an ancestor")],
 			[LOG, okOut("deadbee land child #5729\n")],
 			...remote(refRow(OLD_HEAD), refRow(HEAD)),
@@ -161,7 +161,10 @@ describe("runPush", () => {
 	});
 
 	it("reports a proven not-moved ref rather than reading the push's own exit as evidence", async () => {
-		const {outcome, calls} = await run([...remote(refRow(OLD_HEAD), refRow(OLD_HEAD)), ...GROUND]);
+		const { outcome, calls } = await run([
+			...remote(refRow(OLD_HEAD), refRow(OLD_HEAD)),
+			...GROUND,
+		]);
 
 		expect(outcome.code).toBe(REF_NOT_MOVED);
 		expect(outcome.stdout).toBe("");
@@ -169,7 +172,7 @@ describe("runPush", () => {
 	});
 
 	it("reports UNKNOWN, never MOVED, when the ref cannot be re-read after the push", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			...remote(refRow(OLD_HEAD), errOut("network is unreachable")),
 			...GROUND,
 		]);
@@ -179,14 +182,17 @@ describe("runPush", () => {
 	});
 
 	it("refuses an unreadable remote before pushing anything", async () => {
-		const {outcome, calls} = await run([[LS_REMOTE, errOut("network is unreachable")], ...GROUND]);
+		const { outcome, calls } = await run([
+			[LS_REMOTE, errOut("network is unreachable")],
+			...GROUND,
+		]);
 
 		expect(outcome.code).toBe(LANE_UNREADABLE);
 		expect(pushed(calls)).toBe(false);
 	});
 
 	it("pushes the derived branch even when the branch tracks main, and clears that upstream", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[once(UPSTREAM), okOut("origin/main\n")],
 			[UPSTREAM, errOut("fatal: no upstream")],
 			[REMOTES, okOut("origin\n")],
@@ -201,7 +207,7 @@ describe("runPush", () => {
 	});
 
 	it("refuses a seat whose upstream survives the clear, naming the ref a bare push would hit", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[UPSTREAM, okOut("origin/main\n")],
 			[REMOTES, okOut("origin\n")],
 			...remote(refRow(OLD_HEAD), refRow(HEAD)),
@@ -215,7 +221,10 @@ describe("runPush", () => {
 	});
 
 	it("refuses an epic whose lane was never emitted — a branch name alone proves nothing", async () => {
-		const {outcome, calls} = await run([...remote(refRow(OLD_HEAD), refRow(HEAD)), ...GROUND], {});
+		const { outcome, calls } = await run(
+			[...remote(refRow(OLD_HEAD), refRow(HEAD)), ...GROUND],
+			{},
+		);
 
 		expect(outcome.code).toBe(LANE_ABSENT);
 		expect(calls).toEqual([]);

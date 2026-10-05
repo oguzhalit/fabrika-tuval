@@ -4,7 +4,7 @@
  * The load-bearing case is multi-app: resolution must NOT return the first
  * `workers.dev` URL in the comment, or a second app's line would shadow web's.
  */
-import {assert, describe, it} from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import {
 	announcedApps,
 	isPreviewAnnouncement,
@@ -60,7 +60,7 @@ describe("readPreviewAnnouncement", () => {
 		const read = readPreviewAnnouncement(stickyComment(webBlock(url, "abc1234")), "web");
 		assert.deepStrictEqual(read, {
 			_tag: "Announced",
-			value: {app: "web", url, deployedSha: "abc1234"},
+			value: { app: "web", url, deployedSha: "abc1234" },
 		});
 	});
 
@@ -68,7 +68,7 @@ describe("readPreviewAnnouncement", () => {
 		const at = `<!-- preview-deploy:web -->\n- **web** → ${url} @ 03135b91aa04`;
 		assert.deepStrictEqual(readPreviewAnnouncement(at, "web"), {
 			_tag: "Announced",
-			value: {app: "web", url, deployedSha: "03135b91aa04"},
+			value: { app: "web", url, deployedSha: "03135b91aa04" },
 		});
 	});
 
@@ -77,7 +77,7 @@ describe("readPreviewAnnouncement", () => {
 		const body = `<!-- preview-deploy:web -->\n- **web** → ${elsewhere} <sub>(abc1234)</sub>`;
 		assert.deepStrictEqual(readPreviewAnnouncement(body, "web"), {
 			_tag: "Announced",
-			value: {app: "web", url: elsewhere, deployedSha: "abc1234"},
+			value: { app: "web", url: elsewhere, deployedSha: "abc1234" },
 		});
 	});
 

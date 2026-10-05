@@ -22,7 +22,7 @@
  * holds for a cleared round, and the reason an agent-authored marker approves nothing.
  */
 
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
 import {
 	absent,
 	firstNonBlankLine,
@@ -43,8 +43,8 @@ import {
 	scopeDigest,
 } from "./issue-marker.ts";
 
-export type {MarkerTime} from "./grill-marker.ts";
-export {type ScopeDigest, scopeDigest} from "./issue-marker.ts";
+export type { MarkerTime } from "./grill-marker.ts";
+export { type ScopeDigest, scopeDigest } from "./issue-marker.ts";
 
 /** The key that names these bytes. Never widened — a second meaning would need a second format. */
 export const KEY = "plan-approved";
@@ -82,11 +82,11 @@ export const read = (artifact: string): PlanApprovalRead => {
 			evidence,
 		);
 	}
-	return {_tag: "Found", value: {epic: bound.issue, digest: bound.digest, at}};
+	return { _tag: "Found", value: { epic: bound.issue, digest: bound.digest, at } };
 };
 
 /** Compose the marker's first line. Round-trips through {@link read}. */
-export const emit = ({epic, digest, at}: PlanApproval): string =>
+export const emit = ({ epic, digest, at }: PlanApproval): string =>
 	emitIssueMarker(KEY, epic, digest, [at]);
 
 /**
@@ -106,8 +106,8 @@ export const renderApproval = (approval: PlanApproval): NonEmptyReadonlyArray<st
 ];
 
 export type PlanApprovalFields =
-	| {readonly _tag: "Fields"; readonly approval: PlanApproval}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly approval: PlanApproval }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 const KEYS = ["epic", "digest", "at"] as const;
 
@@ -115,7 +115,7 @@ const KEYS = ["epic", "digest", "at"] as const;
 export const parseFields = (fields: string): PlanApprovalFields => {
 	const lines = parseFieldLines(fields, KEYS);
 	if (lines._tag === "Unusable") return lines;
-	const {seen} = lines;
+	const { seen } = lines;
 
 	const epic = issueField(seen.get("epic") ?? "");
 	if (epic === null) {
@@ -138,19 +138,19 @@ export const parseFields = (fields: string): PlanApprovalFields => {
 			reason: `"${seen.get("at") ?? ""}" is not an ISO-8601 UTC timestamp — expected a Z-suffixed instant`,
 		};
 	}
-	return {_tag: "Fields", approval: {epic, digest, at}};
+	return { _tag: "Fields", approval: { epic, digest, at } };
 };
 
 /** The registry row's byte-level `emit`, bound to this module's typed core. */
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.approval)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.approval) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderApproval(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderApproval(result.value) } : result;
 };

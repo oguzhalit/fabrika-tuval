@@ -19,9 +19,9 @@
  * OPEN, which is the recoverable direction. The three unguarded sequential writes this replaces
  * landed a closed, unexplained, unlabelled issue whenever the middle one failed.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {BoardRead} from "../config/resolve-board.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { BoardRead } from "../config/resolve-board.ts";
 import {
 	closeNotPlanned,
 	createComment,
@@ -30,12 +30,12 @@ import {
 	listLabels,
 	resolveRepo,
 } from "../io/issues.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {KILL_LABEL} from "../labels.ts";
-import {scanBody} from "../report/leaks.ts";
-import {missingLabelRemedy} from "../status/label-remedy.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {type AuthoredSurface, leakRefusal, readAuthored} from "./authored.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { KILL_LABEL } from "../labels.ts";
+import { scanBody } from "../report/leaks.ts";
+import { missingLabelRemedy } from "../status/label-remedy.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { type AuthoredSurface, leakRefusal, readAuthored } from "./authored.ts";
 import {
 	HUMAN_FILED,
 	PRECONDITION_UNKNOWN,
@@ -44,11 +44,17 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {applyChanges} from "./facet-writes.ts";
-import {type Change, killedFacets, planReconcile, renderShape, shapeViolations} from "./facets.ts";
-import {OPERATOR_ACCOUNTS_ENV, provenanceOf, resolveOperatorAccounts} from "./provenance.ts";
-import {scannedLine} from "./scope.ts";
-import {guardTarget} from "./target-guard.ts";
+import { applyChanges } from "./facet-writes.ts";
+import {
+	type Change,
+	killedFacets,
+	planReconcile,
+	renderShape,
+	shapeViolations,
+} from "./facets.ts";
+import { OPERATOR_ACCOUNTS_ENV, provenanceOf, resolveOperatorAccounts } from "./provenance.ts";
+import { scannedLine } from "./scope.ts";
+import { guardTarget } from "./target-guard.ts";
 
 const SURFACE: AuthoredSurface = {
 	verb: "triage kill",
@@ -77,7 +83,7 @@ export const runKill = (
 	options: KillOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {issue, duplicateOf, json} = options;
+		const { issue, duplicateOf, json } = options;
 
 		if (!isIssueNumber(issue)) {
 			return refuse(FAILED, `triage kill: ${issue} is not an issue number.`);
@@ -255,10 +261,10 @@ export const runKill = (
 		// two reconciling exits cannot disagree about which statuses a triage transition owns.
 		const facets = killedFacets();
 		const home = target.value.milestone;
-		const plan = planReconcile({labels: target.value.labels, milestone: home}, facets, home);
+		const plan = planReconcile({ labels: target.value.labels, milestone: home }, facets, home);
 		const labelChanges: ReadonlyArray<Change> = [
 			...plan.changes,
-			{_tag: "AddLabels", labels: [KILL_LABEL]},
+			{ _tag: "AddLabels", labels: [KILL_LABEL] },
 		];
 
 		const labelled = yield* applyChanges(repo, issue, labelChanges);
@@ -307,7 +313,7 @@ export const runKill = (
 		// `state`/`state_reason` passes a killed issue still advertising `status:needs-triage` — the
 		// defect itself. `home` is the read-back's own milestone, so this asserts the status facet and
 		// makes no claim about a home the kill never touched.
-		const observed = {labels: after.value.labels, milestone: after.value.milestone};
+		const observed = { labels: after.value.labels, milestone: after.value.milestone };
 		if (shapeViolations(observed, facets, observed.milestone).length > 0) {
 			return refuse(
 				READBACK_MISMATCH,
@@ -319,7 +325,7 @@ export const runKill = (
 		const foldedInto = duplicate === null ? null : duplicate.number;
 		return json
 			? answer(
-					JSON.stringify({outcome: "killed", number: issue, foldedInto, redactions, provenance}),
+					JSON.stringify({ outcome: "killed", number: issue, foldedInto, redactions, provenance }),
 					diagnostics,
 				)
 			: answer(`killed\t${issue}\t${foldedInto ?? "none"}`, diagnostics);

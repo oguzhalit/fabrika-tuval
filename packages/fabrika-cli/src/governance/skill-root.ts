@@ -15,9 +15,9 @@
 const SKILL_FILE = /(^|\/)fabrika\/skills\/governance\/SKILL\.md$/;
 
 export type SkillRoots =
-	| {readonly _tag: "One"; readonly root: string}
-	| {readonly _tag: "None"}
-	| {readonly _tag: "Many"; readonly candidates: ReadonlyArray<string>};
+	| { readonly _tag: "One"; readonly root: string }
+	| { readonly _tag: "None" }
+	| { readonly _tag: "Many"; readonly candidates: ReadonlyArray<string> };
 
 /** Every install's root directory, trailing slash included, sorted so two runs answer alike. */
 export const skillRootsIn = (paths: ReadonlyArray<string>): ReadonlyArray<string> =>
@@ -30,8 +30,8 @@ export const skillRootsIn = (paths: ReadonlyArray<string>): ReadonlyArray<string
 export const resolveSkillRoots = (paths: ReadonlyArray<string>): SkillRoots => {
 	const roots = skillRootsIn(paths);
 	const only = roots[0];
-	if (only === undefined) return {_tag: "None"};
-	return roots.length === 1 ? {_tag: "One", root: only} : {_tag: "Many", candidates: roots};
+	if (only === undefined) return { _tag: "None" };
+	return roots.length === 1 ? { _tag: "One", root: only } : { _tag: "Many", candidates: roots };
 };
 
 /** Whether `path` lies inside the resolved root — the `--path` fence `governance base` applies. */

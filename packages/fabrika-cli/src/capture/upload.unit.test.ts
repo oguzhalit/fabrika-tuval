@@ -6,13 +6,13 @@
  * undocumented `uploads.github.com/user-attachments/assets` endpoint may change
  * without notice).
  */
-import {assert, describe, it} from "@effect/vitest";
-import {Effect, Layer} from "effect";
+import { assert, describe, it } from "@effect/vitest";
+import { Effect, Layer } from "effect";
 import * as HttpClient from "effect/unstable/http/HttpClient";
 import * as HttpClientError from "effect/unstable/http/HttpClientError";
 import * as HttpClientResponse from "effect/unstable/http/HttpClientResponse";
-import {DESKTOP_VIEWPORT, parseSurfaceSpec, surfaceFileName} from "./plan.ts";
-import {PNG_CONTENT_TYPE, parseUploadResponse, uploadAsset, uploadEndpoint} from "./upload.ts";
+import { DESKTOP_VIEWPORT, parseSurfaceSpec, surfaceFileName } from "./plan.ts";
+import { PNG_CONTENT_TYPE, parseUploadResponse, uploadAsset, uploadEndpoint } from "./upload.ts";
 
 const HOSTED = "https://github.com/user-attachments/assets/0a1b2c3d-4e5f-6789-abcd-ef0123456789";
 
@@ -47,33 +47,33 @@ describe("uploadEndpoint", () => {
 
 describe("parseUploadResponse — the fallback classifier (pure core)", () => {
 	it("extracts the hosted URL from a 2xx `href` body", () => {
-		const o = parseUploadResponse({status: 201, body: JSON.stringify({href: HOSTED})});
+		const o = parseUploadResponse({ status: 201, body: JSON.stringify({ href: HOSTED }) });
 		assert.strictEqual(o.hostedUrl, HOSTED);
 		assert.strictEqual(o.uploadError, null);
 	});
 
 	it("also accepts a `url` field", () => {
 		assert.strictEqual(
-			parseUploadResponse({status: 200, body: JSON.stringify({url: HOSTED})}).hostedUrl,
+			parseUploadResponse({ status: 200, body: JSON.stringify({ url: HOSTED }) }).hostedUrl,
 			HOSTED,
 		);
 	});
 
 	// The body carries a valid href, so only the status can be what refuses it.
 	it.each([404, 500])("falls back on HTTP %s with a diagnostic naming the code", (status) => {
-		const o = parseUploadResponse({status, body: JSON.stringify({href: HOSTED})});
+		const o = parseUploadResponse({ status, body: JSON.stringify({ href: HOSTED }) });
 		assert.strictEqual(o.hostedUrl, null);
 		assert.match(o.uploadError ?? "", new RegExp(`returned HTTP ${status}`));
 	});
 
 	it("falls back on an unparseable body (undocumented endpoint drift)", () => {
-		const o = parseUploadResponse({status: 201, body: "<html>not json</html>"});
+		const o = parseUploadResponse({ status: 201, body: "<html>not json</html>" });
 		assert.strictEqual(o.hostedUrl, null);
 		assert.match(o.uploadError ?? "", /unparseable/);
 	});
 
 	it("falls back on a 2xx body with no hosted URL field", () => {
-		const o = parseUploadResponse({status: 201, body: JSON.stringify({id: 5, name: "x.png"})});
+		const o = parseUploadResponse({ status: 201, body: JSON.stringify({ id: 5, name: "x.png" }) });
 		assert.strictEqual(o.hostedUrl, null);
 		assert.match(o.uploadError ?? "", /no hosted URL/);
 	});
@@ -81,7 +81,7 @@ describe("parseUploadResponse — the fallback classifier (pure core)", () => {
 	it("falls back on a URL that is not a GitHub user-attachments asset (never embeds a bogus link)", () => {
 		const o = parseUploadResponse({
 			status: 201,
-			body: JSON.stringify({href: "https://evil.example/x"}),
+			body: JSON.stringify({ href: "https://evil.example/x" }),
 		});
 		assert.strictEqual(o.hostedUrl, null);
 	});
@@ -91,7 +91,7 @@ describe("parseUploadResponse — the fallback classifier (pure core)", () => {
 const stubResponse = (status: number, body: string): Layer.Layer<HttpClient.HttpClient> =>
 	Layer.succeed(HttpClient.HttpClient)(
 		HttpClient.make((request) =>
-			Effect.succeed(HttpClientResponse.fromWeb(request, new Response(body, {status}))),
+			Effect.succeed(HttpClientResponse.fromWeb(request, new Response(body, { status }))),
 		),
 	);
 
@@ -121,7 +121,7 @@ const runUpload = (layer: Layer.Layer<HttpClient.HttpClient>) =>
 
 describe("uploadAsset — over a stubbed transport (never fails the effect)", () => {
 	it("returns the hosted URL on a 201 with a valid href", async () => {
-		const o = await runUpload(stubResponse(201, JSON.stringify({href: HOSTED})));
+		const o = await runUpload(stubResponse(201, JSON.stringify({ href: HOSTED })));
 		assert.strictEqual(o.hostedUrl, HOSTED);
 		assert.strictEqual(o.uploadError, null);
 	});
@@ -144,14 +144,14 @@ describe("uploadAsset — over a stubbed transport (never fails the effect)", ()
  * the request SHAPE — not just the response handling — be asserted, which is the
  * only place that regression lived.
  */
-const recordingTransport = (seen: {url?: string}): Layer.Layer<HttpClient.HttpClient> =>
+const recordingTransport = (seen: { url?: string }): Layer.Layer<HttpClient.HttpClient> =>
 	Layer.succeed(HttpClient.HttpClient)(
 		HttpClient.make((request) => {
 			seen.url = request.url;
 			return Effect.succeed(
 				HttpClientResponse.fromWeb(
 					request,
-					new Response(JSON.stringify({url: HOSTED}), {status: 201}),
+					new Response(JSON.stringify({ url: HOSTED }), { status: 201 }),
 				),
 			);
 		}),
@@ -168,7 +168,7 @@ describe("uploadAsset — the request shape the live endpoint accepts", () => {
 			const fileName = surfaceFileName(parseSurfaceSpec(token), DESKTOP_VIEWPORT);
 			assert.strictEqual(fileName, expectedName);
 
-			const seen: {url?: string} = {};
+			const seen: { url?: string } = {};
 			const outcome = await Effect.runPromise(
 				uploadAsset({
 					pngBytes: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),

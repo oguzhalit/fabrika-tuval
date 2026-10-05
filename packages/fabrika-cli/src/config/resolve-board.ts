@@ -11,15 +11,15 @@
  * default from; importing the key modules there would close a cycle.
  */
 
-import {type BoardVocabulary, composeFacets, type ResolvedBoard} from "./board.ts";
-import type {FacetVocabulary} from "./containment.ts";
-import {BOARD_VOCABULARY, boardVocabularyKey} from "./keys/board-vocabulary.ts";
-import {triageFacetsKey} from "./keys/triage-facets.ts";
-import {type Load, resolve} from "./load.ts";
+import { type BoardVocabulary, composeFacets, type ResolvedBoard } from "./board.ts";
+import type { FacetVocabulary } from "./containment.ts";
+import { BOARD_VOCABULARY, boardVocabularyKey } from "./keys/board-vocabulary.ts";
+import { triageFacetsKey } from "./keys/triage-facets.ts";
+import { type Load, resolve } from "./load.ts";
 
 export type BoardRead =
-	| {readonly _tag: "Resolved"; readonly resolved: ResolvedBoard}
-	| {readonly _tag: "Refused"; readonly reason: string};
+	| { readonly _tag: "Resolved"; readonly resolved: ResolvedBoard }
+	| { readonly _tag: "Refused"; readonly reason: string };
 
 /**
  * The board this load runs on, or the one reason no value of it may be used.
@@ -31,11 +31,11 @@ export type BoardRead =
 export const resolveBoard = (load: Load, shipped: ReadonlyArray<FacetVocabulary>): BoardRead => {
 	const board = resolve(load, boardVocabularyKey);
 	if (board._tag === "Malformed" || board._tag === "Unknown") {
-		return {_tag: "Refused", reason: board.reason};
+		return { _tag: "Refused", reason: board.reason };
 	}
 	const declared = resolve(load, triageFacetsKey);
 	if (declared._tag === "Malformed" || declared._tag === "Unknown") {
-		return {_tag: "Refused", reason: declared.reason};
+		return { _tag: "Refused", reason: declared.reason };
 	}
 	const composed = composeFacets(
 		BOARD_VOCABULARY,
@@ -45,7 +45,7 @@ export const resolveBoard = (load: Load, shipped: ReadonlyArray<FacetVocabulary>
 	);
 	return composed._tag === "Refused"
 		? composed
-		: {_tag: "Resolved", resolved: {board: board.value, facets: composed.facets}};
+		: { _tag: "Resolved", resolved: { board: board.value, facets: composed.facets } };
 };
 
-export type {BoardVocabulary, ResolvedBoard};
+export type { BoardVocabulary, ResolvedBoard };

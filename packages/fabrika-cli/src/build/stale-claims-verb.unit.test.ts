@@ -1,8 +1,8 @@
 /** `build claims stale` — which build claims have stood on the board unmoved, and nothing cleared. */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type Scripted} from "../fakes.test-support.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type Scripted } from "../fakes.test-support.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
 import {
 	adoptMarker,
 	comments,
@@ -13,17 +13,17 @@ import {
 	SIBLING_UUID,
 	served,
 } from "./fixtures.test-support.ts";
-import {DEFAULT_OLDER_THAN_MINUTES, runStaleClaims} from "./stale-claims-verb.ts";
+import { DEFAULT_OLDER_THAN_MINUTES, runStaleClaims } from "./stale-claims-verb.ts";
 
 const SEARCH = /GET .*search\/issues/;
 const COMMENTS = (issue: number) => new RegExp(`GET .*/repos/o/r/issues/${issue}/comments`);
 const PERM = (login: string) => new RegExp(`GET .*/repos/o/r/collaborators/${login}/permission`);
 
-const WRITE = served({permission: "write"});
-const READ_ONLY = served({permission: "read"});
+const WRITE = served({ permission: "write" });
+const READ_ONLY = served({ permission: "read" });
 
 /** No session id anywhere: this verb holds no claim and needs no identity to ask. */
-const ENV = {...GH_TOKEN_ENV, CLAUDE_PIPELINE_REPO: "o/r"};
+const ENV = { ...GH_TOKEN_ENV, CLAUDE_PIPELINE_REPO: "o/r" };
 
 const NOW = "2026-09-01T00:00:00Z";
 /** Two days before {@link NOW} — past the default horizon of a day. */
@@ -34,13 +34,13 @@ const TWO_HOURS_OLD = "2026-08-31T22:00:00Z";
 const candidates = (...numbers: ReadonlyArray<number>) =>
 	served({
 		total_count: numbers.length,
-		items: numbers.map((number) => ({number, title: `issue ${String(number)}`})),
+		items: numbers.map((number) => ({ number, title: `issue ${String(number)}` })),
 	});
 
 const run = (script: ReadonlyArray<Scripted>, olderThanMinutes = DEFAULT_OLDER_THAN_MINUTES) =>
 	Effect.runPromise(
 		Effect.provide(
-			runStaleClaims({olderThanMinutes, repo: null, now: NOW, env: ENV}),
+			runStaleClaims({ olderThanMinutes, repo: null, now: NOW, env: ENV }),
 			fakeSeams(script).layer,
 		),
 	);
@@ -51,11 +51,11 @@ describe("build claims stale", () => {
 			[SEARCH, candidates(4312, 4313)],
 			[
 				COMMENTS(4312),
-				comments({id: 9001, body: marker("s-dead", LANE_UUID), createdAt: TWO_DAYS_OLD}),
+				comments({ id: 9001, body: marker("s-dead", LANE_UUID), createdAt: TWO_DAYS_OLD }),
 			],
 			[
 				COMMENTS(4313),
-				comments({id: 9002, body: marker("s-live", SIBLING_UUID), createdAt: TWO_HOURS_OLD}),
+				comments({ id: 9002, body: marker("s-live", SIBLING_UUID), createdAt: TWO_HOURS_OLD }),
 			],
 			[PERM("agent"), WRITE],
 		]);
@@ -63,7 +63,7 @@ describe("build claims stale", () => {
 		expect(out.code).toBe(0);
 		const answer = JSON.parse(out.stdout);
 		expect(answer.answer).toBe("stranded");
-		expect(answer.scanned).toEqual({candidates: 2, markers: 2, olderThanMinutes: 1440});
+		expect(answer.scanned).toEqual({ candidates: 2, markers: 2, olderThanMinutes: 1440 });
 		expect(answer.stranded).toHaveLength(1);
 		expect(answer.stranded[0]).toMatchObject({
 			issue: 4312,
@@ -81,7 +81,7 @@ describe("build claims stale", () => {
 				[SEARCH, candidates(4313)],
 				[
 					COMMENTS(4313),
-					comments({id: 9002, body: marker("s-live", SIBLING_UUID), createdAt: TWO_HOURS_OLD}),
+					comments({ id: 9002, body: marker("s-live", SIBLING_UUID), createdAt: TWO_HOURS_OLD }),
 				],
 				[PERM("agent"), WRITE],
 			],
@@ -92,7 +92,7 @@ describe("build claims stale", () => {
 		const answer = JSON.parse(out.stdout);
 		expect(answer.scanned.olderThanMinutes).toBe(60);
 		expect(answer.stranded).toHaveLength(1);
-		expect(answer.stranded[0]).toMatchObject({issue: 4313, ageMinutes: 120});
+		expect(answer.stranded[0]).toMatchObject({ issue: 4313, ageMinutes: 120 });
 	});
 
 	it("answers none rather than an empty list when every marker is inside the horizon", async () => {
@@ -100,26 +100,26 @@ describe("build claims stale", () => {
 			[SEARCH, candidates(4313)],
 			[
 				COMMENTS(4313),
-				comments({id: 9002, body: marker("s-live", SIBLING_UUID), createdAt: TWO_HOURS_OLD}),
+				comments({ id: 9002, body: marker("s-live", SIBLING_UUID), createdAt: TWO_HOURS_OLD }),
 			],
 			[PERM("agent"), WRITE],
 		]);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "none", stranded: []});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "none", stranded: [] });
 		expect(out.stderr.join("\n")).toContain("has stood unmoved for 1440 minute(s)");
 	});
 
 	it("counts an index hit whose thread carries no marker, and rows nothing for it", async () => {
 		const out = await run([
 			[SEARCH, candidates(4312)],
-			[COMMENTS(4312), comments({id: 9001, body: "we should sweep stale build-claim markers"})],
+			[COMMENTS(4312), comments({ id: 9001, body: "we should sweep stale build-claim markers" })],
 		]);
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			answer: "none",
-			scanned: {candidates: 1, markers: 0},
+			scanned: { candidates: 1, markers: 0 },
 		});
 	});
 
@@ -141,7 +141,7 @@ describe("build claims stale", () => {
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			answer: "none",
-			scanned: {candidates: 1, markers: 0},
+			scanned: { candidates: 1, markers: 0 },
 		});
 	});
 
@@ -151,17 +151,17 @@ describe("build claims stale", () => {
 			[
 				COMMENTS(4312),
 				comments(
-					{id: 9001, body: marker("s-dead", LANE_UUID), createdAt: TWO_DAYS_OLD},
-					{id: 9002, body: marker("s-dead", SIBLING_UUID), createdAt: TWO_DAYS_OLD},
+					{ id: 9001, body: marker("s-dead", LANE_UUID), createdAt: TWO_DAYS_OLD },
+					{ id: 9002, body: marker("s-dead", SIBLING_UUID), createdAt: TWO_DAYS_OLD },
 				),
 			],
 			[PERM("agent"), WRITE],
 		]);
 
 		expect(out.code).toBe(0);
-		const {stranded} = JSON.parse(out.stdout);
+		const { stranded } = JSON.parse(out.stdout);
 		expect(
-			stranded.map((row: {commentId: number; holder: boolean}) => [row.commentId, row.holder]),
+			stranded.map((row: { commentId: number; holder: boolean }) => [row.commentId, row.holder]),
 		).toEqual([
 			[9001, true],
 			[9002, false],
@@ -174,15 +174,15 @@ describe("build claims stale", () => {
 			[
 				COMMENTS(4312),
 				comments(
-					{id: 9001, body: marker("s-dead", LANE_UUID), createdAt: TWO_DAYS_OLD},
-					{id: 9003, body: adoptMarker("s-dead", "s-next", SIBLING_UUID), createdAt: NOW},
+					{ id: 9001, body: marker("s-dead", LANE_UUID), createdAt: TWO_DAYS_OLD },
+					{ id: 9003, body: adoptMarker("s-dead", "s-next", SIBLING_UUID), createdAt: NOW },
 				),
 			],
 			[PERM("agent"), WRITE],
 		]);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout).stranded[0]).toMatchObject({session: "s-dead", adopted: true});
+		expect(JSON.parse(out.stdout).stranded[0]).toMatchObject({ session: "s-dead", adopted: true });
 		expect(out.stderr.join("\n")).toContain("already adopted");
 	});
 
@@ -191,7 +191,7 @@ describe("build claims stale", () => {
 			[SEARCH, candidates(4312)],
 			[
 				COMMENTS(4312),
-				comments({id: 9001, body: marker("s-dead", LANE_UUID), createdAt: TWO_DAYS_OLD}),
+				comments({ id: 9001, body: marker("s-dead", LANE_UUID), createdAt: TWO_DAYS_OLD }),
 			],
 			[PERM("agent"), WRITE],
 		]);
@@ -215,7 +215,7 @@ describe("build claims stale", () => {
 			[SEARCH, candidates(4312, 4313)],
 			[
 				COMMENTS(4312),
-				comments({id: 9001, body: marker("s-dead", LANE_UUID), createdAt: TWO_DAYS_OLD}),
+				comments({ id: 9001, body: marker("s-dead", LANE_UUID), createdAt: TWO_DAYS_OLD }),
 			],
 			[PERM("agent"), WRITE],
 			[COMMENTS(4313), GATEWAY],
@@ -231,7 +231,7 @@ describe("build claims stale", () => {
 			[SEARCH, candidates(4312)],
 			[
 				COMMENTS(4312),
-				comments({id: 9001, body: marker("s-dead", LANE_UUID), createdAt: "not-an-instant"}),
+				comments({ id: 9001, body: marker("s-dead", LANE_UUID), createdAt: "not-an-instant" }),
 			],
 			[PERM("agent"), WRITE],
 		]);

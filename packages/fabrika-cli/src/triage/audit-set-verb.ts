@@ -7,14 +7,14 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9834
  */
-import {Effect} from "effect";
-import type {BoardRead} from "../config/resolve-board.ts";
-import {openQueueIssues, resolveRepo} from "../io/issues.ts";
-import {answer, FAILED, refuse} from "../verb.ts";
-import type {AuditIssue} from "./audit.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {labelPrecondition} from "./queue-verb.ts";
-import {scannedLine} from "./scope.ts";
+import { Effect } from "effect";
+import type { BoardRead } from "../config/resolve-board.ts";
+import { openQueueIssues, resolveRepo } from "../io/issues.ts";
+import { answer, FAILED, refuse } from "../verb.ts";
+import type { AuditIssue } from "./audit.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { labelPrecondition } from "./queue-verb.ts";
+import { scannedLine } from "./scope.ts";
 
 const VERB = "triage audit-set";
 
@@ -28,7 +28,7 @@ export interface AuditSetOptions {
 }
 
 export const runAuditSet = Effect.fn("runAuditSet")(function* (options: AuditSetOptions) {
-	const {label, json} = options;
+	const { label, json } = options;
 	if (label.trim() === "") return refuse(FAILED, `${VERB}: --label must name a label.`);
 
 	const repoAttempt = yield* resolveRepo(options.repo, options.env);
@@ -53,13 +53,13 @@ export const runAuditSet = Effect.fn("runAuditSet")(function* (options: AuditSet
 
 	const issues: ReadonlyArray<AuditIssue> = [...read.value]
 		.sort((a, b) => a.number - b.number)
-		.map(({number, title}) => ({number, title}));
+		.map(({ number, title }) => ({ number, title }));
 	const scanned = issues.length;
 	const scope = scannedLine(VERB, repo, scanned, `open ${label} issue`);
 	const outcome = scanned === 0 ? "empty" : "set";
 
 	if (json) {
-		return answer(JSON.stringify({outcome, label, repo, issues, scanned}), [scope]);
+		return answer(JSON.stringify({ outcome, label, repo, issues, scanned }), [scope]);
 	}
 	return answer([outcome, ...issues.map((issue) => `${issue.number}\t${issue.title}`)].join("\n"), [
 		scope,

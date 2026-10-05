@@ -11,7 +11,7 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9761
  */
-import {bareEvent} from "./machine.ts";
+import { bareEvent } from "./machine.ts";
 
 /** The child region's cell whose `FAIL` this evidence rides — `emit.ts`'s `integrate`. */
 export const INTEGRATE_STATE = "integrate";
@@ -34,14 +34,14 @@ const isFailExit = (value: unknown): value is IntegrateFailExit =>
 /** Whether a parsed ledger field is the shape {@link IntegrateFailure} names, and nothing looser. */
 export const isIntegrateFailure = (value: unknown): value is IntegrateFailure => {
 	if (typeof value !== "object" || value === null) return false;
-	const {exit, head} = value as {exit?: unknown; head?: unknown};
+	const { exit, head } = value as { exit?: unknown; head?: unknown };
 	return isFailExit(exit) && typeof head === "string" && SHA.test(head);
 };
 
 export type IntegrateEvidenceRead =
-	| {readonly _tag: "None"}
-	| {readonly _tag: "Read"; readonly failure: IntegrateFailure}
-	| {readonly _tag: "Rejected"; readonly reason: string};
+	| { readonly _tag: "None" }
+	| { readonly _tag: "Read"; readonly failure: IntegrateFailure }
+	| { readonly _tag: "Rejected"; readonly reason: string };
 
 /**
  * Read the two flags as one value: both or neither. An exit without the head it failed against, or
@@ -51,7 +51,7 @@ export const readIntegrateEvidence = (
 	exit: number | null,
 	head: string | null,
 ): IntegrateEvidenceRead => {
-	if (exit === null && head === null) return {_tag: "None"};
+	if (exit === null && head === null) return { _tag: "None" };
 	if (exit === null || head === null) {
 		return {
 			_tag: "Rejected",
@@ -71,7 +71,7 @@ export const readIntegrateEvidence = (
 			reason: `--assembly-head "${head}" is not a commit sha (7 to 40 hex characters)`,
 		};
 	}
-	return {_tag: "Read", failure: {exit, head: sha}};
+	return { _tag: "Read", failure: { exit, head: sha } };
 };
 
 /**

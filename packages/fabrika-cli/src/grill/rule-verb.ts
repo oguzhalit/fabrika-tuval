@@ -30,16 +30,16 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/8857#issuecomment-5625302485
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {authorizationBody, readAuthorization} from "../authorization.ts";
-import {createComment, getComment, listComments, resolveRepo} from "../io/issues.ts";
-import {permissionFor, viewerLogin} from "../io/pulls.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {questionId, stampOf} from "../wire/grill-marker.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { authorizationBody, readAuthorization } from "../authorization.ts";
+import { createComment, getComment, listComments, resolveRepo } from "../io/issues.ts";
+import { permissionFor, viewerLogin } from "../io/pulls.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { questionId, stampOf } from "../wire/grill-marker.ts";
 import * as grillRuling from "../wire/grill-ruling.ts";
-import type {DocumentRead} from "./answer-verb.ts";
+import type { DocumentRead } from "./answer-verb.ts";
 import {
 	AUTHORIZATION_ABSENT,
 	BARE_AT_PATH,
@@ -54,7 +54,7 @@ import {
 	TOKEN_UNAUTHORIZED,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {digestRound} from "./round.ts";
+import { digestRound } from "./round.ts";
 import {
 	AUTHORIZED,
 	questionIndex,
@@ -79,7 +79,7 @@ export const runRule = <R = never>(
 	options: RuleOptions<R>,
 ): Effect.Effect<VerbOutcome, never, R | ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {session, authorizationPath} = options;
+		const { session, authorizationPath } = options;
 		if (!Number.isInteger(session) || session <= 0) {
 			return refuse(FAILED, `grill rule: ${session} is not a session issue number.`);
 		}
@@ -212,7 +212,7 @@ export const runRule = <R = never>(
 			);
 		}
 
-		const markerBody = grillRuling.emit({question: id, digest: digested.digest, at});
+		const markerBody = grillRuling.emit({ question: id, digest: digested.digest, at });
 		const marker = yield* createComment(repo, session, markerBody);
 		if (marker._tag === "Failure") {
 			return refuse(

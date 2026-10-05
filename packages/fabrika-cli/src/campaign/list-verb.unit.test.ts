@@ -1,12 +1,12 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFsOptions, fakeFs} from "../fakes.test-support.ts";
-import {FILE, ROADMAP_PATH, ROOT, TWO_ROWS, tree} from "./fixtures.test-support.ts";
-import {runList} from "./list-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFsOptions, fakeFs } from "../fakes.test-support.ts";
+import { FILE, ROADMAP_PATH, ROOT, TWO_ROWS, tree } from "./fixtures.test-support.ts";
+import { runList } from "./list-verb.ts";
 
 const run = (
 	fs: FakeFsOptions,
-	options: {state?: string; json?: boolean; file?: string | null} = {},
+	options: { state?: string; json?: boolean; file?: string | null } = {},
 ) =>
 	Effect.runPromise(
 		Effect.provide(
@@ -30,13 +30,13 @@ describe("campaign list", () => {
 	});
 
 	it("counts the whole table on the scope line even under --state", async () => {
-		const outcome = await run(tree(), {state: "active"});
+		const outcome = await run(tree(), { state: "active" });
 		expect(outcome.stdout).toBe("#47\tactive\tfabrika everywhere\n");
 		expect(outcome.stderr[0]).toContain("2 campaign row(s), 1 active; printed 1.");
 	});
 
 	it("answers none at exit 0 when a --state matches nothing", async () => {
-		const outcome = await run(tree(), {state: "done"});
+		const outcome = await run(tree(), { state: "done" });
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toBe("none\n");
 	});
@@ -53,21 +53,21 @@ describe("campaign list", () => {
 	});
 
 	it("emits the documented object under --json, with rows [] for the none case", async () => {
-		expect(JSON.parse((await run(tree(), {json: true})).stdout)).toEqual({
+		expect(JSON.parse((await run(tree(), { json: true })).stdout)).toEqual({
 			rows: [
-				{milestone: 42, state: "paused", name: "Taste-Skill Library"},
-				{milestone: 47, state: "active", name: "fabrika everywhere"},
+				{ milestone: 42, state: "paused", name: "Taste-Skill Library" },
+				{ milestone: 47, state: "active", name: "fabrika everywhere" },
 			],
 			file: FILE,
 		});
-		expect(JSON.parse((await run(tree(), {json: true, state: "done"})).stdout)).toEqual({
+		expect(JSON.parse((await run(tree(), { json: true, state: "done" })).stdout)).toEqual({
 			rows: [],
 			file: FILE,
 		});
 	});
 
 	it("refuses a --state outside the three values as a usage error", async () => {
-		const outcome = await run(tree(), {state: "archived"});
+		const outcome = await run(tree(), { state: "archived" });
 		expect(outcome.code).toBe(1);
 		expect(outcome.stderr.at(-1)).toBe(
 			'campaign list: --state "archived" is not one of active, paused, done.',
@@ -76,7 +76,7 @@ describe("campaign list", () => {
 	});
 
 	it("refuses an unreadable roadmap on 11 with nothing parsed", async () => {
-		const outcome = await run({files: {[ROADMAP_PATH]: TWO_ROWS}, unreadable: [ROADMAP_PATH]});
+		const outcome = await run({ files: { [ROADMAP_PATH]: TWO_ROWS }, unreadable: [ROADMAP_PATH] });
 		expect(outcome.code).toBe(11);
 		expect(outcome.stderr.at(-1)).toContain("UNKNOWN, nothing was parsed.");
 	});
@@ -90,8 +90,8 @@ describe("campaign list", () => {
 
 	it("refuses on 22 when roadmapFile will not decode, opening no file at all", async () => {
 		const outcome = await run(
-			{files: {[ROADMAP_PATH]: TWO_ROWS, [`${ROOT}/.fabrika.jsonc`]: '{"roadmapFile": 7}'}},
-			{file: null},
+			{ files: { [ROADMAP_PATH]: TWO_ROWS, [`${ROOT}/.fabrika.jsonc`]: '{"roadmapFile": 7}' } },
+			{ file: null },
 		);
 		expect(outcome.code).toBe(22);
 		expect(outcome.stderr.at(-1)).toContain("no roadmap file was opened.");

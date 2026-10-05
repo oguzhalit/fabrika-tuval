@@ -30,22 +30,22 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9200
  * @ruling https://github.com/kamp-us/phoenix/issues/9517#issuecomment-5752597880
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {StandingRuling} from "../decision/ruling.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { StandingRuling } from "../decision/ruling.ts";
 import {
 	describeUnmarked,
 	standingRulings,
 	type UnmarkedRead,
 } from "../decision/standing-rulings.ts";
-import {type CommentRecord, getIssue} from "../io/issues.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {read as readCriteria} from "../wire/acceptance-criteria.ts";
-import {rulingComment} from "../wire/decision-ruling.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {gradedSet, type RulingText, renderGradedSet} from "./graded-set.ts";
-import {marked, quoteRows} from "./outside-diff-evidence.ts";
-import {badNumber, resolveTargetRepo} from "./target.ts";
+import { type CommentRecord, getIssue } from "../io/issues.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { read as readCriteria } from "../wire/acceptance-criteria.ts";
+import { rulingComment } from "../wire/decision-ruling.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { gradedSet, type RulingText, renderGradedSet } from "./graded-set.ts";
+import { marked, quoteRows } from "./outside-diff-evidence.ts";
+import { badNumber, resolveTargetRepo } from "./target.ts";
 
 const VERB = "review criteria";
 
@@ -80,8 +80,9 @@ const withText = (
  * Absent is the proven zero, so an issue with no such comment prints the bytes it always printed.
  * `unknown` is its own state and never rides as an absence.
  */
-const unmarkedField = (unmarked: UnmarkedRead): {readonly unmarked?: unknown} => {
-	if (unmarked._tag === "Unknown") return {unmarked: {state: "unknown", reason: unmarked.reason}};
+const unmarkedField = (unmarked: UnmarkedRead): { readonly unmarked?: unknown } => {
+	if (unmarked._tag === "Unknown")
+		return { unmarked: { state: "unknown", reason: unmarked.reason } };
 	return unmarked.comments.length === 0
 		? {}
 		: {
@@ -97,7 +98,7 @@ export const runCriteria = (
 	options: CriteriaOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {issue, json} = options;
+		const { issue, json } = options;
 		const bad = badNumber(VERB, "an issue number", issue);
 		if (bad !== null) return bad;
 

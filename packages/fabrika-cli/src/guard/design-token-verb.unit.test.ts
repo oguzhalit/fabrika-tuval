@@ -2,11 +2,11 @@
  * `guard design-token-guard check`'s IO boundary, walk semantics and exit taxonomy, over a scripted
  * filesystem.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFsOptions, fakeFs} from "../fakes.test-support.ts";
-import {PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE} from "./codes.ts";
-import {runDesignTokenGuard} from "./design-token-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFsOptions, fakeFs } from "../fakes.test-support.ts";
+import { PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE } from "./codes.ts";
+import { runDesignTokenGuard } from "./design-token-verb.ts";
 
 const ROOT = "/repo";
 const APP_SRC = `${ROOT}/apps/web/src`;
@@ -20,7 +20,7 @@ const DESIGN_COMPONENT_CSS = `${DESIGN_SRC}/Alert.css`;
 const run = (options: FakeFsOptions, writeBaseline = false) =>
 	Effect.runPromise(
 		Effect.provide(
-			runDesignTokenGuard({root: ROOT, cwd: ROOT, env: {}, writeBaseline}),
+			runDesignTokenGuard({ root: ROOT, cwd: ROOT, env: {}, writeBaseline }),
 			fakeFs(options).layer,
 		),
 	);
@@ -94,7 +94,7 @@ describe("runDesignTokenGuard", () => {
 				runDesignTokenGuard({
 					root: ROOT,
 					cwd: ROOT,
-					env: {GITHUB_ACTIONS: "true"},
+					env: { GITHUB_ACTIONS: "true" },
 					writeBaseline: false,
 				}),
 				fakeFs(tree(".a {\n  color: var(--gone);\n}\n")).layer,
@@ -115,7 +115,7 @@ describe("runDesignTokenGuard", () => {
 				[STYLES]: ["design-token-lint.config.json"],
 				[DESIGN_SRC]: [],
 			},
-			files: {[CONFIG]: config()},
+			files: { [CONFIG]: config() },
 		});
 		expect(outcome.code).toBe(ZERO_SCOPE);
 	});
@@ -123,13 +123,16 @@ describe("runDesignTokenGuard", () => {
 	// A present-but-broken allow-list is a broken scope assumption, not a vacuous pass: the ratchet
 	// has nothing to judge a file's px count against.
 	it("fails closed on a config missing an allow-list key", async () => {
-		const outcome = await run(tree(".a {}\n", JSON.stringify({externalProperties: []})));
+		const outcome = await run(tree(".a {}\n", JSON.stringify({ externalProperties: [] })));
 		expect(outcome.code).toBe(ZERO_SCOPE);
 	});
 
 	it("is UNKNOWN when the config is absent", async () => {
 		const withoutConfig = tree(".a {}\n");
-		const outcome = await run({...withoutConfig, files: {...withoutConfig.files, [CONFIG]: null}});
+		const outcome = await run({
+			...withoutConfig,
+			files: { ...withoutConfig.files, [CONFIG]: null },
+		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 	});
 
@@ -147,7 +150,7 @@ describe("runDesignTokenGuard", () => {
 		const unlistable = tree(".a {\n  background: var(--surface);\n}\n");
 		const outcome = await run({
 			...unlistable,
-			dirs: {...unlistable.dirs, [DESIGN_SRC]: null},
+			dirs: { ...unlistable.dirs, [DESIGN_SRC]: null },
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stdout).toBe("");
@@ -160,18 +163,18 @@ describe("--write-baseline", () => {
 		const fake = fakeFs(
 			tree(
 				".a {\n  margin: 8px;\n}\n",
-				config({externalProperties: ["--injected"], note: "keep me"}),
+				config({ externalProperties: ["--injected"], note: "keep me" }),
 			),
 		);
 		const outcome = await Effect.runPromise(
 			Effect.provide(
-				runDesignTokenGuard({root: ROOT, cwd: ROOT, env: {}, writeBaseline: true}),
+				runDesignTokenGuard({ root: ROOT, cwd: ROOT, env: {}, writeBaseline: true }),
 				fake.layer,
 			),
 		);
 		expect(outcome.code).toBe(0);
 		const written = JSON.parse(fake.written.get(CONFIG) ?? "{}");
-		expect(written.rawPxCeilings).toEqual({"packages/design/src/Alert.css": 1});
+		expect(written.rawPxCeilings).toEqual({ "packages/design/src/Alert.css": 1 });
 		expect(written.externalProperties).toEqual(["--injected"]);
 		expect(written.note).toBe("keep me");
 	});

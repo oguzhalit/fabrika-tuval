@@ -11,12 +11,12 @@
  * carries no section. The one refusal on this field is a section the guard would refuse read back
  * through the guard's own predicates, which is a person's to reword rather than this verb's to edit.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {badNumber, openIssue, resolveTargetRepo} from "../build/target.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {aboutSection, assemblyTitle} from "./assembly-pr.ts";
-import {ABOUT_UNSAFE, NOT_AN_EPIC} from "./codes.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { badNumber, openIssue, resolveTargetRepo } from "../build/target.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { aboutSection, assemblyTitle } from "./assembly-pr.ts";
+import { ABOUT_UNSAFE, NOT_AN_EPIC } from "./codes.ts";
 
 const VERB = "fabrika lane assembly-pr";
 

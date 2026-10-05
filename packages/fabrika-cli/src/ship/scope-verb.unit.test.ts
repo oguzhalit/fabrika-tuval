@@ -1,5 +1,5 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	configOnPlatform,
 	fakeFs,
@@ -12,9 +12,9 @@ import {
 	unconfigured,
 	unconfiguredOnPlatform,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {PULL_FILES_CAP} from "../io/pulls.ts";
-import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, PRIMARY_CHECKOUT, ZERO_SCOPE} from "./codes.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { PULL_FILES_CAP } from "../io/pulls.ts";
+import { INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, PRIMARY_CHECKOUT, ZERO_SCOPE } from "./codes.ts";
 import {
 	branchRules,
 	CODEOWNERS,
@@ -26,7 +26,7 @@ import {
 	pull,
 	repositoryServed,
 } from "./fixtures.test-support.ts";
-import {runScope, type ScopeOptions} from "./scope-verb.ts";
+import { runScope, type ScopeOptions } from "./scope-verb.ts";
 
 const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4321$/;
 const FILES = /^GET \S+\/repos\/o\/r\/pulls\/4321\/files\?/;
@@ -36,20 +36,20 @@ const REPO = /^GET https:\/\/api\.github\.com\/repos\/o\/r$/;
 const CONFIG = /contents\/\.fabrika\.jsonc/;
 
 /** A canned `ExecResult` fixture as the body of a 200 — the same payload, off the served seam. */
-const served = (result: ExecResult): HttpReply => ({status: 200, body: result.stdout});
+const served = (result: ExecResult): HttpReply => ({ status: 200, body: result.stdout });
 
 /** A file served through the raw media type, which hands back bytes rather than JSON. */
-const raw = (body: string): HttpReply => ({status: 200, body});
+const raw = (body: string): HttpReply => ({ status: 200, body });
 
-const NOT_FOUND: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
-const BAD_GATEWAY: HttpReply = {status: 502, body: '{"message":"Bad gateway"}'};
+const NOT_FOUND: HttpReply = { status: 404, body: '{"message":"Not Found"}' };
+const BAD_GATEWAY: HttpReply = { status: 502, body: '{"message":"Bad gateway"}' };
 
 const options: ScopeOptions = {
 	pr: 4321,
 	repo: null,
 	json: false,
 	env: ENV,
-	caller: {_tag: "shipper", cwd: "/repo"},
+	caller: { _tag: "shipper", cwd: "/repo" },
 };
 
 const REV_PARSE = /^git rev-parse/;
@@ -57,12 +57,12 @@ const REV_PARSE = /^git rev-parse/;
 /** `git rev-parse --git-dir --git-common-dir` as git answers it in the main working tree. */
 const MAIN_WORKING_TREE: Scripted = [
 	REV_PARSE,
-	{ok: true, stdout: "/repo/.git\n/repo/.git\n", reason: ""},
+	{ ok: true, stdout: "/repo/.git\n/repo/.git\n", reason: "" },
 ];
 
 /** A `/repo` tree whose tracked config declares `shipScope` as given. */
 const shipScopeDeclared = (shipScope: unknown) =>
-	fakeFs({files: {"/repo/.fabrika.jsonc": JSON.stringify({shipScope})}}).layer;
+	fakeFs({ files: { "/repo/.fabrika.jsonc": JSON.stringify({ shipScope }) } }).layer;
 
 const run = (
 	script: ReadonlyArray<Scripted>,
@@ -72,7 +72,7 @@ const run = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runScope({...options, ...overrides}),
+			runScope({ ...options, ...overrides }),
 			Layer.merge(fakeSeams([...script, ...extra, ...config, LINKED_WORKTREE]).layer, unconfigured),
 		),
 	);
@@ -80,7 +80,7 @@ const run = (
 describe("runScope", () => {
 	it("renders a partial split as `part-of:<n>` — the marker resolves at this seam as it does at review's", async () => {
 		const out = await run([
-			[PULL, served(pull({body: "does things\n\nPart of #4000\n"}))],
+			[PULL, served(pull({ body: "does things\n\nPart of #4000\n" }))],
 			[FILES, served(files("apps/site/worker/cart.ts", "README.md"))],
 			[OWNERS, raw(CODEOWNERS)],
 		]);
@@ -136,7 +136,7 @@ describe("runScope", () => {
 			[PULL, served(pull())],
 			[FILES, served(files("README.md", "DEVELOPMENT.md"))],
 			[OWNERS, raw(CODEOWNERS)],
-			[RULES, {status: 503, body: '{"message":"unavailable"}'}],
+			[RULES, { status: 503, body: '{"message":"unavailable"}' }],
 		]);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toContain(`landing\tunknown\t-\n`);
@@ -206,7 +206,7 @@ describe("runScope", () => {
 
 	it("reports a merged PR as an ANSWER, not a refusal", async () => {
 		const out = await run([
-			[PULL, served(pull({merged: true, state: "closed", changedFiles: 1}))],
+			[PULL, served(pull({ merged: true, state: "closed", changedFiles: 1 }))],
 			[FILES, served(files("README.md"))],
 			[OWNERS, raw(CODEOWNERS)],
 		]);
@@ -216,7 +216,7 @@ describe("runScope", () => {
 
 	it("reports a draft PR as an answer too", async () => {
 		const out = await run([
-			[PULL, served(pull({draft: true, changedFiles: 1}))],
+			[PULL, served(pull({ draft: true, changedFiles: 1 }))],
 			[FILES, served(files("README.md"))],
 			[OWNERS, raw(CODEOWNERS)],
 		]);
@@ -225,7 +225,7 @@ describe("runScope", () => {
 
 	it("classifies a control-plane path off CODEOWNERS itself", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 1}))],
+			[PULL, served(pull({ changedFiles: 1 }))],
 			[FILES, served(files(".github/workflows/ci.yml"))],
 			[OWNERS, raw(CODEOWNERS)],
 		]);
@@ -234,7 +234,7 @@ describe("runScope", () => {
 
 	it("holds on unknown when the boundary is proven absent — never match-everything", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 1}))],
+			[PULL, served(pull({ changedFiles: 1 }))],
 			[FILES, served(files("README.md"))],
 			[OWNERS, NOT_FOUND],
 		]);
@@ -244,7 +244,7 @@ describe("runScope", () => {
 
 	it("refuses an UNREADABLE boundary on 11 — a failed read is not `unknown`", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 1}))],
+			[PULL, served(pull({ changedFiles: 1 }))],
 			[FILES, served(files("README.md"))],
 			[OWNERS, BAD_GATEWAY],
 		]);
@@ -255,7 +255,7 @@ describe("runScope", () => {
 
 	it("refuses a failed read whatever the repo's config says — never `not-control-plane`", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 1}))],
+			[PULL, served(pull({ changedFiles: 1 }))],
 			[FILES, served(files("README.md"))],
 			[OWNERS, BAD_GATEWAY],
 			[CONFIG, raw('{"unreadableCodeowners": "ship"}')],
@@ -269,7 +269,7 @@ describe("runScope", () => {
 	// verb a `ship` run makes, so the whole merge path stranded before it started.
 	it("reports a file list short of the declared count and still partitions it (#9322)", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 9}))],
+			[PULL, served(pull({ changedFiles: 9 }))],
 			[FILES, served(files("README.md"))],
 			[OWNERS, raw(CODEOWNERS)],
 			[RULES, served(branchRules())],
@@ -285,7 +285,7 @@ describe("runScope", () => {
 	// than the declared count: a zero can never render as a clean partition.
 	it("refuses an empty file list on 7 even where the record declares files (#9322)", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 9}))],
+			[PULL, served(pull({ changedFiles: 9 }))],
 			[FILES, served(files())],
 		]);
 		expect(out.code).toBe(ZERO_SCOPE);
@@ -300,10 +300,12 @@ describe("runScope", () => {
 	// case by accident; `capped` catches it on purpose.
 	it("refuses a file list at the 3000-file ceiling on 13 (#9322)", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: PULL_FILES_CAP}))],
+			[PULL, served(pull({ changedFiles: PULL_FILES_CAP }))],
 			[
 				FILES,
-				served(files(...Array.from({length: PULL_FILES_CAP}, (_, i) => `apps/site/src/f${i}.ts`))),
+				served(
+					files(...Array.from({ length: PULL_FILES_CAP }, (_, i) => `apps/site/src/f${i}.ts`)),
+				),
 			],
 		]);
 		expect(out.code).toBe(INCOMPLETE_SCAN);
@@ -347,7 +349,7 @@ describe("runScope", () => {
 							[REPO, repositoryServed()],
 							...unconfiguredOnPlatform(),
 						]).layer,
-						shipScopeDeclared({mainWorkingTree: "allow"}),
+						shipScopeDeclared({ mainWorkingTree: "allow" }),
 					),
 				),
 			);
@@ -365,7 +367,7 @@ describe("runScope", () => {
 			const out = await Effect.runPromise(
 				Effect.provide(
 					runScope(options),
-					Layer.merge(seams.layer, shipScopeDeclared({mainWorkingTree: "yes"})),
+					Layer.merge(seams.layer, shipScopeDeclared({ mainWorkingTree: "yes" })),
 				),
 			);
 			expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -390,7 +392,7 @@ describe("runScope", () => {
 							...unconfiguredOnPlatform(),
 							LINKED_WORKTREE,
 						]).layer,
-						shipScopeDeclared({mainWorkingTree: "yes"}),
+						shipScopeDeclared({ mainWorkingTree: "yes" }),
 					),
 				),
 			);
@@ -414,7 +416,7 @@ describe("runScope", () => {
 
 		it("refuses an unreadable worktree fact on 11 with nothing proven", async () => {
 			const out = await run([
-				[REV_PARSE, {ok: false, stdout: "", reason: "fatal: not a git repository"}],
+				[REV_PARSE, { ok: false, stdout: "", reason: "fatal: not a git repository" }],
 				[PULL, served(pull())],
 			]);
 			expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -433,7 +435,7 @@ describe("runScope", () => {
 					[OWNERS, raw(CODEOWNERS)],
 					[RULES, served(branchRules("pull_request"))],
 				],
-				{caller: {_tag: "relay"}},
+				{ caller: { _tag: "relay" } },
 				[[REPO, repositoryServed()]],
 			);
 			expect(out.code).toBe(0);
@@ -449,7 +451,7 @@ describe("runScope", () => {
 		const MERGE_BASE = "c".repeat(40);
 		const SITE = JSON.stringify({
 			uiSurfaces: [
-				{name: "web", prefix: "apps/site/src/", mount: "/", command: "pnpm dev --port {{port}}"},
+				{ name: "web", prefix: "apps/site/src/", mount: "/", command: "pnpm dev --port {{port}}" },
 			],
 		});
 		const scoped = (config: ReadonlyArray<Scripted>, tree = unconfigured) =>
@@ -507,7 +509,7 @@ describe("runScope", () => {
 			const out = await scoped([
 				[
 					new RegExp(`contents/\\.fabrika\\.jsonc\\?ref=${HEAD}$`),
-					{status: 502, body: '{"message":"Bad gateway"}'},
+					{ status: 502, body: '{"message":"Bad gateway"}' },
 				],
 			]);
 			expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -516,7 +518,7 @@ describe("runScope", () => {
 
 		it("refuses when the platform names no merge base to read the base config at", async () => {
 			const out = await scoped([
-				[/\/compare\/[^?]+\?per_page=1$/, {status: 200, body: '{"status":"ahead"}'}],
+				[/\/compare\/[^?]+\?per_page=1$/, { status: 200, body: '{"status":"ahead"}' }],
 			]);
 			expect(out.code).toBe(PRECONDITION_UNKNOWN);
 			expect(out.stderr.at(-1)).toContain(`cannot read the merge base of ${HEAD} with main`);

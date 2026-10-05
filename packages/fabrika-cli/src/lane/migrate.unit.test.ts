@@ -1,14 +1,14 @@
 /** The migration judgement and the sweep verb over it. */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs} from "../fakes.test-support.ts";
-import {LANE_ABSENT, MIGRATION_UNSAFE, SHAPE_MISMATCH} from "./codes.ts";
-import type {ExpectationReader} from "./expectation.ts";
-import {choreTemplateText, coderTemplateText} from "./fixtures.test-support.ts";
-import {foldLog, type LogEntry} from "./fold.ts";
-import {type CompiledLane, compileText} from "./machine.ts";
-import {graftContext, judgeMigration} from "./migrate.ts";
-import {runMigrate} from "./migrate-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs } from "../fakes.test-support.ts";
+import { LANE_ABSENT, MIGRATION_UNSAFE, SHAPE_MISMATCH } from "./codes.ts";
+import type { ExpectationReader } from "./expectation.ts";
+import { choreTemplateText, coderTemplateText } from "./fixtures.test-support.ts";
+import { foldLog, type LogEntry } from "./fold.ts";
+import { type CompiledLane, compileText } from "./machine.ts";
+import { graftContext, judgeMigration } from "./migrate.ts";
+import { runMigrate } from "./migrate-verb.ts";
 
 const ROOT = ".fabrika/lanes";
 const TEMPLATE = "/repo/templates/coder.workflow.json";
@@ -21,7 +21,11 @@ const compiled = (text: string): CompiledLane => {
 };
 
 const log = (...events: ReadonlyArray<string>): ReadonlyArray<LogEntry> =>
-	events.map((event) => ({task: "issue", event: `ISSUE.${event}`, at: "2026-08-20T00:00:00.000Z"}));
+	events.map((event) => ({
+		task: "issue",
+		event: `ISSUE.${event}`,
+		at: "2026-08-20T00:00:00.000Z",
+	}));
 
 const logText = (...events: ReadonlyArray<string>): string =>
 	`${log(...events)
@@ -41,14 +45,14 @@ const preWaitCellTemplate = (): string => {
 describe("graftContext", () => {
 	it("keeps the lane's own context, so a per-lane budget survives the swap", () => {
 		const lane = JSON.parse(preWaitCellTemplate());
-		lane.machine.context.issue = {retries: 0, maxRetries: 5, code: true};
+		lane.machine.context.issue = { retries: 0, maxRetries: 5, code: true };
 
 		const grafted = graftContext(coderTemplateText(), JSON.stringify(lane));
 
 		expect(grafted._tag).toBe("Grafted");
 		if (grafted._tag !== "Grafted") return;
 		const written = JSON.parse(grafted.text);
-		expect(written.machine.context.issue).toEqual({retries: 0, maxRetries: 5, code: true});
+		expect(written.machine.context.issue).toEqual({ retries: 0, maxRetries: 5, code: true });
 		expect(written.machine.states.pipeline.states.issue.states["ship:queued"]).toBeDefined();
 	});
 
@@ -88,7 +92,7 @@ describe("judgeMigration", () => {
 			log("WIP", "DONE", "PASS", "WIP"),
 		);
 
-		expect(verdict).toMatchObject({_tag: "Unreplayable", through: "candidate"});
+		expect(verdict).toMatchObject({ _tag: "Unreplayable", through: "candidate" });
 	});
 
 	it("refuses a candidate that folds the same log to a different leaf", () => {
@@ -103,7 +107,7 @@ describe("judgeMigration", () => {
 
 		expect(verdict).toMatchObject({
 			_tag: "Drifts",
-			drifts: [{task: "issue", from: "ship:queued", to: "blocked"}],
+			drifts: [{ task: "issue", from: "ship:queued", to: "blocked" }],
 		});
 	});
 
@@ -114,7 +118,7 @@ describe("judgeMigration", () => {
 			log("WIP", "DONE", "PASS", "WIP"),
 		);
 
-		expect(verdict).toMatchObject({_tag: "Unreplayable", through: "current"});
+		expect(verdict).toMatchObject({ _tag: "Unreplayable", through: "current" });
 	});
 });
 
@@ -138,8 +142,8 @@ describe("lane migrate", () => {
 		} = {},
 	) => {
 		const fs = fakeFs({
-			files: {[TEMPLATE]: coderTemplateText(), [CHORE_TEMPLATE]: choreTemplateText(), ...files},
-			dirs: options.dirs ?? {[ROOT]: ["42", "43"]},
+			files: { [TEMPLATE]: coderTemplateText(), [CHORE_TEMPLATE]: choreTemplateText(), ...files },
+			dirs: options.dirs ?? { [ROOT]: ["42", "43"] },
 			directories: options.roots ?? [ROOT],
 		});
 		return Effect.runPromise(
@@ -155,18 +159,22 @@ describe("lane migrate", () => {
 				}),
 				fs.layer,
 			),
-		).then((outcome) => ({outcome, written: fs.written}));
+		).then((outcome) => ({ outcome, written: fs.written }));
 	};
 
 	it("writes the template over a stale lane whose log replays unchanged", async () => {
-		const {outcome, written} = await sweep({
+		const { outcome, written } = await sweep({
 			[`${ROOT}/42/workflow.json`]: preWaitCellTemplate(),
 			[`${ROOT}/42/events.jsonl`]: logText("WIP", "DONE"),
 			[`${ROOT}/43/workflow.json`]: migratedText(),
 		});
 
 		expect(outcome.code).toBe(0);
-		expect(JSON.parse(outcome.stdout).summary).toMatchObject({migrated: 1, current: 1, unsafe: 0});
+		expect(JSON.parse(outcome.stdout).summary).toMatchObject({
+			migrated: 1,
+			current: 1,
+			unsafe: 0,
+		});
 		expect(written.get(`${ROOT}/42/workflow.json`)).toBe(migratedText());
 	});
 
@@ -180,16 +188,16 @@ describe("lane migrate", () => {
 		const rewound = log("WIP", "DONE", "WIP");
 		expect(foldLog(compiled(preRewind), rewound)._tag).toBe("Unreplayable");
 
-		const {outcome, written} = await sweep(
+		const { outcome, written } = await sweep(
 			{
 				[`${ROOT}/42/workflow.json`]: preRewind,
 				[`${ROOT}/42/events.jsonl`]: logText("WIP", "DONE"),
 			},
-			{dirs: {[ROOT]: ["42"]}},
+			{ dirs: { [ROOT]: ["42"] } },
 		);
 
 		expect(outcome.code).toBe(0);
-		expect(JSON.parse(outcome.stdout).summary).toMatchObject({migrated: 1, unsafe: 0});
+		expect(JSON.parse(outcome.stdout).summary).toMatchObject({ migrated: 1, unsafe: 0 });
 		const migrated = written.get(`${ROOT}/42/workflow.json`) ?? "";
 		const fold = foldLog(compiled(migrated), rewound);
 		expect(fold._tag === "Folded" && fold.states.issue?.type).toBe("queued");
@@ -198,37 +206,37 @@ describe("lane migrate", () => {
 	it("reads a booted lane as current past the formatting `lane open` copied in", async () => {
 		// `lane open` places the template's biome-formatted bytes and a graft re-serializes with a tab
 		// indent, so comparing text called every un-migrated lane stale whatever machine it carried.
-		const {outcome, written} = await sweep({
+		const { outcome, written } = await sweep({
 			[`${ROOT}/42/workflow.json`]: coderTemplateText(),
 			[`${ROOT}/43/workflow.json`]: migratedText(),
 		});
 
 		expect(coderTemplateText()).not.toBe(migratedText());
-		expect(JSON.parse(outcome.stdout).summary).toMatchObject({current: 2, stale: 0, migrated: 0});
+		expect(JSON.parse(outcome.stdout).summary).toMatchObject({ current: 2, stale: 0, migrated: 0 });
 		expect(written.size).toBe(0);
 	});
 
 	it("picks a lane's template by its own machine id, not by the root it sits under", async () => {
-		const {outcome} = await sweep(
-			{[`${ROOT}/42/workflow.json`]: choreTemplateText()},
-			{dirs: {[ROOT]: ["42"]}, templatePaths: [TEMPLATE, CHORE_TEMPLATE]},
+		const { outcome } = await sweep(
+			{ [`${ROOT}/42/workflow.json`]: choreTemplateText() },
+			{ dirs: { [ROOT]: ["42"] }, templatePaths: [TEMPLATE, CHORE_TEMPLATE] },
 		);
 
-		expect(JSON.parse(outcome.stdout).summary).toMatchObject({generated: 0, current: 1});
+		expect(JSON.parse(outcome.stdout).summary).toMatchObject({ generated: 0, current: 1 });
 	});
 
 	it("withholds every write under --check and still names the stale lanes", async () => {
-		const {outcome, written} = await sweep(
+		const { outcome, written } = await sweep(
 			{
 				[`${ROOT}/42/workflow.json`]: preWaitCellTemplate(),
 				[`${ROOT}/42/events.jsonl`]: logText("WIP", "DONE"),
 				[`${ROOT}/43/workflow.json`]: migratedText(),
 			},
-			{check: true},
+			{ check: true },
 		);
 
 		expect(outcome.code).toBe(0);
-		expect(JSON.parse(outcome.stdout).summary).toMatchObject({stale: 1, migrated: 0});
+		expect(JSON.parse(outcome.stdout).summary).toMatchObject({ stale: 1, migrated: 0 });
 		expect(written.size).toBe(0);
 	});
 
@@ -236,7 +244,7 @@ describe("lane migrate", () => {
 		const drifting = JSON.parse(coderTemplateText());
 		drifting.machine.states.pipeline.states.issue.states.ship.on["ISSUE.WIP"] = "blocked";
 
-		const {outcome, written} = await sweep({
+		const { outcome, written } = await sweep({
 			[`${ROOT}/42/workflow.json`]: JSON.stringify(drifting, null, "\t"),
 			[`${ROOT}/42/events.jsonl`]: logText("WIP", "DONE", "PASS", "WIP"),
 			[`${ROOT}/43/workflow.json`]: preWaitCellTemplate(),
@@ -251,39 +259,39 @@ describe("lane migrate", () => {
 	});
 
 	it("reports an unreadable lane as a row rather than ending the sweep", async () => {
-		const {outcome} = await sweep({
+		const { outcome } = await sweep({
 			[`${ROOT}/42/workflow.json`]: "{",
 			[`${ROOT}/43/workflow.json`]: migratedText(),
 		});
 
 		expect(outcome.code).toBe(0);
-		expect(JSON.parse(outcome.stdout).summary).toMatchObject({unreadable: 1, current: 1});
+		expect(JSON.parse(outcome.stdout).summary).toMatchObject({ unreadable: 1, current: 1 });
 	});
 
 	it("reports a generated machine without touching it", async () => {
 		const emitted = JSON.parse(preWaitCellTemplate());
 		emitted.id = "epic-5817";
 
-		const {outcome, written} = await sweep({
+		const { outcome, written } = await sweep({
 			[`${ROOT}/42/workflow.json`]: JSON.stringify(emitted, null, "\t"),
 			[`${ROOT}/43/workflow.json`]: migratedText(),
 		});
 
 		expect(outcome.code).toBe(0);
-		expect(JSON.parse(outcome.stdout).summary).toMatchObject({generated: 1, current: 1});
+		expect(JSON.parse(outcome.stdout).summary).toMatchObject({ generated: 1, current: 1 });
 		expect(written.size).toBe(0);
 	});
 
 	it("skips an entry that holds no lane at all", async () => {
-		const {outcome} = await sweep({[`${ROOT}/43/workflow.json`]: coderTemplateText()});
+		const { outcome } = await sweep({ [`${ROOT}/43/workflow.json`]: coderTemplateText() });
 
-		expect(JSON.parse(outcome.stdout).scanned).toEqual([{root: ROOT, present: true, lanes: 1}]);
+		expect(JSON.parse(outcome.stdout).scanned).toEqual([{ root: ROOT, present: true, lanes: 1 }]);
 	});
 
 	it("refuses the whole sweep when a root is there and cannot be listed", async () => {
-		const {outcome} = await sweep(
-			{[`${ROOT}/43/workflow.json`]: coderTemplateText()},
-			{dirs: {[ROOT]: null}},
+		const { outcome } = await sweep(
+			{ [`${ROOT}/43/workflow.json`]: coderTemplateText() },
+			{ dirs: { [ROOT]: null } },
 		);
 
 		expect(outcome.code).not.toBe(0);
@@ -294,16 +302,16 @@ describe("lane migrate", () => {
 		const epics: ExpectationReader<never> = (issue) =>
 			Effect.succeed(
 				issue === 42
-					? {_tag: "Read", expectation: {_tag: "Epic", children: 4}, classes: []}
-					: {_tag: "Read", expectation: {_tag: "Single"}, classes: []},
+					? { _tag: "Read", expectation: { _tag: "Epic", children: 4 }, classes: [] }
+					: { _tag: "Read", expectation: { _tag: "Single" }, classes: [] },
 			);
 
-		const {outcome, written} = await sweep(
+		const { outcome, written } = await sweep(
 			{
 				[`${ROOT}/42/workflow.json`]: migratedText(),
 				[`${ROOT}/43/workflow.json`]: migratedText(),
 			},
-			{check: true, expectations: epics},
+			{ check: true, expectations: epics },
 		);
 
 		expect(outcome.code).toBe(SHAPE_MISMATCH);
@@ -317,64 +325,64 @@ describe("lane migrate", () => {
 		(issue) =>
 			Effect.succeed(
 				issue === 42
-					? {_tag: "Read", expectation: {_tag: "Child", parent}, classes: []}
-					: {_tag: "Read", expectation: {_tag: "Single"}, classes: []},
+					? { _tag: "Read", expectation: { _tag: "Child", parent }, classes: [] }
+					: { _tag: "Read", expectation: { _tag: "Single" }, classes: [] },
 			);
 
 	it("names a lane booted over an epic's child a duplicate without moving the exit code", async () => {
-		const {outcome, written} = await sweep(
+		const { outcome, written } = await sweep(
 			{
 				[`${ROOT}/42/workflow.json`]: migratedText(),
 				[`${ROOT}/43/workflow.json`]: migratedText(),
 			},
-			{check: true, expectations: childOf(4304)},
+			{ check: true, expectations: childOf(4304) },
 		);
 
 		expect(outcome.code).toBe(0);
 		expect(written.size).toBe(0);
-		const {lanes, summary} = JSON.parse(outcome.stdout);
+		const { lanes, summary } = JSON.parse(outcome.stdout);
 		expect(lanes[0]).toMatchObject({
 			key: "42",
 			verdict: "duplicate",
-			shape: {state: "duplicate", parent: 4304},
+			shape: { state: "duplicate", parent: 4304 },
 		});
-		expect(lanes[1]).toMatchObject({key: "43", verdict: "current"});
+		expect(lanes[1]).toMatchObject({ key: "43", verdict: "current" });
 		expect(summary.duplicate).toBe(1);
 		expect(outcome.stderr.join("\n")).toContain("lane 4304");
 	});
 
 	it("does not migrate a stale duplicate — the row comes back ahead of the graft", async () => {
-		const {outcome, written} = await sweep(
+		const { outcome, written } = await sweep(
 			{
 				[`${ROOT}/42/workflow.json`]: preWaitCellTemplate(),
 				[`${ROOT}/42/events.jsonl`]: logText("WIP", "DONE", "PASS"),
 				[`${ROOT}/43/workflow.json`]: migratedText(),
 			},
-			{expectations: childOf(4304)},
+			{ expectations: childOf(4304) },
 		);
 
 		expect(outcome.code).toBe(0);
 		expect([...written.keys()]).not.toContain(`${ROOT}/42/workflow.json`);
-		expect(JSON.parse(outcome.stdout).lanes[0]).toMatchObject({key: "42", verdict: "duplicate"});
+		expect(JSON.parse(outcome.stdout).lanes[0]).toMatchObject({ key: "42", verdict: "duplicate" });
 	});
 
 	it("carries an unknown shape onto the row it lands on rather than reading it as a match", async () => {
 		const unknown: ExpectationReader<never> = () =>
-			Effect.succeed({_tag: "Unknown", reason: "the API answered 502"});
+			Effect.succeed({ _tag: "Unknown", reason: "the API answered 502" });
 
-		const {outcome} = await sweep(
+		const { outcome } = await sweep(
 			{
 				[`${ROOT}/42/workflow.json`]: migratedText(),
 				[`${ROOT}/43/workflow.json`]: migratedText(),
 			},
-			{check: true, expectations: unknown},
+			{ check: true, expectations: unknown },
 		);
 
 		expect(outcome.code).toBe(0);
 		const lanes = JSON.parse(outcome.stdout).lanes;
 		expect(lanes[0]).toMatchObject({
 			verdict: "current",
-			shape: {state: "unknown", reason: "the API answered 502"},
+			shape: { state: "unknown", reason: "the API answered 502" },
 		});
 	});
 
@@ -382,13 +390,13 @@ describe("lane migrate", () => {
 		const asked: number[] = [];
 		const expectations: ExpectationReader<never> = (issue) => {
 			asked.push(issue);
-			return Effect.succeed({_tag: "Read", expectation: {_tag: "Single"}, classes: []});
+			return Effect.succeed({ _tag: "Read", expectation: { _tag: "Single" }, classes: [] });
 		};
 
-		const {outcome} = await sweep(
-			{[`${ROOT}/park-sweep/workflow.json`]: choreTemplateText()},
+		const { outcome } = await sweep(
+			{ [`${ROOT}/park-sweep/workflow.json`]: choreTemplateText() },
 			{
-				dirs: {[ROOT]: ["park-sweep"]},
+				dirs: { [ROOT]: ["park-sweep"] },
 				templatePaths: [CHORE_TEMPLATE],
 				expectations,
 			},
@@ -405,16 +413,16 @@ describe("lane migrate", () => {
 		});
 
 		it("judges and writes the named lane and reads no other entry under the root", async () => {
-			const {outcome, written} = await sweep(
-				{...stale(`${ROOT}/42`), ...stale(`${ROOT}/43`)},
-				{lane: "42"},
+			const { outcome, written } = await sweep(
+				{ ...stale(`${ROOT}/42`), ...stale(`${ROOT}/43`) },
+				{ lane: "42" },
 			);
 
 			expect(outcome.code).toBe(0);
 			const answer = JSON.parse(outcome.stdout);
-			expect(answer.summary).toMatchObject({migrated: 1, stale: 0, current: 0});
-			expect(answer.lanes.map((row: {key: string}) => row.key)).toEqual(["42"]);
-			expect(answer.scanned).toEqual([{root: ROOT, present: true, lanes: 1}]);
+			expect(answer.summary).toMatchObject({ migrated: 1, stale: 0, current: 0 });
+			expect(answer.lanes.map((row: { key: string }) => row.key)).toEqual(["42"]);
+			expect(answer.scanned).toEqual([{ root: ROOT, present: true, lanes: 1 }]);
 			expect([...written.keys()]).toEqual([`${ROOT}/42/workflow.json`]);
 		});
 
@@ -422,10 +430,10 @@ describe("lane migrate", () => {
 			const asked: number[] = [];
 			const expectations: ExpectationReader<never> = (issue) => {
 				asked.push(issue);
-				return Effect.succeed({_tag: "Read", expectation: {_tag: "Single"}, classes: []});
+				return Effect.succeed({ _tag: "Read", expectation: { _tag: "Single" }, classes: [] });
 			};
 
-			await sweep({...stale(`${ROOT}/42`), ...stale(`${ROOT}/43`)}, {lane: "43", expectations});
+			await sweep({ ...stale(`${ROOT}/42`), ...stale(`${ROOT}/43`) }, { lane: "43", expectations });
 
 			expect(asked).toEqual([43]);
 		});
@@ -433,7 +441,7 @@ describe("lane migrate", () => {
 		it("addresses a chore root's entry by the `chore:` key a caller types", async () => {
 			const CHORES = ".fabrika/chores";
 
-			const {outcome, written} = await sweep(
+			const { outcome, written } = await sweep(
 				{
 					[`${CHORES}/park-sweep/workflow.json`]: choreTemplateText(),
 					...stale(`${ROOT}/42`),
@@ -441,31 +449,31 @@ describe("lane migrate", () => {
 				{
 					lane: "chore:park-sweep",
 					roots: [ROOT, CHORES],
-					dirs: {[ROOT]: ["42"], [CHORES]: ["park-sweep"]},
+					dirs: { [ROOT]: ["42"], [CHORES]: ["park-sweep"] },
 					templatePaths: [TEMPLATE, CHORE_TEMPLATE],
 				},
 			);
 
 			expect(outcome.code).toBe(0);
 			expect(JSON.parse(outcome.stdout).lanes).toMatchObject([
-				{key: "chore:park-sweep", root: CHORES, verdict: "current"},
+				{ key: "chore:park-sweep", root: CHORES, verdict: "current" },
 			]);
 			expect(written.size).toBe(0);
 		});
 
 		it("withholds the write under --check and still names the one lane as stale", async () => {
-			const {outcome, written} = await sweep(
-				{...stale(`${ROOT}/42`), ...stale(`${ROOT}/43`)},
-				{lane: "42", check: true},
+			const { outcome, written } = await sweep(
+				{ ...stale(`${ROOT}/42`), ...stale(`${ROOT}/43`) },
+				{ lane: "42", check: true },
 			);
 
 			expect(outcome.code).toBe(0);
-			expect(JSON.parse(outcome.stdout).summary).toMatchObject({stale: 1, migrated: 0});
+			expect(JSON.parse(outcome.stdout).summary).toMatchObject({ stale: 1, migrated: 0 });
 			expect(written.size).toBe(0);
 		});
 
 		it("refuses a key naming no lane rather than reporting a clean sweep of zero", async () => {
-			const {outcome, written} = await sweep({...stale(`${ROOT}/42`)}, {lane: "99"});
+			const { outcome, written } = await sweep({ ...stale(`${ROOT}/42`) }, { lane: "99" });
 
 			expect(outcome.code).toBe(LANE_ABSENT);
 			expect(outcome.stdout).toBe("");
@@ -476,12 +484,12 @@ describe("lane migrate", () => {
 		it("refuses a chore key typed as a bare directory name, which addresses nothing", async () => {
 			const CHORES = ".fabrika/chores";
 
-			const {outcome} = await sweep(
-				{[`${CHORES}/park-sweep/workflow.json`]: choreTemplateText()},
+			const { outcome } = await sweep(
+				{ [`${CHORES}/park-sweep/workflow.json`]: choreTemplateText() },
 				{
 					lane: "park-sweep",
 					roots: [CHORES],
-					dirs: {[CHORES]: ["park-sweep"]},
+					dirs: { [CHORES]: ["park-sweep"] },
 					templatePaths: [CHORE_TEMPLATE],
 				},
 			);
@@ -493,13 +501,13 @@ describe("lane migrate", () => {
 			const drifting = JSON.parse(coderTemplateText());
 			drifting.machine.states.pipeline.states.issue.states.ship.on["ISSUE.WIP"] = "blocked";
 
-			const {outcome, written} = await sweep(
+			const { outcome, written } = await sweep(
 				{
 					[`${ROOT}/42/workflow.json`]: JSON.stringify(drifting, null, "\t"),
 					[`${ROOT}/42/events.jsonl`]: logText("WIP", "DONE", "PASS", "WIP"),
 					...stale(`${ROOT}/43`),
 				},
-				{lane: "42"},
+				{ lane: "42" },
 			);
 
 			expect(outcome.code).toBe(MIGRATION_UNSAFE);
@@ -508,9 +516,9 @@ describe("lane migrate", () => {
 		});
 
 		it("sweeps both entries and says nothing about narrowing when no key is given", async () => {
-			const {outcome, written} = await sweep({...stale(`${ROOT}/42`), ...stale(`${ROOT}/43`)});
+			const { outcome, written } = await sweep({ ...stale(`${ROOT}/42`), ...stale(`${ROOT}/43`) });
 
-			expect(JSON.parse(outcome.stdout).summary).toMatchObject({migrated: 2});
+			expect(JSON.parse(outcome.stdout).summary).toMatchObject({ migrated: 2 });
 			expect(written.size).toBe(2);
 			expect(outcome.stderr.join("\n")).not.toContain("narrowed");
 		});

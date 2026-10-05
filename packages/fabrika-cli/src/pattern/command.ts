@@ -11,19 +11,19 @@
  * opts out of the excess-operand guard, which `../excess-operand.unit.test.ts` reds on.
  */
 
-import {Effect, Option} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {baseOrTrunk, TRUNK_DEFAULT_HELP, trunkUnresolved} from "../io/trunk.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {runAnchor} from "./anchor-verb.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {runCorpus} from "./corpus-verb.ts";
-import {runDrift} from "./drift-verb.ts";
-import {runNew} from "./new-verb.ts";
-import {runRegister} from "./register-verb.ts";
+import { Effect, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { baseOrTrunk, TRUNK_DEFAULT_HELP, trunkUnresolved } from "../io/trunk.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { runAnchor } from "./anchor-verb.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { runCorpus } from "./corpus-verb.ts";
+import { runDrift } from "./drift-verb.ts";
+import { runNew } from "./new-verb.ts";
+import { runRegister } from "./register-verb.ts";
 
 const dirFlag = Flag.string("dir").pipe(
 	Flag.withDefault(".patterns"),
@@ -68,9 +68,9 @@ const slugArgument = Argument.string("slug").pipe(
 
 const corpus = leafCommand(
 	"corpus",
-	{dir: dirFlag, base: baseFlag, json: jsonFlag},
-	Effect.fn(function* ({dir, base, json}) {
-		yield* emit(yield* atBase("pattern corpus", base, (at) => runCorpus({dir, base: at, json})));
+	{ dir: dirFlag, base: baseFlag, json: jsonFlag },
+	Effect.fn(function* ({ dir, base, json }) {
+		yield* emit(yield* atBase("pattern corpus", base, (at) => runCorpus({ dir, base: at, json })));
 	}),
 ).pipe(
 	Command.withShortDescription("Every pattern doc at a base ref, with its registration."),
@@ -82,15 +82,15 @@ const corpus = leafCommand(
 			'  Derivation: the write-pattern skill\'s contract.md, "pattern corpus"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika pattern corpus --dir .patterns"}]),
+	Command.withExamples([{ command: "fabrika pattern corpus --dir .patterns" }]),
 );
 
 const drift = leafCommand(
 	"drift",
-	{slug: slugArgument, dir: dirFlag, base: baseFlag, json: jsonFlag},
-	Effect.fn(function* ({slug, dir, base, json}) {
+	{ slug: slugArgument, dir: dirFlag, base: baseFlag, json: jsonFlag },
+	Effect.fn(function* ({ slug, dir, base, json }) {
 		yield* emit(
-			yield* atBase("pattern drift", base, (at) => runDrift({slug, dir, base: at, json})),
+			yield* atBase("pattern drift", base, (at) => runDrift({ slug, dir, base: at, json })),
 		);
 	}),
 ).pipe(
@@ -104,7 +104,7 @@ const drift = leafCommand(
 			'  Derivation: the write-pattern skill\'s contract.md, "pattern drift"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika pattern drift worker-queue-retry"}]),
+	Command.withExamples([{ command: "fabrika pattern drift worker-queue-retry" }]),
 );
 
 const anchor = leafCommand(
@@ -121,10 +121,10 @@ const anchor = leafCommand(
 		base: baseFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({slug, dir, manifest, base, json}) {
+	Effect.fn(function* ({ slug, dir, manifest, base, json }) {
 		yield* emit(
 			yield* atBase("pattern anchor", base, (at) =>
-				runAnchor({slug, dir, manifest, base: at, json}),
+				runAnchor({ slug, dir, manifest, base: at, json }),
 			),
 		);
 	}),
@@ -139,7 +139,7 @@ const anchor = leafCommand(
 			'  Derivation: the write-pattern skill\'s contract.md, "pattern anchor"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika pattern anchor worker-queue-retry"}]),
+	Command.withExamples([{ command: "fabrika pattern anchor worker-queue-retry" }]),
 );
 
 const create = leafCommand(
@@ -239,8 +239,8 @@ const register = leafCommand(
 		dir: dirFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({slug, section, topic, readWhen, dir, json}) {
-		yield* emit(yield* runRegister({slug, section, topic, readWhen, dir, json}));
+	Effect.fn(function* ({ slug, section, topic, readWhen, dir, json }) {
+		yield* emit(yield* runRegister({ slug, section, topic, readWhen, dir, json }));
 	}),
 ).pipe(
 	Command.withShortDescription("Insert the doc's row into the index under a named section."),

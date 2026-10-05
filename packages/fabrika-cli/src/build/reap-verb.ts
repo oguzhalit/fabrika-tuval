@@ -56,16 +56,16 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10342#issuecomment-5973709319
  * @ruling https://github.com/kamp-us/phoenix/issues/10342#issuecomment-5973715141
  */
-import {Effect, FileSystem, Option, Path, Result} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {containmentOf} from "../io/containment.ts";
-import {appendText} from "../io/fs.ts";
-import {type Attempt, fail} from "../io/git.ts";
-import {getIssue, resolveRepo} from "../io/issues.ts";
-import {pullsForBranch} from "../io/pulls.ts";
-import {resolveTrunk, trunkUnresolved} from "../io/trunk.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN} from "./codes.ts";
+import { Effect, FileSystem, Option, Path, Result } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { containmentOf } from "../io/containment.ts";
+import { appendText } from "../io/fs.ts";
+import { type Attempt, fail } from "../io/git.ts";
+import { getIssue, resolveRepo } from "../io/issues.ts";
+import { pullsForBranch } from "../io/pulls.ts";
+import { resolveTrunk, trunkUnresolved } from "../io/trunk.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN } from "./codes.ts";
 import {
 	commitsNoRefReaches,
 	pruneWorktrees,
@@ -97,7 +97,7 @@ import {
 	unprovenAmong,
 	type Verdict,
 } from "./reap.ts";
-import {readTree} from "./tree.ts";
+import { readTree } from "./tree.ts";
 
 const VERB = "fabrika build reap";
 
@@ -132,7 +132,7 @@ interface Seat {
 	readonly verdict: Verdict;
 }
 
-type Removing = Extract<Verdict, {readonly _tag: "Remove"}>;
+type Removing = Extract<Verdict, { readonly _tag: "Remove" }>;
 
 interface Removed {
 	readonly path: string;
@@ -166,7 +166,7 @@ export const runReap = (options: ReapOptions): Effect.Effect<VerbOutcome, never,
 		const scope = `${VERB}: scanned ${registrations.value.length} registration(s); ${population.length} named .claude/worktrees/agent-* or pi-worktree-*.`;
 		if (population.length === 0) {
 			return answer(
-				JSON.stringify({answer: "none", executed: options.execute, removed: [], kept: []}),
+				JSON.stringify({ answer: "none", executed: options.execute, removed: [], kept: [] }),
 				[scope, `${VERB}: no agent worktree is registered in this clone — nothing to reap.`],
 			);
 		}
@@ -188,13 +188,13 @@ export const runReap = (options: ReapOptions): Effect.Effect<VerbOutcome, never,
 			);
 		}
 		const trunk = resolved.value.ref;
-		const ground: Ground = {trunk, repo: repo.value, selfPaths: new Set([self.value.root])};
+		const ground: Ground = { trunk, repo: repo.value, selfPaths: new Set([self.value.root]) };
 
 		if (!options.execute) {
 			const seated: Array<Seat> = [];
 			for (const tree of population) seated.push(yield* seatOf(tree, ground));
-			const removable = seated.flatMap(({facts, verdict}) =>
-				verdict._tag === "Remove" ? [{path: facts.path, license: verdict.license}] : [],
+			const removable = seated.flatMap(({ facts, verdict }) =>
+				verdict._tag === "Remove" ? [{ path: facts.path, license: verdict.license }] : [],
 			);
 			const bounded =
 				options.limit === null ? removable.length : Math.min(options.limit, removable.length);
@@ -210,7 +210,7 @@ export const runReap = (options: ReapOptions): Effect.Effect<VerbOutcome, never,
 				}),
 				[
 					scope,
-					...seated.flatMap(({facts, verdict}) =>
+					...seated.flatMap(({ facts, verdict }) =>
 						verdict._tag === "Remove"
 							? [`${VERB}: REMOVE ${facts.path}${branchOf(facts)} — ${verdict.because}.`]
 							: [],
@@ -231,8 +231,8 @@ export const runReap = (options: ReapOptions): Effect.Effect<VerbOutcome, never,
 		const run = new Date().toISOString();
 		const seated: Array<Seat> = [];
 		const removed: Array<Removed> = [];
-		const failed: Array<{path: string; reason: string}> = [];
-		const unjournalled: Array<{path: string; reason: string}> = [];
+		const failed: Array<{ path: string; reason: string }> = [];
+		const unjournalled: Array<{ path: string; reason: string }> = [];
 		let unscanned = 0;
 		for (const tree of population) {
 			// The bound is on removals attempted, and it is checked before the next tree is judged. A
@@ -241,7 +241,7 @@ export const runReap = (options: ReapOptions): Effect.Effect<VerbOutcome, never,
 			if (options.limit !== null && removed.length + failed.length >= options.limit) {
 				const beyond = yield* cheaplySeated(tree, ground);
 				if (beyond.verdict?._tag === "Prune") {
-					seated.push({facts: beyond.facts, verdict: beyond.verdict});
+					seated.push({ facts: beyond.facts, verdict: beyond.verdict });
 				} else {
 					unscanned += 1;
 				}
@@ -252,7 +252,7 @@ export const runReap = (options: ReapOptions): Effect.Effect<VerbOutcome, never,
 			if (seat.verdict._tag !== "Remove") continue;
 			const gone = yield* take(tree.path, seat.verdict);
 			if (gone._tag === "Failure") {
-				failed.push({path: tree.path, reason: gone.reason});
+				failed.push({ path: tree.path, reason: gone.reason });
 				continue;
 			}
 			const row: Removed = {
@@ -262,10 +262,10 @@ export const runReap = (options: ReapOptions): Effect.Effect<VerbOutcome, never,
 			};
 			removed.push(row);
 			const written = yield* Effect.result(
-				appendText(journalPath, `${JSON.stringify({run, trunk, ...row})}\n`),
+				appendText(journalPath, `${JSON.stringify({ run, trunk, ...row })}\n`),
 			);
 			if (Result.isFailure(written)) {
-				unjournalled.push({path: tree.path, reason: written.failure.reason});
+				unjournalled.push({ path: tree.path, reason: written.failure.reason });
 			}
 		}
 		const stale = staleAmong(seated);
@@ -280,14 +280,14 @@ export const runReap = (options: ReapOptions): Effect.Effect<VerbOutcome, never,
 		// directory was already gone, so one prune after the loop clears both. An entry locked by a
 		// dead harness process is unlocked first, because prune skips a locked entry — and its
 		// directory is already proved absent, so the lock is guarding nothing.
-		const unlockFailed: Array<{path: string; reason: string}> = [];
+		const unlockFailed: Array<{ path: string; reason: string }> = [];
 		let pruneFailure: string | null = null;
 		if (stale.length > 0 || removed.length > 0) {
 			for (const row of stale) {
 				if (!row.locked) continue;
 				const unlocked = yield* unlockWorktree(row.path);
 				if (unlocked._tag === "Failure") {
-					unlockFailed.push({path: row.path, reason: unlocked.reason});
+					unlockFailed.push({ path: row.path, reason: unlocked.reason });
 				}
 			}
 			const pruned = yield* pruneWorktrees;
@@ -398,26 +398,26 @@ const branchOf = (facts: CheapFacts): string =>
 	facts.branch === null ? " (detached)" : ` (${facts.branch})`;
 
 const keptAmong = (seated: ReadonlyArray<Seat>) =>
-	seated.flatMap(({facts, verdict}) =>
+	seated.flatMap(({ facts, verdict }) =>
 		verdict._tag === "Keep"
-			? [{path: facts.path, branch: facts.branch, reason: verdict.because}]
+			? [{ path: facts.path, branch: facts.branch, reason: verdict.because }]
 			: [],
 	);
 
 const keptLines = (seated: ReadonlyArray<Seat>): ReadonlyArray<string> =>
-	seated.flatMap(({facts, verdict}) =>
+	seated.flatMap(({ facts, verdict }) =>
 		verdict._tag === "Keep"
 			? [`${VERB}: KEEP ${facts.path}${branchOf(facts)} — ${verdict.because}.`]
 			: [],
 	);
 
 const staleAmong = (seated: ReadonlyArray<Seat>) =>
-	seated.flatMap(({facts, verdict}) =>
-		verdict._tag === "Prune" ? [{path: facts.path, locked: facts.locked !== null}] : [],
+	seated.flatMap(({ facts, verdict }) =>
+		verdict._tag === "Prune" ? [{ path: facts.path, locked: facts.locked !== null }] : [],
 	);
 
 const staleLines = (seated: ReadonlyArray<Seat>): ReadonlyArray<string> =>
-	seated.flatMap(({facts, verdict}) =>
+	seated.flatMap(({ facts, verdict }) =>
 		verdict._tag === "Prune"
 			? [`${VERB}: PRUNE ${facts.path}${branchOf(facts)} — ${verdict.because}.`]
 			: [],
@@ -431,8 +431,8 @@ const staleLines = (seated: ReadonlyArray<Seat>): ReadonlyArray<string> =>
  */
 const seatOf = (tree: WorktreeRegistration, ground: Ground): Effect.Effect<Seat, never, Deps> =>
 	Effect.gen(function* () {
-		const {facts: cheap, verdict: settled} = yield* cheaplySeated(tree, ground);
-		if (settled !== null) return {facts: cheap, verdict: settled};
+		const { facts: cheap, verdict: settled } = yield* cheaplySeated(tree, ground);
+		if (settled !== null) return { facts: cheap, verdict: settled };
 
 		const facts: TreeFacts = {
 			...cheap,
@@ -441,10 +441,10 @@ const seatOf = (tree: WorktreeRegistration, ground: Ground): Effect.Effect<Seat,
 			stranded: yield* strandedIn(tree.path),
 		};
 		const byGit = classifyGit(facts, ground.trunk, ground.selfPaths);
-		if (byGit !== null) return {facts, verdict: byGit};
+		if (byGit !== null) return { facts, verdict: byGit };
 
 		const fate = yield* fateOf(ground.repo, tree.branch);
-		return {facts, verdict: classify({...facts, fate}, ground.trunk, ground.selfPaths)};
+		return { facts, verdict: classify({ ...facts, fate }, ground.trunk, ground.selfPaths) };
 	});
 
 /**
@@ -455,7 +455,7 @@ const cheaplySeated = (
 	tree: WorktreeRegistration,
 	ground: Ground,
 ): Effect.Effect<
-	{readonly facts: CheapFacts; readonly verdict: Verdict | null},
+	{ readonly facts: CheapFacts; readonly verdict: Verdict | null },
 	never,
 	FileSystem.FileSystem
 > =>
@@ -468,7 +468,7 @@ const cheaplySeated = (
 			presence: observed.presence,
 			liveness: observed.liveness,
 		};
-		return {facts, verdict: classifyCheap(facts, ground.selfPaths)};
+		return { facts, verdict: classifyCheap(facts, ground.selfPaths) };
 	});
 
 /** The uncommitted paths a removal commits first, which only the board's license can carry. */
@@ -488,7 +488,7 @@ const take = (
 	Effect.gen(function* () {
 		const salvage = salvageOf(verdict);
 		if (salvage !== null) {
-			const {paths, onto} = salvage;
+			const { paths, onto } = salvage;
 			const committed = yield* salvageWorktree(
 				path,
 				`wip: salvage ${paths} uncommitted path(s) from a reaped worktree (${onto})\n`,
@@ -515,7 +515,7 @@ const fateOf = (
 	branch: string | null,
 ): Effect.Effect<BranchFate, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const unproven = (reason: string): BranchFate => ({_tag: "Unproven", reason});
+		const unproven = (reason: string): BranchFate => ({ _tag: "Unproven", reason });
 		if (branch === null) {
 			return unproven("it holds no branch, so there is no issue or pull request to ask about");
 		}
@@ -556,8 +556,8 @@ const uncommittedIn = (
 	Effect.gen(function* () {
 		const dirty = yield* worktreeStatusPaths(path);
 		return dirty._tag === "Failure"
-			? {_tag: "Unknown" as const, reason: dirty.reason}
-			: {_tag: "Read" as const, paths: dirty.value};
+			? { _tag: "Unknown" as const, reason: dirty.reason }
+			: { _tag: "Read" as const, paths: dirty.value };
 	});
 
 /** How many commits a tree holds that no ref reaches, or the reason that is UNKNOWN. */
@@ -567,8 +567,8 @@ const strandedIn = (
 	Effect.gen(function* () {
 		const count = yield* commitsNoRefReaches(path);
 		return count._tag === "Failure"
-			? {_tag: "Unknown" as const, reason: count.reason}
-			: {_tag: "Read" as const, commits: count.value};
+			? { _tag: "Unknown" as const, reason: count.reason }
+			: { _tag: "Read" as const, commits: count.value };
 	});
 
 /**
@@ -603,15 +603,15 @@ const strandedIn = (
 const observe = (
 	path: string,
 ): Effect.Effect<
-	{readonly presence: Presence; readonly liveness: Liveness},
+	{ readonly presence: Presence; readonly liveness: Liveness },
 	never,
 	FileSystem.FileSystem
 > =>
 	Effect.gen(function* () {
 		const gone = (because: string) =>
 			({
-				presence: {_tag: "Gone" as const, because},
-				liveness: {_tag: "Unknown" as const, reason: "its directory is gone"},
+				presence: { _tag: "Gone" as const, because },
+				liveness: { _tag: "Unknown" as const, reason: "its directory is gone" },
 			}) as const;
 
 		const fs = yield* FileSystem.FileSystem;
@@ -625,15 +625,15 @@ const observe = (
 			}
 			const unreadable = `its directory could not be read: ${stat.failure.message}`;
 			return {
-				presence: {_tag: "Unknown" as const, reason: unreadable},
-				liveness: {_tag: "Unknown" as const, reason: unreadable},
+				presence: { _tag: "Unknown" as const, reason: unreadable },
+				liveness: { _tag: "Unknown" as const, reason: unreadable },
 			};
 		}
 
 		const mtime = stat.success.mtime;
 		if (Option.isNone(mtime)) {
 			return {
-				presence: {_tag: "Present" as const},
+				presence: { _tag: "Present" as const },
 				liveness: {
 					_tag: "Unknown" as const,
 					reason: "this platform reported no modification time for it",
@@ -642,14 +642,18 @@ const observe = (
 		}
 		const ageSeconds = Math.floor((Date.now() - mtime.value.getTime()) / 1000);
 		return {
-			presence: {_tag: "Present" as const},
+			presence: { _tag: "Present" as const },
 			liveness:
 				ageSeconds >= QUIET_WINDOW_SECONDS
-					? ({_tag: "Quiet"} as const)
+					? ({ _tag: "Quiet" } as const)
 					: ({
 							_tag: "Live",
 							signals: [
-								{_tag: "RecentActivity" as const, ageSeconds, windowSeconds: QUIET_WINDOW_SECONDS},
+								{
+									_tag: "RecentActivity" as const,
+									ageSeconds,
+									windowSeconds: QUIET_WINDOW_SECONDS,
+								},
 							],
 						} as const),
 		};

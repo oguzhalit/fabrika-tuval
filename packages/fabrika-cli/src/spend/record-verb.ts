@@ -1,9 +1,9 @@
-import {Effect, Result} from "effect";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, refuse} from "../verb.ts";
-import {INPUT_UNREADABLE} from "./codes.ts";
-import {recordUsage} from "./usage-ledger.ts";
-import {parseUsageRecord} from "./usage-record.ts";
+import { Effect, Result } from "effect";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, refuse } from "../verb.ts";
+import { INPUT_UNREADABLE } from "./codes.ts";
+import { recordUsage } from "./usage-ledger.ts";
+import { parseUsageRecord } from "./usage-record.ts";
 
 export const runRecord = Effect.fn("spend.record")(function* (options: {
 	readonly ledger: string;

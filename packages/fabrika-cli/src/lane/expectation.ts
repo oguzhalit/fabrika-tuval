@@ -21,14 +21,14 @@
  * An unreadable answer is `Unknown`, never `Single`. Reading a failed read as "not an epic" is how a
  * wrong-machine boot would slip through the very refusal this exists to make.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {getIssue, resolveRepo} from "../io/issues.ts";
-import {listSubIssues} from "../plan/github.ts";
-import {EPIC_TYPE_LABEL} from "../triage/facets.ts";
-import {classesFromLabels} from "./class-seed.ts";
-import type {Expectation} from "./shape.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { getIssue, resolveRepo } from "../io/issues.ts";
+import { listSubIssues } from "../plan/github.ts";
+import { EPIC_TYPE_LABEL } from "../triage/facets.ts";
+import { classesFromLabels } from "./class-seed.ts";
+import type { Expectation } from "./shape.ts";
 
 export type ExpectationRead =
 	| {
@@ -45,7 +45,7 @@ export type ExpectationRead =
 			 */
 			readonly classes: ReadonlyArray<string>;
 	  }
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 export type ExpectationReader<R> = (issue: number) => Effect.Effect<ExpectationRead, never, R>;
 
@@ -88,16 +88,16 @@ export const expectationReader = (
 			if (typed || listed.value.length > 0) {
 				return {
 					_tag: "Read" as const,
-					expectation: {_tag: "Epic", children: listed.value.length} as const,
+					expectation: { _tag: "Epic", children: listed.value.length } as const,
 					classes,
 				};
 			}
-			const {parent} = record.value;
+			const { parent } = record.value;
 			return {
 				_tag: "Read" as const,
 				expectation:
 					parent._tag === "None"
-						? ({_tag: "Single"} as const)
+						? ({ _tag: "Single" } as const)
 						: ({
 								_tag: "Child",
 								parent: parent._tag === "Parent" ? parent.number : null,

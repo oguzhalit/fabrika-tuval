@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeSeams, okOut, type Scripted} from "../fakes.test-support.ts";
-import {FAILED} from "../verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeSeams, okOut, type Scripted } from "../fakes.test-support.ts";
+import { FAILED } from "../verb.ts";
 import {
 	BAD_SECTIONS,
 	CLAIM_NOT_MINE,
@@ -21,10 +21,10 @@ import {
 	pull,
 	served,
 } from "./fixtures.test-support.ts";
-import {runTree} from "./tree-verb.ts";
+import { runTree } from "./tree-verb.ts";
 
 /** The write permission the marker's author holds — what authorizes a claim. */
-const WRITE = served({permission: "write"});
+const WRITE = served({ permission: "write" });
 
 const REV_PARSE = /^git rev-parse --path-format=absolute/;
 const STATUS = /^git status --porcelain$/;
@@ -38,21 +38,21 @@ const REPAIR_PULL = /GET .*\/repos\/o\/r\/pulls\/7182$/;
 const SERVED_ISSUE = /GET .*\/repos\/o\/r\/issues\/7181$/;
 
 const LANE_BRANCH = okOut(`build/4312-editor-focus-loss-${NONCE}\n`);
-const MINE = comments({id: 1, body: marker("s-9f2e", LANE_UUID)});
+const MINE = comments({ id: 1, body: marker("s-9f2e", LANE_UUID) });
 
 const options = {
 	requireClean: false,
 	issue: null as number | null,
 	repair: null as number | null,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e"} as Record<
+	env: { CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e" } as Record<
 		string,
 		string | undefined
 	>,
 };
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runTree({...options, ...overrides}), fakeSeams(script).layer));
+	Effect.runPromise(Effect.provide(runTree({ ...options, ...overrides }), fakeSeams(script).layer));
 
 describe("runTree", () => {
 	it("prints the tree root when the git dir and the common dir differ", async () => {
@@ -74,7 +74,7 @@ describe("runTree", () => {
 			[STATUS, okOut(" M src/app/App.tsx\n?? scratch.md\n")],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runTree({...options, requireClean: true}), seams.layer),
+			Effect.provide(runTree({ ...options, requireClean: true }), seams.layer),
 		);
 		expect(out.code).toBe(DIRTY_TREE);
 		expect(out.stderr.at(-1)).toBe(
@@ -100,15 +100,15 @@ describe("runTree", () => {
 				[PERM, WRITE],
 				[BRANCH, LANE_BRANCH],
 			],
-			{issue: 4312},
+			{ issue: 4312 },
 		);
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toEqual({
 			answer: "proven",
 			root: "/repo/trees/lane-a",
 			branch: `build/4312-editor-focus-loss-${NONCE}`,
-			claim: {number: 4312, nonce: NONCE},
-			servedIssue: {number: 4312, kind: "issue"},
+			claim: { number: 4312, nonce: NONCE },
+			servedIssue: { number: 4312, kind: "issue" },
 		});
 	});
 
@@ -118,7 +118,7 @@ describe("runTree", () => {
 				[REV_PARSE, GIT_DIRS],
 				[BRANCH, okOut(`build/9999-editor-focus-loss-${NONCE}\n`)],
 			],
-			{issue: 4312},
+			{ issue: 4312 },
 		);
 		expect(out.code).toBe(WRONG_LANE);
 		expect(out.stderr.at(-1)).toContain("not issue #4312");
@@ -133,7 +133,7 @@ describe("runTree", () => {
 				[PERM, WRITE],
 				[BRANCH, okOut("build/4312-editor-focus-loss-deadbeef\n")],
 			],
-			{issue: 4312},
+			{ issue: 4312 },
 		);
 		expect(out.code).toBe(WRONG_LANE);
 		expect(out.stderr.at(-1)).toContain("does not carry claim build:s-9f2e:");
@@ -144,11 +144,11 @@ describe("runTree", () => {
 			[
 				[REV_PARSE, GIT_DIRS],
 				[ISSUE, issue()],
-				[COMMENTS, comments({id: 1, body: marker("s-77aa", LANE_UUID)})],
+				[COMMENTS, comments({ id: 1, body: marker("s-77aa", LANE_UUID) })],
 				[PERM, WRITE],
 				[BRANCH, LANE_BRANCH],
 			],
-			{issue: 4312},
+			{ issue: 4312 },
 		);
 		expect(out.code).toBe(CLAIM_NOT_MINE);
 		expect(out.stderr.at(-1)).toBe(
@@ -164,14 +164,14 @@ describe("runTree", () => {
 				[COMMENTS, GATEWAY],
 				[BRANCH, LANE_BRANCH],
 			],
-			{issue: 4312},
+			{ issue: 4312 },
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("the lane is UNKNOWN");
 	});
 
 	it("refuses --repair without --issue on 10", async () => {
-		const out = await run([[REV_PARSE, GIT_DIRS]], {repair: 7182});
+		const out = await run([[REV_PARSE, GIT_DIRS]], { repair: 7182 });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toContain("requires --issue");
 	});
@@ -179,7 +179,7 @@ describe("runTree", () => {
 	it("refuses a missing session id on 1, never on 15", async () => {
 		const out = await run([[REV_PARSE, GIT_DIRS]], {
 			issue: 4312,
-			env: {CLAUDE_PIPELINE_REPO: "o/r"},
+			env: { CLAUDE_PIPELINE_REPO: "o/r" },
 		});
 		expect(out.code).toBe(FAILED);
 		expect(out.stderr.at(-1)).toContain(
@@ -193,11 +193,12 @@ describe("runTree", () => {
 		title: "repair PR",
 		html_url: "https://example.test/o/r/pull/7182",
 		body: "Fixes #7181\n\n## Deviations\nNone.\n",
-		pull_request: {url: "https://api.github.com/repos/o/r/pulls/7182"},
+		pull_request: { url: "https://api.github.com/repos/o/r/pulls/7182" },
 	});
-	const repairMine = comments({id: 7182, body: marker("s-9f2e", LANE_UUID)});
-	const repairPull = (body = "Fixes #7181\n\n## Deviations\nNone.\n") => pull({number: 7182, body});
-	const servedIssue = issue({number: 7181, html_url: "https://example.test/o/r/issues/7181"});
+	const repairMine = comments({ id: 7182, body: marker("s-9f2e", LANE_UUID) });
+	const repairPull = (body = "Fixes #7181\n\n## Deviations\nNone.\n") =>
+		pull({ number: 7182, body });
+	const servedIssue = issue({ number: 7181, html_url: "https://example.test/o/r/issues/7181" });
 	const repairProof = (body?: string): ReadonlyArray<Scripted> => [
 		[REV_PARSE, GIT_DIRS],
 		[BRANCH, repairBranch],
@@ -209,14 +210,14 @@ describe("runTree", () => {
 	];
 
 	it("proves issue #7181 through PR #7182's winning claim and resumed branch", async () => {
-		const out = await run(repairProof(), {issue: 7181, repair: 7182});
+		const out = await run(repairProof(), { issue: 7181, repair: 7182 });
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toEqual({
 			answer: "proven",
 			root: "/repo/trees/lane-a",
 			branch: `build/pr-7182-${NONCE}`,
-			claim: {number: 7182, nonce: NONCE},
-			servedIssue: {number: 7181, kind: "fixes"},
+			claim: { number: 7182, nonce: NONCE },
+			servedIssue: { number: 7181, kind: "fixes" },
 		});
 	});
 
@@ -232,12 +233,12 @@ describe("runTree", () => {
 						title: "existing repair PR",
 						html_url: "https://example.test/o/r/pull/7180",
 						body: "Fixes #7162\n\n## Deviations\nNone.\n",
-						pull_request: {url: "https://api.github.com/repos/o/r/pulls/7180"},
+						pull_request: { url: "https://api.github.com/repos/o/r/pulls/7180" },
 					}),
 				],
 				[
 					/GET .*\/repos\/o\/r\/issues\/7180\/comments/,
-					comments({id: 7180, body: marker("s-9f2e", LANE_UUID)}),
+					comments({ id: 7180, body: marker("s-9f2e", LANE_UUID) }),
 				],
 				[PERM, WRITE],
 				[
@@ -255,12 +256,12 @@ describe("runTree", () => {
 					}),
 				],
 			],
-			{issue: 7162, repair: 7180},
+			{ issue: 7162, repair: 7180 },
 		);
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
-			claim: {number: 7180},
-			servedIssue: {number: 7162},
+			claim: { number: 7180 },
+			servedIssue: { number: 7162 },
 		});
 	});
 
@@ -270,7 +271,7 @@ describe("runTree", () => {
 			[BRANCH, okOut(`build/pr-7180-${NONCE}\n`)],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runTree({...options, issue: 7181, repair: 7182}), seams.layer),
+			Effect.provide(runTree({ ...options, issue: 7181, repair: 7182 }), seams.layer),
 		);
 		expect(out.code).toBe(WRONG_LANE);
 		expect(seams.calls.some((call) => call.includes("/issues/7182"))).toBe(false);
@@ -284,11 +285,11 @@ describe("runTree", () => {
 				[REPAIR_CLAIM, repairClaim],
 				[
 					REPAIR_COMMENTS,
-					comments({id: 7182, body: marker("s-9f2e", "deadbeef-3b7e-4a19-9c2d-5e8f0a1b2c3d")}),
+					comments({ id: 7182, body: marker("s-9f2e", "deadbeef-3b7e-4a19-9c2d-5e8f0a1b2c3d") }),
 				],
 				[PERM, WRITE],
 			],
-			{issue: 7181, repair: 7182},
+			{ issue: 7181, repair: 7182 },
 		);
 		expect(out.code).toBe(WRONG_LANE);
 		expect(out.stderr.at(-1)).toContain("does not carry claim");
@@ -297,11 +298,14 @@ describe("runTree", () => {
 	it.each([
 		["epic first", "Fixes #7181\nFixes #7162\n\n## Deviations\nNone.\n"],
 		["epic last", "Fixes #7162\nFixes #7181\n\n## Deviations\nNone.\n"],
-	])("proves the explicitly requested issue when it is %s in a multi-linkage body", async (_name, body) => {
-		const out = await run(repairProof(body), {issue: 7181, repair: 7182});
-		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout).servedIssue).toEqual({number: 7181, kind: "fixes"});
-	});
+	])(
+		"proves the explicitly requested issue when it is %s in a multi-linkage body",
+		async (_name, body) => {
+			const out = await run(repairProof(body), { issue: 7181, repair: 7182 });
+			expect(out.code).toBe(0);
+			expect(JSON.parse(out.stdout).servedIssue).toEqual({ number: 7181, kind: "fixes" });
+		},
+	);
 
 	it("refuses a served-issue set that does not contain the requested issue on 14", async () => {
 		const out = await run(repairProof("Fixes #7162\nFixes #7163\n\n## Deviations\nNone.\n"), {
@@ -333,7 +337,7 @@ describe("runTree", () => {
 				[REPAIR_CLAIM, repairClaim],
 				[REPAIR_COMMENTS, GATEWAY],
 			],
-			{issue: 7181, repair: 7182},
+			{ issue: 7181, repair: 7182 },
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("the lane is UNKNOWN");
@@ -349,7 +353,7 @@ describe("runTree", () => {
 				[PERM, WRITE],
 				[REPAIR_PULL, GATEWAY],
 			],
-			{issue: 7181, repair: 7182},
+			{ issue: 7181, repair: 7182 },
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("served issue is UNKNOWN");
@@ -366,7 +370,7 @@ describe("runTree", () => {
 				[REPAIR_PULL, repairPull()],
 				[SERVED_ISSUE, GATEWAY],
 			],
-			{issue: 7181, repair: 7182},
+			{ issue: 7181, repair: 7182 },
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("repair subject is UNKNOWN");
@@ -383,7 +387,7 @@ describe("runTree", () => {
 				[REPAIR_PULL, repairPull("Fixes #7182\n\n## Deviations\nNone.\n")],
 				[REPAIR_CLAIM, repairClaim],
 			],
-			{issue: 7182, repair: 7182},
+			{ issue: 7182, repair: 7182 },
 		);
 		expect(out.code).toBe(WRONG_LANE);
 		expect(out.stderr.at(-1)).toContain("that record is itself a pull request");
@@ -395,7 +399,7 @@ describe("runTree", () => {
 				[REV_PARSE, GIT_DIRS],
 				[BRANCH, repairBranch],
 			],
-			{issue: 7181, repair: 7181},
+			{ issue: 7181, repair: 7181 },
 		);
 		expect(out.code).toBe(WRONG_LANE);
 	});

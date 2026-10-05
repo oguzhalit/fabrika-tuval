@@ -7,8 +7,8 @@
  * frontier is still untouched rather than after a ticket exists.
  */
 
-import type {Ticket} from "./frontier.ts";
-import {truncateOnWordBoundary} from "./open.ts";
+import type { Ticket } from "./frontier.ts";
+import { truncateOnWordBoundary } from "./open.ts";
 
 /** `ticket → the tickets it waits on`, the direction a cycle is a loop in. */
 export type WaitsOn = ReadonlyMap<number, ReadonlyArray<number>>;
@@ -35,13 +35,13 @@ export const cycleFrom = (
 	graph: WaitsOn,
 	blockedByTargets: ReadonlyArray<number>,
 	blocksTargets: ReadonlyArray<number>,
-): {readonly waitsOn: number; readonly gates: number} | null => {
+): { readonly waitsOn: number; readonly gates: number } | null => {
 	for (const waitsOn of blockedByTargets) {
 		for (const gates of blocksTargets) {
 			// The new ticket waits on `waitsOn` and gates `gates`, so `gates -> new -> waitsOn` already
 			// holds; a path from `waitsOn` back to `gates` — including the degenerate one where they are
 			// the same ticket — closes the loop.
-			if (waitsOn === gates || reaches(graph, waitsOn, gates)) return {waitsOn, gates};
+			if (waitsOn === gates || reaches(graph, waitsOn, gates)) return { waitsOn, gates };
 		}
 	}
 	return null;

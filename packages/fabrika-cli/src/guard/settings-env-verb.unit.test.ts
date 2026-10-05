@@ -3,25 +3,25 @@
  * the `gate.unit.test.ts` cases from the v1 CLI, re-seated on the three guard exit codes.
  */
 // biome-ignore-all lint/suspicious/noTemplateCurlyInString: the unexpanded brace token is the fixture under test; every case here must spell one in a plain string.
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFsOptions, fakeFs} from "../fakes.test-support.ts";
-import {PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE} from "./codes.ts";
-import {runSettingsEnvGuard} from "./settings-env-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFsOptions, fakeFs } from "../fakes.test-support.ts";
+import { PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE } from "./codes.ts";
+import { runSettingsEnvGuard } from "./settings-env-verb.ts";
 
 const ROOT = "/repo";
 const SETTINGS = `${ROOT}/.claude/settings.json`;
 
 const run = (options: FakeFsOptions, env: Record<string, string | undefined> = {}) =>
 	Effect.runPromise(
-		Effect.provide(runSettingsEnvGuard({root: ROOT, cwd: ROOT, env}), fakeFs(options).layer),
+		Effect.provide(runSettingsEnvGuard({ root: ROOT, cwd: ROOT, env }), fakeFs(options).layer),
 	);
 
-const settings = (text: string): FakeFsOptions => ({files: {[SETTINGS]: text}});
+const settings = (text: string): FakeFsOptions => ({ files: { [SETTINGS]: text } });
 
 describe("runSettingsEnvGuard", () => {
 	it("passes a settings file whose env values are all literal", async () => {
-		const outcome = await run(settings(JSON.stringify({env: {A: "/usr/bin", B: "1"}})));
+		const outcome = await run(settings(JSON.stringify({ env: { A: "/usr/bin", B: "1" } })));
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toContain("all 2 .claude/settings.json env value(s)");
 		expect(outcome.stderr).toEqual([]);
@@ -29,13 +29,15 @@ describe("runSettingsEnvGuard", () => {
 
 	// The fix for a bad env value is often to delete the block, and that must stay green.
 	it("passes a settings file with no env block at all", async () => {
-		const outcome = await run(settings(JSON.stringify({permissions: {allow: []}})));
+		const outcome = await run(settings(JSON.stringify({ permissions: { allow: [] } })));
 		expect(outcome.code).toBe(0);
 	});
 
 	it("reds an unexpanded token on the violation seat, with nothing on stdout", async () => {
 		const outcome = await run(
-			settings(JSON.stringify({env: {KAMPUS_PIPELINE_DATA: "${CLAUDE_PROJECT_DIR}/.pipeline"}})),
+			settings(
+				JSON.stringify({ env: { KAMPUS_PIPELINE_DATA: "${CLAUDE_PROJECT_DIR}/.pipeline" } }),
+			),
 		);
 		expect(outcome.code).toBe(VIOLATION);
 		expect(outcome.stdout).toBe("");
@@ -43,7 +45,7 @@ describe("runSettingsEnvGuard", () => {
 	});
 
 	it("annotates the settings file under Actions", async () => {
-		const outcome = await run(settings(JSON.stringify({env: {BAD: "${X}"}})), {
+		const outcome = await run(settings(JSON.stringify({ env: { BAD: "${X}" } })), {
 			GITHUB_ACTIONS: "true",
 		});
 		expect(
@@ -53,7 +55,7 @@ describe("runSettingsEnvGuard", () => {
 
 	// The fail-closed floor: no settings file means the guard scanned nothing, so never clean.
 	it("fails closed when the settings file is absent", async () => {
-		const outcome = await run({files: {}});
+		const outcome = await run({ files: {} });
 		expect(outcome.code).toBe(ZERO_SCOPE);
 		expect(outcome.stderr.join("\n")).toContain("does not exist");
 	});
@@ -67,7 +69,7 @@ describe("runSettingsEnvGuard", () => {
 	});
 
 	it("answers UNKNOWN when the settings file cannot be read", async () => {
-		const outcome = await run({...settings("{}"), unreadable: [SETTINGS]});
+		const outcome = await run({ ...settings("{}"), unreadable: [SETTINGS] });
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.join("\n")).toContain("UNKNOWN");
 	});
@@ -75,8 +77,8 @@ describe("runSettingsEnvGuard", () => {
 	it("answers UNKNOWN when no repo root sits above the cwd", async () => {
 		const outcome = await Effect.runPromise(
 			Effect.provide(
-				runSettingsEnvGuard({root: null, cwd: "/nowhere", env: {}}),
-				fakeFs({files: {}}).layer,
+				runSettingsEnvGuard({ root: null, cwd: "/nowhere", env: {} }),
+				fakeFs({ files: {} }).layer,
 			),
 		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);

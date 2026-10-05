@@ -8,11 +8,11 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9855
  */
-import {Effect, FileSystem, Path, Result} from "effect";
-import {appendText} from "../io/fs.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {instant, waitingOn} from "../wire/lane-record.ts";
-import {lockedRefusal, withLedgerLock} from "./append-lock.ts";
+import { Effect, FileSystem, Path, Result } from "effect";
+import { appendText } from "../io/fs.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { instant, waitingOn } from "../wire/lane-record.ts";
+import { lockedRefusal, withLedgerLock } from "./append-lock.ts";
 import {
 	APPEND_UNKNOWN,
 	CONCURRENT_WRITE,
@@ -20,9 +20,9 @@ import {
 	LANE_UNREADABLE,
 	MALFORMED_RECORD,
 } from "./codes.ts";
-import {encodeFact, loadFacts} from "./facts.ts";
-import {loadRefusal} from "./refusals.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { encodeFact, loadFacts } from "./facts.ts";
+import { loadRefusal } from "./refusals.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane wait";
 
@@ -54,7 +54,7 @@ export const runWait = (
 		const path = yield* Path.Path;
 		const dir = path.join(options.root, options.lane);
 		return yield* withLedgerLock(
-			{fs, path, dir, verb: VERB},
+			{ fs, path, dir, verb: VERB },
 			Effect.gen(function* () {
 				const loaded = yield* loadLane(options);
 				if (loaded._tag !== "Loaded") return loadRefusal(VERB, loaded);
@@ -76,7 +76,7 @@ export const runWait = (
 				if (at === null)
 					return refuse(FACT_REFUSED, `${VERB}: the clock gave no instant — nothing was appended.`);
 				const wrote = yield* Effect.result(
-					appendText(facts.path, encodeFact({kind: "waiting", on, until, at})),
+					appendText(facts.path, encodeFact({ kind: "waiting", on, until, at })),
 				);
 				if (Result.isFailure(wrote)) {
 					return refuse(
@@ -84,12 +84,12 @@ export const runWait = (
 						`${VERB}: the append to ${facts.path} did not land: ${wrote.failure.reason} — the wait is NOT recorded.`,
 					);
 				}
-				return answer(JSON.stringify({answer: "waiting", lane: options.lane, on, until}), [
+				return answer(JSON.stringify({ answer: "waiting", lane: options.lane, on, until }), [
 					`${VERB}: lane ${options.lane} waits on ${on} until ${until}.`,
 				]);
 			}),
 			{
-				onAbsent: (absentDir) => loadRefusal(VERB, {_tag: "Absent", dir: absentDir}),
+				onAbsent: (absentDir) => loadRefusal(VERB, { _tag: "Absent", dir: absentDir }),
 				onLocked: (lockDir) => refuse(CONCURRENT_WRITE, lockedRefusal(VERB, lockDir)),
 			},
 		);

@@ -8,14 +8,14 @@
  * Every other seat is its guard's verb test, in-process; which leaves are registered is
  * `./command.unit.test.ts` and `unknown-subcommand.unit.test.ts`.
  */
-import {execFileSync} from "node:child_process";
-import {mkdirSync, mkdtempSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
-import {VIOLATION} from "./codes.ts";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
+import { VIOLATION } from "./codes.ts";
 
 const BIN = fileURLToPath(new URL("../bin.ts", import.meta.url));
 
@@ -30,13 +30,17 @@ const fabrika = (args: ReadonlyArray<string>): Run => {
 	try {
 		const stdout = execFileSync(process.execPath, [BIN, ...args], {
 			encoding: "utf8",
-			env: {...process.env, FABRIKA_SKIP_INFER: "1", GITHUB_ACTIONS: "false"},
+			env: { ...process.env, FABRIKA_SKIP_INFER: "1", GITHUB_ACTIONS: "false" },
 			stdio: ["pipe", "pipe", "pipe"],
 		});
-		return {code: 0, stdout, stderr: ""};
+		return { code: 0, stdout, stderr: "" };
 	} catch (err) {
-		const failure = err as {status?: number; stdout?: string; stderr?: string};
-		return {code: failure.status ?? -1, stdout: failure.stdout ?? "", stderr: failure.stderr ?? ""};
+		const failure = err as { status?: number; stdout?: string; stderr?: string };
+		return {
+			code: failure.status ?? -1,
+			stdout: failure.stdout ?? "",
+			stderr: failure.stderr ?? "",
+		};
 	}
 };
 
@@ -44,17 +48,17 @@ const fabrika = (args: ReadonlyArray<string>): Run => {
 const fixture = (members: Readonly<Record<string, ReadonlyArray<string>>>): string => {
 	const root = mkdtempSync(join(tmpdir(), "fabrika-guard-"));
 	writeFileSync(join(root, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n", "utf8");
-	mkdirSync(join(root, "packages"), {recursive: true});
+	mkdirSync(join(root, "packages"), { recursive: true });
 	for (const [name, held] of Object.entries(members)) {
-		mkdirSync(join(root, "packages", name), {recursive: true});
+		mkdirSync(join(root, "packages", name), { recursive: true });
 		for (const file of held) writeFileSync(join(root, "packages", name, file), "x", "utf8");
 	}
 	return root;
 };
 
-describe("fabrika guard, end to end", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
+describe("fabrika guard, end to end", { timeout: SUBPROCESS_TEST_TIMEOUT_MS }, () => {
 	it("reds a README-less member on the violation seat with NOTHING on stdout", () => {
-		const root = fixture({a: ["package.json"]});
+		const root = fixture({ a: ["package.json"] });
 		const run = fabrika(["guard", "readme-guard", "check", "--root", root]);
 		expect(run.code).toBe(VIOLATION);
 		expect(run.stdout).toBe("");

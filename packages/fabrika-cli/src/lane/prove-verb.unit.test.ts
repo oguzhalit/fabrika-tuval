@@ -1,5 +1,5 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	configAtCommit,
 	configOnPlatform,
@@ -11,10 +11,10 @@ import {
 	okOut,
 	type Scripted,
 } from "../fakes.test-support.ts";
-import {readGoldenFixture} from "../golden-fixture.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {contentDigest, parseRaw} from "../review/content-binding.ts";
-import {compose as supersedeWith} from "../review/supersede.ts";
+import { readGoldenFixture } from "../golden-fixture.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { contentDigest, parseRaw } from "../review/content-binding.ts";
+import { compose as supersedeWith } from "../review/supersede.ts";
 import {
 	evidenceDoesNotOpen,
 	evidenced,
@@ -29,9 +29,9 @@ import {
 	PROOF_IN_FLIGHT,
 	ROUTE_UNDERIVED,
 } from "./codes.ts";
-import {coderTemplateText, coderWorkflow} from "./fixtures.test-support.ts";
-import {proveDispatched, runProve} from "./prove-verb.ts";
-import {loadLane} from "./store.ts";
+import { coderTemplateText, coderWorkflow } from "./fixtures.test-support.ts";
+import { proveDispatched, runProve } from "./prove-verb.ts";
+import { loadLane } from "./store.ts";
 
 const ROOT = ".fabrika/lanes";
 const WORKFLOW = `${ROOT}/5747/workflow.json`;
@@ -50,8 +50,8 @@ const REPO = "o/r";
 
 const ISSUE_COMMENTS = /^GET .*\/repos\/o\/r\/issues\/5747\/comments\?/;
 
-const served = (payload: unknown): HttpReply => ({status: 200, body: JSON.stringify(payload)});
-const GATEWAY: HttpReply = {status: 502, body: '{"message":"Bad gateway"}'};
+const served = (payload: unknown): HttpReply => ({ status: 200, body: JSON.stringify(payload) });
+const GATEWAY: HttpReply = { status: 502, body: '{"message":"Bad gateway"}' };
 
 /**
  * The reads the verdict arm makes to date a verdict against the issue's standing rulings, answering
@@ -74,7 +74,7 @@ const NO_RULINGS: ReadonlyArray<Scripted> = [[ANY_ISSUE_COMMENTS, served([])]];
  */
 const UI_CONFIG_TEXT = JSON.stringify({
 	uiSurfaces: [
-		{name: "web", prefix: "apps/site/src/", mount: "/", command: "pnpm dev --port {{port}}"},
+		{ name: "web", prefix: "apps/site/src/", mount: "/", command: "pnpm dev --port {{port}}" },
 	],
 });
 const PLATFORM_MERGE_BASE = "b".repeat(40);
@@ -92,7 +92,7 @@ const seamsWith = (script: ReadonlyArray<Scripted>) =>
 const nominated = (...numbers: ReadonlyArray<number>): HttpReply =>
 	served({
 		total_count: numbers.length,
-		items: numbers.map((number) => ({number, title: `pull ${number}`})),
+		items: numbers.map((number) => ({ number, title: `pull ${number}` })),
 	});
 
 /** One page of the closing-issue link edge, every node OPEN — the verb filters on that itself. */
@@ -102,7 +102,7 @@ const closingPulls = (...numbers: ReadonlyArray<number>): HttpReply =>
 			repository: {
 				issue: {
 					closedByPullRequestsReferences: {
-						pageInfo: {hasNextPage: false, endCursor: null},
+						pageInfo: { hasNextPage: false, endCursor: null },
 						nodes: numbers.map((number) => ({
 							number,
 							url: `https://forge.example/o/r/pull/${number}`,
@@ -115,7 +115,7 @@ const closingPulls = (...numbers: ReadonlyArray<number>): HttpReply =>
 	});
 
 const logLine = (event: string, at: string, classes?: ReadonlyArray<string>): string =>
-	`${JSON.stringify({task: "issue", event: `ISSUE.${event}`, at, ...(classes === undefined ? {} : {classes})})}\n`;
+	`${JSON.stringify({ task: "issue", event: `ISSUE.${event}`, at, ...(classes === undefined ? {} : { classes }) })}\n`;
 
 /**
  * The lane at one of the leaves the reads below are taken from: `queued` (no event yet), `build`
@@ -158,7 +158,7 @@ const laneWithNoUiArm = () => {
 		machine: {
 			states: Record<
 				string,
-				{states: Record<string, {states: Record<string, {on: Record<string, unknown>}>}>}
+				{ states: Record<string, { states: Record<string, { on: Record<string, unknown> }> }> }
 			>;
 		};
 	};
@@ -178,8 +178,8 @@ const pull = (overrides: Record<string, unknown> = {}): HttpReply =>
 	served({
 		number: 4318,
 		state: "open",
-		head: {sha: HEAD},
-		base: {ref: "main"},
+		head: { sha: HEAD },
+		base: { ref: "main" },
 		body: "Fixes #5747\n\n## Deviations\nNone.\n",
 		changed_files: 1,
 		comments: 1,
@@ -188,13 +188,13 @@ const pull = (overrides: Record<string, unknown> = {}): HttpReply =>
 	});
 
 const comments = (
-	...rows: ReadonlyArray<{id: number; body: string; createdAt?: string}>
+	...rows: ReadonlyArray<{ id: number; body: string; createdAt?: string }>
 ): HttpReply =>
 	served(
 		rows.map((row) => ({
 			id: row.id,
 			body: row.body,
-			user: {login: "agent"},
+			user: { login: "agent" },
 			created_at: row.createdAt ?? "2026-08-16T03:00:00Z",
 			updated_at: row.createdAt ?? "2026-08-16T03:00:00Z",
 		})),
@@ -210,7 +210,7 @@ const issueFields = {
 };
 
 const issue = (labels: ReadonlyArray<string>): HttpReply =>
-	served({...issueFields, labels: labels.map((name) => ({name}))});
+	served({ ...issueFields, labels: labels.map((name) => ({ name })) });
 
 const run = (
 	fs: ReturnType<typeof fakeFs>,
@@ -230,7 +230,7 @@ const run = (
 				pr,
 				repo: null,
 				cwd: "/repo",
-				env: {CLAUDE_PIPELINE_REPO: "o/r"},
+				env: { CLAUDE_PIPELINE_REPO: "o/r" },
 			}),
 			Layer.mergeAll(fs.layer, seams.layer),
 		),
@@ -251,7 +251,7 @@ describe("lane prove — the two events that carry a claim", () => {
 			proof: "proven",
 			event: "DONE",
 			issue: 5747,
-			evidence: {kind: "open-pull", pr: 4318},
+			evidence: { kind: "open-pull", pr: 4318 },
 		});
 		// A `SHIPPED-PR` stands on a pull request, so it takes the `done:diagnosis` fallthrough and
 		// still folds to `review`.
@@ -263,8 +263,8 @@ describe("lane prove — the two events that carry a claim", () => {
 			[CLOSERS, closingPulls()],
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
-			[FILES, served([{filename: "packages/fabrika-cli/src/lane/prove.ts"}])],
-			[PR_COMMENTS, comments({id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`})],
+			[FILES, served([{ filename: "packages/fabrika-cli/src/lane/prove.ts" }])],
+			[PR_COMMENTS, comments({ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` })],
 		]);
 
 		const out = await run(laneAt("review"), seams, "PASS");
@@ -272,7 +272,7 @@ describe("lane prove — the two events that carry a claim", () => {
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			proof: "proven",
-			evidence: {kind: "head-verdicts", pr: 4318, head: HEAD},
+			evidence: { kind: "head-verdicts", pr: 4318, head: HEAD },
 		});
 	});
 });
@@ -291,9 +291,9 @@ describe("lane prove — a verdict older than the issue's newest ruling", () => 
 
 	/** The roster the author gate resolves once a conforming marker is standing on the issue. */
 	const ROSTER: ReadonlyArray<Scripted> = [
-		[TRUNK, served({default_branch: "main"})],
-		[CODEOWNERS, {status: 200, body: "/packages/fabrika-cli/ @o/control-plane\n"}],
-		[MEMBERS, served([{login: RULER}])],
+		[TRUNK, served({ default_branch: "main" })],
+		[CODEOWNERS, { status: 200, body: "/packages/fabrika-cli/ @o/control-plane\n" }],
+		[MEMBERS, served([{ login: RULER }])],
 	];
 
 	const RULING_URL = `https://github.com/${REPO}/issues/5747#issuecomment-900001`;
@@ -306,7 +306,7 @@ describe("lane prove — a verdict older than the issue's newest ruling", () => 
 			{
 				id: 900002,
 				body: rulingMarker(at),
-				user: {login: author},
+				user: { login: author },
 				created_at: at,
 				updated_at: at,
 			},
@@ -317,7 +317,7 @@ describe("lane prove — a verdict older than the issue's newest ruling", () => 
 			{
 				id: 1,
 				body: `review-code: PASS @ ${HEAD} — merge-ready`,
-				user: {login: "agent"},
+				user: { login: "agent" },
 				created_at: stamp,
 				updated_at: stamp,
 			},
@@ -327,7 +327,7 @@ describe("lane prove — a verdict older than the issue's newest ruling", () => 
 		[CLOSERS, closingPulls()],
 		[SEARCH, nominated(4318)],
 		[PULL, pull()],
-		[FILES, served([{filename: "packages/fabrika-cli/src/lane/prove.ts"}])],
+		[FILES, served([{ filename: "packages/fabrika-cli/src/lane/prove.ts" }])],
 		[PR_COMMENTS, passAt(verdictStamp)],
 		[ISSUE_COMMENTS, rulings],
 		...ROSTER,
@@ -348,7 +348,7 @@ describe("lane prove — a verdict older than the issue's newest ruling", () => 
 		const out = await run(laneAt("review"), seams, "PASS");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({proof: "proven"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ proof: "proven" });
 	});
 
 	/**
@@ -359,11 +359,17 @@ describe("lane prove — a verdict older than the issue's newest ruling", () => 
 		const at = "2026-08-16T04:00:00Z";
 		const later = "2026-08-16T04:30:00Z";
 		const page = served([
-			{id: 900002, body: rulingMarker(at), user: {login: RULER}, created_at: at, updated_at: at},
+			{
+				id: 900002,
+				body: rulingMarker(at),
+				user: { login: RULER },
+				created_at: at,
+				updated_at: at,
+			},
 			{
 				id: 900010,
 				body: "Changed my mind: take the other fork.",
-				user: {login: RULER},
+				user: { login: RULER },
 				created_at: later,
 				updated_at: later,
 			},
@@ -373,7 +379,7 @@ describe("lane prove — a verdict older than the issue's newest ruling", () => 
 		const out = await run(laneAt("review"), seams, "PASS");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({proof: "proven"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ proof: "proven" });
 		expect(out.stderr.join("\n")).toContain(
 			`1 comment(s) by a control-plane account on #5747 are newer than the newest standing ruling and carry no ruling marker: https://github.com/${REPO}/issues/5747#issuecomment-900010`,
 		);
@@ -415,8 +421,8 @@ describe("lane prove — a verdict older than the issue's newest ruling", () => 
 describe("lane prove — a reviewer's park, refused only by a FAIL that still binds", () => {
 	/** The 5661 diff's own shape: a skill file and a package file, so all three namespaces derive. */
 	const FIVE_SIX_SIX_ONE = served([
-		{filename: ".claude/skills/review/SKILL.md"},
-		{filename: "packages/fabrika-cli/src/lane/prove.ts"},
+		{ filename: ".claude/skills/review/SKILL.md" },
+		{ filename: "packages/fabrika-cli/src/lane/prove.ts" },
 	]);
 
 	it("refuses the park that lane recorded, naming every FAIL that still binds at the head", async () => {
@@ -428,9 +434,9 @@ describe("lane prove — a reviewer's park, refused only by a FAIL that still bi
 			[
 				PR_COMMENTS,
 				comments(
-					{id: 1, body: `governance: FAIL @ ${HEAD} — contradicts an ADR`},
-					{id: 2, body: `review-code: FAIL @ ${HEAD} — criteria unmet`},
-					{id: 3, body: `review-skill: FAIL @ ${HEAD} — criteria unmet`},
+					{ id: 1, body: `governance: FAIL @ ${HEAD} — contradicts an ADR` },
+					{ id: 2, body: `review-code: FAIL @ ${HEAD} — criteria unmet` },
+					{ id: 3, body: `review-skill: FAIL @ ${HEAD} — criteria unmet` },
 				),
 			],
 		]);
@@ -448,7 +454,7 @@ describe("lane prove — a reviewer's park, refused only by a FAIL that still bi
 		const seams = seamsWith([
 			[CLOSERS, closingPulls()],
 			[SEARCH, nominated(4318)],
-			[PULL, pull({comments: 0})],
+			[PULL, pull({ comments: 0 })],
 			[FILES, FIVE_SIX_SIX_ONE],
 			[PR_COMMENTS, comments()],
 		]);
@@ -459,7 +465,7 @@ describe("lane prove — a reviewer's park, refused only by a FAIL that still bi
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			proof: "uncontradicted",
 			event: "BLOCKED",
-			evidence: {kind: "park", pr: 4318},
+			evidence: { kind: "park", pr: 4318 },
 		});
 	});
 
@@ -514,12 +520,12 @@ describe("lane prove — a reviewer's park, refused only by a FAIL that still bi
 		const out = await run(laneAt("build"), seamsWith([]), "BLOCKED");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({proof: "not-required", state: "build"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ proof: "not-required", state: "build" });
 	});
 });
 
 describe("lane prove — the ui class, derived exactly as `ship scope` derives it", () => {
-	const UI_FILE = served([{filename: "apps/site/src/routes/page.tsx"}]);
+	const UI_FILE = served([{ filename: "apps/site/src/routes/page.tsx" }]);
 
 	/**
 	 * The deadlock this floor closed. This `PASS` **is** the arm into `review:ui`, so requiring
@@ -532,14 +538,14 @@ describe("lane prove — the ui class, derived exactly as `ship scope` derives i
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
 			[FILES, UI_FILE],
-			[PR_COMMENTS, comments({id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`})],
+			[PR_COMMENTS, comments({ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` })],
 		]);
 
 		const out = await run(laneAt("review"), seams, "PASS", ["ui"]);
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).evidence).toMatchObject({
-			namespaces: [{namespace: "review-code", state: "pass", commentId: 1}],
+			namespaces: [{ namespace: "review-code", state: "pass", commentId: 1 }],
 			deferred: ["review-ui"],
 		});
 		expect(out.stderr.join("\n")).toContain(
@@ -558,7 +564,7 @@ describe("lane prove — the ui class, derived exactly as `ship scope` derives i
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
 			[FILES, UI_FILE],
-			[PR_COMMENTS, comments({id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`})],
+			[PR_COMMENTS, comments({ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` })],
 		]);
 
 		const out = await run(laneAt("review"), seams, "PASS");
@@ -579,7 +585,7 @@ describe("lane prove — the ui class, derived exactly as `ship scope` derives i
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
 			[FILES, UI_FILE],
-			[PR_COMMENTS, comments({id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`})],
+			[PR_COMMENTS, comments({ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` })],
 		]);
 
 		const out = await run(laneWithNoUiArm(), seams, "PASS", ["ui"]);
@@ -595,7 +601,7 @@ describe("lane prove — the ui class, derived exactly as `ship scope` derives i
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
 			[FILES, UI_FILE],
-			[PR_COMMENTS, comments({id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`})],
+			[PR_COMMENTS, comments({ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` })],
 		]);
 
 		const out = await run(laneAt("review:ui"), seams, "PASS");
@@ -613,8 +619,8 @@ describe("lane prove — the ui class, derived exactly as `ship scope` derives i
 			[
 				PR_COMMENTS,
 				comments(
-					{id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`},
-					{id: 2, body: evidenced(`review-ui: PASS @ ${HEAD} — the four pillars hold`)},
+					{ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` },
+					{ id: 2, body: evidenced(`review-ui: PASS @ ${HEAD} — the four pillars hold`) },
 				),
 			],
 			...evidenceOpens(REPO, 2),
@@ -624,8 +630,8 @@ describe("lane prove — the ui class, derived exactly as `ship scope` derives i
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).evidence.namespaces).toEqual([
-			{namespace: "review-code", state: "pass", commentId: 1},
-			{namespace: "review-ui", state: "pass", commentId: 2},
+			{ namespace: "review-code", state: "pass", commentId: 1 },
+			{ namespace: "review-ui", state: "pass", commentId: 2 },
 		]);
 	});
 
@@ -640,7 +646,7 @@ describe("lane prove — the ui class, derived exactly as `ship scope` derives i
 				[FILES, UI_FILE],
 				[
 					PR_COMMENTS,
-					comments({id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`}, {id: 2, body}),
+					comments({ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` }, { id: 2, body }),
 				],
 				...http,
 			]);
@@ -688,15 +694,15 @@ describe("lane prove — the ui class, derived exactly as `ship scope` derives i
 			[CLOSERS, closingPulls()],
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
-			[FILES, served([{filename: "apps/site/src/routes/page.test.tsx"}])],
-			[PR_COMMENTS, comments({id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`})],
+			[FILES, served([{ filename: "apps/site/src/routes/page.test.tsx" }])],
+			[PR_COMMENTS, comments({ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` })],
 		]);
 
 		const out = await run(laneAt("review"), seams, "PASS");
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).evidence.namespaces).toEqual([
-			{namespace: "review-code", state: "pass", commentId: 1},
+			{ namespace: "review-code", state: "pass", commentId: 1 },
 		]);
 		expect(JSON.parse(out.stdout).evidence.deferred).toEqual([]);
 	});
@@ -709,7 +715,7 @@ describe("lane prove — the ui class, derived exactly as `ship scope` derives i
 	 *
 	 * @ruling https://github.com/kamp-us/phoenix/issues/9169#issuecomment-5688656577
 	 */
-	const TEXT_ONLY = served([{filename: "packages/fabrika-cli/src/lane/prove.ts"}]);
+	const TEXT_ONLY = served([{ filename: "packages/fabrika-cli/src/lane/prove.ts" }]);
 
 	const uiStampedInReview = () =>
 		fakeFs({
@@ -725,7 +731,7 @@ describe("lane prove — the ui class, derived exactly as `ship scope` derives i
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
 			[FILES, TEXT_ONLY],
-			[PR_COMMENTS, comments({id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`})],
+			[PR_COMMENTS, comments({ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` })],
 		]);
 
 		const out = await run(uiStampedInReview(), seams, "PASS");
@@ -745,14 +751,14 @@ describe("lane prove — the ui class, derived exactly as `ship scope` derives i
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
 			[FILES, TEXT_ONLY],
-			[PR_COMMENTS, comments({id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`})],
+			[PR_COMMENTS, comments({ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` })],
 		]);
 
 		const out = await run(uiStampedInReview(), seams, "PASS", ["code"]);
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).evidence.namespaces).toEqual([
-			{namespace: "review-code", state: "pass", commentId: 1},
+			{ namespace: "review-code", state: "pass", commentId: 1 },
 		]);
 		expect(JSON.parse(out.stdout).evidence.deferred).toEqual([]);
 	});
@@ -766,7 +772,7 @@ describe("lane prove — the ui class, derived exactly as `ship scope` derives i
 			[
 				PR_COMMENTS,
 				comments(
-					{id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`},
+					{ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` },
 					{
 						id: 2,
 						body: `routed-elsewhere: review-ui @ ${HEAD} — nothing rendered changes`,
@@ -779,8 +785,8 @@ describe("lane prove — the ui class, derived exactly as `ship scope` derives i
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).evidence.namespaces).toEqual([
-			{namespace: "review-code", state: "pass", commentId: 1},
-			{namespace: "review-ui", state: "routed", commentId: 2},
+			{ namespace: "review-code", state: "pass", commentId: 1 },
+			{ namespace: "review-ui", state: "routed", commentId: 2 },
 		]);
 		expect(out.stderr.join("\n")).toContain("is routed rather than judged");
 		// The route is disclosed rather than left for a later reader to re-derive off the board:
@@ -798,8 +804,8 @@ describe("lane prove — the ui class, derived exactly as `ship scope` derives i
 			[
 				PR_COMMENTS,
 				comments(
-					{id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`},
-					{id: 2, body: evidenced(`review-ui: PASS @ ${HEAD} — the render is right`)},
+					{ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` },
+					{ id: 2, body: evidenced(`review-ui: PASS @ ${HEAD} — the render is right`) },
 				),
 			],
 			...evidenceOpens(REPO, 2),
@@ -820,7 +826,7 @@ describe("lane prove — the ui class, derived exactly as `ship scope` derives i
 			[
 				PR_COMMENTS,
 				comments(
-					{id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`},
+					{ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` },
 					{
 						id: 2,
 						body: `routed-elsewhere: review-ui @ ${HEAD} — nothing rendered changes`,
@@ -889,7 +895,7 @@ describe("lane prove — the refusals, each on its own remedy", () => {
 		const out = await run(laneAt("build:ui"), seams, "DONE");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({proof: "proven", event: "DONE", issue: 5747});
+		expect(JSON.parse(out.stdout)).toMatchObject({ proof: "proven", event: "DONE", issue: 5747 });
 	});
 
 	it("refuses a build DONE when several open PRs link the issue", async () => {
@@ -897,7 +903,7 @@ describe("lane prove — the refusals, each on its own remedy", () => {
 			[CLOSERS, closingPulls()],
 			[SEARCH, nominated(4318, 4319)],
 			[PULL, pull()],
-			[/^GET .*\/repos\/o\/r\/pulls\/4319$/, pull({number: 4319})],
+			[/^GET .*\/repos\/o\/r\/pulls\/4319$/, pull({ number: 4319 })],
 		]);
 
 		const out = await run(laneAt("build"), seams, "DONE");
@@ -911,8 +917,8 @@ describe("lane prove — the refusals, each on its own remedy", () => {
 			[CLOSERS, closingPulls()],
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
-			[FILES, served([{filename: ".claude/skills/operate/SKILL.md"}])],
-			[PR_COMMENTS, comments({id: 1, body: `review-skill: PASS @ ${HEAD} — reads clean`})],
+			[FILES, served([{ filename: ".claude/skills/operate/SKILL.md" }])],
+			[PR_COMMENTS, comments({ id: 1, body: `review-skill: PASS @ ${HEAD} — reads clean` })],
 		]);
 
 		const out = await run(laneAt("review"), seams, "PASS");
@@ -949,7 +955,7 @@ describe("lane prove — the §CP advisory carrier", () => {
 	const CONFIG = /^GET \S+\/repos\/o\/r\/contents\/\.fabrika\.jsonc\?ref=main$/;
 	const advisory = (rows = ""): string =>
 		`review-code: advisory — merge stays human-gated\n${rows}\nReviewed-head: @ ${HEAD}\n`;
-	const codeFile = served([{filename: "packages/fabrika-cli/src/lane/prove.ts"}]);
+	const codeFile = served([{ filename: "packages/fabrika-cli/src/lane/prove.ts" }]);
 
 	it("proves a review PASS carried by an advisory when the diff classifies control-plane", async () => {
 		const seams = seamsWith([
@@ -957,8 +963,8 @@ describe("lane prove — the §CP advisory carrier", () => {
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
 			[FILES, codeFile],
-			[PR_COMMENTS, comments({id: 1, body: advisory()})],
-			[CODEOWNERS, {status: 200, body: "/packages/fabrika-cli/ @acme/control-plane\n"}],
+			[PR_COMMENTS, comments({ id: 1, body: advisory() })],
+			[CODEOWNERS, { status: 200, body: "/packages/fabrika-cli/ @acme/control-plane\n" }],
 		]);
 
 		const out = await run(laneAt("review"), seams, "PASS");
@@ -966,7 +972,7 @@ describe("lane prove — the §CP advisory carrier", () => {
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			proof: "proven",
-			evidence: {kind: "head-verdicts", pr: 4318, head: HEAD},
+			evidence: { kind: "head-verdicts", pr: 4318, head: HEAD },
 		});
 		expect(out.stderr.join("\n")).toContain("advisory-carried");
 	});
@@ -977,8 +983,8 @@ describe("lane prove — the §CP advisory carrier", () => {
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
 			[FILES, codeFile],
-			[PR_COMMENTS, comments({id: 1, body: advisory()})],
-			[CODEOWNERS, {status: 200, body: "/claude-plugins/ @acme/control-plane\n"}],
+			[PR_COMMENTS, comments({ id: 1, body: advisory() })],
+			[CODEOWNERS, { status: 200, body: "/claude-plugins/ @acme/control-plane\n" }],
 		]);
 
 		const out = await run(laneAt("review"), seams, "PASS");
@@ -994,8 +1000,8 @@ describe("lane prove — the §CP advisory carrier", () => {
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
 			[FILES, codeFile],
-			[PR_COMMENTS, comments({id: 1, body: advisory("\n- [FAIL] the guard is bypassed\n")})],
-			[CODEOWNERS, {status: 200, body: "/packages/fabrika-cli/ @acme/control-plane\n"}],
+			[PR_COMMENTS, comments({ id: 1, body: advisory("\n- [FAIL] the guard is bypassed\n") })],
+			[CODEOWNERS, { status: 200, body: "/packages/fabrika-cli/ @acme/control-plane\n" }],
 		]);
 
 		const out = await run(laneAt("review"), seams, "PASS");
@@ -1011,8 +1017,8 @@ describe("lane prove — the §CP advisory carrier", () => {
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
 			[FILES, codeFile],
-			[PR_COMMENTS, comments({id: 1, body: stale})],
-			[CODEOWNERS, {status: 200, body: "/packages/fabrika-cli/ @acme/control-plane\n"}],
+			[PR_COMMENTS, comments({ id: 1, body: stale })],
+			[CODEOWNERS, { status: 200, body: "/packages/fabrika-cli/ @acme/control-plane\n" }],
 		]);
 
 		const out = await run(laneAt("review"), seams, "PASS");
@@ -1027,8 +1033,8 @@ describe("lane prove — the §CP advisory carrier", () => {
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
 			[FILES, codeFile],
-			[PR_COMMENTS, comments({id: 1, body: advisory()})],
-			[CODEOWNERS, {status: 502, body: '{"message":"Bad Gateway"}'}],
+			[PR_COMMENTS, comments({ id: 1, body: advisory() })],
+			[CODEOWNERS, { status: 502, body: '{"message":"Bad Gateway"}' }],
 		]);
 
 		const out = await run(laneAt("review"), seams, "PASS");
@@ -1043,9 +1049,9 @@ describe("lane prove — the §CP advisory carrier", () => {
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
 			[FILES, codeFile],
-			[PR_COMMENTS, comments({id: 1, body: advisory()})],
-			[CODEOWNERS, {status: 502, body: '{"message":"Bad Gateway"}'}],
-			[CONFIG, {status: 200, body: '{"unreadableCodeowners": "ship"}'}],
+			[PR_COMMENTS, comments({ id: 1, body: advisory() })],
+			[CODEOWNERS, { status: 502, body: '{"message":"Bad Gateway"}' }],
+			[CONFIG, { status: 200, body: '{"unreadableCodeowners": "ship"}' }],
 		]);
 
 		const out = await run(laneAt("review"), seams, "PASS");
@@ -1059,7 +1065,7 @@ describe("lane prove — the §CP advisory carrier", () => {
 			[SEARCH, nominated(4318)],
 			[PULL, pull()],
 			[FILES, codeFile],
-			[PR_COMMENTS, comments({id: 1, body: "looks good to me"})],
+			[PR_COMMENTS, comments({ id: 1, body: "looks good to me" })],
 		]);
 
 		const out = await run(laneAt("review"), seams, "PASS");
@@ -1075,7 +1081,7 @@ describe("lane prove — the §CP advisory carrier", () => {
  * `lane brief` and this read cannot disagree about whether the review has a subject.
  */
 describe("lane prove — a review rewind, earned only when no open PR links the open issue", () => {
-	const REPOINTED = pull({body: "Fixes #9909\n\nRelates to #5747, but does not fix it.\n"});
+	const REPOINTED = pull({ body: "Fixes #9909\n\nRelates to #5747, but does not fix it.\n" });
 	const OPEN: Scripted = [ISSUE, issue([])];
 
 	it("proves the rewind out of review when the only candidate now links another issue", async () => {
@@ -1094,7 +1100,7 @@ describe("lane prove — a review rewind, earned only when no open PR links the 
 			proof: "proven",
 			event: "WIP",
 			issue: 5747,
-			evidence: {kind: "no-linking-pull", scanned: 1},
+			evidence: { kind: "no-linking-pull", scanned: 1 },
 		});
 	});
 
@@ -1106,7 +1112,7 @@ describe("lane prove — a review rewind, earned only when no open PR links the 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			proof: "proven",
-			evidence: {kind: "no-linking-pull", scanned: 0},
+			evidence: { kind: "no-linking-pull", scanned: 0 },
 		});
 	});
 
@@ -1135,7 +1141,7 @@ describe("lane prove — a review rewind, earned only when no open PR links the 
 
 	it("refuses the rewind over a closed issue, pointing at lane settle — a hand merge leaves no open PR too", async () => {
 		const seams = seamsWith([
-			[ISSUE, served({...JSON.parse(issue([]).body), state: "closed"})],
+			[ISSUE, served({ ...JSON.parse(issue([]).body), state: "closed" })],
 			[CLOSERS, closingPulls()],
 			[SEARCH, nominated()],
 		]);
@@ -1185,7 +1191,7 @@ describe("lane prove — the walk question, asked before the claim", () => {
 		const out = await run(laneAt("review"), seams, "ISSUE.PASS");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({proof: "not-walkable", event: "ISSUE.PASS"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ proof: "not-walkable", event: "ISSUE.PASS" });
 		expect(seams.log).toEqual([]);
 	});
 
@@ -1195,7 +1201,7 @@ describe("lane prove — the walk question, asked before the claim", () => {
 		const out = await run(laneAt("review"), seams, "BANANA");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({proof: "not-walkable", event: "BANANA"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ proof: "not-walkable", event: "BANANA" });
 		expect(seams.log).toEqual([]);
 	});
 
@@ -1205,7 +1211,7 @@ describe("lane prove — the walk question, asked before the claim", () => {
 		const out = await run(laneAt("queued"), seams, "WIP");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({proof: "not-required", state: "queued"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ proof: "not-required", state: "queued" });
 		expect(seams.log).toEqual([]);
 	});
 });
@@ -1218,7 +1224,7 @@ describe("lane prove — what it does not claim, and what it never writes", () =
 		const out = await run(fs, seams, "BLOCKED");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({proof: "not-required", state: "build"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ proof: "not-required", state: "build" });
 		expect(seams.log).toEqual([]);
 	});
 
@@ -1229,7 +1235,7 @@ describe("lane prove — what it does not claim, and what it never writes", () =
 			[ISSUE, issue(["type:bug"])],
 			[
 				ISSUE_COMMENTS,
-				comments({id: 900, body: "the loader races the fold", createdAt: "2026-08-16T04:00:00Z"}),
+				comments({ id: 900, body: "the loader races the fold", createdAt: "2026-08-16T04:00:00Z" }),
 			],
 		]);
 
@@ -1238,7 +1244,7 @@ describe("lane prove — what it does not claim, and what it never writes", () =
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			proof: "proven",
-			evidence: {kind: "diagnosis", commentId: 900},
+			evidence: { kind: "diagnosis", commentId: 900 },
 		});
 		// The routing fact `lane report` relays onto the line, and the machine's `done:diagnosis` arm
 		// reads: this arm is the only one that answers it, so nothing a shell reports can set it.
@@ -1250,7 +1256,7 @@ describe("lane prove — what it does not claim, and what it never writes", () =
 			[CLOSERS, closingPulls()],
 			[SEARCH, nominated()],
 			[ISSUE, issue(["type:bug"])],
-			[ISSUE_COMMENTS, comments({id: 900, body: "triaged", createdAt: "2026-08-16T00:30:00Z"})],
+			[ISSUE_COMMENTS, comments({ id: 900, body: "triaged", createdAt: "2026-08-16T00:30:00Z" })],
 		]);
 
 		const out = await run(laneAt("build"), seams, "DONE");
@@ -1289,7 +1295,7 @@ const epicWorkflowText = (): string =>
 	readGoldenFixture(import.meta.url, "./__fixtures__/epic-4300.workflow.golden.txt");
 
 const epicLine = (task: string, event: string, at: string): string =>
-	`${JSON.stringify({task, event: `${task.toUpperCase()}.${event}`, at})}\n`;
+	`${JSON.stringify({ task, event: `${task.toUpperCase()}.${event}`, at })}\n`;
 
 /** One child's whole local loop: build, review, then the integrate that lands its range. */
 const landed = (child: number, hour: number): string =>
@@ -1335,7 +1341,7 @@ const runEpic = (
 				pr: null,
 				repo: null,
 				cwd: "/repo",
-				env: {CLAUDE_PIPELINE_REPO: "o/r"},
+				env: { CLAUDE_PIPELINE_REPO: "o/r" },
 			}),
 			Layer.mergeAll(fs.layer, seams.layer),
 		),
@@ -1427,7 +1433,7 @@ describe("lane prove — an epic child's DONE stands on commits, never on a PR",
 				kind: "range-commits",
 				epic: 4300,
 				branch: CHILD_BRANCH,
-				range: {base: EPIC_BASE, tip: CHILD_TIP},
+				range: { base: EPIC_BASE, tip: CHILD_TIP },
 				commits: 1,
 				naming: 1,
 			},
@@ -1452,7 +1458,7 @@ describe("lane prove — an epic child's DONE stands on commits, never on a PR",
 		const out = await runEpic(epicLaneAt("build"), seams, "DONE", "issue_4301");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout).evidence).toMatchObject({commits: 2, naming: 1});
+		expect(JSON.parse(out.stdout).evidence).toMatchObject({ commits: 2, naming: 1 });
 		expect(out.stderr.join("\n")).toContain("adds 2 commit(s), 1 of them naming #4301");
 	});
 
@@ -1474,7 +1480,7 @@ describe("lane prove — an epic child's DONE stands on commits, never on a PR",
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).evidence).toMatchObject({
-			range: {base: FORK, tip: CHILD_TIP},
+			range: { base: FORK, tip: CHILD_TIP },
 			commits: 1,
 			naming: 1,
 		});
@@ -1493,7 +1499,9 @@ describe("lane prove — an epic child's DONE stands on commits, never on a PR",
 		const out = await runEpic(epicLaneAt("build"), seams, "DONE", "issue_4301");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout).evidence).toMatchObject({range: {base: FORK, tip: CHILD_TIP}});
+		expect(JSON.parse(out.stdout).evidence).toMatchObject({
+			range: { base: FORK, tip: CHILD_TIP },
+		});
 		expect(seams.calls.some((line) => line.includes(`${FORK}..${CHILD_TIP}`))).toBe(true);
 		expect(seams.calls.some((line) => ANCESTRY.test(line))).toBe(false);
 	});
@@ -1575,28 +1583,28 @@ describe("lane prove — an epic child's DONE stands on commits, never on a PR",
 		const out = await runEpic(fs, seams, "DONE", "issue_4301");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({proof: "not-required", state: "integrate"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ proof: "not-required", state: "integrate" });
 		expect(seams.log).toEqual([]);
 	});
 });
 
 describe("lane prove — an epic child's PASS stands on a range verdict that still binds", () => {
-	const proving = (...comments: ReadonlyArray<{id: number; body: string}>) =>
+	const proving = (...comments: ReadonlyArray<{ id: number; body: string }>) =>
 		seamsWith([...locating(), [RAW, okOut(CHILD_RAW)], [CHILD_COMMENTS, comments_(comments)]]);
 
-	const comments_ = (rows: ReadonlyArray<{id: number; body: string}>): HttpReply =>
+	const comments_ = (rows: ReadonlyArray<{ id: number; body: string }>): HttpReply =>
 		served(
 			rows.map((row) => ({
 				id: row.id,
 				body: row.body,
-				user: {login: "agent"},
+				user: { login: "agent" },
 				created_at: "2026-08-16T03:00:00Z",
 				updated_at: "2026-08-16T03:00:00Z",
 			})),
 		);
 
 	it("proves a child PASS whose verdict binds the content this range carries now", async () => {
-		const seams = proving({id: 1, body: rangeMarker("PASS", CHILD_DIGEST)});
+		const seams = proving({ id: 1, body: rangeMarker("PASS", CHILD_DIGEST) });
 
 		const out = await runEpic(epicLaneAt("review"), seams, "PASS", "issue_4301");
 
@@ -1605,7 +1613,7 @@ describe("lane prove — an epic child's PASS stands on a range verdict that sti
 			proof: "proven",
 			event: "PASS",
 			issue: 4301,
-			evidence: {kind: "range-verdicts", epic: 4300, content: CHILD_DIGEST},
+			evidence: { kind: "range-verdicts", epic: 4300, content: CHILD_DIGEST },
 		});
 	});
 
@@ -1622,21 +1630,21 @@ describe("lane prove — an epic child's PASS stands on a range verdict that sti
 			[new RegExp(`^git merge-base ${EPIC_BEFORE} ${CHILD_TIP}$`), okOut(`${FORK}\n`)],
 			[LOG_RANGE, logOf([CHILD_TIP, CHILD_MESSAGE])],
 			[RAW, okOut(CHILD_RAW)],
-			[CHILD_COMMENTS, comments_([{id: 1, body: rangeMarker("PASS", CHILD_DIGEST)}])],
+			[CHILD_COMMENTS, comments_([{ id: 1, body: rangeMarker("PASS", CHILD_DIGEST) }])],
 		]);
 
 		const out = await runEpic(epicLaneAt("review"), seams, "PASS", "issue_4301");
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).evidence).toMatchObject({
-			range: {base: FORK, tip: CHILD_TIP},
+			range: { base: FORK, tip: CHILD_TIP },
 			content: CHILD_DIGEST,
 		});
 		expect(seams.calls.some((line) => RAW.test(line) && line.includes(FORK))).toBe(true);
 	});
 
 	it("refuses a child PASS with no verdict at all on the child issue", async () => {
-		const seams = proving({id: 1, body: "looks good to me"});
+		const seams = proving({ id: 1, body: "looks good to me" });
 
 		const out = await runEpic(epicLaneAt("review"), seams, "PASS", "issue_4301");
 
@@ -1659,7 +1667,7 @@ describe("lane prove — an epic child's PASS stands on a range verdict that sti
 		const out = await runEpic(epicLaneAt("review"), seams, "PASS", "issue_4301");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({proof: "proven", event: "PASS", issue: 4301});
+		expect(JSON.parse(out.stdout)).toMatchObject({ proof: "proven", event: "PASS", issue: 4301 });
 	});
 
 	it("still contradicts when the appended verdict is the FAIL and the archive holds the PASS", async () => {
@@ -1677,7 +1685,7 @@ describe("lane prove — an epic child's PASS stands on a range verdict that sti
 	});
 
 	it("refuses a child PASS whose verdict binds a digest the range has moved past", async () => {
-		const seams = proving({id: 1, body: rangeMarker("PASS", "2f1a9c4e0b7d")});
+		const seams = proving({ id: 1, body: rangeMarker("PASS", "2f1a9c4e0b7d") });
 
 		const out = await runEpic(epicLaneAt("review"), seams, "PASS", "issue_4301");
 
@@ -1699,7 +1707,7 @@ describe("lane prove — an epic child's PASS stands on a range verdict that sti
 	});
 
 	it("refuses a child PASS the child issue contradicts with a range FAIL", async () => {
-		const seams = proving({id: 1, body: rangeMarker("FAIL", CHILD_DIGEST)});
+		const seams = proving({ id: 1, body: rangeMarker("FAIL", CHILD_DIGEST) });
 
 		const out = await runEpic(epicLaneAt("review"), seams, "PASS", "issue_4301");
 
@@ -1708,7 +1716,7 @@ describe("lane prove — an epic child's PASS stands on a range verdict that sti
 	});
 
 	it("names a PR-scoped marker posted on the child issue instead of reading it as no verdict", async () => {
-		const seams = proving({id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`});
+		const seams = proving({ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` });
 
 		const out = await runEpic(epicLaneAt("review"), seams, "PASS", "issue_4301");
 
@@ -1716,11 +1724,11 @@ describe("lane prove — an epic child's PASS stands on a range verdict that sti
 		expect(out.stderr.join("\n")).toContain("is not a range one");
 	});
 
-	const governedBy = (...comments: ReadonlyArray<{id: number; body: string}>) =>
+	const governedBy = (...comments: ReadonlyArray<{ id: number; body: string }>) =>
 		seamsWith([...locating(), [RAW, okOut(GOVERNED_RAW)], [CHILD_COMMENTS, comments_(comments)]]);
 
 	it("refuses a child PASS whose range touches a governance root and carries no governance verdict", async () => {
-		const seams = governedBy({id: 1, body: rangeMarker("PASS", GOVERNED_DIGEST)});
+		const seams = governedBy({ id: 1, body: rangeMarker("PASS", GOVERNED_DIGEST) });
 
 		const out = await runEpic(epicLaneAt("review"), seams, "PASS", "issue_4301");
 
@@ -1732,7 +1740,7 @@ describe("lane prove — an epic child's PASS stands on a range verdict that sti
 
 	it("proves that same governed child PASS once the governance range verdict is on the issue", async () => {
 		const seams = governedBy(
-			{id: 1, body: rangeMarker("PASS", GOVERNED_DIGEST)},
+			{ id: 1, body: rangeMarker("PASS", GOVERNED_DIGEST) },
 			{
 				id: 2,
 				body: rangeMarker(
@@ -1749,11 +1757,11 @@ describe("lane prove — an epic child's PASS stands on a range verdict that sti
 
 		expect(out.code).toBe(0);
 		expect(
-			JSON.parse(out.stdout).evidence.namespaces.map((row: {namespace: string}) => row.namespace),
+			JSON.parse(out.stdout).evidence.namespaces.map((row: { namespace: string }) => row.namespace),
 		).toEqual(["review-code", "governance"]);
 	});
 
-	const uiRanged = (...comments: ReadonlyArray<{id: number; body: string}>) =>
+	const uiRanged = (...comments: ReadonlyArray<{ id: number; body: string }>) =>
 		seamsWith([...locating(), [RAW, okOut(UI_RAW)], [CHILD_COMMENTS, comments_(comments)]]);
 
 	/**
@@ -1764,13 +1772,13 @@ describe("lane prove — an epic child's PASS stands on a range verdict that sti
 	 * not dropped: it moves to the tail, whose one PR carries these same rendered files.
 	 */
 	it("proves a ui child's PASS with no review-ui verdict at child scope at all", async () => {
-		const seams = uiRanged({id: 1, body: rangeMarker("PASS", UI_DIGEST)});
+		const seams = uiRanged({ id: 1, body: rangeMarker("PASS", UI_DIGEST) });
 
 		const out = await runEpic(epicLaneAt("review"), seams, "PASS", "issue_4301");
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).evidence).toMatchObject({
-			namespaces: [{namespace: "review-code", state: "pass", commentId: 1}],
+			namespaces: [{ namespace: "review-code", state: "pass", commentId: 1 }],
 			deferred: ["review-ui"],
 		});
 		expect(out.stderr.join("\n")).toContain("derives review-code, review-ui");
@@ -1785,7 +1793,7 @@ describe("lane prove — an epic child's PASS stands on a range verdict that sti
 	it("reads no review-ui record at child scope, current or stale, because it is the tail's", async () => {
 		for (const at of [CHILD_TIP, EPIC_BASE]) {
 			const seams = uiRanged(
-				{id: 1, body: rangeMarker("PASS", UI_DIGEST)},
+				{ id: 1, body: rangeMarker("PASS", UI_DIGEST) },
 				{
 					id: 2,
 					body: `routed-elsewhere: review-ui @ ${at} — nothing this range touches renders differently`,
@@ -1796,7 +1804,7 @@ describe("lane prove — an epic child's PASS stands on a range verdict that sti
 
 			expect(out.code).toBe(0);
 			expect(JSON.parse(out.stdout).evidence.namespaces).toEqual([
-				{namespace: "review-code", state: "pass", commentId: 1},
+				{ namespace: "review-code", state: "pass", commentId: 1 },
 			]);
 			expect(out.stderr.join("\n")).not.toContain("is routed rather than judged");
 		}
@@ -1804,7 +1812,7 @@ describe("lane prove — an epic child's PASS stands on a range verdict that sti
 
 	/** A child whose range renders nothing derives no `review-ui` to subtract. */
 	it("defers nothing on a child whose range raises no ui class", async () => {
-		const seams = proving({id: 1, body: rangeMarker("PASS", CHILD_DIGEST)});
+		const seams = proving({ id: 1, body: rangeMarker("PASS", CHILD_DIGEST) });
 
 		const out = await runEpic(epicLaneAt("review"), seams, "PASS", "issue_4301");
 
@@ -1828,9 +1836,9 @@ describe("lane prove — the epic tail keeps the PR arms", () => {
 		const seams = seamsWith([
 			[CLOSERS, closingPulls()],
 			[SEARCH, nominated(4318)],
-			[PULL, pull({body: "Fixes #4300\n\n## Deviations\nNone.\n"})],
-			[FILES, served([{filename: "packages/fabrika-cli/src/lane/prove.ts"}])],
-			[PR_COMMENTS, comments({id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`})],
+			[PULL, pull({ body: "Fixes #4300\n\n## Deviations\nNone.\n" })],
+			[FILES, served([{ filename: "packages/fabrika-cli/src/lane/prove.ts" }])],
+			[PR_COMMENTS, comments({ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` })],
 		]);
 
 		const out = await runEpic(epicLaneAt("tail"), seams, "PASS", "epic_4300");
@@ -1839,7 +1847,7 @@ describe("lane prove — the epic tail keeps the PR arms", () => {
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			proof: "proven",
 			issue: 4300,
-			evidence: {kind: "head-verdicts", pr: 4318, head: HEAD},
+			evidence: { kind: "head-verdicts", pr: 4318, head: HEAD },
 		});
 		expect(seams.calls.some((line) => BRANCHES.test(line))).toBe(false);
 	});
@@ -1853,9 +1861,9 @@ describe("lane prove — the epic tail keeps the PR arms", () => {
 		const seams = seamsWith([
 			[CLOSERS, closingPulls()],
 			[SEARCH, nominated(4318)],
-			[PULL, pull({body: "Fixes #4300\n\n## Deviations\nNone.\n"})],
-			[FILES, served([{filename: "apps/site/src/routes/page.tsx"}])],
-			[PR_COMMENTS, comments({id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`})],
+			[PULL, pull({ body: "Fixes #4300\n\n## Deviations\nNone.\n" })],
+			[FILES, served([{ filename: "apps/site/src/routes/page.tsx" }])],
+			[PR_COMMENTS, comments({ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` })],
 		]);
 
 		const out = await runEpic(epicLaneAt("tail"), seams, "PASS", "epic_4300");
@@ -1876,9 +1884,9 @@ describe("lane prove — the epic tail keeps the PR arms", () => {
 		const seams = seamsWith([
 			[CLOSERS, closingPulls()],
 			[SEARCH, nominated(4318)],
-			[PULL, pull({body: "Fixes #4300\n\n## Deviations\nNone.\n"})],
-			[FILES, served([{filename: "apps/site/src/routes/page.tsx"}])],
-			[PR_COMMENTS, comments({id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready`})],
+			[PULL, pull({ body: "Fixes #4300\n\n## Deviations\nNone.\n" })],
+			[FILES, served([{ filename: "apps/site/src/routes/page.tsx" }])],
+			[PR_COMMENTS, comments({ id: 1, body: `review-code: PASS @ ${HEAD} — merge-ready` })],
 		]);
 
 		const out = await Effect.runPromise(
@@ -1892,14 +1900,14 @@ describe("lane prove — the epic tail keeps the PR arms", () => {
 					pr: null,
 					repo: null,
 					cwd: "/repo",
-					env: {CLAUDE_PIPELINE_REPO: "o/r"},
+					env: { CLAUDE_PIPELINE_REPO: "o/r" },
 				}),
 				Layer.mergeAll(epicLaneAt("tail").layer, seams.layer),
 			),
 		);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout).evidence).toMatchObject({deferred: ["review-ui"]});
+		expect(JSON.parse(out.stdout).evidence).toMatchObject({ deferred: ["review-ui"] });
 	});
 });
 
@@ -1929,7 +1937,7 @@ describe("lane prove — the ship stage's closure, read off the PR the event nam
 	];
 
 	const merged = (body: string): HttpReply =>
-		pull({state: "closed", merged: true, body: `${body}\n\n## Deviations\nNone.\n`});
+		pull({ state: "closed", merged: true, body: `${body}\n\n## Deviations\nNone.\n` });
 
 	const PR_URL = "https://forge.example/o/r/pull/4318";
 
@@ -1939,7 +1947,11 @@ describe("lane prove — the ship stage's closure, read off the PR the event nam
 		const out = await run(shipLane(), seams, "DONE", null, PR_URL);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({issue: 5747, state: "ship", closure: "partial"});
+		expect(JSON.parse(out.stdout)).toMatchObject({
+			issue: 5747,
+			state: "ship",
+			closure: "partial",
+		});
 		expect(out.partial).toBe(true);
 		expect(out.landed).toEqual([4318]);
 	});
@@ -1948,16 +1960,16 @@ describe("lane prove — the ship stage's closure, read off the PR the event nam
 		const seams = seamsWith([
 			...blindNominator,
 			[PULL, merged("Fixes #5747")],
-			[ISSUE, served({...issueFields, state: "closed"})],
+			[ISSUE, served({ ...issueFields, state: "closed" })],
 		]);
 
 		const out = await run(shipLane(), seams, "DONE", null, PR_URL);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({closure: "closes", issueState: "closed"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ closure: "closes", issueState: "closed" });
 		expect(out.partial).toBe(false);
 		expect(out.landed).toEqual([4318]);
-		expect(out.closingMerge).toEqual({_tag: "Closed", issue: 5747});
+		expect(out.closingMerge).toEqual({ _tag: "Closed", issue: 5747 });
 	});
 
 	/**
@@ -1970,8 +1982,8 @@ describe("lane prove — the ship stage's closure, read off the PR the event nam
 		const out = await run(shipLane(), seams, "DONE", null, PR_URL);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({closure: "closes", issueState: "open"});
-		expect(out.closingMerge).toEqual({_tag: "Open", issue: 5747, merged: [4318]});
+		expect(JSON.parse(out.stdout)).toMatchObject({ closure: "closes", issueState: "open" });
+		expect(out.closingMerge).toEqual({ _tag: "Open", issue: 5747, merged: [4318] });
 	});
 
 	it("answers `unread` where the issue read fails, never folding it into closed", async () => {
@@ -1980,7 +1992,7 @@ describe("lane prove — the ship stage's closure, read off the PR the event nam
 		const out = await run(shipLane(), seams, "DONE", null, PR_URL);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({closure: "closes", issueState: "unread"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ closure: "closes", issueState: "unread" });
 		expect(out.closingMerge?._tag).toBe("Unread");
 	});
 
@@ -1999,7 +2011,7 @@ describe("lane prove — the ship stage's closure, read off the PR the event nam
 		const out = await run(shipLane(), seams, "DONE");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({closure: "unknown"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ closure: "unknown" });
 		expect(out.partial).toBe(null);
 		expect(out.landed).toEqual([]);
 	});
@@ -2015,7 +2027,7 @@ describe("lane prove — the ship stage's closure, read off the PR the event nam
 		const out = await run(shipLane(), seams, "DONE", null, PR_URL);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({closure: "unknown"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ closure: "unknown" });
 		expect(out.partial).toBe(null);
 		expect(out.landed).toEqual([]);
 	});
@@ -2023,7 +2035,7 @@ describe("lane prove — the ship stage's closure, read off the PR the event nam
 
 it("rechecks dispatched build evidence against captured build state after the ledger moved to review", async () => {
 	const snapshot = await Effect.runPromise(
-		loadLane({root: ROOT, lane: "5747"}).pipe(Effect.provide(laneAt("build").layer)),
+		loadLane({ root: ROOT, lane: "5747" }).pipe(Effect.provide(laneAt("build").layer)),
 	);
 	if (snapshot._tag !== "Loaded") throw new Error("fixture did not load");
 	const seams = seamsWith([

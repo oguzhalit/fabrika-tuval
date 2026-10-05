@@ -1,6 +1,6 @@
-import {readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import {assert, describe, it} from "@effect/vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { assert, describe, it } from "@effect/vitest";
 
 const ISSUE = 7162;
 const PR = 7180;

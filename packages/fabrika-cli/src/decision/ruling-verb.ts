@@ -4,16 +4,16 @@
  * `build claim` enforces admission from its own fresh read.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {badNumber, resolveTargetRepo} from "../build/target.ts";
-import {listComments} from "../io/issues.ts";
-import {controlPlaneRoster} from "../ship/roster.ts";
-import {READY_FOR_AGENT, READY_FOR_HUMAN} from "../triage/audience.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {bodyDigest} from "./digest.ts";
-import {requireRulable, scanRulings, stateOf} from "./ruling.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { badNumber, resolveTargetRepo } from "../build/target.ts";
+import { listComments } from "../io/issues.ts";
+import { controlPlaneRoster } from "../ship/roster.ts";
+import { READY_FOR_AGENT, READY_FOR_HUMAN } from "../triage/audience.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { bodyDigest } from "./digest.ts";
+import { requireRulable, scanRulings, stateOf } from "./ruling.ts";
 
 const VERB = "decision ruling";
 

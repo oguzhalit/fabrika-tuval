@@ -3,11 +3,11 @@
  * under Outside the bets, a person's Stage left standing, group rows summed, and a second run that
  * writes nothing. Its reads run a few at a time and still refuse whole.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeShell, unconfigured} from "../fakes.test-support.ts";
-import {fail} from "../io/git.ts";
-import {absent, present, unknown} from "../io/issues.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeShell, unconfigured } from "../fakes.test-support.ts";
+import { fail } from "../io/git.ts";
+import { absent, present, unknown } from "../io/issues.ts";
 import type {
 	FieldValue,
 	ItemFieldValue,
@@ -15,11 +15,11 @@ import type {
 	ProjectSnapshot,
 	ProjectsAnswer,
 } from "../io/projects.ts";
-import {emit, type Instant, type LaneRecord, type Origin} from "../wire/lane-record.ts";
-import {MALFORMED_RECORD, NO_TARGET, NOT_SET_UP, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {ORIGINS, STAGES} from "./shape.ts";
-import {spy} from "./spy.test-support.ts";
-import type {SyncNode} from "./sync.ts";
+import { emit, type Instant, type LaneRecord, type Origin } from "../wire/lane-record.ts";
+import { MALFORMED_RECORD, NO_TARGET, NOT_SET_UP, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { ORIGINS, STAGES } from "./shape.ts";
+import { spy } from "./spy.test-support.ts";
+import type { SyncNode } from "./sync.ts";
 import {
 	GRAPH_CAP,
 	type Located,
@@ -53,22 +53,22 @@ const selectField = (id: string, name: string, names: ReadonlyArray<string>) => 
 const PROJECT: ProjectSnapshot = {
 	id: "PVT_1",
 	number: 3,
-	owner: {kind: "Organization", login: "acme"},
+	owner: { kind: "Organization", login: "acme" },
 	url: "https://github.com/orgs/acme/projects/3",
 	title: "widgets table",
 	createdAt: "2026-01-01T00:00:00.000Z",
 	shortDescription: null,
 	readme: null,
 	fields: [
-		{_tag: "Plain", databaseId: 0, id: "F_title", name: "Title", dataType: "TITLE"},
+		{ _tag: "Plain", databaseId: 0, id: "F_title", name: "Title", dataType: "TITLE" },
 		selectField(
 			"F_stage",
 			"Stage",
 			STAGES.map((stage) => stage.name),
 		),
 		selectField("F_section", "Section", ["Tails", "Customers", "New bets", "Outside the bets"]),
-		{_tag: "Plain", databaseId: 0, id: "F_spent", name: "Spent $", dataType: "NUMBER"},
-		{_tag: "Plain", databaseId: 0, id: "F_asks", name: "Asks", dataType: "NUMBER"},
+		{ _tag: "Plain", databaseId: 0, id: "F_spent", name: "Spent $", dataType: "NUMBER" },
+		{ _tag: "Plain", databaseId: 0, id: "F_asks", name: "Asks", dataType: "NUMBER" },
 		selectField(
 			"F_origin",
 			"Origin",
@@ -87,7 +87,7 @@ interface IssueSpec {
 	readonly comments?: ReadonlyArray<string>;
 }
 
-type Value = {name: string; value: ItemFieldValue["value"]; creator: string; updatedAt: string};
+type Value = { name: string; value: ItemFieldValue["value"]; creator: string; updatedAt: string };
 
 interface FakeItem {
 	id: string;
@@ -105,15 +105,15 @@ const fieldName = (id: string): string =>
 const shownValue = (fieldId: string, value: FieldValue): ItemFieldValue["value"] => {
 	switch (value._tag) {
 		case "Option":
-			return {_tag: "Option", optionId: value.optionId, name: value.optionId.split(":")[1] ?? ""};
+			return { _tag: "Option", optionId: value.optionId, name: value.optionId.split(":")[1] ?? "" };
 		case "Number":
-			return {_tag: "Number", number: value.number};
+			return { _tag: "Number", number: value.number };
 		case "Text":
-			return {_tag: "Text", text: value.text};
+			return { _tag: "Text", text: value.text };
 		case "Date":
-			return {_tag: "Date", date: value.date};
+			return { _tag: "Date", date: value.date };
 		case "Iteration":
-			return {_tag: "Iteration", iterationId: value.iterationId, title: fieldId};
+			return { _tag: "Iteration", iterationId: value.iterationId, title: fieldId };
 	}
 };
 
@@ -125,7 +125,7 @@ const world = (
 		type?: ProjectItem["contentType"];
 		values?: Record<string, string | number>;
 	}> = [],
-	options: {merged?: ReadonlyArray<number>; project?: ProjectSnapshot | null} = {},
+	options: { merged?: ReadonlyArray<number>; project?: ProjectSnapshot | null } = {},
 ) => {
 	const items: FakeItem[] = rows.map((row, index) => ({
 		id: `PVTI_${index}`,
@@ -135,13 +135,13 @@ const world = (
 			const field = PROJECT.fields.find((f) => f.name === name);
 			const value: ItemFieldValue["value"] =
 				typeof raw === "number"
-					? {_tag: "Number", number: raw}
-					: {_tag: "Option", optionId: option(field?.id ?? name, raw), name: raw};
-			return {name, value, creator: HUMAN, updatedAt: "2026-09-25T00:00:00Z"};
+					? { _tag: "Number", number: raw }
+					: { _tag: "Option", optionId: option(field?.id ?? name, raw), name: raw };
+			return { name, value, creator: HUMAN, updatedAt: "2026-09-25T00:00:00Z" };
 		}),
 	}));
 	const writes: string[] = [];
-	const ok = <A>(value: A): ProjectsAnswer<A> => ({_tag: "Ok", value});
+	const ok = <A>(value: A): ProjectsAnswer<A> => ({ _tag: "Ok", value });
 	const nodeOf = (number: number): SyncNode | null => {
 		const spec = issues[number];
 		if (spec === undefined) return null;
@@ -167,8 +167,8 @@ const world = (
 			Effect.succeed(
 				ok<Located>(
 					options.project === null
-						? {_tag: "Refused", code: NO_TARGET, reason: "table sync: no table"}
-						: {_tag: "Located", project: options.project ?? PROJECT},
+						? { _tag: "Refused", code: NO_TARGET, reason: "table sync: no table" }
+						: { _tag: "Located", project: options.project ?? PROJECT },
 				),
 			),
 		items: () =>
@@ -201,13 +201,13 @@ const world = (
 				value: [...(issues[number]?.comments ?? []), ...(issues[number]?.records ?? []).map(emit)],
 			}),
 		merged: (_repo, pr) =>
-			Effect.succeed({_tag: "Ok" as const, value: (options.merged ?? []).includes(pr)}),
+			Effect.succeed({ _tag: "Ok" as const, value: (options.merged ?? []).includes(pr) }),
 		add: (_project, _repo, number) =>
 			Effect.sync(() => {
 				writes.push(`add #${number}`);
 				const existing = items.find((item) => item.number === number);
 				if (existing !== undefined) return ok(existing.id);
-				const item: FakeItem = {id: `PVTI_new_${number}`, number, type: "Issue", values: []};
+				const item: FakeItem = { id: `PVTI_new_${number}`, number, type: "Issue", values: [] };
 				items.push(item);
 				return ok(item.id);
 			}),
@@ -218,7 +218,7 @@ const world = (
 				writes.push(`set ${item.number} ${name}`);
 				item.values = [
 					...item.values.filter((v) => v.name !== name),
-					{name, value: shownValue(target.fieldId, value), creator: BOT, updatedAt: clock()},
+					{ name, value: shownValue(target.fieldId, value), creator: BOT, updatedAt: clock() },
 				];
 				return ok(item.id);
 			}),
@@ -241,13 +241,13 @@ const world = (
 			]),
 		);
 	};
-	return {board, items, writes, valuesOf};
+	return { board, items, writes, valuesOf };
 };
 
 const sync = (board: SyncBoard<never>, issues: ReadonlyArray<number> = [], dryRun = false) =>
 	Effect.runPromise(
 		Effect.provide(
-			runSync({repo: REPO, cwd: "/repo", env: {}, issues, board, dryRun}),
+			runSync({ repo: REPO, cwd: "/repo", env: {}, issues, board, dryRun }),
 			Layer.mergeAll(unconfigured, fakeShell([]).layer),
 		),
 	);
@@ -273,7 +273,7 @@ const laneRecord = (
 		terminalAt,
 		builds: 1,
 		reviews: 1,
-		parks: Array.from({length: over.founderParks ?? 0}, () => ({
+		parks: Array.from({ length: over.founderParks ?? 0 }, () => ({
 			task: "issue",
 			leaf: "blocked",
 			cause: null,
@@ -282,10 +282,10 @@ const laneRecord = (
 		})),
 		spent:
 			over.usd === null
-				? {_tag: "Unmeasured", reason: "no rate card"}
-				: {_tag: "Measured", usd: over.usd ?? 5},
+				? { _tag: "Unmeasured", reason: "no rate card" }
+				: { _tag: "Measured", usd: over.usd ?? 5 },
 		origin: over.origin ?? "driver-pick",
-		waiting: {_tag: "None"},
+		waiting: { _tag: "None" },
 		prs: over.prs ?? [],
 		log: [],
 	};
@@ -295,7 +295,9 @@ describe("table sync after a lane posts its record", () => {
 	it("puts the issue on the table with Spent $, Asks and Origin from the record", async () => {
 		const table = world({
 			42: {
-				records: [laneRecord(42, {usd: 7.5, founderParks: 2, origin: "founder-start", prs: [50]})],
+				records: [
+					laneRecord(42, { usd: 7.5, founderParks: 2, origin: "founder-start", prs: [50] }),
+				],
 			},
 		});
 
@@ -313,7 +315,7 @@ describe("table sync after a lane posts its record", () => {
 	});
 
 	it("moves Stage to shipped once a pull request the record names has merged", async () => {
-		const table = world({42: {records: [laneRecord(42, {prs: [50]})]}}, [], {merged: [50]});
+		const table = world({ 42: { records: [laneRecord(42, { prs: [50] })] } }, [], { merged: [50] });
 
 		await sync(table.board, [42]);
 
@@ -321,7 +323,7 @@ describe("table sync after a lane posts its record", () => {
 	});
 
 	it("leaves Spent $ unwritten while a counted lane is unmeasured, and still writes Asks", async () => {
-		const table = world({42: {records: [laneRecord(42, {usd: null, founderParks: 1})]}});
+		const table = world({ 42: { records: [laneRecord(42, { usd: null, founderParks: 1 })] } });
 
 		await sync(table.board, [42]);
 
@@ -333,8 +335,8 @@ describe("table sync after a lane posts its record", () => {
 describe("a person's Stage", () => {
 	it.each(["bet", "not now"])("is never overwritten when it reads %s", async (stage) => {
 		const table = world(
-			{42: {records: [laneRecord(42, {prs: [50]})]}},
-			[{number: 42, values: {Stage: stage}}],
+			{ 42: { records: [laneRecord(42, { prs: [50] })] } },
+			[{ number: 42, values: { Stage: stage } }],
 			{
 				merged: [50],
 			},
@@ -351,31 +353,38 @@ describe("a person's Stage", () => {
 			{
 				42: {
 					records: [
-						laneRecord(42, {usd: 30, founderParks: 3, terminalAt: "2026-09-20T00:00:00.000Z"}),
-						laneRecord(42, {usd: 4, founderParks: 1, terminalAt: "2026-09-26T00:00:00.000Z"}),
+						laneRecord(42, { usd: 30, founderParks: 3, terminalAt: "2026-09-20T00:00:00.000Z" }),
+						laneRecord(42, { usd: 4, founderParks: 1, terminalAt: "2026-09-26T00:00:00.000Z" }),
 					],
 				},
 			},
-			[{number: 42, values: {Stage: "bet"}}],
+			[{ number: 42, values: { Stage: "bet" } }],
 		);
 
 		await sync(table.board, [42]);
 
-		expect(table.valuesOf(42)).toMatchObject({Stage: "bet", "Spent $": 4, Asks: 1});
+		expect(table.valuesOf(42)).toMatchObject({ Stage: "bet", "Spent $": 4, Asks: 1 });
 		expect(table.valuesOf(42).Section).toBeUndefined();
 	});
 
 	it("starts a fresh bet at 0 before any lane has run on it", async () => {
-		const table = world({42: {}}, [{number: 42, values: {Stage: "bet", Section: "New bets"}}]);
+		const table = world({ 42: {} }, [
+			{ number: 42, values: { Stage: "bet", Section: "New bets" } },
+		]);
 
 		await sync(table.board, [42]);
 
-		expect(table.valuesOf(42)).toEqual({Stage: "bet", Section: "New bets", "Spent $": 0, Asks: 0});
+		expect(table.valuesOf(42)).toEqual({
+			Stage: "bet",
+			Section: "New bets",
+			"Spent $": 0,
+			Asks: 0,
+		});
 	});
 
 	it("clears a bet's standing $0 once an unmeasured lane lands on it, never leaving it to read $0", async () => {
-		const table = world({42: {records: [laneRecord(42, {usd: null, founderParks: 1})]}}, [
-			{number: 42, values: {Stage: "bet", Section: "New bets", "Spent $": 0, Asks: 0}},
+		const table = world({ 42: { records: [laneRecord(42, { usd: null, founderParks: 1 })] } }, [
+			{ number: 42, values: { Stage: "bet", Section: "New bets", "Spent $": 0, Asks: 0 } },
 		]);
 
 		await sync(table.board, [42]);
@@ -390,35 +399,43 @@ describe("an epic row", () => {
 	it("sums Spent $ and Asks over its open children, and its children carry no Section", async () => {
 		const table = world(
 			{
-				10: {subIssues: [11, 12, 13], records: [laneRecord(10, {usd: 2, founderParks: 1})]},
-				11: {parent: 10, records: [laneRecord(11, {usd: 3, founderParks: 1})]},
-				12: {parent: 10, records: [laneRecord(12, {usd: 4})]},
-				13: {parent: 10, open: false, records: [laneRecord(13, {usd: 100, founderParks: 9})]},
+				10: { subIssues: [11, 12, 13], records: [laneRecord(10, { usd: 2, founderParks: 1 })] },
+				11: { parent: 10, records: [laneRecord(11, { usd: 3, founderParks: 1 })] },
+				12: { parent: 10, records: [laneRecord(12, { usd: 4 })] },
+				13: { parent: 10, open: false, records: [laneRecord(13, { usd: 100, founderParks: 9 })] },
 			},
-			[{number: 12, values: {Section: "Outside the bets"}}],
+			[{ number: 12, values: { Section: "Outside the bets" } }],
 		);
 
 		const outcome = await sync(table.board, [10]);
 
-		expect(table.valuesOf(10)).toMatchObject({Section: "Outside the bets", "Spent $": 9, Asks: 2});
-		expect(table.valuesOf(11)).toMatchObject({"Spent $": 3, Asks: 1});
+		expect(table.valuesOf(10)).toMatchObject({
+			Section: "Outside the bets",
+			"Spent $": 9,
+			Asks: 2,
+		});
+		expect(table.valuesOf(11)).toMatchObject({ "Spent $": 3, Asks: 1 });
 		expect(table.valuesOf(11).Section).toBeUndefined();
 		expect(table.valuesOf(12).Section).toBeUndefined();
 		expect(table.items.some((item) => item.number === 13)).toBe(false);
 		expect(JSON.parse(outcome.stdout).groups).toEqual([
-			{head: 10, kind: "epic", members: [11, 12]},
+			{ head: 10, kind: "epic", members: [11, 12] },
 		]);
 	});
 
 	it("reaches the epic row from a child's own record", async () => {
 		const table = world({
-			10: {subIssues: [11]},
-			11: {parent: 10, records: [laneRecord(11, {usd: 6, founderParks: 2})]},
+			10: { subIssues: [11] },
+			11: { parent: 10, records: [laneRecord(11, { usd: 6, founderParks: 2 })] },
 		});
 
 		await sync(table.board, [11]);
 
-		expect(table.valuesOf(10)).toMatchObject({Section: "Outside the bets", "Spent $": 6, Asks: 2});
+		expect(table.valuesOf(10)).toMatchObject({
+			Section: "Outside the bets",
+			"Spent $": 6,
+			Asks: 2,
+		});
 		expect(table.valuesOf(11).Section).toBeUndefined();
 	});
 });
@@ -427,49 +444,51 @@ describe("a chain row", () => {
 	it("sums the row and its open blockers transitively, and its members carry no Section", async () => {
 		const table = world(
 			{
-				1: {blockedBy: [2], records: [laneRecord(1, {usd: 1, founderParks: 1})]},
-				2: {blockedBy: [3, 4], records: [laneRecord(2, {usd: 2})]},
-				3: {records: [laneRecord(3, {usd: 3, founderParks: 1})]},
-				4: {open: false, records: [laneRecord(4, {usd: 50})]},
+				1: { blockedBy: [2], records: [laneRecord(1, { usd: 1, founderParks: 1 })] },
+				2: { blockedBy: [3, 4], records: [laneRecord(2, { usd: 2 })] },
+				3: { records: [laneRecord(3, { usd: 3, founderParks: 1 })] },
+				4: { open: false, records: [laneRecord(4, { usd: 50 })] },
 			},
-			[{number: 3, values: {Section: "New bets"}}],
+			[{ number: 3, values: { Section: "New bets" } }],
 		);
 
 		const outcome = await sync(table.board, [1]);
 
-		expect(table.valuesOf(1)).toMatchObject({Section: "Outside the bets", "Spent $": 6, Asks: 2});
+		expect(table.valuesOf(1)).toMatchObject({ Section: "Outside the bets", "Spent $": 6, Asks: 2 });
 		for (const member of [2, 3]) expect(table.valuesOf(member).Section).toBeUndefined();
 		expect(table.items.some((item) => item.number === 4)).toBe(false);
-		expect(JSON.parse(outcome.stdout).groups).toEqual([{head: 1, kind: "chain", members: [2, 3]}]);
+		expect(JSON.parse(outcome.stdout).groups).toEqual([
+			{ head: 1, kind: "chain", members: [2, 3] },
+		]);
 	});
 
 	it("updates the chain row above when a blocker's lane records", async () => {
 		const table = world(
 			{
-				1: {blockedBy: [2]},
-				2: {records: [laneRecord(2, {usd: 8, founderParks: 1})]},
+				1: { blockedBy: [2] },
+				2: { records: [laneRecord(2, { usd: 8, founderParks: 1 })] },
 			},
-			[{number: 1, values: {Stage: "proposed", Section: "New bets"}}],
+			[{ number: 1, values: { Stage: "proposed", Section: "New bets" } }],
 		);
 
 		await sync(table.board, [2]);
 
-		expect(table.valuesOf(1)).toMatchObject({Section: "New bets", "Spent $": 8, Asks: 1});
+		expect(table.valuesOf(1)).toMatchObject({ Section: "New bets", "Spent $": 8, Asks: 1 });
 		expect(table.valuesOf(2).Section).toBeUndefined();
 	});
 });
 
 describe("a bet row that blocks, or hangs under, another row", () => {
-	const chain = (bet: Record<string, string | number> = {Stage: "bet", Section: "New bets"}) =>
+	const chain = (bet: Record<string, string | number> = { Stage: "bet", Section: "New bets" }) =>
 		world(
 			{
-				1: {blockedBy: [2], records: [laneRecord(1, {usd: 1})]},
-				2: {blockedBy: [3], records: [laneRecord(2, {usd: 2, founderParks: 1})]},
-				3: {records: [laneRecord(3, {usd: 3, founderParks: 1})]},
+				1: { blockedBy: [2], records: [laneRecord(1, { usd: 1 })] },
+				2: { blockedBy: [3], records: [laneRecord(2, { usd: 2, founderParks: 1 })] },
+				3: { records: [laneRecord(3, { usd: 3, founderParks: 1 })] },
 			},
 			[
-				{number: 1, values: {Stage: "proposed", Section: "Tails"}},
-				{number: 2, values: bet},
+				{ number: 1, values: { Stage: "proposed", Section: "Tails" } },
+				{ number: 2, values: bet },
 			],
 		);
 
@@ -478,8 +497,8 @@ describe("a bet row that blocks, or hangs under, another row", () => {
 
 		const outcome = await sync(table.board, [1]);
 
-		expect(table.valuesOf(2)).toEqual({Stage: "bet", Section: "New bets"});
-		expect(table.valuesOf(1)).toMatchObject({"Spent $": 1, Asks: 0});
+		expect(table.valuesOf(2)).toEqual({ Stage: "bet", Section: "New bets" });
+		expect(table.valuesOf(1)).toMatchObject({ "Spent $": 1, Asks: 0 });
 		expect(table.items.some((item) => item.number === 3)).toBe(false);
 		expect(JSON.parse(outcome.stdout).groups).toEqual([]);
 	});
@@ -489,14 +508,14 @@ describe("a bet row that blocks, or hangs under, another row", () => {
 
 		const outcome = await sync(table.board, [2]);
 
-		expect(table.valuesOf(2)).toMatchObject({Section: "New bets", "Spent $": 5, Asks: 2});
-		expect(table.valuesOf(1)).toMatchObject({Section: "Tails", "Spent $": 1, Asks: 0});
+		expect(table.valuesOf(2)).toMatchObject({ Section: "New bets", "Spent $": 5, Asks: 2 });
+		expect(table.valuesOf(1)).toMatchObject({ Section: "Tails", "Spent $": 1, Asks: 0 });
 		expect(table.valuesOf(3).Section).toBeUndefined();
-		expect(JSON.parse(outcome.stdout).groups).toEqual([{head: 2, kind: "chain", members: [3]}]);
+		expect(JSON.parse(outcome.stdout).groups).toEqual([{ head: 2, kind: "chain", members: [3] }]);
 	});
 
 	it("is not given a Section back when it had lost one", async () => {
-		const table = chain({Stage: "bet"});
+		const table = chain({ Stage: "bet" });
 
 		await sync(table.board, [1, 2]);
 
@@ -506,29 +525,29 @@ describe("a bet row that blocks, or hangs under, another row", () => {
 	it("keeps its Section under an epic row, which sums its other children only", async () => {
 		const table = world(
 			{
-				10: {subIssues: [11, 12]},
-				11: {parent: 10, records: [laneRecord(11, {usd: 4})]},
-				12: {parent: 10, records: [laneRecord(12, {usd: 9, founderParks: 1})]},
+				10: { subIssues: [11, 12] },
+				11: { parent: 10, records: [laneRecord(11, { usd: 4 })] },
+				12: { parent: 10, records: [laneRecord(12, { usd: 9, founderParks: 1 })] },
 			},
 			[
-				{number: 10, values: {Stage: "proposed", Section: "New bets"}},
-				{number: 11, values: {Section: "Tails"}},
-				{number: 12, values: {Stage: "bet", Section: "Tails"}},
+				{ number: 10, values: { Stage: "proposed", Section: "New bets" } },
+				{ number: 11, values: { Section: "Tails" } },
+				{ number: 12, values: { Stage: "bet", Section: "Tails" } },
 			],
 		);
 
 		await sync(table.board, [11, 12]);
 
-		expect(table.valuesOf(12)).toMatchObject({Section: "Tails", "Spent $": 9, Asks: 1});
-		expect(table.valuesOf(10)).toMatchObject({"Spent $": 4, Asks: 0});
+		expect(table.valuesOf(12)).toMatchObject({ Section: "Tails", "Spent $": 9, Asks: 1 });
+		expect(table.valuesOf(10)).toMatchObject({ "Spent $": 4, Asks: 0 });
 		expect(table.valuesOf(11).Section).toBeUndefined();
 	});
 });
 
 describe("rows are real, open issues", () => {
 	it("never adds a closed issue as a new row, and adds no draft", async () => {
-		const table = world({42: {open: false, records: [laneRecord(42)]}}, [
-			{number: null, type: "DraftIssue"},
+		const table = world({ 42: { open: false, records: [laneRecord(42)] } }, [
+			{ number: null, type: "DraftIssue" },
 		]);
 
 		const outcome = await sync(table.board, [42]);
@@ -536,17 +555,19 @@ describe("rows are real, open issues", () => {
 		expect(outcome.code).toBe(0);
 		expect(table.writes).toEqual([]);
 		expect(JSON.parse(outcome.stdout).skipped).toEqual([
-			{issue: 42, reason: "closed and not on the table, so it is not added"},
+			{ issue: 42, reason: "closed and not on the table, so it is not added" },
 		]);
 		expect(table.items).toHaveLength(1);
 	});
 
 	it("still fills a closed issue that is already a row", async () => {
-		const table = world({42: {open: false, records: [laneRecord(42, {usd: 2})]}}, [{number: 42}]);
+		const table = world({ 42: { open: false, records: [laneRecord(42, { usd: 2 })] } }, [
+			{ number: 42 },
+		]);
 
 		await sync(table.board, [42]);
 
-		expect(table.valuesOf(42)).toMatchObject({Stage: "in lane", "Spent $": 2});
+		expect(table.valuesOf(42)).toMatchObject({ Stage: "in lane", "Spent $": 2 });
 	});
 
 	it("refuses a number that is no issue before writing anything", async () => {
@@ -563,13 +584,13 @@ describe("running sync twice", () => {
 	it("writes nothing the second time", async () => {
 		const table = world(
 			{
-				1: {blockedBy: [2], records: [laneRecord(1, {usd: 1, founderParks: 1, prs: [9]})]},
-				2: {records: [laneRecord(2, {usd: 2})]},
-				10: {subIssues: [11], records: [laneRecord(10)]},
-				11: {parent: 10, records: [laneRecord(11)]},
+				1: { blockedBy: [2], records: [laneRecord(1, { usd: 1, founderParks: 1, prs: [9] })] },
+				2: { records: [laneRecord(2, { usd: 2 })] },
+				10: { subIssues: [11], records: [laneRecord(10)] },
+				11: { parent: 10, records: [laneRecord(11)] },
 			},
 			[],
-			{merged: [9]},
+			{ merged: [9] },
 		);
 
 		const first = await sync(table.board, [1, 10]);
@@ -587,8 +608,8 @@ describe("running sync twice", () => {
 
 describe("refusals", () => {
 	it("names table setup when the project lacks a field sync writes", async () => {
-		const table = world({42: {records: [laneRecord(42)]}}, [], {
-			project: {...PROJECT, fields: PROJECT.fields.filter((field) => field.name !== "Asks")},
+		const table = world({ 42: { records: [laneRecord(42)] } }, [], {
+			project: { ...PROJECT, fields: PROJECT.fields.filter((field) => field.name !== "Asks") },
 		});
 
 		const outcome = await sync(table.board, [42]);
@@ -599,7 +620,7 @@ describe("refusals", () => {
 	});
 
 	it("refuses a lane record that does not read, before any write", async () => {
-		const table = world({42: {comments: ["lane-record: #42 complete @ not-a-time"]}});
+		const table = world({ 42: { comments: ["lane-record: #42 complete @ not-a-time"] } });
 
 		const outcome = await sync(table.board, [42]);
 
@@ -609,13 +630,13 @@ describe("refusals", () => {
 });
 
 const WIDE = 200;
-const numbers = Array.from({length: WIDE}, (_, index) => index + 1);
+const numbers = Array.from({ length: WIDE }, (_, index) => index + 1);
 
 /** A 200-row table, every row an open issue carrying one lane record. */
 const wideTable = () =>
 	world(
-		Object.fromEntries(numbers.map((n) => [n, {records: [laneRecord(n)]}])),
-		numbers.map((number) => ({number})),
+		Object.fromEntries(numbers.map((n) => [n, { records: [laneRecord(n)] }])),
+		numbers.map((number) => ({ number })),
 	);
 
 /** Counts the reads in flight at once; each read waits a moment so its siblings can start. */
@@ -633,7 +654,7 @@ const inFlight = () => {
 			now--;
 			return answer;
 		});
-	return {track, peak: () => peak, seen};
+	return { track, peak: () => peak, seen };
 };
 
 describe("reading a 200-row table", () => {
@@ -673,14 +694,14 @@ describe("reading a 200-row table", () => {
 				reads.track(
 					n,
 					Effect.succeed(
-						present({isPullRequest: false, state: "open", parent: {_tag: "None"} as const}),
+						present({ isPullRequest: false, state: "open", parent: { _tag: "None" } as const }),
 					),
 				),
 			subIssues: edge,
 			blockedBy: edge,
 			blocking: edge,
 		});
-		const board: SyncBoard<never> = {...wideTable().board, node};
+		const board: SyncBoard<never> = { ...wideTable().board, node };
 
 		const scoped = await Effect.runPromise(
 			readScope(board, "table flags", REPO, numbers, new Set(numbers), new Set()),
@@ -736,7 +757,7 @@ describe("reading a 200-row table", () => {
 	});
 
 	it("still refuses at GRAPH_CAP without reading past it", async () => {
-		const seeds = Array.from({length: GRAPH_CAP}, (_, index) => index + 1);
+		const seeds = Array.from({ length: GRAPH_CAP }, (_, index) => index + 1);
 		const head = GRAPH_CAP + 1;
 		let reads = 0;
 		const board: SyncBoard<never> = {
@@ -771,14 +792,14 @@ describe("table sync --dry-run", () => {
 	const WRITES = ["add", "set", "clear"];
 	const record = () => ({
 		42: {
-			records: [laneRecord(42, {usd: 7.5, founderParks: 2, origin: "founder-start", prs: [50]})],
+			records: [laneRecord(42, { usd: 7.5, founderParks: 2, origin: "founder-start", prs: [50] })],
 		},
 	});
 
 	it("sends no write, runs every read a live run makes, and prints each planned write", async () => {
-		const live = spy(world(record(), [], {merged: [50]}).board);
+		const live = spy(world(record(), [], { merged: [50] }).board);
 		await sync(live.board, [42]);
-		const table = world(record(), [], {merged: [50]});
+		const table = world(record(), [], { merged: [50] });
 		const dry = spy(table.board);
 
 		const outcome = await sync(dry.board, [42], true);
@@ -790,12 +811,12 @@ describe("table sync --dry-run", () => {
 		const answer = JSON.parse(outcome.stdout);
 		expect(answer.answer).toBe("dry-run");
 		expect(answer.changes).toEqual([]);
-		expect(answer.planned[0]).toEqual({_tag: "Add", project: 3, issue: 42});
+		expect(answer.planned[0]).toEqual({ _tag: "Add", project: 3, issue: 42 });
 		expect(answer.planned.slice(1)).toEqual(
 			expect.arrayContaining([
-				{_tag: "Set", project: 3, issue: 42, field: "Stage", value: "shipped"},
-				{_tag: "Set", project: 3, issue: 42, field: "Spent $", value: 7.5},
-				{_tag: "Set", project: 3, issue: 42, field: "Asks", value: 2},
+				{ _tag: "Set", project: 3, issue: 42, field: "Stage", value: "shipped" },
+				{ _tag: "Set", project: 3, issue: 42, field: "Spent $", value: 7.5 },
+				{ _tag: "Set", project: 3, issue: 42, field: "Asks", value: 2 },
 			]),
 		);
 		expect(outcome.stderr).toContain("table sync: would add #42 to project #3.");

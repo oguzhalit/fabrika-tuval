@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
 import {
 	COMMENTS,
 	claimPage,
@@ -23,16 +23,16 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {MARKER_RE, renderMarker, SUMMARY_LINE} from "./enrich.ts";
-import {runEnrich} from "./enrich-verb.ts";
+import { MARKER_RE, renderMarker, SUMMARY_LINE } from "./enrich.ts";
+import { runEnrich } from "./enrich-verb.ts";
 
 const READ = /GET .*\/repos\/o\/r\/issues\/4312$/;
 const PATCH = /PATCH .*\/repos\/o\/r\/issues\/4312$/;
 
-const ACCEPTED: HttpReply = {status: 200, body: "{}"};
-const UNREADABLE: HttpReply = {status: 502, body: "{}"};
-const NOT_FOUND: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
-const WRITE_FAILED: HttpReply = {status: 500, body: "{}"};
+const ACCEPTED: HttpReply = { status: 200, body: "{}" };
+const UNREADABLE: HttpReply = { status: 502, body: "{}" };
+const NOT_FOUND: HttpReply = { status: 404, body: '{"message":"Not Found"}' };
+const WRITE_FAILED: HttpReply = { status: 500, body: "{}" };
 
 const ORIGINAL = "## Summary\n\nThe editor loses focus after a save.";
 /** The plain-language summary every enrich stdin carries; sent first, it composes in place. */
@@ -51,7 +51,7 @@ const issue = (body: string, labels: ReadonlyArray<string> = []): HttpReply => (
 		title: "t",
 		body,
 		state: "open",
-		labels: labels.map((name) => ({name})),
+		labels: labels.map((name) => ({ name })),
 		html_url: "https://example.test/issues/4312",
 		milestone: null,
 	}),
@@ -63,8 +63,8 @@ const options = {
 	token: null as string | null,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
-	stdin: Effect.succeed<StdinRead>({_tag: "Text", text: REWRITE}),
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
+	stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: REWRITE }),
 };
 
 /** The body the PATCH carried, or `null` when the verb wrote nothing. */
@@ -72,7 +72,7 @@ const written = (seams: GuardedSeams): string | null => {
 	const at = seams.requests.findIndex((line) => PATCH.test(line));
 	if (at < 0) return null;
 	const sent: unknown = JSON.parse(seams.bodies[at] ?? "{}");
-	const body = (sent as {readonly body?: unknown}).body;
+	const body = (sent as { readonly body?: unknown }).body;
 	return typeof body === "string" ? body : null;
 };
 
@@ -93,24 +93,24 @@ const run = async (
 	]);
 	// Two passes: the first to learn what the verb writes, the second to feed it back as the read-back.
 	const probe = await Effect.runPromise(
-		Effect.provide(runEnrich({...options, ...overrides}), shell.layer),
+		Effect.provide(runEnrich({ ...options, ...overrides }), shell.layer),
 	);
 	const patched = written(shell);
-	if (patched === null) return {outcome: probe, body: null, requests: shell.requests};
+	if (patched === null) return { outcome: probe, body: null, requests: shell.requests };
 	const echoing = guardedShell([
 		[once(READ), issue(before, labels)],
 		[PATCH, ACCEPTED],
 		[READ, issue(patched, labels)],
 	]);
 	const outcome = await Effect.runPromise(
-		Effect.provide(runEnrich({...options, ...overrides}), echoing.layer),
+		Effect.provide(runEnrich({ ...options, ...overrides }), echoing.layer),
 	);
-	return {outcome, body: patched, requests: echoing.requests};
+	return { outcome, body: patched, requests: echoing.requests };
 };
 
 const runScripted = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
-		Effect.provide(runEnrich({...options, ...overrides}), guardedShell(script).layer),
+		Effect.provide(runEnrich({ ...options, ...overrides }), guardedShell(script).layer),
 	);
 
 const summaryLines = (body: string): ReadonlyArray<string> =>
@@ -121,7 +121,7 @@ const markerLines = (body: string): ReadonlyArray<string> =>
 
 describe("runEnrich — a first enrichment", () => {
 	it("writes the rewrite above the preserved original and prints the enriched line", async () => {
-		const {outcome, body} = await run(ORIGINAL);
+		const { outcome, body } = await run(ORIGINAL);
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toBe("enriched\t4312\t0\n");
 		expect(body).toBe(
@@ -130,9 +130,9 @@ describe("runEnrich — a first enrichment", () => {
 	});
 
 	it("heads a pitch under the two headings with --epic, and never writes a rewrite there", async () => {
-		const {outcome, body} = await run(ORIGINAL, {
+		const { outcome, body } = await run(ORIGINAL, {
 			epic: true,
-			stdin: Effect.succeed<StdinRead>({_tag: "Text", text: EPIC_STDIN}),
+			stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: EPIC_STDIN }),
 		});
 		expect(outcome.code).toBe(0);
 		expect(body).toBe(
@@ -141,7 +141,7 @@ describe("runEnrich — a first enrichment", () => {
 	});
 
 	it("emits the record on STDOUT with --json", async () => {
-		const {outcome} = await run(ORIGINAL, {json: true});
+		const { outcome } = await run(ORIGINAL, { json: true });
 		expect(JSON.parse(outcome.stdout)).toEqual({
 			outcome: "enriched",
 			number: 4312,
@@ -152,7 +152,7 @@ describe("runEnrich — a first enrichment", () => {
 
 	it("redacts machine-local paths out of the PRESERVED original and counts them", async () => {
 		const leaky = `Repro at /Users/someone/scratch/case.md and /tmp/kampus/out.log.`;
-		const {outcome, body} = await run(leaky);
+		const { outcome, body } = await run(leaky);
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toBe("enriched\t4312\t2\n");
 		expect(body).toContain("/Users/<redacted>");
@@ -164,7 +164,7 @@ describe("runEnrich — a first enrichment", () => {
 	});
 
 	it("says on stderr that it found no marker and is wrapping a first enrichment", async () => {
-		const {outcome} = await run(ORIGINAL);
+		const { outcome } = await run(ORIGINAL);
 		expect(outcome.stderr[0]).toBe(
 			"triage enrich: #4312 carries no enrichment marker — wrapping its body as a first enrichment.",
 		);
@@ -175,8 +175,8 @@ describe("runEnrich — re-enrichment is recognised by the marker, in EITHER mod
 	const enriched = `${REWRITE}\n\n---\n\n${renderMarker(4312, "rewrite")}\n<details>\n${SUMMARY_LINE.rewrite}\n\n${ORIGINAL}\n\n</details>\n`;
 
 	it("replaces the authored region on a same-mode re-run, leaving one envelope", async () => {
-		const {outcome, body} = await run(enriched, {
-			stdin: Effect.succeed<StdinRead>({_tag: "Text", text: `${LEAD}## A sharper rewrite`}),
+		const { outcome, body } = await run(enriched, {
+			stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: `${LEAD}## A sharper rewrite` }),
 		});
 		expect(outcome.code).toBe(0);
 		expect(body).toBe(
@@ -186,9 +186,9 @@ describe("runEnrich — re-enrichment is recognised by the marker, in EITHER mod
 	});
 
 	it("does NOT double-wrap a default-mode envelope re-run under --epic — the cross-mode class", async () => {
-		const {outcome, body} = await run(enriched, {
+		const { outcome, body } = await run(enriched, {
 			epic: true,
-			stdin: Effect.succeed<StdinRead>({_tag: "Text", text: EPIC_STDIN}),
+			stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: EPIC_STDIN }),
 		});
 		expect(outcome.code).toBe(0);
 		// One envelope, still the default-mode one, and the original was never re-wrapped as a "brief".
@@ -200,16 +200,16 @@ describe("runEnrich — re-enrichment is recognised by the marker, in EITHER mod
 
 	it("does NOT double-wrap an --epic envelope re-run in default mode either", async () => {
 		const epicBody = `## Pitch\n\n${PITCH}\n\n## Epic — awaiting plan\n\n${renderMarker(4312, "wrap")}\n<details>\n${SUMMARY_LINE.wrap}\n\n${ORIGINAL}\n\n</details>\n`;
-		const {body} = await run(epicBody);
+		const { body } = await run(epicBody);
 		expect(summaryLines(body ?? "")).toEqual([SUMMARY_LINE.wrap]);
 		expect(body).not.toContain("## Pitch");
 	});
 
 	it("preserves the plan and dependency topology plan-epic wrote BELOW the wrap", async () => {
 		const planned = `## Pitch\n\nstale\n\n## Epic — awaiting plan\n\n${renderMarker(4312, "wrap")}\n<details>\n${SUMMARY_LINE.wrap}\n\n${ORIGINAL}\n\n</details>\n\n## Plan (plan-epic)\n\nPhase 1: #4400\n\n## Dependencies\n\n#4400 requires: none\n`;
-		const {body} = await run(planned, {
+		const { body } = await run(planned, {
 			epic: true,
-			stdin: Effect.succeed<StdinRead>({_tag: "Text", text: EPIC_STDIN}),
+			stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: EPIC_STDIN }),
 		});
 		expect(body).toContain("## Plan (plan-epic)\n\nPhase 1: #4400");
 		expect(body).toContain("## Dependencies\n\n#4400 requires: none");
@@ -220,7 +220,7 @@ describe("runEnrich — re-enrichment is recognised by the marker, in EITHER mod
 
 	it("re-reports zero redactions on a re-enrich — the preserved bytes are not rescanned", async () => {
 		const already = `${REWRITE}\n\n---\n\n${renderMarker(4312, "rewrite")}\n<details>\n${SUMMARY_LINE.rewrite}\n\nRepro at /Users/<redacted> and one raw /tmp/kampus/out.log.\n\n</details>\n`;
-		const {outcome, body} = await run(already);
+		const { outcome, body } = await run(already);
 		expect(outcome.stdout).toBe("enriched\t4312\t0\n");
 		// Verbatim means verbatim: the preserved region is not re-redacted behind the caller's back.
 		expect(body).toContain("/tmp/kampus/out.log");
@@ -230,7 +230,7 @@ describe("runEnrich — re-enrichment is recognised by the marker, in EITHER mod
 describe("runEnrich — the marker binds THIS issue, so a paste reads as fresh", () => {
 	it("wraps an enriched body pasted in from another issue instead of overwriting above it", async () => {
 		const pasted = `Someone else's rewrite\n\n---\n\n${renderMarker(4290, "rewrite")}\n<details>\n${SUMMARY_LINE.rewrite}\n\n${ORIGINAL}\n\n</details>\n`;
-		const {outcome, body} = await run(pasted);
+		const { outcome, body } = await run(pasted);
 		expect(outcome.code).toBe(0);
 		// The whole paste — foreign marker included — is preserved as the original, under OUR marker.
 		expect(body).toBe(
@@ -242,7 +242,7 @@ describe("runEnrich — the marker binds THIS issue, so a paste reads as fresh",
 
 	it("says on stderr which issue the foreign marker bound", async () => {
 		const pasted = `x\n\n${renderMarker(4290, "wrap")}\n<details>\n${SUMMARY_LINE.wrap}\n\n${ORIGINAL}\n\n</details>\n`;
-		const {outcome} = await run(pasted);
+		const { outcome } = await run(pasted);
 		expect(outcome.stderr[0]).toBe(
 			"triage enrich: #4312 carries an enrichment marker bound to #4290, not #4312 — reading it as a pasted body and wrapping it as a first enrichment.",
 		);
@@ -264,8 +264,8 @@ describe("runEnrich — legacy migration", () => {
 	const legacy = `${REWRITE}\n\n---\n\n<details>\n${SUMMARY_LINE.rewrite}\n\n${ORIGINAL}\n\n</details>\n`;
 
 	it("recognises a pre-marker envelope, keeps it, and stamps the marker in passing", async () => {
-		const {outcome, body} = await run(legacy, {
-			stdin: Effect.succeed<StdinRead>({_tag: "Text", text: `${LEAD}## A sharper rewrite`}),
+		const { outcome, body } = await run(legacy, {
+			stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: `${LEAD}## A sharper rewrite` }),
 		});
 		expect(outcome.code).toBe(0);
 		expect(body).toBe(
@@ -276,9 +276,9 @@ describe("runEnrich — legacy migration", () => {
 	});
 
 	it("migrates a legacy body across a mode switch without nesting it", async () => {
-		const {body} = await run(legacy, {
+		const { body } = await run(legacy, {
 			epic: true,
-			stdin: Effect.succeed<StdinRead>({_tag: "Text", text: EPIC_STDIN}),
+			stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: EPIC_STDIN }),
 		});
 		expect(summaryLines(body ?? "")).toEqual([SUMMARY_LINE.rewrite]);
 		expect(markerLines(body ?? "")).toEqual([renderMarker(4312, "wrap")]);
@@ -286,7 +286,7 @@ describe("runEnrich — legacy migration", () => {
 
 	it("wraps a body that merely QUOTES an envelope rather than overwriting the reporter's framing", async () => {
 		const quoting = `I think this format is wrong:\n\n<details>\n${SUMMARY_LINE.wrap}\n\n${ORIGINAL}\n\n</details>\n\nWhat should it be?\n`;
-		const {body} = await run(quoting);
+		const { body } = await run(quoting);
 		expect(body).toContain("I think this format is wrong:");
 		expect(body).toContain("What should it be?");
 		expect(summaryLines(body ?? "")).toEqual([SUMMARY_LINE.rewrite, SUMMARY_LINE.wrap]);
@@ -314,7 +314,7 @@ describe("runEnrich — the composed body's criteria block must be one the wire 
 	});
 
 	it("accepts a conforming level-3 block", async () => {
-		const {outcome} = await run(ORIGINAL, {
+		const { outcome } = await run(ORIGINAL, {
 			stdin: Effect.succeed<StdinRead>({
 				_tag: "Text",
 				text: `${REWRITE}\n\n### Acceptance criteria\n\n- [ ] keep focus\n`,
@@ -324,15 +324,15 @@ describe("runEnrich — the composed body's criteria block must be one the wire 
 	});
 
 	it("accepts a rewrite that carries no criteria block at all — Absent is never a defect", async () => {
-		const {outcome} = await run(ORIGINAL);
+		const { outcome } = await run(ORIGINAL);
 		expect(outcome.code).toBe(0);
 	});
 
 	it("never blocks a re-enrichment on a `##` heading inside the PRESERVED original", async () => {
 		const driftedOriginal = `## Summary\n\nx\n\n## Acceptance criteria\n\n- [ ] old item`;
 		const enriched = `${REWRITE}\n\n---\n\n${renderMarker(4312, "rewrite")}\n<details>\n${SUMMARY_LINE.rewrite}\n\n${driftedOriginal}\n\n</details>\n`;
-		const {outcome, body} = await run(enriched, {
-			stdin: Effect.succeed<StdinRead>({_tag: "Text", text: `${LEAD}## A sharper rewrite`}),
+		const { outcome, body } = await run(enriched, {
+			stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: `${LEAD}## A sharper rewrite` }),
 		});
 		expect(outcome.code).toBe(0);
 		expect(body).toContain("## Acceptance criteria");
@@ -352,7 +352,7 @@ describe("runEnrich — the composed body's criteria block must be one the wire 
 	});
 
 	it("writes a rewrite that DOES carry a block over the same label", async () => {
-		const {outcome, body} = await run(
+		const { outcome, body } = await run(
 			ORIGINAL,
 			{
 				stdin: Effect.succeed<StdinRead>({
@@ -367,9 +367,9 @@ describe("runEnrich — the composed body's criteria block must be one the wire 
 	});
 
 	it("exempts an --epic pitch: a criteria-less epic body over ready-for:agent still writes", async () => {
-		const {outcome, body} = await run(
+		const { outcome, body } = await run(
 			ORIGINAL,
-			{epic: true, stdin: Effect.succeed<StdinRead>({_tag: "Text", text: EPIC_STDIN})},
+			{ epic: true, stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: EPIC_STDIN }) },
 			["ready-for:agent"],
 		);
 		expect(outcome.code).toBe(0);
@@ -377,7 +377,7 @@ describe("runEnrich — the composed body's criteria block must be one the wire 
 	});
 
 	it("leaves the criteria-less allowance standing wherever the label is absent", async () => {
-		const {outcome, body} = await run(ORIGINAL, {}, ["status:triaged", "ready-for:human"]);
+		const { outcome, body } = await run(ORIGINAL, {}, ["status:triaged", "ready-for:human"]);
 		expect(outcome.code).toBe(0);
 		expect(body).toContain(REWRITE);
 	});
@@ -407,7 +407,7 @@ describe("runEnrich — refusals", () => {
 		const shell = guardedShell([[READ, issue(ORIGINAL)]]);
 		const outcome = await Effect.runPromise(
 			Effect.provide(
-				runEnrich({...options, stdin: Effect.succeed<StdinRead>({_tag: "Text", text: "  \n"})}),
+				runEnrich({ ...options, stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: "  \n" }) }),
 				shell.layer,
 			),
 		);
@@ -419,7 +419,7 @@ describe("runEnrich — refusals", () => {
 		const shell = guardedShell([[READ, issue(ORIGINAL)]]);
 		const outcome = await Effect.runPromise(
 			Effect.provide(
-				runEnrich({...options, epic, stdin: Effect.succeed<StdinRead>({_tag: "Text", text})}),
+				runEnrich({ ...options, epic, stdin: Effect.succeed<StdinRead>({ _tag: "Text", text }) }),
 				shell.layer,
 			),
 		);
@@ -453,7 +453,7 @@ describe("runEnrich — refusals", () => {
 	});
 
 	it("moves a summary sent at the END of the rewrite to the very top of the body", async () => {
-		const {outcome, body} = await run(ORIGINAL, {
+		const { outcome, body } = await run(ORIGINAL, {
 			stdin: Effect.succeed<StdinRead>({
 				_tag: "Text",
 				text: "## What to build\n\nKeep focus.\n\n## In plain words\n\nFocus drops. We keep it.\n",
@@ -550,10 +550,10 @@ describe("runEnrich — refusals", () => {
 	});
 
 	it("refuses a non-issue number, and an unresolvable repo, before reading anything", async () => {
-		expect((await runScripted([], {issue: -1})).code).toBe(1);
+		expect((await runScripted([], { issue: -1 })).code).toBe(1);
 		const shell = guardedShell([]);
 		const outcome = await Effect.runPromise(
-			Effect.provide(runEnrich({...options, env: {}}), shell.layer),
+			Effect.provide(runEnrich({ ...options, env: {} }), shell.layer),
 		);
 		expect(outcome.code).toBe(1);
 		expect(shell.requests.some((line) => PATCH.test(line))).toBe(false);
@@ -564,22 +564,22 @@ describe("runEnrich — refusals", () => {
 describe("runEnrich — the target guard", () => {
 	const MINE = "session-mine";
 	const THEIRS = "session-theirs";
-	const mine = {CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: MINE} as Record<
+	const mine = { CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: MINE } as Record<
 		string,
 		string | undefined
 	>;
 	const guard = async (script: ReadonlyArray<Scripted>) => {
 		const shell = guardedShell(script);
 		const outcome = await Effect.runPromise(
-			Effect.provide(runEnrich({...options, env: mine}), shell.layer),
+			Effect.provide(runEnrich({ ...options, env: mine }), shell.layer),
 		);
-		return {outcome, patched: shell.requests.some((line) => PATCH.test(line))};
+		return { outcome, patched: shell.requests.some((line) => PATCH.test(line)) };
 	};
 
 	it("refuses a live claim held by another session on 17 and writes nothing", async () => {
-		const {outcome, patched} = await guard([
+		const { outcome, patched } = await guard([
 			[READ, issue(ORIGINAL)],
-			[COMMENTS, claimPage({session: THEIRS, createdAt: LIVE})],
+			[COMMENTS, claimPage({ session: THEIRS, createdAt: LIVE })],
 			[PATCH, ACCEPTED],
 		]);
 		expect(outcome.code).toBe(CLAIMED_ELSEWHERE);
@@ -587,9 +587,9 @@ describe("runEnrich — the target guard", () => {
 	});
 
 	it("writes when the live claim is this session's own", async () => {
-		const {patched} = await guard([
+		const { patched } = await guard([
 			[once(READ), issue(ORIGINAL)],
-			[COMMENTS, claimPage({session: MINE, createdAt: LIVE})],
+			[COMMENTS, claimPage({ session: MINE, createdAt: LIVE })],
 			[PATCH, ACCEPTED],
 			[READ, issue(ORIGINAL)],
 		]);
@@ -607,7 +607,7 @@ describe("runEnrich — the stated-ordering gate", () => {
 
 	const edgeList = (...numbers: ReadonlyArray<number>): HttpReply => ({
 		status: 200,
-		body: JSON.stringify(numbers.map((number) => ({number}))),
+		body: JSON.stringify(numbers.map((number) => ({ number }))),
 	});
 
 	const ORDERED = `${LEAD}## What to build\n\nBlocked. Do not start until #4311 has merged.`;
@@ -622,7 +622,7 @@ describe("runEnrich — the stated-ordering gate", () => {
 	 */
 	const AS_ISSUE: Scripted = [
 		/GET .*\/repos\/o\/r\/issues\/(?!4312$)\d+$/,
-		{status: 200, body: JSON.stringify({id: 9911})},
+		{ status: 200, body: JSON.stringify({ id: 9911 }) },
 	];
 
 	const gate = async (
@@ -637,31 +637,31 @@ describe("runEnrich — the stated-ordering gate", () => {
 			ref,
 			[PATCH, ACCEPTED],
 		];
-		const stdin = Effect.succeed<StdinRead>({_tag: "Text", text: rewrite});
+		const stdin = Effect.succeed<StdinRead>({ _tag: "Text", text: rewrite });
 		const shell = guardedShell(rows());
-		await Effect.runPromise(Effect.provide(runEnrich({...options, stdin}), shell.layer));
+		await Effect.runPromise(Effect.provide(runEnrich({ ...options, stdin }), shell.layer));
 		const patched = written(shell);
 		if (patched === null) {
 			const outcome = await Effect.runPromise(
-				Effect.provide(runEnrich({...options, stdin}), guardedShell(rows()).layer),
+				Effect.provide(runEnrich({ ...options, stdin }), guardedShell(rows()).layer),
 			);
-			return {outcome, patched: false, requests: shell.requests};
+			return { outcome, patched: false, requests: shell.requests };
 		}
 		const echoing = guardedShell([...rows(), [READ, issue(patched)]]);
 		const outcome = await Effect.runPromise(
-			Effect.provide(runEnrich({...options, stdin}), echoing.layer),
+			Effect.provide(runEnrich({ ...options, stdin }), echoing.layer),
 		);
-		return {outcome, patched: true, requests: echoing.requests};
+		return { outcome, patched: true, requests: echoing.requests };
 	};
 
 	it("refuses on 20 and writes nothing when the graph carries no edge for the number", async () => {
-		const {outcome, patched} = await gate(ORDERED, [EDGES, edgeList()]);
+		const { outcome, patched } = await gate(ORDERED, [EDGES, edgeList()]);
 		expect(outcome.code).toBe(UNWIRED_ORDERING);
 		expect(patched).toBe(false);
 	});
 
 	it("names both escapes the ruling allows, and states there is no override", async () => {
-		const {outcome} = await gate(ORDERED, [EDGES, edgeList()]);
+		const { outcome } = await gate(ORDERED, [EDGES, edgeList()]);
 		const said = outcome.stderr.join(" ");
 		expect(said).toContain("fabrika triage apply 4312 --blocked-by 4311");
 		expect(said).toContain("reword");
@@ -669,14 +669,14 @@ describe("runEnrich — the stated-ordering gate", () => {
 	});
 
 	it("passes the same ordering once the edge is live", async () => {
-		const {outcome, patched} = await gate(ORDERED, [EDGES, edgeList(4311)]);
+		const { outcome, patched } = await gate(ORDERED, [EDGES, edgeList(4311)]);
 		expect(outcome.code).toBe(0);
 		expect(patched).toBe(true);
 	});
 
 	/** The preserved original is foreign bytes this verb redacts rather than judges. */
 	it("passes an ordering that lives only in the preserved original", async () => {
-		const {outcome, patched} = await gate(
+		const { outcome, patched } = await gate(
 			REWRITE,
 			[EDGES, edgeList()],
 			"Blocked. Do not start until #4311 has merged.",
@@ -686,13 +686,13 @@ describe("runEnrich — the stated-ordering gate", () => {
 	});
 
 	it("passes a rewrite that states no ordering, and never reads the graph", async () => {
-		const {outcome, requests} = await gate(REWRITE, [EDGES, edgeList()]);
+		const { outcome, requests } = await gate(REWRITE, [EDGES, edgeList()]);
 		expect(outcome.code).toBe(0);
 		expect(requests.some((line) => /dependencies/.test(line))).toBe(false);
 	});
 
 	it("is PRECONDITION_UNKNOWN when the graph could not be read, and writes nothing", async () => {
-		const {outcome, patched} = await gate(ORDERED, [EDGES, UNREADABLE]);
+		const { outcome, patched } = await gate(ORDERED, [EDGES, UNREADABLE]);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(patched).toBe(false);
 	});
@@ -706,12 +706,15 @@ describe("runEnrich — the stated-ordering gate", () => {
 		const REF = /GET .*\/repos\/o\/r\/issues\/4311$/;
 		const asPull: HttpReply = {
 			status: 200,
-			body: JSON.stringify({id: 9911, pull_request: {url: "u"}}),
+			body: JSON.stringify({ id: 9911, pull_request: { url: "u" } }),
 		};
-		const asIssue: HttpReply = {status: 200, body: JSON.stringify({id: 9911})};
+		const asIssue: HttpReply = { status: 200, body: JSON.stringify({ id: 9911 }) };
 
 		it("passes, and says why it did not read the PR as a prerequisite", async () => {
-			const {outcome, patched} = await gate(ORDERED, [EDGES, edgeList()], ORIGINAL, [REF, asPull]);
+			const { outcome, patched } = await gate(ORDERED, [EDGES, edgeList()], ORIGINAL, [
+				REF,
+				asPull,
+			]);
 			expect(outcome.code).toBe(0);
 			expect(patched).toBe(true);
 			expect(outcome.stderr.join(" ")).toContain("the issue its merge closes");
@@ -721,7 +724,7 @@ describe("runEnrich — the stated-ordering gate", () => {
 		it("passes a wired issue named beside a PR link (#7223, verbatim)", async () => {
 			const line =
 				"Blocked on #7035 / [#4311](https://example.test/o/r/pull/4311). The shared derivation this";
-			const {outcome, patched} = await gate(
+			const { outcome, patched } = await gate(
 				`${LEAD}## What to build\n\n${line}`,
 				[EDGES, edgeList(7035)],
 				ORIGINAL,
@@ -732,13 +735,16 @@ describe("runEnrich — the stated-ordering gate", () => {
 		});
 
 		it("still reds when the same number is an issue", async () => {
-			const {outcome, patched} = await gate(ORDERED, [EDGES, edgeList()], ORIGINAL, [REF, asIssue]);
+			const { outcome, patched } = await gate(ORDERED, [EDGES, edgeList()], ORIGINAL, [
+				REF,
+				asIssue,
+			]);
 			expect(outcome.code).toBe(UNWIRED_ORDERING);
 			expect(patched).toBe(false);
 		});
 
 		it("is PRECONDITION_UNKNOWN when issue-versus-PR could not be settled", async () => {
-			const {outcome, patched} = await gate(ORDERED, [EDGES, edgeList()], ORIGINAL, [
+			const { outcome, patched } = await gate(ORDERED, [EDGES, edgeList()], ORIGINAL, [
 				REF,
 				UNREADABLE,
 			]);

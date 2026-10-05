@@ -7,8 +7,8 @@
  * that the sequence RUNS: a generic checkout plus one prior child branch in, the re-keyed branch
  * checked out and proven on the way out, and every fail-closed stop still distinct.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	errOut,
 	fakeFs,
@@ -18,8 +18,8 @@ import {
 	once,
 	type Scripted,
 } from "../fakes.test-support.ts";
-import {emitMachine} from "../lane/emit.ts";
-import {FAILED} from "../verb.ts";
+import { emitMachine } from "../lane/emit.ts";
+import { FAILED } from "../verb.ts";
 import {
 	CLAIM_NOT_MINE,
 	DIRTY_TREE,
@@ -42,7 +42,7 @@ import {
 	NONCE,
 	served,
 } from "./fixtures.test-support.ts";
-import {runResumeChild} from "./resume-child-verb.ts";
+import { runResumeChild } from "./resume-child-verb.ts";
 
 const CHILD = 4312;
 const PRIOR = `build/${CHILD}-path-surface-config-c4367b0b`;
@@ -66,15 +66,17 @@ const RENAME = /^git branch -m /;
 const SWITCH = /^git switch build\//;
 const ABBREV_REF = /^git rev-parse --abbrev-ref HEAD$/;
 
-const WRITES = served({permission: "write"});
-const NO_CONTENT: HttpReply = {status: 204, body: ""};
+const WRITES = served({ permission: "write" });
+const NO_CONTENT: HttpReply = { status: 204, body: "" };
 const MINE = marker("s-9f2e", LANE_UUID);
 const THEIRS = marker("s-77aa", "9d8c7b6a-5f4e-3d2c-1b0a-998877665544");
-const POSTED = served({id: 9001, html_url: "https://example.test/o/r/issues/4312#c"}, 201);
-const ECHO = served({body: MINE});
+const POSTED = served({ id: 9001, html_url: "https://example.test/o/r/issues/4312#c" }, 201);
+const ECHO = served({ body: MINE });
 
-const labelled = (...names: ReadonlyArray<string>) => names.map((name) => ({name}));
-const CLAIMABLE = issue({labels: labelled("type:bug", "p1", "status:triaged", "ready-for:agent")});
+const labelled = (...names: ReadonlyArray<string>) => names.map((name) => ({ name }));
+const CLAIMABLE = issue({
+	labels: labelled("type:bug", "p1", "status:triaged", "ready-for:agent"),
+});
 /** The shape that found this: a decision triage stamped for an agent once a founder had ruled on it. */
 const RULED_DECISION = issue({
 	labels: labelled("type:decision", "p1", "status:triaged", "ready-for:agent"),
@@ -85,11 +87,11 @@ const RANGE = "9f2c1ab4d5e6f708192a3b4c5d6e7f8091a2b3c4..03135b917283a4b5c6d7e8f
 const rangeVerdict = (polarity: string) =>
 	`review-code: ${polarity} range:${RANGE} content:2f1a9c4e0b7d — the child's range`;
 
-const graded = (polarity: string) => comments({id: 8801, body: rangeVerdict(polarity)});
+const graded = (polarity: string) => comments({ id: 8801, body: rangeVerdict(polarity) });
 /** The thread once this lane's marker has landed beside the verdict it is repairing. */
 const CLAIMED_THREAD = comments(
-	{id: 8801, body: rangeVerdict("FAIL")},
-	{id: 9001, body: MINE, createdAt: "2026-08-09T00:00:01Z"},
+	{ id: 8801, body: rangeVerdict("FAIL") },
+	{ id: 9001, body: MINE, createdAt: "2026-08-09T00:00:01Z" },
 );
 
 /** The board a mid-sequence stop leaves behind: this lane's marker already standing beside the FAIL. */
@@ -109,7 +111,7 @@ const HOLDS_THE_DECISION_CLAIM: ReadonlyArray<Scripted> = [
 ];
 
 /** No `ROADMAP.md`: nothing the admission test reads, so this suite asks only about the sequence. */
-const NO_CAMPAIGNS = fakeFs({files: {}});
+const NO_CAMPAIGNS = fakeFs({ files: {} });
 
 /** The race, won: the pre-post verdict read, the marker write, and the checkpoint that resolves it. */
 const WINS_THE_CLAIM: ReadonlyArray<Scripted> = [
@@ -161,7 +163,7 @@ const options = {
 	laneRoot: null as string | null,
 	repo: null,
 	cwd: "/repo",
-	env: {CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e", ...GH_TOKEN_ENV} as Record<
+	env: { CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e", ...GH_TOKEN_ENV } as Record<
 		string,
 		string | undefined
 	>,
@@ -178,13 +180,16 @@ const run = (
 ) => {
 	const shell = seams(script);
 	return Effect.runPromise(
-		Effect.provide(runResumeChild({...options, ...overrides}), Layer.merge(shell.layer, fs.layer)),
-	).then((outcome) => ({outcome, shell}));
+		Effect.provide(
+			runResumeChild({ ...options, ...overrides }),
+			Layer.merge(shell.layer, fs.layer),
+		),
+	).then((outcome) => ({ outcome, shell }));
 };
 
 describe("runResumeChild — the sequenced repair entry", () => {
 	it("re-keys the prior child branch, checks it out, and proves the armed lane identity", async () => {
-		const {outcome, shell} = await run([...WINS_THE_CLAIM, ...GENERIC_CHECKOUT]);
+		const { outcome, shell } = await run([...WINS_THE_CLAIM, ...GENERIC_CHECKOUT]);
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout)).toEqual({
 			answer: "resumed",
@@ -192,7 +197,7 @@ describe("runResumeChild — the sequenced repair entry", () => {
 			token: LANE_TOKEN,
 			branch: RESUMED,
 			root: "/repo/trees/lane-a",
-			claim: {number: CHILD, nonce: NONCE},
+			claim: { number: CHILD, nonce: NONCE },
 		});
 		expect(shell.calls).toContain(`git branch -m ${PRIOR} ${RESUMED}`);
 		expect(shell.calls).toContain(`git switch ${RESUMED}`);
@@ -205,7 +210,7 @@ describe("runResumeChild — the sequenced repair entry", () => {
 	const TASK = `issue_${CHILD}`;
 	const ASSEMBLY = "03135b917283a4b5c6d7e8f90a1b2c3d4e5f6071";
 	const stamped = (event: string, minute: number, extra: Record<string, unknown> = {}) =>
-		`${JSON.stringify({task: TASK, event: `${TASK.toUpperCase()}.${event}`, at: `2026-09-26T00:0${minute}:00.000Z`, ...extra})}\n`;
+		`${JSON.stringify({ task: TASK, event: `${TASK.toUpperCase()}.${event}`, at: `2026-09-26T00:0${minute}:00.000Z`, ...extra })}\n`;
 	/**
 	 * The same repair, reached two ways: `lane report` recorded the pair on the FAIL, or the FAIL
 	 * predates the pair and `lane attach-integrate` put it there with a CORRECTED line.
@@ -217,7 +222,7 @@ describe("runResumeChild — the sequenced repair entry", () => {
 				stamped("WIP", 0),
 				stamped("DONE", 1),
 				stamped("PASS", 2),
-				stamped("FAIL", 3, {integrate: {exit: 42, head: ASSEMBLY}}),
+				stamped("FAIL", 3, { integrate: { exit: 42, head: ASSEMBLY } }),
 			],
 		],
 		[
@@ -229,47 +234,50 @@ describe("runResumeChild — the sequenced repair entry", () => {
 				stamped("FAIL", 3),
 				stamped("CORRECTED", 4, {
 					corrects: "2026-09-26T00:03:00.000Z",
-					integrate: {exit: 42, head: ASSEMBLY},
+					integrate: { exit: 42, head: ASSEMBLY },
 				}),
 			],
 		],
-	])("opens the repair of an integrate FAIL on a PASS-graded child, naming exit and head — pair %s", async (_how, events) => {
-		const emitted = emitMachine(900, `## Dependencies\n\n- phase 1: #${CHILD}\n`, [
-			{number: CHILD, state: "open", stateReason: null, classes: []},
-		]);
-		if (emitted._tag !== "Emitted") throw new Error("the epic fixture did not emit");
-		const ledger = fakeFs({
-			files: {
-				"/lanes/900/workflow.json": emitted.text,
-				"/lanes/900/events.jsonl": events.join(""),
-			},
-		});
-		const passedThread = comments(
-			{id: 8801, body: rangeVerdict("PASS")},
-			{id: 9001, body: MINE, createdAt: "2026-08-09T00:00:01Z"},
-		);
-		const {outcome} = await run(
-			[
-				[once(COMMENTS), graded("PASS")],
-				[POST, POSTED],
-				[GET_COMMENT, ECHO],
-				[COMMENTS, passedThread],
-				[ISSUE, CLAIMABLE],
-				[PERM, WRITES],
-				NO_BLOCKERS,
-				...GENERIC_CHECKOUT,
-			],
-			{lane: "900", laneRoot: "/lanes"},
-			ledger,
-		);
-		expect(outcome.code).toBe(0);
-		expect(JSON.parse(outcome.stdout)).toMatchObject({
-			answer: "resumed",
-			branch: RESUMED,
-			integrate: {exit: 42, head: ASSEMBLY},
-		});
-		expect(outcome.stderr.at(-1)).toContain("the integrate FAIL the claim step named");
-	});
+	])(
+		"opens the repair of an integrate FAIL on a PASS-graded child, naming exit and head — pair %s",
+		async (_how, events) => {
+			const emitted = emitMachine(900, `## Dependencies\n\n- phase 1: #${CHILD}\n`, [
+				{ number: CHILD, state: "open", stateReason: null, classes: [] },
+			]);
+			if (emitted._tag !== "Emitted") throw new Error("the epic fixture did not emit");
+			const ledger = fakeFs({
+				files: {
+					"/lanes/900/workflow.json": emitted.text,
+					"/lanes/900/events.jsonl": events.join(""),
+				},
+			});
+			const passedThread = comments(
+				{ id: 8801, body: rangeVerdict("PASS") },
+				{ id: 9001, body: MINE, createdAt: "2026-08-09T00:00:01Z" },
+			);
+			const { outcome } = await run(
+				[
+					[once(COMMENTS), graded("PASS")],
+					[POST, POSTED],
+					[GET_COMMENT, ECHO],
+					[COMMENTS, passedThread],
+					[ISSUE, CLAIMABLE],
+					[PERM, WRITES],
+					NO_BLOCKERS,
+					...GENERIC_CHECKOUT,
+				],
+				{ lane: "900", laneRoot: "/lanes" },
+				ledger,
+			);
+			expect(outcome.code).toBe(0);
+			expect(JSON.parse(outcome.stdout)).toMatchObject({
+				answer: "resumed",
+				branch: RESUMED,
+				integrate: { exit: 42, head: ASSEMBLY },
+			});
+			expect(outcome.stderr.at(-1)).toContain("the integrate FAIL the claim step named");
+		},
+	);
 
 	/**
 	 * The inversion this pins: the armed proof ran first, refused the generic branch on `14`, and the
@@ -277,24 +285,24 @@ describe("runResumeChild — the sequenced repair entry", () => {
 	 * order a property of the run rather than of a paragraph.
 	 */
 	it("checks the branch out BEFORE it arms the lane proof", async () => {
-		const {shell} = await run([...WINS_THE_CLAIM, ...GENERIC_CHECKOUT]);
+		const { shell } = await run([...WINS_THE_CLAIM, ...GENERIC_CHECKOUT]);
 		expect(shell.calls.findIndex((line) => SWITCH.test(line))).toBeLessThan(
 			shell.calls.findIndex((line) => ABBREV_REF.test(line)),
 		);
 	});
 
 	it("proves the generic checkout clean BEFORE it re-keys anything", async () => {
-		const {shell} = await run([...WINS_THE_CLAIM, ...GENERIC_CHECKOUT]);
+		const { shell } = await run([...WINS_THE_CLAIM, ...GENERIC_CHECKOUT]);
 		expect(shell.calls.findIndex((line) => STATUS.test(line))).toBeLessThan(
 			shell.calls.findIndex((line) => RENAME.test(line)),
 		);
 	});
 
 	it("names the branch the checked-out one, on the live claim's nonce", async () => {
-		const {outcome} = await run([...WINS_THE_CLAIM, ...GENERIC_CHECKOUT]);
+		const { outcome } = await run([...WINS_THE_CLAIM, ...GENERIC_CHECKOUT]);
 		const answered = JSON.parse(outcome.stdout) as {
 			readonly branch: string;
-			readonly claim: {readonly nonce: string};
+			readonly claim: { readonly nonce: string };
 			readonly token: string;
 		};
 		expect(answered.branch.endsWith(`-${answered.claim.nonce}`)).toBe(true);
@@ -308,7 +316,7 @@ describe("runResumeChild — the sequenced repair entry", () => {
 	 * standing in.
 	 */
 	it("cannot report success while the tree is still on a generic harness branch", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			...WINS_THE_CLAIM,
 			...GENERIC_CHECKOUT.filter(([pattern]) => pattern !== ABBREV_REF),
 			[ABBREV_REF, okOut(`${GENERIC}\n`)],
@@ -321,7 +329,7 @@ describe("runResumeChild — the sequenced repair entry", () => {
 
 describe("runResumeChild — the fail-closed stops, each still its own", () => {
 	it("refuses a child holding no standing FAIL on 31, re-keying nothing", async () => {
-		const {outcome, shell} = await run([
+		const { outcome, shell } = await run([
 			[COMMENTS, graded("PASS")],
 			[ISSUE, CLAIMABLE],
 			[PERM, WRITES],
@@ -335,16 +343,16 @@ describe("runResumeChild — the fail-closed stops, each still its own", () => {
 	});
 
 	it("refuses a lost claim on 15 before touching git at all", async () => {
-		const {outcome, shell} = await run([
+		const { outcome, shell } = await run([
 			[once(COMMENTS), graded("FAIL")],
 			[POST, POSTED],
 			[GET_COMMENT, ECHO],
 			[
 				COMMENTS,
 				comments(
-					{id: 8801, body: rangeVerdict("FAIL")},
-					{id: 8900, body: THEIRS, author: "other", createdAt: "2026-08-08T00:00:00Z"},
-					{id: 9001, body: MINE, createdAt: "2026-08-09T00:00:01Z"},
+					{ id: 8801, body: rangeVerdict("FAIL") },
+					{ id: 8900, body: THEIRS, author: "other", createdAt: "2026-08-08T00:00:00Z" },
+					{ id: 9001, body: MINE, createdAt: "2026-08-09T00:00:01Z" },
 				),
 			],
 			[DELETE, NO_CONTENT],
@@ -358,7 +366,7 @@ describe("runResumeChild — the fail-closed stops, each still its own", () => {
 	});
 
 	it("refuses a dirty generic checkout on 13, re-keying nothing and naming how to release the claim", async () => {
-		const {outcome, shell} = await run([
+		const { outcome, shell } = await run([
 			...WINS_THE_CLAIM,
 			[TREE_ROOT, GIT_DIRS],
 			[STATUS, okOut(" M packages/fabrika-cli/src/build/command.ts\n")],
@@ -372,7 +380,7 @@ describe("runResumeChild — the fail-closed stops, each still its own", () => {
 	});
 
 	it("refuses on 7 when no prior branch was cut for the child", async () => {
-		const {outcome, shell} = await run([
+		const { outcome, shell } = await run([
 			...WINS_THE_CLAIM,
 			[TREE_ROOT, GIT_DIRS],
 			[STATUS, okOut("")],
@@ -384,7 +392,7 @@ describe("runResumeChild — the fail-closed stops, each still its own", () => {
 	});
 
 	it("refuses on 11 when several prior branches name the child", async () => {
-		const {outcome, shell} = await run([
+		const { outcome, shell } = await run([
 			...WINS_THE_CLAIM,
 			[TREE_ROOT, GIT_DIRS],
 			[STATUS, okOut("")],
@@ -396,7 +404,7 @@ describe("runResumeChild — the fail-closed stops, each still its own", () => {
 	});
 
 	it("refuses on 11 when another worktree still holds the branch, BEFORE the rename", async () => {
-		const {outcome, shell} = await run([
+		const { outcome, shell } = await run([
 			...WINS_THE_CLAIM,
 			[TREE_ROOT, GIT_DIRS],
 			[STATUS, okOut("")],
@@ -412,7 +420,7 @@ describe("runResumeChild — the fail-closed stops, each still its own", () => {
 	});
 
 	it("refuses on 11 when the tree root cannot be read — nothing is proven and nothing moves", async () => {
-		const {outcome, shell} = await run([
+		const { outcome, shell } = await run([
 			...WINS_THE_CLAIM,
 			[TREE_ROOT, errOut("fatal: not a git repository")],
 		]);
@@ -421,7 +429,7 @@ describe("runResumeChild — the fail-closed stops, each still its own", () => {
 	});
 
 	it("names the exact --token re-run that continues the lane, not a bare one", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			...WINS_THE_CLAIM,
 			[TREE_ROOT, GIT_DIRS],
 			[STATUS, okOut(" M a.ts\n")],
@@ -432,7 +440,7 @@ describe("runResumeChild — the fail-closed stops, each still its own", () => {
 	});
 
 	it("names the step it stopped at, and keeps the stopping verb's own reason last", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			...WINS_THE_CLAIM,
 			[TREE_ROOT, GIT_DIRS],
 			[STATUS, okOut(" M a.ts\n")],
@@ -451,7 +459,7 @@ describe("runResumeChild — the fail-closed stops, each still its own", () => {
  */
 describe("runResumeChild — continuing a lane that already holds its claim", () => {
 	it("carries the same claim through on --token, writing no second marker", async () => {
-		const {outcome, shell} = await run([...HOLDS_THE_CLAIM, ...GENERIC_CHECKOUT], {
+		const { outcome, shell } = await run([...HOLDS_THE_CLAIM, ...GENERIC_CHECKOUT], {
 			token: LANE_TOKEN,
 		});
 		expect(outcome.code).toBe(0);
@@ -461,14 +469,14 @@ describe("runResumeChild — continuing a lane that already holds its claim", ()
 			token: LANE_TOKEN,
 			branch: RESUMED,
 			root: "/repo/trees/lane-a",
-			claim: {number: CHILD, nonce: NONCE},
+			claim: { number: CHILD, nonce: NONCE },
 		});
 		expect(shell.requests.some((line) => POST.test(line))).toBe(false);
 		expect(outcome.stderr.join("\n")).toContain("already held by this lane");
 	});
 
 	it("reaches the checkout the stop short-circuited, in the same order", async () => {
-		const {shell} = await run([...HOLDS_THE_CLAIM, ...GENERIC_CHECKOUT], {token: LANE_TOKEN});
+		const { shell } = await run([...HOLDS_THE_CLAIM, ...GENERIC_CHECKOUT], { token: LANE_TOKEN });
 		expect(shell.calls).toContain(`git branch -m ${PRIOR} ${RESUMED}`);
 		expect(shell.calls.findIndex((line) => STATUS.test(line))).toBeLessThan(
 			shell.calls.findIndex((line) => RENAME.test(line)),
@@ -490,7 +498,7 @@ describe("runResumeChild — continuing a lane that already holds its claim", ()
  */
 describe("runResumeChild — the ruled decision child's repair", () => {
 	it("opens the lane on a cited ruling, running the same sequence to the armed proof", async () => {
-		const {outcome, shell} = await run([...WINS_AS_DECISION, ...GENERIC_CHECKOUT], {
+		const { outcome, shell } = await run([...WINS_AS_DECISION, ...GENERIC_CHECKOUT], {
 			cites: RULING,
 		});
 		expect(outcome.code).toBe(0);
@@ -500,7 +508,7 @@ describe("runResumeChild — the ruled decision child's repair", () => {
 			token: LANE_TOKEN,
 			branch: RESUMED,
 			root: "/repo/trees/lane-a",
-			claim: {number: CHILD, nonce: NONCE},
+			claim: { number: CHILD, nonce: NONCE },
 		});
 		expect(outcome.stderr.join("\n")).toContain(
 			`admitted as transcription of the founder ruling at ${RULING}`,
@@ -510,7 +518,7 @@ describe("runResumeChild — the ruled decision child's repair", () => {
 	});
 
 	it("still refuses an uncited decision on 30, before any marker or git step", async () => {
-		const {outcome, shell} = await run([...WINS_AS_DECISION, ...GENERIC_CHECKOUT]);
+		const { outcome, shell } = await run([...WINS_AS_DECISION, ...GENERIC_CHECKOUT]);
 		expect(outcome.code).toBe(TYPE_NOT_BUILDABLE);
 		expect(outcome.stderr.join("\n")).toContain("type not buildable");
 		expect(shell.requests.some((line) => POST.test(line))).toBe(false);
@@ -522,7 +530,7 @@ describe("runResumeChild — the ruled decision child's repair", () => {
 		["another repository's", "https://github.com/other/repo/issues/4312#issuecomment-5335398768"],
 		["another issue's", "https://github.com/o/r/issues/9999#issuecomment-5335398768"],
 	])("keeps build claim's own refusal for %s citation, moving no branch", async (_kind, cites) => {
-		const {outcome, shell} = await run([...WINS_AS_DECISION, ...GENERIC_CHECKOUT], {cites});
+		const { outcome, shell } = await run([...WINS_AS_DECISION, ...GENERIC_CHECKOUT], { cites });
 		expect(outcome.code).toBe(FAILED);
 		expect(outcome.stderr.at(-1)).toContain("build claim: --cites");
 		expect(outcome.stderr.at(-1)).toContain("nothing was written");
@@ -532,32 +540,35 @@ describe("runResumeChild — the ruled decision child's repair", () => {
 
 	it("leaves an ordinary bug child's repair unchanged, cited or not", async () => {
 		const bare = await run([...WINS_THE_CLAIM, ...GENERIC_CHECKOUT]);
-		const cited = await run([...WINS_THE_CLAIM, ...GENERIC_CHECKOUT], {cites: RULING});
+		const cited = await run([...WINS_THE_CLAIM, ...GENERIC_CHECKOUT], { cites: RULING });
 		expect(bare.outcome.code).toBe(0);
 		expect(cited.outcome.code).toBe(0);
 		expect(cited.outcome.stdout).toBe(bare.outcome.stdout);
 	});
 
 	it("admits no type a citation was never an arm for — an epic child is still 30", async () => {
-		const {outcome, shell} = await run(
+		const { outcome, shell } = await run(
 			[
 				[once(COMMENTS), graded("FAIL")],
 				[POST, POSTED],
 				[GET_COMMENT, ECHO],
 				[COMMENTS, CLAIMED_THREAD],
-				[ISSUE, issue({labels: labelled("type:epic", "p1", "status:triaged", "ready-for:agent")})],
+				[
+					ISSUE,
+					issue({ labels: labelled("type:epic", "p1", "status:triaged", "ready-for:agent") }),
+				],
 				[PERM, WRITES],
 				NO_BLOCKERS,
 				...GENERIC_CHECKOUT,
 			],
-			{cites: RULING},
+			{ cites: RULING },
 		);
 		expect(outcome.code).toBe(TYPE_NOT_BUILDABLE);
 		expect(shell.calls).toEqual([]);
 	});
 
 	it("continues the decision lane on --token alone, with no citation and no second marker", async () => {
-		const {outcome, shell} = await run([...HOLDS_THE_DECISION_CLAIM, ...GENERIC_CHECKOUT], {
+		const { outcome, shell } = await run([...HOLDS_THE_DECISION_CLAIM, ...GENERIC_CHECKOUT], {
 			token: LANE_TOKEN,
 		});
 		expect(outcome.code).toBe(0);

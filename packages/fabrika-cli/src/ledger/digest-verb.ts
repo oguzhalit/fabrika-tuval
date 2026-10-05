@@ -17,11 +17,11 @@
  * there can only differ because the body moved, which is what `21` is for.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {answer, type VerbOutcome} from "../verb.ts";
-import {bodyDigest} from "./digest.ts";
-import {type LedgerMessages, type OpenOptions, openGround} from "./preconditions.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { answer, type VerbOutcome } from "../verb.ts";
+import { bodyDigest } from "./digest.ts";
+import { type LedgerMessages, type OpenOptions, openGround } from "./preconditions.ts";
 
 const VERB = "ledger digest";
 
@@ -38,10 +38,10 @@ export const runDigest = (
 	Effect.gen(function* () {
 		const ground = yield* openGround(MESSAGES, options);
 		if (ground._tag === "Refused") return ground.outcome;
-		const {epic, notes} = ground;
+		const { epic, notes } = ground;
 
 		const digest = bodyDigest(epic.body);
-		return answer(JSON.stringify({answer: "digest", epic: epic.number, bodyDigest: digest}), [
+		return answer(JSON.stringify({ answer: "digest", epic: epic.number, bodyDigest: digest }), [
 			`${VERB}: #${epic.number}'s body digests to ${digest} — carry it to \`ledger retopology\` before the body moves.`,
 			...notes,
 		]);

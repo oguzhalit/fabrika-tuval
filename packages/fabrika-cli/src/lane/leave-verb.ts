@@ -14,16 +14,16 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/10389
  */
-import {Effect, FileSystem, Result} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {execCapture} from "../io/exec.ts";
-import {exists} from "../io/fs.ts";
-import type {Attempt} from "../io/git.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {parseWorktreeList, splitTrees, type WorkingTrees, worktrees} from "./assembly.ts";
-import {type Disposition, dispose, type TreeState} from "./cleanup.ts";
-import {readTree} from "./cleanup-verb.ts";
-import {APPEND_UNKNOWN, LANE_UNREADABLE, TREES_KEPT} from "./codes.ts";
+import { Effect, FileSystem, Result } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { execCapture } from "../io/exec.ts";
+import { exists } from "../io/fs.ts";
+import type { Attempt } from "../io/git.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { parseWorktreeList, splitTrees, type WorkingTrees, worktrees } from "./assembly.ts";
+import { type Disposition, dispose, type TreeState } from "./cleanup.ts";
+import { readTree } from "./cleanup-verb.ts";
+import { APPEND_UNKNOWN, LANE_UNREADABLE, TREES_KEPT } from "./codes.ts";
 
 const VERB = "fabrika lane leave";
 
@@ -34,7 +34,7 @@ export interface LeaveOptions {
 
 type Services = ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem;
 
-const kept = (worktree: string, {reason, detail}: Extract<Disposition, {_tag: "Kept"}>) =>
+const kept = (worktree: string, { reason, detail }: Extract<Disposition, { _tag: "Kept" }>) =>
 	refuse(
 		TREES_KEPT,
 		`${VERB}: kept ${worktree} — ${reason}: ${detail}. Nothing was forced; repeat this path and reason in your closing message.`,
@@ -74,7 +74,7 @@ export const runLeave = (options: LeaveOptions): Effect.Effect<VerbOutcome, neve
 		const here = yield* real(worktree);
 		const main = listed.value.main.path;
 		if ((yield* real(main)) === here) {
-			return answer(JSON.stringify({answer: "main", worktree}), [
+			return answer(JSON.stringify({ answer: "main", worktree }), [
 				`${VERB}: ${worktree} is the main working tree, which no shell removes — nothing was touched.`,
 			]);
 		}
@@ -82,7 +82,7 @@ export const runLeave = (options: LeaveOptions): Effect.Effect<VerbOutcome, neve
 		const entry = yield* seated(listed.value, here);
 		const state: TreeState =
 			entry === null || entry.prunable
-				? {_tag: "Stranded", prunable: entry !== null}
+				? { _tag: "Stranded", prunable: entry !== null }
 				: yield* readTree(worktree, (_head, count) =>
 						Effect.succeed({
 							_tag: "LocalOnly",
@@ -117,7 +117,7 @@ export const runLeave = (options: LeaveOptions): Effect.Effect<VerbOutcome, neve
 				detail: removed.ok ? "git reported success and the tree still stands" : removed.reason,
 			});
 		}
-		return answer(JSON.stringify({answer: "removed", worktree}), [
+		return answer(JSON.stringify({ answer: "removed", worktree }), [
 			`${VERB}: removed ${worktree}. This was the tree you stand in, so run no further command from it.`,
 		]);
 	});

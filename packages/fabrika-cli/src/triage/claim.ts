@@ -19,12 +19,12 @@
  * branches testable without a network: the verb supplies markers, a clock and a caller, and
  * this module decides.
  */
-import {type Caller, type LaneCaller, laneCaller} from "../build/claim.ts";
-import {composeToken, nonceOf, parseToken} from "../build/lane.ts";
-import {sessionIdFrom, sessionIdUnset} from "../io/session-id.ts";
-import {FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { type Caller, type LaneCaller, laneCaller } from "../build/claim.ts";
+import { composeToken, nonceOf, parseToken } from "../build/lane.ts";
+import { sessionIdFrom, sessionIdUnset } from "../io/session-id.ts";
+import { FAILED, refuse, type VerbOutcome } from "../verb.ts";
 
-export {anySessionCaller, type Caller, type LaneCaller, laneCaller} from "../build/claim.ts";
+export { anySessionCaller, type Caller, type LaneCaller, laneCaller } from "../build/claim.ts";
 
 /**
  * The claim token shape a triage lane holds: `triage:<session-id>:<uuid>`.
@@ -44,14 +44,14 @@ export const claimNonceOf = (token: string): string | null => nonceOf(token, TOK
 /** The session and uuid halves of a triage token, or `null` when it does not parse as one. */
 export const parseClaimToken = (
 	token: string,
-): {readonly session: string; readonly uuid: string} | null => parseToken(token, TOKEN_PREFIX);
+): { readonly session: string; readonly uuid: string } | null => parseToken(token, TOKEN_PREFIX);
 
 /** Either half of the "who is asking" read: the answer, or the refusal that ends the verb. */
 export type Asked<A> =
-	| {readonly _tag: "Asked"; readonly value: A}
-	| {readonly refusal: VerbOutcome};
+	| { readonly _tag: "Asked"; readonly value: A }
+	| { readonly refusal: VerbOutcome };
 
-const usage = (verb: string, message: string): {readonly refusal: VerbOutcome} => ({
+const usage = (verb: string, message: string): { readonly refusal: VerbOutcome } => ({
 	refusal: refuse(FAILED, `${verb}: ${message}`),
 });
 
@@ -77,7 +77,7 @@ export const requireSession = (
 			"the session id is not a single token — a marker stamped with it would not read back as this session.",
 		);
 	}
-	return {_tag: "Asked", value: raw};
+	return { _tag: "Asked", value: raw };
 };
 
 /** One resolved lane and the token that names it — non-null by construction, unlike `Caller.token`. */
@@ -113,7 +113,7 @@ export const requireCallerToken = (
 			`--token "${trimmed}" carries session ${parsed.session}, but this run is session ${session} — a lane names itself, never another.`,
 		);
 	}
-	return {_tag: "Asked", value: {caller: laneCaller(session, nonce, trimmed), token: trimmed}};
+	return { _tag: "Asked", value: { caller: laneCaller(session, nonce, trimmed), token: trimmed } };
 };
 
 /** A fresh lane of `session`, minted from `uuid` — `triage claim`'s no-`--token` path. */
@@ -122,7 +122,7 @@ export const mintCaller = (verb: string, session: string, uuid: string): Asked<A
 	const nonce = claimNonceOf(minted);
 	return nonce === null
 		? usage(verb, `could not mint a lane token for session ${session} — nothing was written.`)
-		: {_tag: "Asked", value: {caller: laneCaller(session, nonce, minted), token: minted}};
+		: { _tag: "Asked", value: { caller: laneCaller(session, nonce, minted), token: minted } };
 };
 
 /** The exact one-line body a claim marker carries, up to the session id. */
@@ -136,7 +136,7 @@ const MARKER_SUFFIX = " -->";
  * The `lane=` field is what a sibling lane of the same session reads back as *not* its own; a marker
  * without it is a session-only claim, which every lane now treats as another claimant's.
  */
-export const markerBody = (caller: {readonly session: string; readonly nonce: string}): string =>
+export const markerBody = (caller: { readonly session: string; readonly nonce: string }): string =>
 	`${MARKER_PREFIX}${caller.session}${LANE_KEY}${caller.nonce}${MARKER_SUFFIX}`;
 
 /**
@@ -197,7 +197,11 @@ export interface Marker {
 
 /** The markers among `comments`, in the order they were read. */
 export const markersOf = (
-	comments: ReadonlyArray<{readonly id: number; readonly createdAt: string; readonly body: string}>,
+	comments: ReadonlyArray<{
+		readonly id: number;
+		readonly createdAt: string;
+		readonly body: string;
+	}>,
 ): ReadonlyArray<Marker> => {
 	const out: Marker[] = [];
 	for (const comment of comments) {
@@ -231,7 +235,12 @@ export const instantOf = (iso: string): number | null => {
 export const DEFAULT_TTL_MINUTES = 60;
 
 export type ClaimResolution =
-	| {readonly _tag: "Won"; readonly marker: Marker; readonly live: number; readonly expired: number}
+	| {
+			readonly _tag: "Won";
+			readonly marker: Marker;
+			readonly live: number;
+			readonly expired: number;
+	  }
 	| {
 			readonly _tag: "Lost";
 			readonly holder: Marker;
@@ -241,9 +250,9 @@ export type ClaimResolution =
 			readonly expired: number;
 	  }
 	/** No marker of this lane survives — whatever was posted is not on the issue. */
-	| {readonly _tag: "MineAbsent"; readonly live: number; readonly expired: number}
+	| { readonly _tag: "MineAbsent"; readonly live: number; readonly expired: number }
 	/** The ordering key itself could not be read, so no claim was resolved. */
-	| {readonly _tag: "Unresolvable"; readonly reason: string};
+	| { readonly _tag: "Unresolvable"; readonly reason: string };
 
 export interface ResolveInput {
 	readonly markers: ReadonlyArray<Marker>;
@@ -269,8 +278,8 @@ export const namesCaller = (marker: Marker, caller: Caller): boolean =>
 
 /** The markers still binding at `now`, oldest first — or the reason the set could not be ordered. */
 export type LiveMarkers =
-	| {readonly _tag: "Live"; readonly live: ReadonlyArray<Marker>; readonly expired: number}
-	| {readonly _tag: "Unresolvable"; readonly reason: string};
+	| { readonly _tag: "Live"; readonly live: ReadonlyArray<Marker>; readonly expired: number }
+	| { readonly _tag: "Unresolvable"; readonly reason: string };
 
 /**
  * Discard the markers older than the TTL and order what survives, oldest first.
@@ -310,23 +319,28 @@ export const liveMarkers = ({
 		const bt = instantOf(b.createdAt) ?? 0;
 		return at === bt ? a.id - b.id : at - bt;
 	});
-	return {_tag: "Live", live: ordered, expired};
+	return { _tag: "Live", live: ordered, expired };
 };
 
 /** Order the live markers, then let the earliest survivor win. */
-export const resolveClaim = ({markers, caller, now, ttlMinutes}: ResolveInput): ClaimResolution => {
-	const scanned = liveMarkers({markers, now, ttlMinutes});
+export const resolveClaim = ({
+	markers,
+	caller,
+	now,
+	ttlMinutes,
+}: ResolveInput): ClaimResolution => {
+	const scanned = liveMarkers({ markers, now, ttlMinutes });
 	if (scanned._tag === "Unresolvable") return scanned;
-	const {live: ordered, expired} = scanned;
+	const { live: ordered, expired } = scanned;
 
 	const mine = ordered.find((m) => namesCaller(m, caller)) ?? null;
 	const earliest = ordered[0];
 	if (earliest === undefined || mine === null) {
-		return {_tag: "MineAbsent", live: ordered.length, expired};
+		return { _tag: "MineAbsent", live: ordered.length, expired };
 	}
 	return namesCaller(earliest, caller)
-		? {_tag: "Won", marker: earliest, live: ordered.length, expired}
-		: {_tag: "Lost", holder: earliest, mine, live: ordered.length, expired};
+		? { _tag: "Won", marker: earliest, live: ordered.length, expired }
+		: { _tag: "Lost", holder: earliest, mine, live: ordered.length, expired };
 };
 
 /**

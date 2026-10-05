@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import type {CommandNode} from "../unknown-subcommand.ts";
-import {grillCommand} from "./command.ts";
+import { describe, expect, it } from "vitest";
+import type { CommandNode } from "../unknown-subcommand.ts";
+import { grillCommand } from "./command.ts";
 
 /**
  * Registration is the only route to a verb: a leaf dropped from `withSubcommands` is unreachable

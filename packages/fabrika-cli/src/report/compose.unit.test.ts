@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	checkSections,
 	classifyingPrefix,
@@ -19,17 +19,17 @@ describe("checkSections", () => {
 	});
 
 	it("accepts an empty suggested-next-step — a blank guess beats a misleading one", () => {
-		expect(checkSections(sections({"## Suggested next step (non-binding)": ""}))).toBeNull();
+		expect(checkSections(sections({ "## Suggested next step (non-binding)": "" }))).toBeNull();
 	});
 
 	it("names the one missing heading", () => {
 		const body = sections().replace("## Pointers\ncontent", "");
-		expect(checkSections(body)).toEqual({_tag: "Missing", heading: "## Pointers"});
+		expect(checkSections(body)).toEqual({ _tag: "Missing", heading: "## Pointers" });
 	});
 
 	it("catches a misspelled heading as the canonical one missing", () => {
 		const body = sections().replace("## What I observed", "## What I Observed");
-		expect(checkSections(body)).toEqual({_tag: "Missing", heading: "## What I observed"});
+		expect(checkSections(body)).toEqual({ _tag: "Missing", heading: "## What I observed" });
 	});
 
 	it("names both sides of an ordering violation", () => {
@@ -49,7 +49,7 @@ describe("checkSections", () => {
 	});
 
 	it("names an empty required section", () => {
-		expect(checkSections(sections({"## Why it matters": "   "}))).toEqual({
+		expect(checkSections(sections({ "## Why it matters": "   " }))).toEqual({
 			_tag: "Empty",
 			heading: "## Why it matters",
 		});
@@ -89,7 +89,7 @@ describe("renderFooter", () => {
 
 	it("never drops the `Filed by an agent` marker — it is the never-auto-close signal", () => {
 		expect(
-			renderFooter({session: null, model: null, branch: null, timestamp: "2026-08-01T14:22:07Z"}),
+			renderFooter({ session: null, model: null, branch: null, timestamp: "2026-08-01T14:22:07Z" }),
 		).toBe("---\n<sub>Filed by an agent · 2026-08-01T14:22:07Z</sub>");
 	});
 });

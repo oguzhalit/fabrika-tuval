@@ -31,11 +31,11 @@ import type {
 	SelectOption,
 	ViewLayout,
 } from "../io/projects.ts";
-import {mergeReadme, type ReadmeCase} from "./readme-section.ts";
-import type {TableShape, ViewShape} from "./shape.ts";
+import { mergeReadme, type ReadmeCase } from "./readme-section.ts";
+import type { TableShape, ViewShape } from "./shape.ts";
 
 export type Step =
-	| {readonly _tag: "CreateField"; readonly spec: FieldSpec}
+	| { readonly _tag: "CreateField"; readonly spec: FieldSpec }
 	| {
 			readonly _tag: "UpdateOptions";
 			readonly fieldId: string;
@@ -46,7 +46,7 @@ export type Step =
 			/** The kept options whose blank description this step fills. */
 			readonly filled: ReadonlyArray<string>;
 	  }
-	| {readonly _tag: "CreateView"; readonly view: ViewShape}
+	| { readonly _tag: "CreateView"; readonly view: ViewShape }
 	| {
 			readonly _tag: "UpdateView";
 			readonly viewId: string;
@@ -58,15 +58,15 @@ export type Step =
 	  }
 	| {
 			readonly _tag: "UpdateProject";
-			readonly readme: {readonly case: ReadmeCase; readonly text: string} | null;
+			readonly readme: { readonly case: ReadmeCase; readonly text: string } | null;
 			/** Only ever written over an empty short description. */
 			readonly shortDescription: string | null;
 	  };
 
 /** Something a person wrote that differs from the table's, left as it is for them to change by hand. */
 export type Drift =
-	| {readonly _tag: "ShortDescription"; readonly found: string; readonly wanted: string}
-	| {readonly _tag: "BrokenReadmeMarkers"; readonly section: string};
+	| { readonly _tag: "ShortDescription"; readonly found: string; readonly wanted: string }
+	| { readonly _tag: "BrokenReadmeMarkers"; readonly section: string };
 
 export interface Conflict {
 	readonly field: string;
@@ -109,8 +109,8 @@ const matches = (spec: FieldSpec, field: ProjectField): boolean => {
 };
 
 const optionStep = (
-	spec: Extract<FieldSpec, {_tag: "SingleSelect"}>,
-	field: Extract<ProjectField, {_tag: "SingleSelect"}>,
+	spec: Extract<FieldSpec, { _tag: "SingleSelect" }>,
+	field: Extract<ProjectField, { _tag: "SingleSelect" }>,
 ): Step | null => {
 	const wanted = new Map(spec.options.map((option) => [option.name, option] as const));
 	const filled: string[] = [];
@@ -118,13 +118,13 @@ const optionStep = (
 		const description = wanted.get(option.name)?.description ?? "";
 		if (option.description !== "" || description === "") return option;
 		filled.push(option.name);
-		return {...option, description};
+		return { ...option, description };
 	});
 	const have = new Set(field.options.map((option) => option.name));
 	const added = spec.options.filter((option) => !have.has(option.name));
 	return added.length === 0 && filled.length === 0
 		? null
-		: {_tag: "UpdateOptions", fieldId: field.id, field: field.name, kept, added, filled};
+		: { _tag: "UpdateOptions", fieldId: field.id, field: field.name, kept, added, filled };
 };
 
 /**
@@ -152,11 +152,11 @@ export const plan = (shape: TableShape, project: ProjectSnapshot): Plan => {
 	for (const spec of shape.fields) {
 		const found = project.fields.find((field) => field.name === spec.name);
 		if (found === undefined) {
-			steps.push({_tag: "CreateField", spec});
+			steps.push({ _tag: "CreateField", spec });
 			continue;
 		}
 		if (!matches(spec, found)) {
-			conflicts.push({field: spec.name, wanted: spec._tag, found: kindOf(found)});
+			conflicts.push({ field: spec.name, wanted: spec._tag, found: kindOf(found) });
 			continue;
 		}
 		if (spec._tag === "SingleSelect" && found._tag === "SingleSelect") {
@@ -169,28 +169,28 @@ export const plan = (shape: TableShape, project: ProjectSnapshot): Plan => {
 	for (const view of shape.views) {
 		const found = project.views.find((candidate) => candidate.name === view.name);
 		if (found === undefined) {
-			steps.push({_tag: "CreateView", view});
+			steps.push({ _tag: "CreateView", view });
 			continue;
 		}
 		const layout = found.layout === view.layout ? null : view.layout;
 		const filter = found.filter === view.filter ? null : view.filter;
 		const visibleFieldIds = visibleList(view, found.visibleFieldIds, idOf);
 		if (layout !== null || filter !== null || visibleFieldIds !== null) {
-			steps.push({_tag: "UpdateView", viewId: found.id, view, layout, filter, visibleFieldIds});
+			steps.push({ _tag: "UpdateView", viewId: found.id, view, layout, filter, visibleFieldIds });
 		}
 	}
 
 	const legacy = shape.legacy.flatMap((name): ReadonlyArray<Legacy> => {
 		const found = project.fields.find((field) => field.name === name);
-		return found === undefined ? [] : [{field: name, kind: kindOf(found)}];
+		return found === undefined ? [] : [{ field: name, kind: kindOf(found) }];
 	});
 
 	const drift: Drift[] = [];
 	const merged = mergeReadme(project.readme, shape.readme);
 	if (merged._tag === "Broken") {
-		drift.push({_tag: "BrokenReadmeMarkers", section: shape.readme.name});
+		drift.push({ _tag: "BrokenReadmeMarkers", section: shape.readme.name });
 	}
-	const readme = merged._tag === "Write" ? {case: merged.case, text: merged.readme} : null;
+	const readme = merged._tag === "Write" ? { case: merged.case, text: merged.readme } : null;
 	const shortDescription = project.shortDescription === null ? shape.shortDescription : null;
 	if (project.shortDescription !== null && project.shortDescription !== shape.shortDescription) {
 		drift.push({
@@ -200,10 +200,10 @@ export const plan = (shape: TableShape, project: ProjectSnapshot): Plan => {
 		});
 	}
 	if (readme !== null || shortDescription !== null) {
-		steps.push({_tag: "UpdateProject", readme, shortDescription});
+		steps.push({ _tag: "UpdateProject", readme, shortDescription });
 	}
 
-	return {steps, drift, conflicts, legacy};
+	return { steps, drift, conflicts, legacy };
 };
 
 /** One line per step, as the verb reports what it changed. */

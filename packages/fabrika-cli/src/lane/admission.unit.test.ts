@@ -5,14 +5,14 @@
  * assertion rather than a reading of the source: a refused key leaves the substituted run
  * uninvoked and the substituted filesystem unwritten.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs} from "../fakes.test-support.ts";
-import {answer, type VerbOutcome} from "../verb.ts";
-import {admitBoardKey, admitKey} from "./admission.ts";
-import {KEY_MALFORMED} from "./codes.ts";
-import type {LaneKey} from "./key.ts";
-import type {LaneRef} from "./store.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs } from "../fakes.test-support.ts";
+import { answer, type VerbOutcome } from "../verb.ts";
+import { admitBoardKey, admitKey } from "./admission.ts";
+import { KEY_MALFORMED } from "./codes.ts";
+import type { LaneKey } from "./key.ts";
+import type { LaneRef } from "./store.ts";
 
 const REPO = "/work/repo";
 const ROOT = "/work/repo/.fabrika/lanes";
@@ -22,7 +22,7 @@ interface Spy {
 	readonly refs: Array<LaneRef>;
 }
 
-const spy = (): Spy => ({keys: [], refs: []});
+const spy = (): Spy => ({ keys: [], refs: [] });
 
 /** A stand-in for whatever the verb would have done — it records that it ran, and nothing else. */
 const recording =
@@ -36,7 +36,7 @@ const recording =
 const admit = (raw: string, into: Spy, fs: ReturnType<typeof fakeFs>) =>
 	Effect.runPromise(Effect.provide(admitKey("open", raw, ROOT, REPO, recording(into)), fs.layer));
 
-const grounded = () => fakeFs({files: {}, directories: [`${REPO}/.git`, ROOT]});
+const grounded = () => fakeFs({ files: {}, directories: [`${REPO}/.git`, ROOT] });
 
 describe("a keyed lane verb's admission", () => {
 	it("refuses a traversal before the verb runs and before anything is written", async () => {
@@ -64,8 +64,8 @@ describe("a keyed lane verb's admission", () => {
 		const out = await admit("05673", ran, grounded());
 
 		expect(out.code).toBe(0);
-		expect(ran.refs).toEqual([{root: ROOT, lane: "5673"}]);
-		expect(ran.keys).toEqual([{_tag: "Issue", lane: "5673"}]);
+		expect(ran.refs).toEqual([{ root: ROOT, lane: "5673" }]);
+		expect(ran.keys).toEqual([{ _tag: "Issue", lane: "5673" }]);
 	});
 
 	it("leaves a canonical key reaching exactly the lane it always did", async () => {
@@ -73,7 +73,7 @@ describe("a keyed lane verb's admission", () => {
 		const out = await admit("5673", ran, grounded());
 
 		expect(out.code).toBe(0);
-		expect(ran.refs).toEqual([{root: ROOT, lane: "5673"}]);
+		expect(ran.refs).toEqual([{ root: ROOT, lane: "5673" }]);
 	});
 
 	it("keeps a chore key on the chores root the caller named", async () => {
@@ -81,7 +81,7 @@ describe("a keyed lane verb's admission", () => {
 		const out = await admit("chore:park-sweep", ran, grounded());
 
 		expect(out.code).toBe(0);
-		expect(ran.refs).toEqual([{root: ROOT, lane: "park-sweep"}]);
+		expect(ran.refs).toEqual([{ root: ROOT, lane: "park-sweep" }]);
 	});
 });
 
@@ -107,6 +107,6 @@ describe("a board-ground lane verb's admission", () => {
 		const out = await board("05673", seen);
 
 		expect(out.code).toBe(0);
-		expect(seen).toEqual([{_tag: "Issue", lane: "5673"}]);
+		expect(seen).toEqual([{ _tag: "Issue", lane: "5673" }]);
 	});
 });

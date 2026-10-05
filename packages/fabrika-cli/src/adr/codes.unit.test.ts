@@ -1,6 +1,6 @@
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
-import {allocatedCodes, verbLocalCodesIn} from "../exit-code-alignment.ts";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import { allocatedCodes, verbLocalCodesIn } from "../exit-code-alignment.ts";
 import * as codes from "./codes.ts";
 
 const GROUP_DIR = fileURLToPath(new URL(".", import.meta.url));

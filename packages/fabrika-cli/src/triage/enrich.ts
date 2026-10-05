@@ -22,7 +22,7 @@
  * Pre-marker bodies are recognised by `./enrich-legacy.ts`, which is one-time migration code.
  */
 
-import {type EnrichText, renderPlainSummary} from "./plain-summary.ts";
+import { type EnrichText, renderPlainSummary } from "./plain-summary.ts";
 
 /** Which authored region the verb last wrote: a rewrite (default mode) or a pitch (`--epic`). */
 export type EnrichMode = "rewrite" | "wrap";
@@ -59,13 +59,13 @@ export const renderMarker = (issue: number, mode: EnrichMode): string =>
  */
 export const preservedEnvelope = (
 	lines: ReadonlyArray<string>,
-): {readonly start: number; readonly end: number} | null => {
+): { readonly start: number; readonly end: number } | null => {
 	const start = lines.findIndex((line) => MARKER_RE.test(line.trim()));
 	if (start === -1) return null;
 	const closing = lines.findIndex(
 		(line, index) => index > start && line.trim().toLowerCase() === "</details>",
 	);
-	return {start, end: closing === -1 ? start : closing};
+	return { start, end: closing === -1 ? start : closing };
 };
 
 export type Detection =
@@ -94,7 +94,7 @@ export type Detection =
  */
 const splitAtMarker = (
 	body: string,
-): {readonly issue: number; readonly mode: EnrichMode; readonly preserved: string} | null => {
+): { readonly issue: number; readonly mode: EnrichMode; readonly preserved: string } | null => {
 	const match = MARKER_RE.exec(body);
 	if (match === null || match.index === undefined) return null;
 	const after = match.index + match[0].length;
@@ -120,16 +120,16 @@ export const detect = (
 	const marked = splitAtMarker(body);
 	if (marked !== null) {
 		return marked.issue === issue
-			? {_tag: "Enriched", via: "marker", markedMode: marked.mode, preserved: marked.preserved}
-			: {_tag: "Fresh", reason: "marker binds another issue", boundTo: marked.issue};
+			? { _tag: "Enriched", via: "marker", markedMode: marked.mode, preserved: marked.preserved }
+			: { _tag: "Fresh", reason: "marker binds another issue", boundTo: marked.issue };
 	}
 	// The legacy shapes are only consulted for a body carrying NO marker at all. A body whose marker
 	// binds another issue returned above: it is a paste, and running a shape test over a paste is
 	// exactly the impersonation the binding exists to refuse.
 	const legacy = legacyPreserved(body);
 	return legacy === null
-		? {_tag: "Fresh", reason: "no marker", boundTo: null}
-		: {_tag: "Enriched", via: "legacy", markedMode: null, preserved: legacy};
+		? { _tag: "Fresh", reason: "no marker", boundTo: null }
+		: { _tag: "Enriched", via: "legacy", markedMode: null, preserved: legacy };
 };
 
 const EPIC_HEADER = "## Epic — awaiting plan";

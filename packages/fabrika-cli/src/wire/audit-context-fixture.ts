@@ -26,7 +26,10 @@ export const AUDIT_FIELDS = JSON.stringify({
 		},
 	],
 	disproven: [
-		{suspicion: "Header-only image validation", disposition: "Decoder already validates the image"},
+		{
+			suspicion: "Header-only image validation",
+			disposition: "Decoder already validates the image",
+		},
 	],
 	accounting: {
 		openedFiles: ["src/capture.ts"],

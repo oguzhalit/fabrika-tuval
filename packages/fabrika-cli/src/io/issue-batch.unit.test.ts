@@ -1,7 +1,7 @@
-import {Effect, Layer} from "effect";
-import {afterEach, beforeAll, beforeEach, describe, expect, it} from "vitest";
-import {fakeShell} from "../fakes.test-support.ts";
-import {ok} from "./git.ts";
+import { Effect, Layer } from "effect";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { fakeShell } from "../fakes.test-support.ts";
+import { ok } from "./git.ts";
 import {
 	type CommentWaveReads,
 	ISSUE_BATCH,
@@ -9,8 +9,8 @@ import {
 	readIssueNodes,
 	reconcileComments,
 } from "./issue-batch.ts";
-import {type CommentRecord, present} from "./issues.ts";
-import {type FakeIssue, fakeIssues, GRAPHQL} from "./issues-fake.test-support.ts";
+import { type CommentRecord, present } from "./issues.ts";
+import { type FakeIssue, fakeIssues, GRAPHQL } from "./issues-fake.test-support.ts";
 
 beforeAll(() => {
 	process.env.GITHUB_TOKEN = "ghp_scripted";
@@ -35,11 +35,11 @@ const against = (
 
 describe("readIssueNodes", () => {
 	it(`reads 200 issues in ceil(200 / ${ISSUE_BATCH}) GraphQL requests, each node whole`, async () => {
-		const numbers = Array.from({length: 200}, (_, index) => index + 1);
+		const numbers = Array.from({ length: 200 }, (_, index) => index + 1);
 		const issues = Object.fromEntries(
-			numbers.map((n) => [n, {parent: 500, blockedBy: [n + 1], comments: ["a", "b"]}]),
+			numbers.map((n) => [n, { parent: 500, blockedBy: [n + 1], comments: ["a", "b"] }]),
 		);
-		const {github, nodes} = against(issues);
+		const { github, nodes } = against(issues);
 
 		const read = await nodes(numbers);
 
@@ -60,18 +60,18 @@ describe("readIssueNodes", () => {
 	});
 
 	it("reads a pull request number and a number with no issue as Absent", async () => {
-		const {nodes} = against({1: {}, 2: {pr: true}});
+		const { nodes } = against({ 1: {}, 2: { pr: true } });
 
 		const read = await nodes([1, 2, 3]);
 
 		expect(read.get(1)?._tag).toBe("Present");
-		expect(read.get(2)).toEqual({_tag: "Absent"});
-		expect(read.get(3)).toEqual({_tag: "Absent"});
+		expect(read.get(2)).toEqual({ _tag: "Absent" });
+		expect(read.get(3)).toEqual({ _tag: "Absent" });
 	});
 
 	it("marks an issue whose connection runs past one page Unproven, never a short list", async () => {
-		const many = Array.from({length: 150}, (_, index) => 1000 + index);
-		const {nodes} = against({1: {subIssues: many}, 2: {}});
+		const many = Array.from({ length: 150 }, (_, index) => 1000 + index);
+		const { nodes } = against({ 1: { subIssues: many }, 2: {} });
 
 		const read = await nodes([1, 2]);
 
@@ -83,7 +83,7 @@ describe("readIssueNodes", () => {
 	});
 
 	it("marks an issue whose node alone errored Unproven", async () => {
-		const {nodes} = against({1: {nodeError: "Resource not accessible"}, 2: {}});
+		const { nodes } = against({ 1: { nodeError: "Resource not accessible" }, 2: {} });
 
 		const read = await nodes([1, 2]);
 
@@ -95,7 +95,7 @@ describe("readIssueNodes", () => {
 	});
 
 	it("reads every issue of a request that failed as a whole Unknown", async () => {
-		const {nodes} = against({1: {}, 2: {}}, {graphqlStatus: 502});
+		const { nodes } = against({ 1: {}, 2: {} }, { graphqlStatus: 502 });
 
 		const read = await nodes([1, 2]);
 
@@ -106,9 +106,9 @@ describe("readIssueNodes", () => {
 
 describe("readCommentCounts", () => {
 	it("reads only the declared counts, in batches", async () => {
-		const numbers = Array.from({length: 120}, (_, index) => index + 1);
-		const {github, counts} = against(
-			Object.fromEntries(numbers.map((n) => [n, {comments: ["x"]}])),
+		const numbers = Array.from({ length: 120 }, (_, index) => index + 1);
+		const { github, counts } = against(
+			Object.fromEntries(numbers.map((n) => [n, { comments: ["x"] }])),
 		);
 
 		const read = await counts(numbers);
@@ -152,7 +152,7 @@ describe("reconcileComments", () => {
 						order.push(`list #${issue}`);
 						const steps = served[issue] ?? [0];
 						const length = steps[Math.min(k, steps.length - 1)] ?? 0;
-						return [issue, ok(Array.from({length}, (_, index) => comment(index)))] as const;
+						return [issue, ok(Array.from({ length }, (_, index) => comment(index)))] as const;
 					}),
 				),
 			counts: (issues) =>
@@ -161,33 +161,37 @@ describe("reconcileComments", () => {
 					return new Map(issues.map((issue) => [issue, present(declared[issue] ?? 0)]));
 				}),
 		};
-		return {order, waves};
+		return { order, waves };
 	};
 
 	it("reads every count after the lists, in one batched read", async () => {
-		const {order, waves} = scripted({1: [2], 2: [0], 3: [5]}, {1: 2, 2: 0, 3: 5});
+		const { order, waves } = scripted({ 1: [2], 2: [0], 3: [5] }, { 1: 2, 2: 0, 3: 5 });
 
 		const scans = await Effect.runPromise(reconcileComments(REPO, [1, 2, 3], waves));
 
 		expect(order).toEqual(["list #1", "list #2", "list #3", "count #1,#2,#3"]);
 		expect(scans.get(3)).toEqual(
-			ok({comments: Array.from({length: 5}, (_, index) => comment(index)), declared: 5, reads: 1}),
+			ok({
+				comments: Array.from({ length: 5 }, (_, index) => comment(index)),
+				declared: 5,
+				reads: 1,
+			}),
 		);
 	});
 
 	it("re-reads a short list with its count and keeps the ones that settled", async () => {
-		const {order, waves} = scripted({1: [1, 2], 2: [3]}, {1: 2, 2: 3});
+		const { order, waves } = scripted({ 1: [1, 2], 2: [3] }, { 1: 2, 2: 3 });
 
 		const scans = await Effect.runPromise(reconcileComments(REPO, [1, 2], waves));
 
 		expect(order).toEqual(["list #1", "list #2", "count #1,#2", "list #1", "count #1"]);
-		expect(scans.get(1)?._tag === "Ok" && scans.get(1)).toMatchObject({value: {reads: 2}});
+		expect(scans.get(1)?._tag === "Ok" && scans.get(1)).toMatchObject({ value: { reads: 2 } });
 		expect(scans.get(2)?._tag).toBe("Ok");
 	});
 
 	it("fails a list still shorter than its count after the bounded retries", async () => {
 		process.env.FABRIKA_COMMENT_SCAN_ATTEMPTS = "3";
-		const {order, waves} = scripted({1: [1]}, {1: 4});
+		const { order, waves } = scripted({ 1: [1] }, { 1: 4 });
 
 		const scans = await Effect.runPromise(reconcileComments(REPO, [1], waves));
 

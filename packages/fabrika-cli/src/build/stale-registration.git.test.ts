@@ -14,12 +14,12 @@
  * Removing a *directory* out from under a registration is exactly how a dead session leaves one
  * behind, so the fixture creates that state the same way rather than simulating it.
  */
-import {execFileSync} from "node:child_process";
-import {existsSync, mkdtempSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {afterAll, describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
 
 const GIT_ENV = {
 	...process.env,
@@ -32,11 +32,11 @@ const GIT_ENV = {
 };
 
 const git = (cwd: string, ...args: ReadonlyArray<string>): string =>
-	execFileSync("git", [...args], {cwd, env: GIT_ENV, encoding: "utf8"}).trim();
+	execFileSync("git", [...args], { cwd, env: GIT_ENV, encoding: "utf8" }).trim();
 
 const roots: Array<string> = [];
 afterAll(() => {
-	for (const root of roots) rmSync(root, {recursive: true, force: true});
+	for (const root of roots) rmSync(root, { recursive: true, force: true });
 	roots.length = 0;
 });
 
@@ -67,17 +67,17 @@ const open = (): Fixture => {
 	const live = join(root, "live");
 	git(repo, "worktree", "add", "--detach", "--quiet", dead, "HEAD");
 	git(repo, "worktree", "add", "--detach", "--quiet", live, "HEAD");
-	return {repo, dead, live};
+	return { repo, dead, live };
 };
 
 describe("git worktree prune, against real git", () => {
 	it(
 		"clears a registration whose directory is gone and keeps the one still on disk",
 		() => {
-			const {repo, dead, live} = open();
+			const { repo, dead, live } = open();
 			expect(registrations(repo)).toBe(3);
 
-			rmSync(dead, {recursive: true, force: true});
+			rmSync(dead, { recursive: true, force: true });
 			expect(git(repo, "worktree", "list", "--porcelain")).toMatch(/prunable/);
 
 			git(repo, "worktree", "prune");
@@ -91,8 +91,8 @@ describe("git worktree prune, against real git", () => {
 	it(
 		"needs no --expire window: a registration stale for seconds is dropped by a direct prune",
 		() => {
-			const {repo, dead} = open();
-			rmSync(dead, {recursive: true, force: true});
+			const { repo, dead } = open();
+			rmSync(dead, { recursive: true, force: true });
 
 			// The `gc.worktreePruneExpire` default is `git gc`'s, not this command's. If it bound here,
 			// a just-orphaned entry would survive and `build reap` would prune nothing it ever finds.
@@ -106,9 +106,9 @@ describe("git worktree prune, against real git", () => {
 	it(
 		"SKIPS a locked registration whose directory is gone — the state unlock exists for",
 		() => {
-			const {repo, dead} = open();
+			const { repo, dead } = open();
 			git(repo, "worktree", "lock", "--reason", "claude agent (pid 84894)", dead);
-			rmSync(dead, {recursive: true, force: true});
+			rmSync(dead, { recursive: true, force: true });
 
 			git(repo, "worktree", "prune");
 			expect(git(repo, "worktree", "list", "--porcelain")).toContain(dead);
@@ -123,9 +123,9 @@ describe("git worktree prune, against real git", () => {
 	it(
 		"calls a registration prunable on a DELETED .git FILE, while its checkout still holds work",
 		() => {
-			const {repo, dead} = open();
+			const { repo, dead } = open();
 			writeFileSync(join(dead, "unsaved.txt"), "work nobody committed\n");
-			rmSync(join(dead, ".git"), {force: true});
+			rmSync(join(dead, ".git"), { force: true });
 
 			// The flag's condition is the `.git` file, not the directory — so it fires here, where
 			// there is a checkout and it is dirty. Seating "its directory is gone" off this would
@@ -147,7 +147,7 @@ describe("git worktree prune, against real git", () => {
 	it(
 		"leaves a live registration alone however many times it runs",
 		() => {
-			const {repo, live} = open();
+			const { repo, live } = open();
 
 			git(repo, "worktree", "prune");
 			git(repo, "worktree", "prune");

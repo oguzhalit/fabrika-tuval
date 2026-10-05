@@ -14,9 +14,9 @@
  * than a scan for unaccounted bytes on a killed `gh`'s stdout. Both are still values the caller
  * refuses on.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	attemptOf,
 	existenceOf,
@@ -25,9 +25,9 @@ import {
 	restRead,
 	restWrite,
 } from "../io/gh-api.ts";
-import {type Attempt, fail, ok} from "../io/git.ts";
-import {type Existence, unknown} from "../io/issues.ts";
-import {isRecord} from "../io/json.ts";
+import { type Attempt, fail, ok } from "../io/git.ts";
+import { type Existence, unknown } from "../io/issues.ts";
+import { isRecord } from "../io/json.ts";
 
 /**
  * What these functions need: the HTTP client they call over, and the spawner `resolveToken` may
@@ -56,7 +56,7 @@ export interface CandidateIssue {
 
 const toCandidate = (value: unknown): CandidateIssue | null => {
 	if (!isRecord(value)) return null;
-	const {number, title, labels, assignees, milestone} = value;
+	const { number, title, labels, assignees, milestone } = value;
 	if (typeof number !== "number" || typeof title !== "string") return null;
 	const names = Array.isArray(labels)
 		? labels.map((l) => (isRecord(l) && typeof l.name === "string" ? l.name : null))
@@ -171,13 +171,13 @@ export const getPullHead = (
 			if (!isRecord(body) || !isRecord(body.head)) {
 				return fail("GitHub answered 200 but its body is not a pull request");
 			}
-			const {ref, sha} = body.head;
+			const { ref, sha } = body.head;
 			const state = body.state;
 			return typeof ref === "string" &&
 				ref !== "" &&
 				typeof sha === "string" &&
 				typeof state === "string"
-				? ok({ref, sha, state, merged: body.merged === true})
+				? ok({ ref, sha, state, merged: body.merged === true })
 				: fail("GitHub answered 200 but its output is not a pull-request head");
 		});
 	});
@@ -189,7 +189,7 @@ export interface PullRef {
 
 const toPullRef = (body: unknown, what: string): Attempt<PullRef> =>
 	isRecord(body) && typeof body.number === "number" && typeof body.html_url === "string"
-		? ok({number: body.number, url: body.html_url})
+		? ok({ number: body.number, url: body.html_url })
 		: fail(`GitHub answered 2xx but its body is not ${what}`);
 
 /**
@@ -259,7 +259,7 @@ export const updatePullBody = (
 	Effect.gen(function* () {
 		const token = yield* resolveToken(env);
 		if (token._tag === "Failure") return token;
-		const outcome = yield* restWrite(token.value, "PATCH", `repos/${repo}/pulls/${pr}`, {body});
+		const outcome = yield* restWrite(token.value, "PATCH", `repos/${repo}/pulls/${pr}`, { body });
 		return attemptOf(outcome, (payload) => toPullRef(payload, "an updated pull request"));
 	});
 

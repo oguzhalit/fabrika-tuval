@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	type ChildRecord,
 	EXCLUDE_ENTRY,
@@ -77,9 +77,9 @@ describe("run.json", () => {
 
 describe("children.jsonl", () => {
 	it("round-trips one record per line", () => {
-		expect(parseManifest(renderManifest([CHILD, {...CHILD, number: 4302, id: 90211}]))).toEqual([
+		expect(parseManifest(renderManifest([CHILD, { ...CHILD, number: 4302, id: 90211 }]))).toEqual([
 			CHILD,
-			{...CHILD, number: 4302, id: 90211},
+			{ ...CHILD, number: 4302, id: 90211 },
 		]);
 	});
 

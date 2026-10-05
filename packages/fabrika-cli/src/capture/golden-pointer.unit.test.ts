@@ -3,7 +3,7 @@
  * bless (move the pointer) immutably. Asserted with no fs, no network — pure logic
  * belongs to the unit tier. This is the "baseline resolution" AC.
  */
-import {assert, describe, it} from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import {
 	blessedSurfaces,
 	blessSurface,
@@ -16,8 +16,8 @@ const SHA_A = "a".repeat(64);
 const SHA_B = "b".repeat(64);
 
 const pointer: GoldenPointer = {
-	"/catalog": {sha256: SHA_A, blessedDate: "2026-07-14", intent: "catalog home, seeded corpus"},
-	"/catalog:empty": {sha256: SHA_B, blessedDate: "2026-07-14", intent: "catalog empty state"},
+	"/catalog": { sha256: SHA_A, blessedDate: "2026-07-14", intent: "catalog home, seeded corpus" },
+	"/catalog:empty": { sha256: SHA_B, blessedDate: "2026-07-14", intent: "catalog empty state" },
 };
 
 describe("resolveGoldenEntry — baseline resolution", () => {

@@ -40,12 +40,12 @@ export const renderFrame = (frame: LogFrame): string =>
 export const parseFrames = (stream: string): ReadonlyArray<LogFrame> => {
 	const lines = stream.split("\n");
 	const frames: LogFrame[] = [];
-	let open: {header: RegExpExecArray; body: string[]} | null = null;
+	let open: { header: RegExpExecArray; body: string[] } | null = null;
 
 	for (const line of lines) {
 		if (open === null) {
 			const header = HEADER.exec(line);
-			if (header !== null) open = {header, body: []};
+			if (header !== null) open = { header, body: [] };
 			continue;
 		}
 		const context = open.header[1] ?? NULL_TOKEN;

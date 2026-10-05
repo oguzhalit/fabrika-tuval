@@ -10,9 +10,9 @@
  * Output channels follow `../verb.ts`; `./annotate.ts` owns workflow annotations.
  */
 
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {type Annotation, fallbackAnnotations, renderAnnotations} from "./annotate.ts";
-import {PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE} from "./codes.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { type Annotation, fallbackAnnotations, renderAnnotations } from "./annotate.ts";
+import { PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE } from "./codes.ts";
 
 /**
  * `Skipped` and `ZeroScope` both mean the guard scanned nothing, and they are not the same answer.
@@ -23,9 +23,9 @@ import {PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE} from "./codes.ts";
  */
 export type GuardVerdict =
 	/** The scan ran over `scanned` real units of scope and found nothing to report. */
-	| {readonly _tag: "Clean"; readonly summary: string; readonly scanned: number}
+	| { readonly _tag: "Clean"; readonly summary: string; readonly scanned: number }
 	/** The repo declared this guard's subject absent, so there was nothing to scan. */
-	| {readonly _tag: "Skipped"; readonly summary: string}
+	| { readonly _tag: "Skipped"; readonly summary: string }
 	/** The rule is broken. `report` names every offender; `annotations` locate them on the diff. */
 	| {
 			readonly _tag: "Violation";
@@ -33,9 +33,9 @@ export type GuardVerdict =
 			readonly annotations: ReadonlyArray<Annotation>;
 	  }
 	/** The scope resolved empty, so a pass would be vacuous. */
-	| {readonly _tag: "ZeroScope"; readonly report: string}
+	| { readonly _tag: "ZeroScope"; readonly report: string }
 	/** A read the verdict rests on failed. Nothing is proven — never reported as clean. */
-	| {readonly _tag: "Unknown"; readonly report: string};
+	| { readonly _tag: "Unknown"; readonly report: string };
 
 /** A clean run. `scanned` is what it covered, so the summary can never claim a scope it never had. */
 export const clean = (summary: string, scanned: number): GuardVerdict => ({
@@ -48,16 +48,16 @@ export const clean = (summary: string, scanned: number): GuardVerdict => ({
  * A guard whose subject this repo declared it does not keep. `summary` must name the declaration,
  * so nobody reads the exit 0 as a scan that passed.
  */
-export const skipped = (summary: string): GuardVerdict => ({_tag: "Skipped", summary});
+export const skipped = (summary: string): GuardVerdict => ({ _tag: "Skipped", summary });
 
 export const violation = (
 	report: string,
 	annotations: ReadonlyArray<Annotation> = [],
-): GuardVerdict => ({_tag: "Violation", report, annotations});
+): GuardVerdict => ({ _tag: "Violation", report, annotations });
 
-export const zeroScope = (report: string): GuardVerdict => ({_tag: "ZeroScope", report});
+export const zeroScope = (report: string): GuardVerdict => ({ _tag: "ZeroScope", report });
 
-export const unknown = (report: string): GuardVerdict => ({_tag: "Unknown", report});
+export const unknown = (report: string): GuardVerdict => ({ _tag: "Unknown", report });
 
 /**
  * Build a verdict's annotations, degrading to none if the build throws.
@@ -104,5 +104,5 @@ export const emitVerdict = (
 	const annotations = verdict._tag === "Violation" ? verdict.annotations : [];
 	const lines = renderAnnotations(fallbackAnnotations(verdict.report, annotations), env);
 	const refusal = refuse(verdictCode(verdict), verdict.report);
-	return {...refusal, stderr: [...refusal.stderr, ...lines]};
+	return { ...refusal, stderr: [...refusal.stderr, ...lines] };
 };

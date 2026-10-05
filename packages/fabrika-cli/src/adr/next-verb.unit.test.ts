@@ -1,6 +1,6 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeSeams, okOut, type Scripted, tree} from "../fakes.test-support.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeSeams, okOut, type Scripted, tree } from "../fakes.test-support.ts";
 import {
 	BASE_UNFETCHABLE,
 	BRANCH_CLAIMS_UNKNOWN,
@@ -9,7 +9,7 @@ import {
 	ORIGIN_REPO_UNRESOLVABLE,
 	UNPARSEABLE_RECORD_ID,
 } from "./codes.ts";
-import {runNext} from "./next-verb.ts";
+import { runNext } from "./next-verb.ts";
 
 const SHA = "49a22902d1e0c7b3f5a8e4126b9d0f3c7a1e5b82";
 
@@ -24,28 +24,28 @@ const base = (overrides: ReadonlyArray<Scripted> = []) =>
 		[/^git log/, okOut("")],
 		[
 			/GET .*\/pulls\?state=open/,
-			{status: 200, body: JSON.stringify([{number: 11}, {number: 12}])},
+			{ status: 200, body: JSON.stringify([{ number: 11 }, { number: 12 }]) },
 		],
 		[
 			/pulls\/11\/files/,
 			{
 				status: 200,
 				body: JSON.stringify([
-					{status: "added", filename: ".records/0237-x.md"},
-					{status: "modified", filename: "README.md"},
+					{ status: "added", filename: ".records/0237-x.md" },
+					{ status: "modified", filename: "README.md" },
 				]),
 			},
 		],
 		[
 			/pulls\/12\/files/,
-			{status: 200, body: JSON.stringify([{status: "added", filename: ".records/0239-y.md"}])},
+			{ status: 200, body: JSON.stringify([{ status: "added", filename: ".records/0239-y.md" }]) },
 		],
 	]);
 
-const options = {dir: ".records", base: "origin/main", repo: null, json: false};
+const options = { dir: ".records", base: "origin/main", repo: null, json: false };
 
 const run = (overrides: ReadonlyArray<Scripted> = [], opts: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runNext({...options, ...opts}), base(overrides).layer));
+	Effect.runPromise(Effect.provide(runNext({ ...options, ...opts }), base(overrides).layer));
 
 describe("runNext", () => {
 	it("answers max(union) + 1 on stdout with the scope line on stderr", async () => {
@@ -56,7 +56,7 @@ describe("runNext", () => {
 	});
 
 	it("--json carries the whole allocation record", async () => {
-		const out = await run([], {json: true});
+		const out = await run([], { json: true });
 		expect(JSON.parse(out.stdout)).toEqual({
 			id: "0240",
 			mergedMax: "0236",
@@ -72,7 +72,7 @@ describe("runNext", () => {
 			json: true,
 		});
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({id: "0242", branchClaims: ["0235", "0241"]});
+		expect(JSON.parse(out.stdout)).toMatchObject({ id: "0242", branchClaims: ["0235", "0241"] });
 		expect(out.stderr.join("\n")).toContain("2 id(s) claimed on branch refs");
 	});
 
@@ -102,7 +102,7 @@ describe("runNext", () => {
 
 	it("refuses when the open pull requests cannot be enumerated — never 'nothing reserved'", async () => {
 		const out = await run([
-			[/GET .*\/pulls\?state=open/, {status: 404, body: '{"message":"Not Found"}'}],
+			[/GET .*\/pulls\?state=open/, { status: 404, body: '{"message":"Not Found"}' }],
 		]);
 		expect(out.code).toBe(IN_FLIGHT_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -110,21 +110,24 @@ describe("runNext", () => {
 	});
 
 	it("refuses when ONE pull request's file list cannot be read — incomplete is UNKNOWN", async () => {
-		const out = await run([[/pulls\/12\/files/, {status: 502, body: "{}"}]]);
+		const out = await run([[/pulls\/12\/files/, { status: 502, body: "{}" }]]);
 		expect(out.code).toBe(IN_FLIGHT_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("PR #12");
 		expect(out.stderr.at(-1)).toContain("INCOMPLETE");
 	});
 
 	it("refuses when GitHub answers 200 with a body that is not a list of pull requests", async () => {
-		const out = await run([[/GET .*\/pulls\?state=open/, {status: 200, body: "null"}]]);
+		const out = await run([[/GET .*\/pulls\?state=open/, { status: 200, body: "null" }]]);
 		expect(out.code).toBe(IN_FLIGHT_UNKNOWN);
 		expect(out.stdout).toBe("");
 	});
 
 	it("refuses when a pull request's file list comes back in an unexpected shape", async () => {
 		const out = await run([
-			[/pulls\/11\/files/, {status: 200, body: JSON.stringify([{filename: "just-a-filename.md"}])}],
+			[
+				/pulls\/11\/files/,
+				{ status: 200, body: JSON.stringify([{ filename: "just-a-filename.md" }]) },
+			],
 		]);
 		expect(out.code).toBe(IN_FLIGHT_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -136,7 +139,7 @@ describe("runNext", () => {
 	it("answers 0001 on a readable-but-empty --dir, with no open PR claiming an id", async () => {
 		const out = await run([
 			[/^git ls-tree/, okOut("")],
-			[/GET .*\/pulls\?state=open/, {status: 200, body: "[]"}],
+			[/GET .*\/pulls\?state=open/, { status: 200, body: "[]" }],
 		]);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("0001\n");

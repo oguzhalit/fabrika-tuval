@@ -1,7 +1,7 @@
-import {readFileSync} from "node:fs";
-import {describe, expect, it} from "vitest";
-import {parse} from "yaml";
-import {skillFrom} from "./roster.ts";
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { parse } from "yaml";
+import { skillFrom } from "./roster.ts";
 
 const skill = new URL("../../../../claude-plugins/fabrika/skills/front-door/", import.meta.url);
 

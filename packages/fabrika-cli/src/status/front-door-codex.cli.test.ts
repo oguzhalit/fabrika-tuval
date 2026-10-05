@@ -1,11 +1,11 @@
-import {spawn, spawnSync} from "node:child_process";
-import {cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync} from "node:fs";
-import {createServer} from "node:http";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
+import { spawn, spawnSync } from "node:child_process";
+import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { createServer } from "node:http";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
 
 const source = fileURLToPath(
 	new URL("../../../../claude-plugins/fabrika/skills/front-door/", import.meta.url),
@@ -13,7 +13,7 @@ const source = fileURLToPath(
 
 describe.runIf(process.env.FABRIKA_CODEX_PROOF === "1")(
 	"front-door in the installed Codex runtime (loopback provider, no model calls)",
-	{timeout: SUBPROCESS_TEST_TIMEOUT_MS},
+	{ timeout: SUBPROCESS_TEST_TIMEOUT_MS },
 	() => {
 		it("withholds implicit discovery but expands an explicit skill invocation", async () => {
 			const root = mkdtempSync(join(tmpdir(), "fabrika-codex-policy-"));
@@ -21,7 +21,7 @@ describe.runIf(process.env.FABRIKA_CODEX_PROOF === "1")(
 			const repo = join(root, "repo");
 			const market = join(root, "market");
 			const plugin = join(market, "fabrika");
-			const env = {PATH: process.env.PATH, HOME: home, CODEX_HOME: home};
+			const env = { PATH: process.env.PATH, HOME: home, CODEX_HOME: home };
 			let accept: (body: string) => void = () => {};
 			const server = createServer(async (req, res) => {
 				const chunks: Buffer[] = [];
@@ -38,10 +38,10 @@ describe.runIf(process.env.FABRIKA_CODEX_PROOF === "1")(
 					join(market, ".claude-plugin"),
 					join(plugin, ".claude-plugin"),
 				]) {
-					mkdirSync(dir, {recursive: true});
+					mkdirSync(dir, { recursive: true });
 				}
-				cpSync(source, join(plugin, "skills/front-door"), {recursive: true});
-				mkdirSync(join(plugin, "skills/control"), {recursive: true});
+				cpSync(source, join(plugin, "skills/front-door"), { recursive: true });
+				mkdirSync(join(plugin, "skills/control"), { recursive: true });
 				writeFileSync(
 					join(plugin, "skills/control/SKILL.md"),
 					"---\nname: control\ndescription: Codex policy proof discovery control.\n---\nSay hello.\n",
@@ -50,13 +50,13 @@ describe.runIf(process.env.FABRIKA_CODEX_PROOF === "1")(
 					join(market, ".claude-plugin/marketplace.json"),
 					JSON.stringify({
 						name: "policy-proof",
-						owner: {name: "proof"},
-						plugins: [{name: "fabrika", source: "./fabrika"}],
+						owner: { name: "proof" },
+						plugins: [{ name: "fabrika", source: "./fabrika" }],
 					}),
 				);
 				writeFileSync(
 					join(plugin, ".claude-plugin/plugin.json"),
-					JSON.stringify({name: "fabrika", version: "0.1.0", description: "Policy proof"}),
+					JSON.stringify({ name: "fabrika", version: "0.1.0", description: "Policy proof" }),
 				);
 				for (const args of [
 					["plugin", "marketplace", "add", market],
@@ -103,7 +103,7 @@ describe.runIf(process.env.FABRIKA_CODEX_PROOF === "1")(
 							`model_providers.proof.base_url="http://127.0.0.1:${address.port}/v1"`,
 							prompt,
 						],
-						{env, stdio: ["ignore", "ignore", "pipe"]},
+						{ env, stdio: ["ignore", "ignore", "pipe"] },
 					);
 					let stderr = "";
 					child.stderr.on("data", (chunk) => {
@@ -137,7 +137,7 @@ describe.runIf(process.env.FABRIKA_CODEX_PROOF === "1")(
 			} finally {
 				server.closeAllConnections();
 				await new Promise<void>((resolve) => server.close(() => resolve()));
-				rmSync(root, {recursive: true, force: true});
+				rmSync(root, { recursive: true, force: true });
 			}
 		});
 	},

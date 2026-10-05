@@ -26,11 +26,11 @@
  * A worktree-isolated lane may run it against a branch it never cut: every step is a read or a
  * rename in the shared ref store, and refs are common to every worktree of a clone.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {localBranches} from "../io/git.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {readClaimants} from "./claim.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { localBranches } from "../io/git.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { readClaimants } from "./claim.ts";
 import {
 	PRECONDITION_UNKNOWN,
 	READBACK_MISMATCH,
@@ -39,11 +39,11 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {pruneWorktrees, renameBranch, worktreeCheckouts} from "./git.ts";
-import {childLaneBranches} from "./lane.ts";
-import {sessionsByNonce} from "./retire.ts";
-import {retiredBranchName, supersede} from "./retire-branch.ts";
-import {badNumber, resolveTargetRepo, scannedLine} from "./target.ts";
+import { pruneWorktrees, renameBranch, worktreeCheckouts } from "./git.ts";
+import { childLaneBranches } from "./lane.ts";
+import { sessionsByNonce } from "./retire.ts";
+import { retiredBranchName, supersede } from "./retire-branch.ts";
+import { badNumber, resolveTargetRepo, scannedLine } from "./target.ts";
 
 const VERB = "fabrika build retire-branch";
 
@@ -65,13 +65,13 @@ export const runRetireBranch = (
 	options: RetireBranchOptions,
 ): Effect.Effect<VerbOutcome, never, Deps> =>
 	Effect.gen(function* () {
-		const {number} = options;
+		const { number } = options;
 		const bad = badNumber(VERB, "an issue number", number);
 		if (bad !== null) return bad;
 
 		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
 		if (resolved._tag === "Refused") return resolved.outcome;
-		const {repo} = resolved;
+		const { repo } = resolved;
 
 		const branches = yield* localBranches;
 		if (branches._tag === "Failure") {
@@ -96,7 +96,7 @@ export const runRetireBranch = (
 		}
 		if (candidates.length === 1) {
 			return answer(
-				JSON.stringify({answer: "none", number, survivor: candidates[0], retired: []}),
+				JSON.stringify({ answer: "none", number, survivor: candidates[0], retired: [] }),
 				[
 					scope,
 					`${VERB}: ${candidates[0]} is the only branch cut for #${number} — the range is already derivable, and nothing is superseded.`,
@@ -165,7 +165,7 @@ export const runRetireBranch = (
 					[scope],
 				);
 			}
-			retired.push({from, to});
+			retired.push({ from, to });
 		}
 
 		const after = yield* localBranches;
@@ -187,12 +187,15 @@ export const runRetireBranch = (
 			);
 		}
 
-		return answer(JSON.stringify({answer: "retired", number, survivor: seated.survivor, retired}), [
-			scope,
-			...retired.map(
-				(row) =>
-					`${VERB}: retired ${row.from} — renamed to ${row.to}, never deleted, so every commit it carries is still reachable by that name.`,
-			),
-			`${VERB}: ${seated.survivor} is the survivor — an authorized claim marker on #${number} carries its lane nonce.`,
-		]);
+		return answer(
+			JSON.stringify({ answer: "retired", number, survivor: seated.survivor, retired }),
+			[
+				scope,
+				...retired.map(
+					(row) =>
+						`${VERB}: retired ${row.from} — renamed to ${row.to}, never deleted, so every commit it carries is still reachable by that name.`,
+				),
+				`${VERB}: ${seated.survivor} is the survivor — an authorized claim marker on #${number} carries its lane nonce.`,
+			],
+		);
 	});

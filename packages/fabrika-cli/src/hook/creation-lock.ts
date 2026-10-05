@@ -26,9 +26,9 @@
  * straight back. This is the protocol `../lane/append-lock.ts` runs, with a liveness verdict in
  * place of its age-only one.
  */
-import {randomUUID} from "node:crypto";
-import {hostname} from "node:os";
-import {Effect, type FileSystem, Option, Result, Schema} from "effect";
+import { randomUUID } from "node:crypto";
+import { hostname } from "node:os";
+import { Effect, type FileSystem, Option, Result, Schema } from "effect";
 
 /** Where the lock sits under a clone's common git dir. */
 export const lockDirFor = (commonDir: string): string =>
@@ -115,9 +115,9 @@ export const holderIsLive = (holder: Holder, self: LockHost): boolean => {
 };
 
 export type Acquired =
-	| {readonly _tag: "Held"; readonly holder: Holder}
-	| {readonly _tag: "Busy"; readonly holder: Option.Option<Holder>}
-	| {readonly _tag: "Unplaceable"; readonly reason: string};
+	| { readonly _tag: "Held"; readonly holder: Holder }
+	| { readonly _tag: "Busy"; readonly holder: Option.Option<Holder> }
+	| { readonly _tag: "Unplaceable"; readonly reason: string };
 
 const claim = (
 	fs: FileSystem.FileSystem,
@@ -125,18 +125,20 @@ const claim = (
 	holder: Holder,
 ): Effect.Effect<boolean, never> =>
 	Effect.map(
-		Effect.result(fs.writeFileString(holderPath(lockDir), stampOf(holder), {flag: "wx"})),
+		Effect.result(fs.writeFileString(holderPath(lockDir), stampOf(holder), { flag: "wx" })),
 		Result.isSuccess,
 	);
 
 const readHolder = (
 	fs: FileSystem.FileSystem,
 	lockDir: string,
-): Effect.Effect<Option.Option<{readonly line: string; readonly holder: Option.Option<Holder>}>> =>
+): Effect.Effect<
+	Option.Option<{ readonly line: string; readonly holder: Option.Option<Holder> }>
+> =>
 	Effect.map(Effect.result(fs.readFileString(holderPath(lockDir))), (read) => {
 		if (Result.isFailure(read)) return Option.none();
 		const line = read.success.trim();
-		return Option.some({line, holder: parseStamp(line)});
+		return Option.some({ line, holder: parseStamp(line) });
 	});
 
 const holds = (
@@ -147,7 +149,7 @@ const holds = (
 	Effect.map(readHolder(fs, lockDir), (read) =>
 		Option.match(read, {
 			onNone: () => false,
-			onSome: ({line}) => line === stampOf(holder),
+			onSome: ({ line }) => line === stampOf(holder),
 		}),
 	);
 
@@ -171,12 +173,12 @@ const acquireOnce = (
 	holder: Holder,
 ): Effect.Effect<Attempt, never> =>
 	Effect.gen(function* () {
-		const made = yield* Effect.result(fs.makeDirectory(lockDir, {recursive: false}));
+		const made = yield* Effect.result(fs.makeDirectory(lockDir, { recursive: false }));
 		if (Result.isFailure(made)) {
 			return made.failure.reason._tag === "AlreadyExists" ? "held" : "unplaceable";
 		}
 		if (yield* claim(fs, lockDir, holder)) return "acquired";
-		yield* Effect.ignore(fs.remove(lockDir, {recursive: true}));
+		yield* Effect.ignore(fs.remove(lockDir, { recursive: true }));
 		return "unplaceable";
 	});
 
@@ -227,19 +229,22 @@ export const acquireCreationLock = (
 ): Effect.Effect<Acquired, never> =>
 	Effect.gen(function* () {
 		const parent = lockDir.slice(0, lockDir.lastIndexOf("/"));
-		const placed = yield* Effect.result(fs.makeDirectory(parent, {recursive: true}));
+		const placed = yield* Effect.result(fs.makeDirectory(parent, { recursive: true }));
 		if (Result.isFailure(placed)) {
-			return {_tag: "Unplaceable", reason: `could not create ${parent}: ${placed.failure.message}`};
+			return {
+				_tag: "Unplaceable",
+				reason: `could not create ${parent}: ${placed.failure.message}`,
+			};
 		}
-		const holder: Holder = {id: randomUUID(), pid: self.pid, host: self.host, at: self.now()};
+		const holder: Holder = { id: randomUUID(), pid: self.pid, host: self.host, at: self.now() };
 		const deadline = self.now() + budgetMs;
 		while (true) {
 			const attempt = yield* acquireOnce(fs, lockDir, holder);
-			if (attempt === "acquired") return {_tag: "Held", holder};
+			if (attempt === "acquired") return { _tag: "Held", holder };
 			if (attempt === "unplaceable") {
-				return {_tag: "Unplaceable", reason: `could not create ${lockDir}`};
+				return { _tag: "Unplaceable", reason: `could not create ${lockDir}` };
 			}
-			if (yield* stealIfDead(fs, lockDir, holder, self)) return {_tag: "Held", holder};
+			if (yield* stealIfDead(fs, lockDir, holder, self)) return { _tag: "Held", holder };
 			if (self.now() >= deadline) {
 				const standing = yield* readHolder(fs, lockDir);
 				return {
@@ -258,7 +263,7 @@ export const releaseCreationLock = (
 	holder: Holder,
 ): Effect.Effect<void, never> =>
 	Effect.flatMap(holds(fs, lockDir, holder), (mine) =>
-		mine ? Effect.ignore(fs.remove(lockDir, {recursive: true})) : Effect.void,
+		mine ? Effect.ignore(fs.remove(lockDir, { recursive: true })) : Effect.void,
 	);
 
 /**

@@ -23,9 +23,9 @@
  * read off a file no fold reads. It is absent where nothing stands, and a file that does not read
  * never costs the fold its answer: it is named in `inFlightUnread` instead.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import {answer, type VerbOutcome} from "../verb.ts";
-import {resolveDeferrals} from "./deferral.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { answer, type VerbOutcome } from "../verb.ts";
+import { resolveDeferrals } from "./deferral.ts";
 import {
 	deriveStatus,
 	foldLog,
@@ -33,9 +33,9 @@ import {
 	standingParkEvidence,
 	standingRationales,
 } from "./fold.ts";
-import {inFlight, loadInFlight} from "./in-flight.ts";
-import {loadRefusal, replayRefusal} from "./refusals.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { inFlight, loadInFlight } from "./in-flight.ts";
+import { loadRefusal, replayRefusal } from "./refusals.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane status";
 
@@ -66,9 +66,9 @@ export const runStatus = (
 					: null;
 		const answered = {
 			...status,
-			...(deferred.length === 0 ? {} : {deferred}),
-			...(Object.keys(standing).length === 0 ? {} : {inFlight: standing}),
-			...(unread === null ? {} : {inFlightUnread: unread}),
+			...(deferred.length === 0 ? {} : { deferred }),
+			...(Object.keys(standing).length === 0 ? {} : { inFlight: standing }),
+			...(unread === null ? {} : { inFlightUnread: unread }),
 		};
 		return answer(JSON.stringify(answered, null, 2), [
 			`${VERB}: folded ${loaded.entries.length} event(s) from ${loaded.logPath}.`,

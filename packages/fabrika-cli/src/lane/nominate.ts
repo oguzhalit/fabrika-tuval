@@ -32,11 +32,11 @@
  * property of the artifact and restoring the state restored the wall. Two verbs answering
  * one question have to answer it from one nominator.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {getPullRequest, type PullScope, pullsClosing, searchOpenPulls} from "../io/pulls.ts";
-import {issueRefsOf} from "../review/classes.ts";
-import type {PullFact} from "./prove.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { getPullRequest, type PullScope, pullsClosing, searchOpenPulls } from "../io/pulls.ts";
+import { issueRefsOf } from "../review/classes.ts";
+import type { PullFact } from "./prove.ts";
 
 /** One nominated PR, read off the board: the trace's facts plus the link a brief hands on. */
 export interface NominatedPull extends PullFact {
@@ -44,9 +44,9 @@ export interface NominatedPull extends PullFact {
 }
 
 export type Nomination =
-	| {readonly _tag: "Nominated"; readonly pulls: ReadonlyArray<NominatedPull>}
+	| { readonly _tag: "Nominated"; readonly pulls: ReadonlyArray<NominatedPull> }
 	/** A read that did not answer — never an empty candidate set, which is a different fact. */
-	| {readonly _tag: "Unreadable"; readonly what: string; readonly reason: string};
+	| { readonly _tag: "Unreadable"; readonly what: string; readonly reason: string };
 
 /** What the union searched, for a refusal that has to name its own scope rather than half of it. */
 export const nominationScope = (issue: number, scope: PullScope = "open"): string =>
@@ -85,7 +85,7 @@ export const nominatePulls = (
 		for (const candidate of candidates) {
 			const pull = yield* getPullRequest(repo, candidate);
 			if (pull._tag === "Unknown") {
-				return {_tag: "Unreadable" as const, what: `PR #${candidate}`, reason: pull.reason};
+				return { _tag: "Unreadable" as const, what: `PR #${candidate}`, reason: pull.reason };
 			}
 			if (pull._tag === "Absent") continue;
 			const refs = issueRefsOf(pull.value.body);
@@ -99,5 +99,5 @@ export const nominatePulls = (
 				htmlUrl: pull.value.htmlUrl,
 			});
 		}
-		return {_tag: "Nominated" as const, pulls};
+		return { _tag: "Nominated" as const, pulls };
 	});

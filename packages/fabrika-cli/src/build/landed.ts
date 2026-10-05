@@ -24,13 +24,13 @@
  * bounds are independent: the range says which commits may speak, the landing rule says what
  * counts as speaking.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {mergeBase, noMergeBaseReason, rangeCommits, resolveCommit} from "../io/git.ts";
-import {resolveTrunk, trunkUnresolved} from "../io/trunk.ts";
-import {epicBranch} from "../wire/lane-brief.ts";
-import {landingRefsIn} from "./commit-message.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { mergeBase, noMergeBaseReason, rangeCommits, resolveCommit } from "../io/git.ts";
+import { resolveTrunk, trunkUnresolved } from "../io/trunk.ts";
+import { epicBranch } from "../wire/lane-brief.ts";
+import { landingRefsIn } from "./commit-message.ts";
 
 /** Every issue number these commit messages claim to land — the set whose work this branch carries. */
 export const landedRefs = (messages: ReadonlyArray<string>): ReadonlySet<number> =>
@@ -53,7 +53,7 @@ export type Assembly =
 			/** How many commits the run put on the branch — not how many the branch can reach. */
 			readonly commits: number;
 	  }
-	| {readonly _tag: "Unreadable"; readonly branch: string; readonly reason: string};
+	| { readonly _tag: "Unreadable"; readonly branch: string; readonly reason: string };
 
 /**
  * Read epic `epic`'s assembly branch in this tree, bounded to the commits the run put on it.
@@ -74,7 +74,7 @@ export const readAssembly = (
 	Effect.gen(function* () {
 		const branch = epicBranch(epic);
 		const tip = yield* resolveCommit(branch, " — the epic run's assembly branch");
-		if (tip._tag === "Failure") return {_tag: "Unreadable" as const, branch, reason: tip.reason};
+		if (tip._tag === "Failure") return { _tag: "Unreadable" as const, branch, reason: tip.reason };
 		const trunk = yield* resolveTrunk(env, repo);
 		if (trunk._tag === "Failure")
 			return {
@@ -92,7 +92,7 @@ export const readAssembly = (
 			};
 		const walked = yield* rangeCommits(base.value, tip.value);
 		if (walked._tag === "Failure")
-			return {_tag: "Unreadable" as const, branch, reason: walked.reason};
+			return { _tag: "Unreadable" as const, branch, reason: walked.reason };
 		return {
 			_tag: "Read" as const,
 			branch,

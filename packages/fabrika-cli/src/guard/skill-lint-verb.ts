@@ -10,12 +10,12 @@
  * The matchers themselves stay pure in `./skill-lint.ts`; this file is scope plus the verdict.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {isDirectory, type ReadFailed, readDir, readFile, realPath} from "../io/fs.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {type Annotation, atLine} from "./annotate.ts";
-import {isZeroScope, type LintResult, lintCorpus, type ScanFile} from "./skill-lint.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { isDirectory, type ReadFailed, readDir, readFile, realPath } from "../io/fs.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { type Annotation, atLine } from "./annotate.ts";
+import { isZeroScope, type LintResult, lintCorpus, type ScanFile } from "./skill-lint.ts";
 import {
 	annotationsOrNone,
 	clean,
@@ -170,7 +170,7 @@ const judge = (
 		}
 		const corpus: Array<ScanFile> = [];
 		for (const file of files) {
-			corpus.push({file, content: yield* readFile(path.join(root, file))});
+			corpus.push({ file, content: yield* readFile(path.join(root, file)) });
 		}
 		const result = lintCorpus(corpus);
 		if (isZeroScope(result)) {

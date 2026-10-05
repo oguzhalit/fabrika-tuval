@@ -2,11 +2,11 @@
  * `ci changelog` — the trust boundary around the entries JSON and the stdout/`--out`
  * split, over a scripted filesystem.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs} from "../fakes.test-support.ts";
-import {runChangelog} from "./changelog-verb.ts";
-import {MALFORMED_DOCUMENT, PRECONDITION_UNKNOWN} from "./codes.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs } from "../fakes.test-support.ts";
+import { runChangelog } from "./changelog-verb.ts";
+import { MALFORMED_DOCUMENT, PRECONDITION_UNKNOWN } from "./codes.ts";
 
 const ENTRIES = "/repo/entries.json";
 
@@ -16,19 +16,19 @@ const run = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runChangelog({entries: ENTRIES, version: "0.3.1", date: "2026-08-18", out: null, ...over}),
-			fakeFs({files}).layer,
+			runChangelog({ entries: ENTRIES, version: "0.3.1", date: "2026-08-18", out: null, ...over }),
+			fakeFs({ files }).layer,
 		),
 	);
 
-const entries = (rows: ReadonlyArray<unknown>) => ({[ENTRIES]: JSON.stringify(rows)});
+const entries = (rows: ReadonlyArray<unknown>) => ({ [ENTRIES]: JSON.stringify(rows) });
 
 describe("runChangelog", () => {
 	it("renders the section, bucketed by the entries' type:* labels", async () => {
 		const outcome = await run(
 			entries([
-				{issue: 12, pr: 13, title: "Add search", type: "feature"},
-				{issue: 20, title: "Fix the focus steal", type: "bug"},
+				{ issue: 12, pr: 13, title: "Add search", type: "feature" },
+				{ issue: 20, title: "Fix the focus steal", type: "bug" },
 			]),
 		);
 		expect(outcome.code).toBe(0);
@@ -38,7 +38,7 @@ describe("runChangelog", () => {
 	});
 
 	it("surfaces an entry with no recognized type under Uncategorized rather than dropping it", async () => {
-		const outcome = await run(entries([{issue: 7, title: "Something", type: "mystery"}]));
+		const outcome = await run(entries([{ issue: 7, title: "Something", type: "mystery" }]));
 		expect(outcome.stdout).toContain("### Uncategorized\n\n- Something (#7)");
 	});
 
@@ -49,7 +49,7 @@ describe("runChangelog", () => {
 	});
 
 	it("writes to --out and keeps stdout empty, with the count on stderr", async () => {
-		const fs = fakeFs({files: entries([{issue: 1, title: "One", type: "chore"}])});
+		const fs = fakeFs({ files: entries([{ issue: 1, title: "One", type: "chore" }]) });
 		const outcome = await Effect.runPromise(
 			Effect.provide(
 				runChangelog({
@@ -75,13 +75,13 @@ describe("runChangelog", () => {
 	});
 
 	it("refuses a JSON file that is not a ChangelogEntry[]", async () => {
-		const outcome = await run(entries([{issue: "twelve", title: "Add search"}]));
+		const outcome = await run(entries([{ issue: "twelve", title: "Add search" }]));
 		expect(outcome.code).toBe(MALFORMED_DOCUMENT);
 		expect(outcome.stdout).toBe("");
 	});
 
 	it("refuses a file that is not JSON at all", async () => {
-		const outcome = await run({[ENTRIES]: "not json"});
+		const outcome = await run({ [ENTRIES]: "not json" });
 		expect(outcome.code).toBe(MALFORMED_DOCUMENT);
 	});
 });

@@ -13,15 +13,15 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9856
  */
 
-import {asksOf, type LaneRecord} from "../wire/lane-record.ts";
+import { asksOf, type LaneRecord } from "../wire/lane-record.ts";
 
 export type Spend =
-	| {readonly _tag: "Measured"; readonly usd: number}
+	| { readonly _tag: "Measured"; readonly usd: number }
 	/**
 	 * `measuredUsd` is what the measured lanes add up to: a floor on the real spend, never the spend.
 	 * It is what lets a flag prove a row over its size while one of its lanes went unmeasured.
 	 */
-	| {readonly _tag: "Unmeasured"; readonly lanes: number; readonly measuredUsd: number};
+	| { readonly _tag: "Unmeasured"; readonly lanes: number; readonly measuredUsd: number };
 
 export interface Tally {
 	/** Lanes counted: one per distinct `startedAt` inside the window. */
@@ -30,7 +30,7 @@ export interface Tally {
 	readonly spend: Spend;
 }
 
-export const EMPTY_TALLY: Tally = {lanes: 0, asks: 0, spend: {_tag: "Measured", usd: 0}};
+export const EMPTY_TALLY: Tally = { lanes: 0, asks: 0, spend: { _tag: "Measured", usd: 0 } };
 
 const cents = (usd: number): number => Math.round(usd * 100) / 100;
 
@@ -64,8 +64,8 @@ export const tally = (records: ReadonlyArray<LaneRecord>, since: string | null):
 		asks: lanes.reduce((sum, record) => sum + asksOf(record), 0),
 		spend:
 			unmeasured > 0
-				? {_tag: "Unmeasured", lanes: unmeasured, measuredUsd: cents(usd)}
-				: {_tag: "Measured", usd: cents(usd)},
+				? { _tag: "Unmeasured", lanes: unmeasured, measuredUsd: cents(usd) }
+				: { _tag: "Measured", usd: cents(usd) },
 	};
 };
 
@@ -85,7 +85,7 @@ export const addTallies = (a: Tally, b: Tally): Tally => ({
 						(b.spend._tag === "Unmeasured" ? b.spend.lanes : 0),
 					measuredUsd: cents(measuredUsd(a.spend) + measuredUsd(b.spend)),
 				}
-			: {_tag: "Measured", usd: cents(a.spend.usd + b.spend.usd)},
+			: { _tag: "Measured", usd: cents(a.spend.usd + b.spend.usd) },
 });
 
 /** The issue's own latest record across every lane, or `null` when it has none. */

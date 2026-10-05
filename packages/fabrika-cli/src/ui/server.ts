@@ -16,13 +16,13 @@
  * answers there, and the readiness probe cannot tell that apart from its own server. An app whose
  * command cannot be made strict is left undeclared.
  */
-import {spawn} from "node:child_process";
-import {createServer} from "node:net";
-import {Effect} from "effect";
-import {fillPorts, portTokens, type UiSurface} from "../config/keys/ui-surfaces.ts";
-import {legFailed} from "./leg-failed.ts";
-import type {HarnessLeg, HarnessStart} from "./render-verb.ts";
-import {READY_TIMEOUT_MS} from "./surfaces.ts";
+import { spawn } from "node:child_process";
+import { createServer } from "node:net";
+import { Effect } from "effect";
+import { fillPorts, portTokens, type UiSurface } from "../config/keys/ui-surfaces.ts";
+import { legFailed } from "./leg-failed.ts";
+import type { HarnessLeg, HarnessStart } from "./render-verb.ts";
+import { READY_TIMEOUT_MS } from "./surfaces.ts";
 
 const POLL_INTERVAL_MS = 500;
 /** How much of a server's own stderr rides along in the not-ready refusal. */
@@ -31,7 +31,7 @@ const TAIL_LIMIT = 2000;
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const answers200 = (url: string): Promise<boolean> =>
-	fetch(url, {redirect: "follow"}).then(
+	fetch(url, { redirect: "follow" }).then(
 		(response) => response.status === 200,
 		() => false,
 	);
@@ -46,7 +46,7 @@ const freePort = (): Promise<number> =>
 				probe.close(() => reject(new Error("the OS named no port for the probe socket")));
 				return;
 			}
-			const {port} = address;
+			const { port } = address;
 			probe.close(() => resolve(port));
 		});
 	});
@@ -69,7 +69,7 @@ const start = async (app: UiSurface, root: string): Promise<Started> => {
 	const origin = `http://localhost:${ports.get("")}`;
 	let stderr = "";
 	let spawnFailure: string | null = null;
-	const child = spawn(fillPorts(app.command, ports), {cwd: root, shell: true, detached: true});
+	const child = spawn(fillPorts(app.command, ports), { cwd: root, shell: true, detached: true });
 	child.stderr?.on("data", (chunk: Buffer) => {
 		stderr = `${stderr}${chunk.toString("utf8")}`.slice(-TAIL_LIMIT);
 	});
@@ -99,7 +99,7 @@ export const spawnHarness: HarnessLeg = (apps: ReadonlyArray<UiSurface>, root: s
 		try: async (): Promise<HarnessStart> => {
 			const started: Array<Started> = [];
 			const stopAll = Effect.suspend(() =>
-				Effect.forEach(started, (one) => one.stop, {concurrency: 1, discard: true}),
+				Effect.forEach(started, (one) => one.stop, { concurrency: 1, discard: true }),
 			);
 			for (const app of apps) started.push(await start(app, root));
 
@@ -110,7 +110,7 @@ export const spawnHarness: HarnessLeg = (apps: ReadonlyArray<UiSurface>, root: s
 					const failure = one.spawnFailure();
 					if (failure !== null) {
 						await Effect.runPromise(stopAll);
-						return {_tag: "Failed", app: one.app.name, reason: failure};
+						return { _tag: "Failed", app: one.app.name, reason: failure };
 					}
 					if (one.exited() !== null) {
 						await Effect.runPromise(stopAll);
@@ -147,6 +147,6 @@ export const spawnHarness: HarnessLeg = (apps: ReadonlyArray<UiSurface>, root: s
 			// The leg itself threw, so no app owns the failure — the refusal reads `app "the render leg"
 			// could not start`, which is what happened, rather than a placeholder that reads as a bug in
 			// the message.
-			Effect.succeed<HarnessStart>({_tag: "Failed", app: "the render leg", reason: cause.reason}),
+			Effect.succeed<HarnessStart>({ _tag: "Failed", app: "the render leg", reason: cause.reason }),
 		),
 	);

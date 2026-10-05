@@ -1,10 +1,10 @@
 /** `lane record` and `lane wait` — posting once per terminal, the leak scrub, and the wait fact. */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs} from "../fakes.test-support.ts";
-import {fail, ok} from "../io/git.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {read} from "../wire/lane-record.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs } from "../fakes.test-support.ts";
+import { fail, ok } from "../io/git.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { read } from "../wire/lane-record.ts";
 import {
 	APPEND_UNKNOWN,
 	FACT_REFUSED,
@@ -16,10 +16,10 @@ import {
 	MALFORMED_RECORD,
 	MARKER_READBACK,
 } from "./codes.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
-import {LEDGER_SPEND} from "./record.ts";
-import {type IssueComment, type RecordBoard, runRecord} from "./record-verb.ts";
-import {runWait} from "./wait-verb.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
+import { LEDGER_SPEND } from "./record.ts";
+import { type IssueComment, type RecordBoard, runRecord } from "./record-verb.ts";
+import { runWait } from "./wait-verb.ts";
 
 const ROOT = ".fabrika/lanes";
 const LANE = "42";
@@ -29,17 +29,17 @@ const FACTS = `${ROOT}/${LANE}/facts.jsonl`;
 
 let tick = 0;
 const line = (event: string, extra: Record<string, unknown> = {}): string =>
-	`${JSON.stringify({task: "issue", event: `ISSUE.${event}`, at: new Date(Date.UTC(2026, 8, 26, 6, tick++)).toISOString(), ...extra})}\n`;
+	`${JSON.stringify({ task: "issue", event: `ISSUE.${event}`, at: new Date(Date.UTC(2026, 8, 26, 6, tick++)).toISOString(), ...extra })}\n`;
 
 const shipped = (rationale?: string): string => {
 	tick = 0;
 	return [
 		line("WIP"),
-		line("DONE", {pr: "https://forge.test/o/r/pull/12"}),
+		line("DONE", { pr: "https://forge.test/o/r/pull/12" }),
 		line("PASS"),
-		line("BLOCKED", {cause: "awaiting-cp-approval"}),
-		line("UNBLOCKED", rationale === undefined ? {} : {rationale}),
-		line("DONE", {landed: [12]}),
+		line("BLOCKED", { cause: "awaiting-cp-approval" }),
+		line("UNBLOCKED", rationale === undefined ? {} : { rationale }),
+		line("DONE", { landed: [12] }),
 	].join("");
 };
 
@@ -48,15 +48,15 @@ const laneFs = (log: string, facts?: string) =>
 		files: {
 			[WORKFLOW]: coderTemplateText(),
 			[LOG]: log,
-			...(facts === undefined ? {} : {[FACTS]: facts}),
+			...(facts === undefined ? {} : { [FACTS]: facts }),
 		},
-		dirs: {[ROOT]: [LANE]},
+		dirs: { [ROOT]: [LANE] },
 		directories: [ROOT],
 	});
 
 /** One issue read at `state`, as `getIssue` serves it. */
 const issueReads = (state: string) =>
-	({_tag: "Present", value: {state, isPullRequest: false}}) as const;
+	({ _tag: "Present", value: { state, isPullRequest: false } }) as const;
 
 /** An in-memory issue thread: what was posted, and what the read-back serves. */
 const thread = (
@@ -71,7 +71,7 @@ const thread = (
 		post: (_issue, body) =>
 			Effect.sync(() => {
 				posted.push(body);
-				comments.push({id: 100 + posted.length, body});
+				comments.push({ id: 100 + posted.length, body });
 				return ok({
 					id: 100 + posted.length,
 					url: `https://forge.test/o/r/comments/${100 + posted.length}`,
@@ -80,7 +80,7 @@ const thread = (
 		readBack: (id) => Effect.succeed(ok(comments.find((comment) => comment.id === id)?.body ?? "")),
 		...over,
 	};
-	return {board, posted};
+	return { board, posted };
 };
 
 const record = (fs: ReturnType<typeof fakeFs>, board: RecordBoard<never>, issue = true) =>
@@ -89,7 +89,7 @@ const record = (fs: ReturnType<typeof fakeFs>, board: RecordBoard<never>, issue 
 			runRecord({
 				root: ROOT,
 				lane: LANE,
-				issue: issue ? {_tag: "Issue", number: 42} : {_tag: "Chore"},
+				issue: issue ? { _tag: "Issue", number: 42 } : { _tag: "Chore" },
 				spent: LEDGER_SPEND,
 				board,
 			}),
@@ -107,7 +107,7 @@ describe("lane record, then the table", () => {
 				runRecord({
 					root: ROOT,
 					lane: LANE,
-					issue: {_tag: "Issue", number: 42},
+					issue: { _tag: "Issue", number: 42 },
 					spent: LEDGER_SPEND,
 					board,
 					syncTable,
@@ -118,26 +118,26 @@ describe("lane record, then the table", () => {
 
 	it("syncs the lane's issue once its record stands, posted now or already there", async () => {
 		const synced: number[] = [];
-		const {board} = thread();
+		const { board } = thread();
 		const syncTable = (issue: number) =>
 			Effect.sync(() => {
 				synced.push(issue);
-				return answer(JSON.stringify({answer: synced.length === 1 ? "synced" : "unchanged"}));
+				return answer(JSON.stringify({ answer: synced.length === 1 ? "synced" : "unchanged" }));
 			});
 
 		const first = await recordThenSync(board, syncTable);
 		const second = await recordThenSync(board, syncTable);
 
 		expect(synced).toEqual([42, 42]);
-		expect(JSON.parse(first.stdout).table).toEqual({code: 0, answer: "synced"});
+		expect(JSON.parse(first.stdout).table).toEqual({ code: 0, answer: "synced" });
 		expect(JSON.parse(second.stdout)).toMatchObject({
 			answer: "unchanged",
-			table: {code: 0, answer: "unchanged"},
+			table: { code: 0, answer: "unchanged" },
 		});
 	});
 
 	it("keeps the record when the sync refuses, and names the re-run", async () => {
-		const {board, posted} = thread();
+		const { board, posted } = thread();
 
 		const outcome = await recordThenSync(board, () =>
 			Effect.succeed(refuse(20, "table sync: the GitHub token lacks the `project` scope")),
@@ -145,7 +145,7 @@ describe("lane record, then the table", () => {
 
 		expect(outcome.code).toBe(0);
 		expect(posted).toHaveLength(1);
-		expect(JSON.parse(outcome.stdout)).toMatchObject({answer: "posted", table: {code: 20}});
+		expect(JSON.parse(outcome.stdout)).toMatchObject({ answer: "posted", table: { code: 20 } });
 		expect(outcome.stderr.join("\n")).toContain("`project` scope");
 		expect(outcome.stderr.join("\n")).toContain("fabrika table sync 42");
 	});
@@ -154,7 +154,7 @@ describe("lane record, then the table", () => {
 describe("lane record", () => {
 	it("posts one record for a terminal lane, and a re-run for the same terminal writes nothing", async () => {
 		const fs = laneFs(shipped());
-		const {board, posted} = thread();
+		const { board, posted } = thread();
 
 		const first = await record(fs, board);
 		const second = await record(fs, board);
@@ -171,17 +171,17 @@ describe("lane record", () => {
 			prs: [12],
 		});
 		expect(second.code).toBe(0);
-		expect(JSON.parse(second.stdout)).toMatchObject({answer: "unchanged", commentId: 101});
+		expect(JSON.parse(second.stdout)).toMatchObject({ answer: "unchanged", commentId: 101 });
 		expect(posted).toHaveLength(1);
 		expect(read(posted[0] ?? "")).toMatchObject({
 			_tag: "Found",
-			value: {issue: 42, outcome: "complete"},
+			value: { issue: 42, outcome: "complete" },
 		});
 	});
 
 	it("carries the origin and the standing wait from the lane's facts", async () => {
 		const facts = [
-			JSON.stringify({kind: "origin", origin: "experiment", at: "2026-09-26T05:00:00.000Z"}),
+			JSON.stringify({ kind: "origin", origin: "experiment", at: "2026-09-26T05:00:00.000Z" }),
 			JSON.stringify({
 				kind: "waiting",
 				on: "legal",
@@ -189,7 +189,7 @@ describe("lane record", () => {
 				at: "2026-09-26T05:30:00.000Z",
 			}),
 		].join("\n");
-		const {board, posted} = thread();
+		const { board, posted } = thread();
 
 		await record(laneFs(shipped(), facts), board);
 
@@ -198,7 +198,7 @@ describe("lane record", () => {
 	});
 
 	it("scrubs a machine-local path out of the log before it reaches the issue", async () => {
-		const {board, posted} = thread();
+		const { board, posted } = thread();
 
 		const out = await record(
 			laneFs(shipped("cleared after reading /Users/someone/notes.md")),
@@ -234,10 +234,10 @@ describe("lane record", () => {
 				[LOG]: shipped(),
 				[`${ROOT}/${LANE}/in-flight.jsonl`]: records,
 			},
-			dirs: {[ROOT]: [LANE]},
+			dirs: { [ROOT]: [LANE] },
 			directories: [ROOT],
 		});
-		const {board, posted} = thread();
+		const { board, posted } = thread();
 
 		const out = await record(fs, board);
 
@@ -249,7 +249,7 @@ describe("lane record", () => {
 
 	it("posts nothing for a lane that has not ended", async () => {
 		tick = 0;
-		const {board, posted} = thread();
+		const { board, posted } = thread();
 
 		const out = await record(laneFs(line("WIP")), board);
 
@@ -258,7 +258,7 @@ describe("lane record", () => {
 	});
 
 	it("posts nothing for a chore lane, which has no issue", async () => {
-		const {board, posted} = thread();
+		const { board, posted } = thread();
 
 		const out = await record(laneFs(shipped()), board, false);
 
@@ -267,7 +267,7 @@ describe("lane record", () => {
 	});
 
 	it("refuses when a lane record on the issue does not read, since the terminal may be recorded", async () => {
-		const {board, posted} = thread([{id: 7, body: "lane-record: #42 complete\n"}]);
+		const { board, posted } = thread([{ id: 7, body: "lane-record: #42 complete\n" }]);
 
 		const out = await record(laneFs(shipped()), board);
 
@@ -276,9 +276,9 @@ describe("lane record", () => {
 	});
 
 	it("keeps an unread thread, a failed post and a drifted read-back on their own codes", async () => {
-		const unread = thread([], {comments: () => Effect.succeed(fail("rate limited"))});
-		const unposted = thread([], {post: () => Effect.succeed(fail("502"))});
-		const drifted = thread([], {readBack: () => Effect.succeed(ok("something else"))});
+		const unread = thread([], { comments: () => Effect.succeed(fail("rate limited")) });
+		const unposted = thread([], { post: () => Effect.succeed(fail("502")) });
+		const drifted = thread([], { readBack: () => Effect.succeed(ok("something else")) });
 
 		expect((await record(laneFs(shipped()), unread.board)).code).toBe(LANE_UNREADABLE);
 		expect((await record(laneFs(shipped()), unposted.board)).code).toBe(APPEND_UNKNOWN);
@@ -286,16 +286,16 @@ describe("lane record", () => {
 	});
 
 	it("refuses a lane that is not there", async () => {
-		const {board} = thread();
+		const { board } = thread();
 
-		const out = await record(fakeFs({files: {}}), board);
+		const out = await record(fakeFs({ files: {} }), board);
 
 		expect(out.code).toBe(LANE_ABSENT);
 	});
 });
 
 const wait = (fs: ReturnType<typeof fakeFs>, on: string, until: string) =>
-	Effect.runPromise(Effect.provide(runWait({root: ROOT, lane: LANE, on, until}), fs.layer));
+	Effect.runPromise(Effect.provide(runWait({ root: ROOT, lane: LANE, on, until }), fs.layer));
 
 describe("lane wait", () => {
 	it("appends a waiting fact and leaves the event log alone", async () => {
@@ -338,7 +338,7 @@ describe("lane wait", () => {
  */
 describe("lane record — a complete record over an open issue", () => {
 	it("refuses at ISSUE_LIVE naming the open issue, and posts nothing", async () => {
-		const {board, posted} = thread([], {issue: () => Effect.succeed(issueReads("open"))});
+		const { board, posted } = thread([], { issue: () => Effect.succeed(issueReads("open")) });
 
 		const out = await record(laneFs(shipped()), board);
 
@@ -348,8 +348,8 @@ describe("lane record — a complete record over an open issue", () => {
 	});
 
 	it("refuses as UNKNOWN where the issue does not read, and posts nothing", async () => {
-		const {board, posted} = thread([], {
-			issue: () => Effect.succeed({_tag: "Unknown", reason: "HTTP 502"} as const),
+		const { board, posted } = thread([], {
+			issue: () => Effect.succeed({ _tag: "Unknown", reason: "HTTP 502" } as const),
 		});
 
 		const out = await record(laneFs(shipped()), board);
@@ -360,12 +360,12 @@ describe("lane record — a complete record over an open issue", () => {
 	});
 
 	it("posts the complete record once the issue reads closed", async () => {
-		const {board, posted} = thread([], {issue: () => Effect.succeed(issueReads("closed"))});
+		const { board, posted } = thread([], { issue: () => Effect.succeed(issueReads("closed")) });
 
 		const out = await record(laneFs(shipped()), board);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "posted", outcome: "complete"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "posted", outcome: "complete" });
 		expect(posted).toHaveLength(1);
 	});
 });

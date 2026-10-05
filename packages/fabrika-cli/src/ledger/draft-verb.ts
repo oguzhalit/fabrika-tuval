@@ -11,18 +11,18 @@
  * vacuous.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {readAuthored} from "../build/authored.ts";
-import {scannedLine} from "../build/target.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {BAD_SECTIONS, EPIC_MOVED, OFF_VOCABULARY, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {BODY_DIGEST_RE, bodyDigest} from "./digest.ts";
-import {checkPlanBlock} from "./plan-block.ts";
-import {type LedgerMessages, type OpenOptions, openGround} from "./preconditions.ts";
-import {planPath} from "./run.ts";
-import {loadRun, maskedLeakRefusal, stage} from "./run-io.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { readAuthored } from "../build/authored.ts";
+import { scannedLine } from "../build/target.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { BAD_SECTIONS, EPIC_MOVED, OFF_VOCABULARY, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { BODY_DIGEST_RE, bodyDigest } from "./digest.ts";
+import { checkPlanBlock } from "./plan-block.ts";
+import { type LedgerMessages, type OpenOptions, openGround } from "./preconditions.ts";
+import { planPath } from "./run.ts";
+import { loadRun, maskedLeakRefusal, stage } from "./run-io.ts";
 
 const VERB = "ledger draft";
 
@@ -64,7 +64,7 @@ export const runDraft = (
 
 		const ground = yield* openGround(MESSAGES, options);
 		if (ground._tag === "Refused") return ground.outcome;
-		const {epic, dir, notes} = ground;
+		const { epic, dir, notes } = ground;
 
 		const run = yield* loadRun(MESSAGES, dir, notes);
 		if (run._tag === "Refused") return run.outcome;
@@ -82,7 +82,7 @@ export const runDraft = (
 		if (checked._tag === "Bad") return refuse(BAD_SECTIONS, `${VERB}: ${checked.reason}`, notes);
 
 		const leaked = maskedLeakRefusal(VERB, "plan text", authored.text);
-		if (leaked !== null) return {...leaked, stderr: [...notes, ...leaked.stderr]};
+		if (leaked !== null) return { ...leaked, stderr: [...notes, ...leaked.stderr] };
 
 		const failed = yield* stage(planPath(dir), authored.text);
 		if (failed !== null) {

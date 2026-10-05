@@ -26,5 +26,5 @@ export const readCitation = (value: string): Citation | null => {
 	const url = value.trim();
 	const match = COMMENT_URL.exec(url);
 	if (match?.[1] === undefined || match[2] === undefined || match[3] === undefined) return null;
-	return {url, repo: `${match[1]}/${match[2]}`, commentId: Number.parseInt(match[3], 10)};
+	return { url, repo: `${match[1]}/${match[2]}`, commentId: Number.parseInt(match[3], 10) };
 };

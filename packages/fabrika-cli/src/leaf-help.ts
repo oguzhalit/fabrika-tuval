@@ -80,7 +80,7 @@ export const leafHelpDefects = (text: string | undefined): ReadonlyArray<string>
 export interface DescribedNode {
 	readonly name: string;
 	readonly description?: string | undefined;
-	readonly subcommands: ReadonlyArray<{readonly commands: ReadonlyArray<DescribedNode>}>;
+	readonly subcommands: ReadonlyArray<{ readonly commands: ReadonlyArray<DescribedNode> }>;
 }
 
 /** One leaf verb's description, keyed by its group and its path under that group. */
@@ -126,7 +126,7 @@ export const LEAF_HELP_BASELINE_FILE = "leaf-help-baseline.json";
 
 /** Why the ratchet reds. Each kind names the one edit that clears it. */
 export type RatchetFinding =
-	| {readonly kind: "no-leaves"}
+	| { readonly kind: "no-leaves" }
 	| {
 			readonly kind: "unbaselined";
 			readonly group: string;
@@ -140,8 +140,8 @@ export type RatchetFinding =
 			readonly length: number;
 			readonly recorded: number;
 	  }
-	| {readonly kind: "stale"; readonly group: string; readonly verb: string}
-	| {readonly kind: "unknown-verb"; readonly group: string; readonly verb: string};
+	| { readonly kind: "stale"; readonly group: string; readonly verb: string }
+	| { readonly kind: "unknown-verb"; readonly group: string; readonly verb: string };
 
 /**
  * The ratchet over a walk: a verb breaking the rule must be in its group's baseline and no longer
@@ -152,25 +152,25 @@ export const leafHelpRatchet = (
 	walk: ReadonlyArray<LeafHelp>,
 	baselines: ReadonlyMap<string, LeafHelpBaseline>,
 ): ReadonlyArray<RatchetFinding> => {
-	if (walk.length === 0) return [{kind: "no-leaves"}];
+	if (walk.length === 0) return [{ kind: "no-leaves" }];
 	const findings: Array<RatchetFinding> = [];
 	const seen = new Set<string>();
-	for (const {group, verb, description} of walk) {
+	for (const { group, verb, description } of walk) {
 		seen.add(`${group}\u0000${verb}`);
 		const defects = leafHelpDefects(description);
 		const recorded = baselines.get(group)?.[verb];
 		if (defects.length === 0) {
-			if (recorded !== undefined) findings.push({kind: "stale", group, verb});
+			if (recorded !== undefined) findings.push({ kind: "stale", group, verb });
 		} else if (recorded === undefined) {
-			findings.push({kind: "unbaselined", group, verb, defects});
+			findings.push({ kind: "unbaselined", group, verb, defects });
 		} else {
 			const length = description?.length ?? 0;
-			if (length > recorded) findings.push({kind: "grew", group, verb, length, recorded});
+			if (length > recorded) findings.push({ kind: "grew", group, verb, length, recorded });
 		}
 	}
 	for (const [group, baseline] of baselines) {
 		for (const verb of Object.keys(baseline)) {
-			if (!seen.has(`${group}\u0000${verb}`)) findings.push({kind: "unknown-verb", group, verb});
+			if (!seen.has(`${group}\u0000${verb}`)) findings.push({ kind: "unknown-verb", group, verb });
 		}
 	}
 	return findings;

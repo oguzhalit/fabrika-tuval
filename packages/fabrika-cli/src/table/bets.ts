@@ -7,9 +7,9 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9989
  */
 
-import type {TableSettings} from "../config/keys/table.ts";
-import type {Board, BoardItem} from "../io/projects.ts";
-import {currentTableDay, type TableDay} from "./table-day.ts";
+import type { TableSettings } from "../config/keys/table.ts";
+import type { Board, BoardItem } from "../io/projects.ts";
+import { currentTableDay, type TableDay } from "./table-day.ts";
 
 /** The Stage option a yes at the table sets. */
 export const BET_STAGE = "bet";
@@ -24,7 +24,7 @@ export interface BetOrder {
 /** A bet at the table on `day`: Stage `bet`, dated that day. A bet dated any other day is not. */
 export const isBetAt =
 	(day: TableDay) =>
-	(item: BoardItem): item is BoardItem & {readonly issue: number} =>
+	(item: BoardItem): item is BoardItem & { readonly issue: number } =>
 		!item.archived && item.issue !== null && item.stage === BET_STAGE && item.tableDay === day;
 
 /**
@@ -38,23 +38,23 @@ export const betOrder = (
 	now: Date,
 ): BetOrder => {
 	const tableDay = currentTableDay(settings, now);
-	const {sections} = settings;
+	const { sections } = settings;
 	const rank = (section: string | null): number => {
 		const index = section === null ? -1 : sections.indexOf(section);
 		return index === -1 ? sections.length : index;
 	};
 	const bets = board.items
 		.filter(isBetAt(tableDay))
-		.map((item, position) => ({item, position}))
+		.map((item, position) => ({ item, position }))
 		.sort((a, b) => rank(a.item.section) - rank(b.item.section) || a.position - b.position);
-	return {tableDay, issues: [...new Set(bets.map(({item}) => item.issue))]};
+	return { tableDay, issues: [...new Set(bets.map(({ item }) => item.issue))] };
 };
 
 /**
  * The pool with its bets moved to the front, in bet order, and everything else behind them in the
  * order it already had. Only candidates already in the pool move: a bet the pool left out stays out.
  */
-export const betsFirst = <A extends {readonly number: number}>(
+export const betsFirst = <A extends { readonly number: number }>(
 	pool: ReadonlyArray<A>,
 	bets: ReadonlyArray<number>,
 ): ReadonlyArray<A> => {

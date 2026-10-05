@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {loadConfig, resolve} from "../load.ts";
+import { describe, expect, it } from "vitest";
+import { loadConfig, resolve } from "../load.ts";
 import {
 	asksNothing,
 	type ContainmentVocabulary,
@@ -10,7 +10,7 @@ import {
 } from "./containment-vocabulary.ts";
 
 const declared = (text: string) =>
-	resolve(loadConfig({_tag: "Text", text}), containmentVocabularyKey);
+	resolve(loadConfig({ _tag: "Text", text }), containmentVocabularyKey);
 
 describe("the declared vocabulary", () => {
 	it("reads both halves", () => {
@@ -19,7 +19,7 @@ describe("the declared vocabulary", () => {
 		).toEqual({
 			_tag: "Declared",
 			layer: "tracked",
-			value: {types: ["type:chore"], values: ["unpublished"]},
+			value: { types: ["type:chore"], values: ["unpublished"] },
 		});
 	});
 
@@ -27,7 +27,7 @@ describe("the declared vocabulary", () => {
 		expect(declared('{"containmentVocabulary": {"values": ["Unpublished"]}}')).toEqual({
 			_tag: "Declared",
 			layer: "tracked",
-			value: {types: ["type:feature"], values: ["unpublished"]},
+			value: { types: ["type:feature"], values: ["unpublished"] },
 		});
 	});
 
@@ -35,7 +35,7 @@ describe("the declared vocabulary", () => {
 		expect(declared('{"containmentVocabulary": {"values": ["unpublished", "exempt"]}}')).toEqual({
 			_tag: "Declared",
 			layer: "tracked",
-			value: {types: ["type:feature"], values: ["unpublished", "exempt"]},
+			value: { types: ["type:feature"], values: ["unpublished", "exempt"] },
 		});
 	});
 
@@ -43,7 +43,7 @@ describe("the declared vocabulary", () => {
 		expect(declared('{"containmentVocabulary": {"types": []}}')).toEqual({
 			_tag: "Declared",
 			layer: "tracked",
-			value: {types: [], values: ["flag", "exempt"]},
+			value: { types: [], values: ["flag", "exempt"] },
 		});
 	});
 
@@ -84,7 +84,7 @@ describe("readContainment", () => {
 	});
 
 	it("reads a foreign vocabulary's own keyword", () => {
-		const foreign: ContainmentVocabulary = {types: ["type:feature"], values: ["unpublished"]};
+		const foreign: ContainmentVocabulary = { types: ["type:feature"], values: ["unpublished"] };
 		expect(readContainment("unpublished", foreign)).toBe("unpublished");
 		expect(readContainment("flag", foreign)).toBeNull();
 	});
@@ -111,16 +111,16 @@ describe("containmentGap", () => {
 		expect(containmentGap(SHIPPED_CONTAINMENT_VOCABULARY, ["type:chore"], null)).toBeNull();
 	});
 
-	it.each([
-		[{types: [], values: ["flag"]}],
-		[{types: ["type:feature"], values: []}],
-	])("asks nothing when a half is empty (%j)", (vocabulary: ContainmentVocabulary) => {
-		expect(asksNothing(vocabulary)).toBe(true);
-		expect(containmentGap(vocabulary, FEATURE, null)).toBeNull();
-	});
+	it.each([[{ types: [], values: ["flag"] }], [{ types: ["type:feature"], values: [] }]])(
+		"asks nothing when a half is empty (%j)",
+		(vocabulary: ContainmentVocabulary) => {
+			expect(asksNothing(vocabulary)).toBe(true);
+			expect(containmentGap(vocabulary, FEATURE, null)).toBeNull();
+		},
+	);
 
 	it("reds a shipped-legal value that a foreign vocabulary does not carry", () => {
-		const foreign: ContainmentVocabulary = {types: ["type:feature"], values: ["unpublished"]};
+		const foreign: ContainmentVocabulary = { types: ["type:feature"], values: ["unpublished"] };
 		expect(containmentGap(foreign, FEATURE, readContainment("flag", foreign))).toEqual({
 			type: "type:feature",
 			got: "unset",

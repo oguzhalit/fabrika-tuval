@@ -8,20 +8,20 @@
  * This group is what `claude-plugins/fabrika/hooks.json` declares against, so its verb names are part
  * of a committed hook declaration: renaming one is a change to the hook surface, not a refactor.
  */
-import {Effect, FileSystem} from "effect";
-import {Command, Flag} from "effect/unstable/cli";
-import {emit as emitOutcome} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStdin} from "../io/stdin.ts";
-import {runClaudeSpend} from "../spend/claude/collector.ts";
-import {VERSION} from "../version.ts";
-import {runCheck} from "./check-verb.ts";
-import {readFloorFile, runCliFloor} from "./cli-floor-verb.ts";
-import {runCodes} from "./codes-verb.ts";
-import {runPluginSync} from "./plugin-sync-verb.ts";
-import {runPreBash} from "./pre-bash-verb.ts";
-import {runStashGuard} from "./stash-guard-verb.ts";
-import {runWorktreeCreate} from "./worktree-create-verb.ts";
+import { Effect, FileSystem } from "effect";
+import { Command, Flag } from "effect/unstable/cli";
+import { emit as emitOutcome } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStdin } from "../io/stdin.ts";
+import { runClaudeSpend } from "../spend/claude/collector.ts";
+import { VERSION } from "../version.ts";
+import { runCheck } from "./check-verb.ts";
+import { readFloorFile, runCliFloor } from "./cli-floor-verb.ts";
+import { runCodes } from "./codes-verb.ts";
+import { runPluginSync } from "./plugin-sync-verb.ts";
+import { runPreBash } from "./pre-bash-verb.ts";
+import { runStashGuard } from "./stash-guard-verb.ts";
+import { runWorktreeCreate } from "./worktree-create-verb.ts";
 
 const jsonFlag = Flag.boolean("json").pipe(
 	Flag.withDefault(false),
@@ -32,7 +32,7 @@ const claudeSpend = leafCommand(
 	"claude-spend",
 	{},
 	Effect.fn(function* () {
-		yield* emitOutcome(yield* runClaudeSpend({stdin: Effect.sync(readStdin), env: process.env}));
+		yield* emitOutcome(yield* runClaudeSpend({ stdin: Effect.sync(readStdin), env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("Record Claude model and token usage from a native hook."),
@@ -44,14 +44,14 @@ const claudeSpend = leafCommand(
 			"  Derivation: the fabrika plugin's docs/claude-usage.md",
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika hook claude-spend"}]),
+	Command.withExamples([{ command: "fabrika hook claude-spend" }]),
 );
 
 const check = leafCommand(
 	"check",
-	{json: jsonFlag},
-	Effect.fn(function* ({json}) {
-		yield* emitOutcome(yield* runCheck({json, stdin: Effect.sync(readStdin)}));
+	{ json: jsonFlag },
+	Effect.fn(function* ({ json }) {
+		yield* emitOutcome(yield* runCheck({ json, stdin: Effect.sync(readStdin) }));
 	}),
 ).pipe(
 	Command.withShortDescription("Whether the hook envelope on stdin is one fabrika can read."),
@@ -64,7 +64,7 @@ const check = leafCommand(
 			"  13: fd 0 could not be read (UNKNOWN, never malformed)",
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika hook check"}]),
+	Command.withExamples([{ command: "fabrika hook check" }]),
 );
 
 const cliFloor = leafCommand(
@@ -91,14 +91,14 @@ const cliFloor = leafCommand(
 			'  Derivation: the fabrika plugin\'s docs/hook-surface.md, "hook cli-floor"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika hook cli-floor"}]),
+	Command.withExamples([{ command: "fabrika hook cli-floor" }]),
 );
 
 const codes = leafCommand(
 	"codes",
-	{json: jsonFlag},
-	Effect.fn(function* ({json}) {
-		yield* emitOutcome(runCodes({json}));
+	{ json: jsonFlag },
+	Effect.fn(function* ({ json }) {
+		yield* emitOutcome(runCodes({ json }));
 	}),
 ).pipe(
 	Command.withShortDescription("Print the exit taxonomy this group allocates from."),
@@ -107,7 +107,7 @@ const codes = leafCommand(
 			"Prints the exit taxonomy every hook verb allocates from, one `<code>\\t<meaning>` line each.",
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika hook codes"}]),
+	Command.withExamples([{ command: "fabrika hook codes" }]),
 );
 
 const preBash = leafCommand(
@@ -115,7 +115,7 @@ const preBash = leafCommand(
 	{},
 	Effect.fn(function* () {
 		yield* emitOutcome(
-			yield* runPreBash({stdin: Effect.sync(readStdin), env: globalThis.process.env}),
+			yield* runPreBash({ stdin: Effect.sync(readStdin), env: globalThis.process.env }),
 		);
 	}),
 ).pipe(
@@ -133,7 +133,7 @@ const preBash = leafCommand(
 			'  Derivation: the fabrika plugin\'s docs/hook-surface.md, "hook pre-bash"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika hook pre-bash"}]),
+	Command.withExamples([{ command: "fabrika hook pre-bash" }]),
 );
 
 const stashGuard = leafCommand(
@@ -141,7 +141,7 @@ const stashGuard = leafCommand(
 	{},
 	Effect.fn(function* () {
 		yield* emitOutcome(
-			yield* runStashGuard({stdin: Effect.sync(readStdin), env: globalThis.process.env}),
+			yield* runStashGuard({ stdin: Effect.sync(readStdin), env: globalThis.process.env }),
 		);
 	}),
 ).pipe(
@@ -159,7 +159,7 @@ const stashGuard = leafCommand(
 			'  Derivation: the fabrika plugin\'s docs/hook-surface.md, "hook stash-guard"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika hook stash-guard"}]),
+	Command.withExamples([{ command: "fabrika hook stash-guard" }]),
 );
 
 const worktreeCreate = leafCommand(
@@ -170,7 +170,7 @@ const worktreeCreate = leafCommand(
 			Flag.withDescription("print the path this would create, and create nothing"),
 		),
 	},
-	Effect.fn(function* ({dryRun}) {
+	Effect.fn(function* ({ dryRun }) {
 		yield* emitOutcome(
 			yield* runWorktreeCreate({
 				stdin: Effect.sync(readStdin),
@@ -197,7 +197,7 @@ const worktreeCreate = leafCommand(
 			'  Derivation: the fabrika plugin\'s docs/hook-surface.md, "hook worktree-create"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika hook worktree-create"}]),
+	Command.withExamples([{ command: "fabrika hook worktree-create" }]),
 );
 
 const pluginSync = leafCommand(
@@ -208,9 +208,9 @@ const pluginSync = leafCommand(
 			Flag.withDescription("report what this would advance, and move nothing"),
 		),
 	},
-	Effect.fn(function* ({dryRun}) {
+	Effect.fn(function* ({ dryRun }) {
 		yield* emitOutcome(
-			yield* runPluginSync({stdin: Effect.sync(readStdin), dryRun, env: globalThis.process.env}),
+			yield* runPluginSync({ stdin: Effect.sync(readStdin), dryRun, env: globalThis.process.env }),
 		);
 	}),
 ).pipe(
@@ -231,7 +231,7 @@ const pluginSync = leafCommand(
 			'  Derivation: the fabrika plugin\'s docs/hook-surface.md, "hook plugin-sync"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika hook plugin-sync"}]),
+	Command.withExamples([{ command: "fabrika hook plugin-sync" }]),
 );
 
 export const hookCommand = Command.make("hook").pipe(

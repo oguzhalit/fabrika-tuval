@@ -40,12 +40,12 @@ import {
 	scanHeadings,
 	sectionOf,
 } from "../wire/acceptance-criteria.ts";
-import type {NonEmptyReadonlyArray} from "../wire/format.ts";
-import {MARKER_RE} from "./enrich.ts";
+import type { NonEmptyReadonlyArray } from "../wire/format.ts";
+import { MARKER_RE } from "./enrich.ts";
 
 /** One shape defect this module repaired, with the lines it touched. Line numbers are 1-based. */
 export type CriteriaRepair =
-	| {readonly _tag: "HeadingLevel"; readonly line: number; readonly fromLevel: number}
+	| { readonly _tag: "HeadingLevel"; readonly line: number; readonly fromLevel: number }
 	| {
 			readonly _tag: "BulletItems";
 			readonly lines: NonEmptyReadonlyArray<number>;
@@ -75,11 +75,11 @@ export type CriteriaRepairPlan =
 			readonly criteria: NonEmptyReadonlyArray<AcceptanceCriterion>;
 	  }
 	/** The reader already answers `Found`; there is nothing to repair. */
-	| {readonly _tag: "AlreadyConforming"}
+	| { readonly _tag: "AlreadyConforming" }
 	/** The reader answers `Absent`; a body with no block at all is a fact, not a defect. */
-	| {readonly _tag: "NoBlock"}
+	| { readonly _tag: "NoBlock" }
 	/** `Malformed`, but not a pure level drift in the authored region — refuse, naming what was read. */
-	| {readonly _tag: "Refused"; readonly reason: string};
+	| { readonly _tag: "Refused"; readonly reason: string };
 
 /**
  * The bytes this repair may touch and the bytes it must not, split at the same boundary
@@ -92,18 +92,18 @@ export const splitAuthored = (
 	body: string,
 	issue: number,
 	legacyPreserved: (body: string) => string | null,
-): {readonly authored: string; readonly preserved: string} => {
+): { readonly authored: string; readonly preserved: string } => {
 	const match = MARKER_RE.exec(body);
 	if (match !== null && Number(match[1]) === issue) {
-		return {authored: body.slice(0, match.index), preserved: body.slice(match.index)};
+		return { authored: body.slice(0, match.index), preserved: body.slice(match.index) };
 	}
 	if (match === null) {
 		const legacy = legacyPreserved(body);
 		if (legacy !== null && body.endsWith(legacy)) {
-			return {authored: body.slice(0, body.length - legacy.length), preserved: legacy};
+			return { authored: body.slice(0, body.length - legacy.length), preserved: legacy };
 		}
 	}
-	return {authored: body, preserved: ""};
+	return { authored: body, preserved: "" };
 };
 
 const CONFORMING_LINE = `${"#".repeat(HEADING_LEVEL)} ${HEADING_TEXT}`;
@@ -158,7 +158,7 @@ type BulletConversion =
 			readonly converted: NonEmptyReadonlyArray<number>;
 			readonly family: ListFamily;
 	  }
-	| {readonly _tag: "Refused"; readonly reason: string};
+	| { readonly _tag: "Refused"; readonly reason: string };
 
 /**
  * Which family the section's items are written in, or the proof that the question has no one answer.
@@ -217,7 +217,10 @@ const convertBullets = (lines: ReadonlyArray<string>, heading: Heading): BulletC
 		};
 	}
 	if (family === null) {
-		return {_tag: "Refused", reason: "the section under the heading holds no list item to convert"};
+		return {
+			_tag: "Refused",
+			reason: "the section under the heading holds no list item to convert",
+		};
 	}
 	const items = section.flatMap((line, offset) =>
 		listItem(line, family) === null ? [] : [offset],
@@ -225,7 +228,10 @@ const convertBullets = (lines: ReadonlyArray<string>, heading: Heading): BulletC
 	const first = items[0];
 	const last = items.at(-1);
 	if (first === undefined || last === undefined) {
-		return {_tag: "Refused", reason: "the section under the heading holds no list item to convert"};
+		return {
+			_tag: "Refused",
+			reason: "the section under the heading holds no list item to convert",
+		};
 	}
 
 	const rewritten = [...lines];
@@ -244,7 +250,10 @@ const convertBullets = (lines: ReadonlyArray<string>, heading: Heading): BulletC
 			const marker = item[1] ?? "";
 			const text = item[2] ?? "";
 			if (text.trim() === "") {
-				return {_tag: "Refused", reason: `line ${at} is a list item carrying no text ("${line}")`};
+				return {
+					_tag: "Refused",
+					reason: `line ${at} is a list item carrying no text ("${line}")`,
+				};
 			}
 			// An ordered marker carries no checkbox the reader recognises, so the family's marker is
 			// replaced by the one bullet shape `CHECKBOX_ITEM` matches; a bullet keeps its own.
@@ -263,9 +272,12 @@ const convertBullets = (lines: ReadonlyArray<string>, heading: Heading): BulletC
 	}
 	const [head, ...rest] = converted;
 	if (head === undefined) {
-		return {_tag: "Refused", reason: "the section under the heading holds no list item to convert"};
+		return {
+			_tag: "Refused",
+			reason: "the section under the heading holds no list item to convert",
+		};
 	}
-	return {_tag: "Converted", lines: rewritten, converted: [head, ...rest], family};
+	return { _tag: "Converted", lines: rewritten, converted: [head, ...rest], family };
 };
 
 /**
@@ -287,10 +299,10 @@ export const planRepair = (
 	legacyPreserved: (body: string) => string | null,
 ): CriteriaRepairPlan => {
 	const whole = read(body);
-	if (whole._tag === "Found") return {_tag: "AlreadyConforming"};
-	if (whole._tag === "Absent") return {_tag: "NoBlock"};
+	if (whole._tag === "Found") return { _tag: "AlreadyConforming" };
+	if (whole._tag === "Absent") return { _tag: "NoBlock" };
 
-	const {authored, preserved} = splitAuthored(body, issue, legacyPreserved);
+	const { authored, preserved } = splitAuthored(body, issue, legacyPreserved);
 	const named = namedHeadings(authored);
 	const first = named[0];
 	if (first === undefined) {
@@ -312,9 +324,9 @@ export const planRepair = (
 		const levelled = [...lines];
 		levelled[first.line - 1] = CONFORMING_LINE;
 		lines = levelled;
-		repairs.push({_tag: "HeadingLevel", line: first.line, fromLevel: first.level});
+		repairs.push({ _tag: "HeadingLevel", line: first.line, fromLevel: first.level });
 	}
-	const heading: Heading = {...first, level: HEADING_LEVEL};
+	const heading: Heading = { ...first, level: HEADING_LEVEL };
 
 	const unreadable = (attempt: ReadonlyArray<string>): string | null => {
 		const back = read(`${attempt.join("\n")}${preserved}`);
@@ -336,7 +348,7 @@ export const planRepair = (
 		}
 		lines = conversion.lines;
 		converted = conversion.converted;
-		repairs.push({_tag: "BulletItems", lines: conversion.converted, family: conversion.family});
+		repairs.push({ _tag: "BulletItems", lines: conversion.converted, family: conversion.family });
 	}
 
 	const repaired = `${lines.join("\n")}${preserved}`;
@@ -386,7 +398,7 @@ export const planRepair = (
 			reason: `the block reads as ${whole.reason} and no shape defect this verb repairs explains it (${whole.evidence})`,
 		};
 	}
-	return {_tag: "Repaired", body: repaired, repairs: [head, ...rest], criteria};
+	return { _tag: "Repaired", body: repaired, repairs: [head, ...rest], criteria };
 };
 
 /**

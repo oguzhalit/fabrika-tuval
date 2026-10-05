@@ -17,16 +17,16 @@
  * A pack is posted as one comment. See `handoff take --help` for write and read-back refusals.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {createComment, getComment, listComments} from "../io/issues.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {resolveTrunk, trunkUnresolved} from "../io/trunk.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {isBareAtReference} from "../report/leaks.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {emit, packNonce, groundDigest as toGroundDigest} from "../wire/handoff-pack.ts";
-import {parseAsserted} from "./asserted.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { createComment, getComment, listComments } from "../io/issues.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { resolveTrunk, trunkUnresolved } from "../io/trunk.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { isBareAtReference } from "../report/leaks.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { emit, packNonce, groundDigest as toGroundDigest } from "../wire/handoff-pack.ts";
+import { parseAsserted } from "./asserted.ts";
 import {
 	BAD_SECTIONS,
 	BARE_AT_PATH,
@@ -36,9 +36,9 @@ import {
 	WORK_UNREACHABLE,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {deriveGround, renderGround} from "./ground.ts";
-import {leakFree, requireIssue, targetRepo} from "./guards.ts";
-import {reachesForPackMarker, stampOf} from "./markers.ts";
+import { deriveGround, renderGround } from "./ground.ts";
+import { leakFree, requireIssue, targetRepo } from "./guards.ts";
+import { reachesForPackMarker, stampOf } from "./markers.ts";
 
 export interface TakeOptions {
 	readonly issue: number;
@@ -169,7 +169,7 @@ export const runTake = (
 			issue: options.issue,
 			ref: null,
 			base,
-			board: {state: issue.value.state, labels: issue.value.labels},
+			board: { state: issue.value.state, labels: issue.value.labels },
 			now: options.now,
 		});
 		if (derived._tag === "Failed") {

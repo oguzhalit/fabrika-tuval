@@ -26,15 +26,15 @@
  * unread blocker is `11`: the set of blocking edges is only complete when every blocker's state is
  * known.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {readBlockedness} from "./blockedness.ts";
-import {BLOCKED, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {assemblyNotes, dischargeLanded} from "./discharge.ts";
-import {getParent} from "./github.ts";
-import {openIssue, resolveTargetRepo, scannedLine} from "./target.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { readBlockedness } from "./blockedness.ts";
+import { BLOCKED, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { assemblyNotes, dischargeLanded } from "./discharge.ts";
+import { getParent } from "./github.ts";
+import { openIssue, resolveTargetRepo, scannedLine } from "./target.ts";
 
 const VERB = "build eligible";
 
@@ -52,7 +52,7 @@ export const runEligible = (
 	ChildProcessSpawner.ChildProcessSpawner | HttpClient.HttpClient
 > =>
 	Effect.gen(function* () {
-		const {number} = options;
+		const { number } = options;
 		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
 		if (resolved._tag === "Refused") return resolved.outcome;
 		const repo = resolved.repo;
@@ -90,7 +90,7 @@ export const runEligible = (
 			epic === null ? "standalone" : `parent #${epic}`,
 		);
 		const discharge = yield* dischargeLanded(options.env, repo, epic, blockedness);
-		const {open: stillOpen, unread: stillUnread} = discharge.remaining;
+		const { open: stillOpen, unread: stillUnread } = discharge.remaining;
 		const branchNotes = assemblyNotes(VERB, discharge);
 
 		const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
@@ -113,7 +113,7 @@ export const runEligible = (
 			);
 		}
 
-		return answer(JSON.stringify({answer: "eligible", number, parent: epic}), [
+		return answer(JSON.stringify({ answer: "eligible", number, parent: epic }), [
 			scope,
 			...branchNotes,
 		]);

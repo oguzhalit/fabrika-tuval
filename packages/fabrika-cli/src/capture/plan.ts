@@ -14,8 +14,8 @@
  * on screen is `states.ts`'s closed list (`auth` today), and `review-ui render`
  * refuses the rest on `10`. Parsing a state is not rendering one.
  */
-import type {ColorScheme, SchemeRequest} from "./color-scheme.ts";
-import type {Interaction} from "./interaction.ts";
+import type { ColorScheme, SchemeRequest } from "./color-scheme.ts";
+import type { Interaction } from "./interaction.ts";
 
 /** A changed UI surface to shoot: a route + an optional state variant. */
 export interface Surface {
@@ -42,7 +42,7 @@ export const parseSurfaceSpec = (token: string): Surface => {
 	if (route.length === 0) {
 		throw new Error(`fabrika capture: --surface token has no route: ${token}`);
 	}
-	return {surface: token, route, state: rawState.length === 0 ? null : rawState};
+	return { surface: token, route, state: rawState.length === 0 ? null : rawState };
 };
 
 /** A deterministic viewport the capture runs at (fixed size ⇒ reproducible shots). */
@@ -59,8 +59,8 @@ export interface Viewport {
  * when the caller opts into it. Fixed (not device-emulated) so a shot is
  * byte-reproducible for the same head.
  */
-export const DESKTOP_VIEWPORT: Viewport = {label: "desktop", width: 1280, height: 800};
-export const MOBILE_VIEWPORT: Viewport = {label: "mobile", width: 390, height: 844};
+export const DESKTOP_VIEWPORT: Viewport = { label: "desktop", width: 1280, height: 800 };
+export const MOBILE_VIEWPORT: Viewport = { label: "mobile", width: 390, height: 844 };
 export const DEFAULT_VIEWPORT: Viewport = DESKTOP_VIEWPORT;
 
 /**
@@ -220,7 +220,7 @@ export const buildCapturePlan = (
 			scheme?.scheme ?? null,
 			interaction?.label ?? null,
 		),
-		...(scheme === null ? {} : {scheme}),
-		...(interaction === null ? {} : {interaction}),
+		...(scheme === null ? {} : { scheme }),
+		...(interaction === null ? {} : { interaction }),
 	}));
 };

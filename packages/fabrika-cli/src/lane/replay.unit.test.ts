@@ -6,12 +6,12 @@
  * this file — that split is the one `review/range-durability.git.test.ts` documents: a claim about
  * what git does is measured, and a claim about what this module does with a failed read is scripted.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import type {LockfileRegenerator} from "../config/keys/assembly-replay.ts";
-import {errOut, fakeFs, fakeShell, okOut, once} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {replayBranchName, replayChild} from "./replay.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import type { LockfileRegenerator } from "../config/keys/assembly-replay.ts";
+import { errOut, fakeFs, fakeShell, okOut, once } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { replayBranchName, replayChild } from "./replay.ts";
 
 const SEAT = "/checkout/repo/.claude/worktrees/epic-7140";
 const BRANCH = "epic/7140";
@@ -52,10 +52,10 @@ const run = (
 	const shell = fakeShell(script, undefined, unstartable);
 	return Effect.runPromise(
 		Effect.provide(
-			replayChild({path: SEAT, branch: BRANCH, child: CHILD, tip: TIP, regenerator}),
-			Layer.merge(shell.layer, fakeFs({files}).layer),
+			replayChild({ path: SEAT, branch: BRANCH, child: CHILD, tip: TIP, regenerator }),
+			Layer.merge(shell.layer, fakeFs({ files }).layer),
 		),
-	).then((outcome) => ({outcome, calls: shell.calls, cwds: shell.cwds}));
+	).then((outcome) => ({ outcome, calls: shell.calls, cwds: shell.cwds }));
 };
 
 describe("replayBranchName", () => {
@@ -69,7 +69,7 @@ describe("replayBranchName", () => {
 
 describe("replayChild", () => {
 	it("names the replayed range and merges it into the assembly branch", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			...cleanPick(),
 			[NAME_REPLAY, okOut("")],
 			[CHECKOUT_BRANCH, okOut("")],
@@ -79,7 +79,7 @@ describe("replayChild", () => {
 		expect(outcome).toEqual({
 			_tag: "Replayed",
 			replayBranch: replayBranchName(CHILD, TIP),
-			range: {from: TIP, to: REPLAY},
+			range: { from: TIP, to: REPLAY },
 			commits: 1,
 			resolved: [],
 			regenerated: [],
@@ -90,14 +90,14 @@ describe("replayChild", () => {
 	});
 
 	it("is UNKNOWN when the commits the child adds cannot be listed", async () => {
-		const {outcome, calls} = await run([[REV_LIST, errOut("fatal: bad revision")]]);
+		const { outcome, calls } = await run([[REV_LIST, errOut("fatal: bad revision")]]);
 
 		expect(outcome._tag).toBe("Unreadable");
 		expect(calls.some((line) => line.includes("checkout --detach"))).toBe(false);
 	});
 
 	it("is UNKNOWN when the seat will not detach, and picks nothing", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[REV_LIST, okOut(`${PICK}\n`)],
 			[DETACH, errOut("error: Your local changes would be overwritten")],
 		]);
@@ -109,7 +109,7 @@ describe("replayChild", () => {
 	// The seat is detached here, and a caller's restore describes a branch — so this is UNKNOWN even
 	// though the refusal that reached it was going to be one.
 	it("is UNKNOWN when the seat cannot be put back on its branch after a stopped pick", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[REV_LIST, okOut(`${PICK}\n`)],
 			[DETACH, okOut("")],
 			[PICK_START, errOut("CONFLICT")],
@@ -125,7 +125,7 @@ describe("replayChild", () => {
 	// A checkout takes while a pick is still in progress, so the abort's own exit is what tells a
 	// clean seat from one whose next pick refuses — the caller's hard reset clears neither.
 	it("is UNKNOWN when the pick will not abort and the seat still carries one", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[REV_LIST, okOut(`${PICK}\n`)],
 			[DETACH, okOut("")],
 			[PICK_START, errOut("CONFLICT")],
@@ -141,7 +141,7 @@ describe("replayChild", () => {
 
 	// A pick that never started leaves nothing to abort and says so — that refusal is not the defect.
 	it("keeps the content refusal when the abort failed because no pick survives", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[REV_LIST, okOut(`${PICK}\n`)],
 			[DETACH, okOut("")],
 			[PICK_START, errOut("fatal: bad object")],
@@ -155,7 +155,7 @@ describe("replayChild", () => {
 	});
 
 	it("is UNKNOWN when the replayed range cannot be named", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			...cleanPick(),
 			[NAME_REPLAY, errOut("fatal: cannot force update")],
 		]);
@@ -166,7 +166,7 @@ describe("replayChild", () => {
 	// A range built on this tip cannot conflict with it, so a merge that does says the seat is not
 	// what this leg believes it is — never a content answer to hand back.
 	it("aborts and is UNKNOWN when the replayed range still conflicts with the tip", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			...cleanPick(),
 			[NAME_REPLAY, okOut("")],
 			[CHECKOUT_BRANCH, okOut("")],
@@ -200,7 +200,7 @@ describe("replayChild over a lockfile collision", () => {
 		okOut(rows.map(([file, value]) => `${file}\0merge\0${value}\0`).join(""));
 
 	/** A binary merge leaves "ours" in place with no markers — the file keep-both cannot read. */
-	const LOCK_FILES = {[`${SEAT}/${LOCK}`]: "lockfileVersion: '9.0'\n"};
+	const LOCK_FILES = { [`${SEAT}/${LOCK}`]: "lockfileVersion: '9.0'\n" };
 
 	/** The pick stops on the named unmerged paths, before anything resolves them. */
 	const stoppedOn = (
@@ -228,7 +228,7 @@ describe("replayChild over a lockfile collision", () => {
 	];
 
 	it("regenerates a lockfile-only collision in the seat, stages it and continues the pick", async () => {
-		const {outcome, calls, cwds} = await run(
+		const { outcome, calls, cwds } = await run(
 			[
 				...stoppedOn(LOCK),
 				[ATTRIBUTES, attrs([LOCK, "binary"])],
@@ -237,13 +237,13 @@ describe("replayChild over a lockfile collision", () => {
 				[STAGE, okOut("")],
 				...landed(),
 			],
-			{regenerator: REGENERATOR, files: LOCK_FILES},
+			{ regenerator: REGENERATOR, files: LOCK_FILES },
 		);
 
 		expect(outcome).toEqual({
 			_tag: "Replayed",
 			replayBranch: replayBranchName(CHILD, TIP),
-			range: {from: TIP, to: REPLAY},
+			range: { from: TIP, to: REPLAY },
 			commits: 1,
 			resolved: [],
 			regenerated: [LOCK],
@@ -263,10 +263,10 @@ describe("replayChild over a lockfile collision", () => {
 			[ATTRIBUTES, attrs([LOCK, "binary"], [MANIFEST, "unspecified"])],
 			...putBack(),
 		];
-		const files = {...LOCK_FILES, [`${SEAT}/${MANIFEST}`]: '{"name": "x"}\n'};
+		const files = { ...LOCK_FILES, [`${SEAT}/${MANIFEST}`]: '{"name": "x"}\n' };
 
-		const declared = await run(script(), {regenerator: REGENERATOR, files});
-		const undeclared = await run(script(), {regenerator: null, files});
+		const declared = await run(script(), { regenerator: REGENERATOR, files });
+		const undeclared = await run(script(), { regenerator: null, files });
 
 		expect(declared.outcome._tag).toBe("NotKeepBoth");
 		expect(declared.outcome).toEqual(undeclared.outcome);
@@ -274,7 +274,7 @@ describe("replayChild over a lockfile collision", () => {
 	});
 
 	it("refuses a lockfile-only collision as before when no regenerator is declared", async () => {
-		const {outcome, calls} = await run([...stoppedOn(LOCK), ...putBack()], {
+		const { outcome, calls } = await run([...stoppedOn(LOCK), ...putBack()], {
 			regenerator: null,
 			files: LOCK_FILES,
 		});
@@ -290,9 +290,9 @@ describe("replayChild over a lockfile collision", () => {
 	});
 
 	it("leaves a declared lockfile that is not `merge=binary` to the keep-both judgment", async () => {
-		const {outcome, calls} = await run(
+		const { outcome, calls } = await run(
 			[...stoppedOn(LOCK), [ATTRIBUTES, attrs([LOCK, "unspecified"])], ...putBack()],
-			{regenerator: REGENERATOR, files: LOCK_FILES},
+			{ regenerator: REGENERATOR, files: LOCK_FILES },
 		);
 
 		expect(outcome._tag).toBe("NotKeepBoth");
@@ -300,14 +300,14 @@ describe("replayChild over a lockfile collision", () => {
 	});
 
 	it("abandons the replay naming the command and the lockfile when the regenerator fails", async () => {
-		const {outcome, calls} = await run(
+		const { outcome, calls } = await run(
 			[
 				...stoppedOn(LOCK),
 				[ATTRIBUTES, attrs([LOCK, "binary"])],
 				[REGENERATE, errOut("ERR_PNPM_NO_MATCHING_VERSION No matching version")],
 				...putBack(),
 			],
-			{regenerator: REGENERATOR, files: LOCK_FILES},
+			{ regenerator: REGENERATOR, files: LOCK_FILES },
 		);
 
 		expect(outcome._tag).toBe("NotRegenerated");
@@ -321,9 +321,9 @@ describe("replayChild over a lockfile collision", () => {
 	});
 
 	it("abandons the replay naming the command and the lockfile when the regenerator cannot start", async () => {
-		const {outcome, calls} = await run(
+		const { outcome, calls } = await run(
 			[...stoppedOn(LOCK), [ATTRIBUTES, attrs([LOCK, "binary"])], ...putBack()],
-			{regenerator: REGENERATOR, files: LOCK_FILES, unstartable: [REGENERATE]},
+			{ regenerator: REGENERATOR, files: LOCK_FILES, unstartable: [REGENERATE] },
 		);
 
 		expect(outcome._tag).toBe("NotRegenerated");
@@ -334,7 +334,7 @@ describe("replayChild over a lockfile collision", () => {
 	});
 
 	it("refuses a regenerator that also rewrote a tracked file beside the lockfile", async () => {
-		const {outcome, calls} = await run(
+		const { outcome, calls } = await run(
 			[
 				...stoppedOn(LOCK),
 				[ATTRIBUTES, attrs([LOCK, "binary"])],
@@ -342,7 +342,7 @@ describe("replayChild over a lockfile collision", () => {
 				[WORKTREE_CHANGES, okOut(`${LOCK}\n${MANIFEST}\n`)],
 				...putBack(),
 			],
-			{regenerator: REGENERATOR, files: LOCK_FILES},
+			{ regenerator: REGENERATOR, files: LOCK_FILES },
 		);
 
 		expect(outcome._tag).toBe("NotRegenerated");
@@ -352,9 +352,9 @@ describe("replayChild over a lockfile collision", () => {
 	});
 
 	it("is UNKNOWN when which paths are `merge=binary` cannot be read", async () => {
-		const {outcome, calls} = await run(
+		const { outcome, calls } = await run(
 			[...stoppedOn(LOCK), [ATTRIBUTES, errOut("fatal: bad attribute")], ...putBack()],
-			{regenerator: REGENERATOR, files: LOCK_FILES},
+			{ regenerator: REGENERATOR, files: LOCK_FILES },
 		);
 
 		expect(outcome._tag).toBe("Unreadable");

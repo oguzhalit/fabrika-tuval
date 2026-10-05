@@ -1,14 +1,14 @@
-import {mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {NodeServices} from "@effect/platform-node";
-import {Effect, PlatformError} from "effect";
-import {describe, expect, it} from "vitest";
-import {faultingShell, signalledExitError, signalledShell} from "../fakes.test-support.ts";
-import {NO_IMPLEMENTATION} from "../verb.ts";
-import {type LocalInstall, PACKAGE_NAME, probeLocalInstall} from "./local.ts";
-import {type RepoPredicate, repoPredicate} from "./reason.ts";
-import type {CopyOrigin} from "./repository.ts";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { Effect, PlatformError } from "effect";
+import { describe, expect, it } from "vitest";
+import { faultingShell, signalledExitError, signalledShell } from "../fakes.test-support.ts";
+import { NO_IMPLEMENTATION } from "../verb.ts";
+import { type LocalInstall, PACKAGE_NAME, probeLocalInstall } from "./local.ts";
+import { type RepoPredicate, repoPredicate } from "./reason.ts";
+import type { CopyOrigin } from "./repository.ts";
 import {
 	foreignCheckoutRefusal,
 	GLOBAL_WARNING_DISABLED_ENV,
@@ -30,12 +30,12 @@ const install: LocalInstall = {
 const GLOBAL = "/usr/local/pnpm/global/5/node_modules/@kampus/fabrika-cli";
 
 /** A copy on `PATH`: it belongs to no repository to cross out of, so it may always hand over. */
-const INSTALLED: CopyOrigin = {_tag: "same-repository"};
+const INSTALLED: CopyOrigin = { _tag: "same-repository" };
 
 /** A copy whose checkout is a genuinely different repository — the one state that refuses. */
 const OTHER_CHECKOUT = "/elsewhere";
 const otherCopy = `${OTHER_CHECKOUT}/packages/fabrika-cli`;
-const ELSEWHERE: CopyOrigin = {_tag: "other-repository", checkout: OTHER_CHECKOUT};
+const ELSEWHERE: CopyOrigin = { _tag: "other-repository", checkout: OTHER_CHECKOUT };
 
 describe("resolve", () => {
 	it("delegates to the repo-local install — the pinned version wins over the global", () => {
@@ -44,9 +44,9 @@ describe("resolve", () => {
 				selfPackageRoot: GLOBAL,
 				origin: INSTALLED,
 				repoRoot: "/repo",
-				local: {_tag: "found", install},
+				local: { _tag: "found", install },
 			}),
-		).toEqual({_tag: "delegate", to: install});
+		).toEqual({ _tag: "delegate", to: install });
 	});
 
 	it("runs here SILENTLY outside any repo — a global-only invocation is not a defect", () => {
@@ -64,7 +64,7 @@ describe("resolve", () => {
 			selfPackageRoot: GLOBAL,
 			origin: INSTALLED,
 			repoRoot: "/repo",
-			local: {_tag: "absent"},
+			local: { _tag: "absent" },
 		});
 		expect(resolution._tag).toBe("warn-and-run-here");
 	});
@@ -74,7 +74,7 @@ describe("resolve", () => {
 			selfPackageRoot: GLOBAL,
 			origin: INSTALLED,
 			repoRoot: "/repo",
-			local: {_tag: "corrupt", reason: repoPredicate`declares no version`},
+			local: { _tag: "corrupt", reason: repoPredicate`declares no version` },
 		});
 		expect(resolution).toEqual({
 			_tag: "warn-and-run-here",
@@ -88,7 +88,7 @@ describe("resolve", () => {
 			selfPackageRoot: install.packageRoot,
 			origin: INSTALLED,
 			repoRoot: "/repo",
-			local: {_tag: "found", install},
+			local: { _tag: "found", install },
 		});
 		expect(resolution._tag).toBe("run-here");
 	});
@@ -107,9 +107,9 @@ describe("resolve", () => {
 		expect(
 			resolve({
 				selfPackageRoot: worktreeInstall.packageRoot,
-				origin: {_tag: "same-repository"},
+				origin: { _tag: "same-repository" },
 				repoRoot: "/repo/.claude/worktrees/lane",
-				local: {_tag: "found", install: worktreeInstall},
+				local: { _tag: "found", install: worktreeInstall },
 			})._tag,
 		).toBe("run-here");
 	});
@@ -123,10 +123,10 @@ describe("resolve", () => {
  * answer.
  */
 describe("resolve — an install, a worktree peer and a foreign checkout are NOT the same input", () => {
-	const input = {repoRoot: "/repo", local: {_tag: "found", install}} as const;
+	const input = { repoRoot: "/repo", local: { _tag: "found", install } } as const;
 
 	it("REFUSES a copy invoked out of a different repository, naming both roots", () => {
-		const resolution = resolve({...input, selfPackageRoot: otherCopy, origin: ELSEWHERE});
+		const resolution = resolve({ ...input, selfPackageRoot: otherCopy, origin: ELSEWHERE });
 		expect(resolution).toEqual({
 			_tag: "refuse-foreign-checkout",
 			selfPackageRoot: otherCopy,
@@ -137,7 +137,7 @@ describe("resolve — an install, a worktree peer and a foreign checkout are NOT
 	});
 
 	it("still delegates SILENTLY from an install that belongs to no checkout — same comparison, opposite answer", () => {
-		expect(resolve({...input, selfPackageRoot: GLOBAL, origin: INSTALLED})).toEqual({
+		expect(resolve({ ...input, selfPackageRoot: GLOBAL, origin: INSTALLED })).toEqual({
 			_tag: "delegate",
 			to: install,
 		});
@@ -153,9 +153,9 @@ describe("resolve — an install, a worktree peer and a foreign checkout are NOT
 			resolve({
 				...input,
 				selfPackageRoot: "/primary/packages/fabrika-cli",
-				origin: {_tag: "same-repository"},
+				origin: { _tag: "same-repository" },
 			}),
-		).toEqual({_tag: "delegate", to: install});
+		).toEqual({ _tag: "delegate", to: install });
 	});
 
 	it("delegates within ONE checkout — the pinned install may differ from the copy you ran", () => {
@@ -163,9 +163,9 @@ describe("resolve — an install, a worktree peer and a foreign checkout are NOT
 			resolve({
 				...input,
 				selfPackageRoot: "/repo/vendor/fabrika-cli",
-				origin: {_tag: "same-repository"},
+				origin: { _tag: "same-repository" },
 			}),
-		).toEqual({_tag: "delegate", to: install});
+		).toEqual({ _tag: "delegate", to: install });
 	});
 });
 
@@ -192,7 +192,7 @@ describe("globalWarning", () => {
 	 * the one arrangement that was never broken.
 	 */
 	const warn = (reason: RepoPredicate, declared: string | undefined, repoRoot = "/repo") =>
-		globalWarning({repoRoot, reason, globalVersion: "0.1.0", declared});
+		globalWarning({ repoRoot, reason, globalVersion: "0.1.0", declared });
 
 	const firstLine = (text: string) => text.split("\n")[0];
 
@@ -201,7 +201,7 @@ describe("globalWarning", () => {
 			selfPackageRoot: GLOBAL,
 			origin: INSTALLED,
 			repoRoot: "/repo",
-			local: {_tag: "absent"},
+			local: { _tag: "absent" },
 		});
 		if (resolution._tag !== "warn-and-run-here") throw new Error("expected the loud branch");
 		return resolution.reason;
@@ -220,7 +220,7 @@ describe("globalWarning", () => {
 	}> => {
 		const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "fabrika-corrupt-")));
 		const installed = join(repoRoot, "node_modules", PACKAGE_NAME);
-		mkdirSync(installed, {recursive: true});
+		mkdirSync(installed, { recursive: true });
 		writeFileSync(join(repoRoot, "package.json"), "{}");
 		writeFileSync(join(installed, "package.json"), '{"name":"@kampus/fabrika-cli"}');
 		try {
@@ -228,9 +228,9 @@ describe("globalWarning", () => {
 				probeLocalInstall(repoRoot).pipe(Effect.provide(NodeServices.layer)),
 			);
 			if (probed._tag !== "corrupt") throw new Error(`expected corrupt, got ${probed._tag}`);
-			return {reason: probed.reason, repoRoot};
+			return { reason: probed.reason, repoRoot };
 		} finally {
-			rmSync(repoRoot, {recursive: true, force: true});
+			rmSync(repoRoot, { recursive: true, force: true });
 		}
 	};
 
@@ -241,7 +241,7 @@ describe("globalWarning", () => {
 	});
 
 	it("reads as one sentence on a corrupt branch too", async () => {
-		const {reason, repoRoot} = await corruptProbe();
+		const { reason, repoRoot } = await corruptProbe();
 		expect(firstLine(warn(reason, "^0.4.0", repoRoot))).toBe(
 			`fabrika: running the GLOBAL install (v0.1.0) — ${repoRoot} has an unusable install: ` +
 				`${join(repoRoot, "node_modules", PACKAGE_NAME, "package.json")} declares no "version".`,
@@ -269,7 +269,7 @@ describe("traceLine", () => {
 				selfPackageRoot: GLOBAL,
 				origin: INSTALLED,
 				repoRoot: "/repo",
-				local: {_tag: "found", install},
+				local: { _tag: "found", install },
 			}),
 		);
 		expect(line).toContain(GLOBAL);
@@ -327,7 +327,7 @@ describe("spawnDelegate", () => {
 				invocationDir: "/repo/packages/fabrika-cli",
 			}).pipe(Effect.provide(faultingShell)),
 		);
-		expect(outcome).toEqual({_tag: "exited", status: NO_IMPLEMENTATION});
+		expect(outcome).toEqual({ _tag: "exited", status: NO_IMPLEMENTATION });
 	});
 
 	it("reports a signal-killed child as signalled, never as the could-not-run diagnosis", async () => {
@@ -340,7 +340,7 @@ describe("spawnDelegate", () => {
 				invocationDir: "/repo/packages/fabrika-cli",
 			}).pipe(Effect.provide(signalledShell("SIGINT"))),
 		);
-		expect(outcome).toEqual({_tag: "signalled", signal: "SIGINT"});
+		expect(outcome).toEqual({ _tag: "signalled", signal: "SIGINT" });
 	});
 
 	/**
@@ -361,9 +361,9 @@ describe("spawnDelegate", () => {
 					invocationDir: dir,
 				}).pipe(Effect.provide(NodeServices.layer)),
 			);
-			expect(outcome).toEqual({_tag: "signalled", signal: "SIGINT"});
+			expect(outcome).toEqual({ _tag: "signalled", signal: "SIGINT" });
 		} finally {
-			rmSync(dir, {recursive: true, force: true});
+			rmSync(dir, { recursive: true, force: true });
 		}
 	});
 });

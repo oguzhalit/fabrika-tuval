@@ -1,7 +1,7 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {comments, GATEWAY, GIT_DIRS} from "../build/fixtures.test-support.ts";
-import {errOut, fakeFs, fakeSeams, okOut, type Scripted} from "../fakes.test-support.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { comments, GATEWAY, GIT_DIRS } from "../build/fixtures.test-support.ts";
+import { errOut, fakeFs, fakeSeams, okOut, type Scripted } from "../fakes.test-support.ts";
 import {
 	CLAIM_NOT_MINE,
 	OFF_VOCABULARY,
@@ -21,8 +21,8 @@ import {
 	subIssues,
 	TOKEN,
 } from "./fixtures.test-support.ts";
-import {runOpen} from "./open-verb.ts";
-import {manifestPath, parseManifest, parseRunRecord, runJsonPath} from "./run.ts";
+import { runOpen } from "./open-verb.ts";
+import { manifestPath, parseManifest, parseRunRecord, runJsonPath } from "./run.ts";
 
 const SHA = "03135b9188d2be6c0a4b7bd0b7a3ff9c53f0f2b1";
 
@@ -39,7 +39,7 @@ const REV_LIST = /^git rev-list --count/;
 const TRUNK_READ = /^GET https:\/\/api\.github\.com\/repos\/o\/r$/;
 
 const GROUND: ReadonlyArray<Scripted> = [
-	[TRUNK_READ, {status: 200, body: JSON.stringify({default_branch: "main"})}],
+	[TRUNK_READ, { status: 200, body: JSON.stringify({ default_branch: "main" }) }],
 	[/^git remote$/, okOut("origin\n")],
 	[/^git fetch --quiet origin main$/, okOut("")],
 	[/^git rev-parse --verify --quiet origin\/main/, okOut(`${SHA}\n`)],
@@ -52,7 +52,7 @@ const CLEAN: ReadonlyArray<Scripted> = [
 	...CLAIMED,
 	...GROUND,
 	[SUBS, subIssues()],
-	[CYCLE, {status: 200, body: "{}"}],
+	[CYCLE, { status: 200, body: "{}" }],
 	[BACKLOG, backlogPage([4180, "queue view for reports"])],
 	[SEARCH, issueRows()],
 ];
@@ -62,10 +62,10 @@ const run = (
 	files: Readonly<Record<string, string | null>> = {},
 ) => {
 	const shell = fakeSeams(script);
-	const fs = fakeFs({files});
+	const fs = fakeFs({ files });
 	return Effect.runPromise(
 		Effect.provide(
-			runOpen({number: 4300, token: TOKEN, repo: null, cwd: "/repo", env}),
+			runOpen({ number: 4300, token: TOKEN, repo: null, cwd: "/repo", env }),
 			Layer.mergeAll(shell.layer, fs.layer),
 		),
 	).then((outcome) => ({
@@ -78,7 +78,7 @@ const run = (
 
 describe("runOpen", () => {
 	it("allocates the run, decides the mode, and prints the ground it proved", async () => {
-		const {outcome, written} = await run(CLEAN);
+		const { outcome, written } = await run(CLEAN);
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout)).toMatchObject({
 			answer: "opened",
@@ -88,7 +88,7 @@ describe("runOpen", () => {
 			dir: DIR,
 			children: [],
 			cycleDoc: "present",
-			candidates: {outcome: "candidates"},
+			candidates: { outcome: "candidates" },
 		});
 		expect(JSON.parse(outcome.stdout).bodyDigest).toMatch(/^[0-9a-f]{12}$/);
 		expect(parseRunRecord(written.get(runJsonPath(DIR)) ?? "")).toMatchObject({
@@ -104,12 +104,12 @@ describe("runOpen", () => {
 	 * and an orphan at the gate if omitted, with no third option.
 	 */
 	it("seeds the manifest with the epic's existing children, ids and all", async () => {
-		const {outcome, written} = await run([
+		const { outcome, written } = await run([
 			...CLEAN.filter(([pattern]) => pattern !== SUBS),
-			[SUBS, subIssues({number: 4301, id: 90210, labels: ["type:feature", "p1"]})],
+			[SUBS, subIssues({ number: 4301, id: 90210, labels: ["type:feature", "p1"] })],
 		]);
 		expect(JSON.parse(outcome.stdout).children).toEqual([
-			{number: 4301, title: "child 4301", labels: ["type:feature", "p1"]},
+			{ number: 4301, title: "child 4301", labels: ["type:feature", "p1"] },
 		]);
 		expect(parseManifest(written.get(manifestPath(DIR)) ?? "")).toEqual([
 			{
@@ -128,8 +128,8 @@ describe("runOpen", () => {
 	});
 
 	it("reads one plan heading as a re-plan", async () => {
-		const {outcome} = await run([
-			[EPIC_READ, epic({body: "brief\n\n## Plan (plan-epic)\n\n### Summary\n\nold\n"})],
+		const { outcome } = await run([
+			[EPIC_READ, epic({ body: "brief\n\n## Plan (plan-epic)\n\n### Summary\n\nold\n" })],
 			...CLEAN.slice(1),
 		]);
 		expect(JSON.parse(outcome.stdout).mode).toBe("re-plan");
@@ -137,8 +137,8 @@ describe("runOpen", () => {
 
 	/** Two headings: the mode cannot be decided, and guessing is what corrupted epics in v1. */
 	it("refuses two plan headings rather than guessing the mode", async () => {
-		const {outcome} = await run([
-			[EPIC_READ, epic({body: "## Plan (plan-epic)\n\na\n\n## Plan (plan-epic)\n\nb\n"})],
+		const { outcome } = await run([
+			[EPIC_READ, epic({ body: "## Plan (plan-epic)\n\na\n\n## Plan (plan-epic)\n\nb\n" })],
 			...CLEAN.slice(1),
 		]);
 		expect(outcome.code).toBe(REGION_UNRESOLVABLE);
@@ -146,20 +146,20 @@ describe("runOpen", () => {
 	});
 
 	it("registers the run root in this tree's git exclude", async () => {
-		const {written} = await run(CLEAN);
+		const { written } = await run(CLEAN);
 		expect(written.get(EXCLUDE_PATH)).toBe(".fabrika-plan/\n");
 	});
 
 	it("keeps a staged plan across a re-open — a resume is not a reset", async () => {
-		const {written} = await run(CLEAN, {[`${DIR}/plan.md`]: "## Plan (plan-epic)\n"});
+		const { written } = await run(CLEAN, { [`${DIR}/plan.md`]: "## Plan (plan-epic)\n" });
 		expect(written.has(`${DIR}/plan.md`)).toBe(false);
 	});
 
 	it("re-seeds a resumed run without forgetting which children it minted", async () => {
-		const {written} = await run(
+		const { written } = await run(
 			[
 				...CLEAN.filter(([pattern]) => pattern !== SUBS),
-				[SUBS, subIssues({number: 4301, id: 90210})],
+				[SUBS, subIssues({ number: 4301, id: 90210 })],
 			],
 			{
 				[manifestPath(DIR)]: `${JSON.stringify({
@@ -172,12 +172,12 @@ describe("runOpen", () => {
 			},
 		);
 		expect(parseManifest(written.get(manifestPath(DIR)) ?? "")).toMatchObject([
-			{number: 4301, linked: true, mintedThisRun: true},
+			{ number: 4301, linked: true, mintedThisRun: true },
 		]);
 	});
 
 	it("refuses a base proven behind origin/main", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			...CLEAN.filter(([pattern]) => pattern !== REV_LIST),
 			[REV_LIST, okOut("47\n")],
 		]);
@@ -189,7 +189,7 @@ describe("runOpen", () => {
 
 	/** "I could not tell" is not "it is stale", and it is certainly not "it is fresh". */
 	it("seats an unreadable freshness probe on 11, never on 20", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			...CLEAN.filter(([pattern]) => pattern !== REV_LIST),
 			[REV_LIST, errOut("fatal: bad revision")],
 		]);
@@ -197,8 +197,8 @@ describe("runOpen", () => {
 	});
 
 	it("refuses an issue that is not a type:epic", async () => {
-		const {outcome} = await run([
-			[EPIC_READ, epic({labels: [{name: "type:feature"}]})],
+		const { outcome } = await run([
+			[EPIC_READ, epic({ labels: [{ name: "type:feature" }] })],
 			...CLEAN.slice(1),
 		]);
 		expect(outcome.code).toBe(OFF_VOCABULARY);
@@ -208,20 +208,20 @@ describe("runOpen", () => {
 	});
 
 	it("refuses a proven-absent epic on 7", async () => {
-		const {outcome} = await run([
-			[EPIC_READ, {status: 404, body: '{"message":"Not Found"}'}],
+		const { outcome } = await run([
+			[EPIC_READ, { status: 404, body: '{"message":"Not Found"}' }],
 			...CLEAN.slice(1),
 		]);
 		expect(outcome.code).toBe(ZERO_SCOPE);
 	});
 
 	it("refuses an unreadable epic on 11 — absence is decided by status, never by text", async () => {
-		const {outcome} = await run([[EPIC_READ, GATEWAY], ...CLEAN.slice(1)]);
+		const { outcome } = await run([[EPIC_READ, GATEWAY], ...CLEAN.slice(1)]);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 	});
 
 	it("refuses an unreadable tree root on 11 — the run directory is UNKNOWN", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[EPIC_READ, epic()],
 			[TREE, errOut("fatal: not a git repository")],
 			...CLEAN.slice(2),
@@ -230,12 +230,12 @@ describe("runOpen", () => {
 	});
 
 	it("refuses when this lane does not hold the claim", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[EPIC_READ, epic()],
 			[TREE, GIT_DIRS],
 			[
 				/^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4300\/comments\?/,
-				comments({id: 1, body: "nothing here"}),
+				comments({ id: 1, body: "nothing here" }),
 			],
 			...CLEAN.slice(4),
 		]);
@@ -245,7 +245,7 @@ describe("runOpen", () => {
 
 	/** An unreachable index is `indeterminate`; only a read that ran and matched nothing is `none`. */
 	it("seats an unreadable backlog on 11 rather than a clean none", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			...CLEAN.filter(([pattern]) => pattern !== BACKLOG),
 			[BACKLOG, GATEWAY],
 		]);
@@ -254,13 +254,13 @@ describe("runOpen", () => {
 	});
 
 	it("ranks the open backlog and excludes the epic from its own candidates", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			...CLEAN.filter(([pattern]) => pattern !== BACKLOG),
 			[BACKLOG, backlogPage([4300, "The moderation queue epic"], [4180, "moderation queue view"])],
 		]);
-		const {candidates} = JSON.parse(outcome.stdout);
+		const { candidates } = JSON.parse(outcome.stdout);
 		expect(candidates.outcome).toBe("candidates");
-		expect(candidates.items.map((item: {number: number}) => item.number)).toEqual([4180]);
+		expect(candidates.items.map((item: { number: number }) => item.number)).toEqual([4180]);
 	});
 
 	/**
@@ -270,28 +270,30 @@ describe("runOpen", () => {
 	 * third does not drift back.
 	 */
 	it("sends only the SEARCH_TOKENS prefix to search while rank keeps the full list", async () => {
-		const {outcome, requests} = await run([
-			[EPIC_READ, epic({title: "moderation queue triage backlog dashboard rewrite"})],
+		const { outcome, requests } = await run([
+			[EPIC_READ, epic({ title: "moderation queue triage backlog dashboard rewrite" })],
 			...CLEAN.slice(1).filter(([pattern]) => pattern !== BACKLOG),
 			[BACKLOG, backlogPage([4180, "dashboard rewrite notes"])],
 		]);
 		const query = requests.find((line) => SEARCH.test(line)) ?? "";
 		expect(decodeURIComponent(query)).toContain("moderation queue triage backlog");
 		expect(decodeURIComponent(query)).not.toContain("dashboard");
-		const {candidates} = JSON.parse(outcome.stdout);
-		expect(candidates.items).toEqual([{number: 4180, title: "dashboard rewrite notes", score: 2}]);
+		const { candidates } = JSON.parse(outcome.stdout);
+		expect(candidates.items).toEqual([
+			{ number: 4180, title: "dashboard rewrite notes", score: 2 },
+		]);
 	});
 
 	it("names the tokens actually sent when the search list is shorter than the ranking list", async () => {
-		const {outcome} = await run([
-			[EPIC_READ, epic({title: "moderation queue triage backlog dashboard rewrite"})],
+		const { outcome } = await run([
+			[EPIC_READ, epic({ title: "moderation queue triage backlog dashboard rewrite" })],
 			...CLEAN.slice(1),
 		]);
 		expect(outcome.stderr.at(-1)).toContain("sent to search: moderation, queue, triage, backlog");
 	});
 
 	it("says nothing about a narrowed send when the whole list went to search", async () => {
-		const {outcome} = await run(CLEAN);
+		const { outcome } = await run(CLEAN);
 		expect(outcome.stderr.at(-1)).not.toContain("sent to search");
 	});
 });

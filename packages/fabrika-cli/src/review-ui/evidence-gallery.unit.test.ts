@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import {compose as supersedeWith} from "../review/supersede.ts";
-import {emit, read} from "./evidence-gallery.ts";
+import { describe, expect, it } from "vitest";
+import { compose as supersedeWith } from "../review/supersede.ts";
+import { emit, read } from "./evidence-gallery.ts";
 
 const HEAD = "03135b91aa04f7e2c9d8b1640a5c22e9f01b7d3c";
 const A = {
@@ -22,15 +22,15 @@ describe("the evidence gallery", () => {
 		expect(read(verdict("PASS"))).toEqual({
 			_tag: "Found",
 			evidence: [
-				{url: A.url, sha256: A.sha256},
-				{url: B.url, sha256: B.sha256},
+				{ url: A.url, sha256: A.sha256 },
+				{ url: B.url, sha256: B.sha256 },
 			],
 		});
 	});
 
 	it("reads only the verdict in force, never a superseded one's gallery below the fence", () => {
 		const body = supersedeWith(verdict("FAIL", [A]), verdict("PASS", [B]), new Date(0));
-		expect(read(body)).toEqual({_tag: "Found", evidence: [{url: B.url, sha256: B.sha256}]});
+		expect(read(body)).toEqual({ _tag: "Found", evidence: [{ url: B.url, sha256: B.sha256 }] });
 	});
 
 	it("is unprovable when an image carries no digest line", () => {

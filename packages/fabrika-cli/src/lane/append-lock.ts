@@ -42,10 +42,10 @@
  * `FABRIKA_LANE_LOCK_BUDGET_MS` still overrides the budget on purpose — a caller asking to refuse
  * fast is asking not to reach the horizon at all.
  */
-import {randomUUID} from "node:crypto";
-import {Effect, type FileSystem, Option, type Path, Result} from "effect";
-import {CONCURRENT_WRITE} from "./codes.ts";
-import {WORKFLOW_FILE} from "./store.ts";
+import { randomUUID } from "node:crypto";
+import { Effect, type FileSystem, Option, type Path, Result } from "effect";
+import { CONCURRENT_WRITE } from "./codes.ts";
+import { WORKFLOW_FILE } from "./store.ts";
 
 /** The sidecar directory a holding writer creates inside the lane directory. */
 export const LOCK_DIR_NAME = "events.lock";
@@ -159,7 +159,7 @@ const claimHolder = (
 	holder: string,
 ): Effect.Effect<boolean, never> =>
 	Effect.map(
-		Effect.result(fs.writeFileString(holderPath(lockDir), stampLine(holder), {flag: "wx"})),
+		Effect.result(fs.writeFileString(holderPath(lockDir), stampLine(holder), { flag: "wx" })),
 		Result.isSuccess,
 	);
 
@@ -171,11 +171,11 @@ const holdsLock = (
 ): Effect.Effect<boolean, never> =>
 	Effect.map(
 		readStamp(fs, lockDir),
-		Option.match({onNone: () => false, onSome: (stamp) => stamp.holder === holder}),
+		Option.match({ onNone: () => false, onSome: (stamp) => stamp.holder === holder }),
 	);
 
 const removeLock = (fs: FileSystem.FileSystem, lockDir: string): Effect.Effect<void, never> =>
-	Effect.ignore(fs.remove(lockDir, {recursive: true}));
+	Effect.ignore(fs.remove(lockDir, { recursive: true }));
 
 const acquireOnce = (
 	fs: FileSystem.FileSystem,
@@ -183,7 +183,7 @@ const acquireOnce = (
 	holder: string,
 ): Effect.Effect<LockAttempt, never> =>
 	Effect.gen(function* () {
-		const made = yield* Effect.result(fs.makeDirectory(lockDir, {recursive: false}));
+		const made = yield* Effect.result(fs.makeDirectory(lockDir, { recursive: false }));
 		if (Result.isFailure(made)) {
 			// A non-recursive mkdir fails two ways that mean opposite things, so the reason decides it:
 			// EEXIST (`AlreadyExists`) is the atomic-mkdir race — someone holds the lock — while ENOENT
@@ -383,4 +383,4 @@ export const lockedRefusal = (verb: string, lockDir: string): string =>
 	`${verb}: refused (log unappended): another writer holds ${lockDir} — concurrent ledger writes are serialized (${CONCURRENT_WRITE}); retry this exact event once the holder clears.`;
 
 // Re-exported so callers need no second import site for the refusal seat.
-export {CONCURRENT_WRITE};
+export { CONCURRENT_WRITE };

@@ -1,10 +1,10 @@
-import {readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
-import {classifyPark, KNOWN_PARKS} from "../recipe/parks.ts";
-import {EPIC_RULES} from "../wire/lane-brief.ts";
-import {MACHINERY_EVENT} from "./machine.ts";
-import {REVIEW_UI_STATE} from "./prove.ts";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import { classifyPark, KNOWN_PARKS } from "../recipe/parks.ts";
+import { EPIC_RULES } from "../wire/lane-brief.ts";
+import { MACHINERY_EVENT } from "./machine.ts";
+import { REVIEW_UI_STATE } from "./prove.ts";
 import {
 	AXIS_ISSUE_CAUSES,
 	axisIssueForCause,
@@ -71,7 +71,7 @@ describe("the builder's no-PR terminals", () => {
 	it("recognises the terminal the epic-run brief tells a child to end on", () => {
 		const named = /ends on `([A-Z][A-Z-]+)`/.exec(EPIC_RULES);
 		expect(named?.[1]).toBe("BUILT-NO-PR");
-		expect(eventForToken(named?.[1] ?? "")).toMatchObject({event: "DONE"});
+		expect(eventForToken(named?.[1] ?? "")).toMatchObject({ event: "DONE" });
 	});
 
 	// The three builder terminals are indistinguishable here on purpose, and this is the line that
@@ -81,9 +81,9 @@ describe("the builder's no-PR terminals", () => {
 		expect(
 			["SHIPPED-PR", "SUCCESS-NO-PR", "BUILT-NO-PR"].map((token) => eventForToken(token)),
 		).toEqual([
-			{_tag: "Mapped", token: "SHIPPED-PR", event: "DONE"},
-			{_tag: "Mapped", token: "SUCCESS-NO-PR", event: "DONE"},
-			{_tag: "Mapped", token: "BUILT-NO-PR", event: "DONE"},
+			{ _tag: "Mapped", token: "SHIPPED-PR", event: "DONE" },
+			{ _tag: "Mapped", token: "SUCCESS-NO-PR", event: "DONE" },
+			{ _tag: "Mapped", token: "BUILT-NO-PR", event: "DONE" },
 		]);
 	});
 });
@@ -95,17 +95,17 @@ describe("the shipper's routing arms are three answers, not one", () => {
 			token: "ROUTED-REPAIR",
 			event: "FAIL",
 		});
-		expect(eventForToken("EJECTED")).toEqual({_tag: "Mapped", token: "EJECTED", event: "FAIL"});
+		expect(eventForToken("EJECTED")).toEqual({ _tag: "Mapped", token: "EJECTED", event: "FAIL" });
 	});
 
 	it("leaves the heal-ci and review arms BLOCKED — neither is work this lane can retry", () => {
-		expect(eventForToken("ROUTED-HEAL-CI")).toMatchObject({event: "BLOCKED"});
-		expect(eventForToken("ROUTED-REVIEW")).toMatchObject({event: "BLOCKED"});
+		expect(eventForToken("ROUTED-HEAL-CI")).toMatchObject({ event: "BLOCKED" });
+		expect(eventForToken("ROUTED-REVIEW")).toMatchObject({ event: "BLOCKED" });
 	});
 
 	it("no longer recognises a bare ROUTED as the shipper's — the reviewer's is what it resolves to", () => {
 		expect(SHELL_VOCABULARIES.shipper).not.toHaveProperty("ROUTED");
-		expect(eventForToken("ROUTED")).toEqual({_tag: "Mapped", token: "ROUTED", event: "BLOCKED"});
+		expect(eventForToken("ROUTED")).toEqual({ _tag: "Mapped", token: "ROUTED", event: "BLOCKED" });
 	});
 });
 
@@ -119,44 +119,44 @@ describe("the shipper's two queue terminals are waits, not landings", () => {
 	});
 
 	it("routes a bare enqueue to WIP too — a merge nobody read back is not `shipped`", () => {
-		expect(eventForToken("QUEUED")).toEqual({_tag: "Mapped", token: "QUEUED", event: "WIP"});
+		expect(eventForToken("QUEUED")).toEqual({ _tag: "Mapped", token: "QUEUED", event: "WIP" });
 	});
 
 	it("keeps DONE for the two terminals that read a merge back", () => {
-		expect(eventForToken("LANDED")).toMatchObject({event: "DONE"});
-		expect(eventForToken("ALREADY-MERGED")).toMatchObject({event: "DONE"});
+		expect(eventForToken("LANDED")).toMatchObject({ event: "DONE" });
+		expect(eventForToken("ALREADY-MERGED")).toMatchObject({ event: "DONE" });
 	});
 
 	it("still folds every genuine shipper block to BLOCKED", () => {
-		expect(eventForToken("REFUSED")).toMatchObject({event: "BLOCKED"});
-		expect(eventForToken("AWAITING-CP-APPROVAL")).toMatchObject({event: "BLOCKED"});
-		expect(eventForToken("UNKNOWN")).toMatchObject({event: "BLOCKED"});
+		expect(eventForToken("REFUSED")).toMatchObject({ event: "BLOCKED" });
+		expect(eventForToken("AWAITING-CP-APPROVAL")).toMatchObject({ event: "BLOCKED" });
+		expect(eventForToken("UNKNOWN")).toMatchObject({ event: "BLOCKED" });
 	});
 });
 
 describe("the states each vocabulary group serves", () => {
 	it("serves a builder's terminal out of either build state", () => {
-		expect(serviceAt("SHIPPED-PR", "build")).toEqual({_tag: "Served", by: ["builder"]});
-		expect(serviceAt("shipped-pr", "build:ui")).toEqual({_tag: "Served", by: ["builder"]});
+		expect(serviceAt("SHIPPED-PR", "build")).toEqual({ _tag: "Served", by: ["builder"] });
+		expect(serviceAt("shipped-pr", "build:ui")).toEqual({ _tag: "Served", by: ["builder"] });
 	});
 
 	it("serves the shipper's LANDED out of ship and the queue dwell", () => {
-		expect(serviceAt("LANDED", "ship")).toEqual({_tag: "Served", by: ["shipper"]});
-		expect(serviceAt("LANDED", "ship:queued")).toEqual({_tag: "Served", by: ["shipper"]});
+		expect(serviceAt("LANDED", "ship")).toEqual({ _tag: "Served", by: ["shipper"] });
+		expect(serviceAt("LANDED", "ship:queued")).toEqual({ _tag: "Served", by: ["shipper"] });
 	});
 
 	it("accepts a shared token wherever any one of its owners serves the state", () => {
-		expect(serviceAt("UNKNOWN", "review")).toEqual({_tag: "Served", by: ["reviewer"]});
-		expect(serviceAt("UNKNOWN", "ship")).toEqual({_tag: "Served", by: ["shipper"]});
-		expect(serviceAt("ESCALATED", "build")).toEqual({_tag: "Served", by: ["builder"]});
-		expect(serviceAt("ESCALATED", "review:ui")).toEqual({_tag: "Served", by: ["ui-reviewer"]});
-		expect(serviceAt("PASS", "review:ui")).toEqual({_tag: "Served", by: ["ui-reviewer"]});
-		expect(serviceAt("FAIL", "integrate")).toEqual({_tag: "Served", by: ["integrator"]});
+		expect(serviceAt("UNKNOWN", "review")).toEqual({ _tag: "Served", by: ["reviewer"] });
+		expect(serviceAt("UNKNOWN", "ship")).toEqual({ _tag: "Served", by: ["shipper"] });
+		expect(serviceAt("ESCALATED", "build")).toEqual({ _tag: "Served", by: ["builder"] });
+		expect(serviceAt("ESCALATED", "review:ui")).toEqual({ _tag: "Served", by: ["ui-reviewer"] });
+		expect(serviceAt("PASS", "review:ui")).toEqual({ _tag: "Served", by: ["ui-reviewer"] });
+		expect(serviceAt("FAIL", "integrate")).toEqual({ _tag: "Served", by: ["integrator"] });
 	});
 
 	it("serves a machinery token out of any state", () => {
 		for (const leaf of ["review", "review:ui", "ship", "ship:queued", "integrate", "queued"]) {
-			expect(serviceAt("SHELL-DEAD", leaf)).toEqual({_tag: "Served", by: ["machinery"]});
+			expect(serviceAt("SHELL-DEAD", leaf)).toEqual({ _tag: "Served", by: ["machinery"] });
 		}
 	});
 });
@@ -164,21 +164,21 @@ describe("the states each vocabulary group serves", () => {
 describe("flattening the per-shell vocabularies", () => {
 	it("flattens the real vocabularies with nothing overwritten", () => {
 		const flat = flattenVocabularies(SHELL_VOCABULARIES);
-		expect(flat).toMatchObject({_tag: "Flat"});
+		expect(flat).toMatchObject({ _tag: "Flat" });
 	});
 
 	it("keeps a token two shells spell the same way when they agree on the event", () => {
 		const flat = flattenVocabularies({
-			reviewer: {UNKNOWN: "BLOCKED"},
-			shipper: {UNKNOWN: "BLOCKED"},
+			reviewer: { UNKNOWN: "BLOCKED" },
+			shipper: { UNKNOWN: "BLOCKED" },
 		});
-		expect(flat).toEqual({_tag: "Flat", tokens: {UNKNOWN: "BLOCKED"}});
+		expect(flat).toEqual({ _tag: "Flat", tokens: { UNKNOWN: "BLOCKED" } });
 	});
 
 	it("names a token two shells spell the same way with different events, both sides in the reason", () => {
 		const flat = flattenVocabularies({
-			reviewer: {ROUTED: "BLOCKED"},
-			shipper: {ROUTED: "FAIL"},
+			reviewer: { ROUTED: "BLOCKED" },
+			shipper: { ROUTED: "FAIL" },
 		});
 		expect(flat._tag).toBe("Collision");
 		if (flat._tag !== "Collision") return;
@@ -187,8 +187,8 @@ describe("flattening the per-shell vocabularies", () => {
 
 	it("catches the collision whichever shell is written last", () => {
 		const flat = flattenVocabularies({
-			shipper: {ROUTED: "FAIL"},
-			reviewer: {ROUTED: "BLOCKED"},
+			shipper: { ROUTED: "FAIL" },
+			reviewer: { ROUTED: "BLOCKED" },
 		});
 		expect(flat).toMatchObject({
 			_tag: "Collision",
@@ -220,7 +220,7 @@ describe("the UI reviewer's vocabulary against the skill that owns it", () => {
 
 	it("resolves every terminal the skill declares, none to the refusal", () => {
 		for (const token of declared) {
-			expect(eventForToken(token)).toMatchObject({_tag: "Mapped", token});
+			expect(eventForToken(token)).toMatchObject({ _tag: "Mapped", token });
 		}
 	});
 
@@ -234,10 +234,10 @@ describe("the UI reviewer's vocabulary against the skill that owns it", () => {
 			token: "CANT-SEE",
 			event: "BLOCKED",
 		});
-		expect(eventForToken("BLOCKED-NO-MANIFEST")).toMatchObject({event: "BLOCKED"});
+		expect(eventForToken("BLOCKED-NO-MANIFEST")).toMatchObject({ event: "BLOCKED" });
 		// `ROUTED-ELSEWHERE`'s park is its floor, and the flat lookup still reads it — a caller that
 		// asks the token alone gets the arm that has to be bought, never the one that advances a lane.
-		expect(eventForToken("ROUTED-ELSEWHERE")).toMatchObject({event: "BLOCKED"});
+		expect(eventForToken("ROUTED-ELSEWHERE")).toMatchObject({ event: "BLOCKED" });
 	});
 
 	// The emitting half: a cause the skill never tells the gate to pass is a cause nobody
@@ -259,12 +259,12 @@ describe("the rendered gate's three parks name a cause instead of landing bare",
 		if (resolved._tag !== "Mapped") throw new Error(resolved.reason);
 
 		expect(resolved.event).toBe("BLOCKED");
-		expect(causeForEvent(cause, resolved.event, false)).toEqual({_tag: "Caused", cause});
+		expect(causeForEvent(cause, resolved.event, false)).toEqual({ _tag: "Caused", cause });
 	});
 
 	it.each(RENDERED_PARKS)("refuses %2$s on an event that is not a park", (_token, cause) => {
-		expect(causeForEvent(cause, "PASS", false)).toMatchObject({_tag: "Rejected"});
-		expect(causeForEvent(cause, "DONE", false)).toMatchObject({_tag: "Rejected"});
+		expect(causeForEvent(cause, "PASS", false)).toMatchObject({ _tag: "Rejected" });
+		expect(causeForEvent(cause, "DONE", false)).toMatchObject({ _tag: "Rejected" });
 	});
 
 	// A cause is payable on naming alone, and a row is bought separately. Two of the three have no
@@ -301,8 +301,11 @@ describe("a render-axis park names the issue it waits on", () => {
 	});
 
 	it("leaves every other cause without one exactly as it was", () => {
-		expect(axisIssueForCause(null, "no-preview-render")).toEqual({_tag: "Named", axisIssue: null});
-		expect(axisIssueForCause(null, null)).toEqual({_tag: "Named", axisIssue: null});
+		expect(axisIssueForCause(null, "no-preview-render")).toEqual({
+			_tag: "Named",
+			axisIssue: null,
+		});
+		expect(axisIssueForCause(null, null)).toEqual({ _tag: "Named", axisIssue: null });
 	});
 
 	it("keys only the render-axis cause on an issue", () => {
@@ -355,13 +358,13 @@ describe("every park cause carries a route", () => {
 
 	// Under `parkCause.driverRouted: "clear"` a driver route is one a rationale clears, so either of
 	// these routed `driver` would let a driver clear a wait on the founder by saying so.
-	it.each([
-		"ruling-owed",
-		"founder-act-owed",
-	])("routes %s to the founder, with no verb that removes it", (cause) => {
-		expect(routeForCause(cause)).toBe("founder");
-		expect(remedyForCause(cause)).toBeNull();
-	});
+	it.each(["ruling-owed", "founder-act-owed"])(
+		"routes %s to the founder, with no verb that removes it",
+		(cause) => {
+			expect(routeForCause(cause)).toBe("founder");
+			expect(remedyForCause(cause)).toBeNull();
+		},
+	);
 
 	// Fail-closed: a park nothing named cannot be attributed to machinery, so the derivation may not
 	// claim a driver can work it.
@@ -409,7 +412,7 @@ describe("remedyForCause", () => {
 
 describe("a BLOCKED that names no cause", () => {
 	it("records as the bare park it always was while the key is off", () => {
-		expect(causeForEvent(null, "BLOCKED", false)).toEqual({_tag: "Uncaused"});
+		expect(causeForEvent(null, "BLOCKED", false)).toEqual({ _tag: "Uncaused" });
 	});
 
 	it("is Required — never Rejected — while the key is on, so its own exit code is reachable", () => {
@@ -422,15 +425,12 @@ describe("a BLOCKED that names no cause", () => {
 		for (const cause of PARK_CAUSE_TOKENS) expect(resolved.reason).toContain(cause);
 	});
 
-	it.each([
-		"DONE",
-		"PASS",
-		"FAIL",
-		"WIP",
-		"UNBLOCKED",
-	] as const)("is untouched on %s, which is no park — the key binds BLOCKED alone", (event) => {
-		expect(causeForEvent(null, event, true)).toEqual({_tag: "Uncaused"});
-	});
+	it.each(["DONE", "PASS", "FAIL", "WIP", "UNBLOCKED"] as const)(
+		"is untouched on %s, which is no park — the key binds BLOCKED alone",
+		(event) => {
+			expect(causeForEvent(null, event, true)).toEqual({ _tag: "Uncaused" });
+		},
+	);
 
 	it.each([false, true])("leaves a named cause alone at requireCause %p", (requireCause) => {
 		expect(causeForEvent("worktree-holds-branch", "BLOCKED", requireCause)).toEqual({
@@ -451,7 +451,7 @@ describe("a BLOCKED that names no cause", () => {
 
 describe("the rationale a clearance rides on", () => {
 	it("carries nothing when nothing was named — the ordinary resume, unchanged", () => {
-		expect(rationaleForEvent(null, "UNBLOCKED")).toEqual({_tag: "Reasoned", rationale: null});
+		expect(rationaleForEvent(null, "UNBLOCKED")).toEqual({ _tag: "Reasoned", rationale: null });
 	});
 
 	it("seats a named rationale on the resume, trimmed", () => {
@@ -469,27 +469,25 @@ describe("the rationale a clearance rides on", () => {
 		expect(resolved._tag).toBe("Rejected");
 	});
 
-	it.each([
-		"DONE",
-		"PASS",
-		"FAIL",
-		"WIP",
-		"BLOCKED",
-	] as const)("rejects one riding %s, which clears no park", (event) => {
-		const resolved = rationaleForEvent("a reason", event);
+	it.each(["DONE", "PASS", "FAIL", "WIP", "BLOCKED"] as const)(
+		"rejects one riding %s, which clears no park",
+		(event) => {
+			const resolved = rationaleForEvent("a reason", event);
 
-		expect(resolved._tag).toBe("Rejected");
-		if (resolved._tag !== "Rejected") return;
-		expect(resolved.reason).toContain("UNBLOCKED");
-	});
+			expect(resolved._tag).toBe("Rejected");
+			if (resolved._tag !== "Rejected") return;
+			expect(resolved.reason).toContain("UNBLOCKED");
+		},
+	);
 });
 
 describe("the machinery terminals a driver records about the pipeline itself", () => {
-	it.each(
-		Object.entries(MACHINERY_CAUSES),
-	)("%s records the machine's machinery event, not a content FAIL", (token) => {
-		expect(eventForToken(token)).toMatchObject({token, event: MACHINERY_EVENT});
-	});
+	it.each(Object.entries(MACHINERY_CAUSES))(
+		"%s records the machine's machinery event, not a content FAIL",
+		(token) => {
+			expect(eventForToken(token)).toMatchObject({ token, event: MACHINERY_EVENT });
+		},
+	);
 
 	it.each(Object.entries(MACHINERY_CAUSES))("%s names %s off the routed table", (token, cause) => {
 		expect(machineryCause(token)).toBe(cause);
@@ -511,15 +509,15 @@ describe("the machinery terminals a driver records about the pipeline itself", (
 		const integrate = eventForToken("REPLAY-COLLIDED");
 		const review = eventForToken("FAIL");
 
-		expect(integrate).toMatchObject({event: MACHINERY_EVENT});
-		expect(review).toMatchObject({event: "FAIL"});
-		expect(integrate).not.toMatchObject({event: "FAIL"});
+		expect(integrate).toMatchObject({ event: MACHINERY_EVENT });
+		expect(review).toMatchObject({ event: "FAIL" });
+		expect(integrate).not.toMatchObject({ event: "FAIL" });
 	});
 });
 
 describe("the park terminals whose token names their own cause", () => {
 	it.each(Object.entries(TERMINAL_PARK_CAUSES))("%s parks, and names %s", (token, cause) => {
-		expect(eventForToken(token)).toMatchObject({event: "BLOCKED"});
+		expect(eventForToken(token)).toMatchObject({ event: "BLOCKED" });
 		expect(tokenCause(token)).toBe(cause);
 		expect(PARK_CAUSE_TOKENS).toContain(cause);
 	});
@@ -605,7 +603,7 @@ describe("the terminal whose event a proof picks", () => {
 	// Written twice — once flat, once as the row's fallback — so it is checked rather than trusted.
 	it("parks on the same event the flat lookup maps the token to", () => {
 		for (const [token, row] of Object.entries(PROOF_CONDITIONAL_TERMINALS)) {
-			expect(eventForToken(token)).toMatchObject({event: row.parked});
+			expect(eventForToken(token)).toMatchObject({ event: row.parked });
 		}
 	});
 });

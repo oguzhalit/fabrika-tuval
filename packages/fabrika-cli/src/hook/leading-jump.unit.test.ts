@@ -6,15 +6,15 @@
  * misses — and the jump that stays home, because a guard that refused ordinary work inside the
  * worktree would be turned off within the day.
  */
-import {describe, expect, it} from "vitest";
-import {decideJump, parseLeadingJump} from "./leading-jump.ts";
+import { describe, expect, it } from "vitest";
+import { decideJump, parseLeadingJump } from "./leading-jump.ts";
 
 const TREE = "/work/repo/.claude/worktrees/agent-a";
 const SHARED = "/work/repo";
 const HOME = "/Users/operator";
 
 const decide = (command: string, cwd: string = TREE) =>
-	decideJump({command, cwd, workingTree: TREE, home: HOME});
+	decideJump({ command, cwd, workingTree: TREE, home: HOME });
 
 describe("the jump this guard exists for", () => {
 	it("refuses the shape that moved the shared checkout: a jump out, then a program reaching git", () => {
@@ -124,13 +124,13 @@ describe("the targets that cannot be resolved before the shell runs them", () =>
 
 describe("the home directory", () => {
 	it("reads a bare `cd` as the jump home it is, and refuses it", () => {
-		expect(parseLeadingJump("cd")).toEqual({_tag: "Literal", keyword: "cd", target: "~"});
+		expect(parseLeadingJump("cd")).toEqual({ _tag: "Literal", keyword: "cd", target: "~" });
 		expect(decide("cd")._tag).toBe("Deny");
 		expect(decide("cd ~/code/elsewhere")._tag).toBe("Deny");
 	});
 
 	it("refuses a `~` target when HOME is unset rather than resolving it to nothing", () => {
-		const out = decideJump({command: "cd ~", cwd: TREE, workingTree: TREE, home: undefined});
+		const out = decideJump({ command: "cd ~", cwd: TREE, workingTree: TREE, home: undefined });
 
 		expect(out._tag).toBe("Deny");
 		expect(out._tag === "Deny" && out.reason).toContain("HOME is unset");

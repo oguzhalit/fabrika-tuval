@@ -1,9 +1,9 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeSeams, okOut, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {GATEWAY, GH_TOKEN_ENV, served} from "./fixtures.test-support.ts";
-import {landedRefs, readAssembly} from "./landed.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeSeams, okOut, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { GATEWAY, GH_TOKEN_ENV, served } from "./fixtures.test-support.ts";
+import { landedRefs, readAssembly } from "./landed.ts";
 
 describe("landedRefs", () => {
 	it("reads every issue a message claims to land, subject and body alike", () => {
@@ -52,7 +52,7 @@ const TRUNK = /^GET https:\/\/api\.github\.com\/repos\/o\/r$/;
 
 const script: ReadonlyArray<Scripted> = [
 	[/^git rev-parse --verify --quiet epic\/4300\^\{commit\}$/, okOut(`${TIP}\n`)],
-	[TRUNK, served({default_branch: "main"})],
+	[TRUNK, served({ default_branch: "main" })],
 	[/^git merge-base origin\/main /, okOut(`${BASE}\n`)],
 	[/^git log /, okOut(`${TIP}\x1ffeat: landed (#210)\x1e`)],
 ];
@@ -68,7 +68,7 @@ describe("readAssembly", () => {
 		const read = await Effect.runPromise(
 			Effect.provide(readAssembly(GH_TOKEN_ENV, "o/r", 4300), seams.layer),
 		);
-		expect(read).toMatchObject({_tag: "Read", branch: "epic/4300", baseRef: "origin/main"});
+		expect(read).toMatchObject({ _tag: "Read", branch: "epic/4300", baseRef: "origin/main" });
 		expect(seams.calls.some((line) => line.endsWith(`${BASE}..${TIP}`))).toBe(true);
 		expect(read._tag === "Read" ? [...read.landed] : []).toEqual([210]);
 	});
@@ -88,7 +88,7 @@ describe("readAssembly", () => {
 		const read = await Effect.runPromise(
 			Effect.provide(readAssembly(GH_TOKEN_ENV, "o/r", 4300), seams.layer),
 		);
-		expect(read).toMatchObject({_tag: "Read", commits: 1});
+		expect(read).toMatchObject({ _tag: "Read", commits: 1 });
 		expect(read._tag === "Read" ? read.landed.size : -1).toBe(0);
 	});
 
@@ -98,7 +98,7 @@ describe("readAssembly", () => {
 	 */
 	const beyondBoundary = (shallow: ExecResult): ReadonlyArray<Scripted> => [
 		script[0] as Scripted,
-		[TRUNK, served({default_branch: "main"})],
+		[TRUNK, served({ default_branch: "main" })],
 		[/^git merge-base origin\/main /, errOut("git merge-base exited 1")],
 		[/^git rev-parse --is-shallow-repository$/, shallow],
 	];
@@ -108,7 +108,7 @@ describe("readAssembly", () => {
 		const read = await Effect.runPromise(
 			Effect.provide(readAssembly(GH_TOKEN_ENV, "o/r", 4300), seams.layer),
 		);
-		expect(read).toMatchObject({_tag: "Unreadable", branch: "epic/4300"});
+		expect(read).toMatchObject({ _tag: "Unreadable", branch: "epic/4300" });
 		const reason = read._tag === "Unreadable" ? read.reason : "";
 		expect(reason).toContain("this clone is shallow");
 		expect(reason).toContain("git fetch --unshallow origin");

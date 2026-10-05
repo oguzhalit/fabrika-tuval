@@ -18,25 +18,25 @@
  * proven to sit in the working tree that OWNS it, and one inside a linked worktree is refused on
  * {@link ROOT_NOT_OWNED} rather than read.
  */
-import {Effect, type FileSystem, Option, Path, Result} from "effect";
-import {repositoryOf} from "../delegate/repository.ts";
-import {exists, realPath} from "../io/fs.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {LANE_UNREADABLE, NOT_A_REPO, ROOT_NOT_OWNED} from "./codes.ts";
+import { Effect, type FileSystem, Option, Path, Result } from "effect";
+import { repositoryOf } from "../delegate/repository.ts";
+import { exists, realPath } from "../io/fs.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { LANE_UNREADABLE, NOT_A_REPO, ROOT_NOT_OWNED } from "./codes.ts";
 
 /** What marks a directory as a repo checkout: fabrika's own state, or git's (a file in a worktree). */
 export const REPO_MARKERS = [".fabrika", ".git"] as const;
 
 export type Ground =
-	| {readonly _tag: "Grounded"}
-	| {readonly _tag: "NotARepo"; readonly cwd: string; readonly roots: ReadonlyArray<string>}
+	| { readonly _tag: "Grounded" }
+	| { readonly _tag: "NotARepo"; readonly cwd: string; readonly roots: ReadonlyArray<string> }
 	| {
 			readonly _tag: "ForeignWorktree";
 			readonly root: string;
 			readonly workingTree: string;
 			readonly owner: string;
 	  }
-	| {readonly _tag: "Unprobeable"; readonly path: string; readonly reason: string};
+	| { readonly _tag: "Unprobeable"; readonly path: string; readonly reason: string };
 
 /** Whether the cwd a relative root would be joined onto is a repo checkout at all. */
 const proveCwd = (
@@ -49,11 +49,11 @@ const proveCwd = (
 			const at = path.join(cwd, marker);
 			const probe = yield* Effect.result(exists(at));
 			if (Result.isFailure(probe)) {
-				return {_tag: "Unprobeable", path: at, reason: probe.failure.reason} as const;
+				return { _tag: "Unprobeable", path: at, reason: probe.failure.reason } as const;
 			}
-			if (probe.success) return {_tag: "Grounded"} as const;
+			if (probe.success) return { _tag: "Grounded" } as const;
 		}
-		return {_tag: "NotARepo", cwd, roots: relative} as const;
+		return { _tag: "NotARepo", cwd, roots: relative } as const;
 	});
 
 /**
@@ -69,11 +69,11 @@ const proveOwnership = (
 		const at = path.resolve(cwd, root);
 		const owner = yield* deriveRepoRoot(at);
 		if (owner._tag === "Unestablished") {
-			return {_tag: "Unprobeable", path: at, reason: owner.reason} as const;
+			return { _tag: "Unprobeable", path: at, reason: owner.reason } as const;
 		}
-		if (owner._tag === "NotARepo") return {_tag: "Grounded"} as const;
+		if (owner._tag === "NotARepo") return { _tag: "Grounded" } as const;
 		return owner.workingTree === owner.repoRoot
-			? ({_tag: "Grounded"} as const)
+			? ({ _tag: "Grounded" } as const)
 			: ({
 					_tag: "ForeignWorktree",
 					root: at,
@@ -102,7 +102,7 @@ export const proveGround = (
 			const owned = yield* proveOwnership(root, cwd);
 			if (owned._tag !== "Grounded") return owned;
 		}
-		return {_tag: "Grounded"} as const;
+		return { _tag: "Grounded" } as const;
 	});
 
 /**
@@ -111,7 +111,7 @@ export const proveGround = (
  */
 export const groundRefusal = (
 	verb: string,
-	ground: Exclude<Ground, {_tag: "Grounded"}>,
+	ground: Exclude<Ground, { _tag: "Grounded" }>,
 ): VerbOutcome => {
 	if (ground._tag === "Unprobeable") {
 		return refuse(
@@ -140,9 +140,9 @@ export const groundRefusal = (
  * UNKNOWN — never a cwd-relative fallback, which would reintroduce the drift bug quietly.
  */
 export type RepoGround =
-	| {readonly _tag: "Derived"; readonly repoRoot: string; readonly workingTree: string}
-	| {readonly _tag: "NotARepo"; readonly cwd: string}
-	| {readonly _tag: "Unestablished"; readonly cwd: string; readonly reason: string};
+	| { readonly _tag: "Derived"; readonly repoRoot: string; readonly workingTree: string }
+	| { readonly _tag: "NotARepo"; readonly cwd: string }
+	| { readonly _tag: "Unestablished"; readonly cwd: string; readonly reason: string };
 
 /**
  * Walk up from the cwd to the nearest `.git` entry, then read its repository's common dir. The
@@ -162,16 +162,16 @@ export const deriveRepoRoot = (
 		for (;;) {
 			const probe = yield* Effect.result(exists(path.join(current, ".git")));
 			if (Result.isFailure(probe)) {
-				return {_tag: "Unestablished", cwd, reason: probe.failure.reason} as const;
+				return { _tag: "Unestablished", cwd, reason: probe.failure.reason } as const;
 			}
 			if (probe.success) break;
 			const parent = path.dirname(current);
-			if (parent === current) return {_tag: "NotARepo", cwd} as const;
+			if (parent === current) return { _tag: "NotARepo", cwd } as const;
 			current = parent;
 		}
 		const common = yield* Effect.result(repositoryOf(current));
 		if (Result.isFailure(common)) {
-			return {_tag: "Unestablished", cwd, reason: common.failure.reason} as const;
+			return { _tag: "Unestablished", cwd, reason: common.failure.reason } as const;
 		}
 		if (common.success === undefined) {
 			return {
@@ -182,7 +182,7 @@ export const deriveRepoRoot = (
 		}
 		const tree = yield* Effect.result(realPath(current));
 		return Result.isFailure(tree)
-			? ({_tag: "Unestablished", cwd, reason: tree.failure.reason} as const)
+			? ({ _tag: "Unestablished", cwd, reason: tree.failure.reason } as const)
 			: ({
 					_tag: "Derived",
 					repoRoot: path.dirname(common.success),
@@ -193,7 +193,7 @@ export const deriveRepoRoot = (
 /** Seat a derivation that did not reach a repository — each fact on its own code. */
 export const repoGroundRefusal = (
 	verb: string,
-	ground: Exclude<RepoGround, {_tag: "Derived"}>,
+	ground: Exclude<RepoGround, { _tag: "Derived" }>,
 ): VerbOutcome =>
 	ground._tag === "NotARepo"
 		? refuse(

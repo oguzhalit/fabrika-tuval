@@ -15,13 +15,13 @@
  * so the refusal narrows to the minted set rather than the whole manifest.
  */
 
-import {Effect, type FileSystem} from "effect";
+import { Effect, type FileSystem } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {scannedLine} from "../build/target.ts";
-import {createComment} from "../io/issues.ts";
-import {isBareAtReference} from "../report/leaks.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { scannedLine } from "../build/target.ts";
+import { createComment } from "../io/issues.ts";
+import { isBareAtReference } from "../report/leaks.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	BARE_AT_PATH,
 	OFF_VOCABULARY,
@@ -30,9 +30,9 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {closeAsNotPlanned, listSubIssueEntries, readChildBack, unlinkSubIssue} from "./github.ts";
-import {type LedgerMessages, type OpenOptions, openGround} from "./preconditions.ts";
-import {loadManifest, loadRun, maskedLeakRefusal} from "./run-io.ts";
+import { closeAsNotPlanned, listSubIssueEntries, readChildBack, unlinkSubIssue } from "./github.ts";
+import { type LedgerMessages, type OpenOptions, openGround } from "./preconditions.ts";
+import { loadManifest, loadRun, maskedLeakRefusal } from "./run-io.ts";
 
 const VERB = "ledger supersede";
 
@@ -66,7 +66,7 @@ export const runSupersede = (
 
 		const ground = yield* openGround(MESSAGES, options);
 		if (ground._tag === "Refused") return ground.outcome;
-		const {repo, epic, dir, notes} = ground;
+		const { repo, epic, dir, notes } = ground;
 
 		const run = yield* loadRun(MESSAGES, dir, notes);
 		if (run._tag === "Refused") return run.outcome;

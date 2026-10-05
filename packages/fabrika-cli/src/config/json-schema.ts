@@ -17,8 +17,8 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9020#issuecomment-5625285600
  */
 
-import type {Registration} from "./key-group.ts";
-import {machineLocalKeys} from "./machine-local.ts";
+import type { Registration } from "./key-group.ts";
+import { machineLocalKeys } from "./machine-local.ts";
 
 /** The JSON Schema keywords the fragments use. Not the whole vocabulary — only what a fragment reaches for. */
 export type JsonSchemaType =
@@ -75,9 +75,9 @@ export interface ConfigSchemaDocument {
 
 export type Assembly =
 	/** Every registered key carried a fragment; this is the document to emit. */
-	| {readonly _tag: "Complete"; readonly schema: ConfigSchemaDocument}
+	| { readonly _tag: "Complete"; readonly schema: ConfigSchemaDocument }
 	/** One or more registered keys carry no fragment — the assembly is refused, naming them. */
-	| {readonly _tag: "Incomplete"; readonly missing: ReadonlyArray<string>};
+	| { readonly _tag: "Incomplete"; readonly missing: ReadonlyArray<string> };
 
 /**
  * The `$schema` self-pointer, admitted as a known property so `additionalProperties: false` does not
@@ -100,12 +100,12 @@ const pointerFragment = (file: string): JsonSchema => ({
 const assemble = (
 	registrations: ReadonlyArray<Registration>,
 	admits: (one: Registration) => boolean,
-	document: {readonly file: string; readonly title: string; readonly description: string},
+	document: { readonly file: string; readonly title: string; readonly description: string },
 ): Assembly => {
 	const missing = registrations.filter((one) => one.jsonSchema === undefined).map((one) => one.key);
-	if (missing.length > 0) return {_tag: "Incomplete", missing};
+	if (missing.length > 0) return { _tag: "Incomplete", missing };
 
-	const properties: Record<string, JsonSchema> = {$schema: pointerFragment(document.file)};
+	const properties: Record<string, JsonSchema> = { $schema: pointerFragment(document.file) };
 	for (const one of registrations) {
 		if (one.jsonSchema !== undefined && admits(one)) properties[one.key] = one.jsonSchema;
 	}

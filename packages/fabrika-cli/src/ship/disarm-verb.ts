@@ -15,14 +15,14 @@
  * the intent is structurally moot, which is a proven answer. Refusing would make the safety verb the
  * fragile one on exactly the cleanup paths that need it.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {getPullRequest} from "../io/pulls.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {OFF_VOCABULARY, PRECONDITION_UNKNOWN, WRITE_UNKNOWN} from "./codes.ts";
-import {disableAutoMerge, isQueueGoverned, pullTimeline} from "./github.ts";
-import {queueStateOf} from "./queue.ts";
-import {badNumber, resolveTargetRepo} from "./target.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { getPullRequest } from "../io/pulls.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { OFF_VOCABULARY, PRECONDITION_UNKNOWN, WRITE_UNKNOWN } from "./codes.ts";
+import { disableAutoMerge, isQueueGoverned, pullTimeline } from "./github.ts";
+import { queueStateOf } from "./queue.ts";
+import { badNumber, resolveTargetRepo } from "./target.ts";
 
 const VERB = "ship disarm";
 
@@ -44,7 +44,7 @@ export const runDisarm = (
 	options: DisarmOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr, json, site} = options;
+		const { pr, json, site } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 		if (!SITES.includes(site as Site)) {
@@ -60,7 +60,7 @@ export const runDisarm = (
 
 		const emit = (outcome: "kept" | "disarmed", reason: string): VerbOutcome =>
 			json
-				? answer(JSON.stringify({outcome, site, reason}))
+				? answer(JSON.stringify({ outcome, site, reason }))
 				: answer(`disarm\t${outcome}\t${site}\t${reason}`);
 
 		const found = yield* getPullRequest(repo, pr);

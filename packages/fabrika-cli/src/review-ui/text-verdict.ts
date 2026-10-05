@@ -28,10 +28,10 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9196#issuecomment-5688739893
  */
-import type {CommentRecord} from "../io/issues.ts";
-import {advisoryPolarity, readAdvisory} from "../review/advisory.ts";
-import {inForce} from "../ship/gate-verb.ts";
-import {bindToContent, read as readMarker} from "../wire/verdict-marker.ts";
+import type { CommentRecord } from "../io/issues.ts";
+import { advisoryPolarity, readAdvisory } from "../review/advisory.ts";
+import { inForce } from "../ship/gate-verb.ts";
+import { bindToContent, read as readMarker } from "../wire/verdict-marker.ts";
 
 /** The namespace whose verdict the route rests on — the text gate's, fixed. */
 export const TEXT_NAMESPACE = "review-code";

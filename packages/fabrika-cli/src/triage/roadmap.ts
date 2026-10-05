@@ -19,7 +19,7 @@
  * default written once, for
  * the callers that scaffold the file rather than read a repo's declared one.
  */
-export {SHIPPED_ROADMAP_FILE as ROADMAP_FILE} from "../config/keys/paths.ts";
+export { SHIPPED_ROADMAP_FILE as ROADMAP_FILE } from "../config/keys/paths.ts";
 
 /** One roadmap row: the first column, and the milestone its second column pins. */
 export interface RoadmapRow {
@@ -63,7 +63,7 @@ const sectionRows = (text: string, heading: string): ReadonlyArray<RoadmapRow> =
 		const pinned = fields?.[1] === undefined ? null : /^#(\d+)$/.exec(fields[1]);
 		const name = fields?.[0];
 		if (pinned?.[1] === undefined || name === undefined || name === "") continue;
-		rows.push({name, milestone: Number.parseInt(pinned[1], 10)});
+		rows.push({ name, milestone: Number.parseInt(pinned[1], 10) });
 	}
 	return rows;
 };

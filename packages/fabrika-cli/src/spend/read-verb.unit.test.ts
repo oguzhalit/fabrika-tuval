@@ -1,11 +1,11 @@
-import {readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFs, fakeFs} from "../fakes.test-support.ts";
-import {INPUT_ABSENT, INPUT_UNREADABLE, NOTHING_MEASURED} from "./codes.ts";
-import {runRead} from "./read-verb.ts";
-import {reconstructSpend} from "./token-spend.ts";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFs, fakeFs } from "../fakes.test-support.ts";
+import { INPUT_ABSENT, INPUT_UNREADABLE, NOTHING_MEASURED } from "./codes.ts";
+import { runRead } from "./read-verb.ts";
+import { reconstructSpend } from "./token-spend.ts";
 
 const PATH = "/runs/one-ruler.jsonl";
 
@@ -15,12 +15,12 @@ const fixture = readFileSync(
 );
 
 const assistantTurn = (usage: Record<string, number>, model = "claude-opus-5"): string =>
-	JSON.stringify({message: {role: "assistant", model, usage}});
+	JSON.stringify({ message: { role: "assistant", model, usage } });
 
 const run = (fs: FakeFs, json = false) =>
-	Effect.runPromise(Effect.provide(runRead({transcript: PATH, json}), fs.layer));
+	Effect.runPromise(Effect.provide(runRead({ transcript: PATH, json }), fs.layer));
 
-const withText = (text: string | null) => fakeFs({files: {[PATH]: text}});
+const withText = (text: string | null) => fakeFs({ files: { [PATH]: text } });
 
 const rows = (stdout: string): Map<string, string> =>
 	new Map(
@@ -64,7 +64,7 @@ describe("spend read — the answer", () => {
 	});
 
 	it("reports a run whose components are all zero but which billed a turn as a measured zero", async () => {
-		const out = await run(withText(assistantTurn({input_tokens: 0, output_tokens: 0})));
+		const out = await run(withText(assistantTurn({ input_tokens: 0, output_tokens: 0 })));
 
 		expect(out.code).toBe(0);
 		expect(out.stdout.split("\n")[0]).toBe("spend\t0\t1");
@@ -72,7 +72,7 @@ describe("spend read — the answer", () => {
 
 	/** The no-gate ruling, asserted rather than noted: it fails the moment a threshold appears. */
 	it("exits 0 on a very large total — no exit code varies with a spend magnitude", async () => {
-		const out = await run(withText(assistantTurn({cache_read_input_tokens: 7_489_969_208})));
+		const out = await run(withText(assistantTurn({ cache_read_input_tokens: 7_489_969_208 })));
 
 		expect(out.code).toBe(0);
 		expect(out.stdout.split("\n")[0]).toBe("spend\t7489969208\t1");
@@ -81,7 +81,7 @@ describe("spend read — the answer", () => {
 
 describe("spend read — the refusals", () => {
 	it("refuses a transcript that is provably not there, with empty stdout", async () => {
-		const out = await run(fakeFs({files: {}}));
+		const out = await run(fakeFs({ files: {} }));
 
 		expect(out.code).toBe(INPUT_ABSENT);
 		expect(out.stdout).toBe("");
@@ -89,7 +89,7 @@ describe("spend read — the refusals", () => {
 	});
 
 	it("refuses an unreadable transcript as UNKNOWN, never as absent and never as a zero", async () => {
-		const out = await run(fakeFs({files: {[PATH]: null}, unprobeable: [PATH]}));
+		const out = await run(fakeFs({ files: { [PATH]: null }, unprobeable: [PATH] }));
 
 		expect(out.code).toBe(INPUT_UNREADABLE);
 		expect(out.stdout).toBe("");

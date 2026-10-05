@@ -1,17 +1,17 @@
-import {describe, expect, it} from "vitest";
-import {capAndCount, reasonHistogram} from "./evidence.ts";
+import { describe, expect, it } from "vitest";
+import { capAndCount, reasonHistogram } from "./evidence.ts";
 
-const row = (reason: string, number: number) => ({number, reason});
+const row = (reason: string, number: number) => ({ number, reason });
 
 describe("reasonHistogram", () => {
 	it("tallies nothing to an empty object", () => {
-		expect(reasonHistogram([], (entry: {reason: string}) => entry.reason)).toEqual({});
+		expect(reasonHistogram([], (entry: { reason: string }) => entry.reason)).toEqual({});
 	});
 
 	it("tallies many rows by reason", () => {
 		const rows = [
-			...Array.from({length: 155}, (_, index) => row("audience-not-agent", index)),
-			...Array.from({length: 111}, (_, index) => row("out-of-focus", index)),
+			...Array.from({ length: 155 }, (_, index) => row("audience-not-agent", index)),
+			...Array.from({ length: 111 }, (_, index) => row("out-of-focus", index)),
 		];
 
 		expect(reasonHistogram(rows, (entry) => entry.reason)).toEqual({
@@ -43,30 +43,30 @@ describe("reasonHistogram", () => {
 	});
 
 	it("reads the reason off any iterable, not only an array", () => {
-		expect(reasonHistogram(new Set(["a", "b", "a"]), (reason) => reason)).toEqual({a: 1, b: 1});
+		expect(reasonHistogram(new Set(["a", "b", "a"]), (reason) => reason)).toEqual({ a: 1, b: 1 });
 	});
 });
 
 describe("capAndCount", () => {
 	it("keeps nothing and counts nothing when there are no rows", () => {
-		expect(capAndCount([], 3)).toEqual({rows: [], more: 0});
+		expect(capAndCount([], 3)).toEqual({ rows: [], more: 0 });
 	});
 
 	it("keeps every row below the cap and reports no remainder", () => {
-		expect(capAndCount([1, 2], 3)).toEqual({rows: [1, 2], more: 0});
+		expect(capAndCount([1, 2], 3)).toEqual({ rows: [1, 2], more: 0 });
 	});
 
 	it("keeps every row at the cap and still reports the remainder as zero", () => {
-		expect(capAndCount([1, 2, 3], 3)).toEqual({rows: [1, 2, 3], more: 0});
+		expect(capAndCount([1, 2, 3], 3)).toEqual({ rows: [1, 2, 3], more: 0 });
 	});
 
 	it("keeps the first cap rows above the cap and counts the rest", () => {
-		expect(capAndCount([1, 2, 3, 4, 5], 3)).toEqual({rows: [1, 2, 3], more: 2});
+		expect(capAndCount([1, 2, 3, 4, 5], 3)).toEqual({ rows: [1, 2, 3], more: 2 });
 	});
 
 	it("keeps nothing on a cap that is not a whole number above zero", () => {
 		for (const cap of [0, -1, 1.5, Number.NaN]) {
-			expect(capAndCount([1, 2, 3], cap)).toEqual({rows: [], more: 3});
+			expect(capAndCount([1, 2, 3], cap)).toEqual({ rows: [], more: 3 });
 		}
 	});
 

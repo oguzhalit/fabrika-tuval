@@ -10,7 +10,7 @@
  * could answer. The route is `report.ts`'s cause table, so a park nothing named routes to the
  * founder, the same fail-closed reading `recipe unpark` takes.
  */
-import {acceptsOf} from "@demlik/tea";
+import { acceptsOf } from "@demlik/tea";
 import {
 	asksOf,
 	decode,
@@ -20,9 +20,9 @@ import {
 	type Park,
 	type Spent,
 } from "../wire/lane-record.ts";
-import {deferredTasks, resolveDeferrals} from "./deferral.ts";
-import {type LaneFact, standingOrigin, standingWait} from "./facts.ts";
-import {deriveStatus, foldLog, type LogEntry, standingCauses} from "./fold.ts";
+import { deferredTasks, resolveDeferrals } from "./deferral.ts";
+import { type LaneFact, standingOrigin, standingWait } from "./facts.ts";
+import { deriveStatus, foldLog, type LogEntry, standingCauses } from "./fold.ts";
 import {
 	AMENDED_EVENT,
 	bareEvent,
@@ -30,7 +30,7 @@ import {
 	type CompiledLane,
 	type TaskState,
 } from "./machine.ts";
-import {routeForCause, structuralParkCause} from "./report.ts";
+import { routeForCause, structuralParkCause } from "./report.ts";
 
 /**
  * What the shipped spend reader says. The spend ledger (`spend/`) counts tokens per response and
@@ -54,7 +54,7 @@ export type Trace =
 			readonly steps: ReadonlyArray<Step>;
 			readonly states: Readonly<Record<string, TaskState>>;
 	  }
-	| {readonly _tag: "Unreplayable"; readonly defects: ReadonlyArray<string>};
+	| { readonly _tag: "Unreplayable"; readonly defects: ReadonlyArray<string> };
 
 /**
  * Replay the log one prefix at a time. An event about no task of this machine — an amendment, a
@@ -62,7 +62,7 @@ export type Trace =
  */
 export const traceLog = (lane: CompiledLane, entries: ReadonlyArray<LogEntry>): Trace => {
 	const deferrals = resolveDeferrals(entries);
-	if (deferrals._tag === "Undecidable") return {_tag: "Unreplayable", defects: deferrals.defects};
+	if (deferrals._tag === "Undecidable") return { _tag: "Unreplayable", defects: deferrals.defects };
 	const pending = [...deferredTasks(deferrals.deferrals)];
 	let before = foldLog(lane, [], pending);
 	if (before._tag !== "Folded") return before;
@@ -79,11 +79,11 @@ export const traceLog = (lane: CompiledLane, entries: ReadonlyArray<LogEntry>): 
 			from !== undefined &&
 			to !== undefined
 		) {
-			steps.push({entry, from, to});
+			steps.push({ entry, from, to });
 		}
 		before = after;
 	}
-	return {_tag: "Traced", steps, states: before.states};
+	return { _tag: "Traced", steps, states: before.states };
 };
 
 const PROGRESS_EVENTS = ["DONE", "PASS", "LAP", "BLOCKED"];
@@ -116,7 +116,7 @@ export const tally = (lane: CompiledLane, steps: ReadonlyArray<Step>): Tally => 
 	let builds = 0;
 	let reviews = 0;
 	const parks: Park[] = [];
-	for (const {entry, from, to} of steps) {
+	for (const { entry, from, to } of steps) {
 		const bare = bareEvent(entry.event);
 		if (bare === "DONE" && stage(from, "build")) builds += 1;
 		if ((bare === "PASS" || bare === "FAIL") && stage(from, "review")) reviews += 1;
@@ -124,11 +124,11 @@ export const tally = (lane: CompiledLane, steps: ReadonlyArray<Step>): Tally => 
 			const cause = entry.cause ?? structuralParkCause(to);
 			const at = instant(entry.at);
 			if (at !== null) {
-				parks.push({task: entry.task, leaf: to, cause, route: routeForCause(cause), at});
+				parks.push({ task: entry.task, leaf: to, cause, route: routeForCause(cause), at });
 			}
 		}
 	}
-	return {builds, reviews, parks};
+	return { builds, reviews, parks };
 };
 
 /** The asks a log holds — founder-routed parks, derived and never stored. */
@@ -160,9 +160,9 @@ export interface RecordInput {
 }
 
 export type Composition =
-	| {readonly _tag: "Composed"; readonly record: LaneRecord}
-	| {readonly _tag: "NotTerminal"; readonly stateValue: unknown}
-	| {readonly _tag: "Unreplayable"; readonly defects: ReadonlyArray<string>};
+	| { readonly _tag: "Composed"; readonly record: LaneRecord }
+	| { readonly _tag: "NotTerminal"; readonly stateValue: unknown }
+	| { readonly _tag: "Unreplayable"; readonly defects: ReadonlyArray<string> };
 
 /** The record of a lane that has reached a terminal state; any other lane has none to post. */
 export const composeRecord = (input: RecordInput): Composition => {
@@ -171,7 +171,7 @@ export const composeRecord = (input: RecordInput): Composition => {
 	const status = deriveStatus(input.lane, trace.states, standingCauses(input.entries));
 	const last = input.entries.at(-1);
 	if (status.status !== "done" || typeof status.stateValue !== "string" || last === undefined) {
-		return {_tag: "NotTerminal", stateValue: status.stateValue};
+		return { _tag: "NotTerminal", stateValue: status.stateValue };
 	}
 	const counted = tally(input.lane, trace.steps);
 	const opened = standingOrigin(input.facts);
@@ -193,6 +193,6 @@ export const composeRecord = (input: RecordInput): Composition => {
 		log: input.entries.map((entry) => JSON.stringify(entry)),
 	});
 	return decoded.ok
-		? {_tag: "Composed", record: decoded.value}
-		: {_tag: "Unreplayable", defects: [`the log does not compose a record: ${decoded.reason}`]};
+		? { _tag: "Composed", record: decoded.value }
+		: { _tag: "Unreplayable", defects: [`the log does not compose a record: ${decoded.reason}`] };
 };

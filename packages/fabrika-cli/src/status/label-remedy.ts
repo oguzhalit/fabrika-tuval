@@ -6,11 +6,11 @@
  * bootstrap sets stay the one place that says which command creates which label.
  */
 
-import {CONFIG_PATH} from "../config/document.ts";
-import type {BoardRead} from "../config/resolve-board.ts";
-import {labelSurface} from "./bootstrap-verb.ts";
+import { CONFIG_PATH } from "../config/document.ts";
+import type { BoardRead } from "../config/resolve-board.ts";
+import { labelSurface } from "./bootstrap-verb.ts";
 
-export {readBoard} from "./repo-board.ts";
+export { readBoard } from "./repo-board.ts";
 
 /**
  * The sentence a missing-label refusal ends on.

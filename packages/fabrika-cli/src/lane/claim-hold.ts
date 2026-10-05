@@ -10,16 +10,16 @@
  * question unanswered, and reading that as "unclaimed" would free a seat on a failed read, which is
  * the permissive arm the cap exists to refuse.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {readClaimants} from "../build/claim.ts";
-import {resolveRepo} from "../io/issues.ts";
-import {LANE_CLAIM, rawClaimTarget} from "./claim.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { readClaimants } from "../build/claim.ts";
+import { resolveRepo } from "../io/issues.ts";
+import { LANE_CLAIM, rawClaimTarget } from "./claim.ts";
 
 export type ClaimHold =
-	| {readonly _tag: "Claimed"; readonly token: string}
-	| {readonly _tag: "Unclaimed"}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Claimed"; readonly token: string }
+	| { readonly _tag: "Unclaimed" }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 export type ClaimHoldReader<R> = (lane: string) => Effect.Effect<ClaimHold, never, R>;
 
@@ -38,7 +38,7 @@ export const claimHoldReader = (
 	return (lane) =>
 		Effect.gen(function* () {
 			const target = rawClaimTarget(lane);
-			if (target._tag === "Inert") return {_tag: "Unclaimed" as const};
+			if (target._tag === "Inert") return { _tag: "Unclaimed" as const };
 			if (resolved === null) {
 				const attempt = yield* resolveRepo(repo, env);
 				if (attempt._tag === "Failure") {
@@ -50,9 +50,9 @@ export const claimHoldReader = (
 				resolved = attempt.value;
 			}
 			const read = yield* readClaimants(resolved, target.number, LANE_CLAIM);
-			if (read._tag === "Unknown") return {_tag: "Unknown" as const, reason: read.reason};
+			if (read._tag === "Unknown") return { _tag: "Unknown" as const, reason: read.reason };
 			return read.holder === null
-				? {_tag: "Unclaimed" as const}
-				: {_tag: "Claimed" as const, token: read.holder.token};
+				? { _tag: "Unclaimed" as const }
+				: { _tag: "Claimed" as const, token: read.holder.token };
 		});
 };

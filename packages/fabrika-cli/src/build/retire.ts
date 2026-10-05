@@ -25,7 +25,7 @@
  * nothing is what this still demands.
  */
 
-import {type LaneBranch, laneNumber, nonceOf, parseLaneBranch} from "./lane.ts";
+import { type LaneBranch, laneNumber, nonceOf, parseLaneBranch } from "./lane.ts";
 
 /** One worktree of this clone that holds a build lane branch. */
 export interface Subject {
@@ -82,25 +82,25 @@ export interface BoardState {
 export type License = "ticket-terminal" | "session-adopted" | "lane-unclaimed";
 
 export type Verdict =
-	| {readonly _tag: "Release"; readonly license: License; readonly because: string}
-	| {readonly _tag: "Hold"; readonly because: string}
+	| { readonly _tag: "Release"; readonly license: License; readonly because: string }
+	| { readonly _tag: "Hold"; readonly because: string }
 	/** This is the tree the verb is running in — git refuses to remove it, and so does this. */
-	| {readonly _tag: "Self"}
+	| { readonly _tag: "Self" }
 	/**
 	 * No lane holds this branch and the board licenses nothing: {@link seatResidue} decides on what
 	 * the tree itself carries. Its own verdict rather than a `Release` because the caller has to go
 	 * and read that, and a read it must make is one the type should not let it skip.
 	 */
-	| {readonly _tag: "Unclaimed"};
+	| { readonly _tag: "Unclaimed" };
 
 /** A verdict a caller acts on — every arm but the one {@link classify} defers to the tree. */
-export type Seated = Exclude<Verdict, {readonly _tag: "Unclaimed"}>;
+export type Seated = Exclude<Verdict, { readonly _tag: "Unclaimed" }>;
 
 /**
  * The verdict that licenses a removal, and the only one that licenses releasing the tree's lock
  * before it — `./git.ts`'s `removeWorktree` takes one to unlock.
  */
-export type Released = Extract<Verdict, {readonly _tag: "Release"}>;
+export type Released = Extract<Verdict, { readonly _tag: "Release" }>;
 
 /** What a subject tree would take with it — the evidence the unclaimed arm turns on. */
 export interface Residue {
@@ -126,7 +126,7 @@ export const classify = (
 	board: BoardState,
 	selfPaths: ReadonlySet<string>,
 ): Verdict => {
-	if (selfPaths.has(subject.path)) return {_tag: "Self"};
+	if (selfPaths.has(subject.path)) return { _tag: "Self" };
 	if (board.terminal) {
 		return {
 			_tag: "Release",
@@ -148,7 +148,7 @@ export const classify = (
 			because: `#${laneNumber(subject.lane)} ${board.describe}, and no authorized build-adopt marker on it names session ${session}`,
 		};
 	}
-	return {_tag: "Unclaimed"};
+	return { _tag: "Unclaimed" };
 };
 
 /**

@@ -20,13 +20,13 @@
  */
 import * as acceptanceCriteria from "./acceptance-criteria.ts";
 import * as auditContext from "./audit-context.ts";
-import {AUDIT_FIELDS} from "./audit-context-fixture.ts";
+import { AUDIT_FIELDS } from "./audit-context-fixture.ts";
 import * as buildDeviations from "./build-deviations.ts";
 import * as cameFrom from "./came-from.ts";
 import * as capClearance from "./cap-clearance.ts";
 import * as decisionRuling from "./decision-ruling.ts";
 import * as deviations from "./deviations.ts";
-import {brandWitnesses, type WireFormat} from "./format.ts";
+import { brandWitnesses, type WireFormat } from "./format.ts";
 import * as governanceDigest from "./governance-digest.ts";
 import * as graduateEmitted from "./graduate-emitted.ts";
 import * as grillAnswer from "./grill-answer.ts";
@@ -69,9 +69,9 @@ const LANE_RECORD_FIELDS = JSON.stringify({
 			at: "2026-09-26T09:00:00.000Z",
 		},
 	],
-	spent: {_tag: "Unmeasured", reason: "no rate card converts tokens to dollars"},
+	spent: { _tag: "Unmeasured", reason: "no rate card converts tokens to dollars" },
 	origin: "bet",
-	waiting: {_tag: "Until", on: "the design review", until: "2026-10-05"},
+	waiting: { _tag: "Until", on: "the design review", until: "2026-10-05" },
 	prs: [4242],
 	log: ['{"task":"issue","event":"ISSUE.WIP","at":"2026-09-26T06:48:00.000Z"}'],
 });
@@ -107,10 +107,10 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 			],
 			absent: "A normal topic session.",
 			malformed: [
-				{drift: "missing context fields", artifact: "## Audit context\n\n```json\n{}\n```\n"},
+				{ drift: "missing context fields", artifact: "## Audit context\n\n```json\n{}\n```\n" },
 			],
 		},
-		brands: brandWitnesses<auditContext.AuditContext>({runId: true}),
+		brands: brandWitnesses<auditContext.AuditContext>({ runId: true }),
 	},
 	{
 		key: "acceptance-criteria",
@@ -154,7 +154,7 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 				},
 			],
 		},
-		brands: brandWitnesses<acceptanceCriteria.AcceptanceCriterion>({text: true}),
+		brands: brandWitnesses<acceptanceCriteria.AcceptanceCriterion>({ text: true }),
 	},
 	{
 		key: "deviations",
@@ -342,7 +342,7 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 				},
 			],
 		},
-		brands: brandWitnesses<report.Report>({text: true}),
+		brands: brandWitnesses<report.Report>({ text: true }),
 	},
 	{
 		key: "verdict-marker",
@@ -387,7 +387,11 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 				},
 			],
 		},
-		brands: brandWitnesses<verdictMarker.VerdictMarker>({sha: true, clause: true, polarity: true}),
+		brands: brandWitnesses<verdictMarker.VerdictMarker>({
+			sha: true,
+			clause: true,
+			polarity: true,
+		}),
 	},
 	{
 		key: "range-verdict-marker",
@@ -678,7 +682,7 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 				},
 			],
 		},
-		brands: brandWitnesses<mapTicket.MapTicketMarker>({kind: true, nonce: true}),
+		brands: brandWitnesses<mapTicket.MapTicketMarker>({ kind: true, nonce: true }),
 	},
 	{
 		key: "grill-ruling",
@@ -722,7 +726,7 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 				},
 			],
 		},
-		brands: brandWitnesses<grillRuling.GrillRuling>({question: true, digest: true, at: true}),
+		brands: brandWitnesses<grillRuling.GrillRuling>({ question: true, digest: true, at: true }),
 	},
 	{
 		key: "cap-clearance",
@@ -762,7 +766,7 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 				},
 			],
 		},
-		brands: brandWitnesses<capClearance.CapClearance>({at: true}),
+		brands: brandWitnesses<capClearance.CapClearance>({ at: true }),
 	},
 	{
 		key: "takeover-grant",
@@ -803,7 +807,7 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 				},
 			],
 		},
-		brands: brandWitnesses<takeoverGrant.TakeoverGrant>({at: true}),
+		brands: brandWitnesses<takeoverGrant.TakeoverGrant>({ at: true }),
 	},
 	{
 		key: "grill-answer",
@@ -844,7 +848,7 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 				},
 			],
 		},
-		brands: brandWitnesses<grillAnswer.GrillAnswer>({question: true, digest: true, at: true}),
+		brands: brandWitnesses<grillAnswer.GrillAnswer>({ question: true, digest: true, at: true }),
 	},
 	{
 		key: "grill-supersede",
@@ -1027,7 +1031,7 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 				},
 			],
 		},
-		brands: brandWitnesses<governanceDigest.DigestRow>({id: true, kind: true, note: true}),
+		brands: brandWitnesses<governanceDigest.DigestRow>({ id: true, kind: true, note: true }),
 	},
 	{
 		key: "graduate-emitted",
@@ -1073,7 +1077,7 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 				},
 			],
 		},
-		brands: brandWitnesses<graduateEmitted.GraduateEmitted>({digest: true, at: true}),
+		brands: brandWitnesses<graduateEmitted.GraduateEmitted>({ digest: true, at: true }),
 	},
 	{
 		key: "came-from",
@@ -1126,7 +1130,7 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 				},
 			],
 		},
-		brands: brandWitnesses<cameFrom.CameFrom>({binding: true}),
+		brands: brandWitnesses<cameFrom.CameFrom>({ binding: true }),
 	},
 	{
 		key: "plan-approval",
@@ -1170,7 +1174,7 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 				},
 			],
 		},
-		brands: brandWitnesses<planApproval.PlanApproval>({digest: true, at: true}),
+		brands: brandWitnesses<planApproval.PlanApproval>({ digest: true, at: true }),
 	},
 	{
 		key: "decision-ruling",
@@ -1224,7 +1228,7 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 				},
 			],
 		},
-		brands: brandWitnesses<decisionRuling.DecisionRuling>({digest: true, ruling: true, at: true}),
+		brands: brandWitnesses<decisionRuling.DecisionRuling>({ digest: true, ruling: true, at: true }),
 	},
 	{
 		key: "pitch-ruling",
@@ -1275,7 +1279,7 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 				},
 			],
 		},
-		brands: brandWitnesses<pitchRuling.PitchRuling>({ruling: true}),
+		brands: brandWitnesses<pitchRuling.PitchRuling>({ ruling: true }),
 	},
 	{
 		key: "routed-elsewhere",
@@ -1343,7 +1347,7 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 				},
 			],
 		},
-		brands: brandWitnesses<routedElsewhere.RoutedElsewhere>({sha: true, clause: true}),
+		brands: brandWitnesses<routedElsewhere.RoutedElsewhere>({ sha: true, clause: true }),
 	},
 	{
 		key: "lane-record",
@@ -1380,9 +1384,9 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 						builds: 0,
 						reviews: 0,
 						parks: [],
-						spent: {_tag: "Unmeasured", reason: "no rate card"},
+						spent: { _tag: "Unmeasured", reason: "no rate card" },
 						origin: "driver-pick",
-						waiting: {_tag: "None"},
+						waiting: { _tag: "None" },
 						prs: [],
 						log: ['{"task":"issue","event":"ISSUE.CANCELLED","at":"2026-09-02T00:00:00.000Z"}'],
 					}),
@@ -1406,9 +1410,9 @@ export const registeredFormats: ReadonlyArray<WireFormat> = [
 							builds: 1,
 							reviews: 1,
 							parks: [],
-							spent: {_tag: "Measured", usd: 3.5},
+							spent: { _tag: "Measured", usd: 3.5 },
 							origin: "bet",
-							waiting: {_tag: "None"},
+							waiting: { _tag: "None" },
 							prs: [8],
 							log: [],
 						})

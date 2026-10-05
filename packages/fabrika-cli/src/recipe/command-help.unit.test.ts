@@ -6,10 +6,10 @@
  * The derivation behind each exit lives in the operate skill's `contract.md`, which help points at;
  * the assertions on that derivation read it there.
  */
-import {readFileSync} from "node:fs";
-import {describe, expect, it} from "vitest";
-import type {CommandNode} from "../unknown-subcommand.ts";
-import {recipeCommand} from "./command.ts";
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import type { CommandNode } from "../unknown-subcommand.ts";
+import { recipeCommand } from "./command.ts";
 
 interface FlagNode {
 	readonly description?: string | undefined;
@@ -18,8 +18,8 @@ interface FlagNode {
 
 interface DescribedCommand extends Omit<CommandNode, "subcommands"> {
 	readonly description: string | undefined;
-	readonly config?: {readonly flags?: ReadonlyArray<FlagNode>} | undefined;
-	readonly subcommands: ReadonlyArray<{readonly commands: ReadonlyArray<DescribedCommand>}>;
+	readonly config?: { readonly flags?: ReadonlyArray<FlagNode> } | undefined;
+	readonly subcommands: ReadonlyArray<{ readonly commands: ReadonlyArray<DescribedCommand> }>;
 }
 
 const group: DescribedCommand = recipeCommand;

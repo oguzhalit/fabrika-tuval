@@ -8,15 +8,15 @@
  * and that fallback answers instead — with the invoked copy itself, which used to read as "the
  * repo-local install is this copy" and silently swallow the global warning.
  */
-import {spawnSync} from "node:child_process";
-import {existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {afterAll, beforeAll, describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
-import {NO_IMPLEMENTATION} from "../verb.ts";
-import {GLOBAL_WARNING_DISABLED_ENV} from "./resolve.ts";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
+import { NO_IMPLEMENTATION } from "../verb.ts";
+import { GLOBAL_WARNING_DISABLED_ENV } from "./resolve.ts";
 
 const BIN = fileURLToPath(new URL("../bin.ts", import.meta.url));
 const CHECKOUT = fileURLToPath(new URL("../../../../", import.meta.url)).replace(/\/$/, "");
@@ -40,7 +40,7 @@ let strayNodeModules: string;
 
 const writeInstall = (nodeModules: string, marker: string) => {
 	const pkg = join(nodeModules, "@kampus", "fabrika-cli");
-	mkdirSync(pkg, {recursive: true});
+	mkdirSync(pkg, { recursive: true });
 	writeFileSync(join(pkg, "bin.js"), `console.log(${JSON.stringify(marker)});\n`);
 	writeFileSync(
 		join(pkg, "package.json"),
@@ -53,22 +53,22 @@ beforeAll(() => {
 	bare = join(scratch, "bare");
 	installed = join(scratch, "installed");
 	strayNodeModules = join(scratch, "stray", "node_modules");
-	mkdirSync(bare, {recursive: true});
-	mkdirSync(installed, {recursive: true});
+	mkdirSync(bare, { recursive: true });
+	mkdirSync(installed, { recursive: true });
 	writeFileSync(join(bare, "package.json"), '{"name":"bare","version":"0.0.0"}\n');
 	writeFileSync(join(installed, "package.json"), '{"name":"installed","version":"0.0.0"}\n');
 	writeInstall(join(installed, "node_modules"), "answered-from-the-cwd-checkout");
 	writeInstall(strayNodeModules, IMPOSTER);
 });
 
-afterAll(() => rmSync(scratch, {recursive: true, force: true}));
+afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 /**
  * `spawnSync`, not `execFileSync`: the subject here is a **stderr warning on an exit-0 run**, and
  * `execFileSync` hands stderr back only on the throwing path.
  */
 const invoke = (cwd: string, nodePath: string, ...args: ReadonlyArray<string>) => {
-	const env: Record<string, string | undefined> = {...process.env, NODE_PATH: nodePath};
+	const env: Record<string, string | undefined> = { ...process.env, NODE_PATH: nodePath };
 	delete env[GLOBAL_WARNING_DISABLED_ENV];
 	const run = spawnSync(process.execPath, [BIN, ...args], {
 		cwd,
@@ -76,7 +76,7 @@ const invoke = (cwd: string, nodePath: string, ...args: ReadonlyArray<string>) =
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
 	});
-	return {code: run.status ?? -1, stdout: run.stdout ?? "", stderr: run.stderr ?? ""};
+	return { code: run.status ?? -1, stdout: run.stdout ?? "", stderr: run.stderr ?? "" };
 };
 
 describe("invoking this checkout's bin under a NODE_PATH that reaches a @kampus/fabrika-cli copy", {

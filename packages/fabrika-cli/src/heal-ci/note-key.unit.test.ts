@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import {HEAD, OTHER_HEAD} from "./fixtures.test-support.ts";
-import {readMarker, renderMarker} from "./marker.ts";
-import {keyBoundTo, keyOf, readKey, renderKey, withKey} from "./note-key.ts";
+import { describe, expect, it } from "vitest";
+import { HEAD, OTHER_HEAD } from "./fixtures.test-support.ts";
+import { readMarker, renderMarker } from "./marker.ts";
+import { keyBoundTo, keyOf, readKey, renderKey, withKey } from "./note-key.ts";
 
 const KEY = keyOf(4321, "gated-unshipped", HEAD);
 
@@ -33,10 +33,10 @@ describe("the note key is matched as a whole line, never a substring", () => {
 });
 
 describe("keyBoundTo suppresses on this key alone", () => {
-	const carried = (body: string) => [{id: 7, body}];
+	const carried = (body: string) => [{ id: 7, body }];
 
 	it("finds an exact key", () => {
-		expect(keyBoundTo(carried(withKey("note", KEY)), KEY)).toEqual({id: 7});
+		expect(keyBoundTo(carried(withKey("note", KEY)), KEY)).toEqual({ id: 7 });
 	});
 
 	it("does not match a changed class", () => {
@@ -60,7 +60,7 @@ describe("keyBoundTo suppresses on this key alone", () => {
  * first rerun (`marker.ts`'s docblock) or suppress every note after one.
  */
 describe("the two markers cannot read each other", () => {
-	const rerun = renderMarker({head: HEAD, run: 9182736450, signature: "preview-warmup"});
+	const rerun = renderMarker({ head: HEAD, run: 9182736450, signature: "preview-warmup" });
 	const rerunNote = withKey(
 		`heal-ci: RERUN-QUEUED — PR #4321 @ ${HEAD} → nobody\n\nOne transient rerun at this head.`,
 		keyOf(4321, "red", HEAD),

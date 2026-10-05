@@ -4,10 +4,10 @@
  * network — the human-in-the-loop bless → commit path, including the no-re-render guard
  * (blessed sha comes from the set, never a decision) and the re-bless update path.
  */
-import {assert, describe, it} from "@effect/vitest";
-import {applyBlessing, parseBlessDecisions, renderBlessingGallery} from "./blessing-surface.ts";
-import type {CandidateSet} from "./candidate-set.ts";
-import type {GoldenPointer} from "./golden-pointer.ts";
+import { assert, describe, it } from "@effect/vitest";
+import { applyBlessing, parseBlessDecisions, renderBlessingGallery } from "./blessing-surface.ts";
+import type { CandidateSet } from "./candidate-set.ts";
+import type { GoldenPointer } from "./golden-pointer.ts";
 
 const SHA_A = "a".repeat(64);
 const SHA_B = "b".repeat(64);
@@ -16,7 +16,7 @@ const SHA_C = "c".repeat(64);
 const set: CandidateSet = {
 	previewUrl: "https://pr-1.preview.example.com",
 	viewport: "desktop",
-	forcedFlags: {"catalog-nav-redesign": true, "feed-v2": false},
+	forcedFlags: { "catalog-nav-redesign": true, "feed-v2": false },
 	screens: [
 		{
 			order: 1,
@@ -67,14 +67,14 @@ describe("parseBlessDecisions", () => {
 			["```", "# my picks", "/catalog approve", "", "/feed redline", "```"].join("\n"),
 		);
 		assert.deepStrictEqual(decisions, [
-			{surfaceId: "/catalog", verdict: "approve"},
-			{surfaceId: "/feed", verdict: "redline"},
+			{ surfaceId: "/catalog", verdict: "approve" },
+			{ surfaceId: "/feed", verdict: "redline" },
 		]);
 	});
 
 	it("is case-insensitive on the verdict token", () => {
 		assert.deepStrictEqual(parseBlessDecisions("/catalog APPROVE"), [
-			{surfaceId: "/catalog", verdict: "approve"},
+			{ surfaceId: "/catalog", verdict: "approve" },
 		]);
 	});
 
@@ -98,8 +98,8 @@ describe("applyBlessing — the bless → pointer-move fold", () => {
 		const result = applyBlessing({
 			set,
 			decisions: [
-				{surfaceId: "/catalog", verdict: "approve"},
-				{surfaceId: "/feed", verdict: "redline"},
+				{ surfaceId: "/catalog", verdict: "approve" },
+				{ surfaceId: "/feed", verdict: "redline" },
 			],
 			blessedDate: "2026-07-14",
 			pointer: empty,
@@ -110,7 +110,7 @@ describe("applyBlessing — the bless → pointer-move fold", () => {
 			intent: "catalog home, seeded corpus",
 		});
 		assert.isUndefined(result.pointer["/feed"]);
-		assert.deepStrictEqual(result.blessed, [{surfaceId: "/catalog", sha256: SHA_A}]);
+		assert.deepStrictEqual(result.blessed, [{ surfaceId: "/catalog", sha256: SHA_A }]);
 		assert.deepStrictEqual(result.redlined, ["/feed"]);
 	});
 
@@ -120,8 +120,8 @@ describe("applyBlessing — the bless → pointer-move fold", () => {
 		const result = applyBlessing({
 			set,
 			decisions: [
-				{surfaceId: "/catalog", verdict: "approve"},
-				{surfaceId: "/feed", verdict: "approve"},
+				{ surfaceId: "/catalog", verdict: "approve" },
+				{ surfaceId: "/feed", verdict: "approve" },
 			],
 			blessedDate: "2026-07-14",
 			pointer: empty,
@@ -132,13 +132,13 @@ describe("applyBlessing — the bless → pointer-move fold", () => {
 
 	it("re-bless: moves an existing golden to the new candidate sha, immutably", () => {
 		const existing: GoldenPointer = {
-			"/catalog": {sha256: SHA_C, blessedDate: "2026-06-01", intent: "old catalog home"},
+			"/catalog": { sha256: SHA_C, blessedDate: "2026-06-01", intent: "old catalog home" },
 		};
 		const result = applyBlessing({
 			set,
 			decisions: [
-				{surfaceId: "/catalog", verdict: "approve"},
-				{surfaceId: "/feed", verdict: "redline"},
+				{ surfaceId: "/catalog", verdict: "approve" },
+				{ surfaceId: "/feed", verdict: "redline" },
 			],
 			blessedDate: "2026-07-14",
 			pointer: existing,
@@ -152,13 +152,13 @@ describe("applyBlessing — the bless → pointer-move fold", () => {
 
 	it("a redline does NOT remove an existing golden — it is just not re-blessed", () => {
 		const existing: GoldenPointer = {
-			"/feed": {sha256: SHA_C, blessedDate: "2026-06-01", intent: "old feed"},
+			"/feed": { sha256: SHA_C, blessedDate: "2026-06-01", intent: "old feed" },
 		};
 		const result = applyBlessing({
 			set,
 			decisions: [
-				{surfaceId: "/catalog", verdict: "approve"},
-				{surfaceId: "/feed", verdict: "redline"},
+				{ surfaceId: "/catalog", verdict: "approve" },
+				{ surfaceId: "/feed", verdict: "redline" },
 			],
 			blessedDate: "2026-07-14",
 			pointer: existing,
@@ -171,7 +171,7 @@ describe("applyBlessing — the bless → pointer-move fold", () => {
 			() =>
 				applyBlessing({
 					set,
-					decisions: [{surfaceId: "/catalog", verdict: "approve"}],
+					decisions: [{ surfaceId: "/catalog", verdict: "approve" }],
 					blessedDate: "2026-07-14",
 					pointer: empty,
 				}),
@@ -185,9 +185,9 @@ describe("applyBlessing — the bless → pointer-move fold", () => {
 				applyBlessing({
 					set,
 					decisions: [
-						{surfaceId: "/catalog", verdict: "approve"},
-						{surfaceId: "/feed", verdict: "redline"},
-						{surfaceId: "/absent", verdict: "approve"},
+						{ surfaceId: "/catalog", verdict: "approve" },
+						{ surfaceId: "/feed", verdict: "redline" },
+						{ surfaceId: "/absent", verdict: "approve" },
 					],
 					blessedDate: "2026-07-14",
 					pointer: empty,
@@ -202,9 +202,9 @@ describe("applyBlessing — the bless → pointer-move fold", () => {
 				applyBlessing({
 					set,
 					decisions: [
-						{surfaceId: "/catalog", verdict: "approve"},
-						{surfaceId: "/catalog", verdict: "redline"},
-						{surfaceId: "/feed", verdict: "redline"},
+						{ surfaceId: "/catalog", verdict: "approve" },
+						{ surfaceId: "/catalog", verdict: "redline" },
+						{ surfaceId: "/feed", verdict: "redline" },
 					],
 					blessedDate: "2026-07-14",
 					pointer: empty,

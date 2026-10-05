@@ -7,15 +7,15 @@
  * label read it, so it lives here rather than inside either one.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {listLabels} from "../io/issues.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { listLabels } from "../io/issues.ts";
 
 export type LabelUniverse =
-	| {readonly _tag: "present"}
-	| {readonly _tag: "absent"; readonly missing: ReadonlyArray<string>};
+	| { readonly _tag: "present" }
+	| { readonly _tag: "absent"; readonly missing: ReadonlyArray<string> };
 
-export const PRESENT: LabelUniverse = {_tag: "present"};
+export const PRESENT: LabelUniverse = { _tag: "present" };
 
 /**
  * The universe of `required` in `repo`, or `null` when the label set itself could not be read.
@@ -31,5 +31,5 @@ export const universeOf = (
 		const attempt = yield* listLabels(repo);
 		if (attempt._tag === "Failure") return null;
 		const missing = required.filter((label) => !attempt.value.includes(label));
-		return missing.length === 0 ? PRESENT : {_tag: "absent", missing};
+		return missing.length === 0 ? PRESENT : { _tag: "absent", missing };
 	});

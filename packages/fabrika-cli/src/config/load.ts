@@ -27,13 +27,13 @@ import {
 	readDocument,
 	trackedOnly,
 } from "./document.ts";
-import {type KeyGroup, type Resolution, resolveKey} from "./key-group.ts";
-import {ineligibleLocalKeys} from "./machine-local.ts";
-import {KEY_GROUPS} from "./registry.ts";
+import { type KeyGroup, type Resolution, resolveKey } from "./key-group.ts";
+import { ineligibleLocalKeys } from "./machine-local.ts";
+import { KEY_GROUPS } from "./registry.ts";
 
 export type Load =
-	| {readonly _tag: "Config"; readonly documents: Documents}
-	| {readonly _tag: "Refused"; readonly reason: string};
+	| { readonly _tag: "Config"; readonly documents: Documents }
+	| { readonly _tag: "Refused"; readonly reason: string };
 
 /** The bytes of both files as their opener found them — the working tree's whole config surface. */
 export interface ConfigLayers {
@@ -43,12 +43,12 @@ export interface ConfigLayers {
 
 const loadDocuments = (documents: Documents): Load => {
 	const ineligible = ineligibleLocalKeys(documents.local, KEY_GROUPS);
-	if (ineligible !== null) return {_tag: "Refused", reason: ineligible};
+	if (ineligible !== null) return { _tag: "Refused", reason: ineligible };
 	for (const group of KEY_GROUPS) {
 		const refusal = group.loadRefusal(documents);
-		if (refusal !== null) return {_tag: "Refused", reason: refusal};
+		if (refusal !== null) return { _tag: "Refused", reason: refusal };
 	}
-	return {_tag: "Config", documents};
+	return { _tag: "Config", documents };
 };
 
 /**
@@ -76,7 +76,7 @@ export const loadLayeredConfig = (layers: ConfigLayers): Load =>
  */
 export const resolve = <A>(load: Load, group: KeyGroup<A>): Resolution<A> =>
 	load._tag === "Refused"
-		? {_tag: "Malformed", reason: load.reason}
+		? { _tag: "Malformed", reason: load.reason }
 		: resolveKey(load.documents, group);
 
 /** One key's resolution, carried with its key so a reader over the whole registry can name it. */
@@ -97,6 +97,6 @@ export const resolveAll = (load: Load): ReadonlyArray<Resolved> =>
 		key: group.key,
 		resolution:
 			load._tag === "Refused"
-				? ({_tag: "Malformed", reason: load.reason} as const)
+				? ({ _tag: "Malformed", reason: load.reason } as const)
 				: group.readout(load.documents),
 	}));

@@ -12,13 +12,13 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9989
  */
 
-import {type TableSettings, WEEKDAYS} from "../config/keys/table.ts";
+import { type TableSettings, WEEKDAYS } from "../config/keys/table.ts";
 
 /** What the date math reads off the table's settings: the weekday it meets, and its zone. */
 export type TableClock = Pick<TableSettings, "day" | "timeZone">;
 
 /** A calendar day as a GitHub DATE field holds it. Only {@link parseTableDay} and this module mint one. */
-export type TableDay = string & {readonly TableDay: unique symbol};
+export type TableDay = string & { readonly TableDay: unique symbol };
 
 const DAY_MS = 86_400_000;
 
@@ -99,7 +99,7 @@ export const currentTableDay = (settings: TableClock, now: Date): TableDay => {
 export const weekBefore = (
 	day: TableDay,
 	timeZone: string,
-): {readonly start: string; readonly end: string} => ({
+): { readonly start: string; readonly end: string } => ({
 	start: startOf(plusDays(day, -7), timeZone),
 	end: startOf(day, timeZone),
 });
@@ -111,9 +111,9 @@ export const weekBefore = (
 export const agendaDays = (
 	settings: TableClock,
 	now: Date,
-): {readonly from: TableDay; readonly to: TableDay} => {
+): { readonly from: TableDay; readonly to: TableDay } => {
 	const today = localDay(settings.timeZone, now);
-	return {from: today, to: plusDays(today, 6)};
+	return { from: today, to: plusDays(today, 6) };
 };
 
 /** Which table `day` is, counting the distinct earlier table days on the board: 1 for the first. */

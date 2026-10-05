@@ -8,14 +8,14 @@
  *
  * This module reads and never repairs. Nothing here creates, cleans, locks or removes anything.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {execCapture} from "../io/exec.ts";
-import {type Attempt, fail, ok, type Shell} from "../io/git.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {DIRTY_TREE, PRECONDITION_UNKNOWN, WRONG_LANE} from "./codes.ts";
-import {currentBranch} from "./git.ts";
-import {laneNumber, parseLaneBranch} from "./lane.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { execCapture } from "../io/exec.ts";
+import { type Attempt, fail, ok, type Shell } from "../io/git.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { DIRTY_TREE, PRECONDITION_UNKNOWN, WRONG_LANE } from "./codes.ts";
+import { currentBranch } from "./git.ts";
+import { laneNumber, parseLaneBranch } from "./lane.ts";
 
 export interface TreeState {
 	/** This tree's own git dir — where a per-tree file such as `info/exclude` belongs. */
@@ -46,7 +46,7 @@ export const readTree: Shell<Attempt<TreeState>> = Effect.gen(function* () {
 	if (gitDir === undefined || root === undefined) {
 		return fail("`git rev-parse` exited 0 but did not name the git dir and tree root");
 	}
-	return ok({gitDir, root});
+	return ok({ gitDir, root });
 });
 
 /** How many paths `git status --porcelain` reports — `0` is a clean tree. */
@@ -57,8 +57,8 @@ export const uncommittedChanges: Shell<Attempt<number>> = Effect.gen(function* (
 });
 
 export type Ground =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Tree"; readonly root: string};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Tree"; readonly root: string };
 
 /**
  * Assert the ground, with the invoked verb's name substituted into the contract's messages.
@@ -81,7 +81,7 @@ export const assertGround = (
 				),
 			};
 		}
-		if (!requireClean) return {_tag: "Tree" as const, root: state.value.root};
+		if (!requireClean) return { _tag: "Tree" as const, root: state.value.root };
 
 		const dirty = yield* uncommittedChanges;
 		if (dirty._tag === "Failure") {
@@ -102,12 +102,12 @@ export const assertGround = (
 				),
 			};
 		}
-		return {_tag: "Tree" as const, root: state.value.root};
+		return { _tag: "Tree" as const, root: state.value.root };
 	});
 
 export type Movable =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Movable"; readonly current: string | null};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Movable"; readonly current: string | null };
 
 /**
  * Whether a verb about to move this tree's HEAD may move it — asked before anything switches,
@@ -143,7 +143,7 @@ export const assertMovable = (
 			);
 		}
 		const current = held.value;
-		if (current !== null && lane.ends.includes(current)) return {_tag: "Movable", current};
+		if (current !== null && lane.ends.includes(current)) return { _tag: "Movable", current };
 
 		const dirty = yield* uncommittedChanges;
 		if (dirty._tag === "Failure") {
@@ -166,5 +166,5 @@ export const assertMovable = (
 				`${verb}: this tree stands on ${standing}, #${laneNumber(foreign)}'s lane branch, not #${lane.serves}'s — switching it would take that lane's tree out from under it. Nothing was changed.`,
 			);
 		}
-		return {_tag: "Movable", current};
+		return { _tag: "Movable", current };
 	});

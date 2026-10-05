@@ -11,12 +11,12 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/6844#issuecomment-5519865462
  */
-import {isAbsolute} from "node:path";
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {execRecord} from "../io/exec.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { isAbsolute } from "node:path";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { execRecord } from "../io/exec.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	EMPTY_STDIN,
 	ENVELOPE_UNKNOWN,
@@ -24,10 +24,10 @@ import {
 	MALFORMED_ENVELOPE,
 	WRONG_EVENT,
 } from "./codes.ts";
-import {classifyEnvelope, type EnvelopeRead} from "./envelope.ts";
-import {decideStash, findGitStash, GIT_DIRS_ARGS, readGitDirs} from "./git-stash.ts";
-import {bashCommandOf, preToolUseStdout} from "./pre-tool-use.ts";
-import {childEnv} from "./worktree-create.ts";
+import { classifyEnvelope, type EnvelopeRead } from "./envelope.ts";
+import { decideStash, findGitStash, GIT_DIRS_ARGS, readGitDirs } from "./git-stash.ts";
+import { bashCommandOf, preToolUseStdout } from "./pre-tool-use.ts";
+import { childEnv } from "./worktree-create.ts";
 
 const VERB = "fabrika hook stash-guard";
 
@@ -47,7 +47,7 @@ export interface StashGuardOptions {
 }
 
 const readEnvelope = (piped: StdinRead): EnvelopeRead =>
-	piped._tag === "Text" ? classifyEnvelope(piped.text) : {_tag: "Unknown", reason: piped.reason};
+	piped._tag === "Text" ? classifyEnvelope(piped.text) : { _tag: "Unknown", reason: piped.reason };
 
 const stdinScope = (piped: StdinRead): string =>
 	piped._tag === "Text"

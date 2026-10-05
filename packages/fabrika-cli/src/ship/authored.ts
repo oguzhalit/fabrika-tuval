@@ -10,20 +10,20 @@
  * example* trips the detector, which is generic by design, and no verb can rewrite a foreign
  * comment. Both route to a human.
  */
-import type {Effect} from "effect";
-import type {StdinRead} from "../io/stdin.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
-import {FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {BARE_AT_PATH, EMPTY_STDIN, LEAKED_PATH} from "./codes.ts";
+import type { Effect } from "effect";
+import type { StdinRead } from "../io/stdin.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
+import { FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { BARE_AT_PATH, EMPTY_STDIN, LEAKED_PATH } from "./codes.ts";
 
 export type Authored =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Text"; readonly text: string; readonly bytes: number};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Text"; readonly text: string; readonly bytes: number };
 
 export interface AuthoredMessages {
 	readonly empty: string;
 	readonly bareAt: string;
-	readonly leaked: (count: number, first: {line: number; class: string}) => string;
+	readonly leaked: (count: number, first: { line: number; class: string }) => string;
 }
 
 export const readAuthored = (
@@ -43,10 +43,10 @@ export const readAuthored = (
 	const text = read._tag === "NoStdin" ? "" : read.text;
 	const bytes = new TextEncoder().encode(text).length;
 	if (text.trim() === "") {
-		return {_tag: "Refused", outcome: refuse(EMPTY_STDIN, messages.empty)};
+		return { _tag: "Refused", outcome: refuse(EMPTY_STDIN, messages.empty) };
 	}
 	if (isBareAtReference(text)) {
-		return {_tag: "Refused", outcome: refuse(BARE_AT_PATH, messages.bareAt)};
+		return { _tag: "Refused", outcome: refuse(BARE_AT_PATH, messages.bareAt) };
 	}
 	const scan = scanBody(text);
 	const first = scan.leaks[0];
@@ -55,12 +55,12 @@ export const readAuthored = (
 			_tag: "Refused",
 			outcome: refuse(
 				LEAKED_PATH,
-				messages.leaked(scan.leaks.length, {line: first.line, class: first.class}),
+				messages.leaked(scan.leaks.length, { line: first.line, class: first.class }),
 				renderLeaks(scan.leaks),
 			),
 		};
 	}
-	return {_tag: "Text", text, bytes};
+	return { _tag: "Text", text, bytes };
 };
 
 /** The stdin effect both verbs take, kept as one type so the adapter wires them identically. */

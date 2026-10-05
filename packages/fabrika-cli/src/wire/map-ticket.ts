@@ -17,12 +17,12 @@
  * map's is visible instead of silently absent.
  */
 
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
 
 declare const NONCE: unique symbol;
 
 /** A run's lane key: exactly eight lowercase hex characters. Branded so `Found` cannot carry `""`. */
-export type Nonce = string & {readonly [NONCE]: true};
+export type Nonce = string & { readonly [NONCE]: true };
 
 /** What clears a frontier ticket. A fourth token is not a kind — it is a drift. */
 export type TicketKind = "research" | "prototype" | "decision";
@@ -91,7 +91,7 @@ export const read = (artifact: string): MapTicketRead => {
 	}
 	return {
 		_tag: "Found",
-		value: {map: Number.parseInt(matched[1] ?? "0", 10), kind, nonce: key},
+		value: { map: Number.parseInt(matched[1] ?? "0", 10), kind, nonce: key },
 	};
 };
 
@@ -100,8 +100,8 @@ export const emit = (marker: MapTicketMarker): string =>
 	`map-ticket: #${marker.map} · ${marker.kind} · ${marker.nonce}`;
 
 export type MapTicketFields =
-	| {readonly _tag: "Fields"; readonly marker: MapTicketMarker}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly marker: MapTicketMarker }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 const FIELD_LINE = /^([A-Za-z-]+)[ \t]*[:\t][ \t]*(.*)$/;
 const KEYS = ["map", "kind", "nonce"] as const;
@@ -147,11 +147,11 @@ export const parseFields = (fields: string): MapTicketFields => {
 	}
 	const map = (seen.get("map") ?? "").trim().replace(/^#/, "");
 	if (!/^\d+$/.test(map)) {
-		return {_tag: "Unusable", reason: `"${seen.get("map")}" is not an issue number`};
+		return { _tag: "Unusable", reason: `"${seen.get("map")}" is not an issue number` };
 	}
 	const kind = (seen.get("kind") ?? "").trim();
 	if (!isTicketKind(kind)) {
-		return {_tag: "Unusable", reason: `"${kind}" is not a kind — expected ${KINDS.join(", ")}`};
+		return { _tag: "Unusable", reason: `"${kind}" is not a kind — expected ${KINDS.join(", ")}` };
 	}
 	const key = nonce(seen.get("nonce") ?? "");
 	if (key === null) {
@@ -160,7 +160,7 @@ export const parseFields = (fields: string): MapTicketFields => {
 			reason: `"${seen.get("nonce")}" is not a run nonce — expected exactly eight lowercase hex characters`,
 		};
 	}
-	return {_tag: "Fields", marker: {map: Number.parseInt(map, 10), kind, nonce: key}};
+	return { _tag: "Fields", marker: { map: Number.parseInt(map, 10), kind, nonce: key } };
 };
 
 export const renderMarker = (marker: MapTicketMarker): NonEmptyReadonlyArray<string> => [
@@ -173,12 +173,12 @@ export const renderMarker = (marker: MapTicketMarker): NonEmptyReadonlyArray<str
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: `${emit(parsed.marker)}\n`}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: `${emit(parsed.marker)}\n` }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderMarker(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderMarker(result.value) } : result;
 };

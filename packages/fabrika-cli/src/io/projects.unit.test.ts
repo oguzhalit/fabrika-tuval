@@ -5,10 +5,10 @@
  * refusal.
  */
 
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import {describe, expect, it} from "vitest";
-import {fakeHttp, type HttpReply} from "../fakes.test-support.ts";
+import { describe, expect, it } from "vitest";
+import { fakeHttp, type HttpReply } from "../fakes.test-support.ts";
 import {
 	addItem,
 	clearFieldValue,
@@ -30,7 +30,7 @@ import {
 	updateFieldOptions,
 	updateView,
 } from "./projects.ts";
-import {blankProject, fakeProjects} from "./projects-fake.test-support.ts";
+import { blankProject, fakeProjects } from "./projects-fake.test-support.ts";
 
 const GRAPHQL = /^POST https:\/\/api\.github\.com\/graphql$/;
 const TOKEN = "ghp_scripted";
@@ -38,7 +38,7 @@ const TOKEN = "ghp_scripted";
 const reply = (body: unknown, headers: Record<string, string> = {}): HttpReply => ({
 	status: 200,
 	body: JSON.stringify(body),
-	headers: {"x-oauth-scopes": "gist, project, read:org, repo", ...headers},
+	headers: { "x-oauth-scopes": "gist, project, read:org, repo", ...headers },
 });
 
 /** One call, one recorded reply: every GraphQL request goes to one URL, so a script row is a reply. */
@@ -48,7 +48,7 @@ const runWith = async <A>(
 ) => {
 	const http = fakeHttp([[GRAPHQL, replies[0]]]);
 	const result = await Effect.runPromise(Effect.provide(use(), http.layer));
-	return {result, http};
+	return { result, http };
 };
 
 const RECORDED_PROJECT = {
@@ -57,11 +57,11 @@ const RECORDED_PROJECT = {
 	url: "https://github.com/orgs/acme/projects/20",
 	title: "Example table",
 	createdAt: "2026-01-01T00:00:00Z",
-	owner: {__typename: "Organization", login: "acme"},
+	owner: { __typename: "Organization", login: "acme" },
 	shortDescription: "Example weekly betting table",
 	readme: "# How to use this table",
 	fields: {
-		pageInfo: {hasNextPage: false},
+		pageInfo: { hasNextPage: false },
 		nodes: [
 			{
 				__typename: "ProjectV2Field",
@@ -77,8 +77,8 @@ const RECORDED_PROJECT = {
 				name: "Stage",
 				dataType: "SINGLE_SELECT",
 				options: [
-					{id: "o_proposed", name: "proposed", color: "GRAY", description: ""},
-					{id: "o_bet", name: "bet", color: "GRAY", description: ""},
+					{ id: "o_proposed", name: "proposed", color: "GRAY", description: "" },
+					{ id: "o_bet", name: "bet", color: "GRAY", description: "" },
 				],
 			},
 			{
@@ -101,12 +101,12 @@ const RECORDED_PROJECT = {
 				databaseId: 417848942,
 				name: "Week",
 				dataType: "ITERATION",
-				configuration: {duration: 7, startDay: 6},
+				configuration: { duration: 7, startDay: 6 },
 			},
 		],
 	},
 	views: {
-		pageInfo: {hasNextPage: false},
+		pageInfo: { hasNextPage: false },
 		nodes: [
 			{
 				id: "V_inbox",
@@ -114,7 +114,7 @@ const RECORDED_PROJECT = {
 				name: "Inbox",
 				layout: "TABLE_LAYOUT",
 				filter: "is:open no:label",
-				fields: {pageInfo: {hasNextPage: false}, nodes: [{id: "F_title"}]},
+				fields: { pageInfo: { hasNextPage: false }, nodes: [{ id: "F_title" }] },
 			},
 		],
 	},
@@ -122,14 +122,14 @@ const RECORDED_PROJECT = {
 
 describe("reading a project", () => {
 	it("reads its owner, fields by kind with their numeric ids, and views with their filters", async () => {
-		const {result} = await runWith(
-			[reply({data: {repositoryOwner: {projectV2: RECORDED_PROJECT}}})],
+		const { result } = await runWith(
+			[reply({ data: { repositoryOwner: { projectV2: RECORDED_PROJECT } } })],
 			() => readProjectByNumber(TOKEN, "acme", 20),
 		);
 
 		expect(result._tag).toBe("Ok");
 		if (result._tag !== "Ok" || result.value === null) return;
-		expect(result.value.owner).toEqual({kind: "Organization", login: "acme"});
+		expect(result.value.owner).toEqual({ kind: "Organization", login: "acme" });
 		expect(result.value.fields.map((field) => [field.name, field._tag, field.databaseId])).toEqual([
 			["Title", "Plain", 417848925],
 			["Stage", "SingleSelect", 417848939],
@@ -137,8 +137,8 @@ describe("reading a project", () => {
 			["Table day", "Plain", 417848941],
 			["Week", "Iteration", 417848942],
 		]);
-		expect(result.value.fields[3]).toMatchObject({dataType: "DATE"});
-		expect(result.value.fields[4]).toMatchObject({duration: 7, startDay: 6});
+		expect(result.value.fields[3]).toMatchObject({ dataType: "DATE" });
+		expect(result.value.fields[4]).toMatchObject({ duration: 7, startDay: 6 });
 		expect(result.value.views[0]).toEqual({
 			id: "V_inbox",
 			number: 6,
@@ -150,15 +150,15 @@ describe("reading a project", () => {
 	});
 
 	it("reads GitHub's NOT_FOUND on a project number as a project proven absent", async () => {
-		const {result} = await runWith(
+		const { result } = await runWith(
 			[
 				reply({
-					data: {repositoryOwner: {projectV2: null}},
+					data: { repositoryOwner: { projectV2: null } },
 					errors: [
 						{
 							type: "NOT_FOUND",
 							path: ["repositoryOwner", "projectV2"],
-							locations: [{line: 1, column: 34}],
+							locations: [{ line: 1, column: 34 }],
 							message: "Could not resolve to a ProjectV2 with the number 9999.",
 						},
 					],
@@ -167,32 +167,33 @@ describe("reading a project", () => {
 			() => readProjectByNumber(TOKEN, "acme", 9999),
 		);
 
-		expect(result).toEqual({_tag: "Ok", value: null});
+		expect(result).toEqual({ _tag: "Ok", value: null });
 	});
 
 	it("refuses a field page GitHub cut short, rather than answering a shorter list", async () => {
 		const cut = {
 			...RECORDED_PROJECT,
-			fields: {...RECORDED_PROJECT.fields, pageInfo: {hasNextPage: true}},
+			fields: { ...RECORDED_PROJECT.fields, pageInfo: { hasNextPage: true } },
 		};
-		const {result} = await runWith([reply({data: {repositoryOwner: {projectV2: cut}}})], () =>
-			readProjectByNumber(TOKEN, "acme", 20),
+		const { result } = await runWith(
+			[reply({ data: { repositoryOwner: { projectV2: cut } } })],
+			() => readProjectByNumber(TOKEN, "acme", 20),
 		);
 
 		expect(result._tag).toBe("Failed");
 	});
 
 	it("reads the repository, its owner and its linked projects", async () => {
-		const {result} = await runWith(
+		const { result } = await runWith(
 			[
 				reply({
 					data: {
 						repository: {
 							id: "R_1",
-							owner: {id: "O_1", login: "acme"},
+							owner: { id: "O_1", login: "acme" },
 							projectsV2: {
-								pageInfo: {hasNextPage: false, endCursor: null},
-								nodes: [{id: "PVT_1", number: 3, title: "widgets table", closed: false}],
+								pageInfo: { hasNextPage: false, endCursor: null },
+								nodes: [{ id: "PVT_1", number: 3, title: "widgets table", closed: false }],
 							},
 						},
 					},
@@ -205,8 +206,8 @@ describe("reading a project", () => {
 			_tag: "Ok",
 			value: {
 				id: "R_1",
-				owner: {id: "O_1", login: "acme"},
-				linkedProjects: [{id: "PVT_1", number: 3, title: "widgets table", closed: false}],
+				owner: { id: "O_1", login: "acme" },
+				linkedProjects: [{ id: "PVT_1", number: 3, title: "widgets table", closed: false }],
 			},
 		});
 	});
@@ -214,15 +215,15 @@ describe("reading a project", () => {
 
 describe("the project scope", () => {
 	it("is read off X-OAuth-Scopes when the token declares its scopes", () => {
-		expect(scopeWithheld({"x-oauth-scopes": "gist, project, read:org, repo"})).toBe(false);
-		expect(scopeWithheld({"x-oauth-scopes": "repo, read:project"})).toBe(true);
-		expect(scopeWithheld({"x-oauth-scopes": ""})).toBe(true);
+		expect(scopeWithheld({ "x-oauth-scopes": "gist, project, read:org, repo" })).toBe(false);
+		expect(scopeWithheld({ "x-oauth-scopes": "repo, read:project" })).toBe(true);
+		expect(scopeWithheld({ "x-oauth-scopes": "" })).toBe(true);
 		expect(scopeWithheld({})).toBeNull();
 	});
 
 	it("refuses with the exact fix when the header withholds it", async () => {
-		const {result} = await runWith(
-			[reply({data: {repository: null}}, {"x-oauth-scopes": "repo"})],
+		const { result } = await runWith(
+			[reply({ data: { repository: null } }, { "x-oauth-scopes": "repo" })],
 			() => readRepository(TOKEN, "acme/widgets"),
 		);
 
@@ -232,7 +233,7 @@ describe("the project scope", () => {
 	});
 
 	it("refuses with the exact fix on GitHub's INSUFFICIENT_SCOPES error from a token that lists no scopes", async () => {
-		const {result} = await runWith(
+		const { result } = await runWith(
 			[
 				{
 					status: 200,
@@ -241,7 +242,7 @@ describe("the project scope", () => {
 						errors: [
 							{
 								type: "INSUFFICIENT_SCOPES",
-								locations: [{line: 5, column: 5}],
+								locations: [{ line: 5, column: 5 }],
 								message:
 									"Your token has not been granted the required scopes to execute this query. The 'projectsV2' field requires one of the following scopes: ['read:project'], but your token has only been granted the: ['repo'] scopes.",
 							},
@@ -260,12 +261,12 @@ describe("the project scope", () => {
 
 describe("writing to a project", () => {
 	it("creates a date field with nothing but its name and type", async () => {
-		const {result, http} = await runWith(
-			[reply({data: {createProjectV2Field: {projectV2Field: {id: "F_new"}}}})],
-			() => createField(TOKEN, "PVT_1", {_tag: "Date", name: "Table day"}),
+		const { result, http } = await runWith(
+			[reply({ data: { createProjectV2Field: { projectV2Field: { id: "F_new" } } } })],
+			() => createField(TOKEN, "PVT_1", { _tag: "Date", name: "Table day" }),
 		);
 
-		expect(result).toEqual({_tag: "Ok", value: "F_new"});
+		expect(result).toEqual({ _tag: "Ok", value: "F_new" });
 		expect(JSON.parse(http.bodies[0] ?? "{}").variables.input).toEqual({
 			projectId: "PVT_1",
 			name: "Table day",
@@ -274,58 +275,60 @@ describe("writing to a project", () => {
 	});
 
 	it("rewrites a field's options with every kept option's id, name, color and description, then the added ones", async () => {
-		const {result, http} = await runWith(
-			[reply({data: {updateProjectV2Field: {projectV2Field: {id: "F_origin"}}}})],
+		const { result, http } = await runWith(
+			[reply({ data: { updateProjectV2Field: { projectV2Field: { id: "F_origin" } } } })],
 			() =>
 				updateFieldOptions(TOKEN, "F_origin", {
 					kept: [
-						{id: "o_founder", name: "founder idea", color: "PINK", description: ""},
-						{id: "o_bet", name: "bet", color: "BLUE", description: "Picked at a table."},
+						{ id: "o_founder", name: "founder idea", color: "PINK", description: "" },
+						{ id: "o_bet", name: "bet", color: "BLUE", description: "Picked at a table." },
 					],
-					added: [{name: "hand-start", color: "GRAY", description: "A person started it by hand."}],
+					added: [
+						{ name: "hand-start", color: "GRAY", description: "A person started it by hand." },
+					],
 				}),
 		);
 
-		expect(result).toEqual({_tag: "Ok", value: "F_origin"});
+		expect(result).toEqual({ _tag: "Ok", value: "F_origin" });
 		const body = JSON.parse(http.bodies[0] ?? "{}");
 		expect(body.query).toContain("updateProjectV2Field(input: $input)");
 		expect(body.variables.input).toEqual({
 			fieldId: "F_origin",
 			singleSelectOptions: [
-				{id: "o_founder", name: "founder idea", color: "PINK", description: ""},
-				{id: "o_bet", name: "bet", color: "BLUE", description: "Picked at a table."},
-				{name: "hand-start", color: "GRAY", description: "A person started it by hand."},
+				{ id: "o_founder", name: "founder idea", color: "PINK", description: "" },
+				{ id: "o_bet", name: "bet", color: "BLUE", description: "Picked at a table." },
+				{ name: "hand-start", color: "GRAY", description: "A person started it by hand." },
 			],
 		});
 	});
 
 	it("keeps a row's value only for an option sent back with its id, as GitHub's whole-list replace does", async () => {
-		const project = blankProject({number: 20, title: "widgets table"});
+		const project = blankProject({ number: 20, title: "widgets table" });
 		project.fields.push({
 			id: "F_origin",
 			name: "Origin",
 			dataType: "SINGLE_SELECT",
-			options: [{id: "o_founder", name: "founder idea", color: "PINK", description: ""}],
+			options: [{ id: "o_founder", name: "founder idea", color: "PINK", description: "" }],
 		});
 		project.items.push({
 			id: "row_1",
 			contentId: "I_1",
 			number: 1,
-			values: {F_origin: {singleSelectOptionId: "o_founder"}},
+			values: { F_origin: { singleSelectOptionId: "o_founder" } },
 		});
-		const founder = {name: "founder idea", color: "PINK", description: ""} as const;
+		const founder = { name: "founder idea", color: "PINK", description: "" } as const;
 		const rewrite = async (list: Parameters<typeof updateFieldOptions>[2]) => {
-			const github = fakeProjects({projects: [project]});
+			const github = fakeProjects({ projects: [project] });
 			await Effect.runPromise(
 				Effect.provide(updateFieldOptions(TOKEN, "F_origin", list), github.layer),
 			);
 			return github.projects[0]?.items[0]?.values.F_origin;
 		};
 
-		expect(await rewrite({kept: [{id: "o_founder", ...founder}], added: []})).toEqual({
+		expect(await rewrite({ kept: [{ id: "o_founder", ...founder }], added: [] })).toEqual({
 			singleSelectOptionId: "o_founder",
 		});
-		expect(await rewrite({kept: [], added: [founder]})).toBeUndefined();
+		expect(await rewrite({ kept: [], added: [founder] })).toBeUndefined();
 	});
 
 	it("creates a view over REST under the owner's login, grouped as it is made", async () => {
@@ -343,26 +346,26 @@ describe("writing to a project", () => {
 		const orgs = fakeHttp([
 			[
 				/^POST https:\/\/api\.github\.com\/orgs\/acme\/projectsV2\/20\/views$/,
-				{status: 201, body: JSON.stringify(created)},
+				{ status: 201, body: JSON.stringify(created) },
 			],
 		]);
 		const table = await Effect.runPromise(
 			Effect.provide(
 				createView(
 					TOKEN,
-					{owner: {kind: "Organization", login: "acme"}, number: 20},
+					{ owner: { kind: "Organization", login: "acme" }, number: 20 },
 					{
 						name: "Agenda",
 						layout: "TABLE_LAYOUT",
 						filter: "has:section",
 						visibleFields: [417848925, 417848939],
-						grouping: {_tag: "Rows", fieldId: 417848939},
+						grouping: { _tag: "Rows", fieldId: 417848939 },
 					},
 				),
 				orgs.layer,
 			),
 		);
-		expect(table).toEqual({_tag: "Ok", value: "PVTV_new"});
+		expect(table).toEqual({ _tag: "Ok", value: "PVTV_new" });
 		expect(JSON.parse(orgs.bodies[0] ?? "{}")).toEqual({
 			name: "Agenda",
 			layout: "table",
@@ -374,20 +377,20 @@ describe("writing to a project", () => {
 		const users = fakeHttp([
 			[
 				/^POST https:\/\/api\.github\.com\/users\/octo\/projectsV2\/3\/views$/,
-				{status: 201, body: JSON.stringify({...created, layout: "board"})},
+				{ status: 201, body: JSON.stringify({ ...created, layout: "board" }) },
 			],
 		]);
 		const board = await Effect.runPromise(
 			Effect.provide(
 				createView(
 					TOKEN,
-					{owner: {kind: "User", login: "octo"}, number: 3},
+					{ owner: { kind: "User", login: "octo" }, number: 3 },
 					{
 						name: "Lanes",
 						layout: "BOARD_LAYOUT",
 						filter: "has:section",
 						visibleFields: [417848925],
-						grouping: {_tag: "Columns", fieldId: 417848939},
+						grouping: { _tag: "Columns", fieldId: 417848939 },
 					},
 				),
 				users.layer,
@@ -405,32 +408,35 @@ describe("writing to a project", () => {
 		const http = fakeHttp([
 			[
 				/^POST https:\/\/api\.github\.com\/orgs\/acme\/projectsV2\/20\/views$/,
-				{status: 422, body: JSON.stringify({message: "Validation Failed"})},
+				{ status: 422, body: JSON.stringify({ message: "Validation Failed" }) },
 			],
 		]);
 		const result = await Effect.runPromise(
 			Effect.provide(
 				createView(
 					TOKEN,
-					{owner: {kind: "Organization", login: "acme"}, number: 20},
+					{ owner: { kind: "Organization", login: "acme" }, number: 20 },
 					{
 						name: "Inbox",
 						layout: "TABLE_LAYOUT",
 						filter: "is:open",
 						visibleFields: [],
-						grouping: {_tag: "None"},
+						grouping: { _tag: "None" },
 					},
 				),
 				http.layer,
 			),
 		);
-		expect(result).toEqual({_tag: "Failed", reason: "GitHub answered HTTP 422: Validation Failed"});
+		expect(result).toEqual({
+			_tag: "Failed",
+			reason: "GitHub answered HTTP 422: Validation Failed",
+		});
 	});
 
 	it("sends only the view settings it was asked to change", async () => {
-		const {http} = await runWith(
-			[reply({data: {updateProjectV2View: {projectV2View: {id: "V_1"}}}})],
-			() => updateView(TOKEN, "V_1", {filter: "is:open no:label"}),
+		const { http } = await runWith(
+			[reply({ data: { updateProjectV2View: { projectV2View: { id: "V_1" } } } })],
+			() => updateView(TOKEN, "V_1", { filter: "is:open no:label" }),
 		);
 
 		expect(JSON.parse(http.bodies[0] ?? "{}").variables.input).toEqual({
@@ -441,33 +447,33 @@ describe("writing to a project", () => {
 
 	it("adds an item and sets a single-select value by option id", async () => {
 		const added = await runWith(
-			[reply({data: {addProjectV2ItemById: {item: {id: "PVTI_1"}}}})],
+			[reply({ data: { addProjectV2ItemById: { item: { id: "PVTI_1" } } } })],
 			() => addItem(TOKEN, "PVT_1", "I_issue"),
 		);
-		expect(added.result).toEqual({_tag: "Ok", value: "PVTI_1"});
+		expect(added.result).toEqual({ _tag: "Ok", value: "PVTI_1" });
 
 		const set = await runWith(
-			[reply({data: {updateProjectV2ItemFieldValue: {projectV2Item: {id: "PVTI_1"}}}})],
+			[reply({ data: { updateProjectV2ItemFieldValue: { projectV2Item: { id: "PVTI_1" } } } })],
 			() =>
 				setFieldValue(
 					TOKEN,
-					{projectId: "PVT_1", itemId: "PVTI_1", fieldId: "F_stage"},
-					{_tag: "Option", optionId: "o_bet"},
+					{ projectId: "PVT_1", itemId: "PVTI_1", fieldId: "F_stage" },
+					{ _tag: "Option", optionId: "o_bet" },
 				),
 		);
-		expect(set.result).toEqual({_tag: "Ok", value: "PVTI_1"});
+		expect(set.result).toEqual({ _tag: "Ok", value: "PVTI_1" });
 		expect(JSON.parse(set.http.bodies[0] ?? "{}").variables.input.value).toEqual({
 			singleSelectOptionId: "o_bet",
 		});
 	});
 
 	it("posts a status update", async () => {
-		const {result, http} = await runWith(
-			[reply({data: {createProjectV2StatusUpdate: {statusUpdate: {id: "PVTSU_1"}}}})],
-			() => postStatusUpdate(TOKEN, "PVT_1", {body: "4 bets continuing", status: "ON_TRACK"}),
+		const { result, http } = await runWith(
+			[reply({ data: { createProjectV2StatusUpdate: { statusUpdate: { id: "PVTSU_1" } } } })],
+			() => postStatusUpdate(TOKEN, "PVT_1", { body: "4 bets continuing", status: "ON_TRACK" }),
 		);
 
-		expect(result).toEqual({_tag: "Ok", value: "PVTSU_1"});
+		expect(result).toEqual({ _tag: "Ok", value: "PVTSU_1" });
 		expect(JSON.parse(http.bodies[0] ?? "{}").variables.input).toEqual({
 			projectId: "PVT_1",
 			body: "4 bets continuing",
@@ -478,40 +484,40 @@ describe("writing to a project", () => {
 
 describe("reading an item's values", () => {
 	it("carries each value's creator and updatedAt, and skips the issue's own values", async () => {
-		const {result} = await runWith(
+		const { result } = await runWith(
 			[
 				reply({
 					data: {
 						node: {
 							id: "PVTI_1",
-							content: {number: 12},
+							content: { number: 12 },
 							fieldValues: {
-								pageInfo: {hasNextPage: false},
+								pageInfo: { hasNextPage: false },
 								nodes: [
-									{__typename: "ProjectV2ItemFieldRepositoryValue"},
-									{__typename: "ProjectV2ItemFieldLabelValue"},
+									{ __typename: "ProjectV2ItemFieldRepositoryValue" },
+									{ __typename: "ProjectV2ItemFieldLabelValue" },
 									{
 										__typename: "ProjectV2ItemFieldIterationValue",
 										title: "Sep 26",
 										iterationId: "c11f1bd7",
-										creator: {login: "octo-owner"},
+										creator: { login: "octo-owner" },
 										updatedAt: "2026-09-26T23:09:24Z",
-										field: {id: "F_week", name: "Week"},
+										field: { id: "F_week", name: "Week" },
 									},
 									{
 										__typename: "ProjectV2ItemFieldSingleSelectValue",
 										name: "bet",
 										optionId: "o_bet",
-										creator: {login: "octo-owner"},
+										creator: { login: "octo-owner" },
 										updatedAt: "2026-09-27T04:38:33Z",
-										field: {id: "F_stage", name: "Stage"},
+										field: { id: "F_stage", name: "Stage" },
 									},
 									{
 										__typename: "ProjectV2ItemFieldNumberValue",
 										number: 12.5,
 										creator: null,
 										updatedAt: "2026-09-27T05:00:00Z",
-										field: {id: "F_spent", name: "Spent $"},
+										field: { id: "F_spent", name: "Spent $" },
 									},
 								],
 							},
@@ -531,21 +537,21 @@ describe("reading an item's values", () => {
 					{
 						fieldId: "F_week",
 						fieldName: "Week",
-						value: {_tag: "Iteration", iterationId: "c11f1bd7", title: "Sep 26"},
+						value: { _tag: "Iteration", iterationId: "c11f1bd7", title: "Sep 26" },
 						creator: "octo-owner",
 						updatedAt: "2026-09-26T23:09:24Z",
 					},
 					{
 						fieldId: "F_stage",
 						fieldName: "Stage",
-						value: {_tag: "Option", optionId: "o_bet", name: "bet"},
+						value: { _tag: "Option", optionId: "o_bet", name: "bet" },
 						creator: "octo-owner",
 						updatedAt: "2026-09-27T04:38:33Z",
 					},
 					{
 						fieldId: "F_spent",
 						fieldName: "Spent $",
-						value: {_tag: "Number", number: 12.5},
+						value: { _tag: "Number", number: 12.5 },
 						creator: null,
 						updatedAt: "2026-09-27T05:00:00Z",
 					},
@@ -554,41 +560,46 @@ describe("reading an item's values", () => {
 		});
 	});
 
-	const META = {creator: {login: "octo-owner"}, updatedAt: "2026-09-27T05:00:00Z"};
-	const FIELD = {field: {id: "F_x", name: "X"}};
+	const META = { creator: { login: "octo-owner" }, updatedAt: "2026-09-27T05:00:00Z" };
+	const FIELD = { field: { id: "F_x", name: "X" } };
 
 	it.each([
-		["a text value with no text", {__typename: "ProjectV2ItemFieldTextValue", ...META, ...FIELD}],
+		["a text value with no text", { __typename: "ProjectV2ItemFieldTextValue", ...META, ...FIELD }],
 		[
 			"a number value whose number is a string",
-			{__typename: "ProjectV2ItemFieldNumberValue", number: "3", ...META, ...FIELD},
+			{ __typename: "ProjectV2ItemFieldNumberValue", number: "3", ...META, ...FIELD },
 		],
-		["a date value with no date", {__typename: "ProjectV2ItemFieldDateValue", ...META, ...FIELD}],
+		["a date value with no date", { __typename: "ProjectV2ItemFieldDateValue", ...META, ...FIELD }],
 		[
 			"a single-select value with no option id",
-			{__typename: "ProjectV2ItemFieldSingleSelectValue", name: "bet", ...META, ...FIELD},
+			{ __typename: "ProjectV2ItemFieldSingleSelectValue", name: "bet", ...META, ...FIELD },
 		],
 		[
 			"an iteration value with no title",
-			{__typename: "ProjectV2ItemFieldIterationValue", iterationId: "c11f1bd7", ...META, ...FIELD},
+			{
+				__typename: "ProjectV2ItemFieldIterationValue",
+				iterationId: "c11f1bd7",
+				...META,
+				...FIELD,
+			},
 		],
 		[
 			"a well-formed value whose field names no id",
-			{__typename: "ProjectV2ItemFieldTextValue", text: "hi", ...META, field: {name: "X"}},
+			{ __typename: "ProjectV2ItemFieldTextValue", text: "hi", ...META, field: { name: "X" } },
 		],
 		[
 			"a well-formed value with no field",
-			{__typename: "ProjectV2ItemFieldTextValue", text: "hi", ...META},
+			{ __typename: "ProjectV2ItemFieldTextValue", text: "hi", ...META },
 		],
 	])("refuses %s rather than answering a shorter list", async (_, malformed) => {
-		const {result} = await runWith(
+		const { result } = await runWith(
 			[
 				reply({
 					data: {
 						node: {
 							id: "PVTI_1",
-							content: {number: 12},
-							fieldValues: {pageInfo: {hasNextPage: false}, nodes: [malformed]},
+							content: { number: 12 },
+							fieldValues: { pageInfo: { hasNextPage: false }, nodes: [malformed] },
 						},
 					},
 				}),
@@ -603,40 +614,40 @@ describe("reading an item's values", () => {
 
 describe("the table's sync reads", () => {
 	it("reads every item with what it stands for, drafts and pull requests included", async () => {
-		const {result} = await runWith(
+		const { result } = await runWith(
 			[
 				reply({
 					data: {
 						node: {
 							items: {
-								pageInfo: {hasNextPage: false, endCursor: null},
+								pageInfo: { hasNextPage: false, endCursor: null },
 								nodes: [
 									{
 										id: "PVTI_issue",
 										content: {
 											__typename: "Issue",
 											number: 7665,
-											repository: {nameWithOwner: "acme/widgets"},
+											repository: { nameWithOwner: "acme/widgets" },
 										},
 										fieldValues: {
-											pageInfo: {hasNextPage: false},
+											pageInfo: { hasNextPage: false },
 											nodes: [
-												{__typename: "ProjectV2ItemFieldRepositoryValue"},
+												{ __typename: "ProjectV2ItemFieldRepositoryValue" },
 												{
 													__typename: "ProjectV2ItemFieldSingleSelectValue",
 													name: "bet",
 													optionId: "o_bet",
-													creator: {login: "octo-owner"},
+													creator: { login: "octo-owner" },
 													updatedAt: "2026-09-27T04:38:33Z",
-													field: {id: "F_stage", name: "Stage"},
+													field: { id: "F_stage", name: "Stage" },
 												},
 											],
 										},
 									},
 									{
 										id: "PVTI_draft",
-										content: {__typename: "DraftIssue"},
-										fieldValues: {pageInfo: {hasNextPage: false}, nodes: []},
+										content: { __typename: "DraftIssue" },
+										fieldValues: { pageInfo: { hasNextPage: false }, nodes: [] },
 									},
 								],
 							},
@@ -659,7 +670,7 @@ describe("the table's sync reads", () => {
 						{
 							fieldId: "F_stage",
 							fieldName: "Stage",
-							value: {_tag: "Option", optionId: "o_bet", name: "bet"},
+							value: { _tag: "Option", optionId: "o_bet", name: "bet" },
 							creator: "octo-owner",
 							updatedAt: "2026-09-27T04:38:33Z",
 						},
@@ -677,20 +688,20 @@ describe("the table's sync reads", () => {
 	});
 
 	const itemsPage = (nodes: ReadonlyArray<unknown>, pageInfo: Record<string, unknown>) =>
-		reply({data: {node: {items: {pageInfo, nodes}}}});
+		reply({ data: { node: { items: { pageInfo, nodes } } } });
 
 	it("reads an item GitHub answers with no content as redacted, never as a draft", async () => {
-		const {result} = await runWith(
+		const { result } = await runWith(
 			[
 				itemsPage(
 					[
 						{
 							id: "PVTI_hidden",
 							content: null,
-							fieldValues: {pageInfo: {hasNextPage: false}, nodes: []},
+							fieldValues: { pageInfo: { hasNextPage: false }, nodes: [] },
 						},
 					],
-					{hasNextPage: false, endCursor: null},
+					{ hasNextPage: false, endCursor: null },
 				),
 			],
 			() => readItems(TOKEN, "PVT_example"),
@@ -711,17 +722,17 @@ describe("the table's sync reads", () => {
 	});
 
 	it("fails an item whose content is no issue, pull request or draft", async () => {
-		const {result} = await runWith(
+		const { result } = await runWith(
 			[
 				itemsPage(
 					[
 						{
 							id: "PVTI_odd",
-							content: {__typename: "Discussion"},
-							fieldValues: {pageInfo: {hasNextPage: false}, nodes: []},
+							content: { __typename: "Discussion" },
+							fieldValues: { pageInfo: { hasNextPage: false }, nodes: [] },
 						},
 					],
-					{hasNextPage: false, endCursor: null},
+					{ hasNextPage: false, endCursor: null },
 				),
 			],
 			() => readItems(TOKEN, "PVT_example"),
@@ -731,7 +742,7 @@ describe("the table's sync reads", () => {
 	});
 
 	it("fails a page that says more follow but names no cursor, never answering it as the last", async () => {
-		const {result} = await runWith([itemsPage([], {hasNextPage: true, endCursor: null})], () =>
+		const { result } = await runWith([itemsPage([], { hasNextPage: true, endCursor: null })], () =>
 			readItems(TOKEN, "PVT_example"),
 		);
 
@@ -741,14 +752,14 @@ describe("the table's sync reads", () => {
 	});
 
 	it("fails a repository's project list cut the same way", async () => {
-		const {result} = await runWith(
+		const { result } = await runWith(
 			[
 				reply({
 					data: {
 						repository: {
 							id: "R_1",
-							owner: {id: "O_1", login: "acme"},
-							projectsV2: {pageInfo: {hasNextPage: true}, nodes: []},
+							owner: { id: "O_1", login: "acme" },
+							projectsV2: { pageInfo: { hasNextPage: true }, nodes: [] },
 						},
 					},
 				}),
@@ -760,12 +771,12 @@ describe("the table's sync reads", () => {
 	});
 
 	it("clears one value", async () => {
-		const {result, http} = await runWith(
-			[reply({data: {clearProjectV2ItemFieldValue: {projectV2Item: {id: "PVTI_1"}}}})],
-			() => clearFieldValue(TOKEN, {projectId: "PVT_1", itemId: "PVTI_1", fieldId: "F_section"}),
+		const { result, http } = await runWith(
+			[reply({ data: { clearProjectV2ItemFieldValue: { projectV2Item: { id: "PVTI_1" } } } })],
+			() => clearFieldValue(TOKEN, { projectId: "PVT_1", itemId: "PVTI_1", fieldId: "F_section" }),
 		);
 
-		expect(result).toEqual({_tag: "Ok", value: "PVTI_1"});
+		expect(result).toEqual({ _tag: "Ok", value: "PVTI_1" });
 		expect(JSON.parse(http.bodies[0] ?? "{}").variables.input).toEqual({
 			projectId: "PVT_1",
 			itemId: "PVTI_1",
@@ -778,52 +789,52 @@ describe("the Week field's history", () => {
 	const week = {
 		__typename: "ProjectV2IterationField",
 		configuration: {
-			iterations: [{id: "it_3", title: "Sep 28", startDate: "2026-09-28", duration: 7}],
+			iterations: [{ id: "it_3", title: "Sep 28", startDate: "2026-09-28", duration: 7 }],
 			completedIterations: [
-				{id: "it_1", title: "Sep 14", startDate: "2026-09-14", duration: 7},
-				{id: "it_2", title: "Sep 21", startDate: "2026-09-21", duration: 7},
+				{ id: "it_1", title: "Sep 14", startDate: "2026-09-14", duration: 7 },
+				{ id: "it_2", title: "Sep 21", startDate: "2026-09-21", duration: 7 },
 			],
 		},
 	};
 
 	it("reads the running iterations apart from the finished ones", async () => {
-		const {result} = await runWith([reply({data: {node: {field: week}}})], () =>
+		const { result } = await runWith([reply({ data: { node: { field: week } } })], () =>
 			readIterationHistory(TOKEN, "PVT_1", "Week"),
 		);
 
 		expect(result).toEqual({
 			_tag: "Ok",
 			value: {
-				running: [{id: "it_3", title: "Sep 28", startDate: "2026-09-28", duration: 7}],
+				running: [{ id: "it_3", title: "Sep 28", startDate: "2026-09-28", duration: 7 }],
 				completed: [
-					{id: "it_1", title: "Sep 14", startDate: "2026-09-14", duration: 7},
-					{id: "it_2", title: "Sep 21", startDate: "2026-09-21", duration: 7},
+					{ id: "it_1", title: "Sep 14", startDate: "2026-09-14", duration: 7 },
+					{ id: "it_2", title: "Sep 21", startDate: "2026-09-21", duration: 7 },
 				],
 			},
 		});
 	});
 
 	it("answers null for a project with no iteration field under that name", () => {
-		expect(readWeekField({node: {field: null}})).toEqual({_tag: "Ok", value: null});
+		expect(readWeekField({ node: { field: null } })).toEqual({ _tag: "Ok", value: null });
 	});
 
 	it("fails rather than read a missing finished list as none", () => {
-		const cut = {...week, configuration: {iterations: week.configuration.iterations}};
+		const cut = { ...week, configuration: { iterations: week.configuration.iterations } };
 
-		expect(readWeekField({node: {field: cut}})._tag).toBe("Failure");
+		expect(readWeekField({ node: { field: cut } })._tag).toBe("Failure");
 	});
 });
 
 describe("status updates and item removal", () => {
 	it("reads every status update with its body and start date", async () => {
-		const {result} = await runWith(
+		const { result } = await runWith(
 			[
 				reply({
 					data: {
 						node: {
 							statusUpdates: {
-								pageInfo: {hasNextPage: false, endCursor: "MQ"},
-								nodes: [{id: "PVTSU_1", body: "**Table notes**", startDate: "2026-09-26"}],
+								pageInfo: { hasNextPage: false, endCursor: "MQ" },
+								nodes: [{ id: "PVTSU_1", body: "**Table notes**", startDate: "2026-09-26" }],
 							},
 						},
 					},
@@ -834,22 +845,24 @@ describe("status updates and item removal", () => {
 
 		expect(result).toEqual({
 			_tag: "Ok",
-			value: [{id: "PVTSU_1", body: "**Table notes**", startDate: "2026-09-26"}],
+			value: [{ id: "PVTSU_1", body: "**Table notes**", startDate: "2026-09-26" }],
 		});
 	});
 
 	it("fails rather than read a malformed update as none", () => {
 		expect(
-			readStatusUpdatesPage({node: {statusUpdates: {pageInfo: {}, nodes: [{id: "PVTSU_1"}]}}})._tag,
+			readStatusUpdatesPage({
+				node: { statusUpdates: { pageInfo: {}, nodes: [{ id: "PVTSU_1" }] } },
+			})._tag,
 		).toBe("Failure");
 	});
 
 	it("answers the deleted item's id", async () => {
-		const {result} = await runWith(
-			[reply({data: {deleteProjectV2Item: {deletedItemId: "PVTI_1"}}})],
+		const { result } = await runWith(
+			[reply({ data: { deleteProjectV2Item: { deletedItemId: "PVTI_1" } } })],
 			() => deleteItem(TOKEN, "PVT_1", "PVTI_1"),
 		);
 
-		expect(result).toEqual({_tag: "Ok", value: "PVTI_1"});
+		expect(result).toEqual({ _tag: "Ok", value: "PVTI_1" });
 	});
 });

@@ -10,13 +10,13 @@
  * could not be performed is `11` with nothing written.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {exists, readFile} from "../io/fs.ts";
-import {treeStatus} from "../io/git.ts";
-import {resolveRepo} from "../io/issues.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
-import {FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { exists, readFile } from "../io/fs.ts";
+import { treeStatus } from "../io/git.ts";
+import { resolveRepo } from "../io/issues.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
+import { FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	BARE_AT_PATH,
 	LEAKED_PATH,
@@ -39,11 +39,11 @@ import {
 } from "./workspace.ts";
 
 export type Guarded<A> =
-	| {readonly _tag: "Ok"; readonly value: A}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Ok"; readonly value: A }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
-export const ok = <A>(value: A): Guarded<A> => ({_tag: "Ok", value});
-export const refused = (outcome: VerbOutcome): Guarded<never> => ({_tag: "Refused", outcome});
+export const ok = <A>(value: A): Guarded<A> => ({ _tag: "Ok", value });
+export const refused = (outcome: VerbOutcome): Guarded<never> => ({ _tag: "Refused", outcome });
 
 /** Anything in this module: it reads disk and shells out, so it needs both platform seams. */
 export type SpikeEffect<A> = Effect.Effect<
@@ -137,9 +137,9 @@ export const readManifest = (
 		}
 		const path = manifestPath(workspace);
 		const read = yield* readFile(path).pipe(
-			Effect.map((text) => ({_tag: "Text" as const, text})),
+			Effect.map((text) => ({ _tag: "Text" as const, text })),
 			Effect.catchTag("fabrika-cli/ReadFailed", (failure) =>
-				Effect.succeed({_tag: "Failed" as const, reason: failure.reason}),
+				Effect.succeed({ _tag: "Failed" as const, reason: failure.reason }),
 			),
 		);
 		if (read._tag === "Failed") {
@@ -182,11 +182,11 @@ export const readEvidence = (verb: string, workspace: string): SpikeEffect<Guard
 		const path = evidencePath(workspace);
 		const present = yield* probe(verb, "the evidence log", path);
 		if (present._tag === "Refused") return present;
-		if (!present.value) return ok<Evidence>({records: [], text: null, digest: null});
+		if (!present.value) return ok<Evidence>({ records: [], text: null, digest: null });
 		const read = yield* readFile(path).pipe(
-			Effect.map((text) => ({_tag: "Text" as const, text})),
+			Effect.map((text) => ({ _tag: "Text" as const, text })),
 			Effect.catchTag("fabrika-cli/ReadFailed", (failure) =>
-				Effect.succeed({_tag: "Failed" as const, reason: failure.reason}),
+				Effect.succeed({ _tag: "Failed" as const, reason: failure.reason }),
 			),
 		);
 		if (read._tag === "Failed") {

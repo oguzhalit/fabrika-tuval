@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	fieldLines,
 	readChildStories,
@@ -40,7 +40,7 @@ describe("sectionCount", () => {
 describe("readEpicStories", () => {
 	it("reads the items' own leading integers, never their positions", () => {
 		const body = "### User stories\n\n1. one\n2. two\n3. three\n";
-		expect(readEpicStories(body)).toEqual({_tag: "Stories", ids: [1, 2, 3]});
+		expect(readEpicStories(body)).toEqual({ _tag: "Stories", ids: [1, 2, 3] });
 	});
 
 	/**
@@ -50,7 +50,7 @@ describe("readEpicStories", () => {
 	 */
 	it("refuses a gap", () => {
 		const body = "### User stories\n\n1. one\n3. three\n";
-		expect(readEpicStories(body)).toEqual({_tag: "MisNumbered", ids: [1, 3]});
+		expect(readEpicStories(body)).toEqual({ _tag: "MisNumbered", ids: [1, 3] });
 	});
 
 	it("refuses a repeat", () => {
@@ -58,16 +58,16 @@ describe("readEpicStories", () => {
 	});
 
 	it("reads an absent section as zero stories, not as a refusal", () => {
-		expect(readEpicStories("nothing here")).toEqual({_tag: "Stories", ids: []});
+		expect(readEpicStories("nothing here")).toEqual({ _tag: "Stories", ids: [] });
 	});
 
 	it("reads an empty list as zero stories — MISSING_STORIES_SECTION's only input", () => {
-		expect(readEpicStories("### User stories\n\nnone yet\n")).toEqual({_tag: "Stories", ids: []});
+		expect(readEpicStories("### User stories\n\nnone yet\n")).toEqual({ _tag: "Stories", ids: [] });
 	});
 
 	it("stops at the next heading of the same or shallower level", () => {
 		const body = "### User stories\n\n1. one\n\n### Other\n\n2. not a story\n";
-		expect(readEpicStories(body)).toEqual({_tag: "Stories", ids: [1]});
+		expect(readEpicStories(body)).toEqual({ _tag: "Stories", ids: [1] });
 	});
 
 	/**
@@ -77,26 +77,26 @@ describe("readEpicStories", () => {
 	it("stops at a thematic break, so an appended amendment adds no stories", () => {
 		const body =
 			"### User stories\n\n1. one\n\n---\n\n## Amendment — 2026-08-16\n\n2. not a story\n";
-		expect(readEpicStories(body)).toEqual({_tag: "Stories", ids: [1]});
+		expect(readEpicStories(body)).toEqual({ _tag: "Stories", ids: [1] });
 	});
 
 	it("stops at whichever of the break and the heading comes first", () => {
 		const heldByHeading = "### User stories\n\n1. one\n\n### Other\n\n2. no\n\n---\n\n3. no\n";
-		expect(readEpicStories(heldByHeading)).toEqual({_tag: "Stories", ids: [1]});
+		expect(readEpicStories(heldByHeading)).toEqual({ _tag: "Stories", ids: [1] });
 	});
 });
 
 describe("readChildStories", () => {
 	it("reads a conforming list", () => {
-		expect(readChildStories("1, 2")).toEqual({_tag: "Ids", ids: [1, 2]});
+		expect(readChildStories("1, 2")).toEqual({ _tag: "Ids", ids: [1, 2] });
 	});
 
 	it("reads `none` as the empty list", () => {
-		expect(readChildStories("none")).toEqual({_tag: "Ids", ids: []});
+		expect(readChildStories("none")).toEqual({ _tag: "Ids", ids: [] });
 	});
 
 	it("reads no line at all as absent", () => {
-		expect(readChildStories(undefined)).toEqual({_tag: "Absent"});
+		expect(readChildStories(undefined)).toEqual({ _tag: "Absent" });
 	});
 
 	/**

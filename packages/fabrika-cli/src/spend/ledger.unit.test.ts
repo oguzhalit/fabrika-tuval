@@ -3,7 +3,7 @@
  * no model call. Nothing writes this format any more; the reader still has to take every line an
  * older run left behind.
  */
-import {assert, describe, it} from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import {
 	DEFAULT_SPEND_LEDGER_PATH,
 	encodeSpendRows,
@@ -11,7 +11,7 @@ import {
 	type LedgerRow,
 	readSpendLedger,
 } from "./ledger.ts";
-import type {RunSpend} from "./token-spend.ts";
+import type { RunSpend } from "./token-spend.ts";
 
 const reconstructed: RunSpend = {
 	_tag: "Reconstructed",
@@ -58,12 +58,12 @@ describe("the default ledger path", () => {
 
 describe("encodeSpendRows — one self-describing JSON line per row", () => {
 	it("writes one newline-terminated line per row, each stamped with the row version", () => {
-		const text = encodeSpendRows([row({caseId: 1}), row({caseId: 2, arm: "without-skill"})]);
+		const text = encodeSpendRows([row({ caseId: 1 }), row({ caseId: 2, arm: "without-skill" })]);
 		assert.strictEqual(text.endsWith("\n"), true);
 		const lines = text.split("\n").filter((line) => line !== "");
 		assert.strictEqual(lines.length, 2);
 		for (const line of lines) {
-			const parsed = JSON.parse(line) as {v: number};
+			const parsed = JSON.parse(line) as { v: number };
 			assert.strictEqual(parsed.v, LEDGER_ROW_VERSION);
 		}
 	});
@@ -89,14 +89,14 @@ describe("encodeSpendRows — one self-describing JSON line per row", () => {
 	});
 
 	it("never emits an embedded newline, which is what keeps one row on one line", () => {
-		const text = encodeSpendRows([row({skillName: "write\ncode"})]);
+		const text = encodeSpendRows([row({ skillName: "write\ncode" })]);
 		assert.strictEqual(text.split("\n").filter((line) => line !== "").length, 1);
 	});
 });
 
 describe("readSpendLedger — tolerant of anything a partial write can leave behind", () => {
 	it("round-trips every row it wrote, skipping nothing", () => {
-		const rows = [row({caseId: 1}), row({caseId: 2, spend: {_tag: "TranscriptMissing"}})];
+		const rows = [row({ caseId: 1 }), row({ caseId: 2, spend: { _tag: "TranscriptMissing" } })];
 		const read = readSpendLedger(encodeSpendRows(rows));
 		assert.deepStrictEqual(read.rows, rows);
 		assert.strictEqual(read.skipped, 0);
@@ -105,10 +105,10 @@ describe("readSpendLedger — tolerant of anything a partial write can leave beh
 	it("round-trips all three spend arms, so an unmeasured run stays unmeasured", () => {
 		const arms: ReadonlyArray<RunSpend> = [
 			reconstructed,
-			{_tag: "NoBilledTurns"},
-			{_tag: "TranscriptMissing"},
+			{ _tag: "NoBilledTurns" },
+			{ _tag: "TranscriptMissing" },
 		];
-		const read = readSpendLedger(encodeSpendRows(arms.map((spend) => row({spend}))));
+		const read = readSpendLedger(encodeSpendRows(arms.map((spend) => row({ spend }))));
 		assert.deepStrictEqual(
 			read.rows.map((r) => r.spend),
 			arms,
@@ -116,8 +116,8 @@ describe("readSpendLedger — tolerant of anything a partial write can leave beh
 	});
 
 	it("skips a malformed line and a truncated tail, and reports how many it skipped", () => {
-		const good = encodeSpendRows([row({caseId: 1}), row({caseId: 2})]);
-		const truncated = encodeSpendRows([row({caseId: 3})]).slice(0, 40);
+		const good = encodeSpendRows([row({ caseId: 1 }), row({ caseId: 2 })]);
+		const truncated = encodeSpendRows([row({ caseId: 3 })]).slice(0, 40);
 		const read = readSpendLedger(`${good}not json at all\n${truncated}`);
 		assert.deepStrictEqual(
 			read.rows.map((r) => r.caseId),
@@ -135,7 +135,7 @@ describe("readSpendLedger — tolerant of anything a partial write can leave beh
 	it("skips a row whose spend is structurally wrong — a fabricated zero never gets in", () => {
 		const line = JSON.stringify({
 			...JSON.parse(encodeSpendRows([row()]).trim()),
-			spend: {_tag: "Reconstructed", spend: {billed: "lots"}},
+			spend: { _tag: "Reconstructed", spend: { billed: "lots" } },
 		});
 		const read = readSpendLedger(`${line}\n`);
 		assert.strictEqual(read.rows.length, 0);
@@ -143,10 +143,10 @@ describe("readSpendLedger — tolerant of anything a partial write can leave beh
 	});
 
 	it("keeps damage and a newer row version apart — they ask the operator for opposite things", () => {
-		const newer = JSON.stringify({...JSON.parse(encodeSpendRows([row()]).trim()), v: 99});
+		const newer = JSON.stringify({ ...JSON.parse(encodeSpendRows([row()]).trim()), v: 99 });
 		const read = readSpendLedger(`not json at all\n${newer}\n${encodeSpendRows([row()])}`);
 		assert.strictEqual(read.rows.length, 1);
-		assert.deepStrictEqual(read.skips, {malformed: 1, newerVersion: 1});
+		assert.deepStrictEqual(read.skips, { malformed: 1, newerVersion: 1 });
 		assert.strictEqual(read.skipped, 2);
 	});
 
@@ -155,7 +155,7 @@ describe("readSpendLedger — tolerant of anything a partial write can leave beh
 			...JSON.parse(encodeSpendRows([row()]).trim()),
 			v: CURRENT_VERSION - 1,
 		});
-		const {skips} = readSpendLedger(`${older}\n`);
+		const { skips } = readSpendLedger(`${older}\n`);
 		assert.strictEqual(skips.newerVersion, 0);
 		assert.strictEqual(
 			skips.malformed,
@@ -165,10 +165,10 @@ describe("readSpendLedger — tolerant of anything a partial write can leave beh
 	});
 
 	it("keeps `skipped` the sum of its halves, so a caller that only wants the gap still gets it", () => {
-		const newer = JSON.stringify({...JSON.parse(encodeSpendRows([row()]).trim()), v: 7});
+		const newer = JSON.stringify({ ...JSON.parse(encodeSpendRows([row()]).trim()), v: 7 });
 		const read = readSpendLedger(`${newer}\n${newer}\nhalf a row`);
 		assert.strictEqual(read.skipped, read.skips.malformed + read.skips.newerVersion);
-		assert.deepStrictEqual(read.skips, {malformed: 1, newerVersion: 2});
+		assert.deepStrictEqual(read.skips, { malformed: 1, newerVersion: 2 });
 	});
 
 	it("counts blank lines as nothing at all — a trailing newline is not a skip", () => {
@@ -181,7 +181,7 @@ describe("readSpendLedger — tolerant of anything a partial write can leave beh
 		assert.deepStrictEqual(readSpendLedger(""), {
 			rows: [],
 			skipped: 0,
-			skips: {malformed: 0, newerVersion: 0},
+			skips: { malformed: 0, newerVersion: 0 },
 		});
 	});
 });

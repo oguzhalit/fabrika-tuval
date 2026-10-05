@@ -21,10 +21,10 @@
  * creation failure and does not fall back to git, so a blocked spawn is the only honest alternative
  * to handing an agent a tree this owner could not finish.
  */
-import {Effect, FileSystem, Option} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type ChildOutcome, execRecord} from "../io/exec.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, FileSystem, Option } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type ChildOutcome, execRecord } from "../io/exec.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	BASE_FETCH_FAILED,
 	CREATION_LOCK_UNAVAILABLE,
@@ -157,7 +157,7 @@ export const withConcurrencyRecovery = (
 			attempts += 1;
 			arm = succeeded(outcome) ? null : concurrencyArm(diagnostics(outcome));
 		}
-		return {outcome, attempts, exhausted: arm};
+		return { outcome, attempts, exhausted: arm };
 	});
 
 /** What the recovery spent, for the refusal line — empty when there was nothing to recover from. */
@@ -189,8 +189,8 @@ const baseBranch = (
 
 /** What the locked section produced: a tree at a commit, or the refusal that stopped it. */
 type Added =
-	| {readonly _tag: "Added"; readonly commit: string}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Added"; readonly commit: string }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * The fetch and the add — the only commands the creation lock holds.
@@ -261,7 +261,7 @@ const fetchAndAdd = (
 				),
 			};
 		}
-		return {_tag: "Added", commit};
+		return { _tag: "Added", commit };
 	});
 
 const describeHolder = (holder: Option.Option<Holder>): string =>

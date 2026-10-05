@@ -12,13 +12,13 @@
  * The printed path is machine-local by definition and must never reach a posted artifact — which is
  * why `build pr` and `build note` red on it (`5`).
  */
-import {Effect, FileSystem} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {requireCallerToken, requireClaim, requireSession} from "./claim.ts";
-import {OFF_VOCABULARY} from "./codes.ts";
-import {isKebabSlug} from "./lane.ts";
-import {resolveTargetRepo} from "./target.ts";
+import { Effect, FileSystem } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { requireCallerToken, requireClaim, requireSession } from "./claim.ts";
+import { OFF_VOCABULARY } from "./codes.ts";
+import { isKebabSlug } from "./lane.ts";
+import { resolveTargetRepo } from "./target.ts";
 
 const VERB = "build scratch";
 
@@ -52,7 +52,7 @@ export const runScratch = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem
 > =>
 	Effect.gen(function* () {
-		const {number, slug} = options;
+		const { number, slug } = options;
 		if (slug.includes("/") || slug.includes("\\") || !isKebabSlug(slug)) {
 			return refuse(
 				OFF_VOCABULARY,
@@ -73,7 +73,7 @@ export const runScratch = (
 
 		const dir = laneScratchDir(options.tmpRoot, session.id, number, asking.caller.nonce);
 		const fs = yield* FileSystem.FileSystem;
-		const made: string | null = yield* fs.makeDirectory(dir, {recursive: true}).pipe(
+		const made: string | null = yield* fs.makeDirectory(dir, { recursive: true }).pipe(
 			Effect.as(null),
 			Effect.catchTag("PlatformError", (cause) => Effect.succeed(cause.message)),
 		);

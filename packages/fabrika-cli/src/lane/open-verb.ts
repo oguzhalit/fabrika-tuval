@@ -61,11 +61,11 @@
  * root whose log folds to `active` AND whose issue carries a live `lane claim`, plus every lane no
  * read can account for. An active lane nobody claims is idle and takes no seat.
  */
-import {Effect, type FileSystem, type Path, Result} from "effect";
-import type {Read} from "../config/read-key.ts";
-import {readFile} from "../io/fs.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {DEFAULT_ORIGIN, ORIGINS, origin} from "../wire/lane-record.ts";
+import { Effect, type FileSystem, type Path, Result } from "effect";
+import type { Read } from "../config/read-key.ts";
+import { readFile } from "../io/fs.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { DEFAULT_ORIGIN, ORIGINS, origin } from "../wire/lane-record.ts";
 import {
 	adoptionRecord,
 	type BoardRecorder,
@@ -73,9 +73,9 @@ import {
 	spendBudget,
 	strandedRecord,
 } from "./board-seat.ts";
-import {type ChildMembership, childMembership} from "./child-membership.ts";
-import type {ClaimHoldReader} from "./claim-hold.ts";
-import {renderClasses, seedClasses} from "./class-seed.ts";
+import { type ChildMembership, childMembership } from "./child-membership.ts";
+import type { ClaimHoldReader } from "./claim-hold.ts";
+import { renderClasses, seedClasses } from "./class-seed.ts";
 import {
 	APPEND_UNKNOWN,
 	CLASS_UNRECOGNISED,
@@ -86,12 +86,12 @@ import {
 	PRIOR_LANE,
 	SHAPE_MISMATCH,
 } from "./codes.ts";
-import {capRefusal} from "./concurrency.ts";
-import type {ExpectationReader} from "./expectation.ts";
-import {recordOrigin} from "./facts.ts";
-import type {PriorLaneReader} from "./prior-lane.ts";
-import {placementRefusal, say} from "./refusals.ts";
-import {type LaneRef, placeMachine, probeLane} from "./store.ts";
+import { capRefusal } from "./concurrency.ts";
+import type { ExpectationReader } from "./expectation.ts";
+import { recordOrigin } from "./facts.ts";
+import type { PriorLaneReader } from "./prior-lane.ts";
+import { placementRefusal, say } from "./refusals.ts";
+import { type LaneRef, placeMachine, probeLane } from "./store.ts";
 
 const VERB = "fabrika lane open";
 
@@ -208,7 +208,7 @@ export const runOpen = <R = never>(
 				`${VERB}: cannot read the committed template at ${options.templatePath}: ${template.failure.reason} — nothing was booted.`,
 			);
 		}
-		const {issue, expectation} = options;
+		const { issue, expectation } = options;
 		let classes: ReadonlyArray<string> = [];
 		if (issue !== null && expectation !== null) {
 			const read = yield* expectation(issue);
@@ -219,7 +219,7 @@ export const runOpen = <R = never>(
 				);
 			}
 			if (read.expectation._tag === "Epic") {
-				const {children} = read.expectation;
+				const { children } = read.expectation;
 				return refuse(
 					SHAPE_MISMATCH,
 					children === 0
@@ -251,7 +251,7 @@ export const runOpen = <R = never>(
 		// What the board-seated arm decided, or `null` on every boot that never reached it — the one
 		// carrier between the prior-lane read above and the placement below, so the bytes placed and
 		// the answer printed cannot disagree about whether this lane was seated.
-		let seated: {readonly pr: number; readonly head: string; readonly text: string} | null = null;
+		let seated: { readonly pr: number; readonly head: string; readonly text: string } | null = null;
 		if (issue !== null && options.priorLane !== null) {
 			// Only over an absent directory: a lane already there is the resume `lane open`'s own
 			// `LANE_EXISTS` names, and answering this code instead would stop a driver mid-drive.
@@ -288,7 +288,7 @@ export const runOpen = <R = never>(
 							`${VERB}: cannot declare the repair budget spent in ${options.templatePath}: ${spent.reason} — a seat that mints an unproven budget is the laundering this arm exists not to be. Nothing was written.`,
 						);
 					}
-					seated = {pr: seat.pr, head: seat.head, text: spent.text};
+					seated = { pr: seat.pr, head: seat.head, text: spent.text };
 				}
 			}
 		}
@@ -353,7 +353,7 @@ export const runOpen = <R = never>(
 				bytes: new TextEncoder().encode(text).length,
 				...(seated === null
 					? {}
-					: {fromBoard: {pr: seated.pr, head: seated.head, maxRetries: 0, record}}),
+					: { fromBoard: { pr: seated.pr, head: seated.head, maxRetries: 0, record } }),
 			}),
 			[
 				seed._tag === "Seeded"

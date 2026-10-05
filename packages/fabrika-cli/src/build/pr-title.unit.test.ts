@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {conventionalTitleOf} from "./pr-title.ts";
+import { describe, expect, it } from "vitest";
+import { conventionalTitleOf } from "./pr-title.ts";
 
 describe("conventionalTitleOf", () => {
 	it("derives fix from type:bug", () => {

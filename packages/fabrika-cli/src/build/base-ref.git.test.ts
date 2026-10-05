@@ -13,12 +13,12 @@
  * that its `Remote` arm runs now. That `fetchBase` has no arm left which can run the first is
  * `branch-verb.unit.test.ts`'s claim, over a scripted spawner.
  */
-import {execFileSync} from "node:child_process";
-import {mkdtempSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {afterAll, describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
 
 const GIT_ENV = {
 	...process.env,
@@ -31,11 +31,11 @@ const GIT_ENV = {
 };
 
 const git = (cwd: string | undefined, ...args: ReadonlyArray<string>): string =>
-	execFileSync("git", [...args], {cwd, env: GIT_ENV, encoding: "utf8"}).trim();
+	execFileSync("git", [...args], { cwd, env: GIT_ENV, encoding: "utf8" }).trim();
 
 const roots: Array<string> = [];
 afterAll(() => {
-	for (const root of roots) rmSync(root, {recursive: true, force: true});
+	for (const root of roots) rmSync(root, { recursive: true, force: true });
 	roots.length = 0;
 });
 
@@ -80,14 +80,14 @@ const openStaleClone = (): Fixture => {
 	git(seed, "commit", "--quiet", "-m", "a sibling landed");
 	git(seed, "push", "--quiet", "origin", ASSEMBLY);
 
-	return {clone, stale, published: git(seed, "rev-parse", "HEAD")};
+	return { clone, stale, published: git(seed, "rev-parse", "HEAD") };
 };
 
 describe("a base naming a branch this clone also holds", {
 	timeout: SUBPROCESS_TEST_TIMEOUT_MS,
 }, () => {
 	it("resolves stale under a bare fetch — the shape that cut four children off the wrong commit", () => {
-		const {clone, stale, published} = openStaleClone();
+		const { clone, stale, published } = openStaleClone();
 		git(clone, "fetch", "--quiet");
 		const resolved = git(clone, "rev-parse", "--verify", "--quiet", `${ASSEMBLY}^{commit}`);
 		expect(resolved).toBe(stale);
@@ -95,7 +95,7 @@ describe("a base naming a branch this clone also holds", {
 	});
 
 	it("resolves the published tip when the remote and the ref are named", () => {
-		const {clone, stale, published} = openStaleClone();
+		const { clone, stale, published } = openStaleClone();
 		git(clone, "fetch", "--quiet", "origin", ASSEMBLY);
 		const resolved = git(clone, "rev-parse", "--verify", "--quiet", "FETCH_HEAD^{commit}");
 		expect(resolved).toBe(published);
@@ -103,7 +103,7 @@ describe("a base naming a branch this clone also holds", {
 	});
 
 	it("leaves the local ref unmoved even after the named fetch, so the local read stays wrong", () => {
-		const {clone, stale} = openStaleClone();
+		const { clone, stale } = openStaleClone();
 		git(clone, "fetch", "--quiet", "origin", ASSEMBLY);
 		expect(git(clone, "rev-parse", `refs/heads/${ASSEMBLY}`)).toBe(stale);
 	});
@@ -117,8 +117,8 @@ describe("a base naming a branch this clone also holds", {
  * `branch-verb.ts` reads both revisions back instead; this measures that the read-back can tell them
  * apart at all — the unrelated pair resolves, the unreadable name does not.
  */
-describe("merge-base over unrelated roots", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
-	const openUnrelatedPair = (): {repo: string; a: string; b: string} => {
+describe("merge-base over unrelated roots", { timeout: SUBPROCESS_TEST_TIMEOUT_MS }, () => {
+	const openUnrelatedPair = (): { repo: string; a: string; b: string } => {
 		const repo = mkdtempSync(join(tmpdir(), "fabrika-unrelated-"));
 		roots.push(repo);
 		git(undefined, "init", "--quiet", "-b", "main", repo);
@@ -131,18 +131,18 @@ describe("merge-base over unrelated roots", {timeout: SUBPROCESS_TEST_TIMEOUT_MS
 		writeFileSync(join(repo, "b.txt"), "b");
 		git(repo, "add", "-A");
 		git(repo, "commit", "--quiet", "-m", "root two");
-		return {repo, a, b: git(repo, "rev-parse", "HEAD")};
+		return { repo, a, b: git(repo, "rev-parse", "HEAD") };
 	};
 
 	it("exits non-zero with no merge base, while both revisions still resolve", () => {
-		const {repo, a, b} = openUnrelatedPair();
+		const { repo, a, b } = openUnrelatedPair();
 		expect(() => git(repo, "merge-base", a, b)).toThrow();
 		expect(git(repo, "rev-parse", "--verify", "--quiet", `${a}^{commit}`)).toBe(a);
 		expect(git(repo, "rev-parse", "--verify", "--quiet", `${b}^{commit}`)).toBe(b);
 	});
 
 	it("exits non-zero the same way when a revision cannot be read, and that one does NOT resolve", () => {
-		const {repo, a} = openUnrelatedPair();
+		const { repo, a } = openUnrelatedPair();
 		const absent = "refs/heads/never-cut";
 		expect(() => git(repo, "merge-base", a, absent)).toThrow();
 		expect(() => git(repo, "rev-parse", "--verify", "--quiet", `${absent}^{commit}`)).toThrow();

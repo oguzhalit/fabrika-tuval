@@ -1,5 +1,5 @@
 /** The `lane-record` marker — its bytes, its read, and the derived rows the reader holds to. */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	asksOf,
 	emit,
@@ -33,9 +33,9 @@ const RECORD: LaneRecord = {
 			at: "2026-09-26T08:00:00.000Z" as Instant,
 		},
 	],
-	spent: {_tag: "Unmeasured", reason: "no rate card"},
+	spent: { _tag: "Unmeasured", reason: "no rate card" },
 	origin: "bet",
-	waiting: {_tag: "Until", on: "a | piped reviewer", until: "2026-10-05" as Instant},
+	waiting: { _tag: "Until", on: "a | piped reviewer", until: "2026-10-05" as Instant },
 	prs: [12, 40],
 	log: ['{"task":"issue","event":"ISSUE.WIP","at":"2026-09-26T06:48:00.000Z","rationale":"```"}'],
 };
@@ -45,7 +45,7 @@ describe("the lane-record format", () => {
 		const bytes = emit(RECORD);
 		const back = read(bytes);
 
-		expect(back).toEqual({_tag: "Found", value: RECORD});
+		expect(back).toEqual({ _tag: "Found", value: RECORD });
 		expect(bytes).toContain("````jsonl");
 	});
 
@@ -91,19 +91,19 @@ describe("the lane-record format", () => {
 	});
 
 	it("never reads a table row from inside the log", () => {
-		const record: LaneRecord = {...RECORD, log: ["| Asks | 9 |"]};
+		const record: LaneRecord = { ...RECORD, log: ["| Asks | 9 |"] };
 
-		expect(read(emit(record))).toEqual({_tag: "Found", value: record});
+		expect(read(emit(record))).toEqual({ _tag: "Found", value: record });
 	});
 
 	it("composes from JSON fields and refuses a record the reader could not hold", () => {
 		expect(emitFromFields(JSON.stringify(RECORD))._tag).toBe("Composed");
-		expect(emitFromFields(JSON.stringify({...RECORD, origin: "whim"}))).toMatchObject({
+		expect(emitFromFields(JSON.stringify({ ...RECORD, origin: "whim" }))).toMatchObject({
 			_tag: "Unusable",
 			reason: expect.stringContaining("origin"),
 		});
 		expect(
-			emitFromFields(JSON.stringify({...RECORD, startedAt: "2026-09-27T00:00:00.000Z"})),
+			emitFromFields(JSON.stringify({ ...RECORD, startedAt: "2026-09-27T00:00:00.000Z" })),
 		).toMatchObject({
 			_tag: "Unusable",
 		});

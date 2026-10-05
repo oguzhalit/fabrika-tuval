@@ -27,14 +27,14 @@
  * which slot is at stake.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {CommitRange} from "../io/git.ts";
-import {createComment, getComment, getIssue, listComments} from "../io/issues.ts";
-import {patchComment, viewerLogin} from "../io/pulls.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import type {NonEmptyReadonlyArray} from "../wire/format.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { CommitRange } from "../io/git.ts";
+import { createComment, getComment, getIssue, listComments } from "../io/issues.ts";
+import { patchComment, viewerLogin } from "../io/pulls.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import type { NonEmptyReadonlyArray } from "../wire/format.ts";
 import {
 	type Clause,
 	contentDigest,
@@ -55,9 +55,9 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {rangeContentAt} from "./content-binding.ts";
-import {compose as supersedeWith} from "./supersede.ts";
-import {latestByWriteRecency} from "./write-recency.ts";
+import { rangeContentAt } from "./content-binding.ts";
+import { compose as supersedeWith } from "./supersede.ts";
+import { latestByWriteRecency } from "./write-recency.ts";
 
 /** The one decision a verb keeps, plus its own leak scan — the codes behind both are shared values. */
 export interface RangeGate {
@@ -152,8 +152,8 @@ export const runRangePost = (
 	post: RangePost,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {verb} = gate;
-		const {issue, repo, json} = post;
+		const { verb } = gate;
+		const { issue, repo, json } = post;
 		const range = renderRange(post.range);
 		const unreadable = (what: string, reason: string): VerbOutcome =>
 			refuse(
@@ -238,16 +238,16 @@ export const runRangePost = (
 		const envelope =
 			mine === undefined ? composed : supersedeWith(mine.body, composed, new Date(yield* post.now));
 
-		let landed: {readonly id: number; readonly url: string} | null = null;
+		let landed: { readonly id: number; readonly url: string } | null = null;
 		let failure: string | null = null;
 		if (mine === undefined) {
 			const created = yield* createComment(repo, issue, envelope);
 			if (created._tag === "Failure") failure = created.reason;
-			else landed = {id: created.value.id, url: created.value.url};
+			else landed = { id: created.value.id, url: created.value.url };
 		} else {
 			const edited = yield* patchComment(repo, mine.id, envelope);
 			if (edited._tag === "Failure") failure = edited.reason;
-			else landed = {id: mine.id, url: edited.value};
+			else landed = { id: mine.id, url: edited.value };
 		}
 		if (landed === null) {
 			return refuse(
@@ -278,7 +278,7 @@ export const runRangePost = (
 						outcome: "posted",
 						namespace: post.namespace,
 						polarity: post.polarity,
-						range: {base: post.range.base, tip: post.range.tip},
+						range: { base: post.range.base, tip: post.range.tip },
 						content: content.value.digest,
 						upsert,
 						commentUrl: landed.url,

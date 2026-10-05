@@ -1,7 +1,7 @@
-import {Effect, Exit} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFsOptions, fakeFs} from "../fakes.test-support.ts";
-import {scanWorkspaceMembers, undeclaredGlobs} from "./members.ts";
+import { Effect, Exit } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFsOptions, fakeFs } from "../fakes.test-support.ts";
+import { scanWorkspaceMembers, undeclaredGlobs } from "./members.ts";
 
 const ROOT = "/repo";
 const WORKSPACE = `${ROOT}/pnpm-workspace.yaml`;
@@ -12,7 +12,7 @@ const workspace = (globs: ReadonlyArray<string>) =>
 const scan = (options: FakeFsOptions, under?: ReadonlyArray<string>) =>
 	Effect.runPromiseExit(Effect.provide(scanWorkspaceMembers(ROOT, under), fakeFs(options).layer));
 
-const dirs = (names: ReadonlyArray<string>) => ({[`${ROOT}/packages`]: names});
+const dirs = (names: ReadonlyArray<string>) => ({ [`${ROOT}/packages`]: names });
 
 describe("undeclaredGlobs", () => {
 	it("names only what the workspace does not declare", () => {
@@ -39,8 +39,8 @@ describe("scanWorkspaceMembers", () => {
 			declared: ["packages/*", "apps/*"],
 			walked: ["packages/*"],
 			members: [
-				{dir: "packages/a", glob: "packages/*"},
-				{dir: "packages/b", glob: "packages/*"},
+				{ dir: "packages/a", glob: "packages/*" },
+				{ dir: "packages/b", glob: "packages/*" },
 			],
 		});
 	});
@@ -90,7 +90,7 @@ describe("scanWorkspaceMembers", () => {
 			["tools/one"],
 		);
 		expect(Exit.isSuccess(exit) && exit.value.members).toEqual([
-			{dir: "tools/one", glob: "tools/one", name: null},
+			{ dir: "tools/one", glob: "tools/one", name: null },
 		]);
 	});
 
@@ -108,8 +108,8 @@ describe("scanWorkspaceMembers", () => {
 			["packages/*"],
 		);
 		expect(Exit.isSuccess(exit) && exit.value.members).toEqual([
-			{dir: "packages/a", glob: "packages/*", name: "@kampus/a"},
-			{dir: "packages/b", glob: "packages/*", name: null},
+			{ dir: "packages/a", glob: "packages/*", name: "@kampus/a" },
+			{ dir: "packages/b", glob: "packages/*", name: null },
 		]);
 	});
 
@@ -120,7 +120,7 @@ describe("scanWorkspaceMembers", () => {
 				[`${ROOT}/packages/a/package.json`]: "{}",
 				[`${ROOT}/apps/site/package.json`]: "{}",
 			},
-			dirs: {[`${ROOT}/packages`]: ["a"], [`${ROOT}/apps`]: ["site"]},
+			dirs: { [`${ROOT}/packages`]: ["a"], [`${ROOT}/apps`]: ["site"] },
 			directories: [`${ROOT}/packages`, `${ROOT}/packages/a`, `${ROOT}/apps`, `${ROOT}/apps/site`],
 		});
 		expect(Exit.isSuccess(exit) && exit.value.members.map((m) => m.dir)).toEqual([
@@ -130,7 +130,7 @@ describe("scanWorkspaceMembers", () => {
 	});
 
 	it("resolves an absent glob directory to no members rather than failing", async () => {
-		const exit = await scan({files: {[WORKSPACE]: workspace(["packages/*"])}});
+		const exit = await scan({ files: { [WORKSPACE]: workspace(["packages/*"]) } });
 		expect(Exit.isSuccess(exit) && exit.value.members).toEqual([]);
 	});
 
@@ -140,8 +140,8 @@ describe("scanWorkspaceMembers", () => {
 	it("FAILS on an unreadable member directory instead of resolving to an empty scan", async () => {
 		const exit = await scan(
 			{
-				files: {[WORKSPACE]: workspace(["packages/*"])},
-				dirs: {[`${ROOT}/packages`]: null},
+				files: { [WORKSPACE]: workspace(["packages/*"]) },
+				dirs: { [`${ROOT}/packages`]: null },
 				directories: [`${ROOT}/packages`],
 			},
 			["packages/*"],
@@ -150,7 +150,9 @@ describe("scanWorkspaceMembers", () => {
 	});
 
 	it("FAILS when the workspace manifest itself cannot be read", async () => {
-		const exit = await scan({unreadable: [WORKSPACE], files: {[WORKSPACE]: "x"}}, ["packages/*"]);
+		const exit = await scan({ unreadable: [WORKSPACE], files: { [WORKSPACE]: "x" } }, [
+			"packages/*",
+		]);
 		expect(Exit.isFailure(exit)).toBe(true);
 	});
 });

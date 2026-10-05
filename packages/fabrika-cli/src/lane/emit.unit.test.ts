@@ -2,20 +2,20 @@
  * The pure epic-machine emitter: golden bytes off the committed fixture pair, determinism, the
  * compile/transition round trip, and every topology refusal as its own tagged arm.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs} from "../fakes.test-support.ts";
-import {readGoldenFixture} from "../golden-fixture.ts";
-import {classifyPark} from "../recipe/parks.ts";
-import {CAP_ROUND, MACHINERY_LAP_BUDGET, RETRY_BUDGET} from "../retry-budget.ts";
-import {WAIT_BUDGET} from "../wait-budget.ts";
-import {type EmitResult, emitMachine} from "./emit.ts";
-import {fakeProver, parkCauseRead} from "./fixtures.test-support.ts";
-import {applyClearance, applyEvent, deriveStatus, foldLog, type LogEntry} from "./fold.ts";
-import {type CompiledLane, compileText} from "./machine.ts";
-import {declaresClosureGuard} from "./reconcile.ts";
-import {routeForCause} from "./report.ts";
-import {runTransition} from "./transition-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs } from "../fakes.test-support.ts";
+import { readGoldenFixture } from "../golden-fixture.ts";
+import { classifyPark } from "../recipe/parks.ts";
+import { CAP_ROUND, MACHINERY_LAP_BUDGET, RETRY_BUDGET } from "../retry-budget.ts";
+import { WAIT_BUDGET } from "../wait-budget.ts";
+import { type EmitResult, emitMachine } from "./emit.ts";
+import { fakeProver, parkCauseRead } from "./fixtures.test-support.ts";
+import { applyClearance, applyEvent, deriveStatus, foldLog, type LogEntry } from "./fold.ts";
+import { type CompiledLane, compileText } from "./machine.ts";
+import { declaresClosureGuard } from "./reconcile.ts";
+import { routeForCause } from "./report.ts";
+import { runTransition } from "./transition-verb.ts";
 
 const body = (): string => readGoldenFixture(import.meta.url, "./__fixtures__/epic-4300.body.txt");
 const golden = (): string =>
@@ -38,7 +38,7 @@ const CHILDREN = [open(4301), open(4302), open(4303)];
 
 const initialOf = (text: string, task: string): unknown => {
 	const doc = JSON.parse(text) as {
-		machine: {states: Record<string, {states: Record<string, {initial: string}>}>};
+		machine: { states: Record<string, { states: Record<string, { initial: string }> }> };
 	};
 	for (const phase of Object.values(doc.machine.states)) {
 		const node = phase.states?.[task];
@@ -54,7 +54,7 @@ const emitted = (result: EmitResult): string => {
 
 const regionOf = (text: string, task: string): Record<string, unknown> => {
 	const doc = JSON.parse(text) as {
-		machine: {states: Record<string, {states?: Record<string, Record<string, unknown>>}>};
+		machine: { states: Record<string, { states?: Record<string, Record<string, unknown>> }> };
 	};
 	for (const phase of Object.values(doc.machine.states)) {
 		const node = phase.states?.[task];
@@ -134,16 +134,16 @@ describe("emitMachine", () => {
 		const compiled = compileText(emitted(emitMachine(4300, body(), CHILDREN)));
 		if (compiled._tag !== "Compiled") throw new Error(compiled.defects.join("; "));
 		expect(compiled.lane.phases).toEqual([
-			{name: "phase1", tasks: ["issue_4301", "issue_4302"]},
-			{name: "phase2", tasks: ["issue_4303"]},
-			{name: "epic", tasks: ["epic_4300"]},
+			{ name: "phase1", tasks: ["issue_4301", "issue_4302"] },
+			{ name: "phase2", tasks: ["issue_4303"] },
+			{ name: "epic", tasks: ["epic_4300"] },
 		]);
-		expect(compiled.lane.terminals).toEqual({complete: "complete", tripped: "tripped"});
+		expect(compiled.lane.terminals).toEqual({ complete: "complete", tripped: "tripped" });
 	});
 
 	it("emits a machine whose states and events `lane transition` accepts", async () => {
 		const fs = fakeFs({
-			files: {".fabrika/lanes/4300/workflow.json": emitted(emitMachine(4300, body(), CHILDREN))},
+			files: { ".fabrika/lanes/4300/workflow.json": emitted(emitMachine(4300, body(), CHILDREN)) },
 		});
 		const out = await Effect.runPromise(
 			Effect.provide(
@@ -173,7 +173,7 @@ describe("emitMachine", () => {
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			event: "ISSUE_4301.WIP",
-			current: {phase1: {issue_4301: "build", issue_4302: "queued"}, phase2: "waiting"},
+			current: { phase1: { issue_4301: "build", issue_4302: "queued" }, phase2: "waiting" },
 		});
 	});
 
@@ -194,7 +194,7 @@ describe("emitMachine", () => {
 
 	it("skips a fully-shipped phase at boot — its onDone fires with no human UNBLOCKED", async () => {
 		const text = emitted(emitMachine(4300, body(), [closed(4301), closed(4302), open(4303)]));
-		const fs = fakeFs({files: {".fabrika/lanes/4300/workflow.json": text}});
+		const fs = fakeFs({ files: { ".fabrika/lanes/4300/workflow.json": text } });
 		const out = await Effect.runPromise(
 			Effect.provide(
 				runTransition(
@@ -223,8 +223,8 @@ describe("emitMachine", () => {
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			event: "ISSUE_4303.WIP",
-			previous: {phase2: {issue_4303: "queued"}},
-			current: {phase2: {issue_4303: "build"}},
+			previous: { phase2: { issue_4303: "queued" } },
+			current: { phase2: { issue_4303: "build" } },
 		});
 	});
 
@@ -250,18 +250,18 @@ describe("emitMachine", () => {
 		const child = regionOf(emitted(emitMachine(4300, body(), CHILDREN)), "issue_4301");
 		expect(child).toMatchObject({
 			states: {
-				review: {on: {"ISSUE_4301.PASS": "integrate"}},
+				review: { on: { "ISSUE_4301.PASS": "integrate" } },
 				integrate: {
 					on: {
 						"ISSUE_4301.DONE": "landed",
 						"ISSUE_4301.WIP": [
-							{target: "review", guard: "waitsRemaining", actions: "incrementWaits"},
-							{target: "human:replay-stall"},
+							{ target: "review", guard: "waitsRemaining", actions: "incrementWaits" },
+							{ target: "human:replay-stall" },
 						],
 						"ISSUE_4301.BLOCKED": "blocked",
 						"ISSUE_4301.FAIL": [
-							{target: "build", guard: "retriesRemaining", actions: "incrementRetries"},
-							{target: "human:budget-spent"},
+							{ target: "build", guard: "retriesRemaining", actions: "incrementRetries" },
+							{ target: "human:budget-spent" },
 						],
 					},
 				},
@@ -277,7 +277,7 @@ describe("emitMachine", () => {
 			["issue_4301", "PASS"],
 		]);
 		expect(status.stateValue).toEqual({
-			phase1: {issue_4301: "integrate", issue_4302: "queued"},
+			phase1: { issue_4301: "integrate", issue_4302: "queued" },
 			phase2: "waiting",
 			epic: "waiting",
 		});
@@ -286,7 +286,7 @@ describe("emitMachine", () => {
 	it("lands a child on its integrate DONE — the success final asserts a landing, not a merge to main", () => {
 		const compiled = laneOf(emitted(emitMachine(4300, body(), CHILDREN)));
 		expect(drive(compiled, land("issue_4301")).stateValue).toEqual({
-			phase1: {issue_4301: "landed", issue_4302: "queued"},
+			phase1: { issue_4301: "landed", issue_4302: "queued" },
 			phase2: "waiting",
 			epic: "waiting",
 		});
@@ -301,10 +301,10 @@ describe("emitMachine", () => {
 			["issue_4301", "FAIL"],
 		];
 		expect(drive(compiled, collided).stateValue).toMatchObject({
-			phase1: {issue_4301: "build"},
+			phase1: { issue_4301: "build" },
 		});
 		expect(drive(compiled, [...collided, ["issue_4301", "DONE"]]).stateValue).toMatchObject({
-			phase1: {issue_4301: "review"},
+			phase1: { issue_4301: "review" },
 		});
 		expect(
 			drive(compiled, [
@@ -313,7 +313,7 @@ describe("emitMachine", () => {
 				["issue_4301", "PASS"],
 				["issue_4301", "DONE"],
 			]).stateValue,
-		).toMatchObject({phase1: {issue_4301: "landed"}});
+		).toMatchObject({ phase1: { issue_4301: "landed" } });
 	});
 
 	it("sends a replayed range back through review on a WIP, and spends no retry doing it", () => {
@@ -325,14 +325,14 @@ describe("emitMachine", () => {
 			["issue_4301", "WIP"],
 		];
 		expect(drive(compiled, replayed).stateValue).toMatchObject({
-			phase1: {issue_4301: "review"},
+			phase1: { issue_4301: "review" },
 		});
 		const spent = statesOf(compiled, driveLog(compiled, replayed)).issue_4301;
 		expect(spent?.retries).toBe(0);
 		expect(spent?.waits).toBe(1);
 		expect(
 			drive(compiled, [...replayed, ["issue_4301", "PASS"], ["issue_4301", "DONE"]]).stateValue,
-		).toMatchObject({phase1: {issue_4301: "landed"}});
+		).toMatchObject({ phase1: { issue_4301: "landed" } });
 	});
 
 	it("parks a child whose replay keeps re-colliding past its wait budget — the loop is bounded", () => {
@@ -346,11 +346,11 @@ describe("emitMachine", () => {
 			["issue_4301", "WIP"],
 			["issue_4301", "DONE"],
 			["issue_4301", "PASS"],
-			...Array.from({length: WAIT_BUDGET}, () => replay).flat(),
+			...Array.from({ length: WAIT_BUDGET }, () => replay).flat(),
 			["issue_4301", "WIP"],
 		];
 		expect(drive(compiled, spun).stateValue).toMatchObject({
-			phase1: {issue_4301: "human:replay-stall"},
+			phase1: { issue_4301: "human:replay-stall" },
 		});
 		const parked = statesOf(compiled, driveLog(compiled, spun)).issue_4301;
 		expect(parked?.waits).toBe(WAIT_BUDGET);
@@ -381,12 +381,12 @@ describe("emitMachine", () => {
 		const exhausted: ReadonlyArray<readonly [string, string]> = [
 			["issue_4301", "WIP"],
 			["issue_4301", "DONE"],
-			...Array.from({length: RETRY_BUDGET}, () => collide).flat(),
+			...Array.from({ length: RETRY_BUDGET }, () => collide).flat(),
 			["issue_4301", "PASS"],
 			["issue_4301", "FAIL"],
 		];
 		expect(drive(compiled, exhausted).stateValue).toMatchObject({
-			phase1: {issue_4301: "human:budget-spent"},
+			phase1: { issue_4301: "human:budget-spent" },
 		});
 		expect(classifyPark("human:budget-spent", null)).toMatchObject({
 			_tag: "Novel",
@@ -397,7 +397,7 @@ describe("emitMachine", () => {
 		// The phase still folds behind the park, so the run ends loud rather than hanging: a landed
 		// sibling carries the phase to its `onDone`, and the parked child is the error it trips on.
 		const tripped = drive(compiled, [...exhausted, ...land("issue_4302")]);
-		expect(tripped).toMatchObject({stateValue: "tripped", status: "done"});
+		expect(tripped).toMatchObject({ stateValue: "tripped", status: "done" });
 		expect(tripped.context.errors).toEqual(["issue_4301"]);
 	});
 
@@ -406,13 +406,13 @@ describe("emitMachine", () => {
 		expect(tail).toMatchObject({
 			initial: "review",
 			states: {
-				build: {on: {"EPIC_4300.DONE": "review", "EPIC_4300.BLOCKED": "blocked"}},
+				build: { on: { "EPIC_4300.DONE": "review", "EPIC_4300.BLOCKED": "blocked" } },
 				review: {
 					on: {
-						"EPIC_4300.PASS": [{target: "review:ui", guard: "class:ui"}, {target: "ship"}],
+						"EPIC_4300.PASS": [{ target: "review:ui", guard: "class:ui" }, { target: "ship" }],
 						"EPIC_4300.FAIL": [
-							{target: "build", guard: "retriesRemaining", actions: "incrementRetries"},
-							{target: "human:budget-spent"},
+							{ target: "build", guard: "retriesRemaining", actions: "incrementRetries" },
+							{ target: "human:budget-spent" },
 						],
 					},
 				},
@@ -421,8 +421,8 @@ describe("emitMachine", () => {
 						"EPIC_4300.PASS": "ship",
 						"EPIC_4300.BLOCKED": "blocked",
 						"EPIC_4300.FAIL": [
-							{target: "build", guard: "retriesRemaining", actions: "incrementRetries"},
-							{target: "human:budget-spent"},
+							{ target: "build", guard: "retriesRemaining", actions: "incrementRetries" },
+							{ target: "human:budget-spent" },
 						],
 					},
 				},
@@ -431,16 +431,16 @@ describe("emitMachine", () => {
 						"EPIC_4300.DONE": "shipped",
 						"EPIC_4300.BLOCKED": "human:cp-approval",
 						"EPIC_4300.FAIL": [
-							{target: "review", guard: "retriesRemaining", actions: "incrementRetries"},
-							{target: "human:budget-spent"},
+							{ target: "review", guard: "retriesRemaining", actions: "incrementRetries" },
+							{ target: "human:budget-spent" },
 						],
 					},
 				},
 				"ship:queued": {
 					on: {
 						"EPIC_4300.FAIL": [
-							{target: "review", guard: "retriesRemaining", actions: "incrementRetries"},
-							{target: "human:budget-spent"},
+							{ target: "review", guard: "retriesRemaining", actions: "incrementRetries" },
+							{ target: "human:budget-spent" },
 						],
 					},
 				},
@@ -449,13 +449,13 @@ describe("emitMachine", () => {
 						"EPIC_4300.UNBLOCKED": "hist",
 						"EPIC_4300.WIP": "review",
 						"EPIC_4300.FAIL": [
-							{target: "build", guard: "retriesRemaining", actions: "incrementRetries"},
-							{target: "human:budget-spent"},
+							{ target: "build", guard: "retriesRemaining", actions: "incrementRetries" },
+							{ target: "human:budget-spent" },
 						],
 					},
 				},
-				shipped: {type: "final"},
-				"human:budget-spent": {type: "final", on: {"EPIC_4300.UNBLOCKED": "hist"}},
+				shipped: { type: "final" },
+				"human:budget-spent": { type: "final", on: { "EPIC_4300.UNBLOCKED": "hist" } },
 			},
 		});
 	});
@@ -465,22 +465,22 @@ describe("emitMachine", () => {
 	it("sends a tail review FAIL into the tail's own build cell, and the repair's DONE back to review", () => {
 		const compiled = laneOf(emitted(emitMachine(4300, body(), CHILDREN)));
 		expect(drive(compiled, [...LAND_ALL, ["epic_4300", "FAIL"]]).stateValue).toEqual({
-			epic: {epic_4300: "build"},
+			epic: { epic_4300: "build" },
 		});
 		expect(
 			drive(compiled, [...LAND_ALL, ["epic_4300", "FAIL"], ["epic_4300", "DONE"]]).stateValue,
-		).toEqual({epic: {epic_4300: "review"}});
+		).toEqual({ epic: { epic_4300: "review" } });
 		expect(
 			drive(compiled, [...LAND_ALL, ["epic_4300", "FAIL"], ["epic_4300", "BLOCKED"]]).stateValue,
-		).toEqual({epic: {epic_4300: "blocked"}});
+		).toEqual({ epic: { epic_4300: "blocked" } });
 	});
 
 	it("reaches the epic review only after every child has landed, and completes on its ship", () => {
 		const compiled = laneOf(emitted(emitMachine(4300, body(), CHILDREN)));
-		expect(drive(compiled, LAND_ALL).stateValue).toEqual({epic: {epic_4300: "review"}});
+		expect(drive(compiled, LAND_ALL).stateValue).toEqual({ epic: { epic_4300: "review" } });
 		expect(
 			drive(compiled, [...LAND_ALL, ["epic_4300", "PASS"], ["epic_4300", "DONE"]]),
-		).toMatchObject({stateValue: "complete", status: "done"});
+		).toMatchObject({ stateValue: "complete", status: "done" });
 	});
 
 	// The tail declares no `merge:partial` arm, and that is a decision rather than the
@@ -519,32 +519,32 @@ describe("emitMachine", () => {
 		const compiled = laneOf(emitted(emitMachine(4300, body(), CHILDREN)));
 		const toShip: ReadonlyArray<readonly [string, string]> = [...LAND_ALL, ["epic_4300", "PASS"]];
 		expect(drive(compiled, [...toShip, ["epic_4300", "FAIL"]]).stateValue).toEqual({
-			epic: {epic_4300: "review"},
+			epic: { epic_4300: "review" },
 		});
 
 		const spent = drive(compiled, [
 			...toShip,
-			...Array.from({length: RETRY_BUDGET}, () => [
+			...Array.from({ length: RETRY_BUDGET }, () => [
 				["epic_4300", "FAIL"] as const,
 				["epic_4300", "PASS"] as const,
 			]).flat(),
 			["epic_4300", "FAIL"],
 		]);
-		expect(spent).toMatchObject({stateValue: "tripped", status: "done"});
+		expect(spent).toMatchObject({ stateValue: "tripped", status: "done" });
 		expect(spent.context.errors).toEqual(["epic_4300"]);
 	});
 
 	it("trips the tail when the epic review fails past its retry budget — never `complete`", () => {
 		const compiled = laneOf(emitted(emitMachine(4300, body(), CHILDREN)));
-		const rounds = Array.from({length: RETRY_BUDGET}, () => [
+		const rounds = Array.from({ length: RETRY_BUDGET }, () => [
 			["epic_4300", "FAIL"] as const,
 			["epic_4300", "DONE"] as const,
 		]).flat();
 		expect(drive(compiled, [...LAND_ALL, ...rounds]).stateValue).toEqual({
-			epic: {epic_4300: "review"},
+			epic: { epic_4300: "review" },
 		});
 		const spent = drive(compiled, [...LAND_ALL, ...rounds, ["epic_4300", "FAIL"]]);
-		expect(spent).toMatchObject({stateValue: "tripped", status: "done"});
+		expect(spent).toMatchObject({ stateValue: "tripped", status: "done" });
 		expect(spent.context.errors).toEqual(["epic_4300"]);
 	});
 
@@ -556,7 +556,7 @@ describe("emitMachine", () => {
 		const compiled = laneOf(emitted(emitMachine(4300, body(), CHILDREN)));
 		const parked = driveLog(compiled, [
 			...LAND_ALL,
-			...Array.from({length: CAP_ROUND - 1}, () => [
+			...Array.from({ length: CAP_ROUND - 1 }, () => [
 				["epic_4300", "FAIL"] as const,
 				["epic_4300", "DONE"] as const,
 			]).flat(),
@@ -570,7 +570,7 @@ describe("emitMachine", () => {
 		// The door is walkable and the budget still gates it, exactly as `frozen`'s did.
 		expect(
 			applyEvent(compiled, statesOf(compiled, parked), "epic_4300", "UNBLOCKED", AT),
-		).toMatchObject({_tag: "Refused", kind: "unbudgeted-resume"});
+		).toMatchObject({ _tag: "Refused", kind: "unbudgeted-resume" });
 
 		const resumed = driveLog(
 			compiled,
@@ -578,7 +578,7 @@ describe("emitMachine", () => {
 			grant(compiled, parked, "epic_4300", CAP_ROUND),
 		);
 		expect(deriveStatus(compiled, statesOf(compiled, resumed))).toMatchObject({
-			stateValue: {epic: {epic_4300: "review"}},
+			stateValue: { epic: { epic_4300: "review" } },
 			status: "active",
 		});
 		expect(statesOf(compiled, resumed).epic_4300?.maxRetries).toBe(RETRY_BUDGET + 1);
@@ -588,7 +588,7 @@ describe("emitMachine", () => {
 		const compiled = laneOf(
 			emitted(emitMachine(4300, body(), [closed(4301), closed(4302), closed(4303)])),
 		);
-		expect(drive(compiled, []).stateValue).toEqual({epic: {epic_4300: "review"}});
+		expect(drive(compiled, []).stateValue).toEqual({ epic: { epic_4300: "review" } });
 		expect(
 			drive(compiled, [
 				["epic_4300", "PASS"],
@@ -604,7 +604,7 @@ describe("emitMachine", () => {
 		const compiled = laneOf(
 			emitted(emitMachine(4300, body(), [closed(4301, "not_planned"), closed(4302), open(4303)])),
 		);
-		expect(drive(compiled, [])).toMatchObject({stateValue: "tripped", status: "done"});
+		expect(drive(compiled, [])).toMatchObject({ stateValue: "tripped", status: "done" });
 	});
 
 	it("leaves `coder.workflow.json` byte-untouched — a single-issue lane still ships its own PR", () => {
@@ -622,22 +622,22 @@ describe("emitMachine", () => {
 	});
 
 	it("refuses a block that parses to zero phase lines as no topology", () => {
-		expect(emitMachine(4300, "## Dependencies\n\n", CHILDREN)).toEqual({_tag: "NoTopology"});
+		expect(emitMachine(4300, "## Dependencies\n\n", CHILDREN)).toEqual({ _tag: "NoTopology" });
 	});
 
 	it("refuses a childless issue whose body carries prose under the topology heading", () => {
 		const text = "## Dependencies\n\nNone blocking. PR #5899 merged, so this is buildable\n";
-		expect(emitMachine(5908, text, [])).toEqual({_tag: "NoTopology"});
+		expect(emitMachine(5908, text, [])).toEqual({ _tag: "NoTopology" });
 	});
 
 	it("refuses a childless issue whose body carries a well-formed topology", () => {
 		const text = "## Dependencies\n\n- phase 1: #4301\n";
-		expect(emitMachine(4300, text, [])).toEqual({_tag: "NoTopology"});
+		expect(emitMachine(4300, text, [])).toEqual({ _tag: "NoTopology" });
 	});
 
 	it("still refuses an unparseable line once the epic has children", () => {
 		const out = emitMachine(4300, "## Dependencies\n\n- phase one: #4301\n", CHILDREN);
-		expect(out).toMatchObject({_tag: "Unparseable", line: 3, text: "- phase one: #4301"});
+		expect(out).toMatchObject({ _tag: "Unparseable", line: 3, text: "- phase one: #4301" });
 	});
 
 	it("refuses a phase member that is not a child of the epic, naming it", () => {
@@ -649,7 +649,7 @@ describe("emitMachine", () => {
 
 	it("refuses a requires reference that is not a child of the epic", () => {
 		const text = "## Dependencies\n\n- phase 1: #4301\n- #4301 requires: #9999\n";
-		expect(emitMachine(4300, text, CHILDREN)).toEqual({_tag: "Foreign", ref: "#9999"});
+		expect(emitMachine(4300, text, CHILDREN)).toEqual({ _tag: "Foreign", ref: "#9999" });
 	});
 
 	it("refuses a ledger-local ref — an epic on the board holds only real issues", () => {
@@ -669,27 +669,30 @@ describe("emitMachine", () => {
 
 	it("refuses a line under the heading that does not parse, naming it", () => {
 		const out = emitMachine(4300, "## Dependencies\n\n- phase one: #4301\n", CHILDREN);
-		expect(out).toMatchObject({_tag: "Unparseable", text: "- phase one: #4301"});
+		expect(out).toMatchObject({ _tag: "Unparseable", text: "- phase one: #4301" });
 	});
 
 	it("refuses a child placed in two phases", () => {
 		const text = "## Dependencies\n\n- phase 1: #4301\n- phase 2: #4301\n";
-		expect(emitMachine(4300, text, CHILDREN)).toEqual({_tag: "Duplicate", child: 4301});
+		expect(emitMachine(4300, text, CHILDREN)).toEqual({ _tag: "Duplicate", child: 4301 });
 	});
 
 	it("refuses a requires subject placed in no phase", () => {
 		const text = "## Dependencies\n\n- phase 1: #4301\n- #4303 requires: #4301\n";
-		expect(emitMachine(4300, text, CHILDREN)).toEqual({_tag: "Unplaced", child: 4303});
+		expect(emitMachine(4300, text, CHILDREN)).toEqual({ _tag: "Unplaced", child: 4303 });
 	});
 });
 
 describe("emitMachine — the --children drop axis", () => {
 	const drop = (text: string, links = CHILDREN): EmitResult =>
-		emitMachine(4300, text, links, {dropForeign: true});
+		emitMachine(4300, text, links, { dropForeign: true });
 
-	const phasesOf = (text: string): Record<string, {states: Record<string, unknown>}> =>
-		(JSON.parse(text) as {machine: {states: Record<string, {states: Record<string, unknown>}>}})
-			.machine.states;
+	const phasesOf = (text: string): Record<string, { states: Record<string, unknown> }> =>
+		(
+			JSON.parse(text) as {
+				machine: { states: Record<string, { states: Record<string, unknown> }> };
+			}
+		).machine.states;
 
 	it("takes the dropped ref out of its phase and out of every requires list naming it", () => {
 		const text =
@@ -720,7 +723,7 @@ describe("emitMachine — the --children drop axis", () => {
 			"complete",
 			"tripped",
 		]);
-		expect(JSON.parse(out.text)).toMatchObject({machine: {initial: "phase2"}});
+		expect(JSON.parse(out.text)).toMatchObject({ machine: { initial: "phase2" } });
 	});
 
 	it("records a ref that appears only in the needs of a requires line whose subject went", () => {
@@ -747,7 +750,7 @@ describe("emitMachine — the --children drop axis", () => {
 
 	it("refuses an emission the drop emptied, naming what went", () => {
 		const out = drop("## Dependencies\n\n- phase 1: #9998, #9999\n");
-		expect(out).toEqual({_tag: "Emptied", dropped: ["#9998", "#9999"]});
+		expect(out).toEqual({ _tag: "Emptied", dropped: ["#9998", "#9999"] });
 	});
 
 	it("still refuses every other topology defect over what survives the drop", () => {
@@ -764,17 +767,17 @@ describe("emitMachine — the --children drop axis", () => {
 		});
 		const cyclic =
 			"## Dependencies\n\n- phase 1: #4301, #4302, #9999\n- #4301 requires: #4302, #9999\n- #4302 requires: #4301\n";
-		expect(drop(cyclic)).toMatchObject({_tag: "Cycle"});
+		expect(drop(cyclic)).toMatchObject({ _tag: "Cycle" });
 	});
 
 	it("leaves the 16 refusal exactly where it was without the flag", () => {
 		const text = "## Dependencies\n\n- phase 1: #4301\n- phase 2: #9999\n";
-		expect(emitMachine(4300, text, CHILDREN)).toEqual({_tag: "Foreign", ref: "#9999"});
+		expect(emitMachine(4300, text, CHILDREN)).toEqual({ _tag: "Foreign", ref: "#9999" });
 	});
 });
 
 describe("emitMachine — the machinery lap axis", () => {
-	const withLaps = (): string => emitted(emitMachine(4300, body(), CHILDREN, {machinery: true}));
+	const withLaps = (): string => emitted(emitMachine(4300, body(), CHILDREN, { machinery: true }));
 
 	const lapStatesOf = (lane: CompiledLane, task: string): number => {
 		const compiled = lane.tasks[task];
@@ -783,14 +786,14 @@ describe("emitMachine — the machinery lap axis", () => {
 	};
 
 	it("emits today's machine byte for byte with the axis off", () => {
-		expect(emitted(emitMachine(4300, body(), CHILDREN, {machinery: false}))).toBe(golden());
+		expect(emitted(emitMachine(4300, body(), CHILDREN, { machinery: false }))).toBe(golden());
 		expect(emitted(emitMachine(4300, body(), CHILDREN))).toBe(golden());
 	});
 
 	it("seeds every task's lap counter with the axis on, and none with it off", () => {
 		const contextOf = (text: string): Record<string, Record<string, unknown>> =>
-			(JSON.parse(text) as {machine: {context: Record<string, Record<string, unknown>>}}).machine
-				.context;
+			(JSON.parse(text) as { machine: { context: Record<string, Record<string, unknown>> } })
+				.machine.context;
 
 		for (const seeded of Object.values(contextOf(withLaps()))) {
 			expect(seeded).toEqual({
@@ -801,7 +804,7 @@ describe("emitMachine — the machinery lap axis", () => {
 			});
 		}
 		for (const seeded of Object.values(contextOf(golden()))) {
-			expect(seeded).toEqual({retries: 0, maxRetries: RETRY_BUDGET});
+			expect(seeded).toEqual({ retries: 0, maxRetries: RETRY_BUDGET });
 		}
 	});
 
@@ -815,7 +818,7 @@ describe("emitMachine — the machinery lap axis", () => {
 		];
 
 		expect(drive(compiled, collided).stateValue).toMatchObject({
-			phase1: {issue_4301: "review"},
+			phase1: { issue_4301: "review" },
 		});
 		const spent = statesOf(compiled, driveLog(compiled, collided)).issue_4301;
 		expect(spent?.retries).toBe(0);
@@ -831,7 +834,7 @@ describe("emitMachine — the machinery lap axis", () => {
 			["issue_4301", "FAIL"],
 		];
 
-		expect(drive(compiled, failed).stateValue).toMatchObject({phase1: {issue_4301: "build"}});
+		expect(drive(compiled, failed).stateValue).toMatchObject({ phase1: { issue_4301: "build" } });
 		const spent = statesOf(compiled, driveLog(compiled, failed)).issue_4301;
 		expect(spent?.retries).toBe(1);
 		expect(spent?.laps).toBe(0);
@@ -848,12 +851,12 @@ describe("emitMachine — the machinery lap axis", () => {
 			["issue_4301", "WIP"],
 			["issue_4301", "DONE"],
 			["issue_4301", "PASS"],
-			...Array.from({length: MACHINERY_LAP_BUDGET}, () => lap).flat(),
+			...Array.from({ length: MACHINERY_LAP_BUDGET }, () => lap).flat(),
 			["issue_4301", "LAP"],
 		];
 
 		expect(drive(compiled, spun).stateValue).toMatchObject({
-			phase1: {issue_4301: "human:machinery-stall"},
+			phase1: { issue_4301: "human:machinery-stall" },
 		});
 		const parked = statesOf(compiled, driveLog(compiled, spun)).issue_4301;
 		expect(parked?.laps).toBe(MACHINERY_LAP_BUDGET);
@@ -877,7 +880,7 @@ describe("emitMachine — the machinery lap axis", () => {
 			["epic_4300", "LAP"],
 		];
 
-		expect(drive(compiled, toShip).stateValue).toMatchObject({epic: {epic_4300: "ship"}});
+		expect(drive(compiled, toShip).stateValue).toMatchObject({ epic: { epic_4300: "ship" } });
 		const spent = statesOf(compiled, driveLog(compiled, toShip)).epic_4300;
 		expect(spent?.retries).toBe(0);
 		expect(spent?.laps).toBe(1);
@@ -925,9 +928,9 @@ describe("emitMachine — the class axis", () => {
 
 	it("seeds the classed child's context entry, and only that child's", () => {
 		const document = JSON.parse(classedText()) as {
-			machine: {context: Record<string, Record<string, unknown>>};
+			machine: { context: Record<string, Record<string, unknown>> };
 		};
-		expect(document.machine.context.issue_4301).toMatchObject({classes: ["ui"]});
+		expect(document.machine.context.issue_4301).toMatchObject({ classes: ["ui"] });
 		expect(document.machine.context.issue_4302).not.toHaveProperty("classes");
 		expect(document.machine.context.epic_4300).not.toHaveProperty("classes");
 	});
@@ -936,7 +939,7 @@ describe("emitMachine — the class axis", () => {
 		const classed = regionOf(classedText(), "issue_4301") as {
 			states: Record<string, unknown>;
 		};
-		const plain = regionOf(classedText(), "issue_4302") as {states: Record<string, unknown>};
+		const plain = regionOf(classedText(), "issue_4302") as { states: Record<string, unknown> };
 
 		expect(Object.keys(classed.states)).toContain("build:ui");
 		expect(Object.keys(classed.states)).not.toContain("review:ui");
@@ -945,7 +948,7 @@ describe("emitMachine — the class axis", () => {
 
 	it("leaves the classed child's review PASS a plain target into integrate", () => {
 		const classed = regionOf(classedText(), "issue_4301") as {
-			states: Record<string, {on: Record<string, unknown>}>;
+			states: Record<string, { on: Record<string, unknown> }>;
 		};
 
 		expect(classed.states.review?.on["ISSUE_4301.PASS"]).toBe("integrate");
@@ -966,12 +969,12 @@ describe("emitMachine — the class axis", () => {
 
 	it("leads BOTH of the classed child's FAIL arms with the class route, budget pair behind it", () => {
 		const classed = regionOf(classedText(), "issue_4301") as {
-			states: Record<string, {on: Record<string, unknown>}>;
+			states: Record<string, { on: Record<string, unknown> }>;
 		};
 		const arm = [
-			{target: "build:ui", guard: "class:ui"},
-			{target: "build", guard: "retriesRemaining", actions: "incrementRetries"},
-			{target: "human:budget-spent"},
+			{ target: "build:ui", guard: "class:ui" },
+			{ target: "build", guard: "retriesRemaining", actions: "incrementRetries" },
+			{ target: "human:budget-spent" },
 		];
 
 		expect(classed.states.review?.on["ISSUE_4301.FAIL"]).toEqual(arm);
@@ -1040,12 +1043,12 @@ describe("emitMachine — the class axis", () => {
 		];
 		const spentAtReview = [
 			...entered,
-			...Array.from({length: RETRY_BUDGET}, () => reviewRound).flat(),
+			...Array.from({ length: RETRY_BUDGET }, () => reviewRound).flat(),
 			["issue_4301", "FAIL"] as const,
 		];
 		const spentAtIntegrate = [
 			...entered,
-			...Array.from({length: RETRY_BUDGET}, () => integrateRound).flat(),
+			...Array.from({ length: RETRY_BUDGET }, () => integrateRound).flat(),
 			["issue_4301", "PASS"] as const,
 			["issue_4301", "FAIL"] as const,
 		];
@@ -1060,11 +1063,11 @@ describe("emitMachine — the class axis", () => {
 
 	it("leaves an UNCLASSED sibling's two FAIL arms the plain budget pair they always were", () => {
 		const plain = regionOf(classedText(), "issue_4302") as {
-			states: Record<string, {on: Record<string, unknown>}>;
+			states: Record<string, { on: Record<string, unknown> }>;
 		};
 		const arm = [
-			{target: "build", guard: "retriesRemaining", actions: "incrementRetries"},
-			{target: "human:budget-spent"},
+			{ target: "build", guard: "retriesRemaining", actions: "incrementRetries" },
+			{ target: "human:budget-spent" },
 		];
 		const lane = laneOf(classedText());
 		const failed = driveLog(lane, [
@@ -1107,7 +1110,7 @@ describe("emitMachine — the class axis", () => {
 describe("emitMachine — the tail's rendered review cell", () => {
 	const TAIL = "epic_4300";
 	const tailLane = (machinery = false): CompiledLane =>
-		laneOf(emitted(emitMachine(4300, body(), CHILDREN, {machinery})));
+		laneOf(emitted(emitMachine(4300, body(), CHILDREN, { machinery })));
 
 	type ClassedStep = readonly [string, string, ReadonlyArray<string>?];
 
@@ -1139,10 +1142,10 @@ describe("emitMachine — the tail's rendered review cell", () => {
 	): string | undefined =>
 		statesOf(compiled, driveClassed(compiled, [...LAND_ALL, ...steps]))[TAIL]?.type;
 
-	const tailRegion = (machinery: boolean): Record<string, {on: Record<string, unknown>}> =>
+	const tailRegion = (machinery: boolean): Record<string, { on: Record<string, unknown> }> =>
 		(
-			regionOf(emitted(emitMachine(4300, body(), CHILDREN, {machinery})), TAIL) as {
-				states: Record<string, {on: Record<string, unknown>}>;
+			regionOf(emitted(emitMachine(4300, body(), CHILDREN, { machinery })), TAIL) as {
+				states: Record<string, { on: Record<string, unknown> }>;
 			}
 		).states;
 
@@ -1180,7 +1183,7 @@ describe("emitMachine — the tail's rendered review cell", () => {
 			[TAIL, "DONE"],
 			[TAIL, "PASS", ["ui"]],
 		];
-		const spent = Array.from({length: RETRY_BUDGET}, () => round).flat();
+		const spent = Array.from({ length: RETRY_BUDGET }, () => round).flat();
 
 		expect(
 			leafAfter(compiled, [
@@ -1196,8 +1199,8 @@ describe("emitMachine — the tail's rendered review cell", () => {
 	it("takes the tail review:ui LAP under machinery, and holds no LAP arm without it", () => {
 		expect(tailRegion(false)["review:ui"]?.on).not.toHaveProperty("EPIC_4300.LAP");
 		expect(tailRegion(true)["review:ui"]?.on["EPIC_4300.LAP"]).toEqual([
-			{target: "review:ui", guard: "lapsRemaining", actions: "incrementLaps"},
-			{target: "human:machinery-stall"},
+			{ target: "review:ui", guard: "lapsRemaining", actions: "incrementLaps" },
+			{ target: "human:machinery-stall" },
 		]);
 		expect(
 			leafAfter(tailLane(true), [
@@ -1210,7 +1213,7 @@ describe("emitMachine — the tail's rendered review cell", () => {
 	it("leaves no child region a review:ui cell — a child's rendered review is this one", () => {
 		const text = emitted(emitMachine(4300, body(), [open(4301, ["ui"]), open(4302), open(4303)]));
 		const cells = (task: string): ReadonlyArray<string> =>
-			Object.keys((regionOf(text, task) as {states: Record<string, unknown>}).states);
+			Object.keys((regionOf(text, task) as { states: Record<string, unknown> }).states);
 
 		expect(cells("issue_4301")).not.toContain("review:ui");
 		expect(cells(TAIL)).toContain("review:ui");

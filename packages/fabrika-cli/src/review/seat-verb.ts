@@ -34,11 +34,11 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/8893
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {childLaneBranches} from "../build/lane.ts";
-import {checkoutDetached, localBranches, mergeBase, resolveCommit} from "../io/git.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { childLaneBranches } from "../build/lane.ts";
+import { checkoutDetached, localBranches, mergeBase, resolveCommit } from "../io/git.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	OFF_VOCABULARY,
 	PRECONDITION_UNKNOWN,
@@ -46,8 +46,8 @@ import {
 	UNREACHABLE_TIP,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {readRangeFlags} from "./range-flags.ts";
-import {badNumber} from "./target.ts";
+import { readRangeFlags } from "./range-flags.ts";
+import { badNumber } from "./target.ts";
 
 const VERB = "review seat";
 
@@ -69,11 +69,11 @@ export const runSeat = (
 	options: SeatOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {issue, json} = options;
+		const { issue, json } = options;
 		const bad = badNumber(VERB, "an issue number", issue);
 		if (bad !== null) return bad;
 
-		const flags = readRangeFlags(VERB, {base: options.base, tip: options.tip, sha: null});
+		const flags = readRangeFlags(VERB, { base: options.base, tip: options.tip, sha: null });
 		if (flags._tag === "Refused") return flags.outcome;
 		if (flags._tag === "Pull") {
 			return refuse(
@@ -81,7 +81,7 @@ export const runSeat = (
 				`${VERB}: --base and --tip are required — the range out of this shell's brief is the subject, and there is no PR here to resolve one from.`,
 			);
 		}
-		const {base, tip} = flags.range;
+		const { base, tip } = flags.range;
 		const range = `${base}..${tip}`;
 
 		const branches = yield* localBranches;

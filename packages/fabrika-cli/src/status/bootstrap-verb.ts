@@ -17,22 +17,22 @@
  * — bar the merge arm an adoption surface takes into a present file, which key-merges or appends
  * once, touching only what the surface declares and never bytes it does not own.
  */
-import {Effect, type FileSystem, Path, Result} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {audienceLabel, type BoardVocabulary, statusList, typeLabel} from "../config/board.ts";
-import {CONFIG_PATH, type ConfigSource, readDocument} from "../config/document.ts";
-import {setJsoncValue} from "../config/jsonc-edit.ts";
+import { Effect, type FileSystem, Path, Result } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { audienceLabel, type BoardVocabulary, statusList, typeLabel } from "../config/board.ts";
+import { CONFIG_PATH, type ConfigSource, readDocument } from "../config/document.ts";
+import { setJsoncValue } from "../config/jsonc-edit.ts";
 import {
 	type NoPreviewRule,
 	REVIEW_UI,
 	reviewUiKey,
 	WHEN_NO_PREVIEW,
 } from "../config/keys/review-ui.ts";
-import {loadConfig} from "../config/load.ts";
-import {type Read, readRoadmapFile} from "../config/paths.ts";
-import {resolveBoard} from "../config/resolve-board.ts";
-import {appendText, exists, readFile, writeFile} from "../io/fs.ts";
-import type {Attempt, Shell} from "../io/git.ts";
+import { loadConfig } from "../config/load.ts";
+import { type Read, readRoadmapFile } from "../config/paths.ts";
+import { resolveBoard } from "../config/resolve-board.ts";
+import { appendText, exists, readFile, writeFile } from "../io/fs.ts";
+import type { Attempt, Shell } from "../io/git.ts";
 import {
 	createLabel,
 	createUnlabelledIssue,
@@ -41,16 +41,16 @@ import {
 	listOpenMilestones,
 	openIssuesTitled,
 } from "../io/issues.ts";
-import {isRecord, parseJsonOrReason} from "../io/json.ts";
-import {FRESH_JSON_LAYOUT, readJsonLayout, renderJson} from "../io/json-layout.ts";
-import {latestPublishedVersion} from "../io/npm.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {CLASS_LABELS, KILL_LABEL} from "../labels.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
-import {DEFAULT_BOARD_VOCABULARY, FACET_VOCABULARY} from "../triage/facets.ts";
-import {parseRoadmap, ROADMAP_FILE, unopenedArcPins} from "../triage/roadmap.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { isRecord, parseJsonOrReason } from "../io/json.ts";
+import { FRESH_JSON_LAYOUT, readJsonLayout, renderJson } from "../io/json-layout.ts";
+import { latestPublishedVersion } from "../io/npm.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { CLASS_LABELS, KILL_LABEL } from "../labels.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
+import { DEFAULT_BOARD_VOCABULARY, FACET_VOCABULARY } from "../triage/facets.ts";
+import { parseRoadmap, ROADMAP_FILE, unopenedArcPins } from "../triage/roadmap.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	BARE_AT_PATH,
 	EMPTY_STDIN,
@@ -61,10 +61,10 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {EMPTY_CELL, row} from "./fields.ts";
-import {ARTIFACT_TITLE} from "./readout-verb.ts";
-import {STARTER_CONFIG} from "./starter-config.ts";
-import {PLUGIN, SETTINGS_PATH} from "./wiring-verb.ts";
+import { EMPTY_CELL, row } from "./fields.ts";
+import { ARTIFACT_TITLE } from "./readout-verb.ts";
+import { STARTER_CONFIG } from "./starter-config.ts";
+import { PLUGIN, SETTINGS_PATH } from "./wiring-verb.ts";
 
 const VERB = "status bootstrap";
 
@@ -98,7 +98,7 @@ export const taxonomy = (board: BoardVocabulary): ReadonlyArray<LabelSpec> =>
 		...board.audiences.map(audienceLabel),
 		...CLASS_LABELS,
 		KILL_LABEL,
-	].map((name) => ({name, description: LABEL_DESCRIPTION, color: null}));
+	].map((name) => ({ name, description: LABEL_DESCRIPTION, color: null }));
 
 /** The taxonomy a repo that declared no vocabulary gets — the shipped default. */
 export const TAXONOMY: ReadonlyArray<LabelSpec> = taxonomy(DEFAULT_BOARD_VOCABULARY);
@@ -160,10 +160,10 @@ const plural = (n: number, noun: string): string => `${n} ${noun}${n === 1 ? "" 
  * leaving an inert draft to be discovered in some later session.
  */
 export const roadmapCount = (text: string): ContentCount => {
-	const {arcs, campaigns} = parseRoadmap(text);
+	const { arcs, campaigns } = parseRoadmap(text);
 	return {
 		clause: `${plural(arcs.length, "arc")}, ${plural(campaigns.length, "campaign")}`,
-		fields: {arcs: arcs.length, campaigns: campaigns.length},
+		fields: { arcs: arcs.length, campaigns: campaigns.length },
 	};
 };
 
@@ -291,7 +291,7 @@ export type BuildableSurface =
 			 */
 			readonly labels: (board: BoardVocabulary) => ReadonlyArray<LabelSpec>;
 	  }
-	| {readonly id: string; readonly kind: "issue"};
+	| { readonly id: string; readonly kind: "issue" };
 
 /** The `.gitignore` row that keeps `fabrika lane`'s per-checkout state out of shared history. */
 export const FABRIKA_IGNORE_ROW = "/.fabrika/";
@@ -308,11 +308,11 @@ ${FABRIKA_IGNORE_ROW}`;
 export const SETTINGS_PATCH: Readonly<Record<string, unknown>> = {
 	extraKnownMarketplaces: {
 		kampus: {
-			source: {source: "github", repo: "kamp-us/phoenix"},
+			source: { source: "github", repo: "kamp-us/phoenix" },
 			autoUpdate: true,
 		},
 	},
-	enabledPlugins: {[`${PLUGIN}@kampus`]: true},
+	enabledPlugins: { [`${PLUGIN}@kampus`]: true },
 };
 
 /**
@@ -345,7 +345,7 @@ export const pinDevDependency = (
 					),
 				}
 			: manifest;
-	return mergeJsonPatch(withoutRuntimeRow, {devDependencies: {[packageName]: version}});
+	return mergeJsonPatch(withoutRuntimeRow, { devDependencies: { [packageName]: version } });
 };
 
 /**
@@ -373,14 +373,14 @@ export const installCostNotices = (packageName: string): ReadonlyArray<string> =
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/10362#issuecomment-5974640994
  */
-export type HandCheckRule = NoPreviewRule & {readonly mode: "hand-check"};
+export type HandCheckRule = NoPreviewRule & { readonly mode: "hand-check" };
 
 /**
  * The `hand-check-rule` rule: every path, so it covers whichever source roots `uiSurfaces` names now
  * or later. The rule is only ever read over a pull request's ui-class files, and the route refuses
  * it when the pull request has a preview, so the wide glob loosens nothing else.
  */
-const HAND_CHECK_RULE: HandCheckRule = {paths: ["**"], mode: "hand-check"};
+const HAND_CHECK_RULE: HandCheckRule = { paths: ["**"], mode: "hand-check" };
 
 /** The marker heading that decides `exists` for the CLAUDE.md section, and its first line. */
 export const CLAUDE_MD_MARKER = "## Work flows through fabrika";
@@ -419,7 +419,7 @@ never the normal entry point: \`build\` (**builder**), \`review\` (**reviewer**)
 
 /** Eleven ids. A twelfth is a change to this table, not a new rule. */
 export const BUILDABLE_SURFACES: ReadonlyArray<BuildableSurface> = [
-	{id: "design-manifest", kind: "file", defaultPath: "design-system-manifest.md"},
+	{ id: "design-manifest", kind: "file", defaultPath: "design-system-manifest.md" },
 	{
 		id: "roadmap-focus",
 		kind: "file",
@@ -442,18 +442,23 @@ export const BUILDABLE_SURFACES: ReadonlyArray<BuildableSurface> = [
 		block: CLAUDE_MD_SECTION,
 		marker: CLAUDE_MD_MARKER,
 	},
-	{id: "label-taxonomy", kind: "labels", labels: taxonomy},
-	{id: "issue-shape-markers", kind: "labels", labels: () => ISSUE_SHAPE_MARKERS},
-	{id: "readout-artifact", kind: "issue"},
-	{id: "settings-patch", kind: "json", defaultPath: SETTINGS_PATH, patch: SETTINGS_PATCH},
+	{ id: "label-taxonomy", kind: "labels", labels: taxonomy },
+	{ id: "issue-shape-markers", kind: "labels", labels: () => ISSUE_SHAPE_MARKERS },
+	{ id: "readout-artifact", kind: "issue" },
+	{ id: "settings-patch", kind: "json", defaultPath: SETTINGS_PATH, patch: SETTINGS_PATCH },
 	{
 		id: "dep-pin",
 		kind: "dep-pin",
 		defaultPath: "package.json",
 		packageName: FABRIKA_CLI_PACKAGE,
 	},
-	{id: "fabrika-config", kind: "starter", defaultPath: CONFIG_PATH, content: STARTER_CONFIG},
-	{id: "hand-check-rule", kind: "no-preview-rule", defaultPath: CONFIG_PATH, rule: HAND_CHECK_RULE},
+	{ id: "fabrika-config", kind: "starter", defaultPath: CONFIG_PATH, content: STARTER_CONFIG },
+	{
+		id: "hand-check-rule",
+		kind: "no-preview-rule",
+		defaultPath: CONFIG_PATH,
+		rule: HAND_CHECK_RULE,
+	},
 ];
 
 const findSurface = (id: string): BuildableSurface | undefined =>
@@ -506,7 +511,7 @@ const created = (
 	extraNotices?: ReadonlyArray<string>,
 ): VerbOutcome => {
 	const stdout = json
-		? `${JSON.stringify({outcome: "created", surfaceId, target, readback: "ok", ...fields})}\n`
+		? `${JSON.stringify({ outcome: "created", surfaceId, target, readback: "ok", ...fields })}\n`
 		: `${row("bootstrap", "created", surfaceId, target, "ok")}\n`;
 	return answer(stdout, [notice, ...(extraNotices ?? [])]);
 };
@@ -518,7 +523,7 @@ const already = (
 	notice = `${target} is already present for ${surfaceId} — nothing written.`,
 ): VerbOutcome => {
 	const stdout = json
-		? `${JSON.stringify({outcome: "exists", surfaceId, target, readback: EMPTY_CELL})}\n`
+		? `${JSON.stringify({ outcome: "exists", surfaceId, target, readback: EMPTY_CELL })}\n`
 		: `${row("bootstrap", "exists", surfaceId, target, EMPTY_CELL)}\n`;
 	return answer(stdout, [`${VERB}: ${notice}`]);
 };
@@ -602,19 +607,19 @@ const targetOf = (
 				`${VERB}: --path ${relative} resolves outside the repository root.`,
 			);
 		}
-		return {relative, absolute};
+		return { relative, absolute };
 	});
 
 const isTarget = (value: Target | VerbOutcome): value is Target => "relative" in value;
 
 const buildFile = (
-	surface: Extract<BuildableSurface, {kind: "file"}>,
+	surface: Extract<BuildableSurface, { kind: "file" }>,
 	input: BootstrapInput,
 ): Effect.Effect<VerbOutcome, never, Requirements> =>
 	Effect.gen(function* () {
 		const target = yield* targetOf(surface, input);
 		if (!isTarget(target)) return target;
-		const {relative, absolute} = target;
+		const { relative, absolute } = target;
 		const probe = yield* Effect.result(exists(absolute));
 		if (Result.isFailure(probe)) {
 			return refuse(
@@ -693,7 +698,7 @@ const mergeJsonPatch = (
 	present: Readonly<Record<string, unknown>>,
 	patch: Readonly<Record<string, unknown>>,
 ): Record<string, unknown> => {
-	const merged: Record<string, unknown> = {...present};
+	const merged: Record<string, unknown> = { ...present };
 	for (const [key, value] of Object.entries(patch)) {
 		merged[key] =
 			isRecord(value) && isRecord(merged[key]) ? mergeJsonPatch(merged[key], value) : value;
@@ -788,7 +793,7 @@ const mergePatchAt = (
 
 /** The settings arm: the registry's static keys through {@link mergePatchAt}. */
 const buildJsonPatch = (
-	surface: Extract<BuildableSurface, {kind: "json"}>,
+	surface: Extract<BuildableSurface, { kind: "json" }>,
 	input: BootstrapInput,
 ): Effect.Effect<VerbOutcome, never, Requirements> =>
 	Effect.gen(function* () {
@@ -813,13 +818,13 @@ const buildJsonPatch = (
  * exact install command is printed instead, because the lockfile stays the caller's.
  */
 const buildDepPin = (
-	surface: Extract<BuildableSurface, {kind: "dep-pin"}>,
+	surface: Extract<BuildableSurface, { kind: "dep-pin" }>,
 	input: BootstrapInput,
 ): Effect.Effect<VerbOutcome, never, Requirements> =>
 	Effect.gen(function* () {
 		const target = yield* targetOf(surface, input);
 		if (!isTarget(target)) return target;
-		const {relative, absolute} = target;
+		const { relative, absolute } = target;
 
 		const resolved = yield* latestPublishedVersion(surface.packageName);
 		if (resolved._tag === "Failure") {
@@ -834,7 +839,7 @@ const buildDepPin = (
 			absolute,
 			{
 				apply: (present) => pinDevDependency(present, surface.packageName, resolved.value),
-				seed: {devDependencies: {[surface.packageName]: resolved.value}},
+				seed: { devDependencies: { [surface.packageName]: resolved.value } },
 			},
 			input,
 			[
@@ -858,14 +863,14 @@ const RULES_KEY = `${REVIEW_UI}.${WHEN_NO_PREVIEW}`;
  * @ruling https://github.com/kamp-us/phoenix/issues/10362#issuecomment-5974640994
  */
 const buildNoPreviewRule = (
-	surface: Extract<BuildableSurface, {kind: "no-preview-rule"}>,
+	surface: Extract<BuildableSurface, { kind: "no-preview-rule" }>,
 	input: BootstrapInput,
 ): Effect.Effect<VerbOutcome, never, Requirements> =>
 	Effect.gen(function* () {
 		const target = yield* targetOf(surface, input);
 		if (!isTarget(target)) return target;
-		const {relative, absolute} = target;
-		const declared = {[REVIEW_UI]: {[WHEN_NO_PREVIEW]: [surface.rule]}};
+		const { relative, absolute } = target;
+		const declared = { [REVIEW_UI]: { [WHEN_NO_PREVIEW]: [surface.rule] } };
 
 		const probe = yield* Effect.result(exists(absolute));
 		if (Result.isFailure(probe)) {
@@ -891,7 +896,7 @@ const buildNoPreviewRule = (
 				`${VERB}: cannot read ${relative}: ${read.failure.reason} — whether a \`${RULES_KEY}\` rule is already there is UNKNOWN, and nothing was written.`,
 			);
 		}
-		const before = readDocument({_tag: "Text", text: read.success}, relative);
+		const before = readDocument({ _tag: "Text", text: read.success }, relative);
 		if (before._tag !== "Record") {
 			return refuse(
 				PRECONDITION_UNKNOWN,
@@ -900,7 +905,7 @@ const buildNoPreviewRule = (
 		}
 		const standing =
 			before.record[REVIEW_UI] === undefined
-				? ({_tag: "Value", value: reviewUiKey.shippedDefault} as const)
+				? ({ _tag: "Value", value: reviewUiKey.shippedDefault } as const)
 				: reviewUiKey.decode(before.record[REVIEW_UI]);
 		if (standing._tag === "Malformed") {
 			return refuse(
@@ -919,11 +924,11 @@ const buildNoPreviewRule = (
 
 		const edit = setJsoncValue(read.success, [REVIEW_UI, WHEN_NO_PREVIEW], [surface.rule]);
 		const after =
-			edit._tag === "Edited" ? readDocument({_tag: "Text", text: edit.text}, relative) : null;
+			edit._tag === "Edited" ? readDocument({ _tag: "Text", text: edit.text }, relative) : null;
 		if (
 			edit._tag === "Refused" ||
 			after?._tag !== "Record" ||
-			!jsonEquals(after.record, {...before.record, ...declared})
+			!jsonEquals(after.record, { ...before.record, ...declared })
 		) {
 			return refuse(
 				PRECONDITION_UNKNOWN,
@@ -946,13 +951,13 @@ const buildNoPreviewRule = (
  * statement and is never read, merged or judged.
  */
 const buildStarter = (
-	surface: Extract<BuildableSurface, {kind: "starter"}>,
+	surface: Extract<BuildableSurface, { kind: "starter" }>,
 	input: BootstrapInput,
 ): Effect.Effect<VerbOutcome, never, Requirements> =>
 	Effect.gen(function* () {
 		const target = yield* targetOf(surface, input);
 		if (!isTarget(target)) return target;
-		const {relative, absolute} = target;
+		const { relative, absolute } = target;
 		const probe = yield* Effect.result(exists(absolute));
 		if (Result.isFailure(probe)) {
 			return refuse(
@@ -1021,13 +1026,13 @@ const writeAndReadBack = (
  * same heading — is recognised as the thing it is.
  */
 const buildLine = (
-	surface: Extract<BuildableSurface, {kind: "line"}>,
+	surface: Extract<BuildableSurface, { kind: "line" }>,
 	input: BootstrapInput,
 ): Effect.Effect<VerbOutcome, never, Requirements> =>
 	Effect.gen(function* () {
 		const target = yield* targetOf(surface, input);
 		if (!isTarget(target)) return target;
-		const {relative, absolute} = target;
+		const { relative, absolute } = target;
 
 		const probe = yield* Effect.result(exists(absolute));
 		if (Result.isFailure(probe)) {
@@ -1089,7 +1094,7 @@ const buildLine = (
  * and is left as it is, because this verb never overwrites.
  */
 const buildLabels = (
-	surface: Extract<BuildableSurface, {kind: "labels"}>,
+	surface: Extract<BuildableSurface, { kind: "labels" }>,
 	input: BootstrapInput,
 ): Effect.Effect<VerbOutcome, never, Requirements> =>
 	Effect.gen(function* () {
@@ -1157,7 +1162,7 @@ const buildLabels = (
  * first creation whose row has not propagated yet.
  */
 const buildArtifact = (
-	surface: Extract<BuildableSurface, {kind: "issue"}>,
+	surface: Extract<BuildableSurface, { kind: "issue" }>,
 	input: BootstrapInput,
 ): Effect.Effect<VerbOutcome, never, Requirements> =>
 	Effect.gen(function* () {

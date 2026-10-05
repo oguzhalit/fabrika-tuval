@@ -153,12 +153,12 @@ export const findLeaks = (filePath: string, text: string): ReadonlyArray<Leak> =
 	if (isSelfExempt(filePath)) return [];
 	const seen = new Set<string>();
 	const leaks: Array<Leak> = [];
-	for (const {pattern, reason} of MACHINE_LOCAL_PATH_PATTERNS) {
+	for (const { pattern, reason } of MACHINE_LOCAL_PATH_PATTERNS) {
 		for (const match of text.matchAll(pattern)) {
 			const key = `${match[0]}\t${reason}`;
 			if (seen.has(key)) continue;
 			seen.add(key);
-			leaks.push({matched: match[0], reason});
+			leaks.push({ matched: match[0], reason });
 		}
 	}
 	return leaks;

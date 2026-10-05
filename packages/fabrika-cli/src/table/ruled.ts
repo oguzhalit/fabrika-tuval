@@ -15,11 +15,11 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9872#issuecomment-5852556900
  */
 
-import {DECISION_TYPE_LABEL} from "../build/scope-admission.ts";
-import {scanRulings} from "../decision/ruling.ts";
-import type {CommentRecord, ListedIssue} from "../io/issues.ts";
-import {READY_FOR_AGENT} from "../triage/audience.ts";
-import type {MarkerTime, RulingUrl} from "../wire/decision-ruling.ts";
+import { DECISION_TYPE_LABEL } from "../build/scope-admission.ts";
+import { scanRulings } from "../decision/ruling.ts";
+import type { CommentRecord, ListedIssue } from "../io/issues.ts";
+import { READY_FOR_AGENT } from "../triage/audience.ts";
+import type { MarkerTime, RulingUrl } from "../wire/decision-ruling.ts";
 
 /** One open issue whose ruling is still waiting on a build. */
 export interface RuledUnbuilt {
@@ -57,6 +57,6 @@ export const ruledUnbuiltOf = (
 			const first = scan.all.reduce((earliest, one) =>
 				instant(one.ruling.at) < instant(earliest.ruling.at) ? one : earliest,
 			);
-			return [{issue, ruledAt: first.ruling.at, ruling: scan.standing.ruling.ruling}];
+			return [{ issue, ruledAt: first.ruling.at, ruling: scan.standing.ruling.ruling }];
 		})
 		.sort((a, b) => instant(a.ruledAt) - instant(b.ruledAt) || a.issue - b.issue);

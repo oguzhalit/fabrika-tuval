@@ -32,11 +32,11 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9852
  */
-import {issueRefsOf} from "../review/classes.ts";
-import {READY_FOR_AGENT, READY_FOR_PREFIX} from "../triage/audience.ts";
-import {EPIC_TYPE_LABEL} from "../triage/facets.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {read as readCriteria} from "../wire/acceptance-criteria.ts";
+import { issueRefsOf } from "../review/classes.ts";
+import { READY_FOR_AGENT, READY_FOR_PREFIX } from "../triage/audience.ts";
+import { EPIC_TYPE_LABEL } from "../triage/facets.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { read as readCriteria } from "../wire/acceptance-criteria.ts";
 import {
 	AUDIENCE_NOT_AGENT,
 	NO_ACCEPTANCE_CRITERIA,
@@ -46,7 +46,7 @@ import {
 } from "./codes.ts";
 
 /** The one audience an agent lane may open against — defined once in `../triage/audience.ts`. */
-export {READY_FOR_AGENT};
+export { READY_FOR_AGENT };
 
 /**
  * The type whose deliverable is a recorded choice rather than a pull request — `/adr`'s lane.
@@ -64,7 +64,7 @@ export const DECISION_TYPE_LABEL = "type:decision";
  * The epic type label, re-exported at the seam that fences on it — defined once in
  * `triage/facets.ts`, where the `--type` vocabulary it derives from lives.
  */
-export {EPIC_TYPE_LABEL};
+export { EPIC_TYPE_LABEL };
 
 /**
  * The four types an agent build lane may take — the type axis's whole vocabulary, declared once.
@@ -93,15 +93,15 @@ const TYPE_PREFIX = "type:";
  */
 export type TypeAxis =
 	/** Every `type:` label carried is one of {@link BUILDABLE_TYPE_LABELS}, or none is carried. */
-	| {readonly _tag: "Buildable"}
+	| { readonly _tag: "Buildable" }
 	/** `label` is the first carried `type:` label outside the buildable set. */
-	| {readonly _tag: "NotBuildable"; readonly label: string};
+	| { readonly _tag: "NotBuildable"; readonly label: string };
 
 export const typeAxisOf = (issue: IssueFacts): TypeAxis => {
 	const barred = issue.labels
 		.filter((label) => label.startsWith(TYPE_PREFIX))
 		.find((label) => !BUILDABLE_TYPE_LABELS.some((buildable) => buildable === label));
-	return barred === undefined ? {_tag: "Buildable"} : {_tag: "NotBuildable", label: barred};
+	return barred === undefined ? { _tag: "Buildable" } : { _tag: "NotBuildable", label: barred };
 };
 
 /**
@@ -120,7 +120,7 @@ export const typeAxisOf = (issue: IssueFacts): TypeAxis => {
  */
 export type CriteriaAxis =
 	/** A readable `### Acceptance criteria` block — the lane has something to build against. */
-	| {readonly _tag: "Contracted"}
+	| { readonly _tag: "Contracted" }
 	/** No contract: `state` is the wire read's own token, `reason` its own words. */
 	| {
 			readonly _tag: "NoContract";
@@ -138,7 +138,7 @@ export const NO_CRITERIA_REASON = "no-acceptance-criteria";
 
 export const criteriaAxisOf = (issue: IssueFacts): CriteriaAxis => {
 	const read = readCriteria(issue.body);
-	if (read._tag === "Found") return {_tag: "Contracted"};
+	if (read._tag === "Found") return { _tag: "Contracted" };
 	return {
 		_tag: "NoContract",
 		state: read._tag === "Absent" ? "absent" : "malformed",
@@ -157,7 +157,7 @@ export const criteriaAxisOf = (issue: IssueFacts): CriteriaAxis => {
  * citation that names some other issue, not one that names the wrong comment.
  */
 export type Citation =
-	| {readonly _tag: "None"}
+	| { readonly _tag: "None" }
 	| {
 			readonly _tag: "Cited";
 			readonly issue: number;
@@ -167,7 +167,7 @@ export type Citation =
 	  };
 
 /** No ruling was cited — the reading every seam but a `--cites` claim takes. */
-export const NO_CITATION: Citation = {_tag: "None"};
+export const NO_CITATION: Citation = { _tag: "None" };
 
 const CITATION_URL =
 	/^https:\/\/github\.com\/([^/\s]+)\/([^/\s]+)\/issues\/(\d+)#issuecomment-(\d+)$/;
@@ -177,8 +177,8 @@ export const CITATION_GRAMMAR =
 	"https://github.com/<owner>/<repo>/issues/<n>#issuecomment-<comment-id>";
 
 export type CitationRead =
-	| {readonly _tag: "Read"; readonly citation: Citation}
-	| {readonly _tag: "Malformed"; readonly reason: string};
+	| { readonly _tag: "Read"; readonly citation: Citation }
+	| { readonly _tag: "Malformed"; readonly reason: string };
 
 /**
  * Read a `--cites` value against the repository and issue the claim is actually addressed to.
@@ -210,7 +210,7 @@ export const parseCitation = (value: string, repo: string, issue: number): Citat
 	}
 	return {
 		_tag: "Read",
-		citation: {_tag: "Cited", issue, commentId: Number(commentId), url: trimmed},
+		citation: { _tag: "Cited", issue, commentId: Number(commentId), url: trimmed },
 	};
 };
 
@@ -240,21 +240,21 @@ export interface SubjectFacts {
  * ordinary PR claim retains the scalar first-reference behavior.
  */
 export type ScopeSubject =
-	| {readonly _tag: "Own"}
-	| {readonly _tag: "Served"; readonly number: number; readonly kind: "fixes" | "part-of"}
+	| { readonly _tag: "Own" }
+	| { readonly _tag: "Served"; readonly number: number; readonly kind: "fixes" | "part-of" }
 	/** A PR whose body names no issue at all, or not the explicitly requested one. */
-	| {readonly _tag: "Unserved"};
+	| { readonly _tag: "Unserved" };
 
 export const scopeSubjectOf = (
 	target: SubjectFacts,
 	requestedIssue: number | null = null,
 ): ScopeSubject => {
-	if (!target.isPullRequest) return {_tag: "Own"};
+	if (!target.isPullRequest) return { _tag: "Own" };
 	const refs = issueRefsOf(target.body);
 	const number = requestedIssue ?? refs.numbers[0] ?? null;
 	return number === null || refs.kind === "none" || !refs.numbers.includes(number)
-		? {_tag: "Unserved"}
-		: {_tag: "Served", number, kind: refs.kind};
+		? { _tag: "Unserved" }
+		: { _tag: "Served", number, kind: refs.kind };
 };
 
 /**
@@ -296,12 +296,12 @@ export interface ActiveCampaign {
  * `Active` carries a non-empty tuple, so "active while naming no campaign" cannot be constructed.
  */
 export type Dispatch =
-	| {readonly _tag: "Active"; readonly campaigns: readonly [ActiveCampaign, ...ActiveCampaign[]]}
-	| {readonly _tag: "None"}
-	| {readonly _tag: "Malformed"; readonly reason: string};
+	| { readonly _tag: "Active"; readonly campaigns: readonly [ActiveCampaign, ...ActiveCampaign[]] }
+	| { readonly _tag: "None" }
+	| { readonly _tag: "Malformed"; readonly reason: string };
 
 /** A table that parsed, so `Malformed` cannot reach a reader of its milestones. */
-export type ParsedDispatch = Exclude<Dispatch, {readonly _tag: "Malformed"}>;
+export type ParsedDispatch = Exclude<Dispatch, { readonly _tag: "Malformed" }>;
 
 /** The milestones a parsed table's `active` rows pin — empty when none is active. */
 export const dispatchMilestones = (dispatch: ParsedDispatch): ReadonlyArray<number> =>
@@ -360,7 +360,7 @@ export interface CampaignScan {
 export const scanCampaigns = (text: string): CampaignScan => {
 	const lines = text.split("\n");
 	const start = lines.findIndex((line) => HEADING.test(line.trim()));
-	if (start === -1) return {heading: null, header: null, separator: null, rows: []};
+	if (start === -1) return { heading: null, header: null, separator: null, rows: [] };
 
 	let header: number | null = null;
 	let separator: number | null = null;
@@ -378,9 +378,9 @@ export const scanCampaigns = (text: string): CampaignScan => {
 			header ??= i;
 			continue;
 		}
-		rows.push({index: i, cells});
+		rows.push({ index: i, cells });
 	}
-	return {heading: start, header, separator, rows};
+	return { heading: start, header, separator, rows };
 };
 
 /** One readable `## Campaigns` row. */
@@ -401,8 +401,8 @@ export interface CampaignRow {
  * file, never a failed read. Which of those a caller calls `none` is the caller's question.
  */
 export type CampaignTable =
-	| {readonly _tag: "Rows"; readonly rows: ReadonlyArray<CampaignRow>}
-	| {readonly _tag: "Malformed"; readonly reason: string};
+	| { readonly _tag: "Rows"; readonly rows: ReadonlyArray<CampaignRow> }
+	| { readonly _tag: "Malformed"; readonly reason: string };
 
 /**
  * Judge every scanned row. Its `rows` are positionally aligned with {@link scanCampaigns}'s, because
@@ -411,7 +411,7 @@ export type CampaignTable =
  */
 export const parseCampaigns = (text: string): CampaignTable => {
 	const rows: CampaignRow[] = [];
-	for (const [index, {cells}] of scanCampaigns(text).rows.entries()) {
+	for (const [index, { cells }] of scanCampaigns(text).rows.entries()) {
 		const where = `## Campaigns row ${index + 1}`;
 		if (cells.length !== 3) {
 			return {
@@ -421,11 +421,11 @@ export const parseCampaigns = (text: string): CampaignTable => {
 		}
 		const name = cells[0] ?? "";
 		if (name === "") {
-			return {_tag: "Malformed", reason: `${where}'s campaign cell is empty`};
+			return { _tag: "Malformed", reason: `${where}'s campaign cell is empty` };
 		}
 		const milestone = MILESTONE_CELL.exec(cells[1] ?? "");
 		if (milestone?.[1] === undefined) {
-			return {_tag: "Malformed", reason: `${where}'s milestone cell "${cells[1]}" is not #<int>`};
+			return { _tag: "Malformed", reason: `${where}'s milestone cell "${cells[1]}" is not #<int>` };
 		}
 		const state = (cells[2] ?? "").toLowerCase();
 		const legal = CAMPAIGN_STATES.find((candidate) => candidate === state);
@@ -435,9 +435,9 @@ export const parseCampaigns = (text: string): CampaignTable => {
 				reason: `${where}'s state cell "${cells[2]}" is none of ${CAMPAIGN_STATES.join(" / ")}`,
 			};
 		}
-		rows.push({milestone: Number.parseInt(milestone[1], 10), state: legal, name});
+		rows.push({ milestone: Number.parseInt(milestone[1], 10), state: legal, name });
 	}
-	return {_tag: "Rows", rows};
+	return { _tag: "Rows", rows };
 };
 
 /**
@@ -452,15 +452,15 @@ export const readCampaigns = (text: string): Dispatch => {
 	if (table._tag === "Malformed") return table;
 	const [first, ...rest] = table.rows
 		.filter((row) => row.state === "active")
-		.map(({milestone, name}): ActiveCampaign => ({milestone, name}));
-	return first === undefined ? {_tag: "None"} : {_tag: "Active", campaigns: [first, ...rest]};
+		.map(({ milestone, name }): ActiveCampaign => ({ milestone, name }));
+	return first === undefined ? { _tag: "None" } : { _tag: "Active", campaigns: [first, ...rest] };
 };
 
 /** Axis one — who the work is for. Hosted here, never redefined. */
 export type AudienceAxis =
-	| {readonly _tag: "Agent"}
+	| { readonly _tag: "Agent" }
 	/** `label` is the `ready-for:` label carried, or `null` when the issue carries none. */
-	| {readonly _tag: "NotAgent"; readonly label: string | null};
+	| { readonly _tag: "NotAgent"; readonly label: string | null };
 
 /**
  * Why a lane claims — `plan`, `gate`, or `build`. A closed enum, never a policy map.
@@ -494,20 +494,20 @@ export const parseClaimPurpose = (value: string): ClaimPurpose | null =>
  */
 export type RepairClaim =
 	/** The target is an issue and judges itself — no PR is in flight. */
-	| {readonly _tag: "NotRepair"}
+	| { readonly _tag: "NotRepair" }
 	/** An open PR serves this issue, whose deliverable is a recorded decision. */
-	| {readonly _tag: "DecisionRepair"; readonly pr: number}
+	| { readonly _tag: "DecisionRepair"; readonly pr: number }
 	/** An open PR serves this issue, and the issue is not a decision. */
-	| {readonly _tag: "OrdinaryRepair"; readonly pr: number};
+	| { readonly _tag: "OrdinaryRepair"; readonly pr: number };
 
 /** The reading every seam but the claim path takes: the pool judges issues, never a PR in flight. */
-export const NOT_REPAIR: RepairClaim = {_tag: "NotRepair"};
+export const NOT_REPAIR: RepairClaim = { _tag: "NotRepair" };
 
 /** Read the repair state off an open PR and the issue the fence judges in its place. */
 export const repairClaimOf = (pr: number, served: IssueFacts): RepairClaim =>
 	served.labels.includes(DECISION_TYPE_LABEL)
-		? {_tag: "DecisionRepair", pr}
-		: {_tag: "OrdinaryRepair", pr};
+		? { _tag: "DecisionRepair", pr }
+		: { _tag: "OrdinaryRepair", pr };
 
 /**
  * Only a build-purpose claim is bound by the audience axis, and not even that one when it
@@ -562,7 +562,7 @@ export const citationOpens = (label: string, citation: Citation): boolean =>
 /** Absence is an unknown audience, never an agent audience. */
 export const audienceAxisOf = (issue: IssueFacts): AudienceAxis =>
 	issue.labels.includes(READY_FOR_AGENT)
-		? {_tag: "Agent"}
+		? { _tag: "Agent" }
 		: {
 				_tag: "NotAgent",
 				label: issue.labels.find((label) => label.startsWith(READY_FOR_PREFIX)) ?? null,
@@ -586,12 +586,12 @@ export type Admission =
 	| {
 			readonly _tag: "TypeNotBuildable";
 			readonly audience: AudienceAxis;
-			readonly type: Extract<TypeAxis, {readonly _tag: "NotBuildable"}>;
+			readonly type: Extract<TypeAxis, { readonly _tag: "NotBuildable" }>;
 			readonly criteria: CriteriaAxis;
 	  }
 	| {
 			readonly _tag: "AudienceNotAgent";
-			readonly audience: Extract<AudienceAxis, {readonly _tag: "NotAgent"}>;
+			readonly audience: Extract<AudienceAxis, { readonly _tag: "NotAgent" }>;
 			readonly type: TypeAxis;
 			readonly criteria: CriteriaAxis;
 	  }
@@ -599,14 +599,14 @@ export type Admission =
 			readonly _tag: "NoCriteria";
 			readonly audience: AudienceAxis;
 			readonly type: TypeAxis;
-			readonly criteria: Extract<CriteriaAxis, {readonly _tag: "NoContract"}>;
+			readonly criteria: Extract<CriteriaAxis, { readonly _tag: "NoContract" }>;
 	  }
 	/**
 	 * A pull request that names no issue to judge: no closing keyword nor "Part of #<n>", or one
 	 * proven absent. It carries no axis verdict because no axis ran — there was no record to run it on.
 	 */
-	| {readonly _tag: "NoServedIssue"; readonly pr: number; readonly reason: string}
-	| {readonly _tag: "Unknown"; readonly code: number; readonly reason: string};
+	| { readonly _tag: "NoServedIssue"; readonly pr: number; readonly reason: string }
+	| { readonly _tag: "Unknown"; readonly code: number; readonly reason: string };
 
 export const noServedIssue = (pr: number, reason: string): Admission => ({
 	_tag: "NoServedIssue",
@@ -640,15 +640,15 @@ export const admissionOf = (
 		typeAxisBinds(purpose, repair) &&
 		!citationOpens(type.label, citation)
 	) {
-		return {_tag: "TypeNotBuildable", audience, type, criteria};
+		return { _tag: "TypeNotBuildable", audience, type, criteria };
 	}
 	if (audience._tag === "NotAgent" && audienceAxisBinds(purpose, repair)) {
-		return {_tag: "AudienceNotAgent", audience, type, criteria};
+		return { _tag: "AudienceNotAgent", audience, type, criteria };
 	}
 	if (criteria._tag === "NoContract" && criteriaAxisBinds(purpose, repair)) {
-		return {_tag: "NoCriteria", audience, type, criteria};
+		return { _tag: "NoCriteria", audience, type, criteria };
 	}
-	return {_tag: "Admitted", audience, type, criteria, citation};
+	return { _tag: "Admitted", audience, type, criteria, citation };
 };
 
 /** The word `build pick` reports per excluded issue; `null` for an admitted one. */
@@ -687,11 +687,11 @@ export const ADMISSION_EXIT_CODES: ReadonlyArray<{
 	readonly code: number;
 	readonly condition: string;
 }> = [
-	{code: PRECONDITION_UNKNOWN, condition: "served issue unreadable"},
-	{code: TYPE_NOT_BUILDABLE, condition: `${DECISION_TYPE_LABEL} or ${EPIC_TYPE_LABEL}`},
-	{code: AUDIENCE_NOT_AGENT, condition: `not ${READY_FOR_AGENT}`},
-	{code: NO_ACCEPTANCE_CRITERIA, condition: "no acceptance criteria"},
-	{code: NO_SERVED_ISSUE, condition: "pull request names no served issue"},
+	{ code: PRECONDITION_UNKNOWN, condition: "served issue unreadable" },
+	{ code: TYPE_NOT_BUILDABLE, condition: `${DECISION_TYPE_LABEL} or ${EPIC_TYPE_LABEL}` },
+	{ code: AUDIENCE_NOT_AGENT, condition: `not ${READY_FOR_AGENT}` },
+	{ code: NO_ACCEPTANCE_CRITERIA, condition: "no acceptance criteria" },
+	{ code: NO_SERVED_ISSUE, condition: "pull request names no served issue" },
 ];
 
 /** The purpose line the claim seam prints, so an exempted audience is read rather than inferred. */

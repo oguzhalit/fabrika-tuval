@@ -23,9 +23,9 @@
  * a stderr line.
  */
 
-import type {CommentRecord} from "../io/issues.ts";
-import type {Polarity} from "../wire/marker-line.ts";
-import {read as readMarker, renderRange} from "../wire/range-verdict-marker.ts";
+import type { CommentRecord } from "../io/issues.ts";
+import type { Polarity } from "../wire/marker-line.ts";
+import { read as readMarker, renderRange } from "../wire/range-verdict-marker.ts";
 
 /** One namespace's newest range-scoped verdict claim on a child issue. */
 export interface RangeVerdict {

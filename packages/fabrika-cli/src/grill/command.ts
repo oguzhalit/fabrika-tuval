@@ -10,19 +10,19 @@
  * silently opts out of the excess-operand guard, which `../excess-operand.unit.test.ts` reds on.
  */
 
-import {Effect, type FileSystem, Option, Result} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readFile} from "../io/fs.ts";
-import {readStdin} from "../io/stdin.ts";
-import {FAILED, refuse} from "../verb.ts";
-import {type DocumentRead, runAnswer} from "./answer-verb.ts";
-import {runAuditOpen} from "./audit-open.ts";
-import {openSubject, runOpen} from "./open-verb.ts";
-import {runRead} from "./read-verb.ts";
-import {runRound} from "./round-verb.ts";
-import {runRule} from "./rule-verb.ts";
+import { Effect, type FileSystem, Option, Result } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readFile } from "../io/fs.ts";
+import { readStdin } from "../io/stdin.ts";
+import { FAILED, refuse } from "../verb.ts";
+import { type DocumentRead, runAnswer } from "./answer-verb.ts";
+import { runAuditOpen } from "./audit-open.ts";
+import { openSubject, runOpen } from "./open-verb.ts";
+import { runRead } from "./read-verb.ts";
+import { runRound } from "./round-verb.ts";
+import { runRule } from "./rule-verb.ts";
 
 /**
  * Read a document the verb was pointed at, as a value.
@@ -35,8 +35,8 @@ const document = (path: string): Effect.Effect<DocumentRead, never, FileSystem.F
 	Effect.gen(function* () {
 		const read = yield* Effect.result(readFile(path));
 		return Result.isFailure(read)
-			? ({_tag: "Failed", reason: read.failure.reason} satisfies DocumentRead)
-			: ({_tag: "Text", text: read.success} satisfies DocumentRead);
+			? ({ _tag: "Failed", reason: read.failure.reason } satisfies DocumentRead)
+			: ({ _tag: "Text", text: read.success } satisfies DocumentRead);
 	});
 
 const repoFlag = Flag.string("repo").pipe(
@@ -85,7 +85,7 @@ const open = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({topic, ticket, repo, auditContext, auditRecover, auditSession}) {
+	Effect.fn(function* ({ topic, ticket, repo, auditContext, auditRecover, auditSession }) {
 		if (Option.isSome(auditContext)) {
 			if (
 				Option.isSome(topic) ||
@@ -106,8 +106,8 @@ const open = leafCommand(
 					: yield* runAuditOpen({
 							text: input.text,
 							attempt: auditRecover
-								? {_tag: "Recover", session: Option.getOrNull(auditSession)}
-								: {_tag: "Create"},
+								? { _tag: "Recover", session: Option.getOrNull(auditSession) }
+								: { _tag: "Create" },
 							repo: Option.getOrNull(repo),
 							env: process.env,
 						}),
@@ -122,7 +122,7 @@ const open = leafCommand(
 						FAILED,
 						"grill open: neither --topic nor --ticket was given — a session needs a subject, or a ticket to take one from.",
 					)
-				: yield* runOpen({subject, repo: Option.getOrNull(repo), env: process.env}),
+				: yield* runOpen({ subject, repo: Option.getOrNull(repo), env: process.env }),
 		);
 	}),
 ).pipe(
@@ -145,7 +145,7 @@ const open = leafCommand(
 			'  Derivation: the grilling skill\'s contract.md, "grill open"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika grill open --ticket 5652"}]),
+	Command.withExamples([{ command: "fabrika grill open --ticket 5652" }]),
 );
 
 const round = leafCommand(
@@ -160,7 +160,7 @@ const round = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({session, supersedes, repo}) {
+	Effect.fn(function* ({ session, supersedes, repo }) {
 		yield* emit(
 			yield* runRound({
 				session,
@@ -191,7 +191,7 @@ const round = leafCommand(
 			'  Derivation: the grilling skill\'s contract.md, "grill round"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika grill round 9412 --supersedes R1.4 < round.md"}]),
+	Command.withExamples([{ command: "fabrika grill round 9412 --supersedes R1.4 < round.md" }]),
 );
 
 const answerCmd = leafCommand(
@@ -204,7 +204,7 @@ const answerCmd = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({session, question, finding, repo}) {
+	Effect.fn(function* ({ session, question, finding, repo }) {
 		yield* emit(
 			yield* runAnswer({
 				session,
@@ -236,7 +236,7 @@ const answerCmd = leafCommand(
 			'  Derivation: the grilling skill\'s contract.md, "grill answer"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika grill answer 9412 R2.1 --finding finding.md"}]),
+	Command.withExamples([{ command: "fabrika grill answer 9412 R2.1 --finding finding.md" }]),
 );
 
 const rule = leafCommand(
@@ -251,7 +251,7 @@ const rule = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({session, question, authorization, repo}) {
+	Effect.fn(function* ({ session, question, authorization, repo }) {
 		yield* emit(
 			yield* runRule({
 				session,
@@ -285,15 +285,15 @@ const rule = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika grill rule 9412 R2.3 --authorization authorization.md"},
+		{ command: "fabrika grill rule 9412 R2.3 --authorization authorization.md" },
 	]),
 );
 
 const read = leafCommand(
 	"read",
-	{session: sessionArg, repo: repoFlag},
-	Effect.fn(function* ({session, repo}) {
-		yield* emit(yield* runRead({session, repo: Option.getOrNull(repo), env: process.env}));
+	{ session: sessionArg, repo: repoFlag },
+	Effect.fn(function* ({ session, repo }) {
+		yield* emit(yield* runRead({ session, repo: Option.getOrNull(repo), env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("The question frontier and total audit-context read."),
@@ -306,7 +306,7 @@ const read = leafCommand(
 			'  Derivation: the grilling skill\'s contract.md, "grill read"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika grill read 9412"}]),
+	Command.withExamples([{ command: "fabrika grill read 9412" }]),
 );
 
 export const grillCommand = Command.make("grill").pipe(

@@ -7,10 +7,10 @@
  * an answer this package owns instead of carrying a routing table in prose — a prose copy
  * of an exit table is a copy that drifts from the exits the moment either verb grows a code.
  */
-import {Effect} from "effect";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {NO_RECIPE} from "./codes.ts";
-import {dispositionOf, RECIPE_ROUTES, routeOf} from "./drive.ts";
+import { Effect } from "effect";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { NO_RECIPE } from "./codes.ts";
+import { dispositionOf, RECIPE_ROUTES, routeOf } from "./drive.ts";
 
 const VERB = "fabrika recipe route";
 

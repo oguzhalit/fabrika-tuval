@@ -15,11 +15,11 @@
  * - **An installed artifact** answers absolute, because a worktree cut from a repo carries no
  *   `node_modules` of its own and a repo-relative `node_modules/…` path would not exist there.
  */
-import {fileURLToPath} from "node:url";
-import {Effect, FileSystem, Path} from "effect";
-import {readFile} from "../io/fs.ts";
-import {readInstallManifest} from "./local.ts";
-import {originOf, type SelfOrigin} from "./root.ts";
+import { fileURLToPath } from "node:url";
+import { Effect, FileSystem, Path } from "effect";
+import { readFile } from "../io/fs.ts";
+import { readInstallManifest } from "./local.ts";
+import { originOf, type SelfOrigin } from "./root.ts";
 
 /** This module's own directory — the anchor the running package root is derived from. */
 const MODULE_DIR = fileURLToPath(new URL(".", import.meta.url));
@@ -38,8 +38,8 @@ export const entrypointFor = (path: Path.Path, origin: SelfOrigin, binPath: stri
 };
 
 export type EntrypointRead =
-	| {readonly _tag: "Entrypoint"; readonly entrypoint: string}
-	| {readonly _tag: "Unresolved"; readonly reason: string};
+	| { readonly _tag: "Entrypoint"; readonly entrypoint: string }
+	| { readonly _tag: "Unresolved"; readonly reason: string };
 
 /**
  * This run's own entrypoint, resolved from the running package's manifest rather than from
@@ -59,15 +59,15 @@ export const resolveEntrypoint = (
 		const soften = Effect.catch(() => Effect.succeed(undefined));
 		const packageRoot = yield* fs.realPath(path.resolve(moduleDir, "..", "..")).pipe(soften);
 		if (packageRoot === undefined) {
-			return {_tag: "Unresolved", reason: "this fabrika's own package root is not on disk"};
+			return { _tag: "Unresolved", reason: "this fabrika's own package root is not on disk" };
 		}
 		const manifestPath = path.join(packageRoot, "package.json");
 		const text = yield* readFile(manifestPath).pipe(soften);
 		if (text === undefined) {
-			return {_tag: "Unresolved", reason: `${manifestPath} could not be read`};
+			return { _tag: "Unresolved", reason: `${manifestPath} could not be read` };
 		}
 		const manifest = readInstallManifest(path, manifestPath, text);
-		if ("corrupt" in manifest) return {_tag: "Unresolved", reason: manifest.corrupt};
+		if ("corrupt" in manifest) return { _tag: "Unresolved", reason: manifest.corrupt };
 		const binPath = yield* fs.realPath(manifest.bin).pipe(soften);
 		if (binPath === undefined) {
 			return {
@@ -85,5 +85,5 @@ export const resolveEntrypoint = (
 				reason: `whether ${packageRoot} is a checkout of its own repo could not be read`,
 			};
 		}
-		return {_tag: "Entrypoint", entrypoint: entrypointFor(path, origin, binPath)};
+		return { _tag: "Entrypoint", entrypoint: entrypointFor(path, origin, binPath) };
 	});

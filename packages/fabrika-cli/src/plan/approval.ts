@@ -11,16 +11,16 @@
  * list with no author gate is exactly the shape an authority check exists to forbid.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type CommentRecord, listComments} from "../io/issues.ts";
-import {controlPlaneRoster} from "../ship/roster.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {approves, type PlanApproval, read as readApproval} from "../wire/plan-approval.ts";
-import {PLAN_UNAPPROVED, PRECONDITION_UNKNOWN} from "./codes.ts";
-import type {PlanMessages} from "./load.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type CommentRecord, listComments } from "../io/issues.ts";
+import { controlPlaneRoster } from "../ship/roster.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { approves, type PlanApproval, read as readApproval } from "../wire/plan-approval.ts";
+import { PLAN_UNAPPROVED, PRECONDITION_UNKNOWN } from "./codes.ts";
+import type { PlanMessages } from "./load.ts";
 
-export {controlPlaneRoster, type RosterRead} from "../ship/roster.ts";
+export { controlPlaneRoster, type RosterRead } from "../ship/roster.ts";
 
 /** The three states an epic's approval resolves to. A fourth would have to be added here, in the open. */
 export type ApprovalState = "current" | "stale" | "absent";
@@ -83,9 +83,9 @@ export const scanApprovals = (
 			unauthorized += 1;
 			continue;
 		}
-		standing = {approval: found.value, by: comment.author, comment: comment.id};
+		standing = { approval: found.value, by: comment.author, comment: comment.id };
 	}
-	return {standing, disregarded, unauthorized};
+	return { standing, disregarded, unauthorized };
 };
 
 /** The state a scan resolves to against the digest derived from the plan as it now stands. */
@@ -95,8 +95,8 @@ export const stateOf = (scan: ApprovalScan, epic: number, derived: string): Appr
 };
 
 export type ApprovalGate =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Approved"; readonly standing: StandingApproval};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Approved"; readonly standing: StandingApproval };
 
 /**
  * The approval **enforcement** the three re-deriving verbs share — a fail-closed precondition, seated
@@ -117,7 +117,7 @@ export const requireApproval = (
 	notes: ReadonlyArray<string>,
 ): Effect.Effect<ApprovalGate, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {verb} = messages;
+		const { verb } = messages;
 		const refused = (
 			code: number,
 			message: string,
@@ -164,5 +164,5 @@ export const requireApproval = (
 				evidence,
 			);
 		}
-		return {_tag: "Approved" as const, standing};
+		return { _tag: "Approved" as const, standing };
 	});

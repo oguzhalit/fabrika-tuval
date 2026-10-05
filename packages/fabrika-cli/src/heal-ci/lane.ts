@@ -17,7 +17,7 @@
  * `ours` or `granted` (`../ownership/`). A standing nobody could read is not ours: it routes to the
  * author too, because naming `build` on an unproven read is the takeover this check exists to stop.
  */
-import type {StallToken} from "./stall.ts";
+import type { StallToken } from "./stall.ts";
 
 /** The closed set the first line's arrow draws from — a lane, never a person. */
 export const LANE_TOKENS = ["build", "review", "ship", "author", "human", "nobody"] as const;

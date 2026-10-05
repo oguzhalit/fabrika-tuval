@@ -6,7 +6,7 @@
  * `## Context`, which these verbs never touch — so the one-line-diff assertion below is that rule
  * made mechanical instead of remembered, and a diff on any other line aborts the write.
  */
-import {isSuperseded, sortIds} from "./records.ts";
+import { isSuperseded, sortIds } from "./records.ts";
 
 export type Relationship = "supersede" | "amend-in-part";
 
@@ -25,7 +25,7 @@ const renderLink = (link: StatusLink): string => `[${link.id}](${link.file})`;
 export const parseLinks = (status: string): ReadonlyArray<StatusLink> => {
 	const out: StatusLink[] = [];
 	for (const m of status.matchAll(LINK)) {
-		if (m[1] !== undefined && m[2] !== undefined) out.push({id: m[1], file: m[2]});
+		if (m[1] !== undefined && m[2] !== undefined) out.push({ id: m[1], file: m[2] });
 	}
 	return out;
 };
@@ -108,10 +108,10 @@ export const diffBeyondStatusLine = (
 };
 
 export type RewriteOutcome =
-	| {readonly _tag: "Rewritten"; readonly text: string; readonly statusAfter: string}
-	| {readonly _tag: "NoSingleStatusLine"}
-	| {readonly _tag: "AlreadySuperseded"}
-	| {readonly _tag: "MultiLineDiff"; readonly changed: number};
+	| { readonly _tag: "Rewritten"; readonly text: string; readonly statusAfter: string }
+	| { readonly _tag: "NoSingleStatusLine" }
+	| { readonly _tag: "AlreadySuperseded" }
+	| { readonly _tag: "MultiLineDiff"; readonly changed: number };
 
 /** Index of the single frontmatter `status:` line, or `null` when there is not exactly one. */
 const statusLineIndex = (lines: ReadonlyArray<string>): number | null => {
@@ -149,14 +149,14 @@ export const rewriteStatus = (
 	const newline = text.includes("\r\n") ? "\r\n" : "\n";
 	const lines = text.split(/\r?\n/);
 	const index = statusLineIndex(lines);
-	if (index === null) return {_tag: "NoSingleStatusLine"};
+	if (index === null) return { _tag: "NoSingleStatusLine" };
 	const currentStatus = (lines[index] ?? "").replace(/^status:\s?/, "");
-	if (isSuperseded(currentStatus)) return {_tag: "AlreadySuperseded"};
+	if (isSuperseded(currentStatus)) return { _tag: "AlreadySuperseded" };
 	const statusAfter = nextStatusValue(relationship, currentStatus, added);
 	const rewritten = [...lines];
 	rewritten[index] = `status: ${statusAfter}`;
 	const rewrittenText = rewritten.join(newline);
 	const diff = diffBeyondStatusLine(text, rewrittenText, index);
-	if (diff !== null) return {_tag: "MultiLineDiff", changed: diff};
-	return {_tag: "Rewritten", text: rewrittenText, statusAfter};
+	if (diff !== null) return { _tag: "MultiLineDiff", changed: diff };
+	return { _tag: "Rewritten", text: rewrittenText, statusAfter };
 };

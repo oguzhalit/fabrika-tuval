@@ -13,9 +13,9 @@
  * conforming side at all. A conforming side reads the same file in its own conformance test — a
  * test-time file read, never an import.
  */
-import {describe, expect, it} from "vitest";
-import {loadGoldenPayload} from "../golden-fixture.ts";
-import {DOC_PATH_PATTERNS} from "./doc-leaks.ts";
+import { describe, expect, it } from "vitest";
+import { loadGoldenPayload } from "../golden-fixture.ts";
+import { DOC_PATH_PATTERNS } from "./doc-leaks.ts";
 
 interface PinnedPattern {
 	readonly source: string;
@@ -27,7 +27,7 @@ const pinned = (): ReadonlyArray<PinnedPattern> =>
 		.patterns as ReadonlyArray<PinnedPattern>;
 
 const declared = (): ReadonlyArray<PinnedPattern> =>
-	DOC_PATH_PATTERNS.map(({pattern}) => ({source: pattern.source, flags: pattern.flags}));
+	DOC_PATH_PATTERNS.map(({ pattern }) => ({ source: pattern.source, flags: pattern.flags }));
 
 describe("DOC_PATH_PATTERNS conforms to the pinned doc-leak vocabulary", () => {
 	it("carries the pinned arms, in the pinned order", () => {
@@ -35,6 +35,6 @@ describe("DOC_PATH_PATTERNS conforms to the pinned doc-leak vocabulary", () => {
 	});
 
 	it("keeps the `g` flag every arm's per-line matchAll scan needs", () => {
-		for (const {flags} of declared()) expect(flags).toContain("g");
+		for (const { flags } of declared()) expect(flags).toContain("g");
 	});
 });

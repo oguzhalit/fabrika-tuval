@@ -17,10 +17,10 @@
  * delegation already had to read this file, and a second parser is a second answer.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import {pnpmWorkspaceGlobs} from "../delegate/root.ts";
-import {exists, isDirectory, type ReadFailed, readDir, readFile} from "../io/fs.ts";
-import {isRecord, parseJson} from "../io/json.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { pnpmWorkspaceGlobs } from "../delegate/root.ts";
+import { exists, isDirectory, type ReadFailed, readDir, readFile } from "../io/fs.ts";
+import { isRecord, parseJson } from "../io/json.ts";
 
 /** One real workspace member: a directory under a declared glob that carries a `package.json`. */
 export interface WorkspaceMember {
@@ -85,7 +85,7 @@ const membersUnder = (
 		if (!glob.endsWith("/*")) {
 			const manifest = path.join(root, glob, MANIFEST);
 			if (!(yield* exists(manifest))) return [];
-			return [{dir: glob, glob, name: yield* manifestName(manifest)}];
+			return [{ dir: glob, glob, name: yield* manifestName(manifest) }];
 		}
 		const parent = glob.slice(0, -2);
 		const base = path.join(root, parent);
@@ -97,7 +97,7 @@ const membersUnder = (
 			if (!(yield* isDirectory(abs))) continue;
 			const manifest = path.join(abs, MANIFEST);
 			if (!(yield* exists(manifest))) continue;
-			found.push({dir: `${parent}/${child}`, glob, name: yield* manifestName(manifest)});
+			found.push({ dir: `${parent}/${child}`, glob, name: yield* manifestName(manifest) });
 		}
 		return found;
 	});
@@ -121,5 +121,5 @@ export const scanWorkspaceMembers = (
 		const members: Array<WorkspaceMember> = [];
 		for (const glob of walked) members.push(...(yield* membersUnder(root, glob)));
 		members.sort((a, b) => (a.dir < b.dir ? -1 : a.dir > b.dir ? 1 : 0));
-		return {declared, walked, members};
+		return { declared, walked, members };
 	});

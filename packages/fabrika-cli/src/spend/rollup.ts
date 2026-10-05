@@ -10,7 +10,7 @@
  * looks right. So the unread halves ride out on the answer next to the total, split the way
  * {@link LedgerSkips} splits them, and a bounded window names how many rows it could not date.
  */
-import type {LedgerRead, LedgerRow, LedgerSkips} from "./ledger.ts";
+import type { LedgerRead, LedgerRow, LedgerSkips } from "./ledger.ts";
 
 /** The four figures a roll-up answers with, plus how many runs stand behind them. */
 export interface SpendTotals {
@@ -94,7 +94,7 @@ const EMPTY: SpendTotals = {
 
 const add = (totals: SpendTotals, row: LedgerRow): SpendTotals => {
 	const runs = totals.runs + 1;
-	if (row.spend._tag !== "Reconstructed") return {...totals, runs};
+	if (row.spend._tag !== "Reconstructed") return { ...totals, runs };
 	const spend = row.spend.spend;
 	return {
 		billed: totals.billed + spend.billed,
@@ -134,8 +134,8 @@ const STAGE_ARM = "\t";
 export const selectWindow = (
 	rows: ReadonlyArray<LedgerRow>,
 	window: ResolvedWindow,
-): {readonly rows: ReadonlyArray<LedgerRow>; readonly undated: number} => {
-	if (window.sinceAt === null && window.untilAt === null) return {rows, undated: 0};
+): { readonly rows: ReadonlyArray<LedgerRow>; readonly undated: number } => {
+	if (window.sinceAt === null && window.untilAt === null) return { rows, undated: 0 };
 	const selected: Array<LedgerRow> = [];
 	let undated = 0;
 	for (const row of rows) {
@@ -148,23 +148,23 @@ export const selectWindow = (
 		if (window.untilAt !== null && at > window.untilAt) continue;
 		selected.push(row);
 	}
-	return {rows: selected, undated};
+	return { rows: selected, undated };
 };
 
 /** Sum a ledger read over a window, grouped three ways. */
 export const rollUp = (read: LedgerRead, window: ResolvedWindow): Rollup => {
-	const {rows, undated} = selectWindow(read.rows, window);
+	const { rows, undated } = selectWindow(read.rows, window);
 	return {
 		window: window.text,
 		totals: rows.reduce(add, EMPTY),
-		skipped: {total: read.skipped, ...read.skips},
+		skipped: { total: read.skipped, ...read.skips },
 		undatedRows: undated,
-		byDay: groupBy(rows, dayOf).map(([day, totals]) => ({day, ...totals})),
-		bySkill: groupBy(rows, (row) => row.skillName).map(([skill, totals]) => ({skill, ...totals})),
+		byDay: groupBy(rows, dayOf).map(([day, totals]) => ({ day, ...totals })),
+		bySkill: groupBy(rows, (row) => row.skillName).map(([skill, totals]) => ({ skill, ...totals })),
 		byStageArm: groupBy(rows, (row) => `${row.stage}${STAGE_ARM}${row.arm}`).map(
 			([key, totals]) => {
 				const [stage = "", arm = ""] = key.split(STAGE_ARM);
-				return {stage, arm, ...totals};
+				return { stage, arm, ...totals };
 			},
 		),
 	};

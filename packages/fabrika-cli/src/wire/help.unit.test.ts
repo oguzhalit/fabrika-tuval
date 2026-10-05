@@ -8,10 +8,10 @@
  * never a cast, so a rename upstream reds here at build time rather than leaving the assertions
  * silently vacuous.
  */
-import {describe, expect, it} from "vitest";
-import type {CommandNode} from "../unknown-subcommand.ts";
-import {wireCommand} from "./command.ts";
-import {registeredKeys} from "./registry.ts";
+import { describe, expect, it } from "vitest";
+import type { CommandNode } from "../unknown-subcommand.ts";
+import { wireCommand } from "./command.ts";
+import { registeredKeys } from "./registry.ts";
 
 /** A flag as this test reads it: a combinator chain over a `Single` carrying the help text. */
 interface FlagNode {
@@ -21,9 +21,9 @@ interface FlagNode {
 
 interface DescribedCommand extends Omit<CommandNode, "subcommands"> {
 	readonly description: string | undefined;
-	readonly examples: ReadonlyArray<{readonly command: string}>;
-	readonly config?: {readonly flags?: ReadonlyArray<FlagNode>} | undefined;
-	readonly subcommands: ReadonlyArray<{readonly commands: ReadonlyArray<DescribedCommand>}>;
+	readonly examples: ReadonlyArray<{ readonly command: string }>;
+	readonly config?: { readonly flags?: ReadonlyArray<FlagNode> } | undefined;
+	readonly subcommands: ReadonlyArray<{ readonly commands: ReadonlyArray<DescribedCommand> }>;
 }
 
 const group: DescribedCommand = wireCommand;

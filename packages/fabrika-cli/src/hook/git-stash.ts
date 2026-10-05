@@ -15,9 +15,9 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/6844#issuecomment-5519865462
  */
-import {isAbsolute} from "node:path";
-import type {ChildOutcome} from "../io/exec.ts";
-import type {Decision} from "./pre-tool-use.ts";
+import { isAbsolute } from "node:path";
+import type { ChildOutcome } from "../io/exec.ts";
+import type { Decision } from "./pre-tool-use.ts";
 
 type Words = ReadonlyArray<string>;
 
@@ -69,7 +69,7 @@ export const simpleCommands = (text: string): ReadonlyArray<Words> => {
 	let word = "";
 	let inWord = false;
 	let redirectTarget = false;
-	const heredocs: Array<{readonly delimiter: string; readonly stripTabs: boolean}> = [];
+	const heredocs: Array<{ readonly delimiter: string; readonly stripTabs: boolean }> = [];
 	let at = 0;
 
 	const endWord = () => {
@@ -126,10 +126,10 @@ export const simpleCommands = (text: string): ReadonlyArray<Words> => {
 			if (char !== "'" && char !== '"' && char !== "\\") delimiter += char;
 			at += 1;
 		}
-		heredocs.push({delimiter, stripTabs});
+		heredocs.push({ delimiter, stripTabs });
 	};
 	const skipHeredocBodies = () => {
-		for (const {delimiter, stripTabs} of heredocs) {
+		for (const { delimiter, stripTabs } of heredocs) {
 			while (at < text.length) {
 				const end = text.indexOf("\n", at) === -1 ? text.length : text.indexOf("\n", at);
 				const line = text.slice(at, end);
@@ -286,22 +286,22 @@ const nestedScript = (words: Words, start: number): string | undefined => {
 };
 
 export type StashRead =
-	| {readonly _tag: "None"}
+	| { readonly _tag: "None" }
 	/** `invocation` is the simple command that runs it, words space-joined, for the refusal text. */
-	| {readonly _tag: "Stash"; readonly invocation: string};
+	| { readonly _tag: "Stash"; readonly invocation: string };
 
 /** Whether any simple command on this line is a `git stash`, in any subcommand form. */
 export const findGitStash = (command: string): StashRead => {
 	for (const words of simpleCommands(command)) {
 		const start = commandStart(words);
-		if (isGitStash(words, start)) return {_tag: "Stash", invocation: words.join(" ")};
+		if (isGitStash(words, start)) return { _tag: "Stash", invocation: words.join(" ") };
 		const script = nestedScript(words, start);
 		if (script !== undefined) {
 			const nested = findGitStash(script);
 			if (nested._tag === "Stash") return nested;
 		}
 	}
-	return {_tag: "None"};
+	return { _tag: "None" };
 };
 
 /** The argv the caller runs in the envelope's `cwd`; absolute output is what makes the pair comparable. */
@@ -318,19 +318,19 @@ export interface GitDirs {
 }
 
 export type GitDirsRead =
-	| {readonly _tag: "Read"; readonly dirs: GitDirs}
+	| { readonly _tag: "Read"; readonly dirs: GitDirs }
 	/** Nothing was established, so nothing may be judged. */
-	| {readonly _tag: "Unread"; readonly reason: string};
+	| { readonly _tag: "Unread"; readonly reason: string };
 
 const decoded = (bytes: Uint8Array): string => new TextDecoder().decode(bytes);
 
 /** Read the two dirs off a {@link GIT_DIRS_ARGS} run. Anything but two absolute paths is Unread. */
 export const readGitDirs = (outcome: ChildOutcome, timeoutSeconds: number): GitDirsRead => {
 	if (outcome._tag === "Unstartable") {
-		return {_tag: "Unread", reason: `could not run git — ${outcome.reason}`};
+		return { _tag: "Unread", reason: `could not run git — ${outcome.reason}` };
 	}
 	if (outcome.timedOut) {
-		return {_tag: "Unread", reason: `git rev-parse did not finish within ${timeoutSeconds}s`};
+		return { _tag: "Unread", reason: `git rev-parse did not finish within ${timeoutSeconds}s` };
 	}
 	if (outcome.exitCode !== 0) {
 		const first = decoded(outcome.stderr).trim().split("\n")[0] ?? "";
@@ -344,12 +344,12 @@ export const readGitDirs = (outcome: ChildOutcome, timeoutSeconds: number): GitD
 		.filter((line) => line.trim() !== "");
 	const [gitDir, commonDir] = lines;
 	if (lines.length !== 2 || gitDir === undefined || commonDir === undefined) {
-		return {_tag: "Unread", reason: `git rev-parse printed ${lines.length} line(s), not 2`};
+		return { _tag: "Unread", reason: `git rev-parse printed ${lines.length} line(s), not 2` };
 	}
 	if (!isAbsolute(gitDir) || !isAbsolute(commonDir)) {
-		return {_tag: "Unread", reason: "git rev-parse printed a relative path"};
+		return { _tag: "Unread", reason: "git rev-parse printed a relative path" };
 	}
-	return {_tag: "Read", dirs: {gitDir, commonDir}};
+	return { _tag: "Read", dirs: { gitDir, commonDir } };
 };
 
 export const PATTERN_DOC = ".patterns/worktree-agent-constraints.md";
@@ -360,7 +360,7 @@ export const PATTERN_DOC = ".patterns/worktree-agent-constraints.md";
  * One git dir means this checkout owns the stack alone, so the stash is its own business. Two means a
  * linked worktree, whose stack every sibling worktree also pushes to and pops from.
  */
-export const decideStash = (invocation: string, {gitDir, commonDir}: GitDirs): Decision =>
+export const decideStash = (invocation: string, { gitDir, commonDir }: GitDirs): Decision =>
 	gitDir === commonDir
 		? {
 				_tag: "Allow",

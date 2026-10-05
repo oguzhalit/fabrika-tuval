@@ -26,7 +26,7 @@
  * silently widen the cap by a round nobody granted.
  */
 
-import {CAP_ROUND, RETRY_BUDGET} from "./retry-budget.ts";
+import { CAP_ROUND, RETRY_BUDGET } from "./retry-budget.ts";
 
 /** The recorded rounds that are grants at all: whole numbers at or past the declared cap. */
 const honoured = (cleared: ReadonlyArray<number>, declaredCap: number): ReadonlyArray<number> =>

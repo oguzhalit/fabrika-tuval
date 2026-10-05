@@ -1,5 +1,5 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	comments,
 	GIT_DIRS,
@@ -10,8 +10,8 @@ import {
 	NONCE,
 	pull,
 } from "../build/fixtures.test-support.ts";
-import {fakeSeams, okOut, type Scripted} from "../fakes.test-support.ts";
-import {isBareAtReference} from "../report/leaks.ts";
+import { fakeSeams, okOut, type Scripted } from "../fakes.test-support.ts";
+import { isBareAtReference } from "../report/leaks.ts";
 import {
 	BAD_SECTIONS,
 	CAPTURE_INVALID,
@@ -30,16 +30,19 @@ import {
 	type Upload,
 	type UploadTarget,
 } from "./evidence-verb.ts";
-import {encodePng, type FakeBytesFsOptions, fakeBytesFs, solid} from "./fakes.test-support.ts";
-import {sha256Of} from "./png.ts";
-import {pairSets, parseSetManifest} from "./set-manifest.ts";
+import { encodePng, type FakeBytesFsOptions, fakeBytesFs, solid } from "./fakes.test-support.ts";
+import { sha256Of } from "./png.ts";
+import { pairSets, parseSetManifest } from "./set-manifest.ts";
 
 const LANE = `build/4312-editor-focus-loss-${NONCE}`;
 const SCRATCH = `/tmp/fabrika-build/s-9f2e/4312-${NONCE}`;
 const PNG = encodePng(2, 2, solid(2, 2, [0, 0, 0, 255]));
 const SHA = sha256Of(PNG);
 
-const setManifest = (set: string, rows: ReadonlyArray<{surface: string; firstRender?: boolean}>) =>
+const setManifest = (
+	set: string,
+	rows: ReadonlyArray<{ surface: string; firstRender?: boolean }>,
+) =>
 	JSON.stringify({
 		set,
 		captures: rows.map((row) => ({
@@ -58,12 +61,12 @@ const LANE_ROOT = "/repo/trees/lane-a";
 const files = (): Record<string, Uint8Array | string> => ({
 	[`${LANE_ROOT}/.fabrika.jsonc`]: JSON.stringify({
 		uiSurfaces: [
-			{name: "web", prefix: "apps/site/src/", mount: "/", command: "pnpm dev --port {{port}}"},
+			{ name: "web", prefix: "apps/site/src/", mount: "/", command: "pnpm dev --port {{port}}" },
 		],
 	}),
-	[`${SCRATCH}/before/manifest.json`]: setManifest("before", [{surface: "/board"}]),
+	[`${SCRATCH}/before/manifest.json`]: setManifest("before", [{ surface: "/board" }]),
 	[`${SCRATCH}/before/board.png`]: PNG,
-	[`${SCRATCH}/after/manifest.json`]: setManifest("after", [{surface: "/board"}]),
+	[`${SCRATCH}/after/manifest.json`]: setManifest("after", [{ surface: "/board" }]),
 	[`${SCRATCH}/after/board.png`]: PNG,
 });
 
@@ -78,13 +81,13 @@ const script = (overrides: ReadonlyArray<Scripted> = []): ReadonlyArray<Scripted
 	[/GET .*\/repos\/o\/r\/issues\/4312$/, issue()],
 	[
 		/GET .*\/repos\/o\/r\/issues\/4312\/comments/,
-		comments({id: 1, body: marker("s-9f2e", LANE_UUID)}),
+		comments({ id: 1, body: marker("s-9f2e", LANE_UUID) }),
 	],
 	[
 		/GET .*\/repos\/o\/r\/collaborators\/agent\/permission/,
-		{status: 200, body: '{"permission":"write"}'},
+		{ status: 200, body: '{"permission":"write"}' },
 	],
-	[/GET .*\/repos\/o\/r\/pulls\/4318$/, pull({head: {sha: HEAD, ref: LANE}})],
+	[/GET .*\/repos\/o\/r\/pulls\/4318$/, pull({ head: { sha: HEAD, ref: LANE } })],
 	[
 		/POST .*\/repos\/o\/r\/issues\/4318\/comments/,
 		{
@@ -99,7 +102,7 @@ const script = (overrides: ReadonlyArray<Scripted> = []): ReadonlyArray<Scripted
 
 const uploads: Pick<EvidenceOptions, "storeUpload" | "attachmentUpload"> = {
 	storeUpload: (_store: string, target: UploadTarget): Effect.Effect<Upload> =>
-		Effect.succeed({_tag: "Ok", url: `https://depo.example/${target.role}${target.surface}.png`}),
+		Effect.succeed({ _tag: "Ok", url: `https://depo.example/${target.role}${target.surface}.png` }),
 	attachmentUpload: (_repo: string, target: UploadTarget): Effect.Effect<Upload> =>
 		Effect.succeed({
 			_tag: "Ok",
@@ -128,7 +131,7 @@ const withReadback = (
 ): ReadonlyArray<Scripted> => [
 	[
 		/GET .*\/repos\/o\/r\/issues\/comments\/512347$/,
-		{status: 200, body: JSON.stringify({body: body()})},
+		{ status: 200, body: JSON.stringify({ body: body() }) },
 	],
 	...rows,
 ];
@@ -151,7 +154,7 @@ const run = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runEvidence({...options, ...overrides}),
+			runEvidence({ ...options, ...overrides }),
 			Layer.mergeAll(fakeSeams(rows).layer, fakeBytesFs(fs).layer),
 		),
 	);
@@ -167,28 +170,28 @@ describe("parseSetManifest", () => {
 
 describe("pairSets", () => {
 	it("pairs by surface id and labels a firstRender surface as new", () => {
-		const before = [{surface: "/board", path: "b", sha256: SHA, firstRender: false}];
+		const before = [{ surface: "/board", path: "b", sha256: SHA, firstRender: false }];
 		const after = [
-			{surface: "/board", path: "a", sha256: SHA, firstRender: false},
-			{surface: "/new", path: "y", sha256: SHA, firstRender: true},
+			{ surface: "/board", path: "a", sha256: SHA, firstRender: false },
+			{ surface: "/new", path: "y", sha256: SHA, firstRender: true },
 		];
 		const paired = pairSets(before, after);
 		expect(paired).toEqual({
 			_tag: "Pairs",
 			pairs: [
-				{surface: "/board", before: before[0], after: after[0]},
-				{surface: "/new", before: null, after: after[1]},
+				{ surface: "/board", before: before[0], after: after[0] },
+				{ surface: "/new", before: null, after: after[1] },
 			],
 		});
 	});
 
 	it("refuses an after-surface with neither a before nor a firstRender mark", () => {
-		expect(pairSets([], [{surface: "/board", path: "a", sha256: SHA, firstRender: false}])).toEqual(
-			{
-				_tag: "Unexplained",
-				surface: "/board",
-			},
-		);
+		expect(
+			pairSets([], [{ surface: "/board", path: "a", sha256: SHA, firstRender: false }]),
+		).toEqual({
+			_tag: "Unexplained",
+			surface: "/board",
+		});
 	});
 });
 
@@ -196,7 +199,7 @@ describe("runEvidence", () => {
 	it("uploads, posts one head-bound comment, and reads it back", async () => {
 		const outcome = await run(
 			withReadback(script(), () => EXPECTED_BODY),
-			{files: files()},
+			{ files: files() },
 		);
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout)).toEqual({
@@ -218,11 +221,11 @@ describe("runEvidence", () => {
 					attachmentUpload: (_repo, target) =>
 						Effect.succeed(
 							target.role === "before"
-								? {_tag: "Failed", reason: "HTTP 502"}
-								: {_tag: "Ok", url: "https://github.com/user-attachments/assets/x"},
+								? { _tag: "Failed", reason: "HTTP 502" }
+								: { _tag: "Ok", url: "https://github.com/user-attachments/assets/x" },
 						),
 				}),
-				Layer.mergeAll(seams.layer, fakeBytesFs({files: files()}).layer),
+				Layer.mergeAll(seams.layer, fakeBytesFs({ files: files() }).layer),
 			),
 		);
 		expect(outcome.code).toBe(UPLOAD_FAILED);
@@ -235,18 +238,18 @@ describe("runEvidence", () => {
 			script(),
 			{
 				files: {
-					[`${SCRATCH}/after/manifest.json`]: setManifest("after", [{surface: "/board"}]),
+					[`${SCRATCH}/after/manifest.json`]: setManifest("after", [{ surface: "/board" }]),
 					[`${SCRATCH}/after/board.png`]: PNG,
 				},
 			},
-			{before: null},
+			{ before: null },
 		);
 		expect(outcome.code).toBe(BAD_SECTIONS);
 		expect(outcome.stderr.at(-1)).toContain("an unexplained missing baseline");
 	});
 
 	it("refuses a set with no manifest.json on 4", async () => {
-		const outcome = await run(script(), {files: {}});
+		const outcome = await run(script(), { files: {} });
 		expect(outcome.code).toBe(BAD_SECTIONS);
 		expect(outcome.stderr.at(-1)).toContain("a set without its manifest is not a set");
 	});
@@ -256,10 +259,10 @@ describe("runEvidence", () => {
 			script([
 				[
 					/GET .*\/repos\/o\/r\/pulls\/4318$/,
-					pull({state: "closed", head: {sha: HEAD, ref: LANE}}),
+					pull({ state: "closed", head: { sha: HEAD, ref: LANE } }),
 				],
 			]),
-			{files: files()},
+			{ files: files() },
 		);
 		expect(outcome.code).toBe(ZERO_SCOPE);
 	});
@@ -269,10 +272,10 @@ describe("runEvidence", () => {
 			script([
 				[
 					/GET .*\/repos\/o\/r\/pulls\/4318$/,
-					pull({head: {sha: HEAD, ref: "build/9999-other-aaaaaaaa"}}),
+					pull({ head: { sha: HEAD, ref: "build/9999-other-aaaaaaaa" } }),
 				],
 			]),
-			{files: files()},
+			{ files: files() },
 		);
 		expect(outcome.code).toBe(LANE_NOT_MINE);
 	});
@@ -282,18 +285,18 @@ describe("runEvidence", () => {
 			script([
 				[
 					/GET .*\/repos\/o\/r\/issues\/4312\/comments/,
-					comments({id: 1, body: marker("other-session", LANE_UUID)}),
+					comments({ id: 1, body: marker("other-session", LANE_UUID) }),
 				],
 			]),
-			{files: files()},
+			{ files: files() },
 		);
 		expect(outcome.code).toBe(LANE_NOT_MINE);
 	});
 
 	it("refuses on 8 when the post itself fails — it may or may not have landed", async () => {
 		const outcome = await run(
-			script([[/POST .*\/repos\/o\/r\/issues\/4318\/comments/, {status: 502, body: "{}"}]]),
-			{files: files()},
+			script([[/POST .*\/repos\/o\/r\/issues\/4318\/comments/, { status: 502, body: "{}" }]]),
+			{ files: files() },
 		);
 		expect(outcome.code).toBe(WRITE_UNKNOWN);
 	});
@@ -311,7 +314,7 @@ describe("runEvidence", () => {
 	it("refuses on 11 when a capture cannot be read", async () => {
 		const withoutPng = files();
 		delete withoutPng[`${SCRATCH}/after/board.png`];
-		const outcome = await run(script(), {files: withoutPng});
+		const outcome = await run(script(), { files: withoutPng });
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.at(-1)).toContain("nothing was uploaded or posted");
 	});
@@ -333,7 +336,7 @@ describe("runEvidence", () => {
 						});
 					},
 				}),
-				Layer.mergeAll(seams.layer, fakeBytesFs({files: tampered}).layer),
+				Layer.mergeAll(seams.layer, fakeBytesFs({ files: tampered }).layer),
 			),
 		);
 		expect(outcome.code).toBe(CAPTURE_INVALID);
@@ -353,7 +356,7 @@ describe("runEvidence", () => {
 							url: `/Users/someone/captures/${target.fileName}`,
 						}),
 				}),
-				Layer.mergeAll(seams.layer, fakeBytesFs({files: files()}).layer),
+				Layer.mergeAll(seams.layer, fakeBytesFs({ files: files() }).layer),
 			),
 		);
 		expect(outcome.code).toBe(LEAKED_PATH);
@@ -372,7 +375,10 @@ describe("runEvidence", () => {
 		expect(isBareAtReference(EXPECTED_BODY)).toBe(false);
 		expect(
 			isBareAtReference(
-				composeEvidence([{surface: "/board", before: null, after: "@/tmp/after-board.png"}], HEAD),
+				composeEvidence(
+					[{ surface: "/board", before: null, after: "@/tmp/after-board.png" }],
+					HEAD,
+				),
 			),
 		).toBe(false);
 	});
@@ -404,16 +410,16 @@ const resumeScript = (upstream: string | null): ReadonlyArray<Scripted> => [
 				[/^git rev-parse --abbrev-ref --symbolic-full-name /, okOut(`origin/${upstream}\n`)],
 				[/^git remote$/, okOut("origin\n")],
 			] as ReadonlyArray<Scripted>)),
-	[/GET .*\/repos\/o\/r\/issues\/4318$/, issue({number: 4318})],
+	[/GET .*\/repos\/o\/r\/issues\/4318$/, issue({ number: 4318 })],
 	[
 		/GET .*\/repos\/o\/r\/issues\/4318\/comments/,
-		comments({id: 1, body: marker("s-9f2e", LANE_UUID)}),
+		comments({ id: 1, body: marker("s-9f2e", LANE_UUID) }),
 	],
 	[
 		/GET .*\/repos\/o\/r\/collaborators\/agent\/permission/,
-		{status: 200, body: '{"permission":"write"}'},
+		{ status: 200, body: '{"permission":"write"}' },
 	],
-	[/GET .*\/repos\/o\/r\/pulls\/4318$/, pull({head: {sha: HEAD, ref: LANE}})],
+	[/GET .*\/repos\/o\/r\/pulls\/4318$/, pull({ head: { sha: HEAD, ref: LANE } })],
 	[
 		/POST .*\/repos\/o\/r\/issues\/4318\/comments/,
 		{
@@ -430,19 +436,19 @@ describe("runEvidence over a repair round's resume branch", () => {
 	it("attaches when the branch tracks the PR's head ref under another name", async () => {
 		const outcome = await run(
 			withReadback(resumeScript(LANE), () => EXPECTED_BODY),
-			{files: resumeFiles()},
+			{ files: resumeFiles() },
 		);
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout).commentId).toBe(POSTED_ID);
 	});
 
 	it("refuses a branch tracking some other lane's ref on 18", async () => {
-		const outcome = await run(resumeScript("build/9999-other-aaaaaaaa"), {files: resumeFiles()});
+		const outcome = await run(resumeScript("build/9999-other-aaaaaaaa"), { files: resumeFiles() });
 		expect(outcome.code).toBe(LANE_NOT_MINE);
 	});
 
 	it("refuses a branch that tracks nothing on 18 — its own name is not the head ref", async () => {
-		const outcome = await run(resumeScript(null), {files: resumeFiles()});
+		const outcome = await run(resumeScript(null), { files: resumeFiles() });
 		expect(outcome.code).toBe(LANE_NOT_MINE);
 	});
 });

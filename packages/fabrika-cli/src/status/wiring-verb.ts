@@ -17,13 +17,13 @@
  * probe that repaired what it measured could never report the state it found.
  */
 
-import {Effect, type FileSystem, type Path, Result} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {exists, readFile} from "../io/fs.ts";
-import {isRecord, parseJsonOrReason} from "../io/json.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {type AsOf, asOfToken, detail, EMPTY_CELL, row} from "./fields.ts";
+import { Effect, type FileSystem, type Path, Result } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { exists, readFile } from "../io/fs.ts";
+import { isRecord, parseJsonOrReason } from "../io/json.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { type AsOf, asOfToken, detail, EMPTY_CELL, row } from "./fields.ts";
 
 const VERB = "status wiring";
 
@@ -38,9 +38,9 @@ export const PLUGIN = "fabrika";
  * different file. An absent file is a fact the repo proves; a read that failed proves nothing.
  */
 export type WiringSource =
-	| {readonly _tag: "Absent"}
-	| {readonly _tag: "Text"; readonly text: string}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Absent" }
+	| { readonly _tag: "Text"; readonly text: string }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /**
  * Three states, on the group's three-state law: `wired` is proven on, `unwired` is proven off (an
@@ -71,13 +71,13 @@ export const readWiringSource = (
 		const path = `${root}/${SETTINGS_PATH}`;
 		const probe = yield* Effect.result(exists(path));
 		if (Result.isFailure(probe)) {
-			return {_tag: "Unreadable" as const, reason: `${path}: ${probe.failure.reason}`};
+			return { _tag: "Unreadable" as const, reason: `${path}: ${probe.failure.reason}` };
 		}
-		if (!probe.success) return {_tag: "Absent" as const};
+		if (!probe.success) return { _tag: "Absent" as const };
 		const text = yield* Effect.result(readFile(path));
 		return Result.isFailure(text)
-			? {_tag: "Unreadable" as const, reason: `${path}: ${text.failure.reason}`}
-			: {_tag: "Text" as const, text: text.success};
+			? { _tag: "Unreadable" as const, reason: `${path}: ${text.failure.reason}` }
+			: { _tag: "Text" as const, text: text.success };
 	});
 
 /**
@@ -218,7 +218,7 @@ export interface WiringInput {
  * while a probe that could not be performed has no answer to seat, so it refuses on the group's
  * UNKNOWN code rather than printing a state it did not establish.
  */
-export const runWiring = ({source, read, asOf, json}: WiringInput): VerbOutcome => {
+export const runWiring = ({ source, read, asOf, json }: WiringInput): VerbOutcome => {
 	const scope = `${VERB}: ${sourceNote(source)}; plugin ${PLUGIN} is ${read.state}.`;
 	if (read.state === "unknown") {
 		return refuse(

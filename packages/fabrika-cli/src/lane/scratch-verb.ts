@@ -14,15 +14,15 @@
  * The printed path is machine-local and must never reach a posted artifact: every posting verb's
  * leak scan reds on the temp root it sits under (`report/leaks.ts`).
  */
-import {Effect, FileSystem} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {requireCallerToken, requireSession, resolveOwnership} from "../build/claim.ts";
-import {isKebabSlug} from "../build/lane.ts";
-import {resolveTargetRepo} from "../build/target.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {claimTarget, LANE_CLAIM} from "./claim.ts";
-import {CLAIM_NOT_MINE, LANE_UNREADABLE, SLUG_OFF_VOCABULARY} from "./codes.ts";
-import type {LaneKey} from "./key.ts";
+import { Effect, FileSystem } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { requireCallerToken, requireSession, resolveOwnership } from "../build/claim.ts";
+import { isKebabSlug } from "../build/lane.ts";
+import { resolveTargetRepo } from "../build/target.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { claimTarget, LANE_CLAIM } from "./claim.ts";
+import { CLAIM_NOT_MINE, LANE_UNREADABLE, SLUG_OFF_VOCABULARY } from "./codes.ts";
+import type { LaneKey } from "./key.ts";
 
 const VERB = "lane scratch";
 
@@ -54,7 +54,7 @@ export const runLaneScratch = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem
 > =>
 	Effect.gen(function* () {
-		const {slug} = options;
+		const { slug } = options;
 		if (slug.includes("/") || slug.includes("\\") || !isKebabSlug(slug)) {
 			return refuse(
 				SLUG_OFF_VOCABULARY,
@@ -78,7 +78,7 @@ export const runLaneScratch = (
 		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
 		if (resolved._tag === "Refused") return resolved.outcome;
 
-		const {ownership} = yield* resolveOwnership(
+		const { ownership } = yield* resolveOwnership(
 			resolved.repo,
 			target.number,
 			asking.caller,
@@ -101,7 +101,7 @@ export const runLaneScratch = (
 
 		const dir = laneScratchDir(options.tmpRoot, session.id, target.number, asking.caller.nonce);
 		const fs = yield* FileSystem.FileSystem;
-		const made: string | null = yield* fs.makeDirectory(dir, {recursive: true}).pipe(
+		const made: string | null = yield* fs.makeDirectory(dir, { recursive: true }).pipe(
 			Effect.as(null),
 			Effect.catchTag("PlatformError", (cause) => Effect.succeed(cause.message)),
 		);

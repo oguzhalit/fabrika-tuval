@@ -15,11 +15,11 @@
  * Superseded verdicts stay visible too. `review post` preserves them below ./supersede.ts's fence;
  * reporting only the surviving verdict would hide the history the append preserves.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type CommentRecord, listComments} from "../io/issues.ts";
-import {getPullRequest} from "../io/pulls.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type CommentRecord, listComments } from "../io/issues.ts";
+import { getPullRequest } from "../io/pulls.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	bindToContent,
 	type HeadSha,
@@ -29,13 +29,13 @@ import {
 	clause as toClause,
 	type VerdictMarker,
 } from "../wire/verdict-marker.ts";
-import {readAdvisory} from "./advisory.ts";
-import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {contentDigestAt} from "./content-binding.ts";
-import {bindHead} from "./head.ts";
-import {NULL_TOKEN} from "./scope-verb.ts";
-import {archived as archivedVerdicts} from "./supersede.ts";
-import {badNumber, resolveTargetRepo, scannedLine} from "./target.ts";
+import { readAdvisory } from "./advisory.ts";
+import { INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { contentDigestAt } from "./content-binding.ts";
+import { bindHead } from "./head.ts";
+import { NULL_TOKEN } from "./scope-verb.ts";
+import { archived as archivedVerdicts } from "./supersede.ts";
+import { badNumber, resolveTargetRepo, scannedLine } from "./target.ts";
 
 const VERB = "review verdicts";
 
@@ -90,7 +90,7 @@ const sweep = (
 	comments: ReadonlyArray<CommentRecord>,
 	head: string | null,
 	digest: string | null,
-): {markers: MarkerRow[]; malformed: MalformedRow[]} => {
+): { markers: MarkerRow[]; malformed: MalformedRow[] } => {
 	const markers: MarkerRow[] = [];
 	const malformed: MalformedRow[] = [];
 	// Newest first: the sweep's own order, so a caller reading top-down sees the latest round first.
@@ -117,7 +117,7 @@ const sweep = (
 					standing: true,
 				});
 			} else if (parsed._tag === "Malformed") {
-				malformed.push({commentId: comment.id, reason: parsed.reason});
+				malformed.push({ commentId: comment.id, reason: parsed.reason });
 			}
 		}
 		// A superseded verdict is a row of its own, never a row dropped: `review post` retires the
@@ -136,14 +136,14 @@ const sweep = (
 			});
 		}
 	}
-	return {markers, malformed};
+	return { markers, malformed };
 };
 
 export const runVerdicts = (
 	options: VerdictsOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -222,7 +222,7 @@ export const runVerdicts = (
 			}
 		}
 
-		const {markers, malformed} = sweep(comments, head, digest);
+		const { markers, malformed } = sweep(comments, head, digest);
 		for (const row of malformed) {
 			diagnostics.push(
 				`${VERB}: comment ${row.commentId} reaches for a marker and fails the format: ${row.reason}.`,

@@ -9,11 +9,11 @@
  * See `guard fanout-guard check --help` for results and exit codes.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {exists, isDirectory, type ReadFailed, readDir, readFile} from "../io/fs.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {type Annotation, atFile} from "./annotate.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { exists, isDirectory, type ReadFailed, readDir, readFile } from "../io/fs.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { type Annotation, atFile } from "./annotate.ts";
 import {
 	type DiscoveredMutation,
 	type FanoutGuardVerdict,
@@ -83,7 +83,7 @@ const gatherFeatures = (
 			const mutationsPath = path.join(dir, MUTATIONS_FILE);
 			if (yield* exists(mutationsPath)) {
 				const source = yield* readFile(mutationsPath);
-				for (const key of parseMutationKeys(source)) discovered.push({key, feature: name});
+				for (const key of parseMutationKeys(source)) discovered.push({ key, feature: name });
 				featurePublishes.set(name, referencesPublisher(source));
 			}
 			const livePath = path.join(dir, LIVE_FILE);
@@ -190,11 +190,11 @@ const judgeRoot = (
 			);
 		}
 		const liveTopicMap = yield* readLiveTopicMap(root);
-		const {discovered, featurePublishes, featureTargets} = yield* gatherFeatures(
+		const { discovered, featurePublishes, featureTargets } = yield* gatherFeatures(
 			root,
 			liveTopicMap,
 		);
-		const verdict = judge({discovered, manifest, featurePublishes, featureTargets});
+		const verdict = judge({ discovered, manifest, featurePublishes, featureTargets });
 		if (verdict.pass) return clean(renderReport(VERB, verdict), verdict.checked);
 		const report = renderReport(VERB, verdict);
 		if (verdict.reason === "zero-scope") return zeroScope(report);

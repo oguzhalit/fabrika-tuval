@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {allocate, padId} from "./next.ts";
+import { describe, expect, it } from "vitest";
+import { allocate, padId } from "./next.ts";
 
 describe("allocate", () => {
 	it("leaves a gap below the maximum rather than re-issuing an abandoned number", () => {

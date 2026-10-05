@@ -6,12 +6,12 @@
  * path reaches a public surface. A shell redirect is expected — the *shell* reads the file, so what
  * reaches the verb is already bytes.
  */
-import {Effect} from "effect";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {classifyArtifact} from "./artifact.ts";
-import {UNUSABLE_FIELDS} from "./codes.ts";
-import {resolveFormat} from "./resolve-format.ts";
+import { Effect } from "effect";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { classifyArtifact } from "./artifact.ts";
+import { UNUSABLE_FIELDS } from "./codes.ts";
+import { resolveFormat } from "./resolve-format.ts";
 
 const VERB = "wire emit";
 
@@ -21,7 +21,7 @@ export interface EmitOptions {
 	readonly stdin: Effect.Effect<StdinRead>;
 }
 
-export const runEmit = ({format, json, stdin}: EmitOptions): Effect.Effect<VerbOutcome> =>
+export const runEmit = ({ format, json, stdin }: EmitOptions): Effect.Effect<VerbOutcome> =>
 	Effect.map(stdin, (piped) => {
 		const lookup = resolveFormat(VERB, format);
 		if (lookup._tag === "Refusal") return lookup.outcome;
@@ -33,5 +33,5 @@ export const runEmit = ({format, json, stdin}: EmitOptions): Effect.Effect<VerbO
 		if (composed._tag === "Unusable") {
 			return refuse(UNUSABLE_FIELDS, `${VERB}: unusable fields — ${composed.reason}`);
 		}
-		return answer(json ? `${JSON.stringify({format, bytes: composed.bytes})}\n` : composed.bytes);
+		return answer(json ? `${JSON.stringify({ format, bytes: composed.bytes })}\n` : composed.bytes);
 	});

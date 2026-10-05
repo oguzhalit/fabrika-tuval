@@ -98,7 +98,7 @@ const staleReasonOf = (facts: StallFacts): StaleReason =>
 			: "inactivity";
 
 export const classifyStall = (facts: StallFacts): StallVerdict => {
-	const plain = (token: StallToken): StallVerdict => ({token, staleReason: null});
+	const plain = (token: StallToken): StallVerdict => ({ token, staleReason: null });
 
 	if (!facts.open) return plain("not-open");
 	if (facts.wedged) return plain("wedged");
@@ -113,7 +113,7 @@ export const classifyStall = (facts: StallFacts): StallVerdict => {
 	if (attended(facts)) return plain("attended");
 	// Arm 9 is the whole owner-exists complement of arm 8, not a subset of it: an owner whose activity
 	// stamp is unreadable is neither provably live nor provably old and must still land somewhere.
-	if (facts.hasOwner) return {token: "claim-stale", staleReason: staleReasonOf(facts)};
+	if (facts.hasOwner) return { token: "claim-stale", staleReason: staleReasonOf(facts) };
 	return plain(facts.gatesSatisfied ? "gated-unshipped" : "ungated");
 };
 

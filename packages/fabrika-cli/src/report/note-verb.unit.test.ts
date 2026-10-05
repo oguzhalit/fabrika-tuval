@@ -1,9 +1,9 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type LeakNames, NO_LEAK_NAMES} from "../config/keys/leak-names.ts";
-import type {Read} from "../config/read-key.ts";
-import {fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type LeakNames, NO_LEAK_NAMES } from "../config/keys/leak-names.ts";
+import type { Read } from "../config/read-key.ts";
+import { fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
 import {
 	BARE_AT_PATH,
 	EMPTY_STDIN,
@@ -13,9 +13,9 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {runNote} from "./note-verb.ts";
+import { runNote } from "./note-verb.ts";
 
-const noNames: Read<LeakNames> = {_tag: "Value", value: NO_LEAK_NAMES, note: "test"};
+const noNames: Read<LeakNames> = { _tag: "Value", value: NO_LEAK_NAMES, note: "test" };
 
 const ISSUE = /^GET .*\/repos\/o\/r\/issues\/4312$/;
 const POST = /^POST .*\/repos\/o\/r\/issues\/4312\/comments$/;
@@ -38,7 +38,7 @@ const issue = (state: string): HttpReply => ({
 const issueOpen = issue("open");
 const issueClosed = issue("closed");
 
-const comment = (body: string): HttpReply => ({status: 200, body: JSON.stringify({body})});
+const comment = (body: string): HttpReply => ({ status: 200, body: JSON.stringify({ body }) });
 
 const posted: HttpReply = {
 	status: 201,
@@ -54,8 +54,8 @@ const options = {
 	leakNames: noNames,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
-	stdin: Effect.succeed<StdinRead>({_tag: "Text", text: NOTE}),
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
+	stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: NOTE }),
 };
 
 const happy: ReadonlyArray<Scripted> = [
@@ -65,7 +65,7 @@ const happy: ReadonlyArray<Scripted> = [
 ];
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runNote({...options, ...overrides}), fakeSeams(script).layer));
+	Effect.runPromise(Effect.provide(runNote({ ...options, ...overrides }), fakeSeams(script).layer));
 
 describe("runNote", () => {
 	it("posts, reads back, and prints a bare tab-separated id and url", async () => {
@@ -77,7 +77,7 @@ describe("runNote", () => {
 	});
 
 	it("emits the note record on STDOUT with --json", async () => {
-		const out = await run(happy, {json: true});
+		const out = await run(happy, { json: true });
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			id: 5154891644,
 			issue: 4312,
@@ -93,7 +93,9 @@ describe("runNote", () => {
 				[ISSUE, issueOpen],
 				[POST, posted],
 			],
-			{stdin: Effect.succeed({_tag: "Text", text: "one line, no headings"} satisfies StdinRead)},
+			{
+				stdin: Effect.succeed({ _tag: "Text", text: "one line, no headings" } satisfies StdinRead),
+			},
 		);
 		expect(out.code).toBe(0);
 	});
@@ -102,7 +104,7 @@ describe("runNote", () => {
 		const seams = fakeSeams(happy);
 		await Effect.runPromise(Effect.provide(runNote(options), seams.layer));
 		const post = seams.bodies[seams.requests.findIndex((c) => POST.test(c))] ?? "";
-		expect(post).toBe(JSON.stringify({body: NOTE}));
+		expect(post).toBe(JSON.stringify({ body: NOTE }));
 		expect(post).not.toContain("Filed by an agent");
 	});
 
@@ -118,7 +120,7 @@ describe("runNote", () => {
 
 	it("refuses a FAILED stdin read as UNKNOWN, never as an empty note", async () => {
 		const out = await run(happy, {
-			stdin: Effect.succeed({_tag: "Failed", reason: "EAGAIN"} satisfies StdinRead),
+			stdin: Effect.succeed({ _tag: "Failed", reason: "EAGAIN" } satisfies StdinRead),
 		});
 		expect(out.code).toBe(1);
 		expect(out.stdout).toBe("");
@@ -127,14 +129,14 @@ describe("runNote", () => {
 
 	it("refuses an empty-but-READ stdin on its own, different code", async () => {
 		const out = await run(happy, {
-			stdin: Effect.succeed({_tag: "Text", text: ""} satisfies StdinRead),
+			stdin: Effect.succeed({ _tag: "Text", text: "" } satisfies StdinRead),
 		});
 		expect(out.code).toBe(EMPTY_STDIN);
 	});
 
 	it("refuses a bare @ path note on its own code", async () => {
 		const out = await run(happy, {
-			stdin: Effect.succeed({_tag: "Text", text: "@/tmp/note.md"} satisfies StdinRead),
+			stdin: Effect.succeed({ _tag: "Text", text: "@/tmp/note.md" } satisfies StdinRead),
 			redact: true,
 		});
 		expect(out.code).toBe(BARE_AT_PATH);
@@ -198,13 +200,13 @@ describe("runNote", () => {
 	});
 
 	it("refuses an issue that does not exist", async () => {
-		const out = await run([[ISSUE, {status: 404, body: '{"message":"Not Found"}'}]]);
+		const out = await run([[ISSUE, { status: 404, body: '{"message":"Not Found"}' }]]);
 		expect(out.code).toBe(NO_TARGET);
 		expect(out.stderr.at(-1)).toBe("report note: o/r has no issue #4312.");
 	});
 
 	it("separates an UNREADABLE issue from an absent one, and posts nothing", async () => {
-		const seams = fakeSeams([[ISSUE, {status: 502, body: "{}"}]]);
+		const seams = fakeSeams([[ISSUE, { status: 502, body: "{}" }]]);
 		const out = await Effect.runPromise(Effect.provide(runNote(options), seams.layer));
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(seams.requests.some((c) => POST.test(c))).toBe(false);
@@ -213,7 +215,7 @@ describe("runNote", () => {
 	it("reports a failed post as UNKNOWN, with the re-read recovery", async () => {
 		const out = await run([
 			[ISSUE, issueOpen],
-			[POST, {status: 502, body: "{}"}],
+			[POST, { status: 502, body: "{}" }],
 		]);
 		expect(out.code).toBe(WRITE_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -232,7 +234,7 @@ describe("runNote", () => {
 
 	it("refuses when the read-back itself fails — a post that is not verified is not finished", async () => {
 		const out = await run([
-			[COMMENT, {status: 502, body: "{}"}],
+			[COMMENT, { status: 502, body: "{}" }],
 			[ISSUE, issueOpen],
 			[POST, posted],
 		]);

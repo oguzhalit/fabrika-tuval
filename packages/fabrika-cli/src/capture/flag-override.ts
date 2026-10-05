@@ -13,7 +13,7 @@
  * which is a valid PNG under the flag-on name — the same shape as a dropped session cookie
  * shooting the signed-out page under the signed-in name, and no byte check can tell the two apart.
  */
-import type {CaptureCookie} from "./capture.ts";
+import type { CaptureCookie } from "./capture.ts";
 
 export const FLAG_OVERRIDE_COOKIE = "phoenix_flag_overrides";
 
@@ -32,8 +32,8 @@ export const FORCED_VALUES = ["on", "off"] as const;
  * because the alternative is a run that renders the default state under the forced name.
  */
 export type FlagOperandRead =
-	| {readonly _tag: "Forced"; readonly flags: ForcedFlags}
-	| {readonly _tag: "Malformed"; readonly token: string; readonly reason: string};
+	| { readonly _tag: "Forced"; readonly flags: ForcedFlags }
+	| { readonly _tag: "Malformed"; readonly token: string; readonly reason: string };
 
 /**
  * Bounded before the shape test so the linear scan below stays linear on any input, the same
@@ -49,15 +49,15 @@ export const parseFlagOperands = (tokens: readonly string[]): FlagOperandRead =>
 	for (const token of tokens) {
 		const equals = token.indexOf("=");
 		if (equals === -1) {
-			return {_tag: "Malformed", token, reason: "no = separating the key from its value"};
+			return { _tag: "Malformed", token, reason: "no = separating the key from its value" };
 		}
 		const key = token.slice(0, equals);
 		const value = token.slice(equals + 1);
 		if (key.length > MAX_KEY_LENGTH) {
-			return {_tag: "Malformed", token, reason: `the key exceeds ${MAX_KEY_LENGTH} characters`};
+			return { _tag: "Malformed", token, reason: `the key exceeds ${MAX_KEY_LENGTH} characters` };
 		}
 		if (!KEY_SHAPE.test(key)) {
-			return {_tag: "Malformed", token, reason: `"${key}" is not a flag key`};
+			return { _tag: "Malformed", token, reason: `"${key}" is not a flag key` };
 		}
 		if (value !== "on" && value !== "off") {
 			return {
@@ -69,11 +69,11 @@ export const parseFlagOperands = (tokens: readonly string[]): FlagOperandRead =>
 		// Last-wins would resolve two operands for one key into a state the caller never asked for,
 		// and the losing one would never be reported.
 		if (Object.hasOwn(flags, key)) {
-			return {_tag: "Malformed", token, reason: `"${key}" is forced more than once`};
+			return { _tag: "Malformed", token, reason: `"${key}" is forced more than once` };
 		}
 		flags[key] = value === "on";
 	}
-	return {_tag: "Forced", flags};
+	return { _tag: "Forced", flags };
 };
 
 /**
@@ -112,7 +112,7 @@ export const FLAG_PROBE_PATH = "/api/flags/evaluate";
  */
 export const flagProbeBody = (flags: ForcedFlags): string =>
 	JSON.stringify({
-		keys: Object.entries(flags).map(([key, forced]) => ({key, default: !forced})),
+		keys: Object.entries(flags).map(([key, forced]) => ({ key, default: !forced })),
 	});
 
 /**
@@ -122,37 +122,37 @@ export const flagProbeBody = (flags: ForcedFlags): string =>
  * "the override was dropped" — both refuse, but only one is a fact about the override.
  */
 export type OverrideProof =
-	| {readonly _tag: "Forced"}
-	| {readonly _tag: "Inert"; readonly keys: readonly string[]}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Forced" }
+	| { readonly _tag: "Inert"; readonly keys: readonly string[] }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 export const readOverrideProof = (
 	status: number,
 	body: string,
 	flags: ForcedFlags,
 ): OverrideProof => {
-	if (status !== 200) return {_tag: "Unreadable", reason: `probe answered ${status}`};
+	if (status !== 200) return { _tag: "Unreadable", reason: `probe answered ${status}` };
 	let parsed: unknown;
 	try {
 		parsed = JSON.parse(body);
 	} catch {
-		return {_tag: "Unreadable", reason: "probe body is not JSON"};
+		return { _tag: "Unreadable", reason: "probe body is not JSON" };
 	}
 	if (typeof parsed !== "object" || parsed === null) {
-		return {_tag: "Unreadable", reason: "probe body is not an evaluation object"};
+		return { _tag: "Unreadable", reason: "probe body is not an evaluation object" };
 	}
-	const evaluated = (parsed as {flags?: unknown}).flags;
+	const evaluated = (parsed as { flags?: unknown }).flags;
 	if (typeof evaluated !== "object" || evaluated === null) {
-		return {_tag: "Unreadable", reason: "probe body names no flags"};
+		return { _tag: "Unreadable", reason: "probe body names no flags" };
 	}
 	const answers = evaluated as Record<string, unknown>;
 	const inert: string[] = [];
 	for (const [key, forced] of Object.entries(flags)) {
 		const value = answers[key];
 		if (typeof value !== "boolean") {
-			return {_tag: "Unreadable", reason: `probe left "${key}" unevaluated`};
+			return { _tag: "Unreadable", reason: `probe left "${key}" unevaluated` };
 		}
 		if (value !== forced) inert.push(key);
 	}
-	return inert.length === 0 ? {_tag: "Forced"} : {_tag: "Inert", keys: inert};
+	return inert.length === 0 ? { _tag: "Forced" } : { _tag: "Inert", keys: inert };
 };

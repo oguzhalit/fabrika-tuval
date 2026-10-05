@@ -61,16 +61,16 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/8857#issuecomment-5625302485
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	type AuthorizationDocument,
 	authorizationBody,
 	readAuthorization,
 } from "../authorization.ts";
-import {parseCitation} from "../build/scope-admission.ts";
-import {badNumber, resolveTargetRepo} from "../build/target.ts";
-import type {BoardRead} from "../config/resolve-board.ts";
+import { parseCitation } from "../build/scope-admission.ts";
+import { badNumber, resolveTargetRepo } from "../build/target.ts";
+import type { BoardRead } from "../config/resolve-board.ts";
 import {
 	addLabels,
 	createComment,
@@ -80,19 +80,19 @@ import {
 	listLabels,
 	removeLabel,
 } from "../io/issues.ts";
-import {viewerLogin} from "../io/pulls.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {controlPlaneRoster} from "../ship/roster.ts";
-import {missingLabelRemedy} from "../status/label-remedy.ts";
+import { viewerLogin } from "../io/pulls.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { controlPlaneRoster } from "../ship/roster.ts";
+import { missingLabelRemedy } from "../status/label-remedy.ts";
 import {
 	audienceSettled,
 	audienceWrites,
 	READY_FOR_AGENT,
 	READY_FOR_HUMAN,
 } from "../triage/audience.ts";
-import {EPIC_TYPE_LABEL} from "../triage/facets.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {type AcceptanceCriteriaRead, read as readCriteria} from "../wire/acceptance-criteria.ts";
+import { EPIC_TYPE_LABEL } from "../triage/facets.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { type AcceptanceCriteriaRead, read as readCriteria } from "../wire/acceptance-criteria.ts";
 import {
 	type CriterionIndex,
 	criterionIndex,
@@ -103,7 +103,7 @@ import {
 	rulingUrl,
 	scopeDigest,
 } from "../wire/decision-ruling.ts";
-import {stampOf} from "../wire/grill-marker.ts";
+import { stampOf } from "../wire/grill-marker.ts";
 import {
 	AUTHORIZATION_ABSENT,
 	BARE_AT_PATH,
@@ -115,8 +115,8 @@ import {
 	RULING_UNAUTHORIZED,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {bodyDigest} from "./digest.ts";
-import {requireRulable} from "./ruling.ts";
+import { bodyDigest } from "./digest.ts";
+import { requireRulable } from "./ruling.ts";
 
 const VERB = "decision rule";
 
@@ -136,8 +136,8 @@ const commentUrl = (repo: string, issue: number, id: number): string =>
 	`https://github.com/${repo}/issues/${issue}#issuecomment-${id}`;
 
 type CitedRuling =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Cited"; readonly url: RulingUrl; readonly commentId: number};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Cited"; readonly url: RulingUrl; readonly commentId: number };
 
 /** The `--cites` shape's two reads: the citation grammar, and the brand the marker's field needs. */
 const citedRuling = (cites: string, repo: string, issue: number): CitedRuling => {
@@ -158,7 +158,7 @@ const citedRuling = (cites: string, repo: string, issue: number): CitedRuling =>
 			),
 		};
 	}
-	return {_tag: "Cited", url, commentId: read.citation.commentId};
+	return { _tag: "Cited", url, commentId: read.citation.commentId };
 };
 
 /** Whether this verb may move the ruled issue's audience: any type but an epic, whose flip is the plan gate's. */
@@ -176,15 +176,15 @@ export const flipsAudience = (labels: ReadonlyArray<string>): boolean =>
 const flipWrites = (
 	labels: ReadonlyArray<string>,
 	criteria: AcceptanceCriteriaRead,
-): {readonly add: boolean; readonly remove: boolean} =>
+): { readonly add: boolean; readonly remove: boolean } =>
 	flipsAudience(labels) && criteria._tag === "Found"
 		? audienceWrites(labels)
-		: {add: false, remove: false};
+		: { add: false, remove: false };
 
 /** Why the flip was skipped, in the reader's own words plus the route that repairs the body. */
 const skippedFlip = (
 	issue: number,
-	criteria: Exclude<AcceptanceCriteriaRead, {readonly _tag: "Found"}>,
+	criteria: Exclude<AcceptanceCriteriaRead, { readonly _tag: "Found" }>,
 ): string =>
 	criteria._tag === "Absent"
 		? `${VERB}: the ruling marker stands, but #${issue} carries no acceptance-criteria block — ${criteria.reason}. ready-for:agent promises a builder can pick it up cold, so the audience was not flipped: author the block with \`fabrika triage enrich ${issue}\` and re-run.`
@@ -198,7 +198,7 @@ const skippedFlip = (
  */
 export type RulingSource<R = never> =
 	/** A comment already on the issue, as an issue-comment URL. */
-	| {readonly _tag: "Cited"; readonly cites: string}
+	| { readonly _tag: "Cited"; readonly cites: string }
 	/** A file quoting the founder verbatim, which this verb posts and then cites. */
 	| {
 			readonly _tag: "Quoted";
@@ -388,7 +388,7 @@ export const runRule = <R = never>(
 			);
 		}
 
-		const body = emit({issue, digest, ruling: url, supersedes, at});
+		const body = emit({ issue, digest, ruling: url, supersedes, at });
 		const posted = yield* createComment(repo, options.number, body);
 		if (posted._tag === "Failure") {
 			return refuse(

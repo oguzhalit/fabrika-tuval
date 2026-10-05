@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import {anchorOutcome, declarationLinesIn, parseCatalog, resolveDeclarations} from "./anchor.ts";
+import { describe, expect, it } from "vitest";
+import { anchorOutcome, declarationLinesIn, parseCatalog, resolveDeclarations } from "./anchor.ts";
 
-const CATALOG = {"acme-queue": "4.2.0", "@nkzw/fate": "1.3.1"};
+const CATALOG = { "acme-queue": "4.2.0", "@nkzw/fate": "1.3.1" };
 
 const declared = (...lines: ReadonlyArray<string>) => resolveDeclarations(lines, CATALOG);
 
@@ -40,12 +40,12 @@ catalog:
 onlyBuiltDependencies:
   - x
 `),
-		).toEqual({_tag: "Ok", catalog: {"acme-queue": "4.2.0", "@nkzw/fate": "1.3.1"}});
+		).toEqual({ _tag: "Ok", catalog: { "acme-queue": "4.2.0", "@nkzw/fate": "1.3.1" } });
 	});
 
 	// The degrade path, not a failure: a repo that pins nothing centrally is a fact about that repo.
 	it("answers a null catalog for a manifest that parses and carries none", () => {
-		expect(parseCatalog("packages:\n  - packages/*\n")).toEqual({_tag: "Ok", catalog: null});
+		expect(parseCatalog("packages:\n  - packages/*\n")).toEqual({ _tag: "Ok", catalog: null });
 	});
 
 	// An unreadable manifest is UNKNOWN and never `unpinned` — a 404 is a verdict, a 5xx is a verdict
@@ -61,7 +61,7 @@ onlyBuiltDependencies:
 	it("reads valid flow maps", () => {
 		expect(parseCatalog("catalog: {acme-queue: 4.2.0}\n")).toEqual({
 			_tag: "Ok",
-			catalog: {"acme-queue": "4.2.0"},
+			catalog: { "acme-queue": "4.2.0" },
 		});
 	});
 	it.each([
@@ -80,12 +80,12 @@ onlyBuiltDependencies:
 	it("reads named-only maps and equal duplicate pins", () => {
 		expect(
 			parseCatalog("catalogs:\n  current: {acme-queue: 4.2.0}\n  other: {acme-queue: 4.2.0}\n"),
-		).toEqual({_tag: "Ok", catalog: {"acme-queue": "4.2.0"}});
+		).toEqual({ _tag: "Ok", catalog: { "acme-queue": "4.2.0" } });
 	});
 	it("reads default and unrelated named catalog pins", () => {
 		expect(
 			parseCatalog("catalog: {alchemy: 2.0.0-beta.59}\ncatalogs:\n  local: {fzf: 0.5.2}\n"),
-		).toEqual({_tag: "Ok", catalog: {alchemy: "2.0.0-beta.59", fzf: "0.5.2"}});
+		).toEqual({ _tag: "Ok", catalog: { alchemy: "2.0.0-beta.59", fzf: "0.5.2" } });
 	});
 	it("refuses only a declared dependency's conflicting pins", () => {
 		const text =
@@ -100,14 +100,14 @@ onlyBuiltDependencies:
 		});
 		expect(
 			parseCatalog(text, ["> Derived from `alchemy@2.0.0-beta.59` — re-verify on pin bump."]),
-		).toEqual({_tag: "Ok", catalog: {alchemy: "2.0.0-beta.59", fzf: "0.5.2"}});
+		).toEqual({ _tag: "Ok", catalog: { alchemy: "2.0.0-beta.59", fzf: "0.5.2" } });
 	});
 });
 
 describe("resolveDeclarations", () => {
 	it("compares byte for byte, with no semver interpretation", () => {
 		expect(declared("> Derived from `acme-queue@^4.2.0` — re-verify on pin bump.")).toEqual([
-			{package: "acme-queue", declaredVersion: "^4.2.0", pinnedVersion: "4.2.0", state: "moved"},
+			{ package: "acme-queue", declaredVersion: "^4.2.0", pinnedVersion: "4.2.0", state: "moved" },
 		]);
 	});
 
@@ -118,21 +118,21 @@ describe("resolveDeclarations", () => {
 				"> Derived from `@acme/retry@2.0.0` — re-verify on pin bump.",
 			),
 		).toEqual([
-			{package: "acme-queue", declaredVersion: "4.2.0", pinnedVersion: "4.2.0", state: "matched"},
-			{package: "@acme/retry", declaredVersion: "2.0.0", pinnedVersion: null, state: "unpinned"},
+			{ package: "acme-queue", declaredVersion: "4.2.0", pinnedVersion: "4.2.0", state: "matched" },
+			{ package: "@acme/retry", declaredVersion: "2.0.0", pinnedVersion: null, state: "unpinned" },
 		]);
 	});
 
 	it("echoes a malformed line's text, clamped, with both version fields empty", () => {
 		const [only] = declared("> Derived from the in-repo source plus `acme-queue@4.1.0` where …");
-		expect(only).toMatchObject({state: "malformed", declaredVersion: null, pinnedVersion: null});
+		expect(only).toMatchObject({ state: "malformed", declaredVersion: null, pinnedVersion: null });
 		expect(only?.package).toBe("the in-repo source plus `acme-queue@4.1.0` where …");
 	});
 
 	it("reports every declaration unpinned against a repo that pins nothing centrally", () => {
 		expect(
 			resolveDeclarations(["> Derived from `acme-queue@4.2.0` — re-verify on pin bump."], null),
-		).toMatchObject([{state: "unpinned", pinnedVersion: null}]);
+		).toMatchObject([{ state: "unpinned", pinnedVersion: null }]);
 	});
 });
 

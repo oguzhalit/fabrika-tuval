@@ -18,7 +18,7 @@
  * `./path-filter-verb.ts`.
  */
 
-import {parse} from "yaml";
+import { parse } from "yaml";
 
 /** The source of one filter list — which workflow file, `changes` job, and filter key. */
 export interface FilterSource {
@@ -75,14 +75,14 @@ export const describeBasis = (basis: DiffBasis): string => {
 
 /** One extraction: the glob entries plus the diff basis, or the reason there are none. */
 export type FilterExtraction =
-	| {readonly ok: true; readonly entries: ReadonlyArray<string>; readonly basis: DiffBasis}
-	| {readonly ok: false; readonly detail: string};
+	| { readonly ok: true; readonly entries: ReadonlyArray<string>; readonly basis: DiffBasis }
+	| { readonly ok: false; readonly detail: string };
 
 /** The verdict. A pass never carries a drift list, and each refusal carries exactly its evidence. */
 export type PathFilterVerdict =
-	| {readonly pass: true; readonly count: number}
+	| { readonly pass: true; readonly count: number }
 	/** A file/job/step/key was missing or a list was empty — fail closed. */
-	| {readonly pass: false; readonly reason: "zero-scope"; readonly detail: string}
+	| { readonly pass: false; readonly reason: "zero-scope"; readonly detail: string }
 	/** The two path sets differ — the sync invariant has drifted. */
 	| {
 			readonly pass: false;
@@ -125,14 +125,17 @@ export const extractFilterList = (workflowText: string, source: FilterSource): F
 	try {
 		doc = parse(workflowText);
 	} catch (cause) {
-		return {ok: false, detail: `${source.file}: could not parse workflow YAML (${String(cause)})`};
+		return {
+			ok: false,
+			detail: `${source.file}: could not parse workflow YAML (${String(cause)})`,
+		};
 	}
 	if (!isRecord(doc) || !isRecord(doc.jobs)) {
-		return {ok: false, detail: `${source.file}: no top-level 'jobs:' mapping`};
+		return { ok: false, detail: `${source.file}: no top-level 'jobs:' mapping` };
 	}
 	const job = doc.jobs[source.job];
 	if (!isRecord(job) || !Array.isArray(job.steps)) {
-		return {ok: false, detail: `${source.file}: no '${source.job}' job with a 'steps:' list`};
+		return { ok: false, detail: `${source.file}: no '${source.job}' job with a 'steps:' list` };
 	}
 	const filterStep = job.steps.find(
 		(s) => isRecord(s) && typeof s.uses === "string" && s.uses.startsWith("dorny/paths-filter"),
@@ -145,23 +148,23 @@ export const extractFilterList = (workflowText: string, source: FilterSource): F
 	}
 	const filtersText = filterStep.with.filters;
 	if (typeof filtersText !== "string") {
-		return {ok: false, detail: `${source.file}: the paths-filter step has no string 'filters:'`};
+		return { ok: false, detail: `${source.file}: the paths-filter step has no string 'filters:'` };
 	}
 	let filters: unknown;
 	try {
 		filters = parse(filtersText);
 	} catch (cause) {
-		return {ok: false, detail: `${source.file}: 'filters:' is not valid YAML (${String(cause)})`};
+		return { ok: false, detail: `${source.file}: 'filters:' is not valid YAML (${String(cause)})` };
 	}
 	if (!isRecord(filters) || !(source.key in filters)) {
-		return {ok: false, detail: `${source.file}: 'filters:' has no '${source.key}:' key`};
+		return { ok: false, detail: `${source.file}: 'filters:' has no '${source.key}:' key` };
 	}
 	const entries = toGlobList(filters[source.key]);
 	if (entries === undefined) {
-		return {ok: false, detail: `${source.file}: '${source.key}:' is not a list of glob strings`};
+		return { ok: false, detail: `${source.file}: '${source.key}:' is not a list of glob strings` };
 	}
 	if (entries.length === 0) {
-		return {ok: false, detail: `${source.file}: '${source.key}:' is an empty list`};
+		return { ok: false, detail: `${source.file}: '${source.key}:' is an empty list` };
 	}
 	// A non-string `token`/`base` (a number, a null) reads as absent: it cannot be the string the
 	// other side pins, so the comparison below still catches it as drift.
@@ -169,7 +172,7 @@ export const extractFilterList = (workflowText: string, source: FilterSource): F
 		const raw = (filterStep.with as Record<string, unknown>)[name];
 		return typeof raw === "string" ? raw : undefined;
 	};
-	return {ok: true, entries, basis: {token: readInput("token"), base: readInput("base")}};
+	return { ok: true, entries, basis: { token: readInput("token"), base: readInput("base") } };
 };
 
 /**
@@ -178,21 +181,21 @@ export const extractFilterList = (workflowText: string, source: FilterSource): F
  */
 export const judge = (facts: PathFilterFacts): PathFilterVerdict => {
 	const e2e = extractFilterList(facts.ciText, CI_E2E_SOURCE);
-	if (!e2e.ok) return {pass: false, reason: "zero-scope", detail: e2e.detail};
+	if (!e2e.ok) return { pass: false, reason: "zero-scope", detail: e2e.detail };
 	const deploy = extractFilterList(facts.deployText, DEPLOY_SOURCE);
-	if (!deploy.ok) return {pass: false, reason: "zero-scope", detail: deploy.detail};
+	if (!deploy.ok) return { pass: false, reason: "zero-scope", detail: deploy.detail };
 
 	const e2eSet = new Set(e2e.entries);
 	const deploySet = new Set(deploy.entries);
 	const onlyInE2e = [...e2eSet].filter((g) => !deploySet.has(g)).sort();
 	const onlyInDeploy = [...deploySet].filter((g) => !e2eSet.has(g)).sort();
 	if (onlyInE2e.length > 0 || onlyInDeploy.length > 0) {
-		return {pass: false, reason: "drift", onlyInE2e, onlyInDeploy};
+		return { pass: false, reason: "drift", onlyInE2e, onlyInDeploy };
 	}
 	if (e2e.basis.token !== deploy.basis.token || e2e.basis.base !== deploy.basis.base) {
-		return {pass: false, reason: "basis-drift", ciBasis: e2e.basis, deployBasis: deploy.basis};
+		return { pass: false, reason: "basis-drift", ciBasis: e2e.basis, deployBasis: deploy.basis };
 	}
-	return {pass: true, count: e2eSet.size};
+	return { pass: true, count: e2eSet.size };
 };
 
 const VERB = "guard path-filter-guard check";

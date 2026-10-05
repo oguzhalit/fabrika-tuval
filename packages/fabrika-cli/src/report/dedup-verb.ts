@@ -1,9 +1,9 @@
-import {Clock, type Crypto, Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {issueDocuments, listLabels, resolveRepo} from "../io/issues.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {NO_TARGET, QUEUE_UNREADABLE, SEARCH_UNREADABLE} from "./codes.ts";
-import {loadIndex} from "./index-cache.ts";
+import { Clock, type Crypto, Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { issueDocuments, listLabels, resolveRepo } from "../io/issues.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { NO_TARGET, QUEUE_UNREADABLE, SEARCH_UNREADABLE } from "./codes.ts";
+import { loadIndex } from "./index-cache.ts";
 import {
 	closedCutoff,
 	DEFAULT_CLOSED_DAYS,
@@ -21,7 +21,7 @@ import {
  * code is `7` rather than a fresh number so it means what it already means on `report file`: *the
  * target named by `--label` does not exist in `--repo`*.
  */
-export {NO_TARGET as LABEL_ABSENT};
+export { NO_TARGET as LABEL_ABSENT };
 
 export interface DedupOptions {
 	readonly query: string;
@@ -44,7 +44,7 @@ export const runDedup = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path | Crypto.Crypto
 > =>
 	Effect.gen(function* () {
-		const {label, limit, json, exclude} = options;
+		const { label, limit, json, exclude } = options;
 		const closedDays = options.closedDays ?? DEFAULT_CLOSED_DAYS;
 		if (!Number.isSafeInteger(closedDays) || closedDays < 0 || closedDays > 36500)
 			return refuse(FAILED, "report dedup: --closed-days must be an integer from 0 to 36500.");
@@ -95,7 +95,7 @@ export const runDedup = (
 				: answer(empty.outcome, [empty.reason ?? "indeterminate"]);
 		}
 		const now = yield* Clock.currentTimeMillis;
-		const queue = yield* issueDocuments(repo, {state: "open", label});
+		const queue = yield* issueDocuments(repo, { state: "open", label });
 		const index = yield* loadIndex(repo, closedDays, now, options.refresh ?? false, options.env);
 		if (queue._tag === "Failure")
 			return refuse(

@@ -1,8 +1,8 @@
-import {describe, expect, it} from "vitest";
-import {traceRange} from "../lane/prove.ts";
-import {NONCE, SIBLING_NONCE} from "./fixtures.test-support.ts";
-import {childLaneBranches} from "./lane.ts";
-import {RETIRED_PREFIX, retiredBranchName, supersede} from "./retire-branch.ts";
+import { describe, expect, it } from "vitest";
+import { traceRange } from "../lane/prove.ts";
+import { NONCE, SIBLING_NONCE } from "./fixtures.test-support.ts";
+import { childLaneBranches } from "./lane.ts";
+import { RETIRED_PREFIX, retiredBranchName, supersede } from "./retire-branch.ts";
 
 const LIVE = `build/6296-editor-focus-loss-${NONCE}`;
 const STALE = `build/6296-editor-focus-loss-${SIBLING_NONCE}`;
@@ -20,7 +20,7 @@ describe("retiredBranchName", () => {
 
 describe("supersede", () => {
 	it("keeps the branch an authorized marker's nonce names and supersedes the rest", () => {
-		expect(supersede(6296, [STALE, LIVE], {[NONCE]: "s-9f2e"})).toEqual({
+		expect(supersede(6296, [STALE, LIVE], { [NONCE]: "s-9f2e" })).toEqual({
 			_tag: "Settled",
 			survivor: LIVE,
 			superseded: [STALE],
@@ -35,7 +35,10 @@ describe("supersede", () => {
 	});
 
 	it("supersedes nothing when two candidates are each attested — two live claims, no order", () => {
-		const seated = supersede(6296, [STALE, LIVE], {[NONCE]: "s-9f2e", [SIBLING_NONCE]: "s-other"});
+		const seated = supersede(6296, [STALE, LIVE], {
+			[NONCE]: "s-9f2e",
+			[SIBLING_NONCE]: "s-other",
+		});
 
 		expect(seated._tag).toBe("Unattested");
 		expect(seated._tag === "Unattested" && seated.why).toContain("two live claims");
@@ -53,7 +56,7 @@ describe("a retired branch leaves the candidate set — the deadlock this clears
 
 	it("is Many while both branches sit in build/, and One once the superseded one is renamed", () => {
 		const before = childLaneBranches(6296, [STALE, LIVE, "main"]);
-		expect(traceRange(6296, "epic/6200", before.map(fact))).toMatchObject({_tag: "Many"});
+		expect(traceRange(6296, "epic/6200", before.map(fact))).toMatchObject({ _tag: "Many" });
 
 		const retired = retiredBranchName(STALE);
 		if (retired === null) throw new Error(`${STALE} has no retired name`);

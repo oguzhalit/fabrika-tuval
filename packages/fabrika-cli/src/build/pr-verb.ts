@@ -20,17 +20,17 @@
  * the two issue-dependent guards (`4`, and the closing-keyword half of it) sit after that read — still
  * before any write, which is the invariant the ordering is for.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {IssueRecord} from "../io/issues.ts";
-import {getPullRequest} from "../io/pulls.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {resolveTrunk, trunkUnresolved} from "../io/trunk.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {leakRefusal, readAuthored} from "./authored.ts";
-import {requireSession} from "./claim.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { IssueRecord } from "../io/issues.ts";
+import { getPullRequest } from "../io/pulls.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { resolveTrunk, trunkUnresolved } from "../io/trunk.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { leakRefusal, readAuthored } from "./authored.ts";
+import { requireSession } from "./claim.ts";
 import {
 	BAD_SECTIONS,
 	OFF_VOCABULARY,
@@ -40,12 +40,12 @@ import {
 	WRONG_LANE,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {createPull, getPullHead, openPullForHead, updatePullBody} from "./github.ts";
-import {parseLaneBranch} from "./lane.ts";
-import {requireLane} from "./lane-guard.ts";
-import {bodyDefect, classificationIn, proseOf} from "./pr-body.ts";
-import {conventionalTitleOf} from "./pr-title.ts";
-import {openIssue, resolveTargetRepo} from "./target.ts";
+import { createPull, getPullHead, openPullForHead, updatePullBody } from "./github.ts";
+import { parseLaneBranch } from "./lane.ts";
+import { requireLane } from "./lane-guard.ts";
+import { bodyDefect, classificationIn, proseOf } from "./pr-body.ts";
+import { conventionalTitleOf } from "./pr-title.ts";
+import { openIssue, resolveTargetRepo } from "./target.ts";
 
 const VERB = "build pr";
 const BODY_VERB = "build pr-body";
@@ -133,8 +133,8 @@ const classificationRefusal = (verb: string, body: string): VerbOutcome | null =
 
 /** A body that passed every guard the create path runs before its first read, or the refusal. */
 export type VettedBody =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Body"; readonly text: string};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Body"; readonly text: string };
 
 /**
  * The create path's body guards, in order: stdin (`3`), machine-local path (`5` / `6`), shape (`4`),
@@ -152,21 +152,21 @@ export const vetBody = (
 	const body = authored.text;
 
 	const leaked = leakRefusal(verb, body);
-	if (leaked !== null) return {_tag: "Refused", outcome: leaked};
+	if (leaked !== null) return { _tag: "Refused", outcome: leaked };
 
 	const defect = bodyDefect(body, issue, partial);
 	if (defect !== null) {
-		return {_tag: "Refused", outcome: shapeRefusal(verb, defect, issue, partial)};
+		return { _tag: "Refused", outcome: shapeRefusal(verb, defect, issue, partial) };
 	}
 
 	const classified = classificationRefusal(verb, body);
-	if (classified !== null) return {_tag: "Refused", outcome: classified};
+	if (classified !== null) return { _tag: "Refused", outcome: classified };
 
-	return {_tag: "Body", text: body};
+	return { _tag: "Body", text: body };
 };
 
 export type LanePull =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
 	| {
 			readonly _tag: "Pull";
 			readonly answer: "opened" | "existing";
@@ -175,8 +175,8 @@ export type LanePull =
 	  };
 
 /** The one stdout line both create paths print for the PR they opened or found. */
-export const pullAnswerLine = (pull: Extract<LanePull, {readonly _tag: "Pull"}>): string =>
-	JSON.stringify({answer: pull.answer, number: pull.number, url: pull.url});
+export const pullAnswerLine = (pull: Extract<LanePull, { readonly _tag: "Pull" }>): string =>
+	JSON.stringify({ answer: pull.answer, number: pull.number, url: pull.url });
 
 export interface LanePullRequest {
 	readonly verb: string;
@@ -200,7 +200,7 @@ export const openLanePull = (
 	ChildProcessSpawner.ChildProcessSpawner | HttpClient.HttpClient
 > =>
 	Effect.gen(function* () {
-		const {verb, env, repo, head, issue, body, notes} = request;
+		const { verb, env, repo, head, issue, body, notes } = request;
 		const refused = (code: number, reason: string): LanePull => ({
 			_tag: "Refused",
 			outcome: refuse(code, reason, notes),
@@ -250,7 +250,7 @@ export const openLanePull = (
 			back._tag === "Present" &&
 			normalizeForReadback(back.value.body) === normalizeForReadback(body);
 		return matches
-			? {_tag: "Pull", answer: "opened", number: created.value.number, url: created.value.url}
+			? { _tag: "Pull", answer: "opened", number: created.value.number, url: created.value.url }
 			: refused(
 					READBACK_MISMATCH,
 					`${verb}: the PR landed (#${created.value.number}) but its body does not read back as sent — it needs a human eye.`,
@@ -265,7 +265,7 @@ export const runPr = (
 	ChildProcessSpawner.ChildProcessSpawner | HttpClient.HttpClient
 > =>
 	Effect.gen(function* () {
-		const {number, partial} = options;
+		const { number, partial } = options;
 
 		const vetted = vetBody(VERB, yield* options.stdin, number, partial);
 		if (vetted._tag === "Refused") return vetted.outcome;
@@ -321,7 +321,7 @@ export const runPrBody = (
 	ChildProcessSpawner.ChildProcessSpawner | HttpClient.HttpClient
 > =>
 	Effect.gen(function* () {
-		const {pr, partial} = options;
+		const { pr, partial } = options;
 
 		const authored = readAuthored(BODY_SURFACE, yield* options.stdin);
 		if (authored._tag === "Refused") return authored.outcome;

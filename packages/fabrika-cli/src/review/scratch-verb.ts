@@ -26,12 +26,12 @@
  * The printed path is machine-local. `review post` and `review append-criterion` red on it through
  * the shared `report/leaks.ts` predicate (`5`), the same refusal `build pr` and `build note` make.
  */
-import {createHash} from "node:crypto";
-import {Effect, FileSystem} from "effect";
-import {isKebabSlug} from "../build/lane.ts";
-import {sessionIdFrom, sessionIdUnset} from "../io/session-id.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {OFF_VOCABULARY} from "./codes.ts";
+import { createHash } from "node:crypto";
+import { Effect, FileSystem } from "effect";
+import { isKebabSlug } from "../build/lane.ts";
+import { sessionIdFrom, sessionIdUnset } from "../io/session-id.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { OFF_VOCABULARY } from "./codes.ts";
 
 const VERB = "review scratch";
 
@@ -76,7 +76,7 @@ export const runScratch = (
 	options: ScratchOptions,
 ): Effect.Effect<VerbOutcome, never, FileSystem.FileSystem> =>
 	Effect.gen(function* () {
-		const {pr, slug} = options;
+		const { pr, slug } = options;
 
 		if (!Number.isInteger(pr) || pr <= 0) {
 			return refuse(FAILED, `${VERB}: ${pr} is not a pull-request number.`);
@@ -120,7 +120,7 @@ export const runScratch = (
 
 		const dir = laneScratchDir(options.tmpRoot, session, pr, laneNonce(lane, sha));
 		const fs = yield* FileSystem.FileSystem;
-		const failure: string | null = yield* fs.makeDirectory(dir, {recursive: true}).pipe(
+		const failure: string | null = yield* fs.makeDirectory(dir, { recursive: true }).pipe(
 			Effect.as(null),
 			Effect.catchTag("PlatformError", (cause) => Effect.succeed(cause.message)),
 		);

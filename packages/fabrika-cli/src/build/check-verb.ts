@@ -41,11 +41,11 @@
  * that merely enters a diff no longer hands its author every defect line it already carried; the
  * shape and its deliberate limits live in `prose-baseline.ts`.
  */
-import {Effect, FileSystem, type Path} from "effect";
+import { Effect, FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {Resolution} from "../config/key-group.ts";
-import {type CiSurface, ciKey} from "../config/keys/ci.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { Resolution } from "../config/key-group.ts";
+import { type CiSurface, ciKey } from "../config/keys/ci.ts";
 import {
 	CODE_VALIDATORS,
 	type CodeValidator,
@@ -56,19 +56,19 @@ import {
 	type ConfigValidator,
 	configValidatorsKey,
 } from "../config/keys/config-validators.ts";
-import {loadConfig, resolve} from "../config/load.ts";
-import {readConfigSource} from "../config/source.ts";
-import type {LocalTreeGuard} from "../guard/local-tree.ts";
-import {execStatus} from "../io/exec.ts";
-import {resolveTrunk, trunkUnresolved} from "../io/trunk.ts";
+import { loadConfig, resolve } from "../config/load.ts";
+import { readConfigSource } from "../config/source.ts";
+import type { LocalTreeGuard } from "../guard/local-tree.ts";
+import { execStatus } from "../io/exec.ts";
+import { resolveTrunk, trunkUnresolved } from "../io/trunk.ts";
 import {
 	CONFIG_PATH,
 	readDocLeakExempt,
 	readWorkflowValidators,
 	type WorkflowValidator,
 } from "../repo-config.ts";
-import {ANSWER, answer, refuse, type VerbOutcome} from "../verb.ts";
-import {requireSession} from "./claim.ts";
+import { ANSWER, answer, refuse, type VerbOutcome } from "../verb.ts";
+import { requireSession } from "./claim.ts";
 import {
 	OFF_VOCABULARY,
 	PRECONDITION_UNKNOWN,
@@ -76,13 +76,13 @@ import {
 	VALIDATION_RED,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {predecessorsOf, readTopology, renderRef, sameRef} from "./dependencies.ts";
-import {docLeaks} from "./doc-leaks.ts";
-import {changedFiles, mergeBase, showAt, treePaths} from "./git.ts";
-import {requireLane} from "./lane-guard.ts";
-import {introducedLeaks} from "./prose-baseline.ts";
-import {resolveTargetRepo} from "./target.ts";
-import {assertGround} from "./tree.ts";
+import { predecessorsOf, readTopology, renderRef, sameRef } from "./dependencies.ts";
+import { docLeaks } from "./doc-leaks.ts";
+import { changedFiles, mergeBase, showAt, treePaths } from "./git.ts";
+import { requireLane } from "./lane-guard.ts";
+import { introducedLeaks } from "./prose-baseline.ts";
+import { resolveTargetRepo } from "./target.ts";
+import { assertGround } from "./tree.ts";
 
 const VERB = "build check";
 
@@ -243,7 +243,7 @@ export const unvalidatableDiff = (
 	files: ReadonlyArray<string>,
 	configured: ReadonlyArray<string> = [],
 ): string | null => {
-	const {code, markdown, workflows, config, unvalidatable} = classifyDiff(files, configured);
+	const { code, markdown, workflows, config, unvalidatable } = classifyDiff(files, configured);
 	if (code.length > 0 || markdown.length > 0 || workflows.length > 0 || config.length > 0) {
 		return null;
 	}
@@ -437,7 +437,7 @@ const planDefects = (file: string, text: string): ReadonlyArray<string> => {
 	}
 	for (const ref of declared) {
 		if (ref._tag !== "Issue") continue;
-		const cycle = predecessorsOf(topology.edges, ref).some(({ref: predecessor}) =>
+		const cycle = predecessorsOf(topology.edges, ref).some(({ ref: predecessor }) =>
 			sameRef(predecessor, ref),
 		);
 		if (cycle) defects.push(`${file}: #${ref.number} is its own predecessor`);
@@ -447,9 +447,9 @@ const planDefects = (file: string, text: string): ReadonlyArray<string> => {
 
 /** A changed markdown file resolves three ways, and only the middle one is safe to skip. */
 type MarkdownRead =
-	| {readonly _tag: "Read"; readonly text: string}
-	| {readonly _tag: "Absent"}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Read"; readonly text: string }
+	| { readonly _tag: "Absent" }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /**
  * Read a changed markdown file, keeping "it is gone" apart from "I could not open it".
@@ -470,20 +470,20 @@ const readMarkdown = (
 	path: string,
 ): Effect.Effect<MarkdownRead, never> =>
 	fs.readFileString(path).pipe(
-		Effect.map((text): MarkdownRead => ({_tag: "Read", text})),
+		Effect.map((text): MarkdownRead => ({ _tag: "Read", text })),
 		Effect.catchTag("PlatformError", (error) =>
 			Effect.succeed<MarkdownRead>(
 				error.reason._tag === "NotFound"
-					? {_tag: "Absent"}
-					: {_tag: "Unreadable", reason: error.reason._tag},
+					? { _tag: "Absent" }
+					: { _tag: "Unreadable", reason: error.reason._tag },
 			),
 		),
 	);
 
 /** The declared exemptions, or why there are none — `Unreadable` is the one answer a green may not absorb. */
 type ExemptScope =
-	| {readonly _tag: "Scope"; readonly paths: ReadonlyArray<string>; readonly note: string}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Scope"; readonly paths: ReadonlyArray<string>; readonly note: string }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /**
  * Read the repo's declared leak-scan exemptions off `.fabrika.jsonc`.
@@ -519,7 +519,7 @@ const readExemptScope = (
 							paths: [],
 							note: `${VERB}: nothing is leak-scan exempt — this repo has no ${CONFIG_PATH}.`,
 						}
-					: {_tag: "Unreadable", reason: error.reason._tag},
+					: { _tag: "Unreadable", reason: error.reason._tag },
 			),
 		),
 	);
@@ -562,7 +562,7 @@ export interface GuardSweep {
 }
 
 type SweepOutcome =
-	| {readonly _tag: "Swept"; readonly sweep: GuardSweep; readonly notes: ReadonlyArray<string>}
+	| { readonly _tag: "Swept"; readonly sweep: GuardSweep; readonly notes: ReadonlyArray<string> }
 	| {
 			readonly _tag: "Red";
 			readonly label: string;
@@ -602,33 +602,33 @@ const sweepLocalTreeGuards = (
 		const notes: string[] = [];
 		for (const guard of guards) {
 			const label = `guard ${guard.name} ${guard.leaf}`;
-			const outcome = yield* guard.run({root, env, changed});
+			const outcome = yield* guard.run({ root, env, changed });
 			if (outcome.code === ANSWER) {
 				ran.push(label);
 				continue;
 			}
 			const reason = SKIP_REASONS.get(outcome.code);
 			if (reason === undefined) {
-				return {_tag: "Red", label, notes, output: outcome.stderr.join("\n")} as const;
+				return { _tag: "Red", label, notes, output: outcome.stderr.join("\n") } as const;
 			}
 			const line = `${guard.name} (${reason}: ${outcome.stderr.at(-1) ?? `exit ${outcome.code}`})`;
 			skipped.push(line);
 			notes.push(`${VERB}: skipped: ${line} — not a pass; CI's own gate answers this one.`);
 		}
-		return {_tag: "Swept", sweep: {ran, skipped}, notes} as const;
+		return { _tag: "Swept", sweep: { ran, skipped }, notes } as const;
 	});
 
 /** The declared config validators, or why which ones exist is UNKNOWN. */
 type ConfigScope =
-	| {readonly _tag: "Scope"; readonly validators: ReadonlyArray<ConfigValidator>}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Scope"; readonly validators: ReadonlyArray<ConfigValidator> }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 const readConfigScope = (root: string): Effect.Effect<ConfigScope, never, FileSystem.FileSystem> =>
 	Effect.gen(function* () {
 		const resolved = resolve(loadConfig(yield* readConfigSource(root)), configValidatorsKey);
 		return resolved._tag === "Declared" || resolved._tag === "Default"
-			? {_tag: "Scope", validators: resolved.value}
-			: {_tag: "Unknown", reason: resolved.reason};
+			? { _tag: "Scope", validators: resolved.value }
+			: { _tag: "Unknown", reason: resolved.reason };
 	});
 
 type ConfigRun =
@@ -637,7 +637,7 @@ type ConfigRun =
 			readonly ran: ReadonlyArray<string>;
 			readonly notes: ReadonlyArray<string>;
 	  }
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * Spawn every declared config validator that reads a changed config file, on every surface.
@@ -651,12 +651,12 @@ const runConfigValidators = (
 	noted: ReadonlyArray<string>,
 ): Effect.Effect<ConfigRun, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		if (changed.length === 0) return {_tag: "Ran", ran: [], notes: []} as const;
+		if (changed.length === 0) return { _tag: "Ran", ran: [], notes: [] } as const;
 		const notes = [
 			`${VERB}: ${changed.length} changed file(s) read by \`${CONFIG_VALIDATORS}\` in ${CONFIG_PATH}: ${changed.join(", ")}.`,
 		];
 		const ran: string[] = [];
-		for (const {argv, reads} of validators) {
+		for (const { argv, reads } of validators) {
 			if (!reads.some((file) => changed.includes(file))) continue;
 			const label = argv.join(" ");
 			const result = yield* execStatus(argv[0], argv.slice(1));
@@ -666,7 +666,7 @@ const runConfigValidators = (
 					`${VERB}: ${label} could not be executed: ${result.reason} — the verdict is UNKNOWN, never green.`,
 					[...noted, ...notes],
 				);
-				return {_tag: "Refused", outcome} as const;
+				return { _tag: "Refused", outcome } as const;
 			}
 			if (!result.ok) {
 				const outcome = refuse(
@@ -674,11 +674,11 @@ const runConfigValidators = (
 					`${VERB}: red — ${label} failed; diagnostics above.`,
 					[...noted, ...notes, ...diagnostics(result.output)],
 				);
-				return {_tag: "Refused", outcome} as const;
+				return { _tag: "Refused", outcome } as const;
 			}
 			ran.push(label);
 		}
-		return {_tag: "Ran", ran, notes} as const;
+		return { _tag: "Ran", ran, notes } as const;
 	});
 
 /** The code validators to run, or why the answer is UNKNOWN. */
@@ -690,7 +690,7 @@ type CodeScope =
 			/** How an empty list reads back to whoever has to fix it. */
 			readonly absence: string;
 	  }
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 const readCodeScope = (root: string): Effect.Effect<CodeScope, never, FileSystem.FileSystem> =>
 	Effect.gen(function* () {
@@ -698,7 +698,7 @@ const readCodeScope = (root: string): Effect.Effect<CodeScope, never, FileSystem
 		switch (resolved._tag) {
 			case "Unknown":
 			case "Malformed":
-				return {_tag: "Unknown", reason: resolved.reason};
+				return { _tag: "Unknown", reason: resolved.reason };
 			case "Declared":
 				return {
 					_tag: "Scope",
@@ -755,7 +755,7 @@ const runCodeSurface = (
 			);
 		}
 		const ran: string[] = [];
-		for (const {argv} of declared.validators) {
+		for (const { argv } of declared.validators) {
 			const label = argv.join(" ");
 			const result = yield* execStatus(argv[0], argv.slice(1));
 			if (result._tag === "Unstartable") {
@@ -793,7 +793,7 @@ type ValidatorScope =
 			readonly validators: ReadonlyArray<WorkflowValidator>;
 			readonly note: string;
 	  }
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 const readValidatorScope = (
 	fs: FileSystem.FileSystem,
@@ -822,7 +822,7 @@ const readValidatorScope = (
 							validators: [],
 							note: `${VERB}: no repo workflow validator is declared — this repo has no ${CONFIG_PATH}.`,
 						}
-					: {_tag: "Unreadable", reason: error.reason._tag},
+					: { _tag: "Unreadable", reason: error.reason._tag },
 			),
 		),
 	);
@@ -891,7 +891,7 @@ const runWorkflowSurface = (
 			ran.push(ACTIONLINT);
 			for (const file of workflows) opened.add(file);
 		}
-		for (const {argv, reads} of declared.validators) {
+		for (const { argv, reads } of declared.validators) {
 			const label = argv.join(" ");
 			const result = yield* execStatus(argv[0], argv.slice(1));
 			if (result._tag === "Unstartable") {
@@ -953,9 +953,9 @@ const runWorkflowSurface = (
 
 /** What starting one declared code validator proved, kept three ways like every run here. */
 type Probed =
-	| {readonly _tag: "Green"; readonly label: string}
-	| {readonly _tag: "Red"; readonly label: string; readonly output: string}
-	| {readonly _tag: "Unstartable"; readonly label: string; readonly reason: string};
+	| { readonly _tag: "Green"; readonly label: string }
+	| { readonly _tag: "Red"; readonly label: string; readonly output: string }
+	| { readonly _tag: "Unstartable"; readonly label: string; readonly reason: string };
 
 const probedLine = (probed: Probed): string => {
 	switch (probed._tag) {
@@ -1003,15 +1003,15 @@ const runProbe = (): Effect.Effect<
 			);
 		}
 		const probed: Probed[] = [];
-		for (const {argv} of declared.validators) {
+		for (const { argv } of declared.validators) {
 			const label = argv.join(" ");
 			const result = yield* execStatus(argv[0], argv.slice(1));
 			probed.push(
 				result._tag === "Unstartable"
-					? {_tag: "Unstartable", label, reason: result.reason}
+					? { _tag: "Unstartable", label, reason: result.reason }
 					: result.ok
-						? {_tag: "Green", label}
-						: {_tag: "Red", label, output: result.output},
+						? { _tag: "Green", label }
+						: { _tag: "Red", label, output: result.output },
 			);
 		}
 		const notes = [declared.note, ...probed.map(probedLine)];
@@ -1117,7 +1117,9 @@ export const runCheck = (
 		// never needs the declaration — and an unreadable one cannot turn its answer UNKNOWN.
 		const unclaimed = classifyDiff(files).unvalidatable;
 		const declared: ConfigScope =
-			unclaimed.length === 0 ? {_tag: "Scope", validators: []} : yield* readConfigScope(lane.root);
+			unclaimed.length === 0
+				? { _tag: "Scope", validators: [] }
+				: yield* readConfigScope(lane.root);
 		if (declared._tag === "Unknown") {
 			return refuse(
 				PRECONDITION_UNKNOWN,
@@ -1139,7 +1141,7 @@ export const runCheck = (
 		if (mismatch !== null) {
 			return refuse(OFF_VOCABULARY, `${VERB}: ${mismatch} — the surface is provably wrong.`, scope);
 		}
-		const {markdown} = classes;
+		const { markdown } = classes;
 		// A partial green has to carry what it skipped, on both channels: a run once greened over 25
 		// workflow files whose `ran` line was true and misleading at once, and a `--surface code` green
 		// then did the same to markdown while reporting an empty list.

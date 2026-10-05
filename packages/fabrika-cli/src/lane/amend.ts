@@ -16,9 +16,9 @@
  * Nothing here reads disk or the board: two compiled machines and the log go in, one verdict comes
  * out, and the verb writes only on the accepting one.
  */
-import {deferredTasks, resolveDeferrals} from "./deferral.ts";
-import {foldLog, type LogEntry} from "./fold.ts";
-import {AMENDED_EVENT, bareEvent, type CompiledLane} from "./machine.ts";
+import { deferredTasks, resolveDeferrals } from "./deferral.ts";
+import { foldLog, type LogEntry } from "./fold.ts";
+import { AMENDED_EVENT, bareEvent, type CompiledLane } from "./machine.ts";
 
 /** A task whose landing this amendment would erase, and the final it landed in. */
 export interface LandedTask {
@@ -37,13 +37,13 @@ export type AmendVerdict =
 			readonly deferred: ReadonlyArray<string>;
 	  }
 	/** The lane's own log already does not replay through the machine it is running. */
-	| {readonly _tag: "Unreplayable"; readonly defects: ReadonlyArray<string>}
+	| { readonly _tag: "Unreplayable"; readonly defects: ReadonlyArray<string> }
 	/** The new topology drops a task the ledger proves landed. */
-	| {readonly _tag: "DropsLanded"; readonly landed: ReadonlyArray<LandedTask>}
+	| { readonly _tag: "DropsLanded"; readonly landed: ReadonlyArray<LandedTask> }
 	/** A task carrying history cannot replay to the leaf it stands on. */
-	| {readonly _tag: "Unreachable"; readonly reasons: ReadonlyArray<string>}
+	| { readonly _tag: "Unreachable"; readonly reasons: ReadonlyArray<string> }
 	/** A named deferral does not describe this lane — see {@link judgeAmendment}. */
-	| {readonly _tag: "DeferralRefused"; readonly reasons: ReadonlyArray<string>};
+	| { readonly _tag: "DeferralRefused"; readonly reasons: ReadonlyArray<string> };
 
 /**
  * Where a region ENDS clean — a final the task reached rather than fell into.
@@ -71,15 +71,15 @@ export const judgeAmendment = (
 	defers: ReadonlyArray<string> = [],
 ): AmendVerdict => {
 	const standing = resolveDeferrals(entries);
-	if (standing._tag !== "Resolved") return {_tag: "Unreplayable", defects: standing.defects};
+	if (standing._tag !== "Resolved") return { _tag: "Unreplayable", defects: standing.defects };
 	const before = foldLog(current, entries);
-	if (before._tag !== "Folded") return {_tag: "Unreplayable", defects: before.defects};
+	if (before._tag !== "Folded") return { _tag: "Unreplayable", defects: before.defects };
 
 	const landed = Object.entries(before.states)
 		.filter(([task, state]) => isLanded(current, task, state.type))
 		.filter(([task]) => candidate.tasks[task] === undefined)
-		.map(([task, state]) => ({task, state: state.type}));
-	if (landed.length > 0) return {_tag: "DropsLanded", landed};
+		.map(([task, state]) => ({ task, state: state.type }));
+	if (landed.length > 0) return { _tag: "DropsLanded", landed };
 
 	// Before the candidate fold, because that fold answers this case as an unknown-task defect naming
 	// the machine rather than the amendment — a reader sent at `.fabrika/lanes/<n>/workflow.json` for
@@ -111,7 +111,7 @@ export const judgeAmendment = (
 		}
 		return [];
 	});
-	if (misnamed.length > 0) return {_tag: "DeferralRefused", reasons: misnamed};
+	if (misnamed.length > 0) return { _tag: "DeferralRefused", reasons: misnamed };
 
 	const strandedByDrop = [...historied]
 		.filter((task) => candidate.tasks[task] === undefined && !deferred.has(task))
@@ -120,10 +120,10 @@ export const judgeAmendment = (
 			(task) =>
 				`task "${task}" carries recorded history and the new topology places it in no phase`,
 		);
-	if (strandedByDrop.length > 0) return {_tag: "Unreachable", reasons: strandedByDrop};
+	if (strandedByDrop.length > 0) return { _tag: "Unreachable", reasons: strandedByDrop };
 
 	const after = foldLog(candidate, entries, defers);
-	if (after._tag !== "Folded") return {_tag: "Unreachable", reasons: after.defects};
+	if (after._tag !== "Folded") return { _tag: "Unreachable", reasons: after.defects };
 
 	const moved = [...historied].sort().flatMap((task) => {
 		const from = before.states[task];
@@ -133,7 +133,7 @@ export const judgeAmendment = (
 			`task "${task}" stands at "${from.type}" and its log replays through the re-derived machine to "${to.type}"`,
 		];
 	});
-	if (moved.length > 0) return {_tag: "Unreachable", reasons: moved};
+	if (moved.length > 0) return { _tag: "Unreachable", reasons: moved };
 
 	const held = new Set(Object.keys(current.tasks));
 	const tasks = Object.keys(candidate.tasks);

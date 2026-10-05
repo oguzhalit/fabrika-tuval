@@ -19,9 +19,9 @@ export type AnnotationLevel = "error" | "warning" | "notice";
 
 /** Where a finding sits: nowhere in particular, a whole file, or one line of it. */
 export type AnnotationLocation =
-	| {readonly _tag: "Unlocated"}
-	| {readonly _tag: "File"; readonly file: string}
-	| {readonly _tag: "Line"; readonly file: string; readonly line: number};
+	| { readonly _tag: "Unlocated" }
+	| { readonly _tag: "File"; readonly file: string }
+	| { readonly _tag: "Line"; readonly file: string; readonly line: number };
 
 export interface Annotation {
 	readonly level: AnnotationLevel;
@@ -32,13 +32,13 @@ export interface Annotation {
 export const unlocated = (level: AnnotationLevel, message: string): Annotation => ({
 	level,
 	message,
-	location: {_tag: "Unlocated"},
+	location: { _tag: "Unlocated" },
 });
 
 export const atFile = (level: AnnotationLevel, file: string, message: string): Annotation => ({
 	level,
 	message,
-	location: {_tag: "File", file},
+	location: { _tag: "File", file },
 });
 
 export const atLine = (
@@ -46,7 +46,7 @@ export const atLine = (
 	file: string,
 	line: number,
 	message: string,
-): Annotation => ({level, message, location: {_tag: "Line", file, line}});
+): Annotation => ({ level, message, location: { _tag: "Line", file, line } });
 
 // A newline would terminate the command early and a `%` would be read as the start of an existing
 // escape, so `%` goes first. This is the toolkit's `toCommandValue` encoding.

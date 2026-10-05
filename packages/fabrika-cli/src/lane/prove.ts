@@ -29,16 +29,16 @@
  * foreign workflow routable instead of refused.
  */
 
-import {issueRefsIn} from "../build/commit-message.ts";
-import type {ParentedCommit} from "../io/git.ts";
-import type {PullScope} from "../io/pulls.ts";
-import {type IssueRefs, ROUTED_NAMESPACES} from "../review/classes.ts";
-import {isBuildState, SHELL_STATES} from "../wire/lane-brief.ts";
-import type {RouteBasis, RoutedBasis} from "../wire/routed-elsewhere.ts";
-import {rawKeyIssue} from "./key.ts";
+import { issueRefsIn } from "../build/commit-message.ts";
+import type { ParentedCommit } from "../io/git.ts";
+import type { PullScope } from "../io/pulls.ts";
+import { type IssueRefs, ROUTED_NAMESPACES } from "../review/classes.ts";
+import { isBuildState, SHELL_STATES } from "../wire/lane-brief.ts";
+import type { RouteBasis, RoutedBasis } from "../wire/routed-elsewhere.ts";
+import { rawKeyIssue } from "./key.ts";
 
 /** The branch grammar's own reader, re-exported so this module's callers take one derivation. */
-export {childLaneBranches} from "../build/lane.ts";
+export { childLaneBranches } from "../build/lane.ts";
 
 /** The plain builder's leaf state — the text-construction member of {@link BUILD_STATES}. */
 export const BUILD_STATE = "build";
@@ -93,9 +93,9 @@ export const SHIP_STATES: ReadonlyArray<string> = ["ship", SHIP_QUEUED_STATE];
  * a diagnostic wants to name it.
  */
 export type LaneRole =
-	| {readonly _tag: "Single"}
-	| {readonly _tag: "Child"; readonly epic: number}
-	| {readonly _tag: "Tail"; readonly epic: number};
+	| { readonly _tag: "Single" }
+	| { readonly _tag: "Child"; readonly epic: number }
+	| { readonly _tag: "Tail"; readonly epic: number };
 
 /**
  * The epic a lane's tail phase reviews and ships, read off the tail task's own name — `null` on a
@@ -112,25 +112,25 @@ export const epicOf = (taskIds: ReadonlyArray<string>): number | null => {
 
 /** The role a task plays: on an epic lane every task but the tail is a child region. */
 export const roleOf = (taskId: string, epic: number | null): LaneRole => {
-	if (epic === null) return {_tag: "Single"};
-	return taskId === `epic_${epic}` ? {_tag: "Tail", epic} : {_tag: "Child", epic};
+	if (epic === null) return { _tag: "Single" };
+	return taskId === `epic_${epic}` ? { _tag: "Tail", epic } : { _tag: "Child", epic };
 };
 
 export type Claim =
-	| {readonly _tag: "OpenPull"}
+	| { readonly _tag: "OpenPull" }
 	/**
 	 * `defers` is the slice of the required set this cell hands to a later one, subtracted before the
 	 * proof is taken. Non-empty only on a `review` `PASS` this lane's own machine routes into
 	 * {@link REVIEW_UI_STATE} — the cell that then owes it. Empty everywhere else, including on a
 	 * `review` `PASS` that walks to `ship`.
 	 */
-	| {readonly _tag: "HeadVerdicts"; readonly defers: ReadonlyArray<string>}
+	| { readonly _tag: "HeadVerdicts"; readonly defers: ReadonlyArray<string> }
 	/**
 	 * A reviewer's park out of a review cell, which claims the run reached no verdict. It is a
 	 * negative claim, so it is refused only by a still-binding `FAIL` and by nothing else — see
 	 * {@link foldPark}.
 	 */
-	| {readonly _tag: "ParkUncontradicted"}
+	| { readonly _tag: "ParkUncontradicted" }
 	/**
 	 * A rewind out of a review cell, which claims the task's issue is still open and no open PR links
 	 * it any more — the PR the review was for now serves another issue. It is the second negative
@@ -140,15 +140,15 @@ export type Claim =
 	 *
 	 * @ruling https://github.com/kamp-us/phoenix/issues/9910
 	 */
-	| {readonly _tag: "Unlinked"}
-	| {readonly _tag: "RangeCommits"; readonly epic: number}
+	| { readonly _tag: "Unlinked" }
+	| { readonly _tag: "RangeCommits"; readonly epic: number }
 	/**
 	 * `defers` is {@link Claim}'s one subtraction asked of a range instead of a head, and on this arm
 	 * it is constant rather than routed — see {@link claimOf} for why a child's scope can hold no
 	 * routed namespace's verdict at all.
 	 */
-	| {readonly _tag: "RangeVerdict"; readonly epic: number; readonly defers: ReadonlyArray<string>}
-	| {readonly _tag: "None"; readonly why: string};
+	| { readonly _tag: "RangeVerdict"; readonly epic: number; readonly defers: ReadonlyArray<string> }
+	| { readonly _tag: "None"; readonly why: string };
 
 /**
  * What this event, recorded out of this leaf state in this role, asserts about the world.
@@ -188,24 +188,24 @@ export const claimOf = (
 ): Claim => {
 	const child = role._tag === "Child";
 	if (event === "DONE" && BUILD_STATES.includes(leaf)) {
-		return child ? {_tag: "RangeCommits", epic: role.epic} : {_tag: "OpenPull"};
+		return child ? { _tag: "RangeCommits", epic: role.epic } : { _tag: "OpenPull" };
 	}
 	if (event === "PASS" && leaf === REVIEW_STATE) {
-		if (child) return {_tag: "RangeVerdict", epic: role.epic, defers: ROUTED_NAMESPACES};
+		if (child) return { _tag: "RangeVerdict", epic: role.epic, defers: ROUTED_NAMESPACES };
 		return {
 			_tag: "HeadVerdicts",
 			defers: next === REVIEW_UI_STATE ? ROUTED_NAMESPACES : [],
 		};
 	}
 	if (event === "PASS" && leaf === REVIEW_UI_STATE && !child) {
-		return {_tag: "HeadVerdicts", defers: []};
+		return { _tag: "HeadVerdicts", defers: [] };
 	}
 	// A child's park has no PR to read, and its range verdicts are the other arm's read.
 	if (event === "BLOCKED" && (leaf === REVIEW_STATE || leaf === REVIEW_UI_STATE) && !child) {
-		return {_tag: "ParkUncontradicted"};
+		return { _tag: "ParkUncontradicted" };
 	}
 	if (event === "WIP" && (leaf === REVIEW_STATE || leaf === REVIEW_UI_STATE) && !child) {
-		return {_tag: "Unlinked"};
+		return { _tag: "Unlinked" };
 	}
 	return {
 		_tag: "None",
@@ -279,8 +279,8 @@ export type RangeTrace =
 			/** How many of those name this issue — the evidence the range is this child's. */
 			readonly naming: number;
 	  }
-	| {readonly _tag: "None"; readonly why: string}
-	| {readonly _tag: "Many"; readonly branches: ReadonlyArray<string>};
+	| { readonly _tag: "None"; readonly why: string }
+	| { readonly _tag: "Many"; readonly branches: ReadonlyArray<string> };
 
 /**
  * The one range a child's `DONE` out of `build` stands on.
@@ -324,7 +324,7 @@ export const traceRange = (
 			naming: one.messages.filter((message) => issueRefsIn(message).includes(issue)).length,
 		};
 	}
-	if (carrying.length > 0) return {_tag: "Many", branches: carrying.map((fact) => fact.branch)};
+	if (carrying.length > 0) return { _tag: "Many", branches: carrying.map((fact) => fact.branch) };
 	const names = facts.map((fact) => fact.branch).join(", ");
 	if (facts.length === 0) {
 		return {
@@ -337,7 +337,7 @@ export const traceRange = (
 				_tag: "None",
 				why: `${names} adds no commit over ${base} — the branch was cut and not built on`,
 			}
-		: {_tag: "None", why: `no commit ${names} adds over ${base} names #${issue}`};
+		: { _tag: "None", why: `no commit ${names} adds over ${base} names #${issue}` };
 };
 
 /** One candidate pull request, read off the board rather than off the search row. */
@@ -373,9 +373,9 @@ export interface PullFact {
 }
 
 export type PullTrace =
-	| {readonly _tag: "One"; readonly pr: number}
-	| {readonly _tag: "None"; readonly why: string}
-	| {readonly _tag: "Many"; readonly prs: ReadonlyArray<number>};
+	| { readonly _tag: "One"; readonly pr: number }
+	| { readonly _tag: "None"; readonly why: string }
+	| { readonly _tag: "Many"; readonly prs: ReadonlyArray<number> };
 
 /**
  * The PR tracing to this issue, within the caller's scope.
@@ -400,18 +400,18 @@ export const tracePulls = (
 	const first = matched[0];
 	const noun = scope === "open" ? "open PR" : "open or merged PR";
 	if (first === undefined) {
-		if (facts.length === 0) return {_tag: "None", why: `no ${noun} links #${issue}`};
+		if (facts.length === 0) return { _tag: "None", why: `no ${noun} links #${issue}` };
 		const read = facts.map((fact) => `#${fact.number}`).join(", ");
 		return live.length === 0
 			? {
 					_tag: "None",
 					why: `read ${read} — every candidate has closed since it was nominated`,
 				}
-			: {_tag: "None", why: `read ${read} — no candidate's body links #${issue}`};
+			: { _tag: "None", why: `read ${read} — no candidate's body links #${issue}` };
 	}
 	return matched.length === 1
-		? {_tag: "One", pr: first.number}
-		: {_tag: "Many", prs: matched.map((fact) => fact.number)};
+		? { _tag: "One", pr: first.number }
+		: { _tag: "Many", prs: matched.map((fact) => fact.number) };
 };
 
 /** An issue's state as the board reports it — the one fact a rewind asks of the issue itself. */
@@ -465,8 +465,8 @@ export const traceUnlinked = (issue: number, state: IssueState, trace: PullTrace
  * picked — every candidate says the same thing about the issue.
  */
 export type Closure =
-	| {readonly _tag: "Closes"; readonly why: string}
-	| {readonly _tag: "Partial"; readonly prs: ReadonlyArray<number>};
+	| { readonly _tag: "Closes"; readonly why: string }
+	| { readonly _tag: "Partial"; readonly prs: ReadonlyArray<number> };
 
 /**
  * The merged pull requests whose body names this issue at all — the evidence every closure judgement
@@ -483,14 +483,14 @@ const closesIssue = (issue: number, fact: PullFact): boolean =>
 
 export const traceClosure = (issue: number, facts: ReadonlyArray<PullFact>): Closure => {
 	const landed = landedFor(issue, facts);
-	if (landed.length === 0) return {_tag: "Closes", why: `no merged PR's body links #${issue}`};
+	if (landed.length === 0) return { _tag: "Closes", why: `no merged PR's body links #${issue}` };
 	const closing = landed.filter((fact) => closesIssue(issue, fact));
 	return closing.length > 0
 		? {
 				_tag: "Closes",
 				why: `${closing.map((fact) => `#${fact.number}`).join(", ")} closes #${issue} on merge`,
 			}
-		: {_tag: "Partial", prs: landed.map((fact) => fact.number)};
+		: { _tag: "Partial", prs: landed.map((fact) => fact.number) };
 };
 
 /** One comment on the driven issue, as much of it as the no-PR proof needs. */
@@ -500,8 +500,8 @@ export interface CommentFact {
 }
 
 export type Diagnosis =
-	| {readonly _tag: "Posted"; readonly commentId: number}
-	| {readonly _tag: "Absent"; readonly why: string};
+	| { readonly _tag: "Posted"; readonly commentId: number }
+	| { readonly _tag: "Absent"; readonly why: string };
 
 /**
  * The no-PR arm: `build`'s `SUCCESS-NO-PR`, proven rather than taken on the spawn's word.
@@ -525,7 +525,7 @@ export const traceDiagnosis = (
 				_tag: "Absent",
 				why: `#${issue} carries no comment written since the task entered its build cell${since === null ? "" : ` at ${since}`}, so no note was posted`,
 			}
-		: {_tag: "Posted", commentId: latest.id};
+		: { _tag: "Posted", commentId: latest.id };
 };
 
 /** One claim in force for a namespace, already ordered by the caller. */
@@ -587,9 +587,9 @@ export const judgeVerdicts = (
 	required.map((namespace) => {
 		const verdict = inForce.find((row) => row.namespace === namespace);
 		const state = stateOf(verdict);
-		const row = {namespace, state, commentId: verdict?.commentId ?? null};
+		const row = { namespace, state, commentId: verdict?.commentId ?? null };
 		return state === "routed" && verdict?.basis !== undefined
-			? {...row, basis: verdict.basis}
+			? { ...row, basis: verdict.basis }
 			: row;
 	});
 
@@ -602,11 +602,11 @@ export const basisOfRows = (rows: ReadonlyArray<NamespaceRow>): RoutedBasis | nu
 };
 
 export type Proof =
-	| {readonly _tag: "Proven"; readonly note: string}
-	| {readonly _tag: "Absent"; readonly what: string}
-	| {readonly _tag: "InFlight"; readonly what: string}
-	| {readonly _tag: "Contradicted"; readonly what: string}
-	| {readonly _tag: "Ambiguous"; readonly what: string};
+	| { readonly _tag: "Proven"; readonly note: string }
+	| { readonly _tag: "Absent"; readonly what: string }
+	| { readonly _tag: "InFlight"; readonly what: string }
+	| { readonly _tag: "Contradicted"; readonly what: string }
+	| { readonly _tag: "Ambiguous"; readonly what: string };
 
 /**
  * Fold the namespace rows into the one verdict a `PASS` claim earns.

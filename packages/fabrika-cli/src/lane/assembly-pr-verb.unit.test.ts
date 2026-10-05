@@ -1,14 +1,14 @@
 /** `lane assembly-pr` — the board read, the two fields, and the seats each refusal takes. */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {issuePayload, NOT_FOUND, served} from "../build/fixtures.test-support.ts";
-import {fakeHttp, fakeShell, type HttpReply} from "../fakes.test-support.ts";
-import {FAILED} from "../verb.ts";
-import {runAssemblyPr} from "./assembly-pr-verb.ts";
-import {LANE_UNREADABLE, NOT_AN_EPIC} from "./codes.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { issuePayload, NOT_FOUND, served } from "../build/fixtures.test-support.ts";
+import { fakeHttp, fakeShell, type HttpReply } from "../fakes.test-support.ts";
+import { FAILED } from "../verb.ts";
+import { runAssemblyPr } from "./assembly-pr-verb.ts";
+import { LANE_UNREADABLE, NOT_AN_EPIC } from "./codes.ts";
 
 const ISSUE = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/8070$/;
-const ENV = {CLAUDE_PIPELINE_REPO: "o/r", GITHUB_TOKEN: "ghp_scripted"} as Record<
+const ENV = { CLAUDE_PIPELINE_REPO: "o/r", GITHUB_TOKEN: "ghp_scripted" } as Record<
 	string,
 	string | undefined
 >;
@@ -21,7 +21,7 @@ const epic = (overrides: Record<string, unknown> = {}): HttpReply =>
 			number: 8070,
 			title: "The desk opens one of the operator's existing sessions",
 			body: PITCH,
-			labels: [{name: "type:epic"}],
+			labels: [{ name: "type:epic" }],
 			...overrides,
 		}),
 	);
@@ -29,7 +29,7 @@ const epic = (overrides: Record<string, unknown> = {}): HttpReply =>
 const run = (field: string, script: ReadonlyArray<readonly [RegExp, HttpReply]>) =>
 	Effect.runPromise(
 		Effect.provide(
-			runAssemblyPr({epic: 8070, field, repo: null, env: ENV}),
+			runAssemblyPr({ epic: 8070, field, repo: null, env: ENV }),
 			Layer.mergeAll(fakeShell([]).layer, fakeHttp(script).layer),
 		),
 	);
@@ -52,7 +52,7 @@ describe("lane assembly-pr", () => {
 	});
 
 	it("prints no section and says why when the epic carries no pitch", async () => {
-		const out = await run("about", [[ISSUE, epic({body: "## Summary\n\nNothing.\n"})]]);
+		const out = await run("about", [[ISSUE, epic({ body: "## Summary\n\nNothing.\n" })]]);
 
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("");
@@ -61,14 +61,14 @@ describe("lane assembly-pr", () => {
 
 	it("quotes a Problem paragraph naming a classification instead of rewording it", async () => {
 		const body = "## Pitch\n\n**Problem.** This is control-plane work on a type:epic at p1.\n";
-		const out = await run("about", [[ISSUE, epic({body})]]);
+		const out = await run("about", [[ISSUE, epic({ body })]]);
 
 		expect(out.code).toBe(0);
 		expect(out.stdout).toContain("> Epic #8070: This is control-plane work on a type:epic at p1.");
 	});
 
 	it("refuses an issue carrying no type:epic, naming the label", async () => {
-		const out = await run("title", [[ISSUE, epic({labels: [{name: "type:feature"}]})]]);
+		const out = await run("title", [[ISSUE, epic({ labels: [{ name: "type:feature" }] })]]);
 
 		expect(out.code).toBe(NOT_AN_EPIC);
 		expect(out.stderr.join(" ")).toContain("type:epic");
@@ -82,7 +82,7 @@ describe("lane assembly-pr", () => {
 	});
 
 	it("is UNKNOWN, never a title, when the epic cannot be read", async () => {
-		const out = await run("title", [[ISSUE, {status: 500, body: "boom"}]]);
+		const out = await run("title", [[ISSUE, { status: 500, body: "boom" }]]);
 
 		expect(out.code).toBe(LANE_UNREADABLE);
 		expect(out.stdout).toBe("");

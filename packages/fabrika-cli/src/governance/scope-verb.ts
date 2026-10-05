@@ -24,8 +24,8 @@
  * provably-short refusal survives on the range path alone, because there the second count is another
  * read of the same git range rather than GitHub's answer about it.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	type ChangedPath,
 	type CommitRange,
@@ -33,17 +33,17 @@ import {
 	diffRangeStatuses,
 	listTreePaths,
 } from "../io/git.ts";
-import {classConfigAtCommits} from "../review/class-config.ts";
-import {readLocalFileSet} from "../review/local-file-set.ts";
-import {rangeMergeBase, readRangeFlags} from "../review/range-flags.ts";
-import {badNumber, openPull, resolveTargetRepo} from "../review/target.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import type {HeadSha} from "../wire/marker-line.ts";
-import {renderRange} from "../wire/range-verdict-marker.ts";
-import {INCOMPLETE_SCAN, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {bindGovernanceHead, boundLine} from "./head.ts";
-import {deriveScope} from "./roots.ts";
-import {skillRootsIn} from "./skill-root.ts";
+import { classConfigAtCommits } from "../review/class-config.ts";
+import { readLocalFileSet } from "../review/local-file-set.ts";
+import { rangeMergeBase, readRangeFlags } from "../review/range-flags.ts";
+import { badNumber, openPull, resolveTargetRepo } from "../review/target.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import type { HeadSha } from "../wire/marker-line.ts";
+import { renderRange } from "../wire/range-verdict-marker.ts";
+import { INCOMPLETE_SCAN, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { bindGovernanceHead, boundLine } from "./head.ts";
+import { deriveScope } from "./roots.ts";
+import { skillRootsIn } from "./skill-root.ts";
 
 const VERB = "governance scope";
 
@@ -95,14 +95,14 @@ interface Subject {
 }
 
 type Resolved =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Subject"; readonly subject: Subject};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Subject"; readonly subject: Subject };
 
 const refused = (
 	code: number,
 	message: string,
 	diagnostics: ReadonlyArray<string> = [],
-): Resolved => ({_tag: "Refused", outcome: refuse(code, message, diagnostics)});
+): Resolved => ({ _tag: "Refused", outcome: refuse(code, message, diagnostics) });
 
 /** The subject a pull-request number names: the diff of its bound head against its merge base. */
 const pullSubject = (
@@ -111,7 +111,7 @@ const pullSubject = (
 ): Effect.Effect<Resolved, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
-		if (resolved._tag === "Refused") return {_tag: "Refused" as const, outcome: resolved.outcome};
+		if (resolved._tag === "Refused") return { _tag: "Refused" as const, outcome: resolved.outcome };
 		const repo = resolved.repo;
 
 		const target = yield* openPull(VERB, repo, pr, {
@@ -122,11 +122,11 @@ const pullSubject = (
 			unknownMessage: (reason) =>
 				`${VERB}: cannot read PR #${pr} in ${repo}: ${reason} — whether the namespace is required is UNKNOWN, never "not-required".`,
 		});
-		if (target._tag === "Refused") return {_tag: "Refused" as const, outcome: target.outcome};
+		if (target._tag === "Refused") return { _tag: "Refused" as const, outcome: target.outcome };
 		const pull = target.pull;
 
 		const bound = yield* bindGovernanceHead(VERB, UNKNOWN_TAIL, repo, pr, pull, options.sha);
-		if (bound._tag === "Refused") return {_tag: "Refused" as const, outcome: bound.outcome};
+		if (bound._tag === "Refused") return { _tag: "Refused" as const, outcome: bound.outcome };
 		const head = bound.head;
 
 		// The local three-dot list IS the file set, and GitHub's `changed_files` is reported beside it
@@ -134,7 +134,7 @@ const pullSubject = (
 		const listed = yield* readLocalFileSet(
 			VERB,
 			`#${pr}`,
-			{base: head.mergeBase, tip: head.sha},
+			{ base: head.mergeBase, tip: head.sha },
 			pull.changedFiles,
 			diffRangeStatuses,
 		);
@@ -245,9 +245,9 @@ export const runScope = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 
-		const flags = readRangeFlags(VERB, {base: options.base, tip: options.tip, sha: options.sha});
+		const flags = readRangeFlags(VERB, { base: options.base, tip: options.tip, sha: options.sha });
 		if (flags._tag === "Refused") return withNotice(flags.outcome);
 
 		let resolved: Resolved;
@@ -275,13 +275,13 @@ export const runScope = (
 			resolved = yield* pullSubject(options, pr);
 		}
 		if (resolved._tag === "Refused") return withNotice(resolved.outcome);
-		const {changed, treeSha, base, declared, named, bound, disagreement} = resolved.subject;
+		const { changed, treeSha, base, declared, named, bound, disagreement } = resolved.subject;
 
 		// The roots the subject's own two commits declare, never this checkout's.
 		const governed = yield* classConfigAtCommits(
 			VERB,
 			'the root set is UNKNOWN and the derivation is never "not-required".',
-			{head: treeSha, base},
+			{ head: treeSha, base },
 		);
 		if (governed._tag === "Refused") {
 			return withNotice(refuse(PRECONDITION_UNKNOWN, governed.message, [bound]));

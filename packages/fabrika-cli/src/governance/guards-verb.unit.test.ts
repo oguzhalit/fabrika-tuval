@@ -1,9 +1,9 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeSeams, okOut, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {DIFF_AT} from "../review/fixtures.test-support.ts";
-import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, STALE_HEAD, ZERO_SCOPE} from "./codes.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeSeams, okOut, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { DIFF_AT } from "../review/fixtures.test-support.ts";
+import { INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, STALE_HEAD, ZERO_SCOPE } from "./codes.ts";
 import {
 	BASE,
 	BASE_TIP,
@@ -15,24 +15,26 @@ import {
 	STATUS_AT,
 	statuses,
 } from "./fixtures.test-support.ts";
-import {runGuards} from "./guards-verb.ts";
+import { runGuards } from "./guards-verb.ts";
 
 const PULL = /^GET .*\/repos\/o\/r\/pulls\/4321$/;
 const SKILL = "claude-plugins/fabrika/skills/review/SKILL.md";
 
 /** A fixture's canned JSON, served as the 200 the REST read now parses. */
-const served = (result: ExecResult) => ({status: 200, body: result.stdout});
+const served = (result: ExecResult) => ({ status: 200, body: result.stdout });
 
 const options = {
 	pr: 4321,
 	sha: null as string | null,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 };
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runGuards({...options, ...overrides}), fakeSeams(script).layer));
+	Effect.runPromise(
+		Effect.provide(runGuards({ ...options, ...overrides }), fakeSeams(script).layer),
+	);
 
 const diffOf = (path: string, ...body: ReadonlyArray<string>): string =>
 	[
@@ -56,7 +58,7 @@ const scripted = (
 	path = SKILL,
 	before = bytes,
 ): ReadonlyArray<Scripted> => [
-	[PULL, served(pull({changedFiles: 1}))],
+	[PULL, served(pull({ changedFiles: 1 }))],
 	...binding(),
 	[DIFF_AT(), okOut(diff)],
 	[STATUS_AT(), statuses(["M", path])],
@@ -109,9 +111,9 @@ describe("runGuards", () => {
 	});
 
 	it("caps the guard-file evidence at five and counts the rest, on both channels", async () => {
-		const paths = Array.from({length: 7}, (_, i) => `.github/workflows/g${i}.yml`);
+		const paths = Array.from({ length: 7 }, (_, i) => `.github/workflows/g${i}.yml`);
 		const script: ReadonlyArray<Scripted> = [
-			[PULL, served(pull({changedFiles: paths.length}))],
+			[PULL, served(pull({ changedFiles: paths.length }))],
 			...binding(),
 			[DIFF_AT(), okOut(paths.map((path) => diffOf(path, "-  run: a", "+  run: b")).join("\n"))],
 			[STATUS_AT(), statuses(...paths.map((path) => ["M", path] as const))],
@@ -130,7 +132,7 @@ describe("runGuards", () => {
 		);
 		expect(lines.stdout).toContain("guard-file-more\t2");
 
-		const json = JSON.parse((await run(script, {json: true})).stdout);
+		const json = JSON.parse((await run(script, { json: true })).stdout);
 		expect(json.guardFiles.rows).toHaveLength(5);
 		expect(json.guardFiles.more).toBe(2);
 	});
@@ -138,10 +140,10 @@ describe("runGuards", () => {
 	it("carries `more: 0` under the cap, so a whole list never reads as a truncated one", async () => {
 		const out = await run(
 			scripted(diffOf(SKILL, "-prose", "+other prose"), "<!-- anchor: G --> g\n"),
-			{json: true},
+			{ json: true },
 		);
 		expect(JSON.parse(out.stdout).guardFiles).toEqual({
-			rows: [{path: SKILL, anchors: 1}],
+			rows: [{ path: SKILL, anchors: 1 }],
 			more: 0,
 		});
 	});
@@ -167,7 +169,7 @@ describe("runGuards", () => {
 	it("compares the anchor block at the merge base, not at a main that edited it since", async () => {
 		const anchored = (text: string): string => `<!-- anchor: G --> ${text}\n`;
 		const out = await run([
-			[PULL, served(pull({changedFiles: 1}))],
+			[PULL, served(pull({ changedFiles: 1 }))],
 			...binding(),
 			[DIFF_AT(), okOut(diffOf(SKILL, "-prose", "+other prose"))],
 			[STATUS_AT(), statuses(["M", SKILL])],
@@ -193,7 +195,7 @@ describe("runGuards", () => {
 		});
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			outcome: "hits",
-			hits: [{kind: "removed", name: "G", file: SKILL, line: 12}],
+			hits: [{ kind: "removed", name: "G", file: SKILL, line: 12 }],
 			scanned: 1,
 		});
 	});
@@ -253,7 +255,7 @@ describe("runGuards", () => {
 
 	it("refuses an unreadable BASE read on 11 — UNKNOWN, never `nothing moved`", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 1}))],
+			[PULL, served(pull({ changedFiles: 1 }))],
 			...binding(),
 			[DIFF_AT(), okOut(diffOf(SKILL, "-a", "+b"))],
 			[STATUS_AT(), statuses(["M", SKILL])],
@@ -269,7 +271,7 @@ describe("runGuards", () => {
 
 	it("does NOT read an added file at the base — it has no base side to compare", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 1}))],
+			[PULL, served(pull({ changedFiles: 1 }))],
 			...binding(),
 			[DIFF_AT(), okOut(diffOf(SKILL, "+<!-- anchor: G --> a claim"))],
 			[STATUS_AT(), statuses(["A", SKILL])],
@@ -283,7 +285,7 @@ describe("runGuards", () => {
 
 	it("reports a deleted file's anchors as removed — the walk still covers what has no head bytes", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 1}))],
+			[PULL, served(pull({ changedFiles: 1 }))],
 			...binding(),
 			[DIFF_AT(), okOut(diffOf(SKILL, "-<!-- anchor: G --> a claim"))],
 			[STATUS_AT(), statuses(["D", SKILL])],
@@ -292,16 +294,16 @@ describe("runGuards", () => {
 	});
 
 	it("refuses an absent, closed, or empty PR on 7", async () => {
-		expect((await run([[PULL, {status: 404, body: '{"message":"Not Found"}'}]])).code).toBe(
+		expect((await run([[PULL, { status: 404, body: '{"message":"Not Found"}' }]])).code).toBe(
 			ZERO_SCOPE,
 		);
-		expect((await run([[PULL, served(pull({state: "closed"}))]])).code).toBe(ZERO_SCOPE);
-		expect((await run([[PULL, served(pull({changedFiles: 0}))]])).code).toBe(ZERO_SCOPE);
+		expect((await run([[PULL, served(pull({ state: "closed" }))]])).code).toBe(ZERO_SCOPE);
+		expect((await run([[PULL, served(pull({ changedFiles: 0 }))]])).code).toBe(ZERO_SCOPE);
 	});
 
 	it("refuses an unreadable diff on 11 — UNKNOWN, never `nothing moved`", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 1}))],
+			[PULL, served(pull({ changedFiles: 1 }))],
 			...binding(),
 			[DIFF_AT(), errOut("fatal: bad revision")],
 		]);
@@ -311,7 +313,7 @@ describe("runGuards", () => {
 
 	it("refuses a diff short of git's own status list on 13 rather than scanning it", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 4}))],
+			[PULL, served(pull({ changedFiles: 4 }))],
 			...binding(),
 			[DIFF_AT(), okOut(diffOf(SKILL, "-a", "+b"))],
 			[STATUS_AT(), statuses(["M", SKILL], ["M", "src/cart.ts"], ["M", "src/checkout.ts"])],
@@ -325,7 +327,7 @@ describe("runGuards", () => {
 
 	it("refuses an empty local read on 7 rather than answering `no-anchors-in-reach` over nothing", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 4}))],
+			[PULL, served(pull({ changedFiles: 4 }))],
 			...binding(),
 			[DIFF_AT(), okOut("")],
 			[STATUS_AT(), statuses()],
@@ -339,7 +341,7 @@ describe("runGuards", () => {
 
 	it("scans the local set when GitHub declares more files, and prints the disagreement", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 4}))],
+			[PULL, served(pull({ changedFiles: 4 }))],
 			...binding(),
 			[DIFF_AT(), okOut(diffOf(SKILL, "-a", "+b"))],
 			[STATUS_AT(), statuses(["M", SKILL])],
@@ -354,7 +356,7 @@ describe("runGuards", () => {
 	});
 
 	it("refuses a --sha that is not the PR's head on 12", async () => {
-		expect((await run(scripted(diffOf(SKILL, "-a", "+b"), "x\n"), {sha: OLD_HEAD})).code).toBe(
+		expect((await run(scripted(diffOf(SKILL, "-a", "+b"), "x\n"), { sha: OLD_HEAD })).code).toBe(
 			STALE_HEAD,
 		);
 	});

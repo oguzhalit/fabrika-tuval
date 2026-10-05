@@ -15,13 +15,13 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9715#issuecomment-5792636866
  */
-import {Effect} from "effect";
-import {uploadAsset} from "../capture/upload.ts";
-import {readBack, readBackThroughRenderer, renderedHtml} from "../io/attachment-read-back.ts";
-import {existenceOf, type RestCall, resolveToken, restRead} from "../io/gh-api.ts";
-import {fail, ok} from "../io/git.ts";
-import {isRecord} from "../io/json.ts";
-import type {EvidenceCheck, EvidenceCheckResult, UploadLeg, UploadResult} from "./post-verb.ts";
+import { Effect } from "effect";
+import { uploadAsset } from "../capture/upload.ts";
+import { readBack, readBackThroughRenderer, renderedHtml } from "../io/attachment-read-back.ts";
+import { existenceOf, type RestCall, resolveToken, restRead } from "../io/gh-api.ts";
+import { fail, ok } from "../io/git.ts";
+import { isRecord } from "../io/json.ts";
+import type { EvidenceCheck, EvidenceCheckResult, UploadLeg, UploadResult } from "./post-verb.ts";
 
 /**
  * The repo's numeric id, which the undocumented attachment endpoint requires (404 without it).
@@ -53,7 +53,7 @@ export const githubAttachmentUploadLeg = (
 	Effect.fn(function* (request) {
 		const token = yield* resolveToken(env);
 		if (token._tag === "Failure") {
-			return {_tag: "Failed", reason: token.reason} as UploadResult;
+			return { _tag: "Failed", reason: token.reason } as UploadResult;
 		}
 		const id = yield* repositoryId(token.value, request.repo);
 		if (id === null) {
@@ -79,11 +79,11 @@ export const githubAttachmentUploadLeg = (
 			bytes: request.bytes,
 		});
 		return unverified === null
-			? ({_tag: "Hosted", url: outcome.hostedUrl} as UploadResult)
-			: ({_tag: "Failed", reason: unverified} as UploadResult);
+			? ({ _tag: "Hosted", url: outcome.hostedUrl } as UploadResult)
+			: ({ _tag: "Failed", reason: unverified } as UploadResult);
 	});
 
-const RESOLVED: EvidenceCheckResult = {_tag: "Resolved"};
+const RESOLVED: EvidenceCheckResult = { _tag: "Resolved" };
 
 const unresolved = (reasons: readonly [string, ...string[]]): EvidenceCheckResult => ({
 	_tag: "Unresolved",

@@ -1,13 +1,13 @@
-import {describe, expect, it} from "vitest";
-import type {ConfigSource} from "../config/document.ts";
-import {SHIPPED_GOVERNED_ROOTS} from "../config/keys/governed-roots.ts";
-import {type ConfigAt, classConfigOf} from "./class-config.ts";
-import {touchesGovernanceRoot} from "./classes.ts";
+import { describe, expect, it } from "vitest";
+import type { ConfigSource } from "../config/document.ts";
+import { SHIPPED_GOVERNED_ROOTS } from "../config/keys/governed-roots.ts";
+import { type ConfigAt, classConfigOf } from "./class-config.ts";
+import { touchesGovernanceRoot } from "./classes.ts";
 
 const HEAD = "a".repeat(40);
 const BASE = "b".repeat(40);
 
-const text = (config: unknown): ConfigSource => ({_tag: "Text", text: JSON.stringify(config)});
+const text = (config: unknown): ConfigSource => ({ _tag: "Text", text: JSON.stringify(config) });
 const at = (side: "head" | "base", source: ConfigSource): ConfigAt => ({
 	side,
 	sha: side === "head" ? HEAD : BASE,
@@ -24,7 +24,7 @@ const read = (head: ConfigSource, base: ConfigSource) =>
 
 describe("classConfigOf", () => {
 	it("takes the union of the two commits' roots, prefixes and subsystems, each once", () => {
-		const cart = {pattern: "src/**", subsystem: "cart", constraint: "cents"};
+		const cart = { pattern: "src/**", subsystem: "cart", constraint: "cents" };
 		const out = read(
 			text({
 				governedRoots: ["src/", ".fabrika.jsonc"],
@@ -45,7 +45,7 @@ describe("classConfigOf", () => {
 	});
 
 	it("reads a commit with no config as that commit's shipped defaults", () => {
-		const out = read({_tag: "Absent"}, text({uiSurfaces: [surface("web", "apps/shop/", "/")]}));
+		const out = read({ _tag: "Absent" }, text({ uiSurfaces: [surface("web", "apps/shop/", "/")] }));
 		expect(out._tag).toBe("Config");
 		if (out._tag !== "Config") return;
 		expect(out.config.governedRoots).toEqual(SHIPPED_GOVERNED_ROOTS);
@@ -55,8 +55,8 @@ describe("classConfigOf", () => {
 
 	it("governs a plugin tree only for a repo that declares it — the shipped roots name none", () => {
 		const pluginFile = ["claude-plugins/fabrika/skills/ship/SKILL.md"];
-		const undeclared = read({_tag: "Absent"}, {_tag: "Absent"});
-		const declaring = text({governedRoots: ["claude-plugins/", ".fabrika.jsonc"]});
+		const undeclared = read({ _tag: "Absent" }, { _tag: "Absent" });
+		const declaring = text({ governedRoots: ["claude-plugins/", ".fabrika.jsonc"] });
 		const declared = read(declaring, declaring);
 		expect([undeclared._tag, declared._tag]).toEqual(["Config", "Config"]);
 		if (undeclared._tag !== "Config" || declared._tag !== "Config") return;
@@ -65,7 +65,7 @@ describe("classConfigOf", () => {
 	});
 
 	it("refuses naming the commit whose config does not decode, whatever the other says", () => {
-		const out = read(text({}), text({governedRoots: []}));
+		const out = read(text({}), text({ governedRoots: [] }));
 		expect(out).toMatchObject({
 			_tag: "Refused",
 			reason: expect.stringContaining(`.fabrika.jsonc at the base ${BASE} is refused`),
@@ -73,7 +73,7 @@ describe("classConfigOf", () => {
 	});
 
 	it("refuses naming the commit whose config could not be read", () => {
-		const out = read({_tag: "Unreadable", reason: "fatal: bad object"}, text({}));
+		const out = read({ _tag: "Unreadable", reason: "fatal: bad object" }, text({}));
 		expect(out._tag).toBe("Refused");
 		if (out._tag !== "Refused") return;
 		expect(out.message).toBe(

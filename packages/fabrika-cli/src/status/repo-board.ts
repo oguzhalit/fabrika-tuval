@@ -13,11 +13,11 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/6428#issuecomment-5363116003
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import {CONFIG_PATH} from "../config/document.ts";
-import {type BoardRead, resolveBoard} from "../config/resolve-board.ts";
-import {loadRepoConfig} from "../config/working-root.ts";
-import {FACET_VOCABULARY} from "../triage/facets.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { CONFIG_PATH } from "../config/document.ts";
+import { type BoardRead, resolveBoard } from "../config/resolve-board.ts";
+import { loadRepoConfig } from "../config/working-root.ts";
+import { FACET_VOCABULARY } from "../triage/facets.ts";
 
 /** What a verb's "cannot read" refusal calls a board that did not resolve. */
 export const BOARD_SUBJECT = `${CONFIG_PATH}'s board vocabulary`;
@@ -29,5 +29,5 @@ export const readBoard = (
 	Effect.map(loadRepoConfig(cwd), (load) => resolveBoard(load, FACET_VOCABULARY));
 
 /** A refused board's reason, fit to sit mid-sentence: each key words its own, period or not. */
-export const refusalReason = (read: Extract<BoardRead, {readonly _tag: "Refused"}>): string =>
+export const refusalReason = (read: Extract<BoardRead, { readonly _tag: "Refused" }>): string =>
 	read.reason.replace(/\.$/, "");

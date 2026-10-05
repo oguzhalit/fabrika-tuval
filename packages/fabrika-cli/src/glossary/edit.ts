@@ -6,8 +6,8 @@
  * whether the result differs from the original anywhere but the target splice, and aborts the write
  * when it does. It is the `adr supersede` idiom reseated on this group's `15`.
  */
-import {compareKeys} from "./findings.ts";
-import type {Section} from "./register.ts";
+import { compareKeys } from "./findings.ts";
+import type { Section } from "./register.ts";
 
 /** The splice a verb intends: remove `replaced` lines at `at`, insert `added` of its own. */
 export interface Splice {
@@ -60,13 +60,13 @@ export const placeRow = (section: Section, key: string): Placement => {
 		(current, index) => index > 0 && compareKeys(keys[index - 1] as string, current) > 0,
 	);
 	if (section.rows.length === 0) {
-		return {index: section.separatorLine ?? 0, unsorted: false};
+		return { index: section.separatorLine ?? 0, unsorted: false };
 	}
 
 	for (let i = 0; i <= keys.length; i += 1) {
 		const before = i === 0 || compareKeys(keys[i - 1] as string, key) <= 0;
 		const after = i === keys.length || compareKeys(key, keys[i] as string) <= 0;
-		if (before && after) return {index: lineIndexAt(section, i), unsorted};
+		if (before && after) return { index: lineIndexAt(section, i), unsorted };
 	}
 	const firstGreater = keys.findIndex((existing) => compareKeys(key, existing) < 0);
 	return {

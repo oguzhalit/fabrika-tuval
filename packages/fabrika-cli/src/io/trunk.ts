@@ -13,13 +13,13 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/10030
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import * as HttpClient from "effect/unstable/http/HttpClient";
-import {execCapture, execExit} from "./exec.ts";
-import {type Api, onTransport, refusalText, resolveToken, restRead} from "./gh-api.ts";
-import {type Attempt, fail, ok, type Shell} from "./git.ts";
-import {resolveRepo} from "./issues.ts";
-import {isRecord} from "./json.ts";
+import { execCapture, execExit } from "./exec.ts";
+import { type Api, onTransport, refusalText, resolveToken, restRead } from "./gh-api.ts";
+import { type Attempt, fail, ok, type Shell } from "./git.ts";
+import { resolveRepo } from "./issues.ts";
+import { isRecord } from "./json.ts";
 
 /** The remote every trunk ref is read from. */
 export const TRUNK_REMOTE = "origin";
@@ -31,7 +31,7 @@ export interface Trunk {
 	readonly ref: string;
 }
 
-export const trunkNamed = (branch: string): Trunk => ({branch, ref: `${TRUNK_REMOTE}/${branch}`});
+export const trunkNamed = (branch: string): Trunk => ({ branch, ref: `${TRUNK_REMOTE}/${branch}` });
 
 /** What an operator does when the trunk cannot be read. Every refusal over one quotes it. */
 export const TRUNK_FIX =
@@ -141,19 +141,19 @@ export const readOriginHead: Shell<Attempt<string | null>> = Effect.gen(function
 
 /** How this clone's `origin/HEAD` stands against the trunk. */
 export type OriginHeadAgreement =
-	| {readonly _tag: "Agrees"}
-	| {readonly _tag: "Unset"}
-	| {readonly _tag: "Disagrees"; readonly originHead: string};
+	| { readonly _tag: "Agrees" }
+	| { readonly _tag: "Unset" }
+	| { readonly _tag: "Disagrees"; readonly originHead: string };
 
 export const originHeadAgreement = (
 	trunk: Trunk,
 	originHead: string | null,
 ): OriginHeadAgreement =>
 	originHead === null
-		? {_tag: "Unset"}
+		? { _tag: "Unset" }
 		: originHead === trunk.branch
-			? {_tag: "Agrees"}
-			: {_tag: "Disagrees", originHead};
+			? { _tag: "Agrees" }
+			: { _tag: "Disagrees", originHead };
 
 /** The command that re-points `origin/HEAD` at whatever the remote now calls its default branch. */
 export const SET_HEAD_FIX = `git remote set-head ${TRUNK_REMOTE} --auto`;

@@ -14,10 +14,10 @@
  * nothing about it, and every other brief's shell stands in a worktree cut from the driver's own
  * head — the tree this very process is running out of.
  */
-import {Effect, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {execCapture} from "../io/exec.ts";
-import type {FabrikaEntry, GitRef} from "../wire/lane-brief.ts";
+import { Effect, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { execCapture } from "../io/exec.ts";
+import type { FabrikaEntry, GitRef } from "../wire/lane-brief.ts";
 
 /**
  * The lane verbs a brief instructs its shell to run.
@@ -44,10 +44,10 @@ export const VERB_MODULES: Readonly<Record<BriefedLaneVerb, string>> = {
 
 export type VerbCarriage =
 	/** Every briefed verb is in that tree, or the tree is not one the branch decides. */
-	| {readonly _tag: "Carried"; readonly why: string}
-	| {readonly _tag: "Missing"; readonly verbs: ReadonlyArray<BriefedLaneVerb>}
+	| { readonly _tag: "Carried"; readonly why: string }
+	| { readonly _tag: "Missing"; readonly verbs: ReadonlyArray<BriefedLaneVerb> }
 	/** The branch or one of its paths could not be read — UNKNOWN, never "carried". */
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 const modulePath = (path: Path.Path, entrypoint: string, verb: BriefedLaneVerb): string =>
 	`${path.join(path.dirname(entrypoint), VERB_MODULES[verb])}${path.extname(entrypoint)}`;
@@ -108,5 +108,5 @@ export const carriedVerbs = (
 					_tag: "Carried",
 					why: `${branch} carries ${entrypoint} and every lane verb the brief names`,
 				} as const)
-			: ({_tag: "Missing", verbs: missing} as const);
+			: ({ _tag: "Missing", verbs: missing } as const);
 	});

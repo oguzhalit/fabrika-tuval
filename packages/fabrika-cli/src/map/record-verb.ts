@@ -19,13 +19,13 @@
  * to `ruled`.
  */
 
-import {Effect, type FileSystem} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {readFile} from "../io/fs.ts";
-import {closeCompleted, getIssue, patchIssueBody} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {type DecisionEntry, digestOf, foldEntryText, parseBody} from "./body.ts";
+import { Effect, type FileSystem } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { readFile } from "../io/fs.ts";
+import { closeCompleted, getIssue, patchIssueBody } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { type DecisionEntry, digestOf, foldEntryText, parseBody } from "./body.ts";
 import {
 	BAD_SECTIONS,
 	OUTCOME_UNRECORDABLE,
@@ -34,7 +34,7 @@ import {
 	TICKET_UNKNOWN,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {decisionRecorded} from "./frontier.ts";
+import { decisionRecorded } from "./frontier.ts";
 import {
 	type Citation,
 	digestFresh,
@@ -45,7 +45,7 @@ import {
 	requireTicket,
 	targetRepo,
 } from "./guards.ts";
-import {applyRecord, QUESTION_ID} from "./record.ts";
+import { applyRecord, QUESTION_ID } from "./record.ts";
 
 /** The citation an entry carries, in the one form the answer reports it. */
 const citationOf = (entry: DecisionEntry): string =>
@@ -86,13 +86,13 @@ export const runRecord = (
 		}
 		const citation: Citation | null =
 			options.ruledOn !== null && options.questionId !== null
-				? {session: options.ruledOn, questionId: options.questionId}
+				? { session: options.ruledOn, questionId: options.questionId }
 				: null;
 
 		const read = yield* readFile(options.finding).pipe(
-			Effect.map((value) => ({ok: true as const, value})),
+			Effect.map((value) => ({ ok: true as const, value })),
 			Effect.catchTag("fabrika-cli/ReadFailed", (cause) =>
-				Effect.succeed({ok: false as const, value: cause.reason}),
+				Effect.succeed({ ok: false as const, value: cause.reason }),
 			),
 		);
 		if (!read.ok) {
@@ -128,7 +128,7 @@ export const runRecord = (
 			options.ticket,
 		);
 		if (resolved._tag === "Refused") return resolved.outcome;
-		const {ticket} = resolved.value;
+		const { ticket } = resolved.value;
 
 		const left = notTerminal(VERB, ticket, "its answer is already on the map.");
 		if (left !== null) return left;
@@ -172,7 +172,7 @@ export const runRecord = (
 			);
 		}
 
-		let authority: DecisionEntry["authority"] = {_tag: "Finding", ticket: options.ticket};
+		let authority: DecisionEntry["authority"] = { _tag: "Finding", ticket: options.ticket };
 		if (ticket.state === "forked") {
 			if (ticket.kind === "decision") {
 				if (citation === null) {
@@ -208,7 +208,7 @@ export const runRecord = (
 				}
 			}
 		} else if (citation !== null) {
-			authority = {_tag: "Ruled", session: citation.session, questionId: citation.questionId};
+			authority = { _tag: "Ruled", session: citation.session, questionId: citation.questionId };
 		}
 
 		// The proof hangs off the authority the entry will carry, not off the branch that composed it:
@@ -219,12 +219,12 @@ export const runRecord = (
 			const ruling = yield* requireRuling(
 				VERB,
 				repo,
-				{session: authority.session, questionId: authority.questionId},
+				{ session: authority.session, questionId: authority.questionId },
 				options.env,
 			);
 			if (ruling._tag === "Refused") return ruling.outcome;
 		}
-		const entry: DecisionEntry = {text: finding, authority};
+		const entry: DecisionEntry = { text: finding, authority };
 
 		const applied = applyRecord(found.value.body, options.ticket, entry);
 		if (applied._tag === "Refused") {

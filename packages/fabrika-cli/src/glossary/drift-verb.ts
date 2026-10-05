@@ -4,15 +4,15 @@
  * See `glossary drift --help` for the answer and refusal contract.
  */
 
-import type {FileSystem} from "effect";
-import {Effect, Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {type Candidate, rankCandidates} from "./candidates.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {readRegister, registerFilesIn, resolveDir, selectRegisters} from "./guards.ts";
-import {commitsSince, filesChangedBy, lastCommitTouching, trackedFiles} from "./history.ts";
-import type {Row} from "./register.ts";
+import type { FileSystem } from "effect";
+import { Effect, Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { type Candidate, rankCandidates } from "./candidates.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { readRegister, registerFilesIn, resolveDir, selectRegisters } from "./guards.ts";
+import { commitsSince, filesChangedBy, lastCommitTouching, trackedFiles } from "./history.ts";
+import type { Row } from "./register.ts";
 
 const VERB = "glossary drift";
 
@@ -48,7 +48,7 @@ interface Live {
 
 export const runDrift = (options: DriftOptions): DriftEffect<VerbOutcome> =>
 	Effect.gen(function* () {
-		const selected = selectRegisters(VERB, options.register, {allowed: true, refusal: ""});
+		const selected = selectRegisters(VERB, options.register, { allowed: true, refusal: "" });
 		if (selected._tag === "Refused") return selected.outcome;
 
 		const dir = yield* resolveDir(VERB, options.cwd, options.dir);
@@ -68,7 +68,7 @@ export const runDrift = (options: DriftOptions): DriftEffect<VerbOutcome> =>
 				bootstrapReason ??= `the register at ${file.display} parsed to 0 rows — bootstrap, not empty drift`;
 				continue;
 			}
-			live.push({display: file.display, path: file.path, rows: state.value.parsed.rows});
+			live.push({ display: file.display, path: file.path, rows: state.value.parsed.rows });
 		}
 
 		if (live.length === 0) {
@@ -76,7 +76,7 @@ export const runDrift = (options: DriftOptions): DriftEffect<VerbOutcome> =>
 				bootstrapReason ??
 				`no register at ${dir.value.display} — this repo has not adopted one yet, which is bootstrap, not empty drift`;
 			return emit(
-				{outcome: "bootstrap", candidates: [], reason, sinceCommit: null, scannedCommits: 0},
+				{ outcome: "bootstrap", candidates: [], reason, sinceCommit: null, scannedCommits: 0 },
 				0,
 				options.json,
 				[`${VERB}: ${reason}.`],
@@ -107,7 +107,7 @@ export const runDrift = (options: DriftOptions): DriftEffect<VerbOutcome> =>
 
 		// With two registers the range starts at the OLDER of their last changes, so nothing that moved
 		// since either one last changed falls outside the sweep — this list is recall-biased by design.
-		let since: {sha: string; when: number} | null = null;
+		let since: { sha: string; when: number } | null = null;
 		for (const register of live) {
 			const stamp = yield* lastCommitTouching(register.path);
 			if (stamp._tag === "Failure") {
@@ -118,7 +118,7 @@ export const runDrift = (options: DriftOptions): DriftEffect<VerbOutcome> =>
 			}
 			if (since === null || stamp.value.when < since.when) since = stamp.value;
 		}
-		const sinceCommit = (since as {sha: string; when: number}).sha;
+		const sinceCommit = (since as { sha: string; when: number }).sha;
 
 		const commits = yield* commitsSince(sinceCommit, pathspecs);
 		if (commits._tag === "Failure") {
@@ -146,7 +146,7 @@ export const runDrift = (options: DriftOptions): DriftEffect<VerbOutcome> =>
 			);
 		}
 
-		const surfaces: {phrase: string; hits: number; firstSurface: string}[] = [];
+		const surfaces: { phrase: string; hits: number; firstSurface: string }[] = [];
 		const cache = new Map<string, string>();
 		for (const candidate of ranked) {
 			surfaces.push({
@@ -199,7 +199,7 @@ const emit = (
 	diagnostics: ReadonlyArray<string>,
 ): VerbOutcome =>
 	json
-		? answer(JSON.stringify({...result, declaredKeys}), diagnostics)
+		? answer(JSON.stringify({ ...result, declaredKeys }), diagnostics)
 		: answer(
 				[
 					result.outcome,

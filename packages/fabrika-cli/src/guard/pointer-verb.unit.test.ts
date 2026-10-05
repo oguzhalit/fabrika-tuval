@@ -2,17 +2,17 @@
  * `guard pointer-guard check`'s two seams — the git listing and the on-disk resolution — over a
  * scripted filesystem and a scripted spawner, plus the exit taxonomy.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFsOptions, fakeFs, fakeShell} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE} from "./codes.ts";
-import {runPointerGuard} from "./pointer-verb.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFsOptions, fakeFs, fakeShell } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE } from "./codes.ts";
+import { runPointerGuard } from "./pointer-verb.ts";
 
 const ROOT = "/repo";
 
-const okResult = (stdout: string): ExecResult => ({ok: true, stdout, reason: ""});
-const failResult = (reason: string): ExecResult => ({ok: false, stdout: "", reason});
+const okResult = (stdout: string): ExecResult => ({ ok: true, stdout, reason: "" });
+const failResult = (reason: string): ExecResult => ({ ok: false, stdout: "", reason });
 
 /** `ls-files` answers the named docs; nothing is gitignored unless a case says so. */
 const shell = (
@@ -41,7 +41,7 @@ const run = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runPointerGuard({root: ROOT, cwd: ROOT, env}),
+			runPointerGuard({ root: ROOT, cwd: ROOT, env }),
 			Layer.merge(fakeFs(fsOptions).layer, shell(docs, ignored, listing).layer),
 		),
 	);
@@ -59,7 +59,7 @@ const tree = (
 describe("runPointerGuard", () => {
 	it("passes when every backticked pointer resolves", async () => {
 		const outcome = await run(
-			tree({"CLAUDE.md": "see `apps/site/index.ts`"}, ["apps/site/index.ts"]),
+			tree({ "CLAUDE.md": "see `apps/site/index.ts`" }, ["apps/site/index.ts"]),
 			["CLAUDE.md"],
 		);
 		expect(outcome.code).toBe(0);
@@ -68,7 +68,7 @@ describe("runPointerGuard", () => {
 	});
 
 	it("reds a pointer whose target is gone, naming file, line and path", async () => {
-		const outcome = await run(tree({"CLAUDE.md": "\nsee `apps/site/gone.ts`"}), ["CLAUDE.md"]);
+		const outcome = await run(tree({ "CLAUDE.md": "\nsee `apps/site/gone.ts`" }), ["CLAUDE.md"]);
 		expect(outcome.code).toBe(VIOLATION);
 		expect(outcome.stdout).toBe("");
 		expect(outcome.stderr.join("\n")).toContain("CLAUDE.md:2  →  apps/site/gone.ts");
@@ -78,7 +78,7 @@ describe("runPointerGuard", () => {
 	// The load-bearing case: CLAUDE.md points at a generated path the doc tells you to create.
 	it("treats a gitignored absent path as resolved", async () => {
 		const outcome = await run(
-			tree({"CLAUDE.md": "run `cp` into `apps/site/.env`"}),
+			tree({ "CLAUDE.md": "run `cp` into `apps/site/.env`" }),
 			["CLAUDE.md"],
 			["apps/site/.env"],
 		);
@@ -87,7 +87,7 @@ describe("runPointerGuard", () => {
 
 	it("scans every tracked CLAUDE.md, not only the root one", async () => {
 		const outcome = await run(
-			tree({"CLAUDE.md": "ok", "apps/site/CLAUDE.md": "see `apps/site/gone.ts`"}),
+			tree({ "CLAUDE.md": "ok", "apps/site/CLAUDE.md": "see `apps/site/gone.ts`" }),
 			["CLAUDE.md", "apps/site/CLAUDE.md"],
 		);
 		expect(outcome.code).toBe(VIOLATION);
@@ -96,11 +96,11 @@ describe("runPointerGuard", () => {
 
 	it("annotates each stale pointer on its own line under Actions", async () => {
 		const outcome = await run(
-			tree({"CLAUDE.md": "see `apps/site/gone.ts`"}),
+			tree({ "CLAUDE.md": "see `apps/site/gone.ts`" }),
 			["CLAUDE.md"],
 			[],
 			undefined,
-			{GITHUB_ACTIONS: "true"},
+			{ GITHUB_ACTIONS: "true" },
 		);
 		expect(outcome.stderr.some((line) => line.startsWith("::error file=CLAUDE.md,line=1::"))).toBe(
 			true,
@@ -125,9 +125,9 @@ describe("runPointerGuard", () => {
 	it("answers UNKNOWN when a tracked doc cannot be read", async () => {
 		const outcome = await Effect.runPromise(
 			Effect.provide(
-				runPointerGuard({root: ROOT, cwd: ROOT, env: {}}),
+				runPointerGuard({ root: ROOT, cwd: ROOT, env: {} }),
 				Layer.merge(
-					fakeFs({...tree({"CLAUDE.md": "x"}), unreadable: [`${ROOT}/CLAUDE.md`]}).layer,
+					fakeFs({ ...tree({ "CLAUDE.md": "x" }), unreadable: [`${ROOT}/CLAUDE.md`] }).layer,
 					shell(["CLAUDE.md"]).layer,
 				),
 			),

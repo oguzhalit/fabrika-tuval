@@ -4,7 +4,7 @@
  * facts, plus the two derivation helpers — parsing publish.yml's resolve arms, and mapping arms
  * onto members. No disk; the IO seam is covered in `publish-isolation-verb.unit.test.ts`.
  */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	depTarget,
 	judge,
@@ -19,13 +19,13 @@ const manifest = (
 	path: string,
 	name: string,
 	deps: PublishedManifest["deps"],
-): PublishedManifest => ({path, name, deps});
+): PublishedManifest => ({ path, name, deps });
 
 describe("judge", () => {
 	it("reds a workspace:* link — it never resolves from a registry", () => {
 		const v = judge([
 			manifest("packages/demo-cli/package.json", "@kampus/demo-cli", [
-				{field: "dependencies", name: "@kampus/epic-ledger", value: "workspace:*"},
+				{ field: "dependencies", name: "@kampus/epic-ledger", value: "workspace:*" },
 			]),
 		]);
 		if (v.pass || v.reason !== "linked-private-deps") throw new Error("expected a violation");
@@ -43,8 +43,8 @@ describe("judge", () => {
 	it("scans optionalDependencies and peerDependencies, not just dependencies", () => {
 		const v = judge([
 			manifest("packages/demo-cli/package.json", "@kampus/demo-cli", [
-				{field: "optionalDependencies", name: "@kampus/optional-private", value: "workspace:*"},
-				{field: "peerDependencies", name: "@kampus/peer-private", value: "^2.0.0"},
+				{ field: "optionalDependencies", name: "@kampus/optional-private", value: "workspace:*" },
+				{ field: "peerDependencies", name: "@kampus/peer-private", value: "^2.0.0" },
 			]),
 		]);
 		if (v.pass || v.reason !== "linked-private-deps") throw new Error("expected a violation");
@@ -58,10 +58,10 @@ describe("judge", () => {
 	it("passes a @kampus dep that is ITSELF in the published set", () => {
 		const v = judge([
 			manifest("packages/demo-cli/package.json", "@kampus/demo-cli", [
-				{field: "dependencies", name: "@kampus/fabrika-cli", value: "^0.1.0"},
+				{ field: "dependencies", name: "@kampus/fabrika-cli", value: "^0.1.0" },
 			]),
 			manifest("packages/fabrika-cli/package.json", "@kampus/fabrika-cli", [
-				{field: "dependencies", name: "effect", value: "catalog:"},
+				{ field: "dependencies", name: "effect", value: "catalog:" },
 			]),
 		]);
 		expect(v.pass).toBe(true);
@@ -70,8 +70,8 @@ describe("judge", () => {
 	it("passes a workspace: link whose target is ITSELF in the published set", () => {
 		const v = judge([
 			manifest("packages/demo-ui/package.json", "@kampus/demo-ui", [
-				{field: "dependencies", name: "@kampus/design", value: "workspace:*"},
-				{field: "peerDependencies", name: "@kampus/demo-sdk", value: "workspace:*"},
+				{ field: "dependencies", name: "@kampus/design", value: "workspace:*" },
+				{ field: "peerDependencies", name: "@kampus/demo-sdk", value: "workspace:*" },
 			]),
 			manifest("packages/design/package.json", "@kampus/design", []),
 			manifest("packages/demo-sdk/package.json", "@kampus/demo-sdk", []),
@@ -82,8 +82,8 @@ describe("judge", () => {
 	it("reds a workspace: link to a package outside the published set, beside a published one", () => {
 		const v = judge([
 			manifest("packages/demo-ui/package.json", "@kampus/demo-ui", [
-				{field: "peerDependencies", name: "@kampus/demo-sdk", value: "workspace:*"},
-				{field: "dependencies", name: "@kampus/epic-ledger", value: "workspace:^"},
+				{ field: "peerDependencies", name: "@kampus/demo-sdk", value: "workspace:*" },
+				{ field: "dependencies", name: "@kampus/epic-ledger", value: "workspace:^" },
 			]),
 			manifest("packages/demo-sdk/package.json", "@kampus/demo-sdk", []),
 		]);
@@ -102,7 +102,11 @@ describe("judge", () => {
 	it("judges an aliased workspace: link by the package it names, not the alias", () => {
 		const v = judge([
 			manifest("packages/demo-ui/package.json", "@kampus/demo-ui", [
-				{field: "dependencies", name: "@kampus/demo-sdk", value: "workspace:@kampus/epic-ledger@*"},
+				{
+					field: "dependencies",
+					name: "@kampus/demo-sdk",
+					value: "workspace:@kampus/epic-ledger@*",
+				},
 			]),
 			manifest("packages/demo-sdk/package.json", "@kampus/demo-sdk", []),
 		]);
@@ -113,8 +117,12 @@ describe("judge", () => {
 	it("reds a path-form workspace: link even when the dep name is a published sibling", () => {
 		const v = judge([
 			manifest("packages/demo-ui/package.json", "@kampus/demo-ui", [
-				{field: "dependencies", name: "@kampus/demo-sdk", value: "workspace:../epic-ledger"},
-				{field: "peerDependencies", name: "@kampus/demo-sdk", value: "workspace:./vendor/private"},
+				{ field: "dependencies", name: "@kampus/demo-sdk", value: "workspace:../epic-ledger" },
+				{
+					field: "peerDependencies",
+					name: "@kampus/demo-sdk",
+					value: "workspace:./vendor/private",
+				},
 			]),
 			manifest("packages/demo-sdk/package.json", "@kampus/demo-sdk", []),
 		]);
@@ -141,9 +149,9 @@ describe("judge", () => {
 	it("reds a link:, file: or portal: dep even when its name is a published sibling", () => {
 		const v = judge([
 			manifest("packages/demo-ui/package.json", "@kampus/demo-ui", [
-				{field: "dependencies", name: "@kampus/demo-sdk", value: "link:../demo-sdk"},
-				{field: "optionalDependencies", name: "vendored", value: "file:../../vendor/x.tgz"},
-				{field: "peerDependencies", name: "@kampus/demo-sdk", value: "portal:../demo-sdk"},
+				{ field: "dependencies", name: "@kampus/demo-sdk", value: "link:../demo-sdk" },
+				{ field: "optionalDependencies", name: "vendored", value: "file:../../vendor/x.tgz" },
+				{ field: "peerDependencies", name: "@kampus/demo-sdk", value: "portal:../demo-sdk" },
 			]),
 			manifest("packages/demo-sdk/package.json", "@kampus/demo-sdk", []),
 		]);
@@ -158,9 +166,9 @@ describe("judge", () => {
 	it("judges an npm: alias by the package it fetches, not the alias", () => {
 		const v = judge([
 			manifest("packages/demo-ui/package.json", "@kampus/demo-ui", [
-				{field: "dependencies", name: "ledger", value: "npm:@kampus/epic-ledger@^1.0.0"},
-				{field: "dependencies", name: "sdk", value: "npm:@kampus/demo-sdk@^0.1.0"},
-				{field: "dependencies", name: "@kampus/epic-ledger", value: "npm:left-pad@^1.0.0"},
+				{ field: "dependencies", name: "ledger", value: "npm:@kampus/epic-ledger@^1.0.0" },
+				{ field: "dependencies", name: "sdk", value: "npm:@kampus/demo-sdk@^0.1.0" },
+				{ field: "dependencies", name: "@kampus/epic-ledger", value: "npm:left-pad@^1.0.0" },
 			]),
 			manifest("packages/demo-sdk/package.json", "@kampus/demo-sdk", []),
 		]);
@@ -179,8 +187,8 @@ describe("judge", () => {
 	it("reds a range that embeds workspace: when the dep is not published, whatever its scope", () => {
 		const v = judge([
 			manifest("packages/demo-ui/package.json", "@kampus/demo-ui", [
-				{field: "peerDependencies", name: "internal-lib", value: "^1.0.0 || workspace:*"},
-				{field: "peerDependencies", name: "@kampus/demo-sdk", value: "^0.1.0 || workspace:*"},
+				{ field: "peerDependencies", name: "internal-lib", value: "^1.0.0 || workspace:*" },
+				{ field: "peerDependencies", name: "@kampus/demo-sdk", value: "^0.1.0 || workspace:*" },
 			]),
 			manifest("packages/demo-sdk/package.json", "@kampus/demo-sdk", []),
 		]);
@@ -209,8 +217,8 @@ describe("parsePublishArms", () => {
 				].join("\n"),
 			),
 		).toEqual([
-			{prefix: "fabrika-cli", dir: "packages/fabrika-cli"},
-			{prefix: "demo-sdk", dir: "packages/sdk-core"},
+			{ prefix: "fabrika-cli", dir: "packages/fabrika-cli" },
+			{ prefix: "demo-sdk", dir: "packages/sdk-core" },
 		]);
 	});
 
@@ -229,8 +237,8 @@ describe("parsePublishArms", () => {
 				'=~ ^demo-cli-v(.*)$ ... =~ ^fabrika-cli-v(.*)$ PKG_DIR="packages/fabrika-cli"',
 			),
 		).toEqual([
-			{prefix: "demo-cli", dir: null},
-			{prefix: "fabrika-cli", dir: "packages/fabrika-cli"},
+			{ prefix: "demo-cli", dir: null },
+			{ prefix: "fabrika-cli", dir: "packages/fabrika-cli" },
 		]);
 	});
 });
@@ -244,10 +252,10 @@ describe("resolvePublished", () => {
 	];
 
 	it("resolves each arm to the member at its PKG_DIR, whatever the directory is called", () => {
-		const {published, drift} = resolvePublished(
+		const { published, drift } = resolvePublished(
 			[
-				{prefix: "demo-cli", dir: "packages/demo-cli"},
-				{prefix: "demo-sdk", dir: "packages/sdk-core"},
+				{ prefix: "demo-cli", dir: "packages/demo-cli" },
+				{ prefix: "demo-sdk", dir: "packages/sdk-core" },
 			],
 			members,
 		);
@@ -257,8 +265,8 @@ describe("resolvePublished", () => {
 
 	// The set is what the arms publish, not every member sharing a name.
 	it("leaves a member that only shares the unscoped name out of the published set", () => {
-		const {published, drift} = resolvePublished(
-			[{prefix: "demo-sdk", dir: "packages/sdk-core"}],
+		const { published, drift } = resolvePublished(
+			[{ prefix: "demo-sdk", dir: "packages/sdk-core" }],
 			[...members, manifest("apps/x/package.json", "@other/demo-sdk", [])],
 		);
 		expect(published.map((m) => m.path)).toEqual(["packages/sdk-core/package.json"]);
@@ -267,12 +275,12 @@ describe("resolvePublished", () => {
 
 	it("reds a link to the colliding member, end to end through the derived set", () => {
 		const ui = manifest("packages/demo-ui/package.json", "@kampus/demo-ui", [
-			{field: "dependencies", name: "@other/demo-sdk", value: "workspace:*"},
+			{ field: "dependencies", name: "@other/demo-sdk", value: "workspace:*" },
 		]);
-		const {published} = resolvePublished(
+		const { published } = resolvePublished(
 			[
-				{prefix: "demo-sdk", dir: "packages/sdk-core"},
-				{prefix: "demo-ui", dir: "packages/demo-ui"},
+				{ prefix: "demo-sdk", dir: "packages/sdk-core" },
+				{ prefix: "demo-ui", dir: "packages/demo-ui" },
 			],
 			[...members, ui, manifest("apps/x/package.json", "@other/demo-sdk", [])],
 		);
@@ -284,28 +292,28 @@ describe("resolvePublished", () => {
 	});
 
 	it("surfaces a PKG_DIR with no member there as drift", () => {
-		const {published, drift} = resolvePublished(
-			[{prefix: "does-not-exist", dir: "packages/does-not-exist"}],
+		const { published, drift } = resolvePublished(
+			[{ prefix: "does-not-exist", dir: "packages/does-not-exist" }],
 			members,
 		);
 		expect(published).toEqual([]);
 		expect(drift).toEqual([
-			{reason: "no-member", prefix: "does-not-exist", dir: "packages/does-not-exist"},
+			{ reason: "no-member", prefix: "does-not-exist", dir: "packages/does-not-exist" },
 		]);
 	});
 
 	it("surfaces an arm with no PKG_DIR, and a prefix split across directories, as drift", () => {
-		const {published, drift} = resolvePublished(
+		const { published, drift } = resolvePublished(
 			[
-				{prefix: "demo-cli", dir: null},
-				{prefix: "fabrika-cli", dir: "packages/fabrika-cli"},
-				{prefix: "fabrika-cli", dir: "packages/demo-cli"},
+				{ prefix: "demo-cli", dir: null },
+				{ prefix: "fabrika-cli", dir: "packages/fabrika-cli" },
+				{ prefix: "fabrika-cli", dir: "packages/demo-cli" },
 			],
 			members,
 		);
 		expect(published).toEqual([]);
 		expect(drift).toEqual([
-			{reason: "no-directory", prefix: "demo-cli"},
+			{ reason: "no-directory", prefix: "demo-cli" },
 			{
 				reason: "several-directories",
 				prefix: "fabrika-cli",
@@ -315,10 +323,10 @@ describe("resolvePublished", () => {
 	});
 
 	it("tolerates a repeated anchor that sets no PKG_DIR beside one that does", () => {
-		const {published, drift} = resolvePublished(
+		const { published, drift } = resolvePublished(
 			[
-				{prefix: "demo-cli", dir: null},
-				{prefix: "demo-cli", dir: "packages/demo-cli"},
+				{ prefix: "demo-cli", dir: null },
+				{ prefix: "demo-cli", dir: "packages/demo-cli" },
 			],
 			members,
 		);
@@ -327,8 +335,8 @@ describe("resolvePublished", () => {
 	});
 
 	it("surfaces a member whose name does not match the tag prefix as drift", () => {
-		const {published, drift} = resolvePublished(
-			[{prefix: "demo-cli", dir: "packages/fabrika-cli"}],
+		const { published, drift } = resolvePublished(
+			[{ prefix: "demo-cli", dir: "packages/fabrika-cli" }],
 			members,
 		);
 		expect(published).toEqual([]);
@@ -344,8 +352,8 @@ describe("resolvePublished", () => {
 
 	// pnpm resolves `workspace:` by name and takes the highest matching version.
 	it("surfaces a published name another member also carries as drift", () => {
-		const {published, drift} = resolvePublished(
-			[{prefix: "demo-sdk", dir: "packages/sdk-core"}],
+		const { published, drift } = resolvePublished(
+			[{ prefix: "demo-sdk", dir: "packages/sdk-core" }],
 			[...members, manifest("apps/x/package.json", "@kampus/demo-sdk", [])],
 		);
 		expect(published).toEqual([]);
@@ -366,23 +374,23 @@ describe("manifestRuntimeDeps", () => {
 	it("reads the three runtime fields and IGNORES devDependencies", () => {
 		expect(
 			manifestRuntimeDeps({
-				dependencies: {a: "catalog:"},
-				optionalDependencies: {b: "^1.0.0"},
-				peerDependencies: {c: "workspace:*"},
-				devDependencies: {d: "workspace:*"},
-				scripts: {build: "tsc"},
+				dependencies: { a: "catalog:" },
+				optionalDependencies: { b: "^1.0.0" },
+				peerDependencies: { c: "workspace:*" },
+				devDependencies: { d: "workspace:*" },
+				scripts: { build: "tsc" },
 			}),
 		).toEqual([
-			{field: "dependencies", name: "a", value: "catalog:"},
-			{field: "optionalDependencies", name: "b", value: "^1.0.0"},
-			{field: "peerDependencies", name: "c", value: "workspace:*"},
+			{ field: "dependencies", name: "a", value: "catalog:" },
+			{ field: "optionalDependencies", name: "b", value: "^1.0.0" },
+			{ field: "peerDependencies", name: "c", value: "workspace:*" },
 		]);
 	});
 });
 
 describe("depTarget", () => {
-	const dep = (value: string) => ({field: "dependencies", name: "@kampus/demo-sdk", value});
-	const pkg = (name: string) => ({kind: "workspace-package", name});
+	const dep = (value: string) => ({ field: "dependencies", name: "@kampus/demo-sdk", value });
+	const pkg = (name: string) => ({ kind: "workspace-package", name });
 	it("names the dependency itself for a plain workspace: range", () => {
 		expect(depTarget(dep("workspace:*"))).toEqual(pkg("@kampus/demo-sdk"));
 		expect(depTarget(dep("workspace:^0.1.0"))).toEqual(pkg("@kampus/demo-sdk"));
@@ -410,7 +418,7 @@ describe("depTarget", () => {
 	});
 	it("reads link:, file: and portal: as a local path", () => {
 		for (const spec of ["link:../x", "file:../x.tgz", "portal:../x"]) {
-			expect(depTarget(dep(spec))).toEqual({kind: "local-path", spec});
+			expect(depTarget(dep(spec))).toEqual({ kind: "local-path", spec });
 		}
 	});
 	it("names an npm: alias by its target, with or without a range", () => {
@@ -422,11 +430,11 @@ describe("depTarget", () => {
 			kind: "registry",
 			name: "@kampus/epic-ledger",
 		});
-		expect(depTarget(dep("npm:left-pad@1"))).toEqual({kind: "registry", name: "left-pad"});
+		expect(depTarget(dep("npm:left-pad@1"))).toEqual({ kind: "registry", name: "left-pad" });
 	});
 	it("names the dependency itself for a registry range or catalog: entry", () => {
-		expect(depTarget(dep("catalog:"))).toEqual({kind: "registry", name: "@kampus/demo-sdk"});
-		expect(depTarget(dep("^1.0.0"))).toEqual({kind: "registry", name: "@kampus/demo-sdk"});
+		expect(depTarget(dep("catalog:"))).toEqual({ kind: "registry", name: "@kampus/demo-sdk" });
+		expect(depTarget(dep("^1.0.0"))).toEqual({ kind: "registry", name: "@kampus/demo-sdk" });
 	});
 });
 

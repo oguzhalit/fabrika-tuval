@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	classOf,
 	DECISIONS_ROOT,
@@ -51,8 +51,8 @@ describe("partition", () => {
 	it("counts each present class and omits the absent ones", () => {
 		const result = partition(["src/a.ts", "src/b.ts", "README.md"]);
 		expect(result.classes).toEqual([
-			{name: "code", files: 2},
-			{name: "doc", files: 1},
+			{ name: "code", files: 2 },
+			{ name: "doc", files: 1 },
 		]);
 		expect(result.scanned).toBe(3);
 	});
@@ -142,7 +142,7 @@ describe("isUiSurface", () => {
 			UI_PREFIXES,
 		);
 		expect(shipNamespacesOf(result)).toEqual(["review-code", "review-ui"]);
-		expect(result.classes).toContainEqual({name: "ui", files: 1});
+		expect(result.classes).toContainEqual({ name: "ui", files: 1 });
 	});
 });
 
@@ -248,7 +248,7 @@ describe("issueRefsOf", () => {
 			numbers: [5434, 5437],
 			referenced: [5434, 5437],
 		});
-		expect(issueRefsOf("see #4000")).toEqual({kind: "none", numbers: [], referenced: []});
+		expect(issueRefsOf("see #4000")).toEqual({ kind: "none", numbers: [], referenced: [] });
 	});
 
 	/**
@@ -287,8 +287,8 @@ describe("issueRefsOf", () => {
 
 describe("issueRefOf", () => {
 	it("prefers a closing keyword, and keeps its kind distinct from a partial split", () => {
-		expect(issueRefOf("Fixes #4287\n\nPart of #4000")).toEqual({kind: "fixes", number: 4287});
-		expect(issueRefOf("Part of #4000")).toEqual({kind: "part-of", number: 4000});
+		expect(issueRefOf("Fixes #4287\n\nPart of #4000")).toEqual({ kind: "fixes", number: 4287 });
+		expect(issueRefOf("Part of #4000")).toEqual({ kind: "part-of", number: 4000 });
 	});
 
 	it("reads the partial-split marker `build --partial` emits, in the shapes it emits it", () => {
@@ -296,11 +296,11 @@ describe("issueRefOf", () => {
 			kind: "part-of",
 			number: 5434,
 		});
-		expect(issueRefOf("part of: #12")).toEqual({kind: "part-of", number: 12});
+		expect(issueRefOf("part of: #12")).toEqual({ kind: "part-of", number: 12 });
 	});
 
 	it("answers none for a body with neither marker", () => {
-		expect(issueRefOf("see #4000")).toEqual({kind: "none", number: null});
-		expect(issueRefOf("")).toEqual({kind: "none", number: null});
+		expect(issueRefOf("see #4000")).toEqual({ kind: "none", number: null });
+		expect(issueRefOf("")).toEqual({ kind: "none", number: null });
 	});
 });

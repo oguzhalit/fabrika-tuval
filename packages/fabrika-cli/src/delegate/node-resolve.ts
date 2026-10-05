@@ -7,13 +7,13 @@
  * Effect seam that wraps it. Every outcome leaves as a value; nothing propagates as a throw except a
  * fault this module genuinely cannot classify.
  */
-import {createRequire} from "node:module";
-import {type RepoPredicate, repoPredicate} from "./reason.ts";
+import { createRequire } from "node:module";
+import { type RepoPredicate, repoPredicate } from "./reason.ts";
 
 export type ResolveOutcome =
-	| {readonly _tag: "resolved"; readonly manifestPath: string}
-	| {readonly _tag: "absent"}
-	| {readonly _tag: "corrupt"; readonly reason: RepoPredicate};
+	| { readonly _tag: "resolved"; readonly manifestPath: string }
+	| { readonly _tag: "absent" }
+	| { readonly _tag: "corrupt"; readonly reason: RepoPredicate };
 
 /**
  * Where `packageName`'s manifest is, resolved from `rootManifest` the way Node itself would.
@@ -32,8 +32,8 @@ export const resolvePackageManifest = (
 			manifestPath: createRequire(rootManifest).resolve(`${packageName}/package.json`),
 		};
 	} catch (error) {
-		const code = (error as {code?: unknown} | null)?.code;
-		if (code === "MODULE_NOT_FOUND") return {_tag: "absent"};
+		const code = (error as { code?: unknown } | null)?.code;
+		if (code === "MODULE_NOT_FOUND") return { _tag: "absent" };
 		if (code === "ERR_PACKAGE_PATH_NOT_EXPORTED")
 			return {
 				_tag: "corrupt",

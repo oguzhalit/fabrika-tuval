@@ -18,8 +18,8 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9821
  */
 
-import type {JsonSchema} from "../json-schema.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import type { JsonSchema } from "../json-schema.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const TABLE = "table";
 
@@ -143,10 +143,10 @@ export const SHIPPED_TABLE: TableSettings = {
 	asksFlag: 3,
 	stuckDays: 3,
 	activeCampaignFlag: 3,
-	fabrikaShare: {percent: 40, forTables: 4, thenPercent: 30, labels: []},
+	fabrikaShare: { percent: 40, forTables: 4, thenPercent: 30, labels: [] },
 	checkDelayDays: 14,
 	evidenceSources: [],
-	project: {owner: null, number: null},
+	project: { owner: null, number: null },
 };
 
 const named = (path: string): string => `\`${TABLE}.${path}\``;
@@ -158,7 +158,7 @@ const asRecord = (raw: unknown): Record<string, unknown> | null =>
 		? (raw as Record<string, unknown>)
 		: null;
 
-const malformed = (reason: string): {readonly _tag: "Malformed"; readonly reason: string} => ({
+const malformed = (reason: string): { readonly _tag: "Malformed"; readonly reason: string } => ({
 	_tag: "Malformed",
 	reason,
 });
@@ -169,29 +169,29 @@ const oneOf =
 	<A extends string>(values: ReadonlyArray<A>): Field<A> =>
 	(raw, path) =>
 		typeof raw === "string" && (values as ReadonlyArray<string>).includes(raw)
-			? {_tag: "Value", value: raw as A}
+			? { _tag: "Value", value: raw as A }
 			: malformed(`${named(path)} is not one of ${values.join(", ")}`);
 
 const positiveInteger: Field<number> = (raw, path) =>
 	typeof raw === "number" && Number.isInteger(raw) && raw >= 1
-		? {_tag: "Value", value: raw}
+		? { _tag: "Value", value: raw }
 		: malformed(`${named(path)} is not a positive integer`);
 
 const percent: Field<number> = (raw, path) =>
 	typeof raw === "number" && Number.isFinite(raw) && raw > 0 && raw <= 100
-		? {_tag: "Value", value: raw}
+		? { _tag: "Value", value: raw }
 		: malformed(`${named(path)} is not a percentage above 0 and at most 100`);
 
 const multiple: Field<number> = (raw, path) =>
 	typeof raw === "number" && Number.isFinite(raw) && raw > 1
-		? {_tag: "Value", value: raw}
+		? { _tag: "Value", value: raw }
 		: malformed(
 				`${named(path)} is not a number above 1 — a lane stopping at its size or below it never runs over`,
 			);
 
 const flagPoint: Field<number> = (raw, path) =>
 	typeof raw === "number" && Number.isFinite(raw) && raw >= 1
-		? {_tag: "Value", value: raw}
+		? { _tag: "Value", value: raw }
 		: malformed(
 				`${named(path)} is not a number of at least 1 — a lane is flagged only once it spends past its size`,
 			);
@@ -226,7 +226,7 @@ const sectionList: Field<ReadonlyArray<string>> = (raw, path) => {
 				.join(", ")}, so every list carries them; reorder them or add your own, but keep them`,
 		);
 	}
-	return {_tag: "Value", value: names};
+	return { _tag: "Value", value: names };
 };
 
 const timeZone: Field<string> = (raw, path) => {
@@ -236,7 +236,7 @@ const timeZone: Field<string> = (raw, path) => {
 	try {
 		return {
 			_tag: "Value",
-			value: new Intl.DateTimeFormat("en-US", {timeZone: raw}).resolvedOptions().timeZone,
+			value: new Intl.DateTimeFormat("en-US", { timeZone: raw }).resolvedOptions().timeZone,
 		};
 	} catch {
 		return malformed(
@@ -256,12 +256,12 @@ const labelList: Field<ReadonlyArray<string>> = (raw, path) => {
 			return malformed(`${named(path)} names "${entry.trim()}" twice`);
 		names.push(entry.trim());
 	}
-	return {_tag: "Value", value: names};
+	return { _tag: "Value", value: names };
 };
 
 /** An object sub-key: unknown keys refuse, absent keys take the shipped value. */
 const objectOf =
-	<A extends object>(fields: {readonly [K in keyof A]: Field<A[K]>}, shipped: A): Field<A> =>
+	<A extends object>(fields: { readonly [K in keyof A]: Field<A[K]> }, shipped: A): Field<A> =>
 	(raw, path) => {
 		const record = asRecord(raw);
 		if (record === null) return malformed(`${named(path)} is not an object`);
@@ -285,17 +285,17 @@ const objectOf =
 			if (decoded._tag === "Malformed") return decoded;
 			out[key] = decoded.value;
 		}
-		return {_tag: "Value", value: out as A};
+		return { _tag: "Value", value: out as A };
 	};
 
 const nullable =
 	<A>(field: Field<A>): Field<A | null> =>
 	(raw, path) =>
-		raw === null ? {_tag: "Value", value: null} : field(raw, path);
+		raw === null ? { _tag: "Value", value: null } : field(raw, path);
 
 const login: Field<string> = (raw, path) =>
 	typeof raw === "string" && /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/.test(raw)
-		? {_tag: "Value", value: raw}
+		? { _tag: "Value", value: raw }
 		: malformed(`${named(path)} is not a GitHub user or organization login`);
 
 const evidenceSource = (raw: unknown, path: string): Decoded<EvidenceSource> => {
@@ -306,7 +306,7 @@ const evidenceSource = (raw: unknown, path: string): Decoded<EvidenceSource> => 
 	if (stray !== undefined) {
 		return malformed(`${named(child(path, stray))} is not a setting — one of ${known.join(", ")}`);
 	}
-	const {name, command, timeoutSeconds} = record;
+	const { name, command, timeoutSeconds } = record;
 	if (typeof name !== "string" || name.trim() === "") {
 		return malformed(`${named(child(path, "name"))} is not a source name`);
 	}
@@ -334,7 +334,7 @@ const evidenceSource = (raw: unknown, path: string): Decoded<EvidenceSource> => 
 	const [binary, ...args] = command as string[];
 	return {
 		_tag: "Value",
-		value: {name: name.trim(), command: [binary as string, ...args], timeoutSeconds: timeout},
+		value: { name: name.trim(), command: [binary as string, ...args], timeoutSeconds: timeout },
 	};
 };
 
@@ -349,10 +349,10 @@ const evidenceSources: Field<ReadonlyArray<EvidenceSource>> = (raw, path) => {
 		}
 		sources.push(decoded.value);
 	}
-	return {_tag: "Value", value: sources};
+	return { _tag: "Value", value: sources };
 };
 
-const SUB_KEYS: {readonly [K in keyof TableSettings]: Field<TableSettings[K]>} = {
+const SUB_KEYS: { readonly [K in keyof TableSettings]: Field<TableSettings[K]> } = {
 	cadence: oneOf(CADENCES),
 	day: oneOf(WEEKDAYS),
 	timeZone,
@@ -364,13 +364,13 @@ const SUB_KEYS: {readonly [K in keyof TableSettings]: Field<TableSettings[K]>} =
 	stuckDays: positiveInteger,
 	activeCampaignFlag: positiveInteger,
 	fabrikaShare: objectOf<FabrikaShare>(
-		{percent, forTables: positiveInteger, thenPercent: percent, labels: labelList},
+		{ percent, forTables: positiveInteger, thenPercent: percent, labels: labelList },
 		SHIPPED_TABLE.fabrikaShare,
 	),
 	checkDelayDays: positiveInteger,
 	evidenceSources,
 	project: objectOf<ProjectTarget>(
-		{owner: nullable(login), number: nullable(positiveInteger)},
+		{ owner: nullable(login), number: nullable(positiveInteger) },
 		SHIPPED_TABLE.project,
 	),
 };
@@ -379,7 +379,7 @@ const decode = (raw: unknown): Decoded<TableSettings> => {
 	if (asRecord(raw) === null) return malformed(`\`${TABLE}\` is not an object`);
 	const decoded = objectOf<TableSettings>(SUB_KEYS, SHIPPED_TABLE)(raw, "");
 	if (decoded._tag === "Malformed") return decoded;
-	const {flagMultiple, stopMultiple} = decoded.value;
+	const { flagMultiple, stopMultiple } = decoded.value;
 	if (flagMultiple >= stopMultiple) {
 		return malformed(
 			`${named("flagMultiple")} (${flagMultiple}) is not below ${named("stopMultiple")} (${stopMultiple}) — the stop is read off the over-size flag, so a lane must be flagged before it stops`,
@@ -430,7 +430,7 @@ export const tableKey: KeyGroup<TableSettings> = {
 			},
 			sections: {
 				type: "array",
-				items: {type: "string", minLength: 1},
+				items: { type: "string", minLength: 1 },
 				minItems: REQUIRED_SECTIONS.length,
 				uniqueItems: true,
 				description: `Agenda sections in agenda order. Default ${REQUIRED_SECTIONS.join(", ")}. Must include all four: prep files each proposal under ${TAILS}, ${CUSTOMERS} or ${NEW_BETS}, and un-bet lanes land in "${OUTSIDE_THE_BETS}". Reorder them or add your own.`,
@@ -461,7 +461,7 @@ export const tableKey: KeyGroup<TableSettings> = {
 					thenPercent: percentage("The target share, in percent, after that. Default 30."),
 					labels: {
 						type: "array",
-						items: {type: "string", minLength: 1},
+						items: { type: "string", minLength: 1 },
 						uniqueItems: true,
 						description:
 							"The issue labels that mark fabrika's own work; a lane on an issue carrying any of them counts toward the share. Default none. An empty list turns the fabrika-share check off; it runs only once the repo names its labels.",
@@ -484,7 +484,7 @@ export const tableKey: KeyGroup<TableSettings> = {
 						},
 						command: {
 							type: "array",
-							items: {type: "string"},
+							items: { type: "string" },
 							minItems: 1,
 							description: 'The argv to run — e.g. ["pnpm", "metrics", "--since", "14d"].',
 						},

@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
 import {
 	INCOMPLETE_SCAN,
 	OFF_VOCABULARY,
@@ -26,8 +26,8 @@ import {
 	RUN,
 	workflowRun,
 } from "./fixtures.test-support.ts";
-import {renderMarker} from "./marker.ts";
-import {runRerun} from "./rerun-verb.ts";
+import { renderMarker } from "./marker.ts";
+import { runRerun } from "./rerun-verb.ts";
 
 const PULL = /^GET .*\/repos\/o\/r\/pulls\/4321$/;
 const COMMENTS = /^GET .*\/repos\/o\/r\/issues\/4321\/comments\?/;
@@ -35,10 +35,10 @@ const CREATE_COMMENT = /^POST .*\/repos\/o\/r\/issues\/\d+\/comments$/;
 const READ_COMMENT = /^GET .*\/repos\/o\/r\/issues\/comments\/\d+$/;
 
 /** The shared payload fixtures speak `gh`'s `ExecResult`; the seam now serves the same bytes. */
-const reply = (result: ExecResult, status = 200): HttpReply => ({status, body: result.stdout});
+const reply = (result: ExecResult, status = 200): HttpReply => ({ status, body: result.stdout });
 
 const RUN_ID = 9182736450;
-const MARKER = renderMarker({head: HEAD, run: RUN_ID, signature: "preview-warmup"});
+const MARKER = renderMarker({ head: HEAD, run: RUN_ID, signature: "preview-warmup" });
 
 const options = {
 	pr: 4321,
@@ -51,7 +51,9 @@ const options = {
 };
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runRerun({...options, ...overrides}), fakeSeams(script).layer));
+	Effect.runPromise(
+		Effect.provide(runRerun({ ...options, ...overrides }), fakeSeams(script).layer),
+	);
 
 /** The whole happy path: failed run at attempt 1, no marker, a new attempt, a matching read-back. */
 const happy = (): ReadonlyArray<Scripted> => [
@@ -59,9 +61,9 @@ const happy = (): ReadonlyArray<Scripted> => [
 	[COMMENTS, reply(comments())],
 	[CREATE_COMMENT, reply(createdComment(5155001122), 201)],
 	[READ_COMMENT, reply(commentBody(MARKER))],
-	[once(RUN), workflowRun({attempt: 1})],
+	[once(RUN), workflowRun({ attempt: 1 })],
 	[RERUN, accepted],
-	[RUN, workflowRun({attempt: 2})],
+	[RUN, workflowRun({ attempt: 2 })],
 ];
 
 describe("runRerun spends the one rerun and records it", () => {
@@ -76,7 +78,7 @@ describe("runRerun spends the one rerun and records it", () => {
 
 describe("the guard lives in the verb, and trusts nothing it was told", () => {
 	it("refuses a head that moved past --sha on 12", async () => {
-		const out = await run([[PULL, reply(pull({head: OTHER_HEAD}))]]);
+		const out = await run([[PULL, reply(pull({ head: OTHER_HEAD }))]]);
 		expect(out.code).toBe(STALE_HEAD);
 		expect(out.stderr.at(-1)).toContain("refusing to rerun against a tree nobody classified");
 	});
@@ -84,7 +86,7 @@ describe("the guard lives in the verb, and trusts nothing it was told", () => {
 	it("refuses a run that did not fail on 14 — nothing was mutated", async () => {
 		const out = await run([
 			[PULL, reply(pull())],
-			[RUN, workflowRun({conclusion: "success"})],
+			[RUN, workflowRun({ conclusion: "success" })],
 		]);
 		expect(out.code).toBe(PROVEN_NOT_IN_STATE);
 		expect(out.stderr.at(-1)).toContain("refusing to rerun a run that did not fail");
@@ -93,7 +95,7 @@ describe("the guard lives in the verb, and trusts nothing it was told", () => {
 	it("refuses a head already rerun by run_attempt on 14", async () => {
 		const out = await run([
 			[PULL, reply(pull())],
-			[RUN, workflowRun({attempt: 2})],
+			[RUN, workflowRun({ attempt: 2 })],
 		]);
 		expect(out.code).toBe(PROVEN_NOT_IN_STATE);
 		expect(out.stderr.at(-1)).toContain("a second rerun is escalation, not retry");
@@ -101,30 +103,30 @@ describe("the guard lives in the verb, and trusts nothing it was told", () => {
 
 	it("refuses a head already rerun by a bound marker on 14 — the other independent signal", async () => {
 		const out = await run([
-			[PULL, reply(pull({comments: 1}))],
-			[COMMENTS, reply(comments({id: 91, body: MARKER}))],
-			[RUN, workflowRun({attempt: 1})],
+			[PULL, reply(pull({ comments: 1 }))],
+			[COMMENTS, reply(comments({ id: 91, body: MARKER }))],
+			[RUN, workflowRun({ attempt: 1 })],
 		]);
 		expect(out.code).toBe(PROVEN_NOT_IN_STATE);
 		expect(out.stderr.at(-1)).toContain("marker 91");
 	});
 
 	it("refuses a closed PR on 14", async () => {
-		const out = await run([[PULL, reply(pull({state: "closed"}))]]);
+		const out = await run([[PULL, reply(pull({ state: "closed" }))]]);
 		expect(out.code).toBe(PROVEN_NOT_IN_STATE);
 	});
 
 	it("refuses a truncated marker read on 13 — an unexhausted read licenses no rerun", async () => {
 		const out = await run([
-			[PULL, reply(pull({comments: 40}))],
+			[PULL, reply(pull({ comments: 40 }))],
 			[COMMENTS, reply(comments())],
-			[RUN, workflowRun({attempt: 1})],
+			[RUN, workflowRun({ attempt: 1 })],
 		]);
 		expect(out.code).toBe(INCOMPLETE_SCAN);
 	});
 
 	it("refuses an off-vocabulary --signature on 10 before any read", async () => {
-		const out = await run([], {signature: "flaky"});
+		const out = await run([], { signature: "flaky" });
 		expect(out.code).toBe(OFF_VOCABULARY);
 	});
 
@@ -134,14 +136,17 @@ describe("the guard lives in the verb, and trusts nothing it was told", () => {
 		["lint-failure", "logic"],
 		["build-failure", "logic"],
 		["roll-up-verdict", "derived"],
-	])("refuses `%s` on 10 before any read, naming its %s class", async (signature, signatureClass) => {
-		const out = await run([], {signature});
-		expect(out.code).toBe(OFF_VOCABULARY);
-		expect(out.stdout).toBe("");
-		expect(out.stderr.at(-1)).toContain(
-			`--signature ${signature} is a ${signatureClass} signature`,
-		);
-	});
+	])(
+		"refuses `%s` on 10 before any read, naming its %s class",
+		async (signature, signatureClass) => {
+			const out = await run([], { signature });
+			expect(out.code).toBe(OFF_VOCABULARY);
+			expect(out.stdout).toBe("");
+			expect(out.stderr.at(-1)).toContain(
+				`--signature ${signature} is a ${signatureClass} signature`,
+			);
+		},
+	);
 
 	it("refuses a run proven absent on 7", async () => {
 		const out = await run([
@@ -157,7 +162,7 @@ describe("the marker is written only once a new attempt is confirmed", () => {
 		const seams = fakeSeams([
 			[PULL, reply(pull())],
 			[COMMENTS, reply(comments())],
-			[RUN, workflowRun({attempt: 1})],
+			[RUN, workflowRun({ attempt: 1 })],
 			[RERUN, accepted],
 		]);
 		const out = await Effect.runPromise(Effect.provide(runRerun(options), seams.layer));
@@ -170,7 +175,7 @@ describe("the marker is written only once a new attempt is confirmed", () => {
 		const out = await run([
 			[PULL, reply(pull())],
 			[COMMENTS, reply(comments())],
-			[RUN, workflowRun({attempt: 1})],
+			[RUN, workflowRun({ attempt: 1 })],
 			[RERUN, httpError(502, "Bad gateway")],
 		]);
 		expect(out.code).toBe(WRITE_UNKNOWN);
@@ -182,9 +187,9 @@ describe("the marker is written only once a new attempt is confirmed", () => {
 			[PULL, reply(pull())],
 			[COMMENTS, reply(comments())],
 			[CREATE_COMMENT, httpError(502, "Bad gateway")],
-			[once(RUN), workflowRun({attempt: 1})],
+			[once(RUN), workflowRun({ attempt: 1 })],
 			[RERUN, accepted],
-			[RUN, workflowRun({attempt: 2})],
+			[RUN, workflowRun({ attempt: 2 })],
 		]);
 		expect(out.code).toBe(RERUN_UNRECORDED);
 		expect(out.stderr.at(-1)).toContain("rerun and UNRECORDED");
@@ -196,9 +201,9 @@ describe("the marker is written only once a new attempt is confirmed", () => {
 			[COMMENTS, reply(comments())],
 			[CREATE_COMMENT, reply(createdComment(77), 201)],
 			[READ_COMMENT, reply(commentBody("something else entirely"))],
-			[once(RUN), workflowRun({attempt: 1})],
+			[once(RUN), workflowRun({ attempt: 1 })],
 			[RERUN, accepted],
-			[RUN, workflowRun({attempt: 2})],
+			[RUN, workflowRun({ attempt: 2 })],
 		]);
 		expect(out.code).toBe(READBACK_MISMATCH);
 		expect(out.stderr.at(-1)).toContain("the rerun is real, the record is not");
@@ -221,16 +226,16 @@ describe("the at-most-once guard under two concurrent callers at one head", () =
 		[COMMENTS, reply(comments())],
 		[CREATE_COMMENT, reply(createdComment(5155001122), 201)],
 		[READ_COMMENT, reply(commentBody(MARKER))],
-		[once(RUN), workflowRun({attempt: 1})],
+		[once(RUN), workflowRun({ attempt: 1 })],
 		[RERUN, accepted],
-		[RUN, workflowRun({attempt: 2})],
+		[RUN, workflowRun({ attempt: 2 })],
 	];
 
 	it("holds once the marker has landed, whichever caller wrote it", async () => {
 		const seams = fakeSeams([
-			[PULL, reply(pull({comments: 1}))],
-			[COMMENTS, reply(comments({id: 42, body: MARKER}))],
-			[RUN, workflowRun({attempt: 1})],
+			[PULL, reply(pull({ comments: 1 }))],
+			[COMMENTS, reply(comments({ id: 42, body: MARKER }))],
+			[RUN, workflowRun({ attempt: 1 })],
 		]);
 		const out = await Effect.runPromise(Effect.provide(runRerun(options), seams.layer));
 		expect(out.code).toBe(PROVEN_NOT_IN_STATE);
@@ -241,7 +246,7 @@ describe("the at-most-once guard under two concurrent callers at one head", () =
 		const seams = fakeSeams([
 			[PULL, reply(pull())],
 			[COMMENTS, reply(comments())],
-			[RUN, workflowRun({attempt: 2})],
+			[RUN, workflowRun({ attempt: 2 })],
 		]);
 		const out = await Effect.runPromise(Effect.provide(runRerun(options), seams.layer));
 		expect(out.code).toBe(PROVEN_NOT_IN_STATE);

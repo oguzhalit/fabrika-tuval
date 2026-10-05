@@ -11,11 +11,11 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10357
  */
 
-import {Effect} from "effect";
+import { Effect } from "effect";
 import * as Schema from "effect/Schema";
-import type {ChatTool} from "../config/keys/digest.ts";
-import {type Attempt, fail, ok} from "../io/git.ts";
-import {payloadOf} from "./digest.ts";
+import type { ChatTool } from "../config/keys/digest.ts";
+import { type Attempt, fail, ok } from "../io/git.ts";
+import { payloadOf } from "./digest.ts";
 
 const TIMEOUT_MS = 30_000;
 
@@ -26,10 +26,12 @@ class PostFailed extends Schema.TaggedError<PostFailed>()("fabrika-cli/table/Pos
 
 /** A platform error code such as `ECONNREFUSED`, or the error's class name; never its message. */
 const postFailed = (cause: unknown): PostFailed => {
-	if (!(cause instanceof Error)) return new PostFailed({code: "unknown error"});
+	if (!(cause instanceof Error)) return new PostFailed({ code: "unknown error" });
 	const inner = cause.cause;
 	const code =
-		typeof inner === "object" && inner !== null ? (inner as {readonly code?: unknown}).code : null;
+		typeof inner === "object" && inner !== null
+			? (inner as { readonly code?: unknown }).code
+			: null;
 	return new PostFailed({
 		code: typeof code === "string" && /^[A-Z0-9_]+$/.test(code) ? code : cause.name,
 	});
@@ -50,7 +52,7 @@ export const postWebhook = (tool: ChatTool, url: URL, text: string): Effect.Effe
 			if (tool === "discord") target.searchParams.set("wait", "true");
 			const response = await fetch(target, {
 				method: "POST",
-				headers: {"content-type": "application/json"},
+				headers: { "content-type": "application/json" },
 				body: JSON.stringify(payloadOf(tool, text)),
 				signal: AbortSignal.timeout(TIMEOUT_MS),
 			});

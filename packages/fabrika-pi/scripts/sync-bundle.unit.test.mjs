@@ -17,10 +17,10 @@ import {
 	rmSync,
 	writeFileSync,
 } from "node:fs";
-import {dirname, join, resolve} from "node:path";
-import {test} from "node:test";
-import {fileURLToPath} from "node:url";
-import {SOURCES, syncBundle} from "./sync-bundle.mjs";
+import { dirname, join, resolve } from "node:path";
+import { test } from "node:test";
+import { fileURLToPath } from "node:url";
+import { SOURCES, syncBundle } from "./sync-bundle.mjs";
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REPO_ROOT = resolve(PACKAGE_ROOT, "../..");
@@ -63,7 +63,7 @@ function resolvePackagedAgents(packageRoot) {
 }
 
 /** One temp dir holding both fixture sources and the destination. */
-function fixture({skills = 2, agents = 3} = {}) {
+function fixture({ skills = 2, agents = 3 } = {}) {
 	const root = mkdtempSync(join(process.cwd(), "sync-bundle-fixture-"));
 	const paths = {
 		skills: join(root, "authored-skills"),
@@ -72,23 +72,23 @@ function fixture({skills = 2, agents = 3} = {}) {
 	};
 	for (let i = 0; i < skills; i++) {
 		const skill = join(paths.skills, `skill-${i}`);
-		mkdirSync(skill, {recursive: true});
+		mkdirSync(skill, { recursive: true });
 		writeFileSync(join(skill, "SKILL.md"), `# skill ${i}\n`);
 	}
 	for (let i = 0; i < agents; i++) {
-		mkdirSync(paths.agents, {recursive: true});
+		mkdirSync(paths.agents, { recursive: true });
 		writeFileSync(join(paths.agents, `shell-${i}.md`), `---\nname: shell-${i}\n---\nbody\n`);
 	}
 	// Both source directories must exist even when empty, so the zero-count refusals — not the
 	// missing-source refusals — are what these fixtures prove.
-	mkdirSync(paths.skills, {recursive: true});
-	mkdirSync(paths.agents, {recursive: true});
+	mkdirSync(paths.skills, { recursive: true });
+	mkdirSync(paths.agents, { recursive: true });
 	// A directory with no SKILL.md under the skills tree is not a skill — it must not ship.
 	if (skills > 0) {
-		mkdirSync(join(paths.skills, "not-a-skill"), {recursive: true});
+		mkdirSync(join(paths.skills, "not-a-skill"), { recursive: true });
 		writeFileSync(join(paths.skills, "not-a-skill", "README.md"), "stray\n");
 	}
-	return {root, paths};
+	return { root, paths };
 }
 
 test("bundles every SKILL.md directory and every agent shell", () => {
@@ -112,7 +112,7 @@ test("bundles every SKILL.md directory and every agent shell", () => {
 			"---\nname: shell-0\n---\nbody\n",
 		);
 	} finally {
-		rmSync(fx.root, {recursive: true, force: true});
+		rmSync(fx.root, { recursive: true, force: true });
 	}
 });
 
@@ -132,23 +132,23 @@ test("the inherited CLAUDE.md contract resolves to canonical AGENTS.md", () => {
 });
 
 test("every packaged shell explicitly inherits context without changing its skill preload", () => {
-	const fx = fixture({skills: 1, agents: 0});
+	const fx = fixture({ skills: 1, agents: 0 });
 	try {
 		copyFileSync(join(PACKAGE_ROOT, "package.json"), join(fx.root, "package.json"));
-		syncBundle({...fx.paths, agents: SOURCES.agents});
+		syncBundle({ ...fx.paths, agents: SOURCES.agents });
 		const agents = resolvePackagedAgents(fx.root);
 		assert.deepEqual(Object.fromEntries(agents), {
-			builder: {inheritProjectContext: true, skills: ["build"]},
-			"mixed-builder": {inheritProjectContext: true, skills: ["build", "build-ui"]},
-			operator: {inheritProjectContext: true, skills: ["operate"]},
-			reviewer: {inheritProjectContext: true, skills: ["review"]},
-			shipper: {inheritProjectContext: true, skills: ["ship"]},
-			triager: {inheritProjectContext: true, skills: ["triage"]},
-			"ui-builder": {inheritProjectContext: true, skills: ["build-ui"]},
-			"ui-reviewer": {inheritProjectContext: true, skills: ["review-ui"]},
+			builder: { inheritProjectContext: true, skills: ["build"] },
+			"mixed-builder": { inheritProjectContext: true, skills: ["build", "build-ui"] },
+			operator: { inheritProjectContext: true, skills: ["operate"] },
+			reviewer: { inheritProjectContext: true, skills: ["review"] },
+			shipper: { inheritProjectContext: true, skills: ["ship"] },
+			triager: { inheritProjectContext: true, skills: ["triage"] },
+			"ui-builder": { inheritProjectContext: true, skills: ["build-ui"] },
+			"ui-reviewer": { inheritProjectContext: true, skills: ["review-ui"] },
 		});
 	} finally {
-		rmSync(fx.root, {recursive: true, force: true});
+		rmSync(fx.root, { recursive: true, force: true });
 	}
 });
 
@@ -156,7 +156,7 @@ test("running twice is idempotent — same files, no stale copies", () => {
 	const fx = fixture();
 	try {
 		const first = syncBundle(fx.paths);
-		const snapshot = () => readdirSync(fx.paths.dest, {recursive: true}).sort().join("\n");
+		const snapshot = () => readdirSync(fx.paths.dest, { recursive: true }).sort().join("\n");
 		const before = snapshot();
 		const second = syncBundle(fx.paths);
 		assert.deepEqual(second, first);
@@ -169,24 +169,24 @@ test("running twice is idempotent — same files, no stale copies", () => {
 			"shell-1.md",
 		]);
 	} finally {
-		rmSync(fx.root, {recursive: true, force: true});
+		rmSync(fx.root, { recursive: true, force: true });
 	}
 });
 
 test("refuses to bundle zero skills — fail-closed like #6967's sync", () => {
-	const fx = fixture({skills: 0, agents: 1});
+	const fx = fixture({ skills: 0, agents: 1 });
 	try {
 		assert.throws(() => syncBundle(fx.paths), /refusing to bundle zero skills/);
 	} finally {
-		rmSync(fx.root, {recursive: true, force: true});
+		rmSync(fx.root, { recursive: true, force: true });
 	}
 });
 
 test("refuses to bundle zero agent shells", () => {
-	const fx = fixture({skills: 1, agents: 0});
+	const fx = fixture({ skills: 1, agents: 0 });
 	try {
 		assert.throws(() => syncBundle(fx.paths), /refusing to bundle zero agent shells/);
 	} finally {
-		rmSync(fx.root, {recursive: true, force: true});
+		rmSync(fx.root, { recursive: true, force: true });
 	}
 });

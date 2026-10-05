@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {DEFAULT_STATUS_NAMES} from "../labels.ts";
+import { describe, expect, it } from "vitest";
+import { DEFAULT_STATUS_NAMES } from "../labels.ts";
 import {
 	AUDIENCE_NOT_AGENT,
 	NO_ACCEPTANCE_CRITERIA,
@@ -7,7 +7,7 @@ import {
 	PRECONDITION_UNKNOWN,
 	TYPE_NOT_BUILDABLE,
 } from "./codes.ts";
-import {isCandidate} from "./pick-verb.ts";
+import { isCandidate } from "./pick-verb.ts";
 import {
 	ADMISSION_EXIT_CODES,
 	type Admission,
@@ -75,16 +75,16 @@ const CAMPAIGNS_44_AND_46 = [
 
 const active: Dispatch = {
 	_tag: "Active",
-	campaigns: [{milestone: 44, name: "fabrika fast follows"}],
+	campaigns: [{ milestone: 44, name: "fabrika fast follows" }],
 };
 const activeBoth: Dispatch = {
 	_tag: "Active",
 	campaigns: [
-		{milestone: 44, name: "fabrika fast follows"},
-		{milestone: 46, name: "fabrika everywhere"},
+		{ milestone: 44, name: "fabrika fast follows" },
+		{ milestone: 46, name: "fabrika everywhere" },
 	],
 };
-const noneActive: Dispatch = {_tag: "None"};
+const noneActive: Dispatch = { _tag: "None" };
 
 /** A body the criteria axis contracts on, so a fixture is admissible unless a case says otherwise. */
 const CONTRACTED_BODY = "## What this is\n\nprose\n\n### Acceptance criteria\n\n- [ ] one thing\n";
@@ -188,22 +188,22 @@ describe("no campaign state is an axis", () => {
 	 * nowhere — is judged on type, audience and criteria alone.
 	 */
 	it("admits an issue whose milestone no active campaign pins", () => {
-		const out = admissionOf(issue({milestone: 24}));
+		const out = admissionOf(issue({ milestone: 24 }));
 		expect(out._tag).toBe("Admitted");
 		expect(admissionRefusal("build claim", out)).toBeNull();
 		expect(exclusionReasonOf(out)).toBeNull();
 	});
 
 	it("admits a milestone-less issue that carries no standing lane", () => {
-		expect(admissionOf(issue({milestone: null}))._tag).toBe("Admitted");
+		expect(admissionOf(issue({ milestone: null }))._tag).toBe("Admitted");
 	});
 
 	it("never seats 20 — no admission outcome refuses on the old scope code", () => {
 		const outcomes: ReadonlyArray<Admission> = [
-			admissionOf(issue({milestone: 24})),
-			admissionOf(issue({labels: ["ready-for:human"]})),
-			admissionOf(issue({labels: ["type:epic", "ready-for:agent"]})),
-			admissionOf(issue({body: "no contract"})),
+			admissionOf(issue({ milestone: 24 })),
+			admissionOf(issue({ labels: ["ready-for:human"] })),
+			admissionOf(issue({ labels: ["type:epic", "ready-for:agent"] })),
+			admissionOf(issue({ body: "no contract" })),
 			unknownAdmission("cannot read #7"),
 		];
 		for (const out of outcomes) {
@@ -213,12 +213,12 @@ describe("no campaign state is an axis", () => {
 	});
 
 	it("still refuses on each of the three axes left, off an issue homed outside every campaign", () => {
-		const elsewhere = {milestone: 24};
+		const elsewhere = { milestone: 24 };
 		const codeOf = (facts: Partial<IssueFacts>) =>
-			admissionRefusal("build claim", admissionOf(issue({...elsewhere, ...facts})))?.code;
-		expect(codeOf({labels: ["ready-for:human"]})).toBe(AUDIENCE_NOT_AGENT);
-		expect(codeOf({labels: ["type:decision", "ready-for:agent"]})).toBe(TYPE_NOT_BUILDABLE);
-		expect(codeOf({body: "no contract"})).toBe(NO_ACCEPTANCE_CRITERIA);
+			admissionRefusal("build claim", admissionOf(issue({ ...elsewhere, ...facts })))?.code;
+		expect(codeOf({ labels: ["ready-for:human"] })).toBe(AUDIENCE_NOT_AGENT);
+		expect(codeOf({ labels: ["type:decision", "ready-for:agent"] })).toBe(TYPE_NOT_BUILDABLE);
+		expect(codeOf({ body: "no contract" })).toBe(NO_ACCEPTANCE_CRITERIA);
 	});
 });
 
@@ -235,33 +235,33 @@ describe("admissionOf", () => {
 
 	for (const lane of LANES) {
 		it(`reads the declared lane ${lane} as the home of an issue carrying no milestone`, () => {
-			const standing = issue({milestone: null, labels: ["ready-for:agent", "p2", lane]});
+			const standing = issue({ milestone: null, labels: ["ready-for:agent", "p2", lane] });
 			expect(homeOf(standing, LANES)).toBe(lane);
 			expect(admissionOf(standing)._tag).toBe("Admitted");
 		});
 	}
 
 	it("reads no lane home off a label the repo did not declare", () => {
-		const standing = issue({milestone: null, labels: ["ready-for:agent", "wayfinder:backlog"]});
+		const standing = issue({ milestone: null, labels: ["ready-for:agent", "wayfinder:backlog"] });
 		expect(homeOf(standing, [])).toBeNull();
 	});
 
 	it("refuses ready-for:human on the audience axis, at 21", () => {
-		const out = admissionOf(issue({labels: ["ready-for:human"]}));
+		const out = admissionOf(issue({ labels: ["ready-for:human"] }));
 		expect(out._tag).toBe("AudienceNotAgent");
 		expect(exclusionReasonOf(out)).toBe("audience-not-agent");
 		expect(admissionRefusal("build claim", out)?.code).toBe(AUDIENCE_NOT_AGENT);
 	});
 
 	it("refuses an absent ready-for: label — absence is an unknown audience, never an agent one", () => {
-		const out = admissionOf(issue({labels: ["status:triaged", "p0"]}));
+		const out = admissionOf(issue({ labels: ["status:triaged", "p0"] }));
 		expect(out._tag).toBe("AudienceNotAgent");
 		expect(out._tag === "AudienceNotAgent" && out.audience.label).toBeNull();
 		expect(admissionRefusal("build claim", out)?.code).toBe(AUDIENCE_NOT_AGENT);
 	});
 
 	it("still applies the audience axis to a standing lane", () => {
-		const standing = issue({milestone: null, labels: ["axis:pipeline-hardening"]});
+		const standing = issue({ milestone: null, labels: ["axis:pipeline-hardening"] });
 		expect(admissionOf(standing)._tag).toBe("AudienceNotAgent");
 	});
 
@@ -283,7 +283,7 @@ describe("admissionOf", () => {
 	 * the epic shape the ruling rests on — so what changes is only which question the claim asks.
 	 */
 	describe("purpose", () => {
-		const unlabelled = issue({labels: ["status:triaged", "type:epic"]});
+		const unlabelled = issue({ labels: ["status:triaged", "type:epic"] });
 
 		it("defaults to build, so an omitted purpose keeps every axis bound", () => {
 			expect(DEFAULT_CLAIM_PURPOSE).toBe("build");
@@ -297,7 +297,7 @@ describe("admissionOf", () => {
 				});
 			}
 			// And on a type the type axis admits, the audience fence is still the one that binds.
-			const bug = issue({labels: ["status:triaged", "type:bug"]});
+			const bug = issue({ labels: ["status:triaged", "type:bug"] });
 			expect(admissionOf(bug)._tag).toBe("AudienceNotAgent");
 		});
 
@@ -305,7 +305,7 @@ describe("admissionOf", () => {
 			it(`admits the same issue under ${purpose}, and still reports the audience it saw`, () => {
 				const out = admissionOf(unlabelled, purpose);
 				expect(out._tag).toBe("Admitted");
-				expect(out._tag === "Admitted" && out.audience).toEqual({_tag: "NotAgent", label: null});
+				expect(out._tag === "Admitted" && out.audience).toEqual({ _tag: "NotAgent", label: null });
 				expect(audienceAxisBinds(purpose)).toBe(false);
 			});
 		}
@@ -335,11 +335,11 @@ describe("admissionOf", () => {
 	 * else: no PR, no exemption, and no other type gets one.
 	 */
 	describe("repair of an open PR whose served issue is a decision", () => {
-		const decision = issue({labels: ["status:triaged", "type:decision", "ready-for:human"]});
+		const decision = issue({ labels: ["status:triaged", "type:decision", "ready-for:human"] });
 		const decisionRepair = repairClaimOf(4703, decision);
 
 		it("admits it under the default build purpose, with no override", () => {
-			expect(decisionRepair).toEqual({_tag: "DecisionRepair", pr: 4703});
+			expect(decisionRepair).toEqual({ _tag: "DecisionRepair", pr: 4703 });
 			const out = admissionOf(decision, DEFAULT_CLAIM_PURPOSE, decisionRepair);
 			expect(out._tag).toBe("Admitted");
 			expect(admissionRefusal("build claim", out)).toBeNull();
@@ -349,7 +349,7 @@ describe("admissionOf", () => {
 			const out = admissionOf(decision, DEFAULT_CLAIM_PURPOSE, decisionRepair);
 			const audience = audienceAxisOf(decision);
 			expect(out._tag === "Admitted" && out.audience).toEqual(audience);
-			expect(audience).toEqual({_tag: "NotAgent", label: "ready-for:human"});
+			expect(audience).toEqual({ _tag: "NotAgent", label: "ready-for:human" });
 			expect(purposeScopeLine("build claim", "build", audience, decisionRepair)).toBe(
 				"build claim: purpose: build — repairing open PR #4703, whose served issue is type:decision: the audience axis does not bind; this issue carries ready-for:human.",
 			);
@@ -370,16 +370,16 @@ describe("admissionOf", () => {
 		});
 
 		it("exempts the decision type only — an ordinary repair still reads the audience label", () => {
-			const human = issue({labels: ["status:triaged", "type:bug", "ready-for:human"]});
+			const human = issue({ labels: ["status:triaged", "type:bug", "ready-for:human"] });
 			const ordinary = repairClaimOf(4703, human);
-			expect(ordinary).toEqual({_tag: "OrdinaryRepair", pr: 4703});
+			expect(ordinary).toEqual({ _tag: "OrdinaryRepair", pr: 4703 });
 			expect(audienceAxisBinds("build", ordinary)).toBe(true);
 			expect(admissionOf(human, DEFAULT_CLAIM_PURPOSE, ordinary)._tag).toBe("AudienceNotAgent");
 		});
 
 		it("names the decision label once, so the test and the fence read the same string", () => {
 			expect(DECISION_TYPE_LABEL).toBe("type:decision");
-			expect(repairClaimOf(4703, issue({labels: [DECISION_TYPE_LABEL]}))._tag).toBe(
+			expect(repairClaimOf(4703, issue({ labels: [DECISION_TYPE_LABEL] }))._tag).toBe(
 				"DecisionRepair",
 			);
 		});
@@ -394,7 +394,7 @@ describe("admissionOf", () => {
 			labels: ["status:triaged", "type:decision", "ready-for:agent", "axis:pipeline-hardening"],
 			milestone: null,
 		});
-		const epic = issue({labels: ["status:triaged", "type:epic", "ready-for:agent"]});
+		const epic = issue({ labels: ["status:triaged", "type:epic", "ready-for:agent"] });
 		const ruling: Citation = {
 			_tag: "Cited",
 			issue: 1,
@@ -404,16 +404,16 @@ describe("admissionOf", () => {
 
 		it("reads every buildable type as Buildable, and an untyped issue too", () => {
 			for (const label of BUILDABLE_TYPE_LABELS) {
-				expect(typeAxisOf(issue({labels: [label]}))).toEqual({_tag: "Buildable"});
+				expect(typeAxisOf(issue({ labels: [label] }))).toEqual({ _tag: "Buildable" });
 			}
 			// Deliberately unchanged: the pool has always admitted an untyped issue, and moving where
 			// the rule is enforced must not quietly move what it says. Its own defect, its own ticket.
-			expect(typeAxisOf(issue({labels: ["status:triaged"]}))).toEqual({_tag: "Buildable"});
+			expect(typeAxisOf(issue({ labels: ["status:triaged"] }))).toEqual({ _tag: "Buildable" });
 		});
 
 		it("names the barred label rather than answering a boolean", () => {
-			expect(typeAxisOf(decision)).toEqual({_tag: "NotBuildable", label: DECISION_TYPE_LABEL});
-			expect(typeAxisOf(epic)).toEqual({_tag: "NotBuildable", label: EPIC_TYPE_LABEL});
+			expect(typeAxisOf(decision)).toEqual({ _tag: "NotBuildable", label: DECISION_TYPE_LABEL });
+			expect(typeAxisOf(epic)).toEqual({ _tag: "NotBuildable", label: EPIC_TYPE_LABEL });
 		});
 
 		/**
@@ -422,7 +422,7 @@ describe("admissionOf", () => {
 		 * composed to `Admitted` and a claim marker was written.
 		 */
 		it("refuses the standing-lane decision the audience axis admits", () => {
-			expect(audienceAxisOf(decision)).toEqual({_tag: "Agent"});
+			expect(audienceAxisOf(decision)).toEqual({ _tag: "Agent" });
 			const out = admissionOf(decision);
 			expect(out._tag).toBe("TypeNotBuildable");
 			const refusal = admissionRefusal("build claim", out);
@@ -448,7 +448,7 @@ describe("admissionOf", () => {
 		});
 
 		it("does not bind a repair — the PR in flight already answered the question", () => {
-			const served = issue({labels: ["status:triaged", "type:decision", "ready-for:human"]});
+			const served = issue({ labels: ["status:triaged", "type:decision", "ready-for:human"] });
 			const repair = repairClaimOf(4703, served);
 			expect(typeAxisBinds("build", repair)).toBe(false);
 			expect(admissionOf(served, DEFAULT_CLAIM_PURPOSE, repair)._tag).toBe("Admitted");
@@ -481,7 +481,7 @@ describe("admissionOf", () => {
 		/** The whole point of the fix: one predicate, so the two seams cannot disagree. */
 		it("is the same predicate the pool filters on", () => {
 			for (const candidate of [decision, epic]) {
-				const listed = {...candidate, title: "", body: "", assigned: false, isPullRequest: false};
+				const listed = { ...candidate, title: "", body: "", assigned: false, isPullRequest: false };
 				expect(isCandidate(listed, DEFAULT_STATUS_NAMES)).toBe(false);
 				expect(admissionOf(candidate)._tag).toBe("TypeNotBuildable");
 			}
@@ -494,7 +494,7 @@ describe("admissionOf", () => {
 		it("reads a comment URL that names this repository and this issue", () => {
 			expect(parseCitation(`  ${url}  `, "o/r", 5879)).toEqual({
 				_tag: "Read",
-				citation: {_tag: "Cited", issue: 5879, commentId: 5335398768, url},
+				citation: { _tag: "Cited", issue: 5879, commentId: 5335398768, url },
 			});
 		});
 
@@ -544,22 +544,22 @@ describe("the criteria axis — a contract to build against (#6554)", () => {
 	const MALFORMED = "## What this is\n\n### Acceptance Criteria:\n\n- [ ] the heading drifted\n";
 
 	it("contracts on a body carrying the conforming block", () => {
-		expect(criteriaAxisOf(issue())).toEqual({_tag: "Contracted"});
+		expect(criteriaAxisOf(issue())).toEqual({ _tag: "Contracted" });
 	});
 
 	it("keeps the wire read's two defects apart rather than flattening them to one", () => {
-		expect(criteriaAxisOf(issue({body: ABSENT}))).toMatchObject({
+		expect(criteriaAxisOf(issue({ body: ABSENT }))).toMatchObject({
 			_tag: "NoContract",
 			state: "absent",
 		});
-		expect(criteriaAxisOf(issue({body: MALFORMED}))).toMatchObject({
+		expect(criteriaAxisOf(issue({ body: MALFORMED }))).toMatchObject({
 			_tag: "NoContract",
 			state: "malformed",
 		});
 	});
 
 	it("refuses a fresh build claim over an absent block on 32, and names the enrich route", () => {
-		const out = admissionOf(issue({body: ABSENT}));
+		const out = admissionOf(issue({ body: ABSENT }));
 		expect(out._tag).toBe("NoCriteria");
 		const refusal = admissionRefusal("build claim", out);
 		expect(refusal?.code).toBe(NO_ACCEPTANCE_CRITERIA);
@@ -568,58 +568,58 @@ describe("the criteria axis — a contract to build against (#6554)", () => {
 	});
 
 	it("names the mechanical repair on a drifted heading — the two routes out are not one act", () => {
-		const refusal = admissionRefusal("build claim", admissionOf(issue({body: MALFORMED})));
+		const refusal = admissionRefusal("build claim", admissionOf(issue({ body: MALFORMED })));
 		expect(refusal?.code).toBe(NO_ACCEPTANCE_CRITERIA);
 		expect(refusal?.stderr.join("\n")).toContain("triage repair-criteria");
 		expect(refusal?.stderr.join("\n")).not.toContain("triage enrich");
 	});
 
 	it("reports the same word the pool has always reported, so an operator sees no rename", () => {
-		expect(exclusionReasonOf(admissionOf(issue({body: ABSENT})))).toBe(NO_CRITERIA_REASON);
+		expect(exclusionReasonOf(admissionOf(issue({ body: ABSENT })))).toBe(NO_CRITERIA_REASON);
 		expect(NO_CRITERIA_REASON).toBe("no-acceptance-criteria");
 	});
 
 	it("carries every other axis's verdict on the refusal, so none is lost behind it", () => {
-		expect(admissionOf(issue({body: ABSENT}))).toMatchObject({
+		expect(admissionOf(issue({ body: ABSENT }))).toMatchObject({
 			_tag: "NoCriteria",
-			audience: {_tag: "Agent"},
-			type: {_tag: "Buildable"},
+			audience: { _tag: "Agent" },
+			type: { _tag: "Buildable" },
 		});
 	});
 
 	it("ranks after the audience axis — a mislabelled issue is told about its label first", () => {
-		const out = admissionOf(issue({body: ABSENT, labels: ["ready-for:human"]}));
+		const out = admissionOf(issue({ body: ABSENT, labels: ["ready-for:human"] }));
 		expect(out._tag).toBe("AudienceNotAgent");
-		expect(out).toMatchObject({criteria: {_tag: "NoContract", state: "absent"}});
+		expect(out).toMatchObject({ criteria: { _tag: "NoContract", state: "absent" } });
 	});
 
 	it("does not bind a plan or gate claim — an epic's criteria arrive per child (#6025)", () => {
 		for (const purpose of ["plan", "gate"] as const) {
 			expect(criteriaAxisBinds(purpose)).toBe(false);
-			expect(admissionOf(issue({body: ABSENT}), purpose)._tag).toBe("Admitted");
+			expect(admissionOf(issue({ body: ABSENT }), purpose)._tag).toBe("Admitted");
 		}
 		expect(criteriaAxisBinds("build")).toBe(true);
 	});
 
 	it("does not bind a repair claim — a build lane cannot repair an issue body from its branch", () => {
-		const repair = {_tag: "OrdinaryRepair", pr: 4318} as const;
+		const repair = { _tag: "OrdinaryRepair", pr: 4318 } as const;
 		expect(criteriaAxisBinds("build", repair)).toBe(false);
-		expect(admissionOf(issue({body: ABSENT}), "build", repair)._tag).toBe("Admitted");
+		expect(admissionOf(issue({ body: ABSENT }), "build", repair)._tag).toBe("Admitted");
 	});
 
 	it("still carries the axis verdict on an admitted claim it did not bind", () => {
-		expect(admissionOf(issue({body: ABSENT}), "plan")).toMatchObject({
+		expect(admissionOf(issue({ body: ABSENT }), "plan")).toMatchObject({
 			_tag: "Admitted",
-			criteria: {_tag: "NoContract", state: "absent"},
+			criteria: { _tag: "NoContract", state: "absent" },
 		});
 	});
 });
 
 describe("scopeSubjectOf", () => {
-	const pull = (body: string) => ({isPullRequest: true, body});
+	const pull = (body: string) => ({ isPullRequest: true, body });
 
 	it("reads an issue as its own subject, whatever its body says", () => {
-		expect(scopeSubjectOf({isPullRequest: false, body: "Fixes #4312"})).toEqual({_tag: "Own"});
+		expect(scopeSubjectOf({ isPullRequest: false, body: "Fixes #4312" })).toEqual({ _tag: "Own" });
 	});
 
 	it("resolves a PR to the issue its closing keyword names", () => {

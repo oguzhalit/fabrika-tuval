@@ -44,18 +44,18 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10135
  * @ruling https://github.com/kamp-us/phoenix/issues/10123
  */
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type StatusNames, statusList} from "../config/board.ts";
-import {reasonHistogram} from "../evidence.ts";
-import {BOARD_SUBJECT, readBoard, refusalReason} from "../status/repo-board.ts";
-import {betsFirst} from "../table/bets.ts";
-import {type BetsRead, readBets} from "../table/bets-read.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {readDischargedGate} from "./discharge.ts";
-import {type CandidateIssue, listLabelled} from "./github.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type StatusNames, statusList } from "../config/board.ts";
+import { reasonHistogram } from "../evidence.ts";
+import { BOARD_SUBJECT, readBoard, refusalReason } from "../status/repo-board.ts";
+import { betsFirst } from "../table/bets.ts";
+import { type BetsRead, readBets } from "../table/bets-read.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { readDischargedGate } from "./discharge.ts";
+import { type CandidateIssue, listLabelled } from "./github.ts";
 import {
 	admissionOf,
 	BUILDABLE_TYPE_LABELS,
@@ -64,7 +64,7 @@ import {
 	NO_CRITERIA_REASON,
 	typeAxisOf,
 } from "./scope-admission.ts";
-import {resolveTargetRepo} from "./target.ts";
+import { resolveTargetRepo } from "./target.ts";
 
 const VERB = "build pick";
 
@@ -150,7 +150,7 @@ const rankWithinBucket = (a: PoolEntry, b: PoolEntry): number => {
 	return keyA === keyB ? a.number - b.number : keyA - keyB;
 };
 
-type TableBets = Exclude<BetsRead, {readonly _tag: "Unknown"}>;
+type TableBets = Exclude<BetsRead, { readonly _tag: "Unknown" }>;
 
 /** How many bets were graph-read and survived — a bet the pool left out stays out, and says so here. */
 const inPool = (bets: TableBets, pool: ReadonlyArray<PoolEntry>): number =>
@@ -163,7 +163,7 @@ const betsReport = (
 	bets: TableBets,
 	pool: ReadonlyArray<PoolEntry>,
 ):
-	| {readonly state: "none"}
+	| { readonly state: "none" }
 	| {
 			readonly state: "read";
 			readonly project: string;
@@ -172,7 +172,7 @@ const betsReport = (
 			readonly inPool: number;
 	  } =>
 	bets._tag === "NoTable"
-		? {state: "none"}
+		? { state: "none" }
 		: {
 				state: "read",
 				project: `${bets.source.owner}#${bets.source.number}`,
@@ -211,7 +211,7 @@ export const runPick = (
 				`${VERB}: cannot read ${BOARD_SUBJECT}: ${refusalReason(board)} — which labels this board runs on is UNKNOWN, never the shipped names.`,
 			);
 		}
-		const {statuses, standingLanes} = board.resolved.board;
+		const { statuses, standingLanes } = board.resolved.board;
 
 		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
 		if (resolved._tag === "Refused") return resolved.outcome;
@@ -224,7 +224,7 @@ export const runPick = (
 			);
 		}
 
-		const scanned: Record<Bucket, number> = {p0: 0, p1: 0, p2: 0};
+		const scanned: Record<Bucket, number> = { p0: 0, p1: 0, p2: 0 };
 		const admitted: PoolEntry[] = [];
 		const excluded: ExclusionEntry[] = [];
 		for (const bucket of BUCKETS) {
@@ -240,7 +240,7 @@ export const runPick = (
 			for (const issue of listed.value.filter((row) => isCandidate(row, statuses))) {
 				const reason = exclusionReasonOf(admissionOf(issue));
 				if (reason !== null) {
-					excluded.push({number: issue.number, home: homeOf(issue, standingLanes), reason});
+					excluded.push({ number: issue.number, home: homeOf(issue, standingLanes), reason });
 					continue;
 				}
 				entries.push({
@@ -270,7 +270,7 @@ export const runPick = (
 		for (const entry of ranked) {
 			if (pool.length === options.limit) break;
 			walked += 1;
-			const {gate, notes} = yield* readDischargedGate(
+			const { gate, notes } = yield* readDischargedGate(
 				VERB,
 				options.env,
 				resolved.repo,
@@ -281,14 +281,14 @@ export const runPick = (
 				unreadableEdges.push(
 					`${VERB}: cannot read the blocked_by edges of #${entry.number}: ${gate.reason} — excluded, because blockedness UNKNOWN is never "not blocked".`,
 				);
-				excluded.push({number: entry.number, home: entry.home, reason: "unreadable"});
+				excluded.push({ number: entry.number, home: entry.home, reason: "unreadable" });
 				continue;
 			}
 			if (gate._tag === "Blocked") {
 				blockedEdges.push(
 					`${VERB}: #${entry.number} is blocked by ${gate.open.map((blocker) => `#${blocker}`).join(", ")}.`,
 				);
-				excluded.push({number: entry.number, home: entry.home, reason: BLOCKED_REASON});
+				excluded.push({ number: entry.number, home: entry.home, reason: BLOCKED_REASON });
 				continue;
 			}
 			pool.push(entry);
@@ -300,7 +300,7 @@ export const runPick = (
 
 		return answer(
 			JSON.stringify({
-				pool: pool.map((entry) => ({...entry, bet: betSet.has(entry.number)})),
+				pool: pool.map((entry) => ({ ...entry, bet: betSet.has(entry.number) })),
 				excluded: reasonHistogram(excluded, (entry) => entry.reason),
 				unread,
 				scanned,

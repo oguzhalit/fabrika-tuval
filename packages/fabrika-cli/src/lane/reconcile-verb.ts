@@ -25,18 +25,18 @@
  * the lanes that shipped since. `--check` withholds the append, so it buys nothing for the next
  * sweep and costs the same reads twice.
  */
-import {Effect, FileSystem, Path, Result} from "effect";
-import {appendText, exists, readFile} from "../io/fs.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {lockedRefusal, withLedgerLock} from "./append-lock.ts";
-import type {ClosureReader} from "./closure.ts";
-import {APPEND_UNKNOWN, LANE_UNREADABLE} from "./codes.ts";
-import {deriveStatus, foldLog, type LogEntry, standingCauses} from "./fold.ts";
-import {CHORE_PREFIX, rawKeyIssue} from "./key.ts";
-import {compileText} from "./machine.ts";
-import {graftContext} from "./migrate.ts";
-import {correctionEntry, declaresClosureGuard, findMisroute} from "./reconcile.ts";
-import {DEFAULT_CHORES_ROOT, listLanes, loadLane} from "./store.ts";
+import { Effect, FileSystem, Path, Result } from "effect";
+import { appendText, exists, readFile } from "../io/fs.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { lockedRefusal, withLedgerLock } from "./append-lock.ts";
+import type { ClosureReader } from "./closure.ts";
+import { APPEND_UNKNOWN, LANE_UNREADABLE } from "./codes.ts";
+import { deriveStatus, foldLog, type LogEntry, standingCauses } from "./fold.ts";
+import { CHORE_PREFIX, rawKeyIssue } from "./key.ts";
+import { compileText } from "./machine.ts";
+import { graftContext } from "./migrate.ts";
+import { correctionEntry, declaresClosureGuard, findMisroute } from "./reconcile.ts";
+import { DEFAULT_CHORES_ROOT, listLanes, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane reconcile";
 
@@ -150,12 +150,12 @@ const reconcileLane = <R>(
 		const fs = yield* FileSystem.FileSystem;
 		const path = yield* Path.Path;
 		const key = keyOf(root, name);
-		const unreadable = (reason: string): LaneRow => ({key, root, verdict: "unreadable", reason});
+		const unreadable = (reason: string): LaneRow => ({ key, root, verdict: "unreadable", reason });
 		// Distinct from `unreadable` because only this one is caused by the sweep: a ledger that was
 		// already broken is a row a reader routes on, while an append this run tried and could not land
 		// leaves whether the lane needs correcting UNKNOWN, and that is what refuses.
-		const unappended = (reason: string): LaneRow => ({key, root, verdict: "unappended", reason});
-		const loaded = yield* loadLane({root, lane: name});
+		const unappended = (reason: string): LaneRow => ({ key, root, verdict: "unappended", reason });
+		const loaded = yield* loadLane({ root, lane: name });
 		// An entry with no workflow.json is not a lane, and reporting a scratch directory as one would
 		// put noise in front of every real row.
 		if (loaded._tag === "Absent") return null;
@@ -171,7 +171,7 @@ const reconcileLane = <R>(
 			return unreadable(`${loaded.logPath} does not replay: ${misroute.defects.join("; ")}`);
 		}
 		if (misroute._tag === "Settled") {
-			if (declaresClosureGuard(loaded.lane)) return {key, root, verdict: "current"};
+			if (declaresClosureGuard(loaded.lane)) return { key, root, verdict: "current" };
 			// The `Settled` answer is ambiguous here and only the template resolves it: this lane may
 			// have nothing to correct, or its machine may predate the guard entirely, which is every
 			// lane booted before the partial-merge guard shipped.
@@ -187,7 +187,7 @@ const reconcileLane = <R>(
 						verdict: "unmigrated",
 						reason: `${workflowPath} declares no merge-closure guard and the committed template does, so nothing here can judge this lane's merge — run \`fabrika lane migrate\`, then re-run this sweep`,
 					}
-				: {key, root, verdict: "current"};
+				: { key, root, verdict: "current" };
 		}
 
 		const corrects = {
@@ -208,7 +208,7 @@ const reconcileLane = <R>(
 		}
 		const read = yield* options.closures(issue, misroute.pr);
 		if (read._tag === "Unknown") {
-			return {key, root, verdict: "unknown", corrects, reason: read.reason};
+			return { key, root, verdict: "unknown", corrects, reason: read.reason };
 		}
 
 		const partial = read.closure._tag === "Partial";
@@ -216,19 +216,19 @@ const reconcileLane = <R>(
 		const from = foldedValue(loaded.lane, loaded.entries);
 		const to = foldedValue(loaded.lane, [...loaded.entries, entry]);
 		const row = partial
-			? {corrects, prs: read.closure.prs, from, to}
-			: {corrects, reason: read.closure.why, from, to};
+			? { corrects, prs: read.closure.prs, from, to }
+			: { corrects, reason: read.closure.why, from, to };
 		if (options.check) {
-			return {key, root, verdict: partial ? "misrouted" : "closes", ...row};
+			return { key, root, verdict: partial ? "misrouted" : "closes", ...row };
 		}
 
 		return yield* withLedgerLock(
-			{fs, path, dir: loaded.dir, verb: VERB},
+			{ fs, path, dir: loaded.dir, verb: VERB },
 			Effect.gen(function* () {
 				// Re-read under the lock and re-derive: between the judgement above and this append a
 				// concurrent writer may have moved the lane, and appending against the older read would
 				// correct a line that is no longer the one standing.
-				const fresh = yield* loadLane({root, lane: name});
+				const fresh = yield* loadLane({ root, lane: name });
 				if (fresh._tag !== "Loaded") {
 					return unappended(`${loaded.logPath} became unreadable before the append`);
 				}
@@ -245,7 +245,12 @@ const reconcileLane = <R>(
 				const wrote = yield* Effect.result(appendText(fresh.logPath, `${JSON.stringify(entry)}\n`));
 				return Result.isFailure(wrote)
 					? unappended(`the append to ${fresh.logPath} did not land: ${wrote.failure.reason}`)
-					: {key, root, verdict: partial ? ("corrected" as const) : ("confirmed" as const), ...row};
+					: {
+							key,
+							root,
+							verdict: partial ? ("corrected" as const) : ("confirmed" as const),
+							...row,
+						};
 			}),
 			{
 				// This sweep only reaches lanes it just loaded, so an absent one here means the lane was
@@ -268,8 +273,8 @@ export const runReconcile = <R = never>(
 ): Effect.Effect<VerbOutcome, never, R | FileSystem.FileSystem | Path.Path> =>
 	Effect.gen(function* () {
 		const lanes: LaneRow[] = [];
-		const scanned: Array<{root: string; present: boolean; lanes: number}> = [];
-		for (const {root, templatePaths} of options.roots) {
+		const scanned: Array<{ root: string; present: boolean; lanes: number }> = [];
+		for (const { root, templatePaths } of options.roots) {
 			const templateTexts: string[] = [];
 			for (const templatePath of templatePaths) {
 				const template = yield* Effect.result(readFile(templatePath));
@@ -289,7 +294,7 @@ export const runReconcile = <R = never>(
 				);
 			}
 			if (!probe.success) {
-				scanned.push({root, present: false, lanes: 0});
+				scanned.push({ root, present: false, lanes: 0 });
 				continue;
 			}
 			const names = yield* Effect.result(listLanes(root));
@@ -306,7 +311,7 @@ export const runReconcile = <R = never>(
 				found += 1;
 				lanes.push(row);
 			}
-			scanned.push({root, present: true, lanes: found});
+			scanned.push({ root, present: true, lanes: found });
 		}
 
 		const summary = Object.fromEntries(
@@ -332,5 +337,8 @@ export const runReconcile = <R = never>(
 				stderr,
 			);
 		}
-		return answer(JSON.stringify({check: options.check, scanned, summary, lanes}, null, 2), stderr);
+		return answer(
+			JSON.stringify({ check: options.check, scanned, summary, lanes }, null, 2),
+			stderr,
+		);
 	});

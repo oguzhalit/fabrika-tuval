@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import * as lane from "../lane/codes.ts";
 import * as recipe from "./codes.ts";
-import {laneExit} from "./relay.ts";
+import { laneExit } from "./relay.ts";
 
 describe("laneExit", () => {
 	it("keeps the shared seats on their own numbers", () => {

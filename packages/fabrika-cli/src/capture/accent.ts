@@ -33,21 +33,21 @@ export interface AccentRequest {
  * accent's page under the requested name.
  */
 export type AccentOperandRead =
-	| {readonly _tag: "Default"}
-	| {readonly _tag: "Requested"; readonly request: AccentRequest}
-	| {readonly _tag: "Undeclared"; readonly value: string}
-	| {readonly _tag: "Unknown"; readonly value: string; readonly declared: readonly string[]};
+	| { readonly _tag: "Default" }
+	| { readonly _tag: "Requested"; readonly request: AccentRequest }
+	| { readonly _tag: "Undeclared"; readonly value: string }
+	| { readonly _tag: "Unknown"; readonly value: string; readonly declared: readonly string[] };
 
 export const parseAccentOperand = (
 	operand: string | null,
 	declared: AccentDeclaration | null,
 ): AccentOperandRead => {
-	if (operand === null) return {_tag: "Default"};
-	if (declared === null) return {_tag: "Undeclared", value: operand};
+	if (operand === null) return { _tag: "Default" };
+	if (declared === null) return { _tag: "Undeclared", value: operand };
 	if (!declared.values.includes(operand)) {
-		return {_tag: "Unknown", value: operand, declared: declared.values};
+		return { _tag: "Unknown", value: operand, declared: declared.values };
 	}
-	return {_tag: "Requested", request: {rootAttribute: declared.rootAttribute, value: operand}};
+	return { _tag: "Requested", request: { rootAttribute: declared.rootAttribute, value: operand } };
 };
 
 /**
@@ -56,9 +56,9 @@ export const parseAccentOperand = (
  * `Unreadable` stays apart from `Mismatch`: both refuse, but only one is a fact about the page.
  */
 export type AccentProof =
-	| {readonly _tag: "Proven"; readonly accent: string}
-	| {readonly _tag: "Mismatch"; readonly rendered: string}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Proven"; readonly accent: string }
+	| { readonly _tag: "Mismatch"; readonly rendered: string }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 export const readAccentProof = (requested: AccentRequest, attributeValue: unknown): AccentProof => {
 	if (typeof attributeValue !== "string") {
@@ -68,6 +68,6 @@ export const readAccentProof = (requested: AccentRequest, attributeValue: unknow
 		};
 	}
 	return attributeValue === requested.value
-		? {_tag: "Proven", accent: requested.value}
-		: {_tag: "Mismatch", rendered: attributeValue};
+		? { _tag: "Proven", accent: requested.value }
+		: { _tag: "Mismatch", rendered: attributeValue };
 };

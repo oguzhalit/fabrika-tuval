@@ -6,13 +6,13 @@
  * A poll that cannot read classifies `pending`. A miss can only keep polling; it can never mint
  * `landed` or `ejected`, which is the fail-safe direction.
  */
-import {Clock, Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {branchSubjects, isQueueGoverned, pullTimeline} from "./github.ts";
-import {armedAtOf, landedOnBase, queueStateOf} from "./queue.ts";
-import {badNumber, resolvePull, resolveTargetRepo} from "./target.ts";
+import { Clock, Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { INCOMPLETE_SCAN, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { branchSubjects, isQueueGoverned, pullTimeline } from "./github.ts";
+import { armedAtOf, landedOnBase, queueStateOf } from "./queue.ts";
+import { badNumber, resolvePull, resolveTargetRepo } from "./target.ts";
 
 const VERB = "ship reconcile";
 
@@ -51,17 +51,17 @@ export interface ReconcileOptions {
 }
 
 type Poll =
-	| {readonly _tag: "Terminal"; readonly outcome: Reconciled}
-	| {readonly _tag: "Watched"; readonly queued: boolean; readonly armedAt: number | null}
-	| {readonly _tag: "Unreadable"; readonly reason: string}
+	| { readonly _tag: "Terminal"; readonly outcome: Reconciled }
+	| { readonly _tag: "Watched"; readonly queued: boolean; readonly armedAt: number | null }
+	| { readonly _tag: "Unreadable"; readonly reason: string }
 	/** The timeline read never reached a terminal page — distinct from unreadable, and not pollable. */
-	| {readonly _tag: "Truncated"};
+	| { readonly _tag: "Truncated" };
 
 export const runReconcile = (
 	options: ReconcileOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -84,22 +84,22 @@ export const runReconcile = (
 		const poll = Effect.gen(function* () {
 			const pull = yield* resolvePull(VERB, repo, pr);
 			if (pull._tag === "Refused") {
-				return {_tag: "Unreadable", reason: `the pull request`} satisfies Poll;
+				return { _tag: "Unreadable", reason: `the pull request` } satisfies Poll;
 			}
-			if (pull.pull.merged) return {_tag: "Terminal", outcome: "landed"} satisfies Poll;
+			if (pull.pull.merged) return { _tag: "Terminal", outcome: "landed" } satisfies Poll;
 
 			const subjects = yield* branchSubjects(repo, base);
 			if (subjects._tag === "Ok" && landedOnBase(subjects.value, pr)) {
-				return {_tag: "Terminal", outcome: "landed"} satisfies Poll;
+				return { _tag: "Terminal", outcome: "landed" } satisfies Poll;
 			}
 
 			const events = yield* pullTimeline(repo, pr);
 			if (events._tag === "Failure") {
-				return {_tag: "Unreadable", reason: events.reason} satisfies Poll;
+				return { _tag: "Unreadable", reason: events.reason } satisfies Poll;
 			}
-			if (!events.value.exhausted) return {_tag: "Truncated"} satisfies Poll;
+			if (!events.value.exhausted) return { _tag: "Truncated" } satisfies Poll;
 			const state = queueStateOf(events.value.events);
-			if (state === "ejected") return {_tag: "Terminal", outcome: "ejected"} satisfies Poll;
+			if (state === "ejected") return { _tag: "Terminal", outcome: "ejected" } satisfies Poll;
 			return {
 				_tag: "Watched",
 				queued: state === "queued",
@@ -140,7 +140,7 @@ export const runReconcile = (
 		const now = yield* Clock.currentTimeMillis;
 		return emit(
 			json,
-			dwellOutcome({everQueued, queueGoverned, armedAt, now}),
+			dwellOutcome({ everQueued, queueGoverned, armedAt, now }),
 			options.polls,
 			horizon,
 		);
@@ -148,5 +148,5 @@ export const runReconcile = (
 
 const emit = (json: boolean, outcome: Reconciled, polls: number, horizon: number): VerbOutcome =>
 	json
-		? answer(JSON.stringify({outcome, polls, horizonSeconds: horizon}))
+		? answer(JSON.stringify({ outcome, polls, horizonSeconds: horizon }))
 		: answer(`reconcile\t${outcome}\t${polls}\t${horizon}`);

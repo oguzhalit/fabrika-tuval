@@ -15,7 +15,7 @@
  * its credential, erasing the transport requirement with `onTransport` rather than publishing
  * `HttpClient` up through its callers — the shape every transport seam in this package takes.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import {
 	ambientToken,
 	authed,
@@ -30,10 +30,10 @@ import {
 	restRead,
 	type ServedStatus,
 } from "../io/gh-api.ts";
-import {type Attempt, fail, ok, type Shell} from "../io/git.ts";
-import {type Existence, unknown} from "../io/issues.ts";
-import {isRecord} from "../io/json.ts";
-import {isBaseConflict, readDefiniteMergeability} from "../ship/mergeability.ts";
+import { type Attempt, fail, ok, type Shell } from "../io/git.ts";
+import { type Existence, unknown } from "../io/issues.ts";
+import { isRecord } from "../io/json.ts";
+import { isBaseConflict, readDefiniteMergeability } from "../ship/mergeability.ts";
 
 const str = (value: unknown): string => (typeof value === "string" ? value : "");
 
@@ -72,16 +72,16 @@ export const listRunJobs = (repo: string, run: number): Shell<Attempt<JobSet>> =
 					conclusion: typeof value.conclusion === "string" ? value.conclusion : null,
 				});
 			}
-			return ok({declared: enveloped.value.declared, jobs});
+			return ok({ declared: enveloped.value.declared, jobs });
 		}),
 	);
 
 /** A run's log availability: the platform serves the bytes, has purged them, or could not be asked. */
 export type LogRead =
-	| {readonly _tag: "Text"; readonly text: string}
+	| { readonly _tag: "Text"; readonly text: string }
 	/** Proven: the platform no longer holds these logs. Permanent, so no retry can change it. */
-	| {readonly _tag: "Expired"}
-	| {readonly _tag: "Failed"; readonly reason: string};
+	| { readonly _tag: "Expired" }
+	| { readonly _tag: "Failed"; readonly reason: string };
 
 /**
  * One job's log text.
@@ -106,19 +106,19 @@ export type LogRead =
 export const fetchJobLog = (repo: string, job: number): Shell<LogRead> =>
 	Effect.gen(function* () {
 		const token = yield* ambientToken;
-		if (token._tag === "Failure") return {_tag: "Failed" as const, reason: token.reason};
+		if (token._tag === "Failure") return { _tag: "Failed" as const, reason: token.reason };
 		const outcome = yield* onTransport(
 			restRead(token.value, "GET", `repos/${repo}/actions/jobs/${job}/logs`),
 		);
 		if (outcome._tag === "Unreachable") {
-			return {_tag: "Failed" as const, reason: outcome.reason};
+			return { _tag: "Failed" as const, reason: outcome.reason };
 		}
 		if (outcome.status >= 200 && outcome.status < 300) {
-			return {_tag: "Text" as const, text: outcome.text};
+			return { _tag: "Text" as const, text: outcome.text };
 		}
 		return outcome.status === 410 || outcome.status === 404
-			? {_tag: "Expired" as const}
-			: {_tag: "Failed" as const, reason: refusalText(outcome)};
+			? { _tag: "Expired" as const }
+			: { _tag: "Failed" as const, reason: refusalText(outcome) };
 	});
 
 export interface RunRecord {
@@ -187,7 +187,7 @@ export const rerunRun = (repo: string, run: number): Shell<Attempt<void>> =>
  * A read's answer beside the status and `message` GitHub served — which is what a permission denial
  * and a plan gate are told apart by, now that no error string carries either.
  */
-export type Answered<A> = {readonly read: A} & ServedStatus;
+export type Answered<A> = { readonly read: A } & ServedStatus;
 
 /**
  * What a base branch's protection endpoint said — and the one thing its 404 does **not** say.
@@ -203,7 +203,7 @@ export const branchProtectionContexts = (
 	Effect.gen(function* () {
 		const token = yield* ambientToken;
 		if (token._tag === "Failure") {
-			return {read: unknown<ReadonlyArray<string>>(token.reason), status: null};
+			return { read: unknown<ReadonlyArray<string>>(token.reason), status: null };
 		}
 		const outcome = yield* onTransport(
 			restRead(token.value, "GET", `repos/${repo}/branches/${branch}/protection`),
@@ -216,8 +216,8 @@ export const branchProtectionContexts = (
 			return ok(required.contexts.filter((c): c is string => typeof c === "string"));
 		});
 		return outcome._tag === "Unreachable"
-			? {read, status: null}
-			: {read, status: outcome.status, message: githubMessage(outcome)};
+			? { read, status: null }
+			: { read, status: outcome.status, message: githubMessage(outcome) };
 	});
 
 export interface RulesetRead {
@@ -242,7 +242,7 @@ export interface RulesetRead {
 export const rulesetContexts = (repo: string, branch: string): Shell<PagedAttempt<RulesetRead>> =>
 	Effect.gen(function* () {
 		const token = yield* ambientToken;
-		if (token._tag === "Failure") return {...token, status: null};
+		if (token._tag === "Failure") return { ...token, status: null };
 		const read = yield* onTransport(
 			pagedWithLinkProof(token.value, `repos/${repo}/rules/branches/${branch}`),
 		);
@@ -277,7 +277,7 @@ export interface OpenPullRow {
  */
 export const listOpenPulls = (
 	repo: string,
-): Shell<Attempt<{readonly rows: ReadonlyArray<OpenPullRow>; readonly exhausted: boolean}>> =>
+): Shell<Attempt<{ readonly rows: ReadonlyArray<OpenPullRow>; readonly exhausted: boolean }>> =>
 	authed((token) =>
 		Effect.map(pagedWithLinkProof(token, `repos/${repo}/pulls?state=open`), (read) => {
 			if (read._tag === "Failure") return read;
@@ -292,7 +292,7 @@ export const listOpenPulls = (
 					headSha: isRecord(head) ? str(head.sha) : "",
 				});
 			}
-			return ok({rows, exhausted: read.value.exhausted});
+			return ok({ rows, exhausted: read.value.exhausted });
 		}),
 	);
 
@@ -319,7 +319,7 @@ export const readRateLimit = (): Shell<Attempt<RateLimit>> =>
 				return fail("GitHub answered 200 but the rate-limit record declares no core remaining");
 			}
 			const reset = typeof core.reset === "number" ? new Date(core.reset * 1000).toISOString() : "";
-			return ok({remaining: core.remaining, resetsAt: reset});
+			return ok({ remaining: core.remaining, resetsAt: reset });
 		}),
 	);
 
@@ -348,12 +348,12 @@ export const commitPushedAt = (repo: string, sha: string): Shell<Attempt<string>
  */
 export type ConflictRead =
 	/** Proven: `mergeable_state` is `dirty`, so the merge of this head into its base conflicts. */
-	| {readonly _tag: "Conflicted"}
+	| { readonly _tag: "Conflicted" }
 	/** A definite read that is not a base conflict — `clean`, `blocked` and `behind` all land here. */
-	| {readonly _tag: "Clear"}
+	| { readonly _tag: "Clear" }
 	/** The lazy job had not landed inside the window. How many seconds it was given. */
-	| {readonly _tag: "Indefinite"; readonly seconds: number}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Indefinite"; readonly seconds: number }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /**
  * The base-conflict fact `diagnose`'s conflict arm runs on.
@@ -375,7 +375,7 @@ export const readBaseConflict = (
 	windowSeconds: number,
 ): Shell<ConflictRead> =>
 	Effect.map(readDefiniteMergeability(repo, pr, windowSeconds), (read): ConflictRead => {
-		if (read._tag === "Unreadable") return {_tag: "Unreadable", reason: read.reason};
-		if (read._tag === "Indefinite") return {_tag: "Indefinite", seconds: read.seconds};
-		return isBaseConflict(read.value) ? {_tag: "Conflicted"} : {_tag: "Clear"};
+		if (read._tag === "Unreadable") return { _tag: "Unreadable", reason: read.reason };
+		if (read._tag === "Indefinite") return { _tag: "Indefinite", seconds: read.seconds };
+		return isBaseConflict(read.value) ? { _tag: "Conflicted" } : { _tag: "Clear" };
 	});

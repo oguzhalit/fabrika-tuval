@@ -7,12 +7,12 @@
  * See `guard path-filter-guard check --help` for results and exit codes.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {exists, type ReadFailed, readFile} from "../io/fs.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {type Annotation, atFile} from "./annotate.ts";
-import {CI_E2E_SOURCE, DEPLOY_SOURCE, judge, renderReport} from "./path-filter.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { exists, type ReadFailed, readFile } from "../io/fs.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { type Annotation, atFile } from "./annotate.ts";
+import { CI_E2E_SOURCE, DEPLOY_SOURCE, judge, renderReport } from "./path-filter.ts";
 import {
 	annotationsOrNone,
 	clean,
@@ -71,7 +71,7 @@ const judgeTree = (
 				`${VERB}: ${absent.join(" and ")} ${absent.length === 1 ? "does" : "do"} not exist under ${root} — the guard compared no filter lists at all, fail-closed. Is the repo root correct?`,
 			);
 		}
-		const verdict = judge({ciText, deployText});
+		const verdict = judge({ ciText, deployText });
 		const report = renderReport(verdict);
 		if (verdict.pass) return clean(report, verdict.count);
 		if (verdict.reason === "zero-scope") return zeroScope(report);

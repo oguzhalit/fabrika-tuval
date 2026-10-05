@@ -4,9 +4,9 @@
  * the exit seats and the report lines a reader acts on are proven through the board read in
  * `./pitch-verb.unit.test.ts`.
  */
-import {describe, expect, it} from "vitest";
-import {SHIPPED_APPETITE_SIZES} from "../config/keys/appetite-sizes.ts";
-import {scanRulings} from "../decision/ruling.ts";
+import { describe, expect, it } from "vitest";
+import { SHIPPED_APPETITE_SIZES } from "../config/keys/appetite-sizes.ts";
+import { scanRulings } from "../decision/ruling.ts";
 import {
 	emit as emitRuling,
 	markedIssue,
@@ -14,8 +14,8 @@ import {
 	rulingUrl,
 	scopeDigest,
 } from "../wire/decision-ruling.ts";
-import {markerTime} from "../wire/grill-marker.ts";
-import {type LabelUniverse, PRESENT} from "./label-universe.ts";
+import { markerTime } from "../wire/grill-marker.ts";
+import { type LabelUniverse, PRESENT } from "./label-universe.ts";
 import {
 	type Appetite,
 	type BetRow,
@@ -66,8 +66,8 @@ const APPROVED = approval("pitch-approved: appetite 2 cycles · 2026-08-18T00:00
 const SIZED_PITCH = GOOD_PITCH.replace("2 cycles", "M");
 const SIZE_APPROVED = approval("pitch-approved: appetite M · 2026-09-26T00:00:00Z");
 
-const cycles = (n: number): Appetite => ({_tag: "cycles", cycles: n});
-const size = (letter: "S" | "M" | "L"): Appetite => ({_tag: "size", size: letter});
+const cycles = (n: number): Appetite => ({ _tag: "cycles", cycles: n });
+const size = (letter: "S" | "M" | "L"): Appetite => ({ _tag: "size", size: letter });
 const SIZES = SHIPPED_APPETITE_SIZES;
 
 const candidate = (over: Partial<Candidate> = {}): Candidate => ({
@@ -82,13 +82,13 @@ const candidate = (over: Partial<Candidate> = {}): Candidate => ({
 	...over,
 });
 
-const BACKLOG: Scope = {_tag: "backlog"};
+const BACKLOG: Scope = { _tag: "backlog" };
 const issueScope = (number: number, universe: LabelUniverse = PRESENT): Scope => ({
 	_tag: "issue",
 	number,
 	universe,
 });
-const ABSENT: LabelUniverse = {_tag: "absent", missing: [...SCOPE_LABELS]};
+const ABSENT: LabelUniverse = { _tag: "absent", missing: [...SCOPE_LABELS] };
 
 describe("the frozen scope literals", () => {
 	it("names EXACTLY the two lane-entering types — widening it is a founder call", () => {
@@ -106,24 +106,24 @@ describe("the frozen scope literals", () => {
 
 describe("isLaneEntering", () => {
 	it("admits a triaged epic, parent or no parent — an epic is always a bet of its own", () => {
-		expect(isLaneEntering(candidate({labels: ["status:triaged", "type:epic"]}))).toBe(true);
+		expect(isLaneEntering(candidate({ labels: ["status:triaged", "type:epic"] }))).toBe(true);
 		expect(
-			isLaneEntering(candidate({labels: ["status:triaged", "type:epic"], hasParent: true})),
+			isLaneEntering(candidate({ labels: ["status:triaged", "type:epic"], hasParent: true })),
 		).toBe(true);
 	});
 
 	it("admits a parentless triaged feature and excludes the same feature under a parent", () => {
 		expect(isLaneEntering(candidate())).toBe(true);
-		expect(isLaneEntering(candidate({hasParent: true}))).toBe(false);
+		expect(isLaneEntering(candidate({ hasParent: true }))).toBe(false);
 	});
 
 	it("excludes an un-triaged issue — the requirement binds when triage makes it pickable", () => {
-		expect(isLaneEntering(candidate({labels: ["type:feature"]}))).toBe(false);
+		expect(isLaneEntering(candidate({ labels: ["type:feature"] }))).toBe(false);
 	});
 
 	it("excludes maintenance and questions — they are not bets", () => {
 		for (const type of ["type:bug", "type:chore", "type:decision", "type:investigation"]) {
-			expect(isLaneEntering(candidate({labels: ["status:triaged", type]}))).toBe(false);
+			expect(isLaneEntering(candidate({ labels: ["status:triaged", type] }))).toBe(false);
 		}
 	});
 });
@@ -173,13 +173,13 @@ describe("parseAppetiteCycles", () => {
 
 describe("readPitch", () => {
 	it("reads a complete pitch and carries its declared appetite", () => {
-		expect(readPitch(GOOD_PITCH)).toEqual({_tag: "present", appetite: cycles(2), success: null});
+		expect(readPitch(GOOD_PITCH)).toEqual({ _tag: "present", appetite: cycles(2), success: null });
 	});
 
 	it("reports absent for a body with no section, and names every missing field", () => {
-		expect(readPitch("no section here")).toEqual({_tag: "absent"});
+		expect(readPitch("no section here")).toEqual({ _tag: "absent" });
 		const read = readPitch("## Pitch\n\n**Problem:** a thing");
-		expect(read).toMatchObject({_tag: "malformed"});
+		expect(read).toMatchObject({ _tag: "malformed" });
 		if (read._tag !== "malformed") throw new Error("expected malformed");
 		expect([...read.missing]).toEqual(["Arc", "Appetite", "Rabbit-holes", "No-gos"]);
 	});
@@ -190,14 +190,14 @@ describe("readPitch", () => {
 				.map((line) => line.replace(/^\*\*/, "- **"))
 				.join("\n"),
 		);
-		expect(read).toMatchObject({_tag: "malformed"});
+		expect(read).toMatchObject({ _tag: "malformed" });
 		if (read._tag !== "malformed") throw new Error("expected malformed");
 		expect([...read.missing]).toEqual([...PITCH_FIELDS]);
 	});
 
 	it("reports an unparseable Appetite as malformed rather than as a filled field", () => {
 		const read = readPitch(GOOD_PITCH.replace("2 cycles", "about a month"));
-		expect(read).toMatchObject({_tag: "malformed"});
+		expect(read).toMatchObject({ _tag: "malformed" });
 		if (read._tag !== "malformed") throw new Error("expected malformed");
 		expect(read.missing).toContain("Appetite (not a size S / M / L, nor a whole number of cycles)");
 	});
@@ -217,12 +217,12 @@ describe("isAgentStamped", () => {
 
 describe("resolveApproval", () => {
 	it("reports none when no comment carries the marker at all", () => {
-		expect(resolveApproval([approval("looks good to me")], cycles(2))).toEqual({_tag: "none"});
+		expect(resolveApproval([approval("looks good to me")], cycles(2))).toEqual({ _tag: "none" });
 	});
 
 	it("refuses an agent-stamped marker — a stamped comment never approves", () => {
 		const stamped = approval("pitch-approved: appetite 2 cycles\n\nFiled by an agent.");
-		expect(resolveApproval([stamped], cycles(2))).toEqual({_tag: "agent-authored"});
+		expect(resolveApproval([stamped], cycles(2))).toEqual({ _tag: "agent-authored" });
 	});
 
 	it("refuses a marker naming no appetite — approval must bind the number it approved", () => {
@@ -253,21 +253,21 @@ describe("resolveApproval", () => {
 
 describe("disposition", () => {
 	it("names the nearest miss for each unpitched shape", () => {
-		expect(disposition(candidate({body: "nothing"}))).toMatchObject({
+		expect(disposition(candidate({ body: "nothing" }))).toMatchObject({
 			detail: "has no `## Pitch` section",
 		});
-		expect(disposition(candidate({comments: []}))).toMatchObject({
+		expect(disposition(candidate({ comments: [] }))).toMatchObject({
 			detail: expect.stringContaining("awaiting the founder"),
 		});
 		expect(
-			disposition(candidate({comments: [approval("pitch-approved: appetite 6 cycles")]})),
-		).toMatchObject({detail: expect.stringContaining("6 cycles but the body declares 2")});
+			disposition(candidate({ comments: [approval("pitch-approved: appetite 6 cycles")] })),
+		).toMatchObject({ detail: expect.stringContaining("6 cycles but the body declares 2") });
 	});
 });
 
 describe("judge", () => {
 	it("passes a fully pitched backlog and counts what it scanned", () => {
-		expect(judge([candidate(), candidate({number: 4313})], BACKLOG)).toEqual({
+		expect(judge([candidate(), candidate({ number: 4313 })], BACKLOG)).toEqual({
 			pass: true,
 			scope: BACKLOG,
 			scanned: 2,
@@ -288,12 +288,12 @@ describe("judge", () => {
 		const verdict = judge(
 			[
 				candidate(),
-				candidate({number: 4313, comments: []}),
-				candidate({number: 4314, labels: ["status:triaged", "type:chore"]}),
+				candidate({ number: 4313, comments: [] }),
+				candidate({ number: 4314, labels: ["status:triaged", "type:chore"] }),
 			],
 			BACKLOG,
 		);
-		expect(verdict).toMatchObject({pass: false, reason: "unpitched", scanned: 2, pitched: 1});
+		expect(verdict).toMatchObject({ pass: false, reason: "unpitched", scanned: 2, pitched: 1 });
 		if (verdict.pass || verdict.reason !== "unpitched") throw new Error("expected unpitched");
 		expect(verdict.unpitched.map((one) => one.number)).toEqual([4313]);
 	});
@@ -302,7 +302,7 @@ describe("judge", () => {
 describe("toGuardVerdict", () => {
 	it("counts an issue-scoped pass as a scan of one, never of zero", () => {
 		const verdict = toGuardVerdict(judge([], issueScope(9)), SIZES);
-		expect(verdict).toMatchObject({_tag: "Clean", scanned: 1});
+		expect(verdict).toMatchObject({ _tag: "Clean", scanned: 1 });
 	});
 });
 
@@ -326,7 +326,7 @@ describe("appetite as a size — S / M / L, with N cycles kept as the legacy rea
 	});
 
 	it("still passes a legacy `2 cycles` pitch against its `appetite 2 cycles` approval", () => {
-		expect(disposition(candidate())).toEqual({_tag: "pitched", appetite: cycles(2)});
+		expect(disposition(candidate())).toEqual({ _tag: "pitched", appetite: cycles(2) });
 	});
 
 	it("refuses a size approval that disagrees with the body's size, asking for re-approval", () => {
@@ -346,10 +346,10 @@ describe("appetite as a size — S / M / L, with N cycles kept as the legacy rea
 	});
 
 	it("refuses a cycles approval over a size body, and a size approval over a cycles body", () => {
-		expect(disposition(candidate({body: SIZED_PITCH, comments: [APPROVED]}))).toMatchObject({
+		expect(disposition(candidate({ body: SIZED_PITCH, comments: [APPROVED] }))).toMatchObject({
 			detail: expect.stringContaining("2 cycles but the body declares M"),
 		});
-		expect(disposition(candidate({comments: [SIZE_APPROVED]}))).toMatchObject({
+		expect(disposition(candidate({ comments: [SIZE_APPROVED] }))).toMatchObject({
 			detail: expect.stringContaining("appetite M but the body declares 2 cycles"),
 		});
 	});
@@ -357,7 +357,7 @@ describe("appetite as a size — S / M / L, with N cycles kept as the legacy rea
 	it("reads a lower-case size in the approval as naming no appetite", () => {
 		expect(
 			resolveApproval([approval("pitch-approved: appetite m · 2026-09-26")], size("M")),
-		).toEqual({_tag: "malformed-marker"});
+		).toEqual({ _tag: "malformed-marker" });
 	});
 });
 
@@ -372,18 +372,18 @@ describe("the optional Success line", () => {
 	});
 
 	it("leaves a pitch without it well-formed", () => {
-		expect(readPitch(SIZED_PITCH)).toMatchObject({_tag: "present", success: null});
+		expect(readPitch(SIZED_PITCH)).toMatchObject({ _tag: "present", success: null });
 	});
 });
 
 describe("the bet arm — a `bet` on the table approves the pitch", () => {
 	const sized = (over: Partial<Candidate> = {}): Candidate =>
-		candidate({body: SIZED_PITCH, comments: [], ...over});
+		candidate({ body: SIZED_PITCH, comments: [], ...over });
 	const row = (over: Partial<BetRow> = {}): BetRow => ({
 		head: 4312,
 		covers: [4312],
 		size: "M",
-		headAppetite: {_tag: "stated", appetite: size("M")},
+		headAppetite: { _tag: "stated", appetite: size("M") },
 		setter: "founder",
 		authorized: true,
 		...over,
@@ -395,8 +395,8 @@ describe("the bet arm — a `bet` on the table approves the pitch", () => {
 	});
 
 	it("counts a `bet` an agent set under a write+ token — the setter's ACL is the whole bar", () => {
-		const agent = table(row({setter: "agent-under-founder-token"}));
-		expect(resolveBetApproval(4312, agent, size("M"))).toMatchObject({_tag: "approved"});
+		const agent = table(row({ setter: "agent-under-founder-token" }));
+		expect(resolveBetApproval(4312, agent, size("M"))).toMatchObject({ _tag: "approved" });
 	});
 
 	it("approves the head and every member of a group row, whatever a member's own size", () => {
@@ -405,17 +405,17 @@ describe("the bet arm — a `bet` on the table approves the pitch", () => {
 				head: 50,
 				covers: [50, 51, 52],
 				size: "L",
-				headAppetite: {_tag: "stated", appetite: size("L")},
+				headAppetite: { _tag: "stated", appetite: size("L") },
 			}),
 		);
-		expect(resolveBetApproval(50, group, size("L"))).toMatchObject({_tag: "approved"});
-		expect(resolveBetApproval(51, group, size("S"))).toMatchObject({_tag: "approved"});
-		expect(resolveBetApproval(52, group, cycles(2))).toMatchObject({_tag: "approved"});
+		expect(resolveBetApproval(50, group, size("L"))).toMatchObject({ _tag: "approved" });
+		expect(resolveBetApproval(51, group, size("S"))).toMatchObject({ _tag: "approved" });
+		expect(resolveBetApproval(52, group, cycles(2))).toMatchObject({ _tag: "approved" });
 		const head = sized({
 			number: 50,
 			body: SIZED_PITCH.replace("**Appetite:** M", "**Appetite:** L"),
 		});
-		expect(judge([head, sized({number: 51})], BACKLOG, group)).toMatchObject({
+		expect(judge([head, sized({ number: 51 })], BACKLOG, group)).toMatchObject({
 			pass: true,
 			pitched: 2,
 		});
@@ -427,10 +427,10 @@ describe("the bet arm — a `bet` on the table approves the pitch", () => {
 				head: 50,
 				covers: [50, 51],
 				size: "L",
-				headAppetite: {_tag: "stated", appetite: size("L")},
+				headAppetite: { _tag: "stated", appetite: size("L") },
 			}),
 		);
-		expect(disposition(sized({number: 51}), group)).toEqual({
+		expect(disposition(sized({ number: 51 }), group)).toEqual({
 			_tag: "pitched",
 			appetite: size("M"),
 		});
@@ -438,19 +438,19 @@ describe("the bet arm — a `bet` on the table approves the pitch", () => {
 
 	it("approves no member when the group row's Size is not the size its head's pitch declares", () => {
 		const cases: ReadonlyArray<readonly [BetRow["headAppetite"], string]> = [
-			[{_tag: "stated", appetite: size("S")}, "it is sized L but its head #50 declares S"],
-			[{_tag: "stated", appetite: cycles(2)}, "its head #50 states a legacy `2 cycles` appetite"],
-			[{_tag: "unstated"}, "its head #50 carries no well-formed pitch"],
-			[{_tag: "unread", reason: "HTTP 502"}, "its head's pitch could not be read (HTTP 502)"],
+			[{ _tag: "stated", appetite: size("S") }, "it is sized L but its head #50 declares S"],
+			[{ _tag: "stated", appetite: cycles(2) }, "its head #50 states a legacy `2 cycles` appetite"],
+			[{ _tag: "unstated" }, "its head #50 carries no well-formed pitch"],
+			[{ _tag: "unread", reason: "HTTP 502" }, "its head's pitch could not be read (HTTP 502)"],
 		];
 		for (const [headAppetite, why] of cases) {
-			const group = table(row({head: 50, covers: [50, 51], size: "L", headAppetite}));
+			const group = table(row({ head: 50, covers: [50, 51], size: "L", headAppetite }));
 			expect(resolveBetApproval(51, group, size("M"))).toEqual({
 				_tag: "group-unbacked",
 				head: 50,
 				why,
 			});
-			expect(disposition(sized({number: 51}), group)).toMatchObject({
+			expect(disposition(sized({ number: 51 }), group)).toMatchObject({
 				_tag: "unpitched",
 				detail: expect.stringContaining(`approves no member: ${why}`),
 			});
@@ -458,11 +458,11 @@ describe("the bet arm — a `bet` on the table approves the pitch", () => {
 	});
 
 	it("refuses a `bet` row with no Size, and one over a legacy cycles pitch", () => {
-		expect(resolveBetApproval(4312, table(row({size: null})), size("M"))).toEqual({
+		expect(resolveBetApproval(4312, table(row({ size: null })), size("M"))).toEqual({
 			_tag: "no-size",
 			head: 4312,
 		});
-		expect(disposition(candidate({comments: []}), table(row()))).toMatchObject({
+		expect(disposition(candidate({ comments: [] }), table(row()))).toMatchObject({
 			detail: expect.stringContaining("cannot approve a legacy `<N> cycles` pitch"),
 		});
 	});
@@ -512,11 +512,13 @@ describe("a founder ruling that names a parentless feature stands in for its pit
 	const own = (author = "founder"): PointedRuling => ({
 		_tag: "own",
 		url: OWN,
-		read: {_tag: "scanned", scan: scanBy(author)},
+		read: { _tag: "scanned", scan: scanBy(author) },
 	});
 
 	const RULING_TEXT = "Ruling 5: #4312 ships with the search arc.";
-	const other = (read: Partial<Extract<OtherRulingRead, {_tag: "read"}>> = {}): PointedRuling => ({
+	const other = (
+		read: Partial<Extract<OtherRulingRead, { _tag: "read" }>> = {},
+	): PointedRuling => ({
 		_tag: "other",
 		url: OTHER,
 		issue: 8070,
@@ -524,7 +526,7 @@ describe("a founder ruling that names a parentless feature stands in for its pit
 			_tag: "read",
 			authorized: true,
 			body: RULING_TEXT,
-			milestone: {number: 52, open: true},
+			milestone: { number: 52, open: true },
 			...read,
 		},
 	});
@@ -533,7 +535,7 @@ describe("a founder ruling that names a parentless feature stands in for its pit
 
 	it("passes ahead of the body: no pitch, a malformed one, or a well-formed one nobody approved", () => {
 		for (const body of ["no pitch here", MALFORMED_PITCH, GOOD_PITCH]) {
-			expect(disposition(candidate({body, comments: [], rulings: [own()]}))).toEqual({
+			expect(disposition(candidate({ body, comments: [], rulings: [own()] }))).toEqual({
 				_tag: "ruled",
 				ruling: OWN,
 			});
@@ -547,32 +549,32 @@ describe("a founder ruling that names a parentless feature stands in for its pit
 			comments: [],
 			rulings: [own()],
 		});
-		expect(disposition(epic)).toEqual({_tag: "unpitched", detail: "has no `## Pitch` section"});
+		expect(disposition(epic)).toEqual({ _tag: "unpitched", detail: "has no `## Pitch` section" });
 	});
 
 	it("binds a pointer to this feature and this repository before anything is read", () => {
-		const pointers = (body: string) => rulingPointers(4312, [{body}], "o/r");
-		expect(pointers(`pitch-ruled: #4312 · ruling:${OWN}`)).toEqual([{_tag: "own", url: OWN}]);
+		const pointers = (body: string) => rulingPointers(4312, [{ body }], "o/r");
+		expect(pointers(`pitch-ruled: #4312 · ruling:${OWN}`)).toEqual([{ _tag: "own", url: OWN }]);
 		expect(pointers(`pitch-ruled: #4312 · ruling:${OTHER}`)).toEqual([
-			{_tag: "other", url: OTHER, issue: 8070, comment: 501},
+			{ _tag: "other", url: OTHER, issue: 8070, comment: 501 },
 		]);
 		expect(pointers(`pitch-ruled: #4313 · ruling:${OWN}`)).toEqual([
-			{_tag: "misnumbered", names: 4313},
+			{ _tag: "misnumbered", names: 4313 },
 		]);
 		const elsewhere = OWN.replace("o/r", "o/elsewhere");
 		expect(pointers(`pitch-ruled: #4312 · ruling:${elsewhere}`)).toEqual([
-			{_tag: "foreign", url: elsewhere},
+			{ _tag: "foreign", url: elsewhere },
 		]);
 		expect(pointers(`Pitch covered by the ruling at ${OWN}`)).toEqual([]);
 	});
 
 	it("passes no pointer that names another issue or links outside the repository", () => {
 		const misses: ReadonlyArray<readonly [PointedRuling, string]> = [
-			[{_tag: "misnumbered", names: 4313}, "names #4313, not #4312"],
-			[{_tag: "foreign", url: OWN}, "which is not an issue comment in this repository"],
+			[{ _tag: "misnumbered", names: 4313 }, "names #4313, not #4312"],
+			[{ _tag: "foreign", url: OWN }, "which is not an issue comment in this repository"],
 		];
 		for (const [pointed, why] of misses) {
-			expect(disposition(candidate({body: "", comments: [], rulings: [pointed]}))).toEqual({
+			expect(disposition(candidate({ body: "", comments: [], rulings: [pointed] }))).toEqual({
 				_tag: "unpitched",
 				detail: expect.stringContaining(why),
 			});
@@ -580,7 +582,7 @@ describe("a founder ruling that names a parentless feature stands in for its pit
 	});
 
 	it("counts a ruling on the feature's own issue only on a control-plane account's marker citing it", () => {
-		expect(disposition(candidate({comments: [], rulings: [own("drive-by")]}))).toMatchObject({
+		expect(disposition(candidate({ comments: [], rulings: [own("drive-by")] }))).toMatchObject({
 			_tag: "unpitched",
 			detail: expect.stringContaining(
 				"no `decision-ruled:` marker from a control-plane account cites that comment",
@@ -589,36 +591,39 @@ describe("a founder ruling that names a parentless feature stands in for its pit
 		const uncited: PointedRuling = {
 			_tag: "own",
 			url: url(4312, 77),
-			read: {_tag: "scanned", scan: scanBy("founder")},
+			read: { _tag: "scanned", scan: scanBy("founder") },
 		};
-		expect(disposition(candidate({comments: [], rulings: [uncited]}))._tag).toBe("unpitched");
+		expect(disposition(candidate({ comments: [], rulings: [uncited] }))._tag).toBe("unpitched");
 	});
 
 	it("holds a ruling on another issue to its author, its stamp, the number it names and one open milestone", () => {
 		const homed = (over: Partial<Candidate> = {}) =>
-			candidate({body: "", comments: [], milestone: 52, ...over});
-		expect(disposition(homed({rulings: [other()]}))).toEqual({_tag: "ruled", ruling: OTHER});
+			candidate({ body: "", comments: [], milestone: 52, ...over });
+		expect(disposition(homed({ rulings: [other()] }))).toEqual({ _tag: "ruled", ruling: OTHER });
 
 		const misses: ReadonlyArray<readonly [Candidate, string]> = [
-			[homed({rulings: [other({authorized: false})]}), "whose author is not a write+ collaborator"],
 			[
-				homed({rulings: [other({body: `${RULING_TEXT}\n\n<sub>Filed by an agent</sub>`})]}),
+				homed({ rulings: [other({ authorized: false })] }),
+				"whose author is not a write+ collaborator",
+			],
+			[
+				homed({ rulings: [other({ body: `${RULING_TEXT}\n\n<sub>Filed by an agent</sub>` })] }),
 				"agent-provenance-stamped",
 			],
-			[homed({rulings: [other({body: "Ruling 5: #43120 ships."})]}), "does not name #4312"],
-			[homed({number: 431, rulings: [other()]}), "does not name #431"],
-			[homed({rulings: [other({body: "Ruling 5: o/elsewhere#4312 ships."})]}), "does not name"],
+			[homed({ rulings: [other({ body: "Ruling 5: #43120 ships." })] }), "does not name #4312"],
+			[homed({ number: 431, rulings: [other()] }), "does not name #431"],
+			[homed({ rulings: [other({ body: "Ruling 5: o/elsewhere#4312 ships." })] }), "does not name"],
 			[
-				homed({rulings: [other({milestone: {number: 53, open: true}})]}),
+				homed({ rulings: [other({ milestone: { number: 53, open: true } })] }),
 				"do not share an open milestone",
 			],
 			[
-				homed({rulings: [other({milestone: {number: 52, open: false}})]}),
+				homed({ rulings: [other({ milestone: { number: 52, open: false } })] }),
 				"do not share an open milestone",
 			],
-			[homed({rulings: [other({milestone: null})]}), "do not share an open milestone"],
+			[homed({ rulings: [other({ milestone: null })] }), "do not share an open milestone"],
 			[
-				homed({rulings: [{_tag: "other", url: OTHER, issue: 8070, read: {_tag: "missing"}}]}),
+				homed({ rulings: [{ _tag: "other", url: OTHER, issue: 8070, read: { _tag: "missing" } }] }),
 				"#8070 carries no comment with that id",
 			],
 		];
@@ -635,7 +640,7 @@ describe("a founder ruling that names a parentless feature stands in for its pit
 			labels: ["status:triaged", "type:feature", "axis:pipeline-hardening"],
 			body: "",
 			comments: [],
-			rulings: [other({milestone: null})],
+			rulings: [other({ milestone: null })],
 		});
 		expect(disposition(onLane)).toEqual({
 			_tag: "unpitched",
@@ -645,36 +650,36 @@ describe("a founder ruling that names a parentless feature stands in for its pit
 
 	it("reports an unread ruling as unread, never as a pass and never as a missing pitch", () => {
 		const unread: ReadonlyArray<PointedRuling> = [
-			{_tag: "own", url: OWN, read: {_tag: "unread", reason: "the roster read answered 502"}},
+			{ _tag: "own", url: OWN, read: { _tag: "unread", reason: "the roster read answered 502" } },
 			{
 				_tag: "other",
 				url: OTHER,
 				issue: 8070,
-				read: {_tag: "unread", reason: "the comments on #8070 could not be read: HTTP 502"},
+				read: { _tag: "unread", reason: "the comments on #8070 could not be read: HTTP 502" },
 			},
 		];
 		for (const pointed of unread) {
-			const feature = candidate({body: "no pitch here", comments: [], rulings: [pointed]});
+			const feature = candidate({ body: "no pitch here", comments: [], rulings: [pointed] });
 			const resolved = disposition(feature);
 			expect(resolved._tag).toBe("unread");
-			expect(resolved).toMatchObject({detail: expect.stringContaining("502")});
-			expect(resolved).not.toMatchObject({detail: expect.stringContaining("## Pitch")});
+			expect(resolved).toMatchObject({ detail: expect.stringContaining("502") });
+			expect(resolved).not.toMatchObject({ detail: expect.stringContaining("## Pitch") });
 
 			const verdict = judge([feature], BACKLOG);
-			expect(verdict).toMatchObject({pass: false, reason: "unread"});
+			expect(verdict).toMatchObject({ pass: false, reason: "unread" });
 			expect(toGuardVerdict(verdict, SIZES)._tag).toBe("Unknown");
 			expect(renderReport(verdict, SIZES)).toContain("could not be read");
 		}
 		// An approved pitch needs no ruling, so one that went unread costs it nothing.
-		expect(disposition(candidate({rulings: unread}))._tag).toBe("pitched");
+		expect(disposition(candidate({ rulings: unread }))._tag).toBe("pitched");
 	});
 
 	it("names a drifted pointer beside the pitch's own miss, and adds nothing where there is none", () => {
-		const [drifted] = rulingPointers(4312, [{body: `pitch-ruled: #4312 · ${OWN}`}], "o/r");
+		const [drifted] = rulingPointers(4312, [{ body: `pitch-ruled: #4312 · ${OWN}` }], "o/r");
 		if (drifted?._tag !== "malformed") throw new Error("expected the drifted pointer to be read");
-		const bare = candidate({body: "no pitch here", comments: []});
-		expect(disposition(bare)).toEqual({_tag: "unpitched", detail: "has no `## Pitch` section"});
-		expect(disposition({...bare, rulings: [drifted]})).toEqual({
+		const bare = candidate({ body: "no pitch here", comments: [] });
+		expect(disposition(bare)).toEqual({ _tag: "unpitched", detail: "has no `## Pitch` section" });
+		expect(disposition({ ...bare, rulings: [drifted] })).toEqual({
 			_tag: "unpitched",
 			detail: expect.stringMatching(
 				/^has no `## Pitch` section; and its `pitch-ruled:` comment does not read as /,
@@ -690,12 +695,12 @@ describe("a founder ruling that names a parentless feature stands in for its pit
 			rulings: [own()],
 		});
 		const passing = judge([candidate(), ruled], BACKLOG);
-		expect(passing).toMatchObject({pass: true, scanned: 2, pitched: 1});
+		expect(passing).toMatchObject({ pass: true, scanned: 2, pitched: 1 });
 		const report = renderReport(passing, SIZES);
 		expect(report).toContain("1 carrying a founder-approved pitch, 1 passed by a founder ruling");
 		expect(report).toContain(`#4313 saved searches\n      ruling: ${OWN}`);
 
-		const failing = renderReport(judge([ruled, candidate({comments: []})], BACKLOG), SIZES);
+		const failing = renderReport(judge([ruled, candidate({ comments: [] })], BACKLOG), SIZES);
 		expect(failing).toContain("(0 pitched, 1 passed by a founder ruling)");
 		expect(failing).toContain(`ruling: ${OWN}`);
 		expect(failing).toContain("passes a third way");

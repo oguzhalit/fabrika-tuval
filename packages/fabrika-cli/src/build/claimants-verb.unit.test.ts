@@ -1,9 +1,9 @@
 /** `build claimants` — who holds a number, answered to a caller holding no claim and no token. */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type Scripted} from "../fakes.test-support.ts";
-import {runClaimants} from "./claimants-verb.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type Scripted } from "../fakes.test-support.ts";
+import { runClaimants } from "./claimants-verb.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
 import {
 	adoptMarker,
 	comments,
@@ -22,22 +22,22 @@ const ISSUE = /GET .*\/repos\/o\/r\/issues\/4312$/;
 const COMMENTS = /GET .*\/repos\/o\/r\/issues\/4312\/comments/;
 const PERM = (login: string) => new RegExp(`GET .*/repos/o/r/collaborators/${login}/permission`);
 
-const WRITE = served({permission: "write"});
-const READ_ONLY = served({permission: "read"});
+const WRITE = served({ permission: "write" });
+const READ_ONLY = served({ permission: "read" });
 
 /** No CLAUDE_CODE_SESSION_ID anywhere: the verb answers without an identity of its own. */
-const ENV = {...GH_TOKEN_ENV, CLAUDE_PIPELINE_REPO: "o/r"};
+const ENV = { ...GH_TOKEN_ENV, CLAUDE_PIPELINE_REPO: "o/r" };
 
 const run = (script: ReadonlyArray<Scripted>) =>
 	Effect.runPromise(
-		Effect.provide(runClaimants({number: 4312, repo: null, env: ENV}), fakeSeams(script).layer),
+		Effect.provide(runClaimants({ number: 4312, repo: null, env: ENV }), fakeSeams(script).layer),
 	);
 
 describe("build claimants", () => {
 	it("names the holder, its session and the adopt route, holding no token itself", async () => {
 		const out = await run([
 			[ISSUE, issue()],
-			[COMMENTS, comments({id: 9001, body: marker("s-dead", LANE_UUID)})],
+			[COMMENTS, comments({ id: 9001, body: marker("s-dead", LANE_UUID) })],
 			[PERM("agent"), WRITE],
 		]);
 
@@ -62,8 +62,8 @@ describe("build claimants", () => {
 			[
 				COMMENTS,
 				comments(
-					{id: 9001, body: marker("s-drive-by", SIBLING_UUID), author: "outsider"},
-					{id: 9002, body: marker("s-9f2e", LANE_UUID), author: "agent"},
+					{ id: 9001, body: marker("s-drive-by", SIBLING_UUID), author: "outsider" },
+					{ id: 9002, body: marker("s-9f2e", LANE_UUID), author: "agent" },
 				),
 			],
 			[PERM("outsider"), READ_ONLY],
@@ -71,7 +71,9 @@ describe("build claimants", () => {
 		]);
 
 		const answer = JSON.parse(out.stdout);
-		expect(answer.claimants.map((row: {commentId: number}) => row.commentId)).toEqual([9001, 9002]);
+		expect(answer.claimants.map((row: { commentId: number }) => row.commentId)).toEqual([
+			9001, 9002,
+		]);
 		expect(answer.holder.token).toBe(LANE_TOKEN);
 		expect(out.stderr.join("\n")).toContain("counted, never a winner");
 	});
@@ -82,8 +84,8 @@ describe("build claimants", () => {
 			[
 				COMMENTS,
 				comments(
-					{id: 9001, body: marker("s-dead", LANE_UUID)},
-					{id: 9002, body: adoptMarker("s-dead", "s-live", SIBLING_UUID)},
+					{ id: 9001, body: marker("s-dead", LANE_UUID) },
+					{ id: 9002, body: adoptMarker("s-dead", "s-live", SIBLING_UUID) },
 				),
 			],
 			[PERM("agent"), WRITE],
@@ -96,17 +98,17 @@ describe("build claimants", () => {
 	it("answers unclaimed on a thread carrying no authorized marker", async () => {
 		const out = await run([
 			[ISSUE, issue()],
-			[COMMENTS, comments({id: 9001, body: "ordinary discussion"})],
+			[COMMENTS, comments({ id: 9001, body: "ordinary discussion" })],
 		]);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "unclaimed", holder: null});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "unclaimed", holder: null });
 	});
 
 	it("answers a CLOSED issue rather than refusing it — a marker outliving its issue is the point", async () => {
 		const out = await run([
-			[ISSUE, issue({state: "closed"})],
-			[COMMENTS, comments({id: 9001, body: marker("s-dead", LANE_UUID)})],
+			[ISSUE, issue({ state: "closed" })],
+			[COMMENTS, comments({ id: 9001, body: marker("s-dead", LANE_UUID) })],
 			[PERM("agent"), WRITE],
 		]);
 
@@ -136,7 +138,7 @@ describe("build claimants", () => {
 	it("is UNKNOWN, never a demotion, when an author's permission cannot be read", async () => {
 		const out = await run([
 			[ISSUE, issue()],
-			[COMMENTS, comments({id: 9001, body: marker("s-dead", LANE_UUID)})],
+			[COMMENTS, comments({ id: 9001, body: marker("s-dead", LANE_UUID) })],
 			[PERM("agent"), GATEWAY],
 		]);
 

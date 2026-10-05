@@ -8,10 +8,10 @@
  * trusted to agree. Editing the fixture without editing `expected.json` reds both suites, which is
  * the point.
  */
-import {readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import {assert, describe, it} from "@effect/vitest";
-import {classifyRunSpend, reconstructSpend, type StageSpend} from "./token-spend.ts";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { assert, describe, it } from "@effect/vitest";
+import { classifyRunSpend, reconstructSpend, type StageSpend } from "./token-spend.ts";
 
 const read = (name: string): string =>
 	readFileSync(fileURLToPath(new URL(`./fixtures/one-ruler/${name}`, import.meta.url)), "utf8");
@@ -49,7 +49,7 @@ describe("reconstructSpend — total over anything a transcript can hold", () =>
 			JSON.stringify({
 				message: {
 					role: "assistant",
-					usage: {input_tokens: "lots", cache_read_input_tokens: -5, output_tokens: 4},
+					usage: { input_tokens: "lots", cache_read_input_tokens: -5, output_tokens: 4 },
 				},
 			}),
 		);

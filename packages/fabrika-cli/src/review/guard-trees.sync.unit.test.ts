@@ -7,11 +7,11 @@
  * (the captured-payload discipline, applied to a source citation instead of a wire payload: cite
  * the source, assert the source, never assert a copy).
  */
-import {readFileSync} from "node:fs";
-import {dirname, join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
-import {governedRootProbes, guardProbes} from "./guard-trees.ts";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import { governedRootProbes, guardProbes } from "./guard-trees.ts";
 
 const srcDir = dirname(fileURLToPath(import.meta.url));
 

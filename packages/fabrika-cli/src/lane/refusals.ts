@@ -2,7 +2,7 @@
  * The refusal folds every `lane` verb shares, so a key, load, boot or replay fault seats on the same
  * code with the same stderr shape whichever verb hit it.
  */
-import {refuse, type VerbOutcome} from "../verb.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
 import {
 	APPEND_UNKNOWN,
 	KEY_MALFORMED,
@@ -10,15 +10,15 @@ import {
 	LANE_UNREADABLE,
 	MALFORMED_RECORD,
 } from "./codes.ts";
-import type {FoldResult} from "./fold.ts";
-import type {KeyResult} from "./key.ts";
-import type {LoadedLane, Placement} from "./store.ts";
+import type { FoldResult } from "./fold.ts";
+import type { KeyResult } from "./key.ts";
+import type { LoadedLane, Placement } from "./store.ts";
 
 /**
  * Seat an unreadable `lane` argument. Group-level rather than per-verb: the key is parsed by the
  * adapter every verb shares, before any of them is reached.
  */
-export const keyRefusal = (malformed: Extract<KeyResult, {_tag: "Malformed"}>): VerbOutcome =>
+export const keyRefusal = (malformed: Extract<KeyResult, { _tag: "Malformed" }>): VerbOutcome =>
 	refuse(
 		KEY_MALFORMED,
 		`fabrika lane: "${malformed.raw}" is not a lane key — ${malformed.reason}. A key is an issue number, or \`chore:<name>\` for a chore lane.`,
@@ -27,7 +27,7 @@ export const keyRefusal = (malformed: Extract<KeyResult, {_tag: "Malformed"}>): 
 /** Seat a non-`Loaded` load outcome. Absent names the remedy: open the lane from a template. */
 export const loadRefusal = (
 	verb: string,
-	loaded: Exclude<LoadedLane, {_tag: "Loaded"}>,
+	loaded: Exclude<LoadedLane, { _tag: "Loaded" }>,
 ): VerbOutcome => {
 	switch (loaded._tag) {
 		case "Absent":
@@ -70,7 +70,7 @@ export const say = (...sentences: ReadonlyArray<string>): string =>
  */
 export const placementRefusal = (
 	verb: string,
-	placed: Exclude<Placement, {_tag: "Placed"} | {_tag: "Exists"}>,
+	placed: Exclude<Placement, { _tag: "Placed" } | { _tag: "Exists" }>,
 	stranded: ReadonlyArray<string> = [],
 ): VerbOutcome => {
 	switch (placed._tag) {
@@ -97,7 +97,7 @@ export const placementRefusal = (
 export const replayRefusal = (
 	verb: string,
 	logPath: string,
-	fold: Exclude<FoldResult, {_tag: "Folded"}>,
+	fold: Exclude<FoldResult, { _tag: "Folded" }>,
 ): VerbOutcome =>
 	refuse(
 		MALFORMED_RECORD,

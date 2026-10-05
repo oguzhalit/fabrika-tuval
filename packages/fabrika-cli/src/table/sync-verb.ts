@@ -15,13 +15,13 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9856
  */
 
-import {Clock, Effect, type FileSystem, type Path, Semaphore} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type TableSettings, tableKey} from "../config/keys/table.ts";
-import {readKey} from "../config/read-key.ts";
-import {blockedBy, blocking, subIssues} from "../io/edges.ts";
-import type {Api} from "../io/gh-api.ts";
-import {type Attempt, fail, ok, type Shell} from "../io/git.ts";
+import { Clock, Effect, type FileSystem, type Path, Semaphore } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type TableSettings, tableKey } from "../config/keys/table.ts";
+import { readKey } from "../config/read-key.ts";
+import { blockedBy, blocking, subIssues } from "../io/edges.ts";
+import type { Api } from "../io/gh-api.ts";
+import { type Attempt, fail, ok, type Shell } from "../io/git.ts";
 import {
 	type IssueNode,
 	readCommentCounts,
@@ -54,9 +54,9 @@ import {
 	setFieldValue,
 	withProjects,
 } from "../io/projects.ts";
-import {getPullRequest} from "../io/pulls.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {type LaneRecord, read} from "../wire/lane-record.ts";
+import { getPullRequest } from "../io/pulls.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { type LaneRecord, read } from "../wire/lane-record.ts";
 import {
 	AMBIGUOUS_PROJECT,
 	CONFIG_MALFORMED,
@@ -68,9 +68,9 @@ import {
 	SCOPE_MISSING,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {describePlanned, dryRunSync} from "./dry-run.ts";
-import {type Bets, kindOf, membersOf} from "./group.ts";
-import {type BoardTarget, productBoard} from "./shape.ts";
+import { describePlanned, dryRunSync } from "./dry-run.ts";
+import { type Bets, kindOf, membersOf } from "./group.ts";
+import { type BoardTarget, productBoard } from "./shape.ts";
 import {
 	betsOf,
 	describeWrite,
@@ -121,10 +121,10 @@ export const readEach = <K, A, R>(
 	});
 
 export type Located =
-	| {readonly _tag: "Located"; readonly project: ProjectSnapshot}
-	| {readonly _tag: "Refused"; readonly code: number; readonly reason: string};
+	| { readonly _tag: "Located"; readonly project: ProjectSnapshot }
+	| { readonly _tag: "Refused"; readonly code: number; readonly reason: string };
 
-type Target = {readonly projectId: string; readonly itemId: string; readonly fieldId: string};
+type Target = { readonly projectId: string; readonly itemId: string; readonly fieldId: string };
 
 /** A board's reads over a whole wave of issues, answering every issue it was asked for. */
 export interface WaveReads<R> {
@@ -185,12 +185,12 @@ export interface SyncOptions<R> {
 	readonly dryRun: boolean;
 }
 
-export type Refusal = {readonly _tag: "Refused"; readonly code: number; readonly reason: string};
+export type Refusal = { readonly _tag: "Refused"; readonly code: number; readonly reason: string };
 
-const refused = (code: number, reason: string): Refusal => ({_tag: "Refused", code, reason});
+const refused = (code: number, reason: string): Refusal => ({ _tag: "Refused", code, reason });
 
 const stop = (
-	failed: Exclude<ProjectsAnswer<unknown>, {_tag: "Ok"}>,
+	failed: Exclude<ProjectsAnswer<unknown>, { _tag: "Ok" }>,
 	onFailure: number,
 	what: string,
 ): Refusal =>
@@ -205,7 +205,7 @@ export const rowsOf = (items: ReadonlyArray<ProjectItem>, repo: string): Map<num
 				? [
 						[
 							item.contentNumber,
-							{itemId: item.itemId, issue: item.contentNumber, values: item.values},
+							{ itemId: item.itemId, issue: item.contentNumber, values: item.values },
 						],
 					]
 				: [],
@@ -224,7 +224,7 @@ const vanished = (issue: number): SyncNode => ({
 
 interface World {
 	readonly _tag: "World";
-	readonly scope: Extract<Scope, {_tag: "Scoped"}>;
+	readonly scope: Extract<Scope, { _tag: "Scoped" }>;
 	readonly graph: ReadonlyMap<number, SyncNode>;
 	readonly records: ReadonlyMap<number, ReadonlyArray<LaneRecord>>;
 	readonly merged: ReadonlySet<number>;
@@ -252,7 +252,7 @@ export const readNodes = <R>(
 	repo: string,
 	issues: ReadonlyArray<number>,
 ): Effect.Effect<ReadonlyArray<readonly [number, Existence<SyncNode>]>, never, R> => {
-	const {wave} = board;
+	const { wave } = board;
 	if (wave === undefined || issues.length === 0) {
 		return readEach(issues, (issue) => board.node(repo, issue));
 	}
@@ -269,7 +269,7 @@ const readCommentWave = <R>(
 	repo: string,
 	issues: ReadonlyArray<number>,
 ): Effect.Effect<ReadonlyArray<readonly [number, Attempt<ReadonlyArray<string>>]>, never, R> => {
-	const {wave} = board;
+	const { wave } = board;
 	if (wave === undefined || issues.length === 0) {
 		return readEach(issues, (issue) => board.comments(repo, issue));
 	}
@@ -281,7 +281,7 @@ const readCommentWave = <R>(
 /** The rows a run touches and the graph that decides their groups. */
 export interface Scoped {
 	readonly _tag: "Graph";
-	readonly scope: Extract<Scope, {_tag: "Scoped"}>;
+	readonly scope: Extract<Scope, { _tag: "Scoped" }>;
 	readonly graph: ReadonlyMap<number, SyncNode>;
 }
 
@@ -337,7 +337,7 @@ export const readScope = <R>(
 				`${verb}: the issue graph did not settle after reading ${graph.size} issues. Nothing was written.`,
 			);
 		}
-		return {_tag: "Graph", scope: scoped, graph};
+		return { _tag: "Graph", scope: scoped, graph };
 	});
 
 export interface Records {
@@ -379,7 +379,7 @@ export const readRecords = <R>(
 			}
 			records.set(issue, found);
 		}
-		return {_tag: "Records", records};
+		return { _tag: "Records", records };
 	});
 
 /** Read the graph, the records, and whether the pull requests the records name have merged. */
@@ -395,7 +395,7 @@ const readWorld = <R>(
 		if (scoped._tag === "Refused") return scoped;
 		const read = yield* readRecords(board, VERB, repo, scoped, rows);
 		if (read._tag === "Refused") return read;
-		const {records} = read;
+		const { records } = read;
 
 		const merged = new Set<number>();
 		const prs = new Set([...records.values()].flat().flatMap((record) => record.prs));
@@ -412,11 +412,11 @@ const readWorld = <R>(
 			}
 			if (state.value) merged.add(pr);
 		}
-		return {_tag: "World", scope: scoped.scope, graph: scoped.graph, records, merged};
+		return { _tag: "World", scope: scoped.scope, graph: scoped.graph, records, merged };
 	});
 
 const planOver = (world: World, rows: ReadonlyMap<number, Row>, fields: TableFields): SyncPlan =>
-	planSync({...world, rows, fields});
+	planSync({ ...world, rows, fields });
 
 const applyAll = <R>(
 	board: SyncBoard<R>,
@@ -434,7 +434,7 @@ const applyAll = <R>(
 					break;
 				case "Set":
 					done = yield* board.set(
-						{projectId: project.id, itemId: write.itemId, fieldId: write.fieldId},
+						{ projectId: project.id, itemId: write.itemId, fieldId: write.fieldId },
 						write.value,
 					);
 					break;
@@ -477,7 +477,7 @@ const converge = <R>(
 		const located = yield* board.locate(repo, productBoard(repo, settings));
 		if (located._tag !== "Ok") return stop(located, PRECONDITION_UNKNOWN, "cannot find the table");
 		if (located.value._tag === "Refused") return located.value;
-		const {project} = located.value;
+		const { project } = located.value;
 		const resolved = tableFields(project);
 		if (resolved._tag === "Missing") {
 			return refused(
@@ -485,12 +485,12 @@ const converge = <R>(
 				`${VERB}: project #${project.number} lacks ${resolved.what.join(", ")} — run \`fabrika table setup\` first. Nothing was written.`,
 			);
 		}
-		const {fields} = resolved;
+		const { fields } = resolved;
 
 		const readRows = Effect.map(
 			board.items(project.id),
 			(items): ProjectsAnswer<ReadonlyMap<number, Row>> =>
-				items._tag === "Ok" ? {_tag: "Ok", value: rowsOf(items.value, repo)} : items,
+				items._tag === "Ok" ? { _tag: "Ok", value: rowsOf(items.value, repo) } : items,
 		);
 		const opened = yield* readRows;
 		if (opened._tag !== "Ok") {
@@ -547,7 +547,7 @@ const converge = <R>(
 				);
 			}
 		}
-		return {_tag: "Synced", project, world, changes: landed, skipped: opening.skipped};
+		return { _tag: "Synced", project, world, changes: landed, skipped: opening.skipped };
 	});
 
 export const runSync = <R>(
@@ -576,12 +576,12 @@ export const runSync = <R>(
 		const run = yield* converge(dry?.board ?? options.board, repo, settings.value, options.issues);
 		if (run._tag === "Refused") return refuse(run.code, run.reason);
 
-		const {project, world, skipped} = run;
+		const { project, world, skipped } = run;
 		const planned = dry?.planned() ?? null;
 		const changes = planned === null ? run.changes : [];
 		const groups = world.scope.heads
 			.filter((group) => group._tag !== "Single")
-			.map((group) => ({head: group.head, kind: kindOf(group), members: membersOf(group)}));
+			.map((group) => ({ head: group.head, kind: kindOf(group), members: membersOf(group) }));
 		const notes = [
 			`${VERB}: read ${settings.note}.`,
 			`${VERB}: project #${project.number} "${project.title}" (${project.url}); ${touched(world).length} issue(s) touched.`,
@@ -603,12 +603,12 @@ export const runSync = <R>(
 			`${JSON.stringify({
 				answer: planned !== null ? "dry-run" : changes.length > 0 ? "synced" : "unchanged",
 				repo,
-				project: {number: project.number, title: project.title, url: project.url},
+				project: { number: project.number, title: project.title, url: project.url },
 				issues: touched(world),
 				groups,
 				changes,
 				skipped,
-				...(planned === null ? {} : {planned}),
+				...(planned === null ? {} : { planned }),
 			})}\n`,
 			notes,
 		);
@@ -622,7 +622,7 @@ export const locateTable = (
 	verb: string,
 ): Api<ProjectsAnswer<Located>> =>
 	Effect.gen(function* () {
-		const found = (value: Located): ProjectsAnswer<Located> => ({_tag: "Ok", value});
+		const found = (value: Located): ProjectsAnswer<Located> => ({ _tag: "Ok", value });
 		const node = yield* readRepository(token, repo);
 		if (node._tag !== "Ok") return node;
 		const owner = target.project.owner ?? node.value.owner.login;
@@ -635,10 +635,10 @@ export const locateTable = (
 							NO_TARGET,
 							`${verb}: \`${target.key}\` names project ${target.project.number} under ${owner}, and ${owner} has no such project. Nothing was written.`,
 						)
-					: {_tag: "Located", project: read.value},
+					: { _tag: "Located", project: read.value },
 			);
 		}
-		const {title} = target;
+		const { title } = target;
 		let refs = node.value.linkedProjects.filter((ref) => ref.title === title && !ref.closed);
 		if (refs.length === 0) {
 			const owned = yield* readOwnerProjects(token, owner);
@@ -663,7 +663,7 @@ export const locateTable = (
 			);
 		}
 		const read = yield* readProject(token, only.id);
-		return read._tag === "Ok" ? found({_tag: "Located", project: read.value}) : read;
+		return read._tag === "Ok" ? found({ _tag: "Located", project: read.value }) : read;
 	});
 
 /** One of an issue's edge lists: its sub-issues, what blocks it, or what it blocks. */
@@ -698,7 +698,7 @@ export const readNode =
 				[reads.subIssues, reads.blockedBy, reads.blocking].map((list) =>
 					budgeted(list(repo, issue)),
 				),
-				{concurrency: "unbounded"},
+				{ concurrency: "unbounded" },
 			);
 			const edges: Array<ReadonlyArray<number>> = [];
 			for (const read of lists) {
@@ -718,9 +718,9 @@ export const readNode =
 		});
 
 /** One issue's node over REST: four calls, spent only on an issue a batched read left unproven. */
-const restNode = readNode({issue: getIssue, subIssues, blockedBy, blocking});
+const restNode = readNode({ issue: getIssue, subIssues, blockedBy, blocking });
 
-const syncNodeOf = ({comments: _, ...node}: IssueNode): SyncNode => node;
+const syncNodeOf = ({ comments: _, ...node }: IssueNode): SyncNode => node;
 
 /**
  * The shipped wave reads: every node in batched GraphQL requests, with an issue a request could not

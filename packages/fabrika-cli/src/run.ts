@@ -13,14 +13,14 @@
  * cannot do for itself — see `unknown-subcommand.ts` for why. The version string is resolved inside
  * the program, so only an invocation asking for it pays for the git read (`source-version.ts`).
  */
-import {NodeRuntime, NodeServices} from "@effect/platform-node";
-import {Effect, Layer} from "effect";
-import {Command} from "effect/unstable/cli";
+import { NodeRuntime, NodeServices } from "@effect/platform-node";
+import { Effect, Layer } from "effect";
+import { Command } from "effect/unstable/cli";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
-import {fabrikaCommand} from "./root-command.ts";
-import {versionFor} from "./source-version.ts";
-import {findUnknownSubcommand, refusal} from "./unknown-subcommand.ts";
-import {FAILED} from "./verb.ts";
+import { fabrikaCommand } from "./root-command.ts";
+import { versionFor } from "./source-version.ts";
+import { findUnknownSubcommand, refusal } from "./unknown-subcommand.ts";
+import { FAILED } from "./verb.ts";
 
 const unknown = findUnknownSubcommand(fabrikaCommand, process.argv.slice(2));
 if (unknown !== undefined) {
@@ -30,7 +30,7 @@ if (unknown !== undefined) {
 
 Effect.gen(function* () {
 	const version = yield* versionFor(process.argv.slice(2));
-	return yield* Command.run(fabrikaCommand, {version});
+	return yield* Command.run(fabrikaCommand, { version });
 }).pipe(
 	// `NodeServices.layer` carries the spawner, filesystem, path and terminal but no HTTP client, so
 	// the GitHub fetch client needs its transport merged in here.

@@ -1,4 +1,4 @@
-import {assert, describe, it} from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import {
 	ACTIONS_BOT,
 	alarmMarker,
@@ -51,31 +51,31 @@ describe("selectAlarm — the marker decides, and only the bot's own issue count
 	});
 
 	it("ignores an issue with no marker, however it is titled", () => {
-		assert.strictEqual(selectAlarm(MARKER, [alarm({body: "Deploy is failing on main"})]), null);
+		assert.strictEqual(selectAlarm(MARKER, [alarm({ body: "Deploy is failing on main" })]), null);
 	});
 
 	it("ignores a human issue that quotes the marker", () => {
-		const quoted = alarm({authorLogin: "a-person", authorType: "User"});
+		const quoted = alarm({ authorLogin: "a-person", authorType: "User" });
 		assert.strictEqual(selectAlarm(MARKER, [quoted]), null);
 	});
 
 	it("ignores a different bot carrying the marker", () => {
-		assert.strictEqual(selectAlarm(MARKER, [alarm({authorLogin: "dependabot[bot]"})]), null);
+		assert.strictEqual(selectAlarm(MARKER, [alarm({ authorLogin: "dependabot[bot]" })]), null);
 	});
 
 	it("ignores an issue with a null body", () => {
-		assert.strictEqual(selectAlarm(MARKER, [alarm({body: null})]), null);
+		assert.strictEqual(selectAlarm(MARKER, [alarm({ body: null })]), null);
 	});
 
 	it("takes the lowest number when the board somehow carries two", () => {
 		assert.strictEqual(
-			selectAlarm(MARKER, [alarm({number: 300}), alarm({number: 120})])?.number,
+			selectAlarm(MARKER, [alarm({ number: 300 }), alarm({ number: 120 })])?.number,
 			120,
 		);
 	});
 
 	it("does not see another workflow's alarm", () => {
-		const other = alarm({body: `${alarmMarker("release-please.yml")}\nstill red`});
+		const other = alarm({ body: `${alarmMarker("release-please.yml")}\nstill red` });
 		assert.strictEqual(selectAlarm(MARKER, [other]), null);
 	});
 });
@@ -102,7 +102,7 @@ describe("decide — the five cases the alarm exists for", () => {
 	});
 
 	it("green with an alarm open closes it, with a link to the green run", () => {
-		const decision = decide(input({result: "success"}), [alarm()]);
+		const decision = decide(input({ result: "success" }), [alarm()]);
 		assert.strictEqual(decision.action, "close");
 		if (decision.action !== "close") return;
 		assert.strictEqual(decision.issue, 100);
@@ -110,14 +110,14 @@ describe("decide — the five cases the alarm exists for", () => {
 	});
 
 	it("green with no alarm open does nothing", () => {
-		assert.strictEqual(decide(input({result: "success"}), []).action, "noop");
+		assert.strictEqual(decide(input({ result: "success" }), []).action, "noop");
 	});
 
 	it("a pull_request run never fires, whatever its result or the board", () => {
-		assert.strictEqual(decide(input({event: "pull_request"}), []).action, "noop");
-		assert.strictEqual(decide(input({event: "pull_request"}), [alarm()]).action, "noop");
+		assert.strictEqual(decide(input({ event: "pull_request" }), []).action, "noop");
+		assert.strictEqual(decide(input({ event: "pull_request" }), [alarm()]).action, "noop");
 		assert.strictEqual(
-			decide(input({event: "pull_request", result: "success"}), [alarm()]).action,
+			decide(input({ event: "pull_request", result: "success" }), [alarm()]).action,
 			"noop",
 		);
 	});
@@ -125,36 +125,36 @@ describe("decide — the five cases the alarm exists for", () => {
 
 describe("decide — a run that concluded neither way decides nothing", () => {
 	it("leaves a standing alarm open on a cancelled run", () => {
-		assert.strictEqual(decide(input({result: "cancelled"}), [alarm()]).action, "noop");
+		assert.strictEqual(decide(input({ result: "cancelled" }), [alarm()]).action, "noop");
 	});
 
 	it("leaves a standing alarm open on a skipped run", () => {
-		assert.strictEqual(decide(input({result: "skipped"}), [alarm()]).action, "noop");
+		assert.strictEqual(decide(input({ result: "skipped" }), [alarm()]).action, "noop");
 	});
 });
 
 describe("the body says what it knows, and never more", () => {
 	it("says the job list was unreadable rather than claiming no job failed", () => {
-		const decision = decide(input({facts: facts({failedJobs: [], jobsRead: false})}), []);
+		const decision = decide(input({ facts: facts({ failedJobs: [], jobsRead: false }) }), []);
 		if (decision.action !== "create") return assert.fail("expected a create");
 		assert.include(decision.body, "could not be read");
 	});
 
 	it("says the run failed outside a job when the list read empty", () => {
-		const decision = decide(input({facts: facts({failedJobs: [], jobsRead: true})}), []);
+		const decision = decide(input({ facts: facts({ failedJobs: [], jobsRead: true }) }), []);
 		if (decision.action !== "create") return assert.fail("expected a create");
 		assert.include(decision.body, "failed outside a job");
 	});
 
 	it("writes one @handle per declared mention, never a doubled @", () => {
-		const decision = decide(input({facts: facts({mention: ["@one", "two"]})}), []);
+		const decision = decide(input({ facts: facts({ mention: ["@one", "two"] }) }), []);
 		if (decision.action !== "create") return assert.fail("expected a create");
 		assert.include(decision.body, "@one @two");
 		assert.notInclude(decision.body, "@@");
 	});
 
 	it("omits the mention line entirely when nobody is declared", () => {
-		const decision = decide(input({facts: facts({mention: []})}), []);
+		const decision = decide(input({ facts: facts({ mention: [] }) }), []);
 		if (decision.action !== "create") return assert.fail("expected a create");
 		assert.notInclude(decision.body, "@");
 	});
@@ -188,12 +188,12 @@ describe("workflowKeyFromEnv — the key survives a display-name rename", () => 
 
 	it("keeps two workflows apart", () => {
 		const key = (file: string) =>
-			workflowKeyFromEnv({GITHUB_WORKFLOW_REF: `o/r/.github/workflows/${file}@refs/heads/main`});
+			workflowKeyFromEnv({ GITHUB_WORKFLOW_REF: `o/r/.github/workflows/${file}@refs/heads/main` });
 		assert.notStrictEqual(key("deploy.yml"), key("release-please.yml"));
 	});
 
 	it("falls back to a slug of the display name when the ref is absent", () => {
-		assert.strictEqual(workflowKeyFromEnv({GITHUB_WORKFLOW: "Release Please"}), "release-please");
+		assert.strictEqual(workflowKeyFromEnv({ GITHUB_WORKFLOW: "Release Please" }), "release-please");
 	});
 
 	it("never yields an empty key", () => {

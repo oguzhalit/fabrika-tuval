@@ -1,12 +1,17 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs, fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import {coderTemplateText} from "../lane/fixtures.test-support.ts";
-import {deriveStatus, foldLog, parseLog} from "../lane/fold.ts";
-import {compileText} from "../lane/machine.ts";
-import {CAP_ROUND, RETRY_BUDGET} from "../retry-budget.ts";
-import {type DocumentRead, runClear} from "./clear-verb.ts";
-import {AUTHORIZATION_VOID, GRANT_UNAUTHORIZED, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs, fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import { coderTemplateText } from "../lane/fixtures.test-support.ts";
+import { deriveStatus, foldLog, parseLog } from "../lane/fold.ts";
+import { compileText } from "../lane/machine.ts";
+import { CAP_ROUND, RETRY_BUDGET } from "../retry-budget.ts";
+import { type DocumentRead, runClear } from "./clear-verb.ts";
+import {
+	AUTHORIZATION_VOID,
+	GRANT_UNAUTHORIZED,
+	PRECONDITION_UNKNOWN,
+	ZERO_SCOPE,
+} from "./codes.ts";
 import {
 	CODEOWNERS_READ,
 	CP_ROSTER,
@@ -27,8 +32,8 @@ const PERMISSION = /^GET \S+\/repos\/o\/r\/collaborators\/usirin\/permission/;
 const POST = /^POST \S+\/repos\/o\/r\/issues\/4310\/comments/;
 const GET_COMMENT = /^GET \S+\/repos\/o\/r\/issues\/comments\/\d+$/;
 
-const viewer = (login: string): HttpReply => served({login});
-const permission = (level: string): HttpReply => served({permission: level});
+const viewer = (login: string): HttpReply => served({ login });
+const permission = (level: string): HttpReply => served({ permission: level });
 
 const WORKFLOW = ".fabrika/lanes/4312/workflow.json";
 const LANE_LOG = ".fabrika/lanes/4312/events.jsonl";
@@ -41,7 +46,7 @@ const laneBudget = (log: string | undefined): number => {
 	if (parsed._tag !== "Parsed") throw new Error("the lane log did not parse");
 	const fold = foldLog(compiled.lane, parsed.entries);
 	if (fold._tag !== "Folded") throw new Error("the lane log did not replay");
-	const issue = deriveStatus(compiled.lane, fold.states).context.issue as {maxRetries: number};
+	const issue = deriveStatus(compiled.lane, fold.states).context.issue as { maxRetries: number };
 	return issue.maxRetries;
 };
 const NOW = new Date("2026-08-18T07:16:03Z");
@@ -60,10 +65,10 @@ const RETIRED_KEY: HttpReply = {
 	status: 200,
 	body: '{\n\t// the founder accounts\n\t"capClearAuthors": ["@someone-else"]\n}\n',
 };
-const POSTED = (id: number): HttpReply => served({id, html_url: "https://x/y#c"}, 201);
+const POSTED = (id: number): HttpReply => served({ id, html_url: "https://x/y#c" }, 201);
 
 const document = (text: string): Effect.Effect<DocumentRead> =>
-	Effect.succeed(text === "" ? {_tag: "Failed", reason: "no such file"} : {_tag: "Text", text});
+	Effect.succeed(text === "" ? { _tag: "Failed", reason: "no such file" } : { _tag: "Text", text });
 
 const options = {
 	pr: 4310,
@@ -72,7 +77,7 @@ const options = {
 	laneRoot: null,
 	task: null,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 	now: () => NOW,
 };
 
@@ -83,9 +88,9 @@ const run = (
 	config: ReadonlyArray<Scripted> = CP_ROSTER,
 ) => {
 	const seams = fakeSeams([...script, ...config]);
-	const fs = fakeFs({files});
+	const fs = fakeFs({ files });
 	return Effect.runPromise(
-		Effect.provide(runClear({...options, ...overrides}), Layer.merge(seams.layer, fs.layer)),
+		Effect.provide(runClear({ ...options, ...overrides }), Layer.merge(seams.layer, fs.layer)),
 	).then((outcome) => ({
 		outcome,
 		requests: seams.requests,
@@ -102,7 +107,7 @@ const postedBodies = (
 	bodies.filter((_, index) => requests[index]?.startsWith("POST") === true);
 
 const GRANTABLE: ReadonlyArray<Scripted> = [
-	[PULL, pull({number: 4310, base: {ref: "main"}})],
+	[PULL, pull({ number: 4310, base: { ref: "main" } })],
 	[COMMENTS, CAPPED],
 	[VIEWER, viewer("usirin")],
 	[PERMISSION, permission("admin")],
@@ -110,18 +115,18 @@ const GRANTABLE: ReadonlyArray<Scripted> = [
 
 describe("runClear", () => {
 	it("posts the authorization first and the marker second, then answers `cleared`", async () => {
-		const {outcome, requests, bodies} = await run(
+		const { outcome, requests, bodies } = await run(
 			[
 				...GRANTABLE,
 				[POST, POSTED(900)],
-				[GET_COMMENT, served({body: `cap-cleared: round ${CAP_ROUND} · 2026-08-18T07:16:03Z\n`})],
+				[GET_COMMENT, served({ body: `cap-cleared: round ${CAP_ROUND} · 2026-08-18T07:16:03Z\n` })],
 			],
 			{},
-			{[WORKFLOW]: coderTemplateText()},
+			{ [WORKFLOW]: coderTemplateText() },
 		);
 		expect(outcome.code).toBe(0);
 		const parsed = JSON.parse(outcome.stdout);
-		expect(parsed).toMatchObject({round: CAP_ROUND, by: "usirin", resolvesTo: "cleared"});
+		expect(parsed).toMatchObject({ round: CAP_ROUND, by: "usirin", resolvesTo: "cleared" });
 		expect(parsed.cap).toBe(CAP_ROUND + 1);
 		const posted = postedBodies(requests, bodies);
 		expect(posted[0]).toContain("Founder ruling 2026-08-18");
@@ -129,22 +134,22 @@ describe("runClear", () => {
 	});
 
 	it("carries the grant into the local lane, so the guard does not freeze the cleared round", async () => {
-		const {written} = await run(
+		const { written } = await run(
 			[
 				...GRANTABLE,
 				[POST, POSTED(900)],
-				[GET_COMMENT, served({body: `cap-cleared: round ${CAP_ROUND} · 2026-08-18T07:16:03Z\n`})],
+				[GET_COMMENT, served({ body: `cap-cleared: round ${CAP_ROUND} · 2026-08-18T07:16:03Z\n` })],
 			],
 			{},
-			{[WORKFLOW]: coderTemplateText()},
+			{ [WORKFLOW]: coderTemplateText() },
 		);
 		expect(written.has(WORKFLOW)).toBe(false);
 		expect(laneBudget(written.get(LANE_LOG))).toBe(RETRY_BUDGET + 1);
 	});
 
 	it("refuses an account outside the control-plane set, writing nothing", async () => {
-		const {outcome, requests} = await run([
-			[PULL, pull({number: 4310, base: {ref: "main"}})],
+		const { outcome, requests } = await run([
+			[PULL, pull({ number: 4310, base: { ref: "main" } })],
 			[COMMENTS, CAPPED],
 			[VIEWER, viewer("someone-else")],
 		]);
@@ -153,8 +158,8 @@ describe("runClear", () => {
 	});
 
 	it("refuses when CODEOWNERS names nobody — an empty control plane grants nobody (#5959)", async () => {
-		const {outcome} = await run([
-			[PULL, pull({number: 4310, base: {ref: "main"}})],
+		const { outcome } = await run([
+			[PULL, pull({ number: 4310, base: { ref: "main" } })],
 			[COMMENTS, CAPPED],
 			[VIEWER, viewer("usirin")],
 			[CODEOWNERS_READ, codeownersNaming()],
@@ -169,15 +174,15 @@ describe("runClear", () => {
 	 * clears though the key leaves it out.
 	 */
 	it("names a still-declared capClearAuthors in a deprecation notice and clears on CODEOWNERS alone", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			[
 				...GRANTABLE,
 				[CONFIG, RETIRED_KEY],
 				[POST, POSTED(900)],
-				[GET_COMMENT, served({body: `cap-cleared: round ${CAP_ROUND} · 2026-08-18T07:16:03Z\n`})],
+				[GET_COMMENT, served({ body: `cap-cleared: round ${CAP_ROUND} · 2026-08-18T07:16:03Z\n` })],
 			],
 			{},
-			{[WORKFLOW]: coderTemplateText()},
+			{ [WORKFLOW]: coderTemplateText() },
 		);
 		expect(outcome.code).toBe(0);
 		expect(outcome.stderr).toContain(
@@ -186,8 +191,8 @@ describe("runClear", () => {
 	});
 
 	it("refuses an account only the retired capClearAuthors names", async () => {
-		const {outcome, requests} = await run([
-			[PULL, pull({number: 4310, base: {ref: "main"}})],
+		const { outcome, requests } = await run([
+			[PULL, pull({ number: 4310, base: { ref: "main" } })],
 			[COMMENTS, CAPPED],
 			[VIEWER, viewer("someone-else")],
 			[CONFIG, RETIRED_KEY],
@@ -198,9 +203,9 @@ describe("runClear", () => {
 	});
 
 	it("holds an unreadable team membership UNKNOWN rather than granting or refusing", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			[
-				[PULL, pull({number: 4310, base: {ref: "main"}})],
+				[PULL, pull({ number: 4310, base: { ref: "main" } })],
 				[COMMENTS, CAPPED],
 				[VIEWER, viewer("usirin")],
 			],
@@ -209,14 +214,14 @@ describe("runClear", () => {
 			[
 				...CP_ROSTER.filter(([pattern]) => pattern !== CODEOWNERS_READ),
 				[CODEOWNERS_READ, codeownersNaming("@o/control-plane")],
-				[TEAM, {status: 502, body: '{"message":"Bad Gateway"}'}],
+				[TEAM, { status: 502, body: '{"message":"Bad Gateway"}' }],
 			],
 		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 	});
 
 	it("refuses a bare stamp — an authorization with no date is void (#4938)", async () => {
-		const {outcome, requests} = await run(GRANTABLE, {
+		const { outcome, requests } = await run(GRANTABLE, {
 			authorization: document("one more round, go ahead"),
 		});
 		expect(outcome.code).toBe(AUTHORIZATION_VOID);
@@ -224,16 +229,16 @@ describe("runClear", () => {
 	});
 
 	it("refuses an empty authorization before reading anything", async () => {
-		const {outcome} = await run(GRANTABLE, {
-			authorization: Effect.succeed({_tag: "Text", text: " "}),
+		const { outcome } = await run(GRANTABLE, {
+			authorization: Effect.succeed({ _tag: "Text", text: " " }),
 		});
 		expect(outcome.code).toBe(AUTHORIZATION_VOID);
 	});
 
 	/** Clearing a budget that is not spent would pre-arm a round nobody has needed yet. */
 	it("refuses while the budget still has rounds in it", async () => {
-		const {outcome} = await run([
-			[PULL, pull({number: 4310, base: {ref: "main"}})],
+		const { outcome } = await run([
+			[PULL, pull({ number: 4310, base: { ref: "main" } })],
 			[
 				COMMENTS,
 				comments({
@@ -248,21 +253,25 @@ describe("runClear", () => {
 	});
 
 	it("counts an already-honoured clearance, so the second grant clears the next round", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			[
-				[PULL, pull({number: 4310, base: {ref: "main"}})],
+				[PULL, pull({ number: 4310, base: { ref: "main" } })],
 				[
 					COMMENTS,
 					comments(
 						...CAPPED_COMMENTS,
-						{id: 4, body: AUTHORIZATION, author: "usirin", createdAt: "2026-08-18T03:10:00Z"},
+						{ id: 4, body: AUTHORIZATION, author: "usirin", createdAt: "2026-08-18T03:10:00Z" },
 						{
 							id: 5,
 							body: `cap-cleared: round ${CAP_ROUND} · 2026-08-18T03:11:00Z`,
 							author: "usirin",
 							createdAt: "2026-08-18T03:11:00Z",
 						},
-						{id: 6, body: `review-code: FAIL @ ${HEAD} — four`, createdAt: "2026-08-18T04:00:00Z"},
+						{
+							id: 6,
+							body: `review-code: FAIL @ ${HEAD} — four`,
+							createdAt: "2026-08-18T04:00:00Z",
+						},
 					),
 				],
 				[VIEWER, viewer("usirin")],
@@ -270,11 +279,11 @@ describe("runClear", () => {
 				[POST, POSTED(901)],
 				[
 					GET_COMMENT,
-					served({body: `cap-cleared: round ${CAP_ROUND + 1} · 2026-08-18T07:16:03Z\n`}),
+					served({ body: `cap-cleared: round ${CAP_ROUND + 1} · 2026-08-18T07:16:03Z\n` }),
 				],
 			],
 			{},
-			{[WORKFLOW]: coderTemplateText()},
+			{ [WORKFLOW]: coderTemplateText() },
 		);
 		expect(outcome.code).toBe(0);
 		const parsed = JSON.parse(outcome.stdout);
@@ -284,8 +293,8 @@ describe("runClear", () => {
 
 	/** The control-plane set narrows the ACL; it never stands in for one. */
 	it("refuses a control-plane account that resolves below write at the ACL", async () => {
-		const {outcome, requests} = await run([
-			[PULL, pull({number: 4310, base: {ref: "main"}})],
+		const { outcome, requests } = await run([
+			[PULL, pull({ number: 4310, base: { ref: "main" } })],
 			[COMMENTS, CAPPED],
 			[VIEWER, viewer("usirin")],
 			[PERMISSION, permission("read")],
@@ -296,11 +305,11 @@ describe("runClear", () => {
 	});
 
 	it("holds an unreadable permission UNKNOWN rather than granting on the roster alone", async () => {
-		const {outcome} = await run([
-			[PULL, pull({number: 4310, base: {ref: "main"}})],
+		const { outcome } = await run([
+			[PULL, pull({ number: 4310, base: { ref: "main" } })],
 			[COMMENTS, CAPPED],
 			[VIEWER, viewer("usirin")],
-			[PERMISSION, {status: 502, body: "{}"}],
+			[PERMISSION, { status: 502, body: "{}" }],
 		]);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 	});
@@ -310,14 +319,14 @@ describe("runClear", () => {
 	 * now makes the budget test say "not spent". The re-run must reconcile the lane, not refuse on 7.
 	 */
 	it("reconciles the lane on a re-run for a round already granted, posting nothing", async () => {
-		const {outcome, requests, written} = await run(
+		const { outcome, requests, written } = await run(
 			[
-				[PULL, pull({number: 4310, base: {ref: "main"}})],
+				[PULL, pull({ number: 4310, base: { ref: "main" } })],
 				[
 					COMMENTS,
 					comments(
 						...CAPPED_COMMENTS,
-						{id: 4, body: AUTHORIZATION, author: "usirin", createdAt: "2026-08-18T03:10:00Z"},
+						{ id: 4, body: AUTHORIZATION, author: "usirin", createdAt: "2026-08-18T03:10:00Z" },
 						{
 							id: 5,
 							body: `cap-cleared: round ${CAP_ROUND} · 2026-08-18T03:11:00Z`,
@@ -330,7 +339,7 @@ describe("runClear", () => {
 				[PERMISSION, permission("admin")],
 			],
 			{},
-			{[WORKFLOW]: coderTemplateText()},
+			{ [WORKFLOW]: coderTemplateText() },
 		);
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout)).toMatchObject({

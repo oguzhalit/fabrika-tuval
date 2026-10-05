@@ -16,16 +16,16 @@
  *   reads an empty set as "nothing reserved" falls back to the on-disk id, which is exactly the
  *   collision the fetched base ref exists to remove.
  */
-import {Effect} from "effect";
-import {fetchAndResolve, listDir, readFileAt, type Shell} from "../io/git.ts";
-import {idsClaimedByPr, openPullRequests} from "../io/github.ts";
-import {partitionRecordNames, statusOf} from "./records.ts";
-import type {InFlightRecord, MergedRecord} from "./resolve.ts";
+import { Effect } from "effect";
+import { fetchAndResolve, listDir, readFileAt, type Shell } from "../io/git.ts";
+import { idsClaimedByPr, openPullRequests } from "../io/github.ts";
+import { partitionRecordNames, statusOf } from "./records.ts";
+import type { InFlightRecord, MergedRecord } from "./resolve.ts";
 
 export type MergedFailure =
-	| {readonly _tag: "FetchFailed"; readonly reason: string}
-	| {readonly _tag: "DirUnreadable"; readonly reason: string}
-	| {readonly _tag: "UnparseableId"; readonly file: string};
+	| { readonly _tag: "FetchFailed"; readonly reason: string }
+	| { readonly _tag: "DirUnreadable"; readonly reason: string }
+	| { readonly _tag: "UnparseableId"; readonly file: string };
 
 export interface MergedSet {
 	readonly sha: string;
@@ -36,21 +36,21 @@ export interface MergedSet {
 }
 
 export type MergedOutcome =
-	| {readonly _tag: "Ok"; readonly value: MergedSet}
-	| {readonly _tag: "Err"; readonly error: MergedFailure};
+	| { readonly _tag: "Ok"; readonly value: MergedSet }
+	| { readonly _tag: "Err"; readonly error: MergedFailure };
 
 /** Fetch `base`, then read `dir` at the resolved commit. Never reads the local working tree. */
 export const loadMerged = (base: string, dir: string): Shell<MergedOutcome> =>
 	Effect.gen(function* () {
 		const resolved = yield* fetchAndResolve(base);
 		if (resolved._tag === "Failure")
-			return {_tag: "Err", error: {_tag: "FetchFailed", reason: resolved.reason}};
+			return { _tag: "Err", error: { _tag: "FetchFailed", reason: resolved.reason } };
 		const listed = yield* listDir(resolved.value, dir);
 		if (listed._tag === "Failure")
-			return {_tag: "Err", error: {_tag: "DirUnreadable", reason: listed.reason}};
-		const {records, unparseable} = partitionRecordNames(listed.value);
+			return { _tag: "Err", error: { _tag: "DirUnreadable", reason: listed.reason } };
+		const { records, unparseable } = partitionRecordNames(listed.value);
 		const bad = unparseable[0];
-		if (bad !== undefined) return {_tag: "Err", error: {_tag: "UnparseableId", file: bad}};
+		if (bad !== undefined) return { _tag: "Err", error: { _tag: "UnparseableId", file: bad } };
 		return {
 			_tag: "Ok",
 			value: {
@@ -74,12 +74,12 @@ export const readMergedRecord = (
 		const text = yield* readFileAt(sha, `${dir}/${file}`);
 		if (text._tag === "Failure") return null;
 		const status = statusOf(text.value);
-		return status === null ? null : {id, file, status};
+		return status === null ? null : { id, file, status };
 	});
 
 export type InFlightFailure =
-	| {readonly _tag: "PrListFailed"; readonly reason: string}
-	| {readonly _tag: "PrFilesFailed"; readonly pr: number; readonly reason: string};
+	| { readonly _tag: "PrListFailed"; readonly reason: string }
+	| { readonly _tag: "PrFilesFailed"; readonly pr: number; readonly reason: string };
 
 /**
  * Every decision-corpus id an open pull request claims.
@@ -88,21 +88,21 @@ export type InFlightFailure =
  * UNKNOWN — it is never trimmed down to the pull requests that happened to answer.
  */
 export type InFlightOutcome =
-	| {readonly _tag: "Ok"; readonly value: ReadonlyArray<InFlightRecord>}
-	| {readonly _tag: "Err"; readonly error: InFlightFailure};
+	| { readonly _tag: "Ok"; readonly value: ReadonlyArray<InFlightRecord> }
+	| { readonly _tag: "Err"; readonly error: InFlightFailure };
 
 export const loadInFlight = (repo: string, dir: string): Shell<InFlightOutcome> =>
 	Effect.gen(function* () {
 		const prs = yield* openPullRequests(repo);
 		if (prs._tag === "Failure")
-			return {_tag: "Err", error: {_tag: "PrListFailed", reason: prs.reason}};
+			return { _tag: "Err", error: { _tag: "PrListFailed", reason: prs.reason } };
 		const claimed: InFlightRecord[] = [];
 		for (const pr of prs.value) {
 			const ids = yield* idsClaimedByPr(repo, pr, dir);
 			if (ids._tag === "Failure") {
-				return {_tag: "Err", error: {_tag: "PrFilesFailed", pr, reason: ids.reason}};
+				return { _tag: "Err", error: { _tag: "PrFilesFailed", pr, reason: ids.reason } };
 			}
 			claimed.push(...ids.value);
 		}
-		return {_tag: "Ok", value: claimed};
+		return { _tag: "Ok", value: claimed };
 	});

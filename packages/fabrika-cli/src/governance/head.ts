@@ -12,15 +12,15 @@
  * one message this module owns the shape of, so a change to `bindHead`'s wording surfaces as a failed
  * unit test rather than as a silently un-rewritten refusal.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {PullRecord} from "../io/pulls.ts";
-import {type Binding, bindHead, boundLine} from "../review/head.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { PullRecord } from "../io/pulls.ts";
+import { type Binding, bindHead, boundLine } from "../review/head.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
 
-export type {Binding, BoundHead} from "../review/head.ts";
-export {boundLine};
+export type { Binding, BoundHead } from "../review/head.ts";
+export { boundLine };
 
 /** The tail `bindHead` writes, which each verb below replaces with its own. */
 const IMPORTED_TAIL = "the artifact cannot be bound to a commit, so what it shows is UNKNOWN.";
@@ -51,5 +51,5 @@ export const bindGovernanceHead = (
 			...bound.outcome,
 			stderr: bound.outcome.stderr.map((line) => withBindingNoun(line, tail)),
 		};
-		return {_tag: "Refused" as const, outcome};
+		return { _tag: "Refused" as const, outcome };
 	});

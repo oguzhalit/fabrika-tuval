@@ -5,10 +5,10 @@
  * quietly, a closed `proposed` row taken off, untriaged customers held for triage, a ruling row
  * read as a pick, one health update, and a second run that writes nothing.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs, fakeShell, unconfigured} from "../fakes.test-support.ts";
-import type {ChildOutcome, ChildRequest} from "../io/exec.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs, fakeShell, unconfigured } from "../fakes.test-support.ts";
+import type { ChildOutcome, ChildRequest } from "../io/exec.ts";
 import {
 	absent,
 	type CommentRecord,
@@ -26,16 +26,16 @@ import type {
 	StatusUpdate,
 	StatusUpdateInput,
 } from "../io/projects.ts";
-import {emit, type Instant, type LaneRecord} from "../wire/lane-record.ts";
-import {checkMarker} from "./check.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import type {PlannedWrite} from "./dry-run.ts";
-import {type PrepBoard, runPrep} from "./prep-verb.ts";
-import {runRoute} from "./route-verb.ts";
-import {rulingComment} from "./ruled.test-support.ts";
-import {ORIGINS, OUTCOMES, STAGES} from "./shape.ts";
-import {spy} from "./spy.test-support.ts";
-import type {SyncNode} from "./sync.ts";
+import { emit, type Instant, type LaneRecord } from "../wire/lane-record.ts";
+import { checkMarker } from "./check.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import type { PlannedWrite } from "./dry-run.ts";
+import { type PrepBoard, runPrep } from "./prep-verb.ts";
+import { runRoute } from "./route-verb.ts";
+import { rulingComment } from "./ruled.test-support.ts";
+import { ORIGINS, OUTCOMES, STAGES } from "./shape.ts";
+import { spy } from "./spy.test-support.ts";
+import type { SyncNode } from "./sync.ts";
 
 const REPO = "acme/widgets";
 const OWNER = "octo-owner";
@@ -50,13 +50,18 @@ const selectField = (id: string, name: string, names: ReadonlyArray<string>) => 
 	id,
 	databaseId: 0,
 	name,
-	options: names.map((n) => ({id: `${id}:${n}`, name: n, color: "GRAY" as const, description: ""})),
+	options: names.map((n) => ({
+		id: `${id}:${n}`,
+		name: n,
+		color: "GRAY" as const,
+		description: "",
+	})),
 });
 
 const PROJECT: ProjectSnapshot = {
 	id: "PVT_1",
 	number: 3,
-	owner: {kind: "Organization", login: "acme"},
+	owner: { kind: "Organization", login: "acme" },
 	url: "https://github.com/orgs/acme/projects/3",
 	title: "widgets table",
 	createdAt: "2026-01-01T00:00:00.000Z",
@@ -70,21 +75,21 @@ const PROJECT: ProjectSnapshot = {
 		),
 		selectField("F_section", "Section", ["Tails", "Customers", "New bets", "Outside the bets"]),
 		selectField("F_size", "Size", ["S", "M", "L"]),
-		{_tag: "Plain", databaseId: 0, id: "F_spent", name: "Spent $", dataType: "NUMBER"},
-		{_tag: "Plain", databaseId: 0, id: "F_asks", name: "Asks", dataType: "NUMBER"},
+		{ _tag: "Plain", databaseId: 0, id: "F_spent", name: "Spent $", dataType: "NUMBER" },
+		{ _tag: "Plain", databaseId: 0, id: "F_asks", name: "Asks", dataType: "NUMBER" },
 		selectField(
 			"F_origin",
 			"Origin",
 			ORIGINS.map((origin) => origin.name),
 		),
-		{_tag: "Plain", databaseId: 0, id: "F_rec", name: "Rec", dataType: "TEXT"},
-		{_tag: "Plain", databaseId: 0, id: "F_plain", name: "In plain words", dataType: "TEXT"},
+		{ _tag: "Plain", databaseId: 0, id: "F_rec", name: "Rec", dataType: "TEXT" },
+		{ _tag: "Plain", databaseId: 0, id: "F_plain", name: "In plain words", dataType: "TEXT" },
 		selectField(
 			"F_outcome",
 			"Outcome",
 			OUTCOMES.map((outcome) => outcome.name),
 		),
-		{_tag: "Plain", databaseId: 0, id: "F_day", name: "Table day", dataType: "DATE"},
+		{ _tag: "Plain", databaseId: 0, id: "F_day", name: "Table day", dataType: "DATE" },
 	],
 	views: [],
 };
@@ -92,7 +97,7 @@ const PROJECT: ProjectSnapshot = {
 const ON_CALL: ProjectSnapshot = {
 	id: "PVT_2",
 	number: 4,
-	owner: {kind: "Organization", login: "acme"},
+	owner: { kind: "Organization", login: "acme" },
 	url: "https://github.com/orgs/acme/projects/4",
 	title: "widgets on-call",
 	createdAt: "2026-09-27T00:00:00.000Z",
@@ -100,7 +105,7 @@ const ON_CALL: ProjectSnapshot = {
 	readme: null,
 	fields: [
 		selectField("F_target", "Response target", ["same day", "this week"]),
-		{_tag: "Plain", databaseId: 0, id: "F_oc_plain", name: "In plain words", dataType: "TEXT"},
+		{ _tag: "Plain", databaseId: 0, id: "F_oc_plain", name: "In plain words", dataType: "TEXT" },
 	],
 	views: [],
 };
@@ -134,16 +139,21 @@ const cellValue = (
 ): ItemFieldValue => {
 	const field = project.fields.find((one) => one.name === fieldName);
 	if (field === undefined) throw new Error(`no field ${fieldName}`);
-	const at = {fieldId: field.id, fieldName, creator: OWNER, updatedAt: "2026-09-26T00:00:00.000Z"};
+	const at = {
+		fieldId: field.id,
+		fieldName,
+		creator: OWNER,
+		updatedAt: "2026-09-26T00:00:00.000Z",
+	};
 	if (field._tag === "SingleSelect") {
-		return {...at, value: {_tag: "Option", optionId: `${field.id}:${raw}`, name: String(raw)}};
+		return { ...at, value: { _tag: "Option", optionId: `${field.id}:${raw}`, name: String(raw) } };
 	}
 	if (field._tag === "Plain" && field.dataType === "DATE") {
-		return {...at, value: {_tag: "Date", date: String(raw)}};
+		return { ...at, value: { _tag: "Date", date: String(raw) } };
 	}
 	return typeof raw === "number"
-		? {...at, value: {_tag: "Number", number: raw}}
-		: {...at, value: {_tag: "Text", text: raw}};
+		? { ...at, value: { _tag: "Number", number: raw } }
+		: { ...at, value: { _tag: "Text", text: raw } };
 };
 
 const PITCH = (appetite: string) =>
@@ -166,16 +176,16 @@ const record = (issue: number, usd: number, outcome: string, asks = 0): LaneReco
 		terminalAt,
 		builds: 1,
 		reviews: 1,
-		parks: Array.from({length: asks}, () => ({
+		parks: Array.from({ length: asks }, () => ({
 			task: "issue",
 			leaf: "blocked",
 			cause: null,
 			route: "founder" as const,
 			at: terminalAt,
 		})),
-		spent: {_tag: "Measured", usd},
+		spent: { _tag: "Measured", usd },
 		origin: "bet",
-		waiting: {_tag: "None"},
+		waiting: { _tag: "None" },
 		prs: [],
 		log: [],
 	};
@@ -185,21 +195,21 @@ const TRIAGED = ["status:triaged", "ready-for:agent"];
 
 /** The board the whole suite reads; each test takes its own copy. */
 const ISSUES: Readonly<Record<number, IssueSpec>> = {
-	1: {open: false, labels: ["type:epic"], subIssues: [11, 12]},
+	1: { open: false, labels: ["type:epic"], subIssues: [11, 12] },
 	11: {
 		labels: [...TRIAGED, "p1"],
 		title: "Export: persist draft before upload",
 		body: "## In plain words\n\nThe export button can lose your work.\nWe would save a draft first.\n\n## Detail\n\nagent text",
 	},
-	12: {open: false, labels: TRIAGED},
+	12: { open: false, labels: TRIAGED },
 	20: {
 		labels: ["type:epic", "status:triaged"],
 		title: "Faster exports",
 		body: PITCH("M"),
 		subIssues: [21, 22],
 	},
-	21: {labels: TRIAGED},
-	22: {labels: TRIAGED},
+	21: { labels: TRIAGED },
+	22: { labels: TRIAGED },
 	30: {
 		labels: [...TRIAGED, "p0"],
 		title: "Login fails on Safari",
@@ -207,20 +217,20 @@ const ISSUES: Readonly<Record<number, IssueSpec>> = {
 		author: "a-user",
 		blockedBy: [31],
 	},
-	31: {labels: TRIAGED, blockedBy: [32]},
-	32: {labels: TRIAGED},
-	40: {labels: [], association: "NONE", author: "another-user"},
-	41: {labels: ["status:needs-info"], association: "CONTRIBUTOR", author: "third-user"},
+	31: { labels: TRIAGED, blockedBy: [32] },
+	32: { labels: TRIAGED },
+	40: { labels: [], association: "NONE", author: "another-user" },
+	41: { labels: ["status:needs-info"], association: "CONTRIBUTOR", author: "third-user" },
 	60: {
 		labels: ["type:epic", "status:triaged", "ready-for:human"],
 		title: "Pick the flag's future",
 		body: `${PITCH("S")}\n\n### Options\n\n- **Keep the old flag.** It works today.\n- Drop it`,
 	},
-	70: {labels: TRIAGED, records: [record(70, 20, "complete")]},
-	71: {labels: TRIAGED},
-	80: {open: false, labels: TRIAGED},
-	90: {labels: TRIAGED, records: [record(90, 12, "tripped", 1)]},
-	95: {labels: [], association: "OWNER", author: OWNER},
+	70: { labels: TRIAGED, records: [record(70, 20, "complete")] },
+	71: { labels: TRIAGED },
+	80: { open: false, labels: TRIAGED },
+	90: { labels: TRIAGED, records: [record(90, 12, "tripped", 1)] },
+	95: { labels: [], association: "OWNER", author: OWNER },
 };
 
 const ROWS: Readonly<Record<number, Cells>> = {
@@ -232,9 +242,9 @@ const ROWS: Readonly<Record<number, Cells>> = {
 		"Table day": PREVIOUS,
 		Rec: "yes.",
 	},
-	71: {Stage: "bet", Section: "New bets", Size: "M", "Table day": PREVIOUS, Rec: "yes."},
-	80: {Stage: "proposed", Section: "Customers", "Table day": PREVIOUS, Rec: "yes."},
-	90: {Stage: "in lane", Section: "Outside the bets", Origin: "driver pick", "Spent $": 12},
+	71: { Stage: "bet", Section: "New bets", Size: "M", "Table day": PREVIOUS, Rec: "yes." },
+	80: { Stage: "proposed", Section: "Customers", "Table day": PREVIOUS, Rec: "yes." },
+	90: { Stage: "in lane", Section: "Outside the bets", Origin: "driver pick", "Spent $": 12 },
 };
 
 const ran = (stdout: string, exitCode: number | null = 0, stderr = ""): ChildOutcome => ({
@@ -251,8 +261,8 @@ const world = (
 	rows: Readonly<Record<number, Cells>> = ROWS,
 	source: (request: ChildRequest) => ChildOutcome = () => ran(""),
 ) => {
-	const ok = <A>(value: A): ProjectsAnswer<A> => ({_tag: "Ok", value});
-	const items = new Map<number, {itemId: string; values: ItemFieldValue[]}>();
+	const ok = <A>(value: A): ProjectsAnswer<A> => ({ _tag: "Ok", value });
+	const items = new Map<number, { itemId: string; values: ItemFieldValue[] }>();
 	for (const [number, cells] of Object.entries(rows)) {
 		items.set(Number(number), {
 			itemId: `PVTI_${number}`,
@@ -260,7 +270,7 @@ const world = (
 				.filter(([field]) => field !== "setAt")
 				.map(([field, raw]) =>
 					field === "Stage" && typeof cells.setAt === "string"
-						? {...cellValue(field, raw), updatedAt: cells.setAt}
+						? { ...cellValue(field, raw), updatedAt: cells.setAt }
 						: cellValue(field, raw),
 				),
 		});
@@ -269,7 +279,7 @@ const world = (
 	const posts: StatusUpdateInput[] = [];
 	const comments = new Map<number, string[]>();
 	const spawned: ChildRequest[] = [];
-	const onCallItems = new Map<number, {itemId: string; values: ItemFieldValue[]}>();
+	const onCallItems = new Map<number, { itemId: string; values: ItemFieldValue[] }>();
 	const storeOf = (projectId: string) => (projectId === ON_CALL.id ? onCallItems : items);
 	const itemByid = (itemId: string) =>
 		[...items.values(), ...onCallItems.values()].find((item) => item.itemId === itemId);
@@ -304,7 +314,7 @@ const world = (
 	const board: PrepBoard<never> = {
 		locate: (_repo, target) =>
 			Effect.succeed(
-				ok({_tag: "Located", project: target.key.startsWith("boards.") ? ON_CALL : PROJECT}),
+				ok({ _tag: "Located", project: target.key.startsWith("boards.") ? ON_CALL : PROJECT }),
 			),
 		items: (projectId) =>
 			Effect.sync(() =>
@@ -351,7 +361,7 @@ const world = (
 		comment: (_repo, number, body) =>
 			Effect.sync(() => {
 				comments.set(number, [...(comments.get(number) ?? []), body]);
-				return {_tag: "Ok" as const, value: undefined};
+				return { _tag: "Ok" as const, value: undefined };
 			}),
 		issue: (_repo, number) => {
 			const spec = issues[number];
@@ -369,38 +379,38 @@ const world = (
 					stateReason: null,
 					comments: 0,
 					isPullRequest: false,
-					parent: {_tag: "None" as const},
+					parent: { _tag: "None" as const },
 				}),
 			);
 		},
 		timeline: (_repo, number) =>
 			Effect.succeed({
 				_tag: "Ok" as const,
-				value: issues[number]?.timeline ?? {references: [], reopenedAt: []},
+				value: issues[number]?.timeline ?? { references: [], reopenedAt: [] },
 			}),
 		source: (request) =>
 			Effect.sync(() => {
 				spawned.push(request);
 				return source(request);
 			}),
-		deciders: () => Effect.succeed({_tag: "Roster" as const, logins: new Set([OWNER])}),
+		deciders: () => Effect.succeed({ _tag: "Roster" as const, logins: new Set([OWNER]) }),
 		rulings: (_repo, number) =>
-			Effect.succeed({_tag: "Ok" as const, value: issues[number]?.rulings ?? []}),
+			Effect.succeed({ _tag: "Ok" as const, value: issues[number]?.rulings ?? [] }),
 		statusUpdates: () => Effect.sync(() => ok([...updates])),
-		openIssues: () => Effect.succeed({_tag: "Ok" as const, value: listed()}),
+		openIssues: () => Effect.succeed({ _tag: "Ok" as const, value: listed() }),
 		followUps: () =>
 			Effect.succeed({
 				_tag: "Ok" as const,
 				value: Object.entries(issues)
 					.filter(([, spec]) => spec.open === false && spec.labels?.includes("type:epic"))
 					.flatMap(([epic, spec]) =>
-						(spec.subIssues ?? []).map((issue) => ({issue, epic: Number(epic)})),
+						(spec.subIssues ?? []).map((issue) => ({ issue, epic: Number(epic) })),
 					),
 			}),
 		add: (projectId, _repo, issue) => {
 			const store = storeOf(projectId);
 			const itemId = projectId === ON_CALL.id ? `PVTI_oc_${issue}` : `PVTI_${issue}`;
-			if (!store.has(issue)) store.set(issue, {itemId, values: []});
+			if (!store.has(issue)) store.set(issue, { itemId, values: [] });
 			return Effect.succeed(ok(itemId));
 		},
 		set: (target, value: FieldValue) => {
@@ -461,7 +471,7 @@ const world = (
 				return value.date;
 		}
 	};
-	return {board, items, onCallItems, posts, cell, comments, spawned};
+	return { board, items, onCallItems, posts, cell, comments, spawned };
 };
 
 const prep = (
@@ -473,7 +483,7 @@ const prep = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runPrep({repo: REPO, cwd: "/repo", env, now, board, dryRun}),
+			runPrep({ repo: REPO, cwd: "/repo", env, now, board, dryRun }),
 			Layer.mergeAll(config, fakeShell([]).layer),
 		),
 	);
@@ -481,7 +491,7 @@ const prep = (
 const route = (board: PrepBoard<never>, config = unconfigured, dryRun = false) =>
 	Effect.runPromise(
 		Effect.provide(
-			runRoute({repo: REPO, cwd: "/repo", env: {}, now: NOW, board, dryRun}),
+			runRoute({ repo: REPO, cwd: "/repo", env: {}, now: NOW, board, dryRun }),
 			Layer.mergeAll(config, fakeShell([]).layer),
 		),
 	);
@@ -498,7 +508,7 @@ interface AgendaOut {
 
 describe("table prep with no .fabrika.jsonc", () => {
 	it("proposes open issues in section order, each row with a Size, a Rec and plain words", async () => {
-		const {board, cell} = world();
+		const { board, cell } = world();
 		const out = await prep(board);
 
 		expect(out.code, out.stderr.join("\n")).toBe(0);
@@ -529,7 +539,7 @@ describe("table prep with no .fabrika.jsonc", () => {
 	});
 
 	it("takes the plain words from the issue's summary, and from its title when it has none", async () => {
-		const {board} = world();
+		const { board } = world();
 		const agenda = JSON.parse((await prep(board)).stdout).agenda as ReadonlyArray<AgendaOut>;
 		const byIssue = new Map(agenda.map((row) => [row.issue, row]));
 
@@ -540,11 +550,11 @@ describe("table prep with no .fabrika.jsonc", () => {
 	});
 
 	it("proposes a row with open blockers as one chain row, its members only in the members view", async () => {
-		const {board, cell} = world();
+		const { board, cell } = world();
 		const agenda = JSON.parse((await prep(board)).stdout).agenda as ReadonlyArray<AgendaOut>;
 		const chain = agenda.find((row) => row.issue === 30);
 
-		expect(chain).toMatchObject({kind: "chain", members: [31, 32], size: "L"});
+		expect(chain).toMatchObject({ kind: "chain", members: [31, 32], size: "L" });
 		expect(chain?.plainWords).toBe("Login fails on Safari. It needs #31 and #32 done first.");
 		expect(chain?.rec).toContain("bets on #31 and #32 too, about $45 in all");
 		for (const member of [31, 32]) {
@@ -552,24 +562,27 @@ describe("table prep with no .fabrika.jsonc", () => {
 			expect(agenda.some((row) => row.issue === member)).toBe(false);
 		}
 		expect(cell(21, "Section")).toBeNull();
-		expect(agenda.find((row) => row.issue === 20)).toMatchObject({kind: "epic", members: [21, 22]});
+		expect(agenda.find((row) => row.issue === 20)).toMatchObject({
+			kind: "epic",
+			members: [21, 22],
+		});
 	});
 
 	it("leaves a bet row that blocks a proposed row out of its chain, with its Section standing", async () => {
-		const {board, cell} = world(ISSUES, {
+		const { board, cell } = world(ISSUES, {
 			...ROWS,
-			31: {Stage: "bet", Section: "New bets", Size: "S", "Table day": PREVIOUS, Rec: "yes."},
+			31: { Stage: "bet", Section: "New bets", Size: "S", "Table day": PREVIOUS, Rec: "yes." },
 		});
 		const agenda = JSON.parse((await prep(board)).stdout).agenda as ReadonlyArray<AgendaOut>;
 
-		expect(agenda.find((row) => row.issue === 30)).toMatchObject({kind: null, members: []});
+		expect(agenda.find((row) => row.issue === 30)).toMatchObject({ kind: null, members: [] });
 		expect(cell(31, "Section")).toBe("New bets");
 	});
 
 	it("counts a chain once toward the cap and leaves what does not fit for a later table", async () => {
-		const {board} = world();
+		const { board } = world();
 		const capped = fakeFs({
-			files: {"/repo/.fabrika.jsonc": JSON.stringify({table: {agendaCap: 3}})},
+			files: { "/repo/.fabrika.jsonc": JSON.stringify({ table: { agendaCap: 3 } }) },
 		}).layer;
 		const answer = JSON.parse((await prep(board, capped)).stdout);
 
@@ -580,10 +593,10 @@ describe("table prep with no .fabrika.jsonc", () => {
 	});
 
 	it("brings a flagged bet back to Tails and carries an unflagged one over with no agenda row", async () => {
-		const {board, cell} = world();
+		const { board, cell } = world();
 		const answer = JSON.parse((await prep(board)).stdout);
 
-		expect(answer.rollover).toEqual({continuing: [71], flagged: [70]});
+		expect(answer.rollover).toEqual({ continuing: [71], flagged: [70] });
 		expect(cell(70, "Stage")).toBe("bet");
 		expect(cell(70, "Size")).toBe("S");
 		expect(cell(70, "Section")).toBe("Tails");
@@ -593,18 +606,18 @@ describe("table prep with no .fabrika.jsonc", () => {
 	});
 
 	it("writes a flagged bet's Rec into an empty cell", async () => {
-		const {Rec: _, ...unwritten} = ROWS[70] ?? {};
-		const {board, cell} = world(ISSUES, {...ROWS, 70: unwritten});
+		const { Rec: _, ...unwritten } = ROWS[70] ?? {};
+		const { board, cell } = world(ISSUES, { ...ROWS, 70: unwritten });
 		const answer = JSON.parse((await prep(board)).stdout);
 
 		expect(String(cell(70, "Rec"))).toContain("Over its S size ($20 of $15)");
-		expect(answer.recsKept.map((one: {issue: number}) => one.issue)).not.toContain(70);
+		expect(answer.recsKept.map((one: { issue: number }) => one.issue)).not.toContain(70);
 	});
 
 	it("never clears or replaces a Rec a row already holds, and names each one it left", async () => {
-		const {board, cell} = world(ISSUES, {
+		const { board, cell } = world(ISSUES, {
 			...ROWS,
-			71: {...ROWS[71], Rec: "needs your ruling: both fixes conflict"},
+			71: { ...ROWS[71], Rec: "needs your ruling: both fixes conflict" },
 		});
 		const out = await prep(board);
 		const answer = JSON.parse(out.stdout);
@@ -613,8 +626,8 @@ describe("table prep with no .fabrika.jsonc", () => {
 		expect(cell(71, "Rec")).toBe("needs your ruling: both fixes conflict");
 		expect(answer.agenda.find((row: AgendaOut) => row.issue === 70)?.rec).toBe("yes.");
 		expect(answer.recsKept).toEqual([
-			{issue: 70, rec: "yes.", wanted: expect.stringContaining("Over its S size ($20 of $15)")},
-			{issue: 71, rec: "needs your ruling: both fixes conflict", wanted: null},
+			{ issue: 70, rec: "yes.", wanted: expect.stringContaining("Over its S size ($20 of $15)") },
+			{ issue: 71, rec: "needs your ruling: both fixes conflict", wanted: null },
 		]);
 		expect(out.stderr).toContain(
 			`table prep: left #71's Rec as it reads: "needs your ruling: both fixes conflict".`,
@@ -622,7 +635,7 @@ describe("table prep with no .fabrika.jsonc", () => {
 	});
 
 	it("adds only open issues, never a draft, and takes a closed proposed row off the table", async () => {
-		const {board, items} = world();
+		const { board, items } = world();
 		const answer = JSON.parse((await prep(board)).stdout);
 
 		expect(answer.removed).toEqual([80]);
@@ -636,13 +649,13 @@ describe("table prep with no .fabrika.jsonc", () => {
 	});
 
 	it("holds untriaged customer reports for triage and marks the one waiting on its filer", async () => {
-		const {board, items} = world();
+		const { board, items } = world();
 		const out = await prep(board);
 		const answer = JSON.parse(out.stdout);
 
 		expect(answer.triageFirst).toEqual([
-			{issue: 40, waitingOnFiler: false},
-			{issue: 41, waitingOnFiler: true},
+			{ issue: 40, waitingOnFiler: false },
+			{ issue: 41, waitingOnFiler: true },
 		]);
 		expect(items.has(40)).toBe(false);
 		expect(items.has(41)).toBe(false);
@@ -652,7 +665,7 @@ describe("table prep with no .fabrika.jsonc", () => {
 	});
 
 	it("asks a ruling row as a pick with its options, never a plain yes", async () => {
-		const {board} = world();
+		const { board } = world();
 		const agenda = JSON.parse((await prep(board)).stdout).agenda as ReadonlyArray<AgendaOut>;
 		const ruling = agenda.find((row) => row.issue === 60);
 
@@ -661,12 +674,12 @@ describe("table prep with no .fabrika.jsonc", () => {
 	});
 
 	it("tallies the running un-bet lanes and posts one health update with the Inbox count", async () => {
-		const {board, posts} = world();
+		const { board, posts } = world();
 		const answer = JSON.parse((await prep(board)).stdout);
 
 		expect(answer.outside).toEqual({
 			count: 1,
-			kinds: {"driver pick": 1},
+			kinds: { "driver pick": 1 },
 			spentUsd: 12,
 			unmeasured: 0,
 		});
@@ -685,11 +698,11 @@ describe("table prep with no .fabrika.jsonc", () => {
 			startDate: "2026-09-28",
 			targetDate: "2026-10-05",
 		});
-		expect(answer.health).toMatchObject({posted: true, alreadyPosted: false, inbox: 2});
+		expect(answer.health).toMatchObject({ posted: true, alreadyPosted: false, inbox: 2 });
 	});
 
 	it("finds every row already dated on a second run for the same table, and writes nothing", async () => {
-		const {board, posts, items} = world();
+		const { board, posts, items } = world();
 		await prep(board);
 		const dated = [...items.values()].filter((item) =>
 			item.values.some((one) => one.fieldName === "Table day" && one.value._tag === "Date"),
@@ -698,8 +711,8 @@ describe("table prep with no .fabrika.jsonc", () => {
 
 		expect(again.code).toBe(0);
 		const answer = JSON.parse(again.stdout);
-		expect(answer).toMatchObject({answer: "unchanged", changes: [], tableDay: NEXT});
-		expect(answer.health).toMatchObject({posted: false, alreadyPosted: true});
+		expect(answer).toMatchObject({ answer: "unchanged", changes: [], tableDay: NEXT });
+		expect(answer.health).toMatchObject({ posted: false, alreadyPosted: true });
 		expect(posts).toHaveLength(1);
 		expect(dated.length).toBeGreaterThan(0);
 		for (const item of dated) {
@@ -712,20 +725,20 @@ describe("table prep with no .fabrika.jsonc", () => {
 	});
 
 	it("marks its health update with the table day, and finds it by that date on the next run", async () => {
-		const {board, posts} = world();
+		const { board, posts } = world();
 		await prep(board);
 
 		expect(posts[0]?.body).toContain(`<!-- fabrika:table-health table-day=${NEXT} -->`);
 		const again = JSON.parse((await prep(board)).stdout);
-		expect(again.health).toMatchObject({alreadyPosted: true});
+		expect(again.health).toMatchObject({ alreadyPosted: true });
 	});
 
 	it("prepares the Saturday table on a Saturday evening in California, already Sunday in UTC", async () => {
-		const {board, posts, cell} = world();
+		const { board, posts, cell } = world();
 		const saturdays = fakeFs({
 			files: {
 				"/repo/.fabrika.jsonc": JSON.stringify({
-					table: {day: "saturday", timeZone: "America/Los_Angeles"},
+					table: { day: "saturday", timeZone: "America/Los_Angeles" },
 				}),
 			},
 		}).layer;
@@ -735,18 +748,18 @@ describe("table prep with no .fabrika.jsonc", () => {
 		expect(JSON.parse(out.stdout).tableDay).toBe("2026-10-03");
 		expect(cell(71, "Table day")).toBe("2026-10-03");
 		expect(posts[0]?.body).toContain("<!-- fabrika:table-health table-day=2026-10-03 -->");
-		expect(posts[0]).toMatchObject({startDate: "2026-10-03", targetDate: "2026-10-10"});
+		expect(posts[0]).toMatchObject({ startDate: "2026-10-03", targetDate: "2026-10-10" });
 	});
 
 	it("closes the agenda once its update stands, even when a new candidate appears", async () => {
-		const {board: first, posts} = world();
+		const { board: first, posts } = world();
 		await prep(first);
 		const grown = world({
 			...ISSUES,
-			99: {labels: ["type:epic", "status:triaged"], body: PITCH("S")},
+			99: { labels: ["type:epic", "status:triaged"], body: PITCH("S") },
 		});
-		const {board} = grown;
-		const seeded = {...board, statusUpdates: first.statusUpdates, items: first.items};
+		const { board } = grown;
+		const seeded = { ...board, statusUpdates: first.statusUpdates, items: first.items };
 		const answer = JSON.parse((await prep(seeded)).stdout);
 
 		expect(answer.changes.some((change: string) => change.includes("#99"))).toBe(false);
@@ -756,7 +769,7 @@ describe("table prep with no .fabrika.jsonc", () => {
 	});
 
 	it("needs no week set up ahead: a table months past every earlier date prepares", async () => {
-		const {board, cell} = world();
+		const { board, cell } = world();
 		const out = await prep(board, unconfigured, {}, new Date("2027-03-10T12:00:00Z"));
 
 		expect(out.code, out.stderr.join("\n")).toBe(0);
@@ -765,17 +778,17 @@ describe("table prep with no .fabrika.jsonc", () => {
 	});
 
 	it("names the date field it lacks and writes nothing on a project set up before Table day", async () => {
-		const {board, posts} = world();
+		const { board, posts } = world();
 		const legacy: ProjectSnapshot = {
 			...PROJECT,
 			fields: [
 				...PROJECT.fields.filter((field) => field.name !== "Table day"),
-				{_tag: "Iteration", databaseId: 0, id: "F_week", name: "Week", duration: 7, startDay: 1},
+				{ _tag: "Iteration", databaseId: 0, id: "F_week", name: "Week", duration: 7, startDay: 1 },
 			],
 		};
 		const out = await prep({
 			...board,
-			locate: () => Effect.succeed({_tag: "Ok", value: {_tag: "Located", project: legacy}}),
+			locate: () => Effect.succeed({ _tag: "Ok", value: { _tag: "Located", project: legacy } }),
 		});
 
 		expect(out.code).toBe(23);
@@ -784,7 +797,7 @@ describe("table prep with no .fabrika.jsonc", () => {
 	});
 
 	it("refuses and writes nothing when a candidate's group member cannot be read", async () => {
-		const {board, posts, items} = world();
+		const { board, posts, items } = world();
 		const reads: number[] = [];
 		const out = await prep({
 			...board,
@@ -808,10 +821,10 @@ describe("table prep's ruled-unbuilt Tails", () => {
 	const DECISION = ["type:decision", "status:triaged", "ready-for:agent"];
 	const RULED: Readonly<Record<number, IssueSpec>> = {
 		...ISSUES,
-		100: {labels: DECISION, rulings: [rulingComment(REPO, 100, "2026-09-20T00:00:00Z", OWNER)]},
-		101: {labels: DECISION, rulings: [rulingComment(REPO, 101, "2026-09-02T00:00:00Z", OWNER)]},
-		102: {labels: DECISION},
-		103: {labels: DECISION, rulings: [rulingComment(REPO, 103, "2026-09-01T00:00:00Z", "a-bot")]},
+		100: { labels: DECISION, rulings: [rulingComment(REPO, 100, "2026-09-20T00:00:00Z", OWNER)] },
+		101: { labels: DECISION, rulings: [rulingComment(REPO, 101, "2026-09-02T00:00:00Z", OWNER)] },
+		102: { labels: DECISION },
+		103: { labels: DECISION, rulings: [rulingComment(REPO, 103, "2026-09-01T00:00:00Z", "a-bot")] },
 		104: {
 			open: false,
 			labels: DECISION,
@@ -820,7 +833,7 @@ describe("table prep's ruled-unbuilt Tails", () => {
 	};
 
 	it("lists each open ruled issue under Tails, oldest ruling first, and names them in the update", async () => {
-		const {board, cell, posts} = world(RULED);
+		const { board, cell, posts } = world(RULED);
 		const out = await prep(board);
 
 		expect(out.code, out.stderr.join("\n")).toBe(0);
@@ -843,10 +856,10 @@ describe("table prep's ruled-unbuilt Tails", () => {
 	});
 
 	it("never re-proposes a ruled issue someone already answered or put in a lane", async () => {
-		const {board} = world(RULED, {
+		const { board } = world(RULED, {
 			...ROWS,
-			100: {Stage: "not now", Section: "Tails", "Table day": PREVIOUS, Rec: "yes."},
-			101: {Stage: "in lane", Section: "Outside the bets"},
+			100: { Stage: "not now", Section: "Tails", "Table day": PREVIOUS, Rec: "yes." },
+			101: { Stage: "in lane", Section: "Outside the bets" },
 		});
 		const agenda = JSON.parse((await prep(board)).stdout).agenda as ReadonlyArray<AgendaOut>;
 
@@ -854,12 +867,12 @@ describe("table prep's ruled-unbuilt Tails", () => {
 	});
 
 	it("refuses and writes nothing when a ruled issue's comments cannot be read", async () => {
-		const {board, posts, items} = world(RULED);
+		const { board, posts, items } = world(RULED);
 		const out = await prep({
 			...board,
 			rulings: (repo, number) =>
 				number === 101
-					? Effect.succeed({_tag: "Failure" as const, reason: "gh timed out"})
+					? Effect.succeed({ _tag: "Failure" as const, reason: "gh timed out" })
 					: board.rulings(repo, number),
 		});
 
@@ -872,10 +885,10 @@ describe("table prep's ruled-unbuilt Tails", () => {
 	});
 
 	it("refuses when the control-plane roster that says whose ruling counts cannot be read", async () => {
-		const {board, posts} = world(RULED);
+		const { board, posts } = world(RULED);
 		const out = await prep({
 			...board,
-			deciders: () => Effect.succeed({_tag: "Unread" as const, reason: "CODEOWNERS unreadable"}),
+			deciders: () => Effect.succeed({ _tag: "Unread" as const, reason: "CODEOWNERS unreadable" }),
 		});
 
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -905,7 +918,7 @@ const SHIPPED_ISSUES: Readonly<Record<number, IssueSpec>> = {
 		labels: ["type:feature", "fabrika"],
 		body: `${PITCH("M")}\n**Success:** exports finish under 2s`,
 		records: [withPr(50, 500)],
-		timeline: {references: [], reopenedAt: ["2026-09-20T00:00:00Z"]},
+		timeline: { references: [], reopenedAt: ["2026-09-20T00:00:00Z"] },
 	},
 	500: {
 		open: false,
@@ -957,15 +970,15 @@ const shippedRows = (setAt: string): Readonly<Record<number, Cells>> => ({
 });
 
 const configured = (table: unknown) =>
-	fakeFs({files: {"/repo/.fabrika.jsonc": JSON.stringify({table})}}).layer;
+	fakeFs({ files: { "/repo/.fabrika.jsonc": JSON.stringify({ table }) } }).layer;
 
-const FABRIKA_LABELLED = configured({fabrikaShare: {labels: ["fabrika"]}});
+const FABRIKA_LABELLED = configured({ fabrikaShare: { labels: ["fabrika"] } });
 
 describe("table prep with no fabrika-share label", () => {
 	it("calls a quiet week on track and names no fabrika-share check it could not make", async () => {
-		const {board, posts} = world({1: {labels: ["type:bug"]}}, {});
+		const { board, posts } = world({ 1: { labels: ["type:bug"] } }, {});
 
-		const out = await prep(board, configured({fabrikaShare: {labels: []}}));
+		const out = await prep(board, configured({ fabrikaShare: { labels: [] } }));
 
 		expect(out.code, out.stderr.join("\n")).toBe(0);
 		expect(posts).toHaveLength(1);
@@ -977,7 +990,7 @@ describe("table prep with no fabrika-share label", () => {
 
 describe("table prep with a boards block", () => {
 	const SPLIT = fakeFs({
-		files: {"/repo/.fabrika.jsonc": JSON.stringify({boards: {onCall: {}}})},
+		files: { "/repo/.fabrika.jsonc": JSON.stringify({ boards: { onCall: {} } }) },
 	}).layer;
 	const issues: Readonly<Record<number, IssueSpec>> = {
 		...ISSUES,
@@ -989,7 +1002,7 @@ describe("table prep with a boards block", () => {
 	};
 	const rows: Readonly<Record<number, Cells>> = {
 		...ROWS,
-		50: {Stage: "in lane", Section: "Outside the bets", Origin: "found mid-lane", "Spent $": 18},
+		50: { Stage: "in lane", Section: "Outside the bets", Origin: "found mid-lane", "Spent $": 18 },
 	};
 	const targetOf = (fake: ReturnType<typeof world>, issue: number): string | null => {
 		const value = fake.onCallItems
@@ -1023,17 +1036,17 @@ describe("table prep with a boards block", () => {
 		const writes = spy(split.board);
 		const again = await route(writes.board, SPLIT);
 
-		expect(JSON.parse(again.stdout)).toMatchObject({answer: "unchanged", changes: []});
+		expect(JSON.parse(again.stdout)).toMatchObject({ answer: "unchanged", changes: [] });
 		expect(writes.calls.filter((call) => ["add", "set", "clear", "remove"].includes(call))).toEqual(
 			[],
 		);
 	});
 
 	it("route moves an item's Response target to the one a relabel picks", async () => {
-		const live: Record<number, IssueSpec> = {...issues};
+		const live: Record<number, IssueSpec> = { ...issues };
 		const split = world(live, rows);
 		await route(split.board, SPLIT);
-		live[40] = {...live[40], labels: ["p0"]};
+		live[40] = { ...live[40], labels: ["p0"] };
 		const again = JSON.parse((await route(split.board, SPLIT)).stdout);
 
 		expect(again.changes).toEqual(["set #40 Response target to same day"]);
@@ -1044,7 +1057,7 @@ describe("table prep with a boards block", () => {
 		const split = world(issues, rows);
 		const answer = JSON.parse((await route(split.board)).stdout);
 
-		expect(answer).toMatchObject({answer: "unchanged", onCall: null, routed: []});
+		expect(answer).toMatchObject({ answer: "unchanged", onCall: null, routed: [] });
 		expect(split.onCallItems.size).toBe(0);
 	});
 
@@ -1058,7 +1071,7 @@ describe("table prep with a boards block", () => {
 		const board: PrepBoard<never> = {
 			...fake.board,
 			add: (projectId, repo, issue) => {
-				writes.push({_tag: "Add", project: projectOf(projectId), issue});
+				writes.push({ _tag: "Add", project: projectOf(projectId), issue });
 				return fake.board.add(projectId, repo, issue);
 			},
 			set: (target, value) => {
@@ -1093,11 +1106,11 @@ describe("table prep with a boards block", () => {
 				return fake.board.clear(target);
 			},
 			remove: (projectId, itemId) => {
-				writes.push({_tag: "Delete", project: projectOf(projectId), issue: issueOf(itemId)});
+				writes.push({ _tag: "Delete", project: projectOf(projectId), issue: issueOf(itemId) });
 				return fake.board.remove(projectId, itemId);
 			},
 		};
-		return {board, writes};
+		return { board, writes };
 	};
 
 	it("route --dry-run plans exactly the writes a live run then sends on the same board, and sends none", async () => {
@@ -1112,7 +1125,7 @@ describe("table prep with a boards block", () => {
 		expect(split.onCallItems.size).toBe(0);
 		expect(split.items.has(50)).toBe(true);
 		const answer = JSON.parse(out.stdout);
-		expect(answer).toMatchObject({answer: "dry-run", routed: [30, 40, 41, 50], changes: []});
+		expect(answer).toMatchObject({ answer: "dry-run", routed: [30, 40, 41, 50], changes: [] });
 		const planned = answer.planned as ReadonlyArray<PlannedWrite>;
 
 		const live = sent(split);
@@ -1123,7 +1136,7 @@ describe("table prep with a boards block", () => {
 			"Add",
 			"Add",
 			"Add",
-			...Array.from({length: 8}, () => "Set"),
+			...Array.from({ length: 8 }, () => "Set"),
 			"Delete",
 		]);
 		expect(planned).toContainEqual({
@@ -1133,7 +1146,7 @@ describe("table prep with a boards block", () => {
 			field: "Response target",
 			value: "same day",
 		});
-		expect(planned.at(-1)).toEqual({_tag: "Delete", project: 3, issue: 50});
+		expect(planned.at(-1)).toEqual({ _tag: "Delete", project: 3, issue: 50 });
 		expect(out.stderr).toContain("table route: would add #30 to project #4.");
 		expect(out.stderr).toContain("table route: would take #50 off project #3.");
 		expect(out.stderr.at(-1)).toBe("table route: --dry-run: nothing was written.");
@@ -1142,7 +1155,7 @@ describe("table prep with a boards block", () => {
 	it("route --dry-run keeps a failed read's exit code", async () => {
 		const failing = (fake: ReturnType<typeof world>): PrepBoard<never> => ({
 			...fake.board,
-			openIssues: () => Effect.succeed({_tag: "Failure" as const, reason: "rate limited"}),
+			openIssues: () => Effect.succeed({ _tag: "Failure" as const, reason: "rate limited" }),
 		});
 		const live = await route(failing(world(issues, rows)), SPLIT);
 		const dry = await route(failing(world(issues, rows)), SPLIT, true);
@@ -1154,7 +1167,7 @@ describe("table prep with a boards block", () => {
 	it("route --dry-run with no boards block plans nothing", async () => {
 		const answer = JSON.parse((await route(world(issues, rows).board, unconfigured, true)).stdout);
 
-		expect(answer).toMatchObject({answer: "dry-run", onCall: null, routed: [], planned: []});
+		expect(answer).toMatchObject({ answer: "dry-run", onCall: null, routed: [], planned: [] });
 	});
 
 	it("prep writes nothing to the on-call board and never proposes on-call work at the table", async () => {
@@ -1167,17 +1180,17 @@ describe("table prep with a boards block", () => {
 		]);
 		expect(answer.triageFirst).toEqual([]);
 		expect(answer.onCall.items).toEqual([
-			{issue: 30, target: "same day"},
-			{issue: 40, target: "this week"},
-			{issue: 41, target: "this week"},
-			{issue: 50, target: "same day"},
+			{ issue: 30, target: "same day" },
+			{ issue: 40, target: "this week" },
+			{ issue: 41, target: "this week" },
+			{ issue: 50, target: "same day" },
 		]);
 	});
 
 	it("prep leaves an Origin-routed issue's table row, so the next route puts it on the on-call board", async () => {
 		const split = world(
-			{...issues, 95: {labels: TRIAGED, title: "Export drops rows"}},
-			{...rows, 95: {Stage: "in lane", Section: "Outside the bets", Origin: "customer"}},
+			{ ...issues, 95: { labels: TRIAGED, title: "Export drops rows" } },
+			{ ...rows, 95: { Stage: "in lane", Section: "Outside the bets", Origin: "customer" } },
 		);
 		await prep(split.board, SPLIT);
 
@@ -1204,7 +1217,7 @@ describe("table prep with a boards block", () => {
 		);
 		expect(split.posts[0]?.status).toBe("AT_RISK");
 		expect(answer.onCall).toMatchObject({
-			spend: {_tag: "Measured", percent: 36, onCallUsd: 18, totalUsd: 50},
+			spend: { _tag: "Measured", percent: 36, onCallUsd: 18, totalUsd: 50 },
 			share: 20,
 			pastTarget: [],
 		});
@@ -1223,7 +1236,7 @@ describe("table prep with a boards block", () => {
 
 describe("table prep's outcome check", () => {
 	it("brings a bet shipped 14 days ago back as a check with its Success line, GitHub signals and fabrika's numbers", async () => {
-		const {board, cell, comments} = world(SHIPPED_ISSUES, shippedRows(SHIPPED_AT));
+		const { board, cell, comments } = world(SHIPPED_ISSUES, shippedRows(SHIPPED_AT));
 		const out = await prep(board, FABRIKA_LABELLED);
 
 		expect(out.code, out.stderr.join("\n")).toBe(0);
@@ -1250,12 +1263,12 @@ describe("table prep's outcome check", () => {
 		expect(body).toContain(checkMarker(50));
 
 		const answer = JSON.parse(out.stdout);
-		expect(answer.checks).toMatchObject([{issue: 50, shippedAt: SHIPPED_AT, comment: "posted"}]);
+		expect(answer.checks).toMatchObject([{ issue: 50, shippedAt: SHIPPED_AT, comment: "posted" }]);
 		expect(answer.agenda.some((row: AgendaOut) => row.issue === 50)).toBe(false);
 	});
 
 	it("still carries the Success line and GitHub signals with no evidence source and no fabrika label", async () => {
-		const {board, comments, spawned} = world(SHIPPED_ISSUES, shippedRows(SHIPPED_AT));
+		const { board, comments, spawned } = world(SHIPPED_ISSUES, shippedRows(SHIPPED_AT));
 		await prep(board);
 
 		const body = comments.get(50)?.[0] ?? "";
@@ -1267,8 +1280,8 @@ describe("table prep's outcome check", () => {
 	});
 
 	it("says so when the pitch names no Success line", async () => {
-		const {board, cell, comments} = world(
-			{...SHIPPED_ISSUES, 50: {...SHIPPED_ISSUES[50], body: PITCH("M")}},
+		const { board, cell, comments } = world(
+			{ ...SHIPPED_ISSUES, 50: { ...SHIPPED_ISSUES[50], body: PITCH("M") } },
 			shippedRows(SHIPPED_AT),
 		);
 		await prep(board);
@@ -1282,9 +1295,9 @@ describe("table prep's outcome check", () => {
 			"./latency.sh": ran("p95 1.8s\n"),
 			"./errors.sh": ran("", 2, "no credentials\n"),
 			"./slow.sh": ran("", null),
-			"./gone.sh": {_tag: "Unstartable", reason: "ENOENT"},
+			"./gone.sh": { _tag: "Unstartable", reason: "ENOENT" },
 		};
-		const {board, cell, comments, spawned} = world(
+		const { board, cell, comments, spawned } = world(
 			SHIPPED_ISSUES,
 			shippedRows(SHIPPED_AT),
 			(request) => scripts[request.file] ?? ran(""),
@@ -1293,13 +1306,13 @@ describe("table prep's outcome check", () => {
 			board,
 			configured({
 				evidenceSources: [
-					{name: "latency", command: ["./latency.sh", "--days", "14"]},
-					{name: "errors", command: ["./errors.sh"]},
-					{name: "slow", command: ["./slow.sh"], timeoutSeconds: 2},
-					{name: "gone", command: ["./gone.sh"]},
+					{ name: "latency", command: ["./latency.sh", "--days", "14"] },
+					{ name: "errors", command: ["./errors.sh"] },
+					{ name: "slow", command: ["./slow.sh"], timeoutSeconds: 2 },
+					{ name: "gone", command: ["./gone.sh"] },
 				],
 			}),
-			{PATH: "/usr/bin", GITHUB_TOKEN: "ghp_secret"},
+			{ PATH: "/usr/bin", GITHUB_TOKEN: "ghp_secret" },
 		);
 
 		expect(out.code, out.stderr.join("\n")).toBe(0);
@@ -1315,7 +1328,7 @@ describe("table prep's outcome check", () => {
 		);
 
 		const latency = spawned.find((request) => request.file === "./latency.sh");
-		expect(latency).toMatchObject({args: ["--days", "14"], cwd: "/repo", timeoutSeconds: 60});
+		expect(latency).toMatchObject({ args: ["--days", "14"], cwd: "/repo", timeoutSeconds: 60 });
 		expect(latency?.env).toEqual({
 			PATH: "/usr/bin",
 			FABRIKA_CHECK_REPO: REPO,
@@ -1333,7 +1346,7 @@ describe("table prep's outcome check", () => {
 		expect(byDefault.comments.get(50)).toBeUndefined();
 
 		const tuned = world(SHIPPED_ISSUES, recent);
-		await prep(tuned.board, configured({checkDelayDays: 7}));
+		await prep(tuned.board, configured({ checkDelayDays: 7 }));
 		expect(tuned.cell(50, "Stage")).toBe("check");
 	});
 
@@ -1348,7 +1361,7 @@ describe("table prep's outcome check", () => {
 				Outcome: "worked",
 			},
 		};
-		const {board, cell, comments} = world(SHIPPED_ISSUES, answered);
+		const { board, cell, comments } = world(SHIPPED_ISSUES, answered);
 		const out = await prep(board);
 
 		expect(out.code).toBe(0);
@@ -1360,7 +1373,7 @@ describe("table prep's outcome check", () => {
 	});
 
 	it("brings back only bets: a shipped row that ran without a bet stays where it is", async () => {
-		const {board, cell, comments} = world(
+		const { board, cell, comments } = world(
 			{
 				...SHIPPED_ISSUES,
 				60: {
@@ -1368,7 +1381,7 @@ describe("table prep's outcome check", () => {
 					title: "Tidy the logs",
 					labels: ["type:chore"],
 					body: `${PITCH("S")}\n**Success:** fewer log lines`,
-					records: [{...withPr(60, 600), origin: "driver-pick"}],
+					records: [{ ...withPr(60, 600), origin: "driver-pick" }],
 				},
 			},
 			{
@@ -1389,19 +1402,19 @@ describe("table prep's outcome check", () => {
 		expect(cell(60, "Rec")).toBeNull();
 		expect(comments.get(60)).toBeUndefined();
 		expect(cell(50, "Stage")).toBe("check");
-		expect(JSON.parse(out.stdout).checks.map((check: {issue: number}) => check.issue)).toEqual([
+		expect(JSON.parse(out.stdout).checks.map((check: { issue: number }) => check.issue)).toEqual([
 			50,
 		]);
 	});
 
 	it("posts no second check comment when one already stands", async () => {
-		const {board, cell, comments} = world(SHIPPED_ISSUES, shippedRows(SHIPPED_AT));
+		const { board, cell, comments } = world(SHIPPED_ISSUES, shippedRows(SHIPPED_AT));
 		comments.set(50, [`an earlier run\n${checkMarker(50)}`]);
 		const out = await prep(board);
 
 		expect(cell(50, "Stage")).toBe("check");
 		expect(comments.get(50)).toHaveLength(1);
-		expect(JSON.parse(out.stdout).checks).toMatchObject([{issue: 50, comment: "standing"}]);
+		expect(JSON.parse(out.stdout).checks).toMatchObject([{ issue: 50, comment: "standing" }]);
 	});
 });
 
@@ -1426,16 +1439,16 @@ describe("table prep --dry-run", () => {
 	});
 
 	it("prints every planned write of every phase under answer dry-run", async () => {
-		const {board} = world(SHIPPED_ISSUES, shippedRows(SHIPPED_AT));
+		const { board } = world(SHIPPED_ISSUES, shippedRows(SHIPPED_AT));
 		const out = await prep(board, unconfigured, {}, NOW, true);
 		const answer = JSON.parse(out.stdout);
 
 		expect(answer.answer).toBe("dry-run");
 		expect(answer.changes).toEqual([]);
 		expect(answer.health.posted).toBe(false);
-		expect(answer.checks).toMatchObject([{issue: 50, comment: "planned"}]);
+		expect(answer.checks).toMatchObject([{ issue: 50, comment: "planned" }]);
 		const planned = answer.planned as ReadonlyArray<Record<string, unknown>>;
-		expect(planned).toContainEqual({_tag: "Add", project: 3, issue: 11});
+		expect(planned).toContainEqual({ _tag: "Add", project: 3, issue: 11 });
 		expect(planned).toContainEqual({
 			_tag: "Set",
 			project: 3,
@@ -1450,7 +1463,7 @@ describe("table prep --dry-run", () => {
 			field: "Table day",
 			value: NEXT,
 		});
-		expect(planned).toContainEqual({_tag: "Delete", project: 3, issue: 80});
+		expect(planned).toContainEqual({ _tag: "Delete", project: 3, issue: 80 });
 		expect(planned).toContainEqual({
 			_tag: "Set",
 			project: 3,
@@ -1459,10 +1472,10 @@ describe("table prep --dry-run", () => {
 			value: "check",
 		});
 		const comment = planned.find((write) => write._tag === "Comment");
-		expect(comment).toMatchObject({issue: 50});
+		expect(comment).toMatchObject({ issue: 50 });
 		expect(String(comment?.body)).toContain(checkMarker(50));
 		const post = planned.find((write) => write._tag === "Post");
-		expect(post).toMatchObject({project: 3});
+		expect(post).toMatchObject({ project: 3 });
 		expect(String(post?.body)).toContain(NEXT);
 		expect(out.stderr).toContain("table prep: would take #80 off project #3.");
 		expect(out.stderr).toContain("table prep: --dry-run: nothing was written.");

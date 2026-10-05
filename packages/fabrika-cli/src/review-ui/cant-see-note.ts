@@ -11,7 +11,7 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/10368
  */
-import type {NearMiss} from "./hand-check.ts";
+import type { NearMiss } from "./hand-check.ts";
 
 /** The note's first line, and how a later run recognises one it posted. */
 export const CANT_SEE_HEADING = "**The UI review could not look at this pull request.**";

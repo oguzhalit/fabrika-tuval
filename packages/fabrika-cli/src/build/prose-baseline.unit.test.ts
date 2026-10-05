@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import {docLeaks} from "./doc-leaks.ts";
-import {introducedLeaks} from "./prose-baseline.ts";
+import { describe, expect, it } from "vitest";
+import { docLeaks } from "./doc-leaks.ts";
+import { introducedLeaks } from "./prose-baseline.ts";
 
 const scan = (text: string) => docLeaks("docs/guide.md", text, []);
 

@@ -12,13 +12,13 @@
  * [`foreign-checkout.cli.test.ts`](./foreign-checkout.cli.test.ts), whose scratch tree shares no
  * repository and must still be refused.
  */
-import {execFileSync} from "node:child_process";
-import {mkdirSync, mkdtempSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join, resolve} from "node:path";
-import {fileURLToPath} from "node:url";
-import {afterAll, beforeAll, describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
 
 const BIN = fileURLToPath(new URL("../bin.ts", import.meta.url));
 const CHECKOUT = fileURLToPath(new URL("../../../../", import.meta.url)).replace(/\/$/, "");
@@ -50,8 +50,8 @@ beforeAll(() => {
 	peer = join(scratch, "lane");
 	const gitDir = join(scratch, "gitdir");
 	const installed = join(peer, "node_modules", "@kampus", "fabrika-cli");
-	mkdirSync(installed, {recursive: true});
-	mkdirSync(gitDir, {recursive: true});
+	mkdirSync(installed, { recursive: true });
+	mkdirSync(gitDir, { recursive: true });
 	// `commondir` is what makes this tree the same repository as the invoked copy's — the mechanism
 	// `git worktree` uses, per `gitrepository-layout(5)`.
 	writeFileSync(join(gitDir, "commondir"), `${commonDir}\n`);
@@ -65,7 +65,7 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-	if (peer !== undefined) rmSync(join(peer, ".."), {recursive: true, force: true});
+	if (peer !== undefined) rmSync(join(peer, ".."), { recursive: true, force: true });
 });
 
 const invokeFromPeer = (...args: ReadonlyArray<string>) => {
@@ -75,10 +75,14 @@ const invokeFromPeer = (...args: ReadonlyArray<string>) => {
 			encoding: "utf8",
 			stdio: ["ignore", "pipe", "pipe"],
 		});
-		return {code: 0, stdout, stderr: ""};
+		return { code: 0, stdout, stderr: "" };
 	} catch (err) {
-		const failure = err as {status?: number; stdout?: string; stderr?: string};
-		return {code: failure.status ?? -1, stdout: failure.stdout ?? "", stderr: failure.stderr ?? ""};
+		const failure = err as { status?: number; stdout?: string; stderr?: string };
+		return {
+			code: failure.status ?? -1,
+			stdout: failure.stdout ?? "",
+			stderr: failure.stderr ?? "",
+		};
 	}
 };
 

@@ -2,8 +2,8 @@
  * `pointer-guard`'s extraction and path-likeness filter — the precision boundary is what these
  * cases pin.
  */
-import {describe, expect, it} from "vitest";
-import {extractPathRefs, maskFences, stalePointersIn, toPathRef} from "./pointer.ts";
+import { describe, expect, it } from "vitest";
+import { extractPathRefs, maskFences, stalePointersIn, toPathRef } from "./pointer.ts";
 
 describe("toPathRef", () => {
 	it("accepts a repo-root-relative path under a known top-level segment", () => {
@@ -52,7 +52,7 @@ describe("maskFences", () => {
 describe("extractPathRefs", () => {
 	it("reads inline spans and reports their 1-based line", () => {
 		const refs = extractPathRefs("intro\nsee `apps/site/index.ts` here\n");
-		expect(refs).toEqual([{path: "apps/site/index.ts", line: 2}]);
+		expect(refs).toEqual([{ path: "apps/site/index.ts", line: 2 }]);
 	});
 
 	// Inline spans are what this guard reads; a fenced example is not a live pointer.
@@ -69,7 +69,7 @@ describe("stalePointersIn", () => {
 	it("keeps only the pointers the predicate rejects", () => {
 		const text = "`apps/site/here.ts` and `apps/site/gone.ts`";
 		expect(stalePointersIn("CLAUDE.md", text, (p) => p === "apps/site/here.ts")).toEqual([
-			{file: "CLAUDE.md", line: 1, path: "apps/site/gone.ts"},
+			{ file: "CLAUDE.md", line: 1, path: "apps/site/gone.ts" },
 		]);
 	});
 });

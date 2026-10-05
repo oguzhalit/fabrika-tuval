@@ -27,14 +27,14 @@
  * thread, an unreadable permission and a marker whose posted instant does not parse are all UNKNOWN
  * on `11`, and none of them is a row quietly dropped.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {searchOpenIssues} from "../io/issues.ts";
-import {ageInMinutes} from "../lane/stale.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {readClaimants} from "./claim.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {resolveTargetRepo} from "./target.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { searchOpenIssues } from "../io/issues.ts";
+import { ageInMinutes } from "../lane/stale.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { readClaimants } from "./claim.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { resolveTargetRepo } from "./target.ts";
 
 const VERB = "build claims stale";
 
@@ -105,7 +105,7 @@ export const runStaleClaims = (
 
 		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
 		if (resolved._tag === "Refused") return resolved.outcome;
-		const {repo} = resolved;
+		const { repo } = resolved;
 
 		const found = yield* searchOpenIssues(repo, [...CANDIDATE_QUERY]);
 		if (found._tag === "Failure") {

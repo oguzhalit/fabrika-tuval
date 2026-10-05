@@ -11,18 +11,27 @@
  * where a fresh repo would be told its queue is clear. The label set was read, so the absence is
  * proven: only a label set that could not be read makes a bucket `unknown`.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {scannedLine} from "../build/target.ts";
-import type {StatusNames} from "../config/board.ts";
-import type {Shell} from "../io/git.ts";
-import {openPullRequests} from "../io/github.ts";
-import {listLabels, openIssuesWithLabel} from "../io/issues.ts";
-import {PRIORITIES} from "../triage/facets.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {type AsOf, asOfToken, detail, EMPTY_CELL, instant, noAsOf, readNow, row} from "./fields.ts";
-import {BOARD_SUBJECT, readBoard as readRepoBoard, refusalReason} from "./repo-board.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { scannedLine } from "../build/target.ts";
+import type { StatusNames } from "../config/board.ts";
+import type { Shell } from "../io/git.ts";
+import { openPullRequests } from "../io/github.ts";
+import { listLabels, openIssuesWithLabel } from "../io/issues.ts";
+import { PRIORITIES } from "../triage/facets.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import {
+	type AsOf,
+	asOfToken,
+	detail,
+	EMPTY_CELL,
+	instant,
+	noAsOf,
+	readNow,
+	row,
+} from "./fields.ts";
+import { BOARD_SUBJECT, readBoard as readRepoBoard, refusalReason } from "./repo-board.ts";
 
 const VERB = "status board";
 
@@ -48,16 +57,16 @@ export const labelBuckets = (statuses: StatusNames) => [
 ];
 
 /** The pull-request bucket, read off `/pulls` rather than `/issues` — it counts PRs on purpose. */
-export const IN_FLIGHT = {name: "in-flight", selector: "pulls?state=open"} as const;
+export const IN_FLIGHT = { name: "in-flight", selector: "pulls?state=open" } as const;
 
 /**
  * What one bucket's read established: a count, a label the repository proved it lacks, or nothing.
  * `Absent` is a proven negative and `Unknown` a failed read, so neither carries a count.
  */
 export type BucketReading =
-	| {readonly _tag: "Counted"; readonly count: number; readonly asOf: AsOf}
-	| {readonly _tag: "Absent"; readonly label: string; readonly asOf: AsOf}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Counted"; readonly count: number; readonly asOf: AsOf }
+	| { readonly _tag: "Absent"; readonly label: string; readonly asOf: AsOf }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 export interface Bucket {
 	readonly name: string;
@@ -87,19 +96,19 @@ export type BoardRead =
 	 * The repository could not be read at all, or its config gave no board to name the status
 	 * buckets by — every bucket is UNKNOWN, so there is no readout.
 	 */
-	| {readonly _tag: "Failed"; readonly repo: string; readonly reason: string}
-	| {readonly _tag: "Read"; readonly repo: string; readonly buckets: ReadonlyArray<Bucket>};
+	| { readonly _tag: "Failed"; readonly repo: string; readonly reason: string }
+	| { readonly _tag: "Read"; readonly repo: string; readonly buckets: ReadonlyArray<Bucket> };
 
 const unknownBucket = (name: string, selector: string, reason: string): Bucket => ({
 	name,
 	selector,
-	reading: {_tag: "Unknown", reason},
+	reading: { _tag: "Unknown", reason },
 });
 
 const countedBucket = (name: string, selector: string, count: number, at: Date): Bucket => ({
 	name,
 	selector,
-	reading: {_tag: "Counted", count, asOf: readNow(instant(at))},
+	reading: { _tag: "Counted", count, asOf: readNow(instant(at)) },
 });
 
 /**
@@ -132,7 +141,7 @@ const readBuckets = (repo: string, statuses: StatusNames, now: () => Date): Shel
 				buckets.push({
 					name: bucket.name,
 					selector: bucket.selector,
-					reading: {_tag: "Absent", label: bucket.label, asOf: readNow(instant(now()))},
+					reading: { _tag: "Absent", label: bucket.label, asOf: readNow(instant(now())) },
 				});
 				continue;
 			}
@@ -157,7 +166,7 @@ const readBuckets = (repo: string, statuses: StatusNames, now: () => Date): Shel
 					repo,
 					reason: labels._tag === "Failure" ? labels.reason : "every bucket read failed",
 				} as const)
-			: ({_tag: "Read", repo, buckets: ordered(buckets)} as const);
+			: ({ _tag: "Read", repo, buckets: ordered(buckets) } as const);
 	});
 
 /**
@@ -216,7 +225,7 @@ export interface BoardInput {
 	readonly json: boolean;
 }
 
-export const runBoard = ({read, json}: BoardInput): VerbOutcome => {
+export const runBoard = ({ read, json }: BoardInput): VerbOutcome => {
 	if (read._tag === "Failed") {
 		return refuse(
 			PRECONDITION_UNKNOWN,

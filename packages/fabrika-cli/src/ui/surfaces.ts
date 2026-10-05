@@ -8,7 +8,7 @@
  * answers.
  */
 
-import type {UiSurface} from "../config/keys/ui-surfaces.ts";
+import type { UiSurface } from "../config/keys/ui-surfaces.ts";
 
 /** The readiness bound: an app that has not answered 200 by here leaves its surfaces UNKNOWN. */
 export const READY_TIMEOUT_MS = 60_000;

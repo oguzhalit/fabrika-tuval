@@ -17,10 +17,10 @@
  * `governance-floor.yml` decides a conclusion, and nothing here re-derives the floor: the answer is
  * `./floor-verb.ts`'s `resolveFloor`, which is the same derivation the exit-code mode seats.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN} from "./codes.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN } from "./codes.ts";
 import {
 	type FloorOptions,
 	type FloorResolution,
@@ -37,7 +37,7 @@ import {
 	updateCheckRun,
 	type WrittenCheckRun,
 } from "./github.ts";
-import {inspectedSha, NULL_TOKEN, resolveTargetRepo} from "./target.ts";
+import { inspectedSha, NULL_TOKEN, resolveTargetRepo } from "./target.ts";
 
 const VERB = "ship floor --publish-check";
 
@@ -102,26 +102,26 @@ const BLOCKED_TITLE_PREFIX = "The governance verdict at this head is ";
  */
 export type PublishedFloor =
 	/** `n/a` — the diff touches no governance root. */
-	| {readonly _tag: "Unbound"}
+	| { readonly _tag: "Unbound" }
 	/** The floor could not be read. UNKNOWN, and so nobody's to clear. */
-	| {readonly _tag: "Unresolved"}
+	| { readonly _tag: "Unresolved" }
 	/** A head-bound, authorized PASS. */
-	| {readonly _tag: "Satisfied"}
+	| { readonly _tag: "Satisfied" }
 	/** No verdict at this head yet — the one row that stays pending. */
-	| {readonly _tag: "Awaiting"}
+	| { readonly _tag: "Awaiting" }
 	/** A verdict exists and blocks; `state` is `ship gate`'s word for it, `stale` or `fail`. */
-	| {readonly _tag: "Blocked"; readonly state: string}
-	| {readonly _tag: "Unreadable"};
+	| { readonly _tag: "Blocked"; readonly state: string }
+	| { readonly _tag: "Unreadable" };
 
 export const publishedFloorOf = (title: string | null): PublishedFloor => {
-	if (title === null) return {_tag: "Unreadable"};
-	if (title === UNBOUND_TITLE) return {_tag: "Unbound"};
-	if (title === UNRESOLVED_TITLE) return {_tag: "Unresolved"};
-	if (title === SATISFIED_TITLE) return {_tag: "Satisfied"};
-	if (title === AWAITING_TITLE) return {_tag: "Awaiting"};
-	if (!title.startsWith(BLOCKED_TITLE_PREFIX)) return {_tag: "Unreadable"};
+	if (title === null) return { _tag: "Unreadable" };
+	if (title === UNBOUND_TITLE) return { _tag: "Unbound" };
+	if (title === UNRESOLVED_TITLE) return { _tag: "Unresolved" };
+	if (title === SATISFIED_TITLE) return { _tag: "Satisfied" };
+	if (title === AWAITING_TITLE) return { _tag: "Awaiting" };
+	if (!title.startsWith(BLOCKED_TITLE_PREFIX)) return { _tag: "Unreadable" };
 	const state = title.slice(BLOCKED_TITLE_PREFIX.length);
-	return state === "" ? {_tag: "Unreadable"} : {_tag: "Blocked", state};
+	return state === "" ? { _tag: "Unreadable" } : { _tag: "Blocked", state };
 };
 
 /**
@@ -181,7 +181,7 @@ export const planFor = (pr: number, resolution: FloorResolution): CheckPlan => {
 
 const draftFor = (plan: CheckPlan, headSha: string): CheckRunDraft =>
 	plan._tag === "Pending"
-		? {_tag: "Pending", name: CHECK_RUN_NAME, headSha, title: plan.title, summary: plan.summary}
+		? { _tag: "Pending", name: CHECK_RUN_NAME, headSha, title: plan.title, summary: plan.summary }
 		: {
 				_tag: "Concluded",
 				name: CHECK_RUN_NAME,
@@ -199,8 +199,8 @@ const draftFor = (plan: CheckPlan, headSha: string): CheckRunDraft =>
  * and folding both in would put a second answer about the floor inside the thing that only publishes.
  */
 export type Publication =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Written"; readonly written: WrittenCheckRun; readonly rewritten: boolean};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Written"; readonly written: WrittenCheckRun; readonly rewritten: boolean };
 
 /**
  * Write one {@link CheckPlan} to a head as the `governance floor at head` check-run.
@@ -272,7 +272,7 @@ export const publishFloorCheck = (
 			};
 		}
 
-		return {_tag: "Written" as const, written: written.value, rewritten: rewritable};
+		return { _tag: "Written" as const, written: written.value, rewritten: rewritable };
 	});
 
 const stateOf = (resolution: FloorResolution): string =>
@@ -298,14 +298,14 @@ export const runFloorCheck = (
 
 		// `resolveFloor` resolves the repository again, and that second call is a pass-through rather
 		// than a second probe: it is handed the name this one already proved.
-		const resolution = yield* resolveFloor({...options, repo});
+		const resolution = yield* resolveFloor({ ...options, repo });
 		const plan = planFor(options.pr, resolution);
 		const relayed =
 			resolution._tag === "Unresolved" ? resolution.outcome.stderr : [...resolution.stderr];
 
 		const published = yield* publishFloorCheck(VERB, repo, bound, plan, relayed);
 		if (published._tag === "Refused") return published.outcome;
-		const {written, rewritten} = published;
+		const { written, rewritten } = published;
 
 		const posted = `${VERB}: ${rewritten ? "rewrote" : "posted"} check-run ${written.id} — the job's own exit code no longer carries the floor.`;
 		return answer(

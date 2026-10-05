@@ -16,8 +16,8 @@
  * add members and rename the others; renaming those two away drops the behaviour they carry.
  */
 
-import {SHIP_CLASS_NAMES} from "../review/classes.ts";
-import {containmentRefusal, type FacetVocabulary, type Ownership} from "./containment.ts";
+import { SHIP_CLASS_NAMES } from "../review/classes.ts";
+import { containmentRefusal, type FacetVocabulary, type Ownership } from "./containment.ts";
 
 /** Each `status:` label by the role it plays, so a rename cannot lose which status it renamed. */
 export interface StatusNames {
@@ -105,8 +105,8 @@ export interface ResolvedBoard {
 }
 
 export type Composed =
-	| {readonly _tag: "Vocabulary"; readonly facets: ReadonlyArray<FacetVocabulary>}
-	| {readonly _tag: "Refused"; readonly reason: string};
+	| { readonly _tag: "Vocabulary"; readonly facets: ReadonlyArray<FacetVocabulary> }
+	| { readonly _tag: "Refused"; readonly reason: string };
 
 const ownershipFor = (
 	name: FacetName,
@@ -115,15 +115,15 @@ const ownershipFor = (
 	shipped: ReadonlyArray<FacetVocabulary>,
 ): Ownership => {
 	const inherited = shipped.find((facet) => facet.name === name)?.owns;
-	if (inherited === undefined) return {_tag: "Set", labels: values};
+	if (inherited === undefined) return { _tag: "Set", labels: values };
 	// Inherit the shipped ownership only where it still contains the declared values in both
 	// directions. `^p\d+$` is deliberately wider than `p0..p2` so a retired priority is still
 	// cleaned up, and that width is worth keeping for a repo that merely drops `p2` — but a repo
 	// whose priorities are `sev1, sev2` is not owned by it at all, and inheriting there would write
 	// a label the facet can never supersede.
-	return containmentRefusal(key, [{name, owns: inherited, values}]) === null
+	return containmentRefusal(key, [{ name, owns: inherited, values }]) === null
 		? inherited
-		: {_tag: "Set", labels: values};
+		: { _tag: "Set", labels: values };
 };
 
 /**
@@ -160,5 +160,5 @@ export const composeFacets = (
 		};
 	});
 	const refusal = containmentRefusal(key, facets);
-	return refusal === null ? {_tag: "Vocabulary", facets} : {_tag: "Refused", reason: refusal};
+	return refusal === null ? { _tag: "Vocabulary", facets } : { _tag: "Refused", reason: refusal };
 };

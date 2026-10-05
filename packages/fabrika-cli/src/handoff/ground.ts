@@ -20,13 +20,13 @@
  * compared.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {execCapture} from "../io/exec.ts";
-import {type Attempt, fail, ok, resolveCommit, type Shell} from "../io/git.ts";
-import {isRecord, parseJson} from "../io/json.ts";
-import {listCheckRuns, pullsForBranch} from "../io/pulls.ts";
-import {bodyDigest} from "../ledger/digest.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { execCapture } from "../io/exec.ts";
+import { type Attempt, fail, ok, resolveCommit, type Shell } from "../io/git.ts";
+import { isRecord, parseJson } from "../io/json.ts";
+import { listCheckRuns, pullsForBranch } from "../io/pulls.ts";
+import { bodyDigest } from "../ledger/digest.ts";
 
 /** Whether a successor can see the work. `unknown` is a fact about an unset upstream, not a failure. */
 export type Reachable = "pushed" | "unpushed" | "unknown";
@@ -41,7 +41,7 @@ export interface GitCore {
 	readonly reachable: Reachable;
 	readonly aheadBy: number | null;
 	readonly behindBy: number | null;
-	readonly base: {readonly branch: string; readonly head: string};
+	readonly base: { readonly branch: string; readonly head: string };
 }
 
 /** Rows 11-13: the working copy that took the pack. Digested, never compared. */
@@ -53,7 +53,7 @@ export interface TreeState {
 
 /** Rows 14-19. `pull` is `null` when no pull request has this head ref — a fact, not an absence. */
 export interface BoardState {
-	readonly issue: {readonly state: string; readonly labels: ReadonlyArray<string>};
+	readonly issue: { readonly state: string; readonly labels: ReadonlyArray<string> };
 	readonly pull: {
 		readonly number: number;
 		readonly state: string;
@@ -66,7 +66,7 @@ export interface GroundState {
 	readonly issue: number;
 	readonly repo: string;
 	readonly capturedAt: string;
-	readonly git: GitCore & {readonly tree: TreeState};
+	readonly git: GitCore & { readonly tree: TreeState };
 	readonly board: BoardState;
 	readonly groundDigest: string;
 }
@@ -127,7 +127,7 @@ export const fieldAt = (source: object, path: string): unknown => {
 export const preImage = (ground: {
 	readonly issue: number;
 	readonly repo: string;
-	readonly git: GitCore & {readonly tree: TreeState};
+	readonly git: GitCore & { readonly tree: TreeState };
 	readonly board: BoardState;
 }): string =>
 	DIGESTED_FIELDS.map((field) => `${field}=${JSON.stringify(fieldAt(ground, field))}`).join("\n");
@@ -164,8 +164,8 @@ export const renderGround = (ground: GroundState): string =>
 	});
 
 export type GroundParse =
-	| {readonly _tag: "Ground"; readonly value: GroundState}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Ground"; readonly value: GroundState }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 const isChecks = (value: unknown): value is ChecksWord =>
 	value === "passing" || value === "failing" || value === "pending" || value === "none";
@@ -187,23 +187,23 @@ export const parseGround = (text: string): GroundParse => {
 	// Through `parseJson` rather than a raw `try/catch`: this module imports `effect`, where a native
 	// throw is banned, and that boundary is exactly what `io/json.ts` exists to be.
 	const parsed = parseJson(text);
-	if (!isRecord(parsed)) return {_tag: "Unusable", reason: "the proven half is not one object"};
-	const {issue, repo, capturedAt, groundDigest} = parsed;
+	if (!isRecord(parsed)) return { _tag: "Unusable", reason: "the proven half is not one object" };
+	const { issue, repo, capturedAt, groundDigest } = parsed;
 	const git = parsed.git;
 	const board = parsed.board;
 	if (typeof issue !== "number" || typeof repo !== "string" || typeof capturedAt !== "string") {
-		return {_tag: "Unusable", reason: "issue, repo or capturedAt is missing or not its shape"};
+		return { _tag: "Unusable", reason: "issue, repo or capturedAt is missing or not its shape" };
 	}
 	if (typeof groundDigest !== "string") {
-		return {_tag: "Unusable", reason: "the proven half carries no groundDigest"};
+		return { _tag: "Unusable", reason: "the proven half carries no groundDigest" };
 	}
 	if (!isRecord(git) || !isRecord(board)) {
-		return {_tag: "Unusable", reason: "the proven half carries no git or no board object"};
+		return { _tag: "Unusable", reason: "the proven half carries no git or no board object" };
 	}
 	const base = git.base;
 	const tree = git.tree;
 	if (!isRecord(base) || typeof base.branch !== "string" || typeof base.head !== "string") {
-		return {_tag: "Unusable", reason: "git.base is missing its branch or head"};
+		return { _tag: "Unusable", reason: "git.base is missing its branch or head" };
 	}
 	if (
 		!isRecord(tree) ||
@@ -211,30 +211,30 @@ export const parseGround = (text: string): GroundParse => {
 		!isCount(tree.trackedModified) ||
 		!isCount(tree.untracked)
 	) {
-		return {_tag: "Unusable", reason: "git.tree is missing a field or carries one off its shape"};
+		return { _tag: "Unusable", reason: "git.tree is missing a field or carries one off its shape" };
 	}
 	if (typeof git.branch !== "string" || typeof git.head !== "string") {
-		return {_tag: "Unusable", reason: "git.branch or git.head is missing"};
+		return { _tag: "Unusable", reason: "git.branch or git.head is missing" };
 	}
 	if (git.upstream !== null && typeof git.upstream !== "string") {
-		return {_tag: "Unusable", reason: "git.upstream is neither a ref nor null"};
+		return { _tag: "Unusable", reason: "git.upstream is neither a ref nor null" };
 	}
 	if (!isReachable(git.reachable)) {
-		return {_tag: "Unusable", reason: "git.reachable is off its closed set"};
+		return { _tag: "Unusable", reason: "git.reachable is off its closed set" };
 	}
 	if (
 		(git.aheadBy !== null && typeof git.aheadBy !== "number") ||
 		(git.behindBy !== null && typeof git.behindBy !== "number")
 	) {
-		return {_tag: "Unusable", reason: "git.aheadBy or git.behindBy is neither a count nor null"};
+		return { _tag: "Unusable", reason: "git.aheadBy or git.behindBy is neither a count nor null" };
 	}
 	const issueState = board.issue;
 	if (!isRecord(issueState) || typeof issueState.state !== "string") {
-		return {_tag: "Unusable", reason: "board.issue carries no state"};
+		return { _tag: "Unusable", reason: "board.issue carries no state" };
 	}
 	const labels = issueState.labels;
 	if (!Array.isArray(labels) || labels.some((label) => typeof label !== "string")) {
-		return {_tag: "Unusable", reason: "board.issue.labels is not a list of names"};
+		return { _tag: "Unusable", reason: "board.issue.labels is not a list of names" };
 	}
 	const pullValue = board.pull;
 	let pull: BoardState["pull"] = null;
@@ -246,7 +246,10 @@ export const parseGround = (text: string): GroundParse => {
 			typeof pullValue.head !== "string" ||
 			!isChecks(pullValue.checks)
 		) {
-			return {_tag: "Unusable", reason: "board.pull is neither null nor a whole pull-request row"};
+			return {
+				_tag: "Unusable",
+				reason: "board.pull is neither null nor a whole pull-request row",
+			};
 		}
 		pull = {
 			number: pullValue.number,
@@ -268,14 +271,14 @@ export const parseGround = (text: string): GroundParse => {
 				reachable: git.reachable,
 				aheadBy: git.aheadBy,
 				behindBy: git.behindBy,
-				base: {branch: base.branch, head: base.head},
+				base: { branch: base.branch, head: base.head },
 				tree: {
 					state: tree.state,
 					trackedModified: tree.trackedModified,
 					untracked: tree.untracked,
 				},
 			},
-			board: {issue: {state: issueState.state, labels: labels as ReadonlyArray<string>}, pull},
+			board: { issue: { state: issueState.state, labels: labels as ReadonlyArray<string> }, pull },
 			groundDigest,
 		},
 	};
@@ -307,7 +310,7 @@ export const compareGround = (packed: Comparable, live: LiveGround): ReadonlyArr
 			// The packed branch is gone, so rows 3-10 have no live value at all. `moved` rather than
 			// `unknown`: the ref's absence is proven, not a read that failed — and reporting a null
 			// upstream as `same` against a branch nobody can check out would be the fail-open reading.
-			return {field, packed: packedValue, live: null, state: "moved" as const};
+			return { field, packed: packedValue, live: null, state: "moved" as const };
 		}
 		const liveValue = fieldAt(live, field);
 		return {
@@ -357,12 +360,12 @@ export const deriveTree: Shell<Attempt<TreeState>> = Effect.gen(function* () {
 /** The counts `git rev-list --left-right --count <a>...<b>` prints: left is behind, right is ahead. */
 export const parseAheadBehind = (
 	stdout: string,
-): {readonly behindBy: number; readonly aheadBy: number} | null => {
+): { readonly behindBy: number; readonly aheadBy: number } | null => {
 	const parts = stdout.trim().split(/\s+/);
 	const behind = parts[0] ?? "";
 	const ahead = parts[1] ?? "";
 	if (parts.length !== 2 || !/^\d+$/.test(behind) || !/^\d+$/.test(ahead)) return null;
-	return {behindBy: Number.parseInt(behind, 10), aheadBy: Number.parseInt(ahead, 10)};
+	return { behindBy: Number.parseInt(behind, 10), aheadBy: Number.parseInt(ahead, 10) };
 };
 
 /**
@@ -437,7 +440,7 @@ export const deriveGitCore = (options: {
 			reachable,
 			aheadBy,
 			behindBy,
-			base: {branch: options.base, head: baseHead.value},
+			base: { branch: options.base, head: baseHead.value },
 		});
 	});
 
@@ -500,12 +503,12 @@ export const derivePull = (repo: string, branch: string): Shell<Attempt<BoardSta
 
 /** Which half of the ground could not be read, so the refusal names a remedy rather than a stack. */
 export type GroundFailure =
-	| {readonly kind: "git"; readonly reason: string}
-	| {readonly kind: "board"; readonly reason: string};
+	| { readonly kind: "git"; readonly reason: string }
+	| { readonly kind: "board"; readonly reason: string };
 
 export type GroundDerivation =
-	| {readonly _tag: "Ground"; readonly value: GroundState}
-	| {readonly _tag: "Failed"; readonly failure: GroundFailure};
+	| { readonly _tag: "Ground"; readonly value: GroundState }
+	| { readonly _tag: "Failed"; readonly failure: GroundFailure };
 
 export interface DeriveOptions {
 	readonly repo: string;
@@ -514,7 +517,7 @@ export interface DeriveOptions {
 	readonly ref: string | null;
 	readonly base: string;
 	/** The live issue, already read by the caller — so a 404 refuses `7` rather than `11` here. */
-	readonly board: {readonly state: string; readonly labels: ReadonlyArray<string>};
+	readonly board: { readonly state: string; readonly labels: ReadonlyArray<string> };
 	readonly now: () => Date;
 }
 
@@ -529,25 +532,25 @@ export const deriveGround = (
 	options: DeriveOptions,
 ): Effect.Effect<GroundDerivation, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const core = yield* deriveGitCore({ref: options.ref, base: options.base});
+		const core = yield* deriveGitCore({ ref: options.ref, base: options.base });
 		if (core._tag === "Failure") {
-			return {_tag: "Failed" as const, failure: {kind: "git" as const, reason: core.reason}};
+			return { _tag: "Failed" as const, failure: { kind: "git" as const, reason: core.reason } };
 		}
 		const tree = yield* deriveTree;
 		if (tree._tag === "Failure") {
-			return {_tag: "Failed" as const, failure: {kind: "git" as const, reason: tree.reason}};
+			return { _tag: "Failed" as const, failure: { kind: "git" as const, reason: tree.reason } };
 		}
 		const pull = yield* derivePull(options.repo, core.value.branch);
 		if (pull._tag === "Failure") {
-			return {_tag: "Failed" as const, failure: {kind: "board" as const, reason: pull.reason}};
+			return { _tag: "Failed" as const, failure: { kind: "board" as const, reason: pull.reason } };
 		}
 
 		const withoutDigest = {
 			issue: options.issue,
 			repo: options.repo,
-			git: {...core.value, tree: tree.value},
+			git: { ...core.value, tree: tree.value },
 			board: {
-				issue: {state: options.board.state, labels: [...options.board.labels].sort()},
+				issue: { state: options.board.state, labels: [...options.board.labels].sort() },
 				pull: pull.value,
 			},
 		};
@@ -575,9 +578,9 @@ export const deriveLiveBoard = (options: {
 	readonly repo: string;
 	readonly issue: number;
 	readonly branch: string;
-	readonly board: {readonly state: string; readonly labels: ReadonlyArray<string>};
+	readonly board: { readonly state: string; readonly labels: ReadonlyArray<string> };
 }): Effect.Effect<
-	| {readonly _tag: "Live"; readonly value: LiveGround}
+	| { readonly _tag: "Live"; readonly value: LiveGround }
 	| {
 			readonly _tag: "Failed";
 			readonly failure: GroundFailure;
@@ -588,7 +591,7 @@ export const deriveLiveBoard = (options: {
 	Effect.gen(function* () {
 		const pull = yield* derivePull(options.repo, options.branch);
 		if (pull._tag === "Failure") {
-			return {_tag: "Failed" as const, failure: {kind: "board" as const, reason: pull.reason}};
+			return { _tag: "Failed" as const, failure: { kind: "board" as const, reason: pull.reason } };
 		}
 		return {
 			_tag: "Live" as const,
@@ -597,7 +600,7 @@ export const deriveLiveBoard = (options: {
 				repo: options.repo,
 				git: null,
 				board: {
-					issue: {state: options.board.state, labels: [...options.board.labels].sort()},
+					issue: { state: options.board.state, labels: [...options.board.labels].sort() },
 					pull: pull.value,
 				},
 			},
@@ -605,8 +608,8 @@ export const deriveLiveBoard = (options: {
 	});
 
 export type ComparableDerivation =
-	| {readonly _tag: "Comparable"; readonly value: Comparable}
-	| {readonly _tag: "Failed"; readonly failure: GroundFailure};
+	| { readonly _tag: "Comparable"; readonly value: Comparable }
+	| { readonly _tag: "Failed"; readonly failure: GroundFailure };
 
 /**
  * The **sixteen** a successor can observe, derived live against the packed branch.
@@ -621,16 +624,16 @@ export const deriveComparable = (options: {
 	readonly issue: number;
 	readonly ref: string;
 	readonly base: string;
-	readonly board: {readonly state: string; readonly labels: ReadonlyArray<string>};
+	readonly board: { readonly state: string; readonly labels: ReadonlyArray<string> };
 }): Effect.Effect<ComparableDerivation, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const core = yield* deriveGitCore({ref: options.ref, base: options.base});
+		const core = yield* deriveGitCore({ ref: options.ref, base: options.base });
 		if (core._tag === "Failure") {
-			return {_tag: "Failed" as const, failure: {kind: "git" as const, reason: core.reason}};
+			return { _tag: "Failed" as const, failure: { kind: "git" as const, reason: core.reason } };
 		}
 		const pull = yield* derivePull(options.repo, core.value.branch);
 		if (pull._tag === "Failure") {
-			return {_tag: "Failed" as const, failure: {kind: "board" as const, reason: pull.reason}};
+			return { _tag: "Failed" as const, failure: { kind: "board" as const, reason: pull.reason } };
 		}
 		return {
 			_tag: "Comparable" as const,
@@ -639,7 +642,7 @@ export const deriveComparable = (options: {
 				repo: options.repo,
 				git: core.value,
 				board: {
-					issue: {state: options.board.state, labels: [...options.board.labels].sort()},
+					issue: { state: options.board.state, labels: [...options.board.labels].sort() },
 					pull: pull.value,
 				},
 			},

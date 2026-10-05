@@ -1,7 +1,7 @@
 /** Decoding pieces several key modules share. */
 
-import {isRecord} from "../io/json.ts";
-import type {Decoded} from "./key-group.ts";
+import { isRecord } from "../io/json.ts";
+import type { Decoded } from "./key-group.ts";
 
 /**
  * An array of non-empty strings, trimmed, or `null` when any entry is not one.
@@ -46,8 +46,8 @@ export const readingValidators = (
 	raw: unknown,
 	malformed: string,
 ): Decoded<ReadonlyArray<ReadingValidator>> => {
-	if (!Array.isArray(raw)) return {_tag: "Malformed", reason: `\`${key}\` is not an array`};
-	const refused = {_tag: "Malformed", reason: malformed} as const;
+	if (!Array.isArray(raw)) return { _tag: "Malformed", reason: `\`${key}\` is not an array` };
+	const refused = { _tag: "Malformed", reason: malformed } as const;
 	const validators: ReadingValidator[] = [];
 	for (const entry of raw) {
 		if (!isRecord(entry)) return refused;
@@ -56,9 +56,9 @@ export const readingValidators = (
 		if (command === null || reads === null || reads.length === 0) return refused;
 		const [binary, ...args] = command;
 		if (binary === undefined) return refused;
-		validators.push({argv: [binary, ...args], reads});
+		validators.push({ argv: [binary, ...args], reads });
 	}
-	return {_tag: "Value", value: validators};
+	return { _tag: "Value", value: validators };
 };
 
 /** How a {@link ReadingValidator} list prints: the file's key is `command`, not the spawn's `argv`. */
@@ -67,4 +67,4 @@ export const renderReadingValidators = (
 ): ReadonlyArray<{
 	readonly command: ReadonlyArray<string>;
 	readonly reads: ReadonlyArray<string>;
-}> => validators.map((one) => ({command: [...one.argv], reads: [...one.reads]}));
+}> => validators.map((one) => ({ command: [...one.argv], reads: [...one.reads] }));

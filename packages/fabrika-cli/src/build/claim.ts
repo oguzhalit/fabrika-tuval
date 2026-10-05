@@ -26,14 +26,14 @@
  * issue without colliding with a build claim; `build` reads {@link BUILD_CLAIM}, which is the default
  * everywhere, and the `lane` group reads its own (`../lane/claim.ts`).
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type CommentRecord, listComments} from "../io/issues.ts";
-import {permissionFor} from "../io/pulls.ts";
-import {sessionIdFrom, sessionIdUnset} from "../io/session-id.ts";
-import {FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {CLAIM_NOT_MINE, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {nonceOf, parseToken} from "./lane.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type CommentRecord, listComments } from "../io/issues.ts";
+import { permissionFor } from "../io/pulls.ts";
+import { sessionIdFrom, sessionIdUnset } from "../io/session-id.ts";
+import { FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { CLAIM_NOT_MINE, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { nonceOf, parseToken } from "./lane.ts";
 
 /** The permissions that authorize a marker — the `write+` set. */
 const AUTHORIZED = new Set(["admin", "maintain", "write"]);
@@ -113,11 +113,11 @@ export const composeMarker = (
 const readMarker = (
 	body: string,
 	grammar: ClaimGrammar,
-): {readonly token: string; readonly session: string} | null => {
+): { readonly token: string; readonly session: string } | null => {
 	const m = grammar.marker.exec(body);
 	if (m?.[1] === undefined) return null;
 	const parsed = parseToken(m[1], grammar.prefix);
-	return parsed === null ? null : {token: m[1], session: parsed.session};
+	return parsed === null ? null : { token: m[1], session: parsed.session };
 };
 
 /** The token a comment body claims in `grammar`, or `null` when it carries no marker of that kind. */
@@ -173,12 +173,12 @@ export interface AdoptMarker {
 export const readAdoptMarker = (
 	body: string,
 	grammar: ClaimGrammar = BUILD_CLAIM,
-): {readonly adopted: string; readonly token: string; readonly reason: string} | null => {
+): { readonly adopted: string; readonly token: string; readonly reason: string } | null => {
 	const m = adoptMarkerRe(grammar).exec(body);
 	if (m?.[1] === undefined || m[2] === undefined || m[3] === undefined) return null;
 	if (parseToken(m[2], grammar.prefix) === null) return null;
 	const reason = m[3].trim();
-	return reason === "" ? null : {adopted: m[1], token: m[2], reason};
+	return reason === "" ? null : { adopted: m[1], token: m[2], reason };
 };
 
 /** What a marker's place on the thread turns on. */
@@ -252,18 +252,18 @@ export type Caller =
 			/** The token the lane was handed, when it passed one — carried so a refusal can name it. */
 			readonly token: string | null;
 	  }
-	| {readonly _tag: "AnySession"; readonly session: string};
+	| { readonly _tag: "AnySession"; readonly session: string };
 
 /** The identity a build lane always has: a session AND the nonce of the token it holds. */
-export type LaneCaller = Extract<Caller, {readonly _tag: "Lane"}>;
+export type LaneCaller = Extract<Caller, { readonly _tag: "Lane" }>;
 
 export const laneCaller = (
 	session: string,
 	nonce: string,
 	token: string | null = null,
-): LaneCaller => ({_tag: "Lane", session, nonce, token});
+): LaneCaller => ({ _tag: "Lane", session, nonce, token });
 
-export const anySessionCaller = (session: string): Caller => ({_tag: "AnySession", session});
+export const anySessionCaller = (session: string): Caller => ({ _tag: "AnySession", session });
 
 /** How a refusal names the asking lane, so a reader can tell two lanes of one session apart. */
 export const describeCaller = (caller: Caller): string =>
@@ -272,8 +272,8 @@ export const describeCaller = (caller: Caller): string =>
 		: (caller.token ?? `the lane on nonce ${caller.nonce}`);
 
 export type CallerRead =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Caller"; readonly caller: LaneCaller};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Caller"; readonly caller: LaneCaller };
 
 /**
  * The asking lane, read off the `--token` its `claim` verb handed it.
@@ -306,7 +306,7 @@ export const requireCallerToken = (
 			`--token "${trimmed}" carries session ${parsed.session}, but this run is session ${session} — a lane names itself, never another.`,
 		);
 	}
-	return {_tag: "Caller", caller: laneCaller(session, nonce, trimmed)};
+	return { _tag: "Caller", caller: laneCaller(session, nonce, trimmed) };
 };
 
 /**
@@ -322,21 +322,21 @@ export const requireCallerToken = (
  * adopt fence went on counting it, so the sanctioned succession never terminated.
  */
 export type Ownership =
-	| {readonly _tag: "Mine"; readonly marker: ClaimMarker; readonly adopt: AdoptMarker | null}
+	| { readonly _tag: "Mine"; readonly marker: ClaimMarker; readonly adopt: AdoptMarker | null }
 	| {
 			readonly _tag: "Foreign";
 			readonly marker: ClaimMarker;
 			/** The winner is another lane of the caller's own session — a wrong lane, not a wrong session. */
 			readonly sameSession: boolean;
 	  }
-	| {readonly _tag: "AdoptOnly"; readonly adopt: AdoptMarker}
-	| {readonly _tag: "Unclaimed"}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "AdoptOnly"; readonly adopt: AdoptMarker }
+	| { readonly _tag: "Unclaimed" }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 type Permission =
-	| {readonly _tag: "Authorized"}
-	| {readonly _tag: "Unauthorized"}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Authorized" }
+	| { readonly _tag: "Unauthorized" }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /** One memoized ACL reader — a repeat author costs one lookup, and a failed read is never a demotion. */
 const permissionReader = (repo: string) => {
@@ -347,7 +347,7 @@ const permissionReader = (repo: string) => {
 		Effect.gen(function* () {
 			const cached = cache.get(author);
 			if (cached !== undefined) {
-				return cached ? ({_tag: "Authorized"} as const) : ({_tag: "Unauthorized"} as const);
+				return cached ? ({ _tag: "Authorized" } as const) : ({ _tag: "Unauthorized" } as const);
 			}
 			const read = yield* permissionFor(repo, author);
 			if (read._tag === "Unknown") {
@@ -358,7 +358,7 @@ const permissionReader = (repo: string) => {
 			}
 			const authorized = read._tag === "Present" && AUTHORIZED.has(read.value);
 			cache.set(author, authorized);
-			return authorized ? ({_tag: "Authorized"} as const) : ({_tag: "Unauthorized"} as const);
+			return authorized ? ({ _tag: "Authorized" } as const) : ({ _tag: "Unauthorized" } as const);
 		});
 };
 
@@ -394,7 +394,7 @@ export const resolveOwnership = (
 		const listed = yield* listComments(repo, number);
 		if (listed._tag === "Failure") {
 			return {
-				ownership: {_tag: "Unknown" as const, reason: listed.reason},
+				ownership: { _tag: "Unknown" as const, reason: listed.reason },
 				unauthorized: [],
 				unauthorizedAdopts: [],
 			};
@@ -412,7 +412,7 @@ export const resolveOwnership = (
 			const permission = yield* authorizationOf(marker.author);
 			if (permission._tag === "Unknown") {
 				return {
-					ownership: {_tag: "Unknown" as const, reason: permission.reason},
+					ownership: { _tag: "Unknown" as const, reason: permission.reason },
 					unauthorized,
 					unauthorizedAdopts: [],
 				};
@@ -435,7 +435,7 @@ export const resolveOwnership = (
 				const permission = yield* authorizationOf(adopt.author);
 				if (permission._tag === "Unknown") {
 					return {
-						ownership: {_tag: "Unknown" as const, reason: permission.reason},
+						ownership: { _tag: "Unknown" as const, reason: permission.reason },
 						unauthorized,
 						unauthorizedAdopts: strandedAdopts,
 					};
@@ -445,13 +445,13 @@ export const resolveOwnership = (
 					continue;
 				}
 				return {
-					ownership: {_tag: "AdoptOnly" as const, adopt},
+					ownership: { _tag: "AdoptOnly" as const, adopt },
 					unauthorized,
 					unauthorizedAdopts: strandedAdopts,
 				};
 			}
 			return {
-				ownership: {_tag: "Unclaimed" as const},
+				ownership: { _tag: "Unclaimed" as const },
 				unauthorized,
 				unauthorizedAdopts: strandedAdopts,
 			};
@@ -476,7 +476,7 @@ export const resolveOwnership = (
 				const permission = yield* authorizationOf(adopt.author);
 				if (permission._tag === "Unknown") {
 					return {
-						ownership: {_tag: "Unknown", reason: permission.reason},
+						ownership: { _tag: "Unknown", reason: permission.reason },
 						unauthorized,
 						unauthorizedAdopts,
 					};
@@ -486,13 +486,13 @@ export const resolveOwnership = (
 					continue;
 				}
 				return {
-					ownership: {_tag: "Foreign" as const, marker: winner, sameSession},
+					ownership: { _tag: "Foreign" as const, marker: winner, sameSession },
 					unauthorized,
 					unauthorizedAdopts,
 				};
 			}
 			return {
-				ownership: {_tag: "Mine" as const, marker: winner, adopt: null},
+				ownership: { _tag: "Mine" as const, marker: winner, adopt: null },
 				unauthorized,
 				unauthorizedAdopts,
 			};
@@ -510,7 +510,7 @@ export const resolveOwnership = (
 			const permission = yield* authorizationOf(adopt.author);
 			if (permission._tag === "Unknown") {
 				return {
-					ownership: {_tag: "Unknown" as const, reason: permission.reason},
+					ownership: { _tag: "Unknown" as const, reason: permission.reason },
 					unauthorized,
 					unauthorizedAdopts,
 				};
@@ -520,13 +520,13 @@ export const resolveOwnership = (
 				continue;
 			}
 			return {
-				ownership: {_tag: "Mine" as const, marker: winner, adopt},
+				ownership: { _tag: "Mine" as const, marker: winner, adopt },
 				unauthorized,
 				unauthorizedAdopts,
 			};
 		}
 		return {
-			ownership: {_tag: "Foreign" as const, marker: winner, sameSession},
+			ownership: { _tag: "Foreign" as const, marker: winner, sameSession },
 			unauthorized,
 			unauthorizedAdopts,
 		};
@@ -550,7 +550,7 @@ export interface Adopter extends AdoptMarker {
  * failed leaves the question unanswered, and "no claim" is the one answer it must never collapse to.
  */
 export type Claimants =
-	| {readonly _tag: "Unknown"; readonly reason: string}
+	| { readonly _tag: "Unknown"; readonly reason: string }
 	| {
 			readonly _tag: "Read";
 			/** Every marker on the thread, oldest first — the unauthorized ones included. */
@@ -583,23 +583,23 @@ export const readClaimants = (
 ): Effect.Effect<Claimants, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		const listed = yield* listComments(repo, number);
-		if (listed._tag === "Failure") return {_tag: "Unknown" as const, reason: listed.reason};
+		if (listed._tag === "Failure") return { _tag: "Unknown" as const, reason: listed.reason };
 		const authorizationOf = permissionReader(repo);
 		const claimants: Claimant[] = [];
 		for (const marker of markersIn(listed.value, grammar)) {
 			const permission = yield* authorizationOf(marker.author);
 			if (permission._tag === "Unknown") {
-				return {_tag: "Unknown" as const, reason: permission.reason};
+				return { _tag: "Unknown" as const, reason: permission.reason };
 			}
-			claimants.push({...marker, authorized: permission._tag === "Authorized"});
+			claimants.push({ ...marker, authorized: permission._tag === "Authorized" });
 		}
 		const adopts: Adopter[] = [];
 		for (const adopt of adoptMarkersIn(listed.value, grammar)) {
 			const permission = yield* authorizationOf(adopt.author);
 			if (permission._tag === "Unknown") {
-				return {_tag: "Unknown" as const, reason: permission.reason};
+				return { _tag: "Unknown" as const, reason: permission.reason };
 			}
-			adopts.push({...adopt, authorized: permission._tag === "Authorized"});
+			adopts.push({ ...adopt, authorized: permission._tag === "Authorized" });
 		}
 		return {
 			_tag: "Read" as const,
@@ -610,8 +610,8 @@ export const readClaimants = (
 	});
 
 export type Session =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Session"; readonly id: string};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Session"; readonly id: string };
 
 /** This run's session id, or the usage refusal. Unset is `1`: an identity-less claim is not a claim. */
 export const requireSession = (
@@ -627,7 +627,7 @@ export const requireSession = (
 					`${verb}: ${sessionIdUnset} — a claim without an identity is not a claim.`,
 				),
 			}
-		: {_tag: "Session", id};
+		: { _tag: "Session", id };
 };
 
 export type Held =
@@ -660,7 +660,7 @@ export const requireClaim = (
 	caller: Caller,
 ): Effect.Effect<Held, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {ownership, unauthorized} = yield* resolveOwnership(repo, number, caller);
+		const { ownership, unauthorized } = yield* resolveOwnership(repo, number, caller);
 		const notes = unauthorized.map(
 			(marker) =>
 				`${verb}: comment ${marker.commentId} carries a claim marker from "${marker.author}", who holds no write permission — counted, never a winner.`,
@@ -713,5 +713,5 @@ export const requireClaim = (
 				),
 			};
 		}
-		return {_tag: "Held" as const, marker: ownership.marker, adopt: ownership.adopt, notes};
+		return { _tag: "Held" as const, marker: ownership.marker, adopt: ownership.adopt, notes };
 	});

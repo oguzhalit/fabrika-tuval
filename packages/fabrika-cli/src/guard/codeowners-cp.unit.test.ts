@@ -6,7 +6,7 @@
  * over-broad CODEOWNERS row is a pass here by design, and the tests say so rather than leaving a
  * reader to infer it from an absence.
  */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	covers,
 	cpPaths,
@@ -16,7 +16,7 @@ import {
 	renderReport,
 	splitTopLevelBranches,
 } from "./codeowners-cp.ts";
-import {CONTROL_PLANE_RE} from "./control-plane-re.ts";
+import { CONTROL_PLANE_RE } from "./control-plane-re.ts";
 
 describe("splitTopLevelBranches", () => {
 	// The split is on `|^` rather than `|`, which is what keeps an inner `(a|b)` group intact.
@@ -28,48 +28,50 @@ describe("splitTopLevelBranches", () => {
 describe("expandBranch", () => {
 	it("cartesian-expands an alternation group into one path each", () => {
 		expect(expandBranch("(\\.claude|\\.github)/")).toEqual([
-			{path: ".claude/", kind: "dir"},
-			{path: ".github/", kind: "dir"},
+			{ path: ".claude/", kind: "dir" },
+			{ path: ".github/", kind: "dir" },
 		]);
 	});
 
 	it("reads a $-anchored leaf as an exact file", () => {
-		expect(expandBranch("biome\\.jsonc$")).toEqual([{path: "biome.jsonc", kind: "file"}]);
+		expect(expandBranch("biome\\.jsonc$")).toEqual([{ path: "biome.jsonc", kind: "file" }]);
 	});
 
 	it("translates a within-segment class to a gitignore glob", () => {
 		expect(expandBranch("packages/demo-cli/src/[^/]+$")).toEqual([
-			{path: "packages/demo-cli/src/*", kind: "glob"},
+			{ path: "packages/demo-cli/src/*", kind: "glob" },
 		]);
 	});
 
 	// A quantified group is not an alternation, so it needs its own translation before the loop.
 	it("translates the any-depth prefix to a double-star", () => {
 		expect(expandBranch("([^/]+/)*(lefthook|\\.lefthook)[^/]+$")).toEqual([
-			{path: "**/lefthook*", kind: "glob"},
-			{path: "**/.lefthook*", kind: "glob"},
+			{ path: "**/lefthook*", kind: "glob" },
+			{ path: "**/.lefthook*", kind: "glob" },
 		]);
 	});
 });
 
 describe("covers", () => {
-	const owned = (pattern: string) => ({pattern, owners: ["@team"]});
+	const owned = (pattern: string) => ({ pattern, owners: ["@team"] });
 
 	it("covers a path under a directory entry", () => {
-		expect(covers(owned(".github/"), {path: ".github/workflows/", kind: "dir"})).toBe(true);
+		expect(covers(owned(".github/"), { path: ".github/workflows/", kind: "dir" })).toBe(true);
 	});
 
 	// The sibling-file gap is why the §CP `hooks` branch needs two literal CODEOWNERS rows.
 	it("does not let a directory entry cover its sibling file", () => {
-		expect(covers(owned("plugins/hooks/"), {path: "plugins/hooks.json", kind: "file"})).toBe(false);
+		expect(covers(owned("plugins/hooks/"), { path: "plugins/hooks.json", kind: "file" })).toBe(
+			false,
+		);
 	});
 
 	it("covers a file by exact match", () => {
-		expect(covers(owned("biome.jsonc"), {path: "biome.jsonc", kind: "file"})).toBe(true);
+		expect(covers(owned("biome.jsonc"), { path: "biome.jsonc", kind: "file" })).toBe(true);
 	});
 
 	it("covers a glob by an identical row or an owning ancestor directory", () => {
-		const glob = {path: "packages/x/src/*", kind: "glob"} as const;
+		const glob = { path: "packages/x/src/*", kind: "glob" } as const;
 		expect(covers(owned("packages/x/src/*"), glob)).toBe(true);
 		expect(covers(owned("packages/x/"), glob)).toBe(true);
 		expect(covers(owned("packages/y/"), glob)).toBe(false);
@@ -82,21 +84,21 @@ describe("parseCodeownersPatterns", () => {
 			"# a comment\n\n/a/ @team\n/b/\n/c/ @team @other # trailing\n",
 		);
 		expect(patterns).toEqual([
-			{pattern: "a/", owners: ["@team"]},
-			{pattern: "c/", owners: ["@team", "@other"]},
+			{ pattern: "a/", owners: ["@team"] },
+			{ pattern: "c/", owners: ["@team", "@other"] },
 		]);
 	});
 });
 
 describe("findUncovered", () => {
 	const paths = [
-		{path: ".github/", kind: "dir"},
-		{path: "biome.jsonc", kind: "file"},
+		{ path: ".github/", kind: "dir" },
+		{ path: "biome.jsonc", kind: "file" },
 	] as const;
 
 	it("names the path a dropped row leaves unowned", () => {
 		expect(findUncovered(paths, parseCodeownersPatterns("/biome.jsonc @team\n"))).toEqual([
-			{path: ".github/", kind: "dir"},
+			{ path: ".github/", kind: "dir" },
 		]);
 	});
 
@@ -105,7 +107,7 @@ describe("findUncovered", () => {
 	it("passes an ancestor row that owns more than the boundary asks", () => {
 		expect(
 			findUncovered(
-				[{path: ".github/workflows/", kind: "dir"}],
+				[{ path: ".github/workflows/", kind: "dir" }],
 				parseCodeownersPatterns("/.github/ @team\n"),
 			),
 		).toEqual([]);
@@ -128,7 +130,7 @@ describe("the live boundary", () => {
 
 describe("renderReport", () => {
 	it("names the zero-approval consequence, not just the missing row", () => {
-		const report = renderReport([{path: ".github/", kind: "dir"}]);
+		const report = renderReport([{ path: ".github/", kind: "dir" }]);
 		expect(report).toContain(".github/");
 		expect(report).toContain("control-plane-re.ts");
 		expect(report).toContain("zero required");

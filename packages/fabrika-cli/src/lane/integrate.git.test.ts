@@ -12,23 +12,23 @@
  * directory, so each run enters the fixture with `process.chdir` and `afterEach` puts the runner's
  * directory back.
  */
-import {execFileSync} from "node:child_process";
-import {mkdirSync, mkdtempSync, readFileSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {NodeServices} from "@effect/platform-node";
-import {Effect} from "effect";
-import {afterEach, describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
-import {ASSEMBLY_RED, CHILD_UNSEATED, MERGE_CONFLICT, RECONCILE_REFUSED} from "./codes.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
-import {runIntegrate} from "./integrate-verb.ts";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
+import { afterEach, describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
+import { ASSEMBLY_RED, CHILD_UNSEATED, MERGE_CONFLICT, RECONCILE_REFUSED } from "./codes.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
+import { runIntegrate } from "./integrate-verb.ts";
 
 const EPIC = 7140;
 const CHILD = "build/7162-app-bootstrap";
 
 const git = (cwd: string, ...args: ReadonlyArray<string>) =>
-	execFileSync("git", args, {cwd, encoding: "utf8"}).trim();
+	execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 
 /** The install a repo declares: record what the lockfile currently pins. */
 const INSTALL = "cp lock.txt .installed\n";
@@ -39,8 +39,8 @@ const VALIDATE = "cmp -s lock.txt .installed\n";
 
 const config = (reconciler: string | null) =>
 	JSON.stringify({
-		...(reconciler === null ? {} : {dependencyReconciler: {command: ["sh", reconciler]}}),
-		codeValidators: [{command: ["sh", "validate.sh"]}],
+		...(reconciler === null ? {} : { dependencyReconciler: { command: ["sh", reconciler] } }),
+		codeValidators: [{ command: ["sh", "validate.sh"] }],
 	});
 
 interface Fixture {
@@ -58,7 +58,7 @@ interface Fixture {
  */
 const fixture = (reconciler: string | null): Fixture => {
 	const root = join(mkdtempSync(join(tmpdir(), "lane-integrate-")), "checkout");
-	mkdirSync(root, {recursive: true});
+	mkdirSync(root, { recursive: true });
 	git(root, "init", "--initial-branch=main", ".");
 	git(root, "config", "user.email", "integrate@example.test");
 	git(root, "config", "user.name", "integrate");
@@ -74,7 +74,7 @@ const fixture = (reconciler: string | null): Fixture => {
 
 	git(root, "branch", CHILD);
 	git(root, "checkout", CHILD);
-	mkdirSync(join(root, "pkg"), {recursive: true});
+	mkdirSync(join(root, "pkg"), { recursive: true });
 	writeFileSync(join(root, "pkg", "package.json"), '{"name":"app"}\n');
 	writeFileSync(join(root, "lock.txt"), "v2");
 	git(root, "add", "-A");
@@ -87,9 +87,9 @@ const fixture = (reconciler: string | null): Fixture => {
 	writeFileSync(join(seat, ".installed"), "v1");
 
 	const lanes = join(root, ".fabrika", "lanes");
-	mkdirSync(join(lanes, String(EPIC)), {recursive: true});
+	mkdirSync(join(lanes, String(EPIC)), { recursive: true });
 	writeFileSync(join(lanes, String(EPIC), "workflow.json"), coderTemplateText());
-	return {root, seat, lanes, base, tip: base};
+	return { root, seat, lanes, base, tip: base };
 };
 
 /** The registry two children each append a row to — the collision the replay exists for. */
@@ -104,7 +104,7 @@ const rows = (...lines: ReadonlyArray<string>): string => [...lines, "LAST", ""]
  */
 const collision = (onCollision: string, validate = VALIDATE): Fixture => {
 	const root = join(mkdtempSync(join(tmpdir(), "lane-replay-")), "checkout");
-	mkdirSync(root, {recursive: true});
+	mkdirSync(root, { recursive: true });
 	git(root, "init", "--initial-branch=main", ".");
 	git(root, "config", "user.email", "integrate@example.test");
 	git(root, "config", "user.name", "integrate");
@@ -116,9 +116,9 @@ const collision = (onCollision: string, validate = VALIDATE): Fixture => {
 	writeFileSync(
 		join(root, ".fabrika.jsonc"),
 		JSON.stringify({
-			dependencyReconciler: {command: ["sh", "install.sh"]},
-			codeValidators: [{command: ["sh", "validate.sh"]}],
-			assemblyReplay: {onCollision},
+			dependencyReconciler: { command: ["sh", "install.sh"] },
+			codeValidators: [{ command: ["sh", "validate.sh"] }],
+			assemblyReplay: { onCollision },
 		}),
 	);
 	git(root, "add", "-A");
@@ -142,23 +142,23 @@ const collision = (onCollision: string, validate = VALIDATE): Fixture => {
 	const tip = git(seat, "rev-parse", "HEAD");
 
 	const lanes = join(root, ".fabrika", "lanes");
-	mkdirSync(join(lanes, String(EPIC)), {recursive: true});
+	mkdirSync(join(lanes, String(EPIC)), { recursive: true });
 	writeFileSync(join(lanes, String(EPIC), "workflow.json"), coderTemplateText());
-	return {root, seat, lanes, base, tip};
+	return { root, seat, lanes, base, tip };
 };
 
 const runnerCwd = process.cwd();
 afterEach(() => process.chdir(runnerCwd));
 
-const integrate = async ({root, lanes}: Fixture) => {
+const integrate = async ({ root, lanes }: Fixture) => {
 	process.chdir(root);
 	const outcome = await Effect.runPromise(
 		Effect.provide(
-			runIntegrate({epic: EPIC, child: CHILD, root: lanes, lane: String(EPIC)}),
+			runIntegrate({ epic: EPIC, child: CHILD, root: lanes, lane: String(EPIC) }),
 			NodeServices.layer,
 		),
 	);
-	return {code: outcome.code, stdout: outcome.stdout};
+	return { code: outcome.code, stdout: outcome.stdout };
 };
 
 describe("lane integrate over a real assembly worktree", {
@@ -167,7 +167,7 @@ describe("lane integrate over a real assembly worktree", {
 	it("reconciles the merged lockfile, so the validators judge the merge and not the stale install", async () => {
 		const tree = fixture("install.sh");
 
-		const {code, stdout} = await integrate(tree);
+		const { code, stdout } = await integrate(tree);
 
 		expect(code).toBe(0);
 		expect(stdout.trim().split("\n").at(-1)).toBe("INTEGRATE-VERDICT: MERGED");
@@ -178,7 +178,7 @@ describe("lane integrate over a real assembly worktree", {
 	it("is the red without that step: the same tree, the same child, no install between", async () => {
 		const tree = fixture(null);
 
-		const {code} = await integrate(tree);
+		const { code } = await integrate(tree);
 
 		expect(code).toBe(ASSEMBLY_RED);
 		// The refusal put the branch back, so the run's next act cannot publish the bad merge.
@@ -188,7 +188,7 @@ describe("lane integrate over a real assembly worktree", {
 	it("refuses an install that rewrote the lockfile, leaving the branch unpublished and reset", async () => {
 		const tree = fixture("rewriting-install.sh");
 
-		const {code} = await integrate(tree);
+		const { code } = await integrate(tree);
 
 		expect(code).toBe(RECONCILE_REFUSED);
 		expect(git(tree.seat, "rev-parse", "HEAD")).toBe(tree.base);
@@ -202,7 +202,7 @@ describe("a cross-child collision over a real assembly worktree", {
 	it("refuses it exactly as it always did while assemblyReplay is off", async () => {
 		const tree = collision("off");
 
-		const {code, stdout} = await integrate(tree);
+		const { code, stdout } = await integrate(tree);
 
 		expect(code).toBe(MERGE_CONFLICT);
 		expect(stdout).toBe("");
@@ -214,7 +214,7 @@ describe("a cross-child collision over a real assembly worktree", {
 	it("replays it onto the tip with the key on, and validates the replayed tree", async () => {
 		const tree = collision("on");
 
-		const {code, stdout} = await integrate(tree);
+		const { code, stdout } = await integrate(tree);
 
 		expect(code).toBe(0);
 		const lines = stdout.trim().split("\n");
@@ -225,7 +225,7 @@ describe("a cross-child collision over a real assembly worktree", {
 		// The classification the retry-budget wiring reads: machinery worked, the child did not fail.
 		expect(event.budget).toBe("unspent");
 		expect(event.resolved).toEqual([REGISTRY]);
-		expect(event.range).toEqual({from: tree.tip, to: git(tree.seat, "rev-parse", "HEAD^2")});
+		expect(event.range).toEqual({ from: tree.tip, to: git(tree.seat, "rev-parse", "HEAD^2") });
 
 		// Both children's rows survived, and the branch carries the replay as one nameable landing.
 		expect(readFileSync(join(tree.seat, REGISTRY), "utf8")).toBe(
@@ -244,7 +244,7 @@ describe("a cross-child collision over a real assembly worktree", {
 		expect((await integrate(tree)).code).toBe(0);
 		const landed = readFileSync(join(tree.seat, REGISTRY), "utf8");
 
-		const {code, stdout} = await integrate(tree);
+		const { code, stdout } = await integrate(tree);
 
 		expect(code).toBe(0);
 		expect(stdout.trim().split("\n").at(-1)).toBe("INTEGRATE-VERDICT: MERGED");
@@ -256,7 +256,7 @@ describe("a cross-child collision over a real assembly worktree", {
 		const tree = collision("on");
 		git(tree.root, "checkout", CHILD);
 
-		const {code, stdout} = await integrate(tree);
+		const { code, stdout } = await integrate(tree);
 
 		expect(code).toBe(CHILD_UNSEATED);
 		expect(stdout).toBe("");
@@ -268,7 +268,7 @@ describe("a cross-child collision over a real assembly worktree", {
 		const tree = collision("on", "exit 1\n");
 		const graded = git(tree.seat, "rev-parse", CHILD);
 
-		const {code} = await integrate(tree);
+		const { code } = await integrate(tree);
 
 		expect(code).toBe(ASSEMBLY_RED);
 		expect(git(tree.seat, "rev-parse", "HEAD")).toBe(tree.tip);

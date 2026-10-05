@@ -7,12 +7,12 @@
  * absent and duplicated are distinct codes, and a document that could not be read is UNKNOWN,
  * never absent (`./codes.ts`).
  */
-import {Effect} from "effect";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {classifyArtifact} from "./artifact.ts";
-import {ABSENT, MALFORMED} from "./codes.ts";
-import {extractSection} from "./doc-section.ts";
+import { Effect } from "effect";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { classifyArtifact } from "./artifact.ts";
+import { ABSENT, MALFORMED } from "./codes.ts";
+import { extractSection } from "./doc-section.ts";
 
 const VERB = "wire doc-section";
 
@@ -46,7 +46,7 @@ export const runDocSection = <R = never>({
 			]);
 		}
 		const stdout = json
-			? `${JSON.stringify({heading: heading.trim(), outcome: "found", line: result.heading.line, body: result.body})}\n`
+			? `${JSON.stringify({ heading: heading.trim(), outcome: "found", line: result.heading.line, body: result.body })}\n`
 			: `${result.body}\n`;
 		return answer(stdout, [scope, `${VERB}: found at line ${result.heading.line}.`]);
 	});

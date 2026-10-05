@@ -12,16 +12,16 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/8901
  */
-import {execFileSync} from "node:child_process";
-import {mkdirSync, mkdtempSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {NodeServices} from "@effect/platform-node";
-import {Effect} from "effect";
-import {afterEach, describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
-import {loadBranchClaims} from "./branch-claims.ts";
-import {allocate} from "./next.ts";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
+import { afterEach, describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
+import { loadBranchClaims } from "./branch-claims.ts";
+import { allocate } from "./next.ts";
 
 /** Pinned away from the developer's own config: a fixture that inherits it proves what this machine does. */
 const GIT_ENV = {
@@ -50,7 +50,7 @@ interface Repo {
 const seeded = (): Repo => {
 	const dir = mkdtempSync(join(tmpdir(), "fabrika-branch-claims-"));
 	const git = (...args: ReadonlyArray<string>): string =>
-		execFileSync("git", [...args], {cwd: dir, env: GIT_ENV, encoding: "utf8"});
+		execFileSync("git", [...args], { cwd: dir, env: GIT_ENV, encoding: "utf8" });
 	git("init", "--quiet", "-b", "main");
 	git("config", "core.hooksPath", join(dir, ".no-hooks"));
 	mkdirSync(join(dir, DIR));
@@ -104,7 +104,7 @@ describe("loadBranchClaims against two sibling branches cut from one assembly ti
 		const claims = await read(repo, tip);
 		expect(claims).toEqual({
 			_tag: "Ok",
-			value: [{id: "0373", file: "0373-driver-seat-on-a-spent-repair-budget.md"}],
+			value: [{ id: "0373", file: "0373-driver-seat-on-a-spent-repair-budget.md" }],
 		});
 
 		const merged = ["0372"];
@@ -119,7 +119,7 @@ describe("loadBranchClaims against two sibling branches cut from one assembly ti
 		child(repo, "main", "build/8820", "0373-already-folded.md");
 		repo.git("merge", "--quiet", "--ff-only", "build/8820");
 
-		await expect(read(repo, repo.rev("main"))).resolves.toEqual({_tag: "Ok", value: []});
+		await expect(read(repo, repo.rev("main"))).resolves.toEqual({ _tag: "Ok", value: [] });
 	});
 
 	it("skips a name it cannot read an id from rather than refusing over it", async () => {
@@ -130,7 +130,7 @@ describe("loadBranchClaims against two sibling branches cut from one assembly ti
 		repo.commit("a branch carrying a non-record file under the corpus");
 		repo.git("checkout", "--quiet", "main");
 
-		await expect(read(repo, tip)).resolves.toEqual({_tag: "Ok", value: []});
+		await expect(read(repo, tip)).resolves.toEqual({ _tag: "Ok", value: [] });
 	});
 
 	it("is UNKNOWN when the walk cannot run, never an empty claim set", async () => {

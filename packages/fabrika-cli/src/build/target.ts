@@ -6,12 +6,12 @@
  * copies of it are fourteen chances to fold the two together. Every message is prefixed with the
  * invoked verb's name — the contract states that once for the whole group, so it is applied once here.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {getIssue, type IssueRecord, resolveRepo} from "../io/issues.ts";
-import {getPullRequest, type PullRecord} from "../io/pulls.ts";
-import {FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { getIssue, type IssueRecord, resolveRepo } from "../io/issues.ts";
+import { getPullRequest, type PullRecord } from "../io/pulls.ts";
+import { FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
 import {
 	type Admission,
 	type IssueFacts,
@@ -34,8 +34,8 @@ export const badNumber = (verb: string, noun: string, value: number): VerbOutcom
 	Number.isInteger(value) && value > 0 ? null : refuse(FAILED, `${verb}: ${value} is not ${noun}.`);
 
 export type Resolved =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Repo"; readonly repo: string};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Repo"; readonly repo: string };
 
 export const resolveTargetRepo = (
 	verb: string,
@@ -52,12 +52,12 @@ export const resolveTargetRepo = (
 						`${verb}: cannot resolve a target repo — set CLAUDE_PIPELINE_REPO, or run inside a checkout whose origin remote resolves.`,
 					),
 				}
-			: {_tag: "Repo" as const, repo: attempt.value};
+			: { _tag: "Repo" as const, repo: attempt.value };
 	});
 
 export type IssueTarget =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Issue"; readonly issue: IssueRecord};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Issue"; readonly issue: IssueRecord };
 
 /**
  * One open issue, or the refusal.
@@ -85,7 +85,7 @@ export const openIssue = (
 				outcome: refuse(PRECONDITION_UNKNOWN, unknownMessage(found.reason)),
 			};
 		}
-		return {_tag: "Issue" as const, issue: found.value};
+		return { _tag: "Issue" as const, issue: found.value };
 	});
 
 /**
@@ -109,7 +109,7 @@ export type AdmissionSubject =
 			 */
 			readonly repair: RepairClaim;
 	  }
-	| {readonly _tag: "Refused"; readonly admission: Admission};
+	| { readonly _tag: "Refused"; readonly admission: Admission };
 
 /**
  * Resolve a claim target to the record the admission axes judge.
@@ -130,7 +130,7 @@ export const resolveAdmissionSubject = (
 	requestedIssue: number | null = null,
 ): Effect.Effect<AdmissionSubject, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const own = {_tag: "Judged" as const, facts: target, note: null, repair: NOT_REPAIR};
+		const own = { _tag: "Judged" as const, facts: target, note: null, repair: NOT_REPAIR };
 		const subject = scopeSubjectOf(target, requestedIssue);
 		if (subject._tag === "Own") return own;
 		const unresolved = (reason: string): AdmissionSubject => ({
@@ -161,8 +161,8 @@ export const resolveAdmissionSubject = (
 	});
 
 export type PullTarget =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Pull"; readonly pull: PullRecord};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Pull"; readonly pull: PullRecord };
 
 export const openPull = (
 	verb: string,
@@ -184,5 +184,5 @@ export const openPull = (
 				outcome: refuse(PRECONDITION_UNKNOWN, unknownMessage(found.reason)),
 			};
 		}
-		return {_tag: "Pull" as const, pull: found.value};
+		return { _tag: "Pull" as const, pull: found.value };
 	});

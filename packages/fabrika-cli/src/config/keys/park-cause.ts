@@ -32,7 +32,7 @@
  * the round is, not which account may record it.
  */
 
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const PARK_CAUSE = "parkCause";
 
@@ -85,7 +85,7 @@ const KNOWN: ReadonlyArray<string> = ["uncaused", "driverRouted", "repairBudgetS
 
 const decodeUncaused = (raw: unknown): Decoded<Uncaused> =>
 	typeof raw === "string" && (UNCAUSED_VALUES as ReadonlyArray<string>).includes(raw.trim())
-		? {_tag: "Value", value: raw.trim() as Uncaused}
+		? { _tag: "Value", value: raw.trim() as Uncaused }
 		: {
 				_tag: "Malformed",
 				reason: `${named("uncaused")} is not one of ${UNCAUSED_VALUES.join(", ")}`,
@@ -93,7 +93,7 @@ const decodeUncaused = (raw: unknown): Decoded<Uncaused> =>
 
 const decodeDriverRouted = (raw: unknown): Decoded<DriverRouted> =>
 	typeof raw === "string" && (DRIVER_ROUTED_VALUES as ReadonlyArray<string>).includes(raw.trim())
-		? {_tag: "Value", value: raw.trim() as DriverRouted}
+		? { _tag: "Value", value: raw.trim() as DriverRouted }
 		: {
 				_tag: "Malformed",
 				reason: `${named("driverRouted")} is not one of ${DRIVER_ROUTED_VALUES.join(", ")}`,
@@ -102,7 +102,7 @@ const decodeDriverRouted = (raw: unknown): Decoded<DriverRouted> =>
 const decodeRepairBudgetSpent = (raw: unknown): Decoded<RepairBudgetSpent> =>
 	typeof raw === "string" &&
 	(REPAIR_BUDGET_SPENT_VALUES as ReadonlyArray<string>).includes(raw.trim())
-		? {_tag: "Value", value: raw.trim() as RepairBudgetSpent}
+		? { _tag: "Value", value: raw.trim() as RepairBudgetSpent }
 		: {
 				_tag: "Malformed",
 				reason: `${named("repairBudgetSpent")} is not one of ${REPAIR_BUDGET_SPENT_VALUES.join(", ")}`,
@@ -110,7 +110,7 @@ const decodeRepairBudgetSpent = (raw: unknown): Decoded<RepairBudgetSpent> =>
 
 const decode = (raw: unknown): Decoded<ParkCauseSurface> => {
 	const record = asRecord(raw);
-	if (record === null) return {_tag: "Malformed", reason: `\`${PARK_CAUSE}\` is not an object`};
+	if (record === null) return { _tag: "Malformed", reason: `\`${PARK_CAUSE}\` is not an object` };
 	const stray = Object.keys(record).find((key) => !KNOWN.includes(key));
 	if (stray !== undefined) {
 		return {
@@ -121,19 +121,19 @@ const decode = (raw: unknown): Decoded<ParkCauseSurface> => {
 
 	const uncaused =
 		record.uncaused === undefined
-			? ({_tag: "Value", value: SHIPPED_PARK_CAUSE.uncaused} as const)
+			? ({ _tag: "Value", value: SHIPPED_PARK_CAUSE.uncaused } as const)
 			: decodeUncaused(record.uncaused);
 	if (uncaused._tag === "Malformed") return uncaused;
 
 	const driverRouted =
 		record.driverRouted === undefined
-			? ({_tag: "Value", value: SHIPPED_PARK_CAUSE.driverRouted} as const)
+			? ({ _tag: "Value", value: SHIPPED_PARK_CAUSE.driverRouted } as const)
 			: decodeDriverRouted(record.driverRouted);
 	if (driverRouted._tag === "Malformed") return driverRouted;
 
 	const repairBudgetSpent =
 		record.repairBudgetSpent === undefined
-			? ({_tag: "Value", value: SHIPPED_PARK_CAUSE.repairBudgetSpent} as const)
+			? ({ _tag: "Value", value: SHIPPED_PARK_CAUSE.repairBudgetSpent } as const)
 			: decodeRepairBudgetSpent(record.repairBudgetSpent);
 	if (repairBudgetSpent._tag === "Malformed") return repairBudgetSpent;
 

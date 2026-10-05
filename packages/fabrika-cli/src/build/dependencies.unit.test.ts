@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {predecessorsOf, readTopology, requiredEdges} from "./dependencies.ts";
+import { describe, expect, it } from "vitest";
+import { predecessorsOf, readTopology, requiredEdges } from "./dependencies.ts";
 
 const ledger = (body: string) => `# Epic\n\n## Dependencies\n\n${body}\n\n## Notes\n\nunrelated\n`;
 
@@ -34,23 +34,21 @@ describe("readTopology", () => {
 		expect(read._tag === "Parsed" ? read.edges : []).toHaveLength(2);
 	});
 
-	it.each([
-		"***",
-		"___",
-		"- - -",
-		"   ---",
-	])("ends the section at the %s spelling of a thematic break", (marker) => {
-		const read = readTopology(
-			`## Dependencies\n\n- phase 1: #210\n${marker}\nnot a topology line\n`,
-		);
-		expect(read._tag).toBe("Parsed");
-		expect(read._tag === "Parsed" ? read.edges : []).toHaveLength(1);
-	});
+	it.each(["***", "___", "- - -", "   ---"])(
+		"ends the section at the %s spelling of a thematic break",
+		(marker) => {
+			const read = readTopology(
+				`## Dependencies\n\n- phase 1: #210\n${marker}\nnot a topology line\n`,
+			);
+			expect(read._tag).toBe("Parsed");
+			expect(read._tag === "Parsed" ? read.edges : []).toHaveLength(1);
+		},
+	);
 
 	it("keeps only the edges above the break", () => {
 		const read = readTopology("## Dependencies\n\n- phase 1: #210\n\n---\n\n- phase 2: #212\n");
 		expect(read._tag === "Parsed" ? read.edges : []).toEqual([
-			{_tag: "Phase", phase: 1, members: [{_tag: "Issue", number: 210}]},
+			{ _tag: "Phase", phase: 1, members: [{ _tag: "Issue", number: 210 }] },
 		]);
 	});
 
@@ -76,9 +74,9 @@ describe("predecessorsOf", () => {
 	it("honours an explicit requires: as the PRECISE gate, not the phase boundary", () => {
 		const found = predecessorsOf(
 			edges("- phase 1: #210, #211\n- phase 2: #212\n- #212 requires: #210"),
-			{_tag: "Issue", number: 212},
+			{ _tag: "Issue", number: 212 },
 		);
-		expect(found).toEqual([{kind: "requires:", ref: {_tag: "Issue", number: 210}}]);
+		expect(found).toEqual([{ kind: "requires:", ref: { _tag: "Issue", number: 210 } }]);
 	});
 
 	it("falls back to every earlier phase when the child has no requires: line", () => {
@@ -87,20 +85,20 @@ describe("predecessorsOf", () => {
 			number: 212,
 		});
 		expect(found.map((row) => row.ref)).toEqual([
-			{_tag: "Issue", number: 210},
-			{_tag: "Issue", number: 211},
+			{ _tag: "Issue", number: 210 },
+			{ _tag: "Issue", number: 211 },
 		]);
 		expect(found.every((row) => row.kind === "phase")).toBe(true);
 	});
 
 	it("gives a phase-1 child no predecessors — a sibling in the same phase does not gate it", () => {
-		expect(predecessorsOf(edges("- phase 1: #210, #211"), {_tag: "Issue", number: 211})).toEqual(
+		expect(predecessorsOf(edges("- phase 1: #210, #211"), { _tag: "Issue", number: 211 })).toEqual(
 			[],
 		);
 	});
 
 	it("gives an issue the topology never names no predecessors", () => {
-		expect(predecessorsOf(edges("- phase 1: #210"), {_tag: "Issue", number: 999})).toEqual([]);
+		expect(predecessorsOf(edges("- phase 1: #210"), { _tag: "Issue", number: 999 })).toEqual([]);
 	});
 });
 
@@ -113,22 +111,22 @@ describe("requiredEdges", () => {
 	/** The epic shape: the row exists, the graph does not, and both build gates read the graph. */
 	it("names the pair a `requires:` row states", () => {
 		expect(of("- phase 1: #6597\n- phase 2: #6598\n- #6598 requires: #6597")).toEqual([
-			{dependent: 6598, prerequisite: 6597},
+			{ dependent: 6598, prerequisite: 6597 },
 		]);
 	});
 
 	it("names every earlier-phase pair when no requires: row narrows it", () => {
 		expect(of("- phase 1: #210, #211\n- phase 2: #212")).toEqual([
-			{dependent: 212, prerequisite: 210},
-			{dependent: 212, prerequisite: 211},
+			{ dependent: 212, prerequisite: 210 },
+			{ dependent: 212, prerequisite: 211 },
 		]);
 	});
 
 	it("reaches back through every earlier phase, not just the one below", () => {
 		expect(of("- phase 1: #210\n- phase 2: #211\n- phase 3: #212")).toEqual([
-			{dependent: 211, prerequisite: 210},
-			{dependent: 212, prerequisite: 210},
-			{dependent: 212, prerequisite: 211},
+			{ dependent: 211, prerequisite: 210 },
+			{ dependent: 212, prerequisite: 210 },
+			{ dependent: 212, prerequisite: 211 },
 		]);
 	});
 
@@ -143,6 +141,6 @@ describe("requiredEdges", () => {
 	it("dedupes a pair two rows both state", () => {
 		expect(
 			of("- phase 1: #210\n- phase 2: #212\n- #212 requires: #210\n- #212 requires: #210"),
-		).toEqual([{dependent: 212, prerequisite: 210}]);
+		).toEqual([{ dependent: 212, prerequisite: 210 }]);
 	});
 });

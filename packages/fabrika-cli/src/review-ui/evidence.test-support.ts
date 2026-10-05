@@ -2,9 +2,9 @@
  * A `review-ui` verdict with its evidence gallery, and the GitHub replies that make that evidence
  * open or not — for the readers that re-check it before they count the verdict.
  */
-import {createHash} from "node:crypto";
-import type {HttpReply, Scripted} from "../fakes.test-support.ts";
-import {emit as emitGallery} from "./evidence-gallery.ts";
+import { createHash } from "node:crypto";
+import type { HttpReply, Scripted } from "../fakes.test-support.ts";
+import { emit as emitGallery } from "./evidence-gallery.ts";
 
 const UUID = "0a1b2c3d-4e5f-6789-abcd-ef0123456789";
 export const EVIDENCE_URL = `https://github.com/user-attachments/assets/${UUID}`;
@@ -37,20 +37,20 @@ const rendered = (repo: string, commentId: number): Scripted => [
 /** The comment renders, and its capture serves the judged bytes. */
 export const evidenceOpens = (repo: string, commentId: number): ReadonlyArray<Scripted> => [
 	rendered(repo, commentId),
-	[FETCH, {status: 200, body: JUDGED}],
+	[FETCH, { status: 200, body: JUDGED }],
 ];
 
 /** The comment renders, and its capture answers `status` — or other bytes on a `200`. */
 export const evidenceDoesNotOpen = (
 	repo: string,
 	commentId: number,
-	reply: HttpReply = {status: 404, body: ""},
+	reply: HttpReply = { status: 404, body: "" },
 ): ReadonlyArray<Scripted> => [rendered(repo, commentId), [FETCH, reply]];
 
 /** The comment's rendered read itself fails — the evidence is UNKNOWN, not broken. */
 export const evidenceUnreadable = (repo: string, commentId: number): ReadonlyArray<Scripted> => [
 	[
 		new RegExp(`^GET https://api\\.github\\.com/repos/${repo}/issues/comments/${commentId}$`),
-		{status: 404, body: "{}"},
+		{ status: 404, body: "{}" },
 	],
 ];

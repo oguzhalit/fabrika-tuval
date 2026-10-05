@@ -1,9 +1,9 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeFs, fakeSeams, okOut, type Scripted} from "../fakes.test-support.ts";
-import type {LocalTreeGuard} from "../guard/local-tree.ts";
-import type {ExecResult} from "../io/exec.ts";
-import type {VerbOutcome} from "../verb.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeFs, fakeSeams, okOut, type Scripted } from "../fakes.test-support.ts";
+import type { LocalTreeGuard } from "../guard/local-tree.ts";
+import type { ExecResult } from "../io/exec.ts";
+import type { VerbOutcome } from "../verb.ts";
 import {
 	classifyDiff,
 	linkTargets,
@@ -98,9 +98,9 @@ const LANE_OK: ReadonlyArray<Scripted> = [
 	[REV_PARSE, GIT_DIRS],
 	[BRANCH, okOut(`${LANE}\n`)],
 	[ISSUE, issue()],
-	[COMMENTS, comments({id: 1, body: marker("s-9f2e", LANE_UUID)})],
-	[PERM, served({permission: "write"})],
-	[REPO_META, served({default_branch: "main"})],
+	[COMMENTS, comments({ id: 1, body: marker("s-9f2e", LANE_UUID) })],
+	[PERM, served({ permission: "write" })],
+	[REPO_META, served({ default_branch: "main" })],
 	[MERGE_BASE, okOut(`${HEAD}\n`)],
 	untracked(""),
 	[LS_TREE, okOut("")],
@@ -109,7 +109,7 @@ const LANE_OK: ReadonlyArray<Scripted> = [
 const options = {
 	surface: "code",
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e", ...GH_TOKEN_ENV} as Record<
+	env: { CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e", ...GH_TOKEN_ENV } as Record<
 		string,
 		string | undefined
 	>,
@@ -126,10 +126,10 @@ const run = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runCheck({...options, ...overrides}),
+			runCheck({ ...options, ...overrides }),
 			Layer.merge(
 				fakeSeams(script).layer,
-				fakeFs({files: {...CODE_CONFIG, ...files}, unreadable}).layer,
+				fakeFs({ files: { ...CODE_CONFIG, ...files }, unreadable }).layer,
 			),
 		),
 	);
@@ -185,14 +185,14 @@ describe("classifyDiff — matched-neither is a bucket, not an absence", () => {
 			"LICENSE",
 			".github/workflows/ci.yaml",
 		];
-		const {code, markdown, workflows, config, unvalidatable} = classifyDiff(files, ["LICENSE"]);
+		const { code, markdown, workflows, config, unvalidatable } = classifyDiff(files, ["LICENSE"]);
 		expect([...code, ...markdown, ...workflows, ...config, ...unvalidatable].sort()).toEqual(
 			[...files].sort(),
 		);
 	});
 
 	it("claims workflow YAML only where GitHub reads it from", () => {
-		const {workflows, unvalidatable} = classifyDiff([
+		const { workflows, unvalidatable } = classifyDiff([
 			".github/workflows/ci.yml",
 			".github/actions/setup/action.yml",
 			"src/app/config.yml",
@@ -236,7 +236,7 @@ describe("runCheck", () => {
 		const out = await Effect.runPromise(
 			Effect.provide(
 				runCheck(options),
-				Layer.merge(shell.layer, fakeFs({files: CODE_CONFIG}).layer),
+				Layer.merge(shell.layer, fakeFs({ files: CODE_CONFIG }).layer),
 			),
 		);
 		expect(out.code).toBe(0);
@@ -286,7 +286,7 @@ describe("runCheck", () => {
 		const shell = fakeSeams([]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runCheck({...options, surface: "design"}),
+				runCheck({ ...options, surface: "design" }),
 				Layer.merge(shell.layer, fakeFs({}).layer),
 			),
 		);
@@ -311,8 +311,8 @@ describe("runCheck", () => {
 	it("reds a prose diff whose relative link does not resolve", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("docs/guide.md\n")]],
-			{surface: "prose"},
-			{"/repo/trees/lane-a/docs/guide.md": "see [the other page](./missing.md)\n"},
+			{ surface: "prose" },
+			{ "/repo/trees/lane-a/docs/guide.md": "see [the other page](./missing.md)\n" },
 		);
 		expect(out.code).toBe(VALIDATION_RED);
 		expect(out.stderr.some((line) => line.includes("does not resolve"))).toBe(true);
@@ -321,8 +321,8 @@ describe("runCheck", () => {
 	it("reds a prose diff carrying a machine-local path", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("docs/guide.md\n")]],
-			{surface: "prose"},
-			{"/repo/trees/lane-a/docs/guide.md": "run it from /Users/someone/repo\n"},
+			{ surface: "prose" },
+			{ "/repo/trees/lane-a/docs/guide.md": "run it from /Users/someone/repo\n" },
 		);
 		expect(out.code).toBe(VALIDATION_RED);
 		expect(out.stderr.some((line) => line.includes("machine-local path"))).toBe(true);
@@ -331,7 +331,7 @@ describe("runCheck", () => {
 	it("greens a prose diff whose links resolve", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("docs/guide.md\n")]],
-			{surface: "prose"},
+			{ surface: "prose" },
 			{
 				"/repo/trees/lane-a/docs/guide.md": "see [the other page](./other.md)\n",
 				"/repo/trees/lane-a/docs/other.md": "here\n",
@@ -348,7 +348,7 @@ describe("runCheck", () => {
 	const NO_SURFACE = okOut("migrations/0007.sql\nclaude-plugins/x/foo.sh\n");
 
 	it("refuses a wholly-unvalidatable diff on 22 under --surface prose — the false green", async () => {
-		const out = await run([...LANE_OK, [DIFF, NO_SURFACE]], {surface: "prose"});
+		const out = await run([...LANE_OK, [DIFF, NO_SURFACE]], { surface: "prose" });
 		expect(out.code).toBe(UNCLASSIFIED_DIFF);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toBe(
@@ -357,12 +357,12 @@ describe("runCheck", () => {
 	});
 
 	it("refuses the same diff on 22 under --surface plan", async () => {
-		const out = await run([...LANE_OK, [DIFF, NO_SURFACE]], {surface: "plan"});
+		const out = await run([...LANE_OK, [DIFF, NO_SURFACE]], { surface: "plan" });
 		expect(out.code).toBe(UNCLASSIFIED_DIFF);
 	});
 
 	it("refuses the same diff on 22 under --surface workflows — no workflow file either", async () => {
-		const out = await run([...LANE_OK, [DIFF, NO_SURFACE]], {surface: "workflows"});
+		const out = await run([...LANE_OK, [DIFF, NO_SURFACE]], { surface: "workflows" });
 		expect(out.code).toBe(UNCLASSIFIED_DIFF);
 	});
 
@@ -380,8 +380,8 @@ describe("runCheck", () => {
 	it("discloses the unvalidated files on a partly-unvalidatable prose green (the #5187 shape)", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("docs/guide.md\n.github/workflows/ship.yml\n")]],
-			{surface: "prose"},
-			{"/repo/trees/lane-a/docs/guide.md": "nothing to resolve here\n"},
+			{ surface: "prose" },
+			{ "/repo/trees/lane-a/docs/guide.md": "nothing to resolve here\n" },
 		);
 		expect(out.code).toBe(0);
 		const verdict = JSON.parse(out.stdout);
@@ -413,7 +413,7 @@ describe("runCheck", () => {
 				[LINT, okOut("")],
 			],
 			{},
-			{"/repo/trees/lane-a/README.md": "nothing to resolve here\n"},
+			{ "/repo/trees/lane-a/README.md": "nothing to resolve here\n" },
 		);
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).unvalidated).toEqual(["README.md"]);
@@ -426,11 +426,11 @@ describe("runCheck", () => {
 		const shell = fakeSeams([...LANE_OK, [DIFF, okOut("src/app/App.tsx\nplans/epic.md\n")]]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runCheck({...options, surface: "plan"}),
+				runCheck({ ...options, surface: "plan" }),
 				Layer.merge(
 					shell.layer,
 					fakeFs({
-						files: {"/repo/trees/lane-a/plans/epic.md": "## Dependencies\n\n- phase 1: #12\n"},
+						files: { "/repo/trees/lane-a/plans/epic.md": "## Dependencies\n\n- phase 1: #12\n" },
 					}).layer,
 				),
 			),
@@ -451,7 +451,7 @@ describe("runCheck", () => {
 				[LINT, okOut("")],
 			],
 			{},
-			{"/repo/trees/lane-a/docs/guide.md": "run it from /Users/someone/repo\n"},
+			{ "/repo/trees/lane-a/docs/guide.md": "run it from /Users/someone/repo\n" },
 		);
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).unvalidated).toEqual(["docs/guide.md"]);
@@ -460,8 +460,8 @@ describe("runCheck", () => {
 	it("reds a plan diff whose Dependencies block does not parse", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("plans/epic.md\n")]],
-			{surface: "plan"},
-			{"/repo/trees/lane-a/plans/epic.md": "## Dependencies\n\n- #12 comes after the API work\n"},
+			{ surface: "plan" },
+			{ "/repo/trees/lane-a/plans/epic.md": "## Dependencies\n\n- #12 comes after the API work\n" },
 		);
 		expect(out.code).toBe(VALIDATION_RED);
 		expect(out.stderr.some((line) => line.includes("does not parse"))).toBe(true);
@@ -470,7 +470,7 @@ describe("runCheck", () => {
 	it("reds a plan whose child requires itself", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("plans/epic.md\n")]],
-			{surface: "plan"},
+			{ surface: "plan" },
 			{
 				"/repo/trees/lane-a/plans/epic.md":
 					"## Dependencies\n\n- phase 1: #12\n- #12 requires: #12\n",
@@ -483,7 +483,7 @@ describe("runCheck", () => {
 	it("greens a well-formed plan", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("plans/epic.md\n")]],
-			{surface: "plan"},
+			{ surface: "plan" },
 			{
 				"/repo/trees/lane-a/plans/epic.md":
 					"## Dependencies\n\n- phase 1: #12\n- phase 2: #13\n- #13 requires: #12\n",
@@ -503,7 +503,7 @@ describe("the prose leak scan predicts the committed-file gate, not the body gua
 	it("greens a fenced regex literal quoting the home marker", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("reports/snapshot.md\n")]],
-			{surface: "prose"},
+			{ surface: "prose" },
 			{
 				"/repo/trees/lane-a/reports/snapshot.md":
 					"```bash\ngrep -nE '(~/|/Users/|/home/)' -- .\n```\n",
@@ -516,8 +516,8 @@ describe("the prose leak scan predicts the committed-file gate, not the body gua
 	it("greens a doc citing a scratch root — a temp root is a comment-surface rule", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("reports/snapshot.md\n")]],
-			{surface: "prose"},
-			{"/repo/trees/lane-a/reports/snapshot.md": "scratch lands under /tmp/fabrika-build/x\n"},
+			{ surface: "prose" },
+			{ "/repo/trees/lane-a/reports/snapshot.md": "scratch lands under /tmp/fabrika-build/x\n" },
 		);
 		expect(out.code).toBe(0);
 	});
@@ -525,8 +525,8 @@ describe("the prose leak scan predicts the committed-file gate, not the body gua
 	it("greens a doc the repo declared exempt", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("CLAUDE.md\n")]],
-			{surface: "prose"},
-			{[CONFIG]: '{"docLeakExempt": ["/CLAUDE.md"]}', "/repo/trees/lane-a/CLAUDE.md": LEAKY},
+			{ surface: "prose" },
+			{ [CONFIG]: '{"docLeakExempt": ["/CLAUDE.md"]}', "/repo/trees/lane-a/CLAUDE.md": LEAKY },
 		);
 		expect(out.code).toBe(0);
 	});
@@ -534,8 +534,8 @@ describe("the prose leak scan predicts the committed-file gate, not the body gua
 	it("reds the same bytes in a doc the list does not name", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("docs/guide.md\n")]],
-			{surface: "prose"},
-			{[CONFIG]: '{"docLeakExempt": ["/CLAUDE.md"]}', "/repo/trees/lane-a/docs/guide.md": LEAKY},
+			{ surface: "prose" },
+			{ [CONFIG]: '{"docLeakExempt": ["/CLAUDE.md"]}', "/repo/trees/lane-a/docs/guide.md": LEAKY },
 		);
 		expect(out.code).toBe(VALIDATION_RED);
 	});
@@ -543,8 +543,8 @@ describe("the prose leak scan predicts the committed-file gate, not the body gua
 	it("exempts nothing when the repo declares no list, and says so", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("CLAUDE.md\n")]],
-			{surface: "prose"},
-			{"/repo/trees/lane-a/CLAUDE.md": LEAKY},
+			{ surface: "prose" },
+			{ "/repo/trees/lane-a/CLAUDE.md": LEAKY },
 		);
 		expect(out.code).toBe(VALIDATION_RED);
 		expect(out.stderr.some((line) => line.includes("nothing is leak-scan exempt"))).toBe(true);
@@ -553,8 +553,8 @@ describe("the prose leak scan predicts the committed-file gate, not the body gua
 	it("refuses an unreadable config on 11 — which docs are exempt is UNKNOWN, never green", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("docs/guide.md\n")]],
-			{surface: "prose"},
-			{[CONFIG]: "{}", "/repo/trees/lane-a/docs/guide.md": "fine\n"},
+			{ surface: "prose" },
+			{ [CONFIG]: "{}", "/repo/trees/lane-a/docs/guide.md": "fine\n" },
 			[CONFIG],
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -574,7 +574,7 @@ describe("a mixed code+markdown diff — every surface has a runnable answer", (
 	it("scans the markdown under --surface prose, reding on its machine-local path", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, MIXED]],
-			{surface: "prose"},
+			{ surface: "prose" },
 			{
 				"/repo/trees/lane-a/README.md": "run it from /Users/someone/repo\n",
 			},
@@ -586,7 +586,7 @@ describe("a mixed code+markdown diff — every surface has a runnable answer", (
 	it("greens under --surface prose, disclosing the code file it did not read", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, MIXED]],
-			{surface: "prose"},
+			{ surface: "prose" },
 			{
 				"/repo/trees/lane-a/README.md": "see [the contract](./other.md)\n",
 				"/repo/trees/lane-a/other.md": "here\n",
@@ -605,9 +605,12 @@ describe("a changed markdown file the verb cannot open", () => {
 	const GUIDE = "/repo/trees/lane-a/docs/guide.md";
 
 	it("refuses on 11 under --surface prose, naming the file and the reason", async () => {
-		const out = await run([...LANE_OK, [DIFF, okOut("docs/guide.md\n")]], {surface: "prose"}, {}, [
-			GUIDE,
-		]);
+		const out = await run(
+			[...LANE_OK, [DIFF, okOut("docs/guide.md\n")]],
+			{ surface: "prose" },
+			{},
+			[GUIDE],
+		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toBe(
@@ -616,7 +619,7 @@ describe("a changed markdown file the verb cannot open", () => {
 	});
 
 	it("refuses on 11 under --surface plan too — the same read, the same polarity", async () => {
-		const out = await run([...LANE_OK, [DIFF, okOut("plans/epic.md\n")]], {surface: "plan"}, {}, [
+		const out = await run([...LANE_OK, [DIFF, okOut("plans/epic.md\n")]], { surface: "plan" }, {}, [
 			"/repo/trees/lane-a/plans/epic.md",
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -626,8 +629,8 @@ describe("a changed markdown file the verb cannot open", () => {
 	it("still greens over a file the diff lists and the tree no longer holds", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("docs/gone.md\ndocs/here.md\n")]],
-			{surface: "prose"},
-			{"/repo/trees/lane-a/docs/here.md": "nothing to resolve here\n"},
+			{ surface: "prose" },
+			{ "/repo/trees/lane-a/docs/here.md": "nothing to resolve here\n" },
 		);
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).unvalidated).toEqual([]);
@@ -641,7 +644,7 @@ describe("--surface plan covers the markdown class it claims", () => {
 	it("reds a plan ledger carrying a machine-local path", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("plans/epic.md\n")]],
-			{surface: "plan"},
+			{ surface: "plan" },
 			{
 				"/repo/trees/lane-a/plans/epic.md":
 					"## Dependencies\n\n- phase 1: #12\n\nRun it from /Users/someone/repo\n",
@@ -654,7 +657,7 @@ describe("--surface plan covers the markdown class it claims", () => {
 	it("reds a plan ledger whose relative link does not resolve", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("plans/epic.md\n")]],
-			{surface: "plan"},
+			{ surface: "plan" },
 			{
 				"/repo/trees/lane-a/plans/epic.md":
 					"## Dependencies\n\n- phase 1: #12\n\nsee [the brief](./missing.md)\n",
@@ -667,8 +670,8 @@ describe("--surface plan covers the markdown class it claims", () => {
 	it("earns its empty unvalidated list — the green names both validators that ran", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("plans/epic.md\n")]],
-			{surface: "plan"},
-			{"/repo/trees/lane-a/plans/epic.md": "## Dependencies\n\n- phase 1: #12\n"},
+			{ surface: "plan" },
+			{ "/repo/trees/lane-a/plans/epic.md": "## Dependencies\n\n- phase 1: #12\n" },
 		);
 		expect(out.code).toBe(0);
 		const verdict = JSON.parse(out.stdout);
@@ -710,7 +713,7 @@ describe("the enumeration unions the untracked files with the diff", () => {
 	it("scans an untracked markdown file under --surface prose", async () => {
 		const out = await run(
 			[untracked("docs/new-guide.md\n"), ...LANE_OK, [DIFF, okOut("docs/tracked.md\n")]],
-			{surface: "prose"},
+			{ surface: "prose" },
 			{
 				"/repo/trees/lane-a/docs/tracked.md": "fine\n",
 				"/repo/trees/lane-a/docs/new-guide.md": "run it from /Users/someone/repo\n",
@@ -764,7 +767,7 @@ describe("the enumeration unions the untracked files with the diff", () => {
 		const out = await Effect.runPromise(
 			Effect.provide(
 				runCheck(options),
-				Layer.merge(shell.layer, fakeFs({files: CODE_CONFIG}).layer),
+				Layer.merge(shell.layer, fakeFs({ files: CODE_CONFIG }).layer),
 			),
 		);
 		expect(out.code).toBe(0);
@@ -839,7 +842,7 @@ describe("the prose link check still reds a dead link", () => {
 	it("reds a genuinely dead relative link in a changed doc", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("docs/guide.md\n")]],
-			{surface: "prose"},
+			{ surface: "prose" },
 			{
 				[DOC]: "see [the plan](plan.md)\n",
 			},
@@ -851,7 +854,7 @@ describe("the prose link check still reds a dead link", () => {
 	it("greens the same doc when that link is written as an example", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("docs/guide.md\n")]],
-			{surface: "prose"},
+			{ surface: "prose" },
 			{
 				[DOC]: "write `[the plan](plan.md)` to cite it\n",
 			},
@@ -870,9 +873,9 @@ describe("the leak scan reds this diff's leaks, not the file's", () => {
 
 	it("greens a defect line the merge base already carried unchanged", async () => {
 		const out = await run(
-			[...atBase({[FILE]: TAXONOMY}), ...LANE_OK, [DIFF, okOut(`${FILE}\n`)]],
-			{surface: "prose"},
-			{[PATH]: `a new opening paragraph\n\n${TAXONOMY}`},
+			[...atBase({ [FILE]: TAXONOMY }), ...LANE_OK, [DIFF, okOut(`${FILE}\n`)]],
+			{ surface: "prose" },
+			{ [PATH]: `a new opening paragraph\n\n${TAXONOMY}` },
 		);
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).verdict).toBe("green");
@@ -880,9 +883,9 @@ describe("the leak scan reds this diff's leaks, not the file's", () => {
 
 	it("reds a leak this diff introduced into a file that already carried another", async () => {
 		const out = await run(
-			[...atBase({[FILE]: TAXONOMY}), ...LANE_OK, [DIFF, okOut(`${FILE}\n`)]],
-			{surface: "prose"},
-			{[PATH]: `${TAXONOMY}the fork lives at ~/code/github.com/o/r\n`},
+			[...atBase({ [FILE]: TAXONOMY }), ...LANE_OK, [DIFF, okOut(`${FILE}\n`)]],
+			{ surface: "prose" },
+			{ [PATH]: `${TAXONOMY}the fork lives at ~/code/github.com/o/r\n` },
 		);
 		expect(out.code).toBe(VALIDATION_RED);
 		expect(out.stderr.some((line) => line.includes("~/code/"))).toBe(true);
@@ -891,9 +894,9 @@ describe("the leak scan reds this diff's leaks, not the file's", () => {
 
 	it("reds an added copy of a leak the base already held, counting occurrences", async () => {
 		const out = await run(
-			[...atBase({[FILE]: TAXONOMY}), ...LANE_OK, [DIFF, okOut(`${FILE}\n`)]],
-			{surface: "prose"},
-			{[PATH]: `${TAXONOMY}${TAXONOMY}`},
+			[...atBase({ [FILE]: TAXONOMY }), ...LANE_OK, [DIFF, okOut(`${FILE}\n`)]],
+			{ surface: "prose" },
+			{ [PATH]: `${TAXONOMY}${TAXONOMY}` },
 		);
 		expect(out.code).toBe(VALIDATION_RED);
 		expect(out.stderr.some((line) => line.includes(`${FILE}:2`))).toBe(true);
@@ -906,14 +909,14 @@ describe("the leak scan reds this diff's leaks, not the file's", () => {
 	// proves the anchor; a matcher that stops before the operands passes under both shapes.
 	it("pins both base reads to the lane root, operands and all", async () => {
 		const shell = fakeSeams([
-			...atBase({[FILE]: TAXONOMY}),
+			...atBase({ [FILE]: TAXONOMY }),
 			...LANE_OK,
 			[DIFF, okOut(`${FILE}\n`)],
 		]);
 		await Effect.runPromise(
 			Effect.provide(
-				runCheck({...options, surface: "prose"}),
-				Layer.merge(shell.layer, fakeFs({files: {[PATH]: TAXONOMY}}).layer),
+				runCheck({ ...options, surface: "prose" }),
+				Layer.merge(shell.layer, fakeFs({ files: { [PATH]: TAXONOMY } }).layer),
 			),
 		);
 		expect(shell.calls).toContain(
@@ -925,8 +928,8 @@ describe("the leak scan reds this diff's leaks, not the file's", () => {
 	it("reds the whole text of a doc this diff creates — nothing predates a new file", async () => {
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut(`${FILE}\n`)]],
-			{surface: "prose"},
-			{[PATH]: TAXONOMY},
+			{ surface: "prose" },
+			{ [PATH]: TAXONOMY },
 		);
 		expect(out.code).toBe(VALIDATION_RED);
 	});
@@ -934,8 +937,8 @@ describe("the leak scan reds this diff's leaks, not the file's", () => {
 	it("refuses on 11 when the base tree cannot be listed — what predates the diff is UNKNOWN", async () => {
 		const out = await run(
 			[[LS_TREE, errOut("fatal: not a tree object")], ...LANE_OK, [DIFF, okOut(`${FILE}\n`)]],
-			{surface: "prose"},
-			{[PATH]: TAXONOMY},
+			{ surface: "prose" },
+			{ [PATH]: TAXONOMY },
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -953,8 +956,8 @@ describe("the leak scan reds this diff's leaks, not the file's", () => {
 				...LANE_OK,
 				[DIFF, okOut(`${FILE}\n`)],
 			],
-			{surface: "prose"},
-			{[PATH]: TAXONOMY},
+			{ surface: "prose" },
+			{ [PATH]: TAXONOMY },
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -966,9 +969,9 @@ describe("the leak scan reds this diff's leaks, not the file's", () => {
 	it("still reds a dead link on a line the merge base carried unchanged", async () => {
 		const DEAD = "see [the plan](plan.md)\n";
 		const out = await run(
-			[...atBase({[FILE]: DEAD}), ...LANE_OK, [DIFF, okOut(`${FILE}\n`)]],
-			{surface: "prose"},
-			{[PATH]: DEAD},
+			[...atBase({ [FILE]: DEAD }), ...LANE_OK, [DIFF, okOut(`${FILE}\n`)]],
+			{ surface: "prose" },
+			{ [PATH]: DEAD },
 		);
 		expect(out.code).toBe(VALIDATION_RED);
 		expect(out.stderr.some((line) => line.includes('links to "plan.md"'))).toBe(true);
@@ -981,7 +984,7 @@ describe("--surface workflows", () => {
 	const CONFIG = "/repo/trees/lane-a/.fabrika.jsonc";
 	const GUARD = ["node", "guards/bin.js", "path-filter-guard", "check"];
 	const declaring = (reads: ReadonlyArray<string>) => ({
-		[CONFIG]: JSON.stringify({workflowValidators: [{command: GUARD, reads}]}),
+		[CONFIG]: JSON.stringify({ workflowValidators: [{ command: GUARD, reads }] }),
 	});
 	const DECLARED = declaring([".github/workflows/ci.yml"]);
 	const GUARD_LINE = /^node guards\/bin\.js path-filter-guard check$/;
@@ -997,14 +1000,14 @@ describe("--surface workflows", () => {
 		const shell = fakeSeams([...LANE_OK, [DIFF, WORKFLOWS], ...script], undefined, unstartable);
 		return Effect.runPromise(
 			Effect.provide(
-				runCheck({...options, surface: "workflows"}),
-				Layer.merge(shell.layer, fakeFs({files}).layer),
+				runCheck({ ...options, surface: "workflows" }),
+				Layer.merge(shell.layer, fakeFs({ files }).layer),
 			),
-		).then((out) => ({out, calls: shell.calls}));
+		).then((out) => ({ out, calls: shell.calls }));
 	};
 
 	it("greens a workflows-only diff, naming actionlint and the declared guard as what ran", async () => {
-		const {out, calls} = await workflows([
+		const { out, calls } = await workflows([
 			[ACTIONLINT, okOut("")],
 			[GUARD_LINE, okOut("")],
 		]);
@@ -1021,7 +1024,7 @@ describe("--surface workflows", () => {
 	});
 
 	it("reds on 18 when actionlint reds, printing its diagnostics above the verdict", async () => {
-		const {out} = await workflows([[ACTIONLINT, errOut('ci.yml:7:9: unexpected key "runs-on"')]]);
+		const { out } = await workflows([[ACTIONLINT, errOut('ci.yml:7:9: unexpected key "runs-on"')]]);
 		expect(out.code).toBe(VALIDATION_RED);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-2)).toBe('ci.yml:7:9: unexpected key "runs-on"');
@@ -1029,15 +1032,15 @@ describe("--surface workflows", () => {
 	});
 
 	it("bounds a runaway linter's output, so the verdict is not buried under it", async () => {
-		const flood = Array.from({length: 60}, (_, i) => `ci.yml:${i}:1: nope`).join("\n");
-		const {out} = await workflows([[ACTIONLINT, errOut(flood)]]);
+		const flood = Array.from({ length: 60 }, (_, i) => `ci.yml:${i}:1: nope`).join("\n");
+		const { out } = await workflows([[ACTIONLINT, errOut(flood)]]);
 		expect(out.code).toBe(VALIDATION_RED);
 		expect(out.stderr.at(-2)).toBe("… 20 more line(s); re-run the command itself for the rest.");
 		expect(out.stderr.at(-1)).toBe("build check: red — actionlint failed; diagnostics above.");
 	});
 
 	it("reds on 18 when a declared guard reds, naming the command", async () => {
-		const {out} = await workflows([
+		const { out } = await workflows([
 			[ACTIONLINT, okOut("")],
 			[GUARD_LINE, errOut("ci.yml's path filter names a path no job reads")],
 		]);
@@ -1048,7 +1051,7 @@ describe("--surface workflows", () => {
 	});
 
 	it("greens without actionlint, disclosing that it did not run", async () => {
-		const {out} = await workflows(
+		const { out } = await workflows(
 			[[GUARD_LINE, okOut("")]],
 			declaring([".github/workflows/ci.yml", ".github/workflows/publish.yml"]),
 			NO_ACTIONLINT,
@@ -1063,12 +1066,12 @@ describe("--surface workflows", () => {
 	});
 
 	it("names the gate workflow the repo declares, not another repo's", async () => {
-		const {out} = await workflows(
+		const { out } = await workflows(
 			[[GUARD_LINE, okOut("")]],
 			{
 				[CONFIG]: JSON.stringify({
-					workflowValidators: [{command: GUARD, reads: [".github/workflows/ci.yml"]}],
-					ci: {gateWorkflow: "build.yml"},
+					workflowValidators: [{ command: GUARD, reads: [".github/workflows/ci.yml"] }],
+					ci: { gateWorkflow: "build.yml" },
 				}),
 			},
 			NO_ACTIONLINT,
@@ -1080,10 +1083,10 @@ describe("--surface workflows", () => {
 	});
 
 	it("refuses on 11 when `ci` is declared off-vocabulary — never the shipped gate name", async () => {
-		const {out} = await workflows([[GUARD_LINE, okOut("")]], {
+		const { out } = await workflows([[GUARD_LINE, okOut("")]], {
 			[CONFIG]: JSON.stringify({
-				workflowValidators: [{command: GUARD, reads: [".github/workflows/ci.yml"]}],
-				ci: {gateWorkflow: ".github/workflows/build.yml"},
+				workflowValidators: [{ command: GUARD, reads: [".github/workflows/ci.yml"] }],
+				ci: { gateWorkflow: ".github/workflows/build.yml" },
 			}),
 		});
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -1094,7 +1097,7 @@ describe("--surface workflows", () => {
 	// opened the file the diff changed. Only actionlint takes the changed paths; a declared guard
 	// reads the fixed set it names, so coverage is per file or it is a claim about nothing.
 	it("names a changed workflow no validator that ran opens in `unvalidated`", async () => {
-		const {out} = await workflows([[GUARD_LINE, okOut("")]], DECLARED, NO_ACTIONLINT);
+		const { out } = await workflows([[GUARD_LINE, okOut("")]], DECLARED, NO_ACTIONLINT);
 		expect(out.code).toBe(0);
 		const verdict = JSON.parse(out.stdout);
 		expect(verdict.ran).toEqual([GUARD.join(" ")]);
@@ -1107,7 +1110,7 @@ describe("--surface workflows", () => {
 	});
 
 	it("refuses on 11 when every validator ran and none of them opened a changed file", async () => {
-		const {out} = await workflows(
+		const { out } = await workflows(
 			[[GUARD_LINE, okOut("")]],
 			declaring([".github/workflows/deploy.yml"]),
 			NO_ACTIONLINT,
@@ -1120,15 +1123,17 @@ describe("--surface workflows", () => {
 	});
 
 	it("refuses the whole declared list when an entry names no file it reads", async () => {
-		const {out} = await workflows([], {[CONFIG]: JSON.stringify({workflowValidators: [GUARD]})}, [
-			ACTIONLINT,
-		]);
+		const { out } = await workflows(
+			[],
+			{ [CONFIG]: JSON.stringify({ workflowValidators: [GUARD] }) },
+			[ACTIONLINT],
+		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("no workflow validator could be executed");
 	});
 
 	it("refuses on 11 when nothing could run — a green there would have opened no file", async () => {
-		const {out} = await workflows([], {}, NO_ACTIONLINT);
+		const { out } = await workflows([], {}, NO_ACTIONLINT);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain("no workflow validator could be executed");
@@ -1136,7 +1141,7 @@ describe("--surface workflows", () => {
 	});
 
 	it("refuses on 11 when a declared guard is not installed, naming it", async () => {
-		const {out} = await workflows([[ACTIONLINT, okOut("")]], DECLARED, [GUARD_LINE]);
+		const { out } = await workflows([[ACTIONLINT, okOut("")]], DECLARED, [GUARD_LINE]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain(`${GUARD.join(" ")} could not be executed`);
@@ -1146,8 +1151,8 @@ describe("--surface workflows", () => {
 		const shell = fakeSeams([...LANE_OK, [DIFF, WORKFLOWS], [ACTIONLINT, okOut("")]]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runCheck({...options, surface: "workflows"}),
-				Layer.merge(shell.layer, fakeFs({files: {[CONFIG]: "{}"}, unreadable: [CONFIG]}).layer),
+				runCheck({ ...options, surface: "workflows" }),
+				Layer.merge(shell.layer, fakeFs({ files: { [CONFIG]: "{}" }, unreadable: [CONFIG] }).layer),
 			),
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -1158,7 +1163,7 @@ describe("--surface workflows", () => {
 		const shell = fakeSeams([...LANE_OK, [DIFF, okOut("src/app/App.tsx\n")]]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runCheck({...options, surface: "workflows"}),
+				runCheck({ ...options, surface: "workflows" }),
 				Layer.merge(shell.layer, fakeFs({}).layer),
 			),
 		);
@@ -1183,8 +1188,8 @@ describe("a mixed workflow-plus-code diff — each surface reads its own class a
 		const shell = fakeSeams([...LANE_OK, [DIFF, MIXED], [/^actionlint /, okOut("")]]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runCheck({...options, surface: "workflows"}),
-				Layer.merge(shell.layer, fakeFs({files: {[CONFIG]: "{}"}}).layer),
+				runCheck({ ...options, surface: "workflows" }),
+				Layer.merge(shell.layer, fakeFs({ files: { [CONFIG]: "{}" } }).layer),
 			),
 		);
 		expect(out.code).toBe(0);
@@ -1211,13 +1216,13 @@ describe("--surface code reads its validators from the config", () => {
 		return Effect.runPromise(
 			Effect.provide(
 				runCheck(options),
-				Layer.merge(shell.layer, fakeFs({files: {[CONFIG]: config}}).layer),
+				Layer.merge(shell.layer, fakeFs({ files: { [CONFIG]: config } }).layer),
 			),
-		).then((out) => ({out, calls: shell.calls}));
+		).then((out) => ({ out, calls: shell.calls }));
 	};
 
 	it("runs what the repo declared, and none of the shipped pair", async () => {
-		const {out, calls} = await codeRun(
+		const { out, calls } = await codeRun(
 			[[/^make check$/, okOut("")]],
 			'{"codeValidators": [{"command": ["make", "check"]}]}',
 		);
@@ -1230,7 +1235,7 @@ describe("--surface code reads its validators from the config", () => {
 	// The adopting-repo reproduction: a repo that never declared these ran another repo's script
 	// names and got a red, which says its code is broken. Nothing is compiled in for it to inherit.
 	it("refuses UNKNOWN when the file declares no `codeValidators`", async () => {
-		const {out, calls} = await codeRun([], "{}");
+		const { out, calls } = await codeRun([], "{}");
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toBe(
@@ -1241,7 +1246,7 @@ describe("--surface code reads its validators from the config", () => {
 	});
 
 	it("refuses UNKNOWN when the repo has no config file at all", async () => {
-		const {out, calls} = await codeRun([], null);
+		const { out, calls } = await codeRun([], null);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toBe(
 			"build check: this repo has no .fabrika.jsonc — no code validator is present here, so nothing ran and the verdict is UNKNOWN, never green and never red.",
@@ -1250,7 +1255,7 @@ describe("--surface code reads its validators from the config", () => {
 	});
 
 	it("refuses UNKNOWN on an explicitly empty list — never green, never red", async () => {
-		const {out} = await codeRun([], '{"codeValidators": []}');
+		const { out } = await codeRun([], '{"codeValidators": []}');
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toBe(
@@ -1259,7 +1264,7 @@ describe("--surface code reads its validators from the config", () => {
 	});
 
 	it("refuses UNKNOWN naming a declared validator that cannot be spawned", async () => {
-		const {out} = await codeRun([], '{"codeValidators": [{"command": ["biome", "ci"]}]}', [
+		const { out } = await codeRun([], '{"codeValidators": [{"command": ["biome", "ci"]}]}', [
 			/^biome ci$/,
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -1268,7 +1273,7 @@ describe("--surface code reads its validators from the config", () => {
 	});
 
 	it("still reds on a declared validator that ran and failed", async () => {
-		const {out} = await codeRun(
+		const { out } = await codeRun(
 			[[/^make check$/, errOut("Makefile:3: recipe for target 'check' failed")]],
 			'{"codeValidators": [{"command": ["make", "check"]}]}',
 		);
@@ -1278,7 +1283,7 @@ describe("--surface code reads its validators from the config", () => {
 	});
 
 	it("refuses UNKNOWN on a malformed declaration rather than guessing a command", async () => {
-		const {out} = await codeRun([], '{"codeValidators": [{"command": []}]}');
+		const { out } = await codeRun([], '{"codeValidators": [{"command": []}]}');
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("`codeValidators` holds an entry that is not");
 	});
@@ -1288,7 +1293,7 @@ describe("--surface code reads its validators from the config", () => {
 		const out = await Effect.runPromise(
 			Effect.provide(
 				runCheck(options),
-				Layer.merge(shell.layer, fakeFs({files: {[CONFIG]: "{}"}, unreadable: [CONFIG]}).layer),
+				Layer.merge(shell.layer, fakeFs({ files: { [CONFIG]: "{}" }, unreadable: [CONFIG] }).layer),
 			),
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -1319,12 +1324,12 @@ describe("runCheck — the local-tree guard sweep", () => {
 			}),
 	});
 
-	const clean: VerbOutcome = {code: 0, stdout: "patch-guard: clean.\n", stderr: []};
+	const clean: VerbOutcome = { code: 0, stdout: "patch-guard: clean.\n", stderr: [] };
 
 	const sweepRun = (guards: ReadonlyArray<LocalTreeGuard>) =>
 		run(
 			[...LANE_OK, [DIFF, okOut("src/app/App.tsx\n")], [TYPECHECK, okOut("")], [LINT, okOut("")]],
-			{guards},
+			{ guards },
 		);
 
 	it("folds a passing member into `ran` under its own leaf", async () => {
@@ -1349,7 +1354,7 @@ describe("runCheck — the local-tree guard sweep", () => {
 			{
 				name: "readme-guard",
 				leaf: "check",
-				run: ({changed}) =>
+				run: ({ changed }) =>
 					Effect.sync(() => {
 						handed.push(changed);
 						return clean;
@@ -1418,8 +1423,8 @@ describe("runCheck — the local-tree guard sweep", () => {
 		const seen: string[] = [];
 		const out = await run(
 			[...LANE_OK, [DIFF, okOut("docs/a.md\n")]],
-			{guards: [guard("portability-guard", clean, "check", seen)], surface: "prose"},
-			{[`${ROOT}/docs/a.md`]: "# a\n"},
+			{ guards: [guard("portability-guard", clean, "check", seen)], surface: "prose" },
+			{ [`${ROOT}/docs/a.md`]: "# a\n" },
 		);
 		expect(out.code).toBe(0);
 		expect(seen).toEqual(["portability-guard check"]);
@@ -1444,10 +1449,10 @@ describe("configValidators — a config-only diff greens or reds under every sur
 	const DECLARED: Record<string, string> = {
 		[CONFIG_FILE]: JSON.stringify({
 			codeValidators: [
-				{command: ["pnpm", "typecheck", "--force"]},
-				{command: ["pnpm", "lint:worktree"]},
+				{ command: ["pnpm", "typecheck", "--force"] },
+				{ command: ["pnpm", "lint:worktree"] },
 			],
-			configValidators: [{command: LEFTHOOK_ARGV, reads: ["lefthook.yml"]}],
+			configValidators: [{ command: LEFTHOOK_ARGV, reads: ["lefthook.yml"] }],
 		}),
 	};
 	const configRun = (
@@ -1460,10 +1465,10 @@ describe("configValidators — a config-only diff greens or reds under every sur
 		const shell = fakeSeams([...LANE_OK, [DIFF, okOut(diff)], ...script]);
 		return Effect.runPromise(
 			Effect.provide(
-				runCheck({...options, surface}),
-				Layer.merge(shell.layer, fakeFs({files, unreadable}).layer),
+				runCheck({ ...options, surface }),
+				Layer.merge(shell.layer, fakeFs({ files, unreadable }).layer),
 			),
-		).then((out) => ({out, calls: shell.calls}));
+		).then((out) => ({ out, calls: shell.calls }));
 	};
 
 	it("keeps the surface vocabulary at four members", () => {
@@ -1499,7 +1504,7 @@ describe("configValidators — a config-only diff greens or reds under every sur
 	});
 
 	it.each(SURFACES)("greens a lefthook.yml-only diff under --surface %s", async (surface) => {
-		const {out, calls} = await configRun("lefthook.yml\n", surface, [
+		const { out, calls } = await configRun("lefthook.yml\n", surface, [
 			[LEFTHOOK, okOut("All good")],
 		]);
 		expect(out.code).toBe(0);
@@ -1515,43 +1520,47 @@ describe("configValidators — a config-only diff greens or reds under every sur
 		expect(calls).not.toContain("pnpm typecheck --force");
 	});
 
-	it.each(
-		SURFACES,
-	)("reds on 18 under --surface %s when the entry exits non-zero", async (surface) => {
-		const {out} = await configRun("lefthook.yml\n", surface, [
-			[LEFTHOOK, errOut("lefthook.yml: unknown hook")],
-		]);
-		expect(out.code).toBe(VALIDATION_RED);
-		expect(out.stdout).toBe("");
-		expect(out.stderr.at(-2)).toBe("lefthook.yml: unknown hook");
-		expect(out.stderr.at(-1)).toBe(
-			"build check: red — pnpm exec lefthook validate failed; diagnostics above.",
-		);
-	});
+	it.each(SURFACES)(
+		"reds on 18 under --surface %s when the entry exits non-zero",
+		async (surface) => {
+			const { out } = await configRun("lefthook.yml\n", surface, [
+				[LEFTHOOK, errOut("lefthook.yml: unknown hook")],
+			]);
+			expect(out.code).toBe(VALIDATION_RED);
+			expect(out.stdout).toBe("");
+			expect(out.stderr.at(-2)).toBe("lefthook.yml: unknown hook");
+			expect(out.stderr.at(-1)).toBe(
+				"build check: red — pnpm exec lefthook validate failed; diagnostics above.",
+			);
+		},
+	);
 
-	it.each(
-		SURFACES,
-	)("still refuses on 22 under --surface %s when no entry reads it", async (surface) => {
-		const {out, calls} = await configRun("lefthook.yml\n", surface, [], CODE_CONFIG);
-		expect(out.code).toBe(UNCLASSIFIED_DIFF);
-		expect(out.stderr.at(-1)).toContain("no surface validates any of the 1 changed file(s)");
-		expect(calls).not.toContain("pnpm exec lefthook validate");
-	});
+	it.each(SURFACES)(
+		"still refuses on 22 under --surface %s when no entry reads it",
+		async (surface) => {
+			const { out, calls } = await configRun("lefthook.yml\n", surface, [], CODE_CONFIG);
+			expect(out.code).toBe(UNCLASSIFIED_DIFF);
+			expect(out.stderr.at(-1)).toContain("no surface validates any of the 1 changed file(s)");
+			expect(calls).not.toContain("pnpm exec lefthook validate");
+		},
+	);
 
 	it("still refuses on 22 over a config file the declared entries do not read", async () => {
-		const {out, calls} = await configRun("biome.jsonc\n.prettierrc\n", "code");
+		const { out, calls } = await configRun("biome.jsonc\n.prettierrc\n", "code");
 		expect(out.code).toBe(UNCLASSIFIED_DIFF);
 		expect(calls).not.toContain("pnpm exec lefthook validate");
 	});
 
 	it("discloses an undeclared file beside a declared one rather than refusing the pair", async () => {
-		const {out} = await configRun("lefthook.yml\nscripts/x.sh\n", "prose", [[LEFTHOOK, okOut("")]]);
+		const { out } = await configRun("lefthook.yml\nscripts/x.sh\n", "prose", [
+			[LEFTHOOK, okOut("")],
+		]);
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).unvalidated).toEqual(["scripts/x.sh"]);
 	});
 
 	it("runs the entry beside the code validators on a mixed diff", async () => {
-		const {out} = await configRun("src/a.ts\nlefthook.yml\n", "code", [
+		const { out } = await configRun("src/a.ts\nlefthook.yml\n", "code", [
 			[LEFTHOOK, okOut("")],
 			[TYPECHECK, okOut("")],
 			[LINT, okOut("")],
@@ -1564,15 +1573,15 @@ describe("configValidators — a config-only diff greens or reds under every sur
 	});
 
 	it("refuses UNKNOWN when the declaration cannot be read over a diff that needs it", async () => {
-		const {out, calls} = await configRun("lefthook.yml\n", "code", [], DECLARED, [CONFIG_FILE]);
+		const { out, calls } = await configRun("lefthook.yml\n", "code", [], DECLARED, [CONFIG_FILE]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("cannot read `configValidators`");
 		expect(calls).not.toContain("pnpm exec lefthook validate");
 	});
 
 	it("refuses UNKNOWN on a malformed declaration rather than guessing which files it reads", async () => {
-		const {out} = await configRun("lefthook.yml\n", "code", [], {
-			[CONFIG_FILE]: JSON.stringify({configValidators: [{command: ["x"], reads: ["*.yml"]}]}),
+		const { out } = await configRun("lefthook.yml\n", "code", [], {
+			[CONFIG_FILE]: JSON.stringify({ configValidators: [{ command: ["x"], reads: ["*.yml"] }] }),
 		});
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("a pattern");
@@ -1591,10 +1600,10 @@ describe("configValidators — a Java-only diff greens or reds on the repo's dec
 	const DECLARED: Record<string, string> = {
 		[CONFIG_FILE]: JSON.stringify({
 			codeValidators: [
-				{command: ["pnpm", "typecheck", "--force"]},
-				{command: ["pnpm", "lint:worktree"]},
+				{ command: ["pnpm", "typecheck", "--force"] },
+				{ command: ["pnpm", "lint:worktree"] },
 			],
-			configValidators: [{command: GRADLE_ARGV, reads: [SERVICE]}],
+			configValidators: [{ command: GRADLE_ARGV, reads: [SERVICE] }],
 		}),
 	};
 	const javaRun = (
@@ -1606,10 +1615,10 @@ describe("configValidators — a Java-only diff greens or reds on the repo's dec
 		const shell = fakeSeams([...LANE_OK, [DIFF, okOut(diff)], ...script]);
 		return Effect.runPromise(
 			Effect.provide(
-				runCheck({...options, surface}),
-				Layer.merge(shell.layer, fakeFs({files}).layer),
+				runCheck({ ...options, surface }),
+				Layer.merge(shell.layer, fakeFs({ files }).layer),
 			),
-		).then((out) => ({out, calls: shell.calls}));
+		).then((out) => ({ out, calls: shell.calls }));
 	};
 
 	it("leaves non-JS source out of the code class, declared or not", () => {
@@ -1618,30 +1627,31 @@ describe("configValidators — a Java-only diff greens or reds on the repo's dec
 			"App.kt",
 			"View.swift",
 		]);
-		expect(classifyDiff([SERVICE], [SERVICE])).toMatchObject({code: [], config: [SERVICE]});
+		expect(classifyDiff([SERVICE], [SERVICE])).toMatchObject({ code: [], config: [SERVICE] });
 	});
 
-	it.each(
-		SURFACES,
-	)("greens a Java-only diff under --surface %s when the build passes", async (surface) => {
-		const {out, calls} = await javaRun(`${SERVICE}\n`, surface, [
-			[GRADLE, okOut("BUILD SUCCESSFUL")],
-		]);
-		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toEqual({
-			verdict: "green",
-			surface,
-			tree: ROOT,
-			ran: [GRADLE_ARGV.join(" ")],
-			skipped: [],
-			unvalidated: [],
-		});
-		expect(calls).toContain("./gradlew testDebugUnitTest");
-		expect(calls).not.toContain("pnpm typecheck --force");
-	});
+	it.each(SURFACES)(
+		"greens a Java-only diff under --surface %s when the build passes",
+		async (surface) => {
+			const { out, calls } = await javaRun(`${SERVICE}\n`, surface, [
+				[GRADLE, okOut("BUILD SUCCESSFUL")],
+			]);
+			expect(out.code).toBe(0);
+			expect(JSON.parse(out.stdout)).toEqual({
+				verdict: "green",
+				surface,
+				tree: ROOT,
+				ran: [GRADLE_ARGV.join(" ")],
+				skipped: [],
+				unvalidated: [],
+			});
+			expect(calls).toContain("./gradlew testDebugUnitTest");
+			expect(calls).not.toContain("pnpm typecheck --force");
+		},
+	);
 
 	it.each(SURFACES)("reds on 18 under --surface %s when the build fails", async (surface) => {
-		const {out} = await javaRun(`${SERVICE}\n`, surface, [
+		const { out } = await javaRun(`${SERVICE}\n`, surface, [
 			[GRADLE, errOut("AuditService.java:12: error: ';' expected")],
 		]);
 		expect(out.code).toBe(VALIDATION_RED);
@@ -1652,7 +1662,7 @@ describe("configValidators — a Java-only diff greens or reds on the repo's dec
 	});
 
 	it.each(SURFACES)("refuses on 22 under --surface %s when no entry claims it", async (surface) => {
-		const {out, calls} = await javaRun(`${SERVICE}\n`, surface, [], CODE_CONFIG);
+		const { out, calls } = await javaRun(`${SERVICE}\n`, surface, [], CODE_CONFIG);
 		expect(out.code).toBe(UNCLASSIFIED_DIFF);
 		expect(out.stderr.at(-1)).toContain(
 			`no surface validates any of the 1 changed file(s) (${SERVICE})`,
@@ -1661,7 +1671,7 @@ describe("configValidators — a Java-only diff greens or reds on the repo's dec
 	});
 
 	it("discloses an unclaimed Java file beside a claimed one on a mixed green", async () => {
-		const {out} = await javaRun(`src/a.ts\n${SERVICE}\n${HELPER}\n`, "code", [
+		const { out } = await javaRun(`src/a.ts\n${SERVICE}\n${HELPER}\n`, "code", [
 			[GRADLE, okOut("")],
 			[TYPECHECK, okOut("")],
 			[LINT, okOut("")],
@@ -1689,17 +1699,17 @@ describe("--probe — the declared code validators, with no lane and no diff", (
 		overrides: Partial<typeof options> = {},
 	) => {
 		const shell = fakeSeams([...GROUND, ...script], undefined, unstartable);
-		const fs = fakeFs({files: {[CONFIG_FILE]: config}});
+		const fs = fakeFs({ files: { [CONFIG_FILE]: config } });
 		return Effect.runPromise(
 			Effect.provide(
-				runCheck({...options, probe: true, env: {}, ...overrides}),
+				runCheck({ ...options, probe: true, env: {}, ...overrides }),
 				Layer.merge(shell.layer, fs.layer),
 			),
-		).then((out) => ({out, calls: shell.calls, written: fs.written}));
+		).then((out) => ({ out, calls: shell.calls, written: fs.written }));
 	};
 
 	it("greens with no session and no lane branch, starting each entry once and writing nothing", async () => {
-		const {out, calls, written} = await probeRun([
+		const { out, calls, written } = await probeRun([
 			[TYPECHECK, okOut("")],
 			[BIOME, okOut("")],
 			[LINT, okOut("")],
@@ -1721,7 +1731,7 @@ describe("--probe — the declared code validators, with no lane and no diff", (
 	});
 
 	it("reds on 18 with the failing entry's diagnostics, and still starts every other entry", async () => {
-		const {out, calls} = await probeRun([
+		const { out, calls } = await probeRun([
 			[TYPECHECK, errOut("src/App.tsx(12,3): error TS2345")],
 			[BIOME, okOut("")],
 			[LINT, okOut("")],
@@ -1737,7 +1747,7 @@ describe("--probe — the declared code validators, with no lane and no diff", (
 	});
 
 	it("refuses UNKNOWN on 11 naming an entry that cannot be started — never green", async () => {
-		const {out, calls} = await probeRun(
+		const { out, calls } = await probeRun(
 			[
 				[TYPECHECK, okOut("")],
 				[LINT, okOut("")],
@@ -1754,7 +1764,7 @@ describe("--probe — the declared code validators, with no lane and no diff", (
 	});
 
 	it("reds rather than UNKNOWN when one entry failed and another could not start", async () => {
-		const {out} = await probeRun(
+		const { out } = await probeRun(
 			[
 				[TYPECHECK, errOut("error TS2345")],
 				[LINT, okOut("")],
@@ -1771,14 +1781,14 @@ describe("--probe — the declared code validators, with no lane and no diff", (
 	});
 
 	it("refuses UNKNOWN on 11 when the repo declares no code validator", async () => {
-		const {out, calls} = await probeRun([], "{}");
+		const { out, calls } = await probeRun([], "{}");
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("there is no code validator to probe");
 		expect(calls.filter((call) => !REV_PARSE.test(call))).toEqual([]);
 	});
 
 	it("refuses a non-code surface on 10 before touching the tree", async () => {
-		const {out, calls} = await probeRun([], TRIO, [], {surface: "prose"});
+		const { out, calls } = await probeRun([], TRIO, [], { surface: "prose" });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(calls).toEqual([]);
 	});

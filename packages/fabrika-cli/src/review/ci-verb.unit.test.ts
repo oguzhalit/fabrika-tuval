@@ -1,7 +1,7 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs, fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs, fakeSeams, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
 import {
 	httpError,
 	PROTECTION,
@@ -12,10 +12,10 @@ import {
 	UNDECLARED,
 	workflows,
 } from "../ship/fixtures.test-support.ts";
-import {CHECK_RUN_NAME, planFor} from "../ship/floor-check.ts";
-import {runCi} from "./ci-verb.ts";
-import {INCOMPLETE_SCAN, NO_GATE_COVERAGE, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {checkRuns, HEAD, inventory, OLD_HEAD, pull, runsAtHead} from "./fixtures.test-support.ts";
+import { CHECK_RUN_NAME, planFor } from "../ship/floor-check.ts";
+import { runCi } from "./ci-verb.ts";
+import { INCOMPLETE_SCAN, NO_GATE_COVERAGE, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { checkRuns, HEAD, inventory, OLD_HEAD, pull, runsAtHead } from "./fixtures.test-support.ts";
 
 const PULL = /GET .*\/repos\/o\/r\/pulls\/4321$/;
 const COMMIT = (sha: string) => new RegExp(`GET .*/repos/o/r/commits/${sha}$`);
@@ -25,21 +25,21 @@ const AT_HEAD = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/actions\/runs\?he
 const CONFIG = "/repo/.fabrika.jsonc";
 
 /** A canned payload as the platform serves it — the fixtures speak `ExecResult`, the seam HTTP. */
-const served = (result: ExecResult): HttpReply => ({status: 200, body: result.stdout});
+const served = (result: ExecResult): HttpReply => ({ status: 200, body: result.stdout });
 
-const BAD_GATEWAY: HttpReply = {status: 502, body: '{"message":"Bad gateway"}'};
+const BAD_GATEWAY: HttpReply = { status: 502, body: '{"message":"Bad gateway"}' };
 const NOT_FOUND = '{"message":"Not Found"}';
 
 /** The check-run envelope at a commit, as the platform serves it. */
 const runs = (
 	declared: number,
-	list: ReadonlyArray<{name: string; status: string; conclusion: string | null; title?: string}>,
+	list: ReadonlyArray<{ name: string; status: string; conclusion: string | null; title?: string }>,
 ): HttpReply => served(checkRuns(declared, list));
 
 const GREEN = runs(3, [
-	{name: "lint / format / typecheck", status: "completed", conclusion: "success"},
-	{name: "unit tests", status: "completed", conclusion: "success"},
-	{name: "leak-guard", status: "completed", conclusion: "success"},
+	{ name: "lint / format / typecheck", status: "completed", conclusion: "success" },
+	{ name: "unit tests", status: "completed", conclusion: "success" },
+	{ name: "leak-guard", status: "completed", conclusion: "success" },
 ]);
 
 const CI_YML = ".github/workflows/ci.yml";
@@ -62,7 +62,7 @@ const options = {
 	cadenceSeconds: 30,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 	cwd: "/repo",
 };
 
@@ -74,8 +74,8 @@ const run = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runCi({...options, ...overrides}),
-			Layer.merge(fakeSeams([...script, ...http, ...UNDECLARED]).layer, fakeFs({files}).layer),
+			runCi({ ...options, ...overrides }),
+			Layer.merge(fakeSeams([...script, ...http, ...UNDECLARED]).layer, fakeFs({ files }).layer),
 		),
 	);
 
@@ -97,8 +97,8 @@ describe("runCi under the base branch's required set", () => {
 				[
 					RUNS,
 					runs(2, [
-						{name: "unit tests", status: "completed", conclusion: "success"},
-						{name: "Analyze (python)", status: "completed", conclusion: "failure"},
+						{ name: "unit tests", status: "completed", conclusion: "success" },
+						{ name: "Analyze (python)", status: "completed", conclusion: "failure" },
 					]),
 				],
 			],
@@ -119,8 +119,8 @@ describe("runCi under the base branch's required set", () => {
 				[
 					RUNS,
 					runs(2, [
-						{name: "unit tests", status: "completed", conclusion: "success"},
-						{name: "Analyze (python)", status: "completed", conclusion: "failure"},
+						{ name: "unit tests", status: "completed", conclusion: "success" },
+						{ name: "Analyze (python)", status: "completed", conclusion: "failure" },
 					]),
 				],
 			],
@@ -137,8 +137,8 @@ describe("runCi under the base branch's required set", () => {
 			[
 				RUNS,
 				runs(2, [
-					{name: "unit tests", status: "completed", conclusion: "failure"},
-					{name: "Analyze (python)", status: "completed", conclusion: "success"},
+					{ name: "unit tests", status: "completed", conclusion: "failure" },
+					{ name: "Analyze (python)", status: "completed", conclusion: "success" },
 				]),
 			],
 		]);
@@ -155,8 +155,8 @@ describe("runCi under the base branch's required set", () => {
 				[
 					RUNS,
 					runs(2, [
-						{name: "unit tests", status: "completed", conclusion: "success"},
-						{name: "Analyze (python)", status: "in_progress", conclusion: null},
+						{ name: "unit tests", status: "completed", conclusion: "success" },
+						{ name: "Analyze (python)", status: "in_progress", conclusion: null },
 					]),
 				],
 			],
@@ -172,7 +172,7 @@ describe("runCi under the base branch's required set", () => {
 			[
 				...REQUIRES,
 				[PULL, served(pull())],
-				[RUNS, runs(1, [{name: "Analyze (python)", status: "completed", conclusion: "success"}])],
+				[RUNS, runs(1, [{ name: "Analyze (python)", status: "completed", conclusion: "success" }])],
 			],
 			GATED,
 		);
@@ -200,16 +200,18 @@ describe("runCi under the base branch's required set", () => {
 			[PROTECTION, protection()],
 		];
 		const posted = (
-			aggregator: ReadonlyArray<{name: string; status: string; conclusion: string | null}>,
+			aggregator: ReadonlyArray<{ name: string; status: string; conclusion: string | null }>,
 		) =>
 			runs(3 + aggregator.length, [
-				{name: "governance floor at head", status: "completed", conclusion: "success"},
-				{name: "scan changed files for leaks", status: "completed", conclusion: "success"},
-				{name: "validate skill frontmatter", status: "completed", conclusion: "success"},
+				{ name: "governance floor at head", status: "completed", conclusion: "success" },
+				{ name: "scan changed files for leaks", status: "completed", conclusion: "success" },
+				{ name: "validate skill frontmatter", status: "completed", conclusion: "success" },
 				...aggregator,
 			]);
 		const THREE = posted([]);
-		const FOUR_GREEN = posted([{name: "ci-required", status: "completed", conclusion: "success"}]);
+		const FOUR_GREEN = posted([
+			{ name: "ci-required", status: "completed", conclusion: "success" },
+		]);
 
 		it("pends, never greens, and names the declared context that has not reported", async () => {
 			const out = await run([...FOUR, [PULL, served(pull())], [RUNS, THREE]], GATED);
@@ -242,7 +244,7 @@ describe("runCi under the base branch's required set", () => {
 			const out = await run(
 				[...FOUR, [PULL, served(pull())], [once(RUNS), THREE], [RUNS, FOUR_GREEN]],
 				GATED,
-				{wait: true, cadenceSeconds: 0},
+				{ wait: true, cadenceSeconds: 0 },
 			);
 			expect(out.stdout.split("\n").slice(0, 2)).toEqual(["settle\tsettled", `ci\t${HEAD}\tgreen`]);
 		});
@@ -260,12 +262,12 @@ describe("runCi under the base branch's required set", () => {
 					[
 						RUNS,
 						runs(1, [
-							{name: "scan changed files for leaks", status: "completed", conclusion: "failure"},
+							{ name: "scan changed files for leaks", status: "completed", conclusion: "failure" },
 						]),
 					],
 				],
 				[],
-				{wait: true, cadenceSeconds: 86_400},
+				{ wait: true, cadenceSeconds: 86_400 },
 			);
 			expect(out.stdout.split("\n").slice(0, 2)).toEqual(["settle\tsettled", `ci\t${HEAD}\tred`]);
 		});
@@ -282,14 +284,14 @@ describe("runCi under the base branch's required set", () => {
 			[PROTECTION, protection()],
 		];
 		const QUEUED = runs(3, [
-			{name: "Analyze (python)", status: "completed", conclusion: "failure"},
-			{name: "unit tests", status: "queued", conclusion: null},
-			{name: "leak-guard", status: "queued", conclusion: null},
+			{ name: "Analyze (python)", status: "completed", conclusion: "failure" },
+			{ name: "unit tests", status: "queued", conclusion: null },
+			{ name: "leak-guard", status: "queued", conclusion: null },
 		]);
 		const CONCLUDED = runs(3, [
-			{name: "Analyze (python)", status: "completed", conclusion: "failure"},
-			{name: "unit tests", status: "completed", conclusion: "success"},
-			{name: "leak-guard", status: "completed", conclusion: "success"},
+			{ name: "Analyze (python)", status: "completed", conclusion: "failure" },
+			{ name: "unit tests", status: "completed", conclusion: "success" },
+			{ name: "leak-guard", status: "completed", conclusion: "success" },
 		]);
 
 		it("does not settle on the first poll, and names the red on the notes", async () => {
@@ -312,7 +314,7 @@ describe("runCi under the base branch's required set", () => {
 			const out = await run(
 				[...TWO, [PULL, served(pull())], [once(RUNS), QUEUED], [RUNS, CONCLUDED]],
 				GATED,
-				{wait: true, cadenceSeconds: 0},
+				{ wait: true, cadenceSeconds: 0 },
 			);
 			expect(out.stdout.split("\n").slice(0, 2)).toEqual(["settle\tsettled", `ci\t${HEAD}\tgreen`]);
 			expect(out.stderr).toContain(
@@ -330,14 +332,14 @@ describe("runCi under the base branch's required set", () => {
 					[
 						RUNS,
 						runs(3, [
-							{name: "Analyze (python)", status: "completed", conclusion: "failure"},
-							{name: "unit tests", status: "completed", conclusion: "failure"},
-							{name: "leak-guard", status: "queued", conclusion: null},
+							{ name: "Analyze (python)", status: "completed", conclusion: "failure" },
+							{ name: "unit tests", status: "completed", conclusion: "failure" },
+							{ name: "leak-guard", status: "queued", conclusion: null },
 						]),
 					],
 				],
 				[],
-				{wait: true, cadenceSeconds: 86_400},
+				{ wait: true, cadenceSeconds: 86_400 },
 			);
 			expect(out.stdout.split("\n").slice(0, 2)).toEqual(["settle\tsettled", `ci\t${HEAD}\tred`]);
 			expect(out.stderr).toContain("review ci: failing at this head: unit tests.");
@@ -359,7 +361,7 @@ describe("runCi under the base branch's required set", () => {
 		const out = await run([
 			[RULES, planGated],
 			[PULL, served(pull())],
-			[RUNS, runs(1, [{name: "unit tests", status: "completed", conclusion: "failure"}])],
+			[RUNS, runs(1, [{ name: "unit tests", status: "completed", conclusion: "failure" }])],
 		]);
 		expect(out.code).toBe(0);
 		expect(out.stdout.split("\n")[0]).toBe(`ci\t${HEAD}\tred`);
@@ -371,7 +373,7 @@ describe("runCi under the base branch's required set", () => {
 	it("falls back to the denylist on a base branch that declares nothing required", async () => {
 		const out = await run([
 			[PULL, served(pull())],
-			[RUNS, runs(1, [{name: "unit tests", status: "completed", conclusion: "failure"}])],
+			[RUNS, runs(1, [{ name: "unit tests", status: "completed", conclusion: "failure" }])],
 		]);
 		expect(out.stdout.split("\n")[0]).toBe(`ci\t${HEAD}\tred`);
 		expect(out.stderr.join("\n")).toContain("declares no required status checks");
@@ -401,9 +403,9 @@ describe("runCi", () => {
 			[
 				RUNS,
 				runs(3, [
-					{name: "unit tests", status: "completed", conclusion: "failure"},
-					{name: "leak-guard", status: "completed", conclusion: "success"},
-					{name: "CodeQL", status: "in_progress", conclusion: null},
+					{ name: "unit tests", status: "completed", conclusion: "failure" },
+					{ name: "leak-guard", status: "completed", conclusion: "success" },
+					{ name: "CodeQL", status: "in_progress", conclusion: null },
 				]),
 			],
 		]);
@@ -417,8 +419,8 @@ describe("runCi", () => {
 	it("enumerates at --sha and notices when the live head has moved past it", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({head: HEAD}))],
-				[COMMIT(OLD_HEAD), {status: 200, body: JSON.stringify({sha: OLD_HEAD})}],
+				[PULL, served(pull({ head: HEAD }))],
+				[COMMIT(OLD_HEAD), { status: 200, body: JSON.stringify({ sha: OLD_HEAD }) }],
 				[RUNS, GREEN],
 			],
 			[
@@ -426,11 +428,11 @@ describe("runCi", () => {
 				[
 					AT_HEAD,
 					served(
-						runsAtHead({path: CI_YML, headSha: OLD_HEAD}, {path: GUARD_YML, headSha: OLD_HEAD}),
+						runsAtHead({ path: CI_YML, headSha: OLD_HEAD }, { path: GUARD_YML, headSha: OLD_HEAD }),
 					),
 				],
 			],
-			{sha: OLD_HEAD},
+			{ sha: OLD_HEAD },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout.split("\n")[0]).toBe(`ci\t${OLD_HEAD}\tgreen`);
@@ -441,10 +443,10 @@ describe("runCi", () => {
 		const out = await run(
 			[
 				[PULL, served(pull())],
-				[COMMIT(OLD_HEAD), {status: 404, body: NOT_FOUND}],
+				[COMMIT(OLD_HEAD), { status: 404, body: NOT_FOUND }],
 			],
 			[],
-			{sha: OLD_HEAD},
+			{ sha: OLD_HEAD },
 		);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-1)).toBe(`review ci: no commit ${OLD_HEAD} on PR #4321 in o/r.`);
@@ -456,7 +458,7 @@ describe("runCi", () => {
 				[PULL, served(pull())],
 				[RUNS, runs(0, [])],
 			],
-			[[WORKFLOWS, served(workflows({path: ".github/workflows/ci.yml"}))]],
+			[[WORKFLOWS, served(workflows({ path: ".github/workflows/ci.yml" }))]],
 		);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stdout).toBe("");
@@ -466,7 +468,7 @@ describe("runCi", () => {
 	it("refuses a short enumeration on 13 — never read as `no red checks`", async () => {
 		const out = await run([
 			[PULL, served(pull())],
-			[RUNS, runs(9, [{name: "unit tests", status: "completed", conclusion: "success"}])],
+			[RUNS, runs(9, [{ name: "unit tests", status: "completed", conclusion: "success" }])],
 		]);
 		expect(out.code).toBe(INCOMPLETE_SCAN);
 		expect(out.stdout).toBe("");
@@ -500,10 +502,10 @@ describe("runCi", () => {
 describe("the gate-coverage read", () => {
 	/** The live incident: a conflicted head where only CodeQL's default setup reported. */
 	const CODEQL_ONLY = runs(4, [
-		{name: "CodeQL", status: "completed", conclusion: "success"},
-		{name: "Analyze (actions)", status: "completed", conclusion: "success"},
-		{name: "Analyze (javascript-typescript)", status: "completed", conclusion: "success"},
-		{name: "Analyze (javascript-typescript)", status: "completed", conclusion: "success"},
+		{ name: "CodeQL", status: "completed", conclusion: "success" },
+		{ name: "Analyze (actions)", status: "completed", conclusion: "success" },
+		{ name: "Analyze (javascript-typescript)", status: "completed", conclusion: "success" },
+		{ name: "Analyze (javascript-typescript)", status: "completed", conclusion: "success" },
 	]);
 
 	it("refuses an all-passed CodeQL-only head on 16 — never green over ungated bytes", async () => {
@@ -544,7 +546,7 @@ describe("the gate-coverage read", () => {
 		const out = await run(
 			[
 				[PULL, served(pull())],
-				[RUNS, runs(1, [{name: "CodeQL", status: "in_progress", conclusion: null}])],
+				[RUNS, runs(1, [{ name: "CodeQL", status: "in_progress", conclusion: null }])],
 			],
 			[
 				[WORKFLOWS, served(inventory(CI_YML, CODEQL))],
@@ -564,14 +566,14 @@ describe("the gate-coverage read", () => {
 				[
 					RUNS,
 					runs(2, [
-						{name: "resolve app roster", status: "completed", conclusion: "success"},
-						{name: "cleanup (web)", status: "completed", conclusion: "success"},
+						{ name: "resolve app roster", status: "completed", conclusion: "success" },
+						{ name: "cleanup (web)", status: "completed", conclusion: "success" },
 					]),
 				],
 			],
 			[
 				[WORKFLOWS, served(inventory(CI_YML, GUARD_YML, CLEANUP_YML))],
-				[AT_HEAD, served(runsAtHead({path: CLEANUP_YML, event: "pull_request_target"}))],
+				[AT_HEAD, served(runsAtHead({ path: CLEANUP_YML, event: "pull_request_target" }))],
 			],
 		);
 		expect(out.code).toBe(NO_GATE_COVERAGE);
@@ -586,14 +588,14 @@ describe("the gate-coverage read", () => {
 		const out = await run(
 			[
 				[PULL, served(pull())],
-				[COMMIT("03135b91"), {status: 200, body: JSON.stringify({sha: HEAD})}],
+				[COMMIT("03135b91"), { status: 200, body: JSON.stringify({ sha: HEAD }) }],
 				[RUNS, GREEN],
 			],
 			[
 				[WORKFLOWS, served(inventory(CI_YML, GUARD_YML, CODEQL))],
 				[AT_FULL, served(runsAtHead(CI_YML, GUARD_YML))],
 			],
-			{sha: "03135b91"},
+			{ sha: "03135b91" },
 		);
 		expect(out.code).toBe(0);
 		// The answer still spells the commit the caller asked about; only the coverage read resolves it.
@@ -604,7 +606,7 @@ describe("the gate-coverage read", () => {
 	it("reports an unresolvable head as UNKNOWN, never as a repo whose gates were silent", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({head: "03135b91"}))],
+				[PULL, served(pull({ head: "03135b91" }))],
 				[RUNS, GREEN],
 			],
 			[
@@ -623,9 +625,9 @@ describe("the gate-coverage read", () => {
 				[RUNS, GREEN],
 			],
 			GATED,
-			{json: true},
+			{ json: true },
 		);
-		expect(JSON.parse(out.stdout).gates).toEqual({declared: 2, covered: 2});
+		expect(JSON.parse(out.stdout).gates).toEqual({ declared: 2, covered: 2 });
 	});
 
 	/** `checks` is a status histogram under `--json`, never a row per run. */
@@ -636,10 +638,10 @@ describe("the gate-coverage read", () => {
 				[RUNS, GREEN],
 			],
 			GATED,
-			{json: true},
+			{ json: true },
 		);
 		const payload = JSON.parse(out.stdout);
-		expect(payload.checks).toEqual({success: 3});
+		expect(payload.checks).toEqual({ success: 3 });
 		expect(payload.scanned).toBe(3);
 		expect(out.stdout).not.toContain('"name"');
 	});
@@ -649,7 +651,7 @@ describe("the gate-coverage read", () => {
 		// assertion. A red check names itself; refusing it as ungated would bury that.
 		const out = await run([
 			[PULL, served(pull())],
-			[RUNS, runs(1, [{name: "unit tests", status: "completed", conclusion: "failure"}])],
+			[RUNS, runs(1, [{ name: "unit tests", status: "completed", conclusion: "failure" }])],
 		]);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toContain("\tred\n");
@@ -721,7 +723,7 @@ describe("the no-producer split", () => {
 			],
 			GATED,
 			{},
-			{[CONFIG]: '{"ci": {"noProducer": "ignore"}}'},
+			{ [CONFIG]: '{"ci": {"noProducer": "ignore"}}' },
 		);
 		expect(out.code).toBe(0);
 	});
@@ -735,8 +737,8 @@ describe("the no-producer split", () => {
 
 	/** The synthetic entries the platform lists for default CodeQL and Dependabot — no CI of the repo's own. */
 	const platformOnly = workflows(
-		{path: "dynamic/github-code-scanning/codeql"},
-		{path: "dynamic/dependabot/dependabot-updates"},
+		{ path: "dynamic/github-code-scanning/codeql" },
+		{ path: "dynamic/dependabot/dependabot-updates" },
 	);
 
 	it("refuses an all-`dynamic/*` inventory on 7 by default — platform entries are no producer", async () => {
@@ -750,7 +752,7 @@ describe("the no-producer split", () => {
 			empty,
 			[[WORKFLOWS, served(platformOnly)]],
 			{},
-			{[CONFIG]: '{"ci": {"noProducer": "degrade"}}'},
+			{ [CONFIG]: '{"ci": {"noProducer": "degrade"}}' },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe([`ci\t${HEAD}\tno-producer`, "run\t0", ""].join("\n"));
@@ -797,9 +799,9 @@ describe("the no-producer split", () => {
  */
 describe("the bounded --wait", () => {
 	const PENDING = runs(3, [
-		{name: "lint / format / typecheck", status: "completed", conclusion: "success"},
-		{name: "unit tests", status: "queued", conclusion: null},
-		{name: "leak-guard", status: "in_progress", conclusion: null},
+		{ name: "lint / format / typecheck", status: "completed", conclusion: "success" },
+		{ name: "unit tests", status: "queued", conclusion: null },
+		{ name: "leak-guard", status: "in_progress", conclusion: null },
 	]);
 
 	it("answers a pending head with this moment's read, and no settle token, without --wait", async () => {
@@ -823,7 +825,7 @@ describe("the bounded --wait", () => {
 				[RUNS, GREEN],
 			],
 			GATED,
-			{wait: true, cadenceSeconds: 0},
+			{ wait: true, cadenceSeconds: 0 },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout.split("\n").slice(0, 2)).toEqual(["settle\tsettled", `ci\t${HEAD}\tgreen`]);
@@ -840,7 +842,7 @@ describe("the bounded --wait", () => {
 				[RUNS, PENDING],
 			],
 			GATED,
-			{wait: true, cadenceSeconds: 0, budgetSeconds: 0},
+			{ wait: true, cadenceSeconds: 0, budgetSeconds: 0 },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout.split("\n").slice(0, 2)).toEqual([
@@ -854,11 +856,11 @@ describe("the bounded --wait", () => {
 		const out = await run(
 			[
 				[once(PULL), served(pull())],
-				[PULL, served(pull({head: OLD_HEAD}))],
+				[PULL, served(pull({ head: OLD_HEAD }))],
 				[RUNS, PENDING],
 			],
 			GATED,
-			{wait: true, cadenceSeconds: 0},
+			{ wait: true, cadenceSeconds: 0 },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout.split("\n").slice(0, 2)).toEqual([
@@ -881,7 +883,7 @@ describe("the bounded --wait", () => {
 				[WORKFLOWS, served(inventory(CI_YML, CODEQL))],
 				[AT_HEAD, served(runsAtHead(CODEQL))],
 			],
-			{wait: true, cadenceSeconds: 86_400},
+			{ wait: true, cadenceSeconds: 86_400 },
 		);
 		expect(out.code).toBe(NO_GATE_COVERAGE);
 		expect(out.stdout).toBe("");
@@ -894,14 +896,14 @@ describe("the bounded --wait", () => {
 	 */
 	describe("a governance floor that is waiting on its own caller", () => {
 		const FLOOR_PENDING = runs(3, [
-			{name: "lint / format / typecheck", status: "completed", conclusion: "success"},
-			{name: "unit tests", status: "completed", conclusion: "success"},
-			{name: CHECK_RUN_NAME, status: "in_progress", conclusion: null},
+			{ name: "lint / format / typecheck", status: "completed", conclusion: "success" },
+			{ name: "unit tests", status: "completed", conclusion: "success" },
+			{ name: CHECK_RUN_NAME, status: "in_progress", conclusion: null },
 		]);
 		const FLOOR_YML = ".github/workflows/governance-floor.yml";
 		const floorRuns = (status: string): ReadonlyArray<Scripted> => [
 			[WORKFLOWS, served(inventory(CI_YML, FLOOR_YML))],
-			[AT_HEAD, served(runsAtHead(CI_YML, {path: FLOOR_YML, name: "governance-floor", status}))],
+			[AT_HEAD, served(runsAtHead(CI_YML, { path: FLOOR_YML, name: "governance-floor", status }))],
 		];
 
 		it("answers governance-owed at once when the floor's workflow run has completed", async () => {
@@ -911,7 +913,7 @@ describe("the bounded --wait", () => {
 					[RUNS, FLOOR_PENDING],
 				],
 				floorRuns("completed"),
-				{wait: true, cadenceSeconds: 86_400},
+				{ wait: true, cadenceSeconds: 86_400 },
 			);
 			expect(out.code).toBe(0);
 			expect(out.stdout.split("\n").slice(0, 2)).toEqual([
@@ -930,7 +932,7 @@ describe("the bounded --wait", () => {
 					[RUNS, GREEN],
 				],
 				[...floorRuns("in_progress"), ...GATED],
-				{wait: true, cadenceSeconds: 0},
+				{ wait: true, cadenceSeconds: 0 },
 			);
 			expect(out.code).toBe(0);
 			expect(out.stdout.split("\n").slice(0, 2)).toEqual(["settle\tsettled", `ci\t${HEAD}\tgreen`]);
@@ -944,7 +946,7 @@ describe("the bounded --wait", () => {
 					[RUNS, PENDING],
 				],
 				floorRuns("completed"),
-				{wait: true, cadenceSeconds: 0, budgetSeconds: 0},
+				{ wait: true, cadenceSeconds: 0, budgetSeconds: 0 },
 			);
 			expect(out.code).toBe(0);
 			expect(out.stdout.split("\n")[0]).toBe("settle\tbudget-exhausted");
@@ -958,18 +960,18 @@ describe("the bounded --wait", () => {
 		 */
 		const floorRed = (title: string) =>
 			runs(3, [
-				{name: "lint / format / typecheck", status: "completed", conclusion: "success"},
-				{name: "unit tests", status: "completed", conclusion: "success"},
-				{name: CHECK_RUN_NAME, status: "completed", conclusion: "failure", title},
+				{ name: "lint / format / typecheck", status: "completed", conclusion: "success" },
+				{ name: "unit tests", status: "completed", conclusion: "success" },
+				{ name: CHECK_RUN_NAME, status: "completed", conclusion: "failure", title },
 			]);
 		// Off the writer, never hand-copied: a third copy of the title would be the drift the whole
 		// discriminator turns on, and it would drift silently green.
 		const publishedTitle = (state: string) =>
-			planFor(4321, {_tag: "Bound", state, sha: HEAD, scanned: 2, stderr: []}).title;
+			planFor(4321, { _tag: "Bound", state, sha: HEAD, scanned: 2, stderr: [] }).title;
 		const STALE_TITLE = publishedTitle("stale");
 		const UNRESOLVED_TITLE = planFor(4321, {
 			_tag: "Unresolved",
-			outcome: {code: 11, stdout: "", stderr: ["unreadable"]},
+			outcome: { code: 11, stdout: "", stderr: ["unreadable"] },
 		}).title;
 
 		it("answers governance-stale on a red whose only failing check is a stale floor", async () => {
@@ -979,7 +981,7 @@ describe("the bounded --wait", () => {
 					[RUNS, floorRed(STALE_TITLE)],
 				],
 				floorRuns("completed"),
-				{wait: true, cadenceSeconds: 86_400},
+				{ wait: true, cadenceSeconds: 86_400 },
 			);
 			expect(out.code).toBe(0);
 			expect(out.stdout.split("\n").slice(0, 2)).toEqual([
@@ -997,16 +999,16 @@ describe("the bounded --wait", () => {
 					[RUNS, floorRed(STALE_TITLE)],
 				],
 				floorRuns("in_progress"),
-				{wait: true, cadenceSeconds: 86_400},
+				{ wait: true, cadenceSeconds: 86_400 },
 			);
 			expect(out.stdout.split("\n")[0]).toBe("settle\tgovernance-stale");
 		});
 
 		it("stays a plain red when anything else is failing beside the floor", async () => {
 			const MIXED = runs(3, [
-				{name: "lint / format / typecheck", status: "completed", conclusion: "success"},
-				{name: "unit tests", status: "completed", conclusion: "failure"},
-				{name: CHECK_RUN_NAME, status: "completed", conclusion: "failure", title: STALE_TITLE},
+				{ name: "lint / format / typecheck", status: "completed", conclusion: "success" },
+				{ name: "unit tests", status: "completed", conclusion: "failure" },
+				{ name: CHECK_RUN_NAME, status: "completed", conclusion: "failure", title: STALE_TITLE },
 			]);
 			const out = await run(
 				[
@@ -1014,7 +1016,7 @@ describe("the bounded --wait", () => {
 					[RUNS, MIXED],
 				],
 				[],
-				{wait: true, cadenceSeconds: 86_400},
+				{ wait: true, cadenceSeconds: 86_400 },
 			);
 			expect(out.code).toBe(0);
 			expect(out.stdout.split("\n").slice(0, 2)).toEqual(["settle\tsettled", `ci\t${HEAD}\tred`]);
@@ -1029,7 +1031,7 @@ describe("the bounded --wait", () => {
 					[RUNS, floorRed(UNRESOLVED_TITLE)],
 				],
 				[],
-				{wait: true, cadenceSeconds: 86_400},
+				{ wait: true, cadenceSeconds: 86_400 },
 			);
 			expect(out.code).toBe(0);
 			expect(out.stdout.split("\n").slice(0, 2)).toEqual(["settle\tsettled", `ci\t${HEAD}\tred`]);
@@ -1043,7 +1045,7 @@ describe("the bounded --wait", () => {
 					[RUNS, floorRed(STALE_TITLE)],
 				],
 				[[AT_HEAD, served(runsAtHead(CI_YML))]],
-				{wait: true, cadenceSeconds: 86_400},
+				{ wait: true, cadenceSeconds: 86_400 },
 			);
 			expect(out.stdout.split("\n")[0]).toBe("settle\tsettled");
 		});
@@ -1056,8 +1058,8 @@ describe("the bounded --wait", () => {
 				[RUNS, runs(0, [])],
 			],
 			[[WORKFLOWS, served(workflows())]],
-			{wait: true, cadenceSeconds: 86_400},
-			{[CONFIG]: '{"ci": {"noProducer": "degrade"}}'},
+			{ wait: true, cadenceSeconds: 86_400 },
+			{ [CONFIG]: '{"ci": {"noProducer": "degrade"}}' },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe([`ci\t${HEAD}\tno-producer`, "run\t0", ""].join("\n"));

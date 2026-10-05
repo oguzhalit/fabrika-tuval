@@ -1,5 +1,5 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	errOut,
 	type FakeFsOptions,
@@ -9,11 +9,11 @@ import {
 	once,
 	type Scripted,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {FAILED} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN} from "./codes.ts";
-import {issue} from "./fixtures.test-support.ts";
-import {REAP_JOURNAL, runReap} from "./reap-verb.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { FAILED } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN } from "./codes.ts";
+import { issue } from "./fixtures.test-support.ts";
+import { REAP_JOURNAL, runReap } from "./reap-verb.ts";
 
 const SELF = /^git rev-parse --path-format=absolute/;
 const TREES = /^git worktree list --porcelain$/;
@@ -48,21 +48,21 @@ const UNLANDED: ReadonlyArray<Scripted> = [
 	[LOG, okOut("")],
 ];
 
-const pullsOn = (...rows: ReadonlyArray<{number: number; state: string; merged?: boolean}>) => ({
+const pullsOn = (...rows: ReadonlyArray<{ number: number; state: string; merged?: boolean }>) => ({
 	status: 200,
 	body: JSON.stringify(
 		rows.map((row) => ({
 			number: row.number,
 			state: row.state,
 			merged_at: row.merged === true ? "2026-09-30T00:00:00Z" : null,
-			head: {sha: "b".repeat(40)},
+			head: { sha: "b".repeat(40) },
 			created_at: "2026-09-29T00:00:00Z",
 		})),
 	),
 });
 
 /** The repo and credential the trunk read resolves against. */
-const ENV = {CLAUDE_PIPELINE_REPO: "o/r", GITHUB_TOKEN: "ghp_scripted"};
+const ENV = { CLAUDE_PIPELINE_REPO: "o/r", GITHUB_TOKEN: "ghp_scripted" };
 
 const HERE = "/repo/.claude/worktrees/agent-self";
 const DEAD = "/repo/.claude/worktrees/agent-dead";
@@ -97,14 +97,14 @@ const trees = (...records: ReadonlyArray<Record>) =>
 	);
 
 /** The primary checkout is always registered, and is never in the population. */
-const PRIMARY: Record = {path: "/repo", branch: "main"};
+const PRIMARY: Record = { path: "/repo", branch: "main" };
 
 /** What `git rev-parse` names for THIS run's checkout — the tree no sweep may remove. */
 const here = okOut([`${HERE}/.git`, HERE].join("\n"));
 
 const GROUND: ReadonlyArray<Scripted> = [
 	[SELF, here],
-	[TRUNK, {status: 200, body: JSON.stringify({default_branch: "main"})}],
+	[TRUNK, { status: 200, body: JSON.stringify({ default_branch: "main" }) }],
 ];
 
 const ago = (seconds: number): Date => new Date(Date.now() - seconds * 1000);
@@ -112,7 +112,7 @@ const ago = (seconds: number): Date => new Date(Date.now() - seconds * 1000);
 /** Every tree in the default fixture is a month cold, so the git facts alone decide its verdict. */
 const QUIET_FS: FakeFsOptions = {
 	directories: [HERE, DEAD, OTHER],
-	mtimes: {[HERE]: ago(2_592_000), [DEAD]: ago(2_592_000), [OTHER]: ago(2_592_000)},
+	mtimes: { [HERE]: ago(2_592_000), [DEAD]: ago(2_592_000), [OTHER]: ago(2_592_000) },
 };
 
 /** Where a sweep standing in {@link HERE} appends its removals. */
@@ -127,7 +127,7 @@ const run = (
 	const shell = fakeSeams(script);
 	const disk = fakeFs(fs);
 	const layer = Layer.merge(shell.layer, disk.layer);
-	return Effect.runPromise(Effect.provide(runReap({execute, limit, env: ENV}), layer)).then(
+	return Effect.runPromise(Effect.provide(runReap({ execute, limit, env: ENV }), layer)).then(
 		(out) => ({
 			out,
 			calls: shell.calls,
@@ -139,9 +139,9 @@ const run = (
 
 describe("runReap — the dry run mutates nothing", () => {
 	it("classifies a clean, unlocked, landed tree REMOVE and removes nothing", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			...GROUND,
-			[TREES, trees(PRIMARY, {path: DEAD})],
+			[TREES, trees(PRIMARY, { path: DEAD })],
 			[STATUS, okOut("")],
 			[ANCESTOR, okOut("")],
 		]);
@@ -152,7 +152,7 @@ describe("runReap — the dry run mutates nothing", () => {
 			executed: false,
 			trunk: "origin/main",
 			scanned: 1,
-			removable: [{path: DEAD, license: "ancestor"}],
+			removable: [{ path: DEAD, license: "ancestor" }],
 			kept: [],
 		});
 		expect(calls.some((line) => REMOVE.test(line))).toBe(false);
@@ -160,9 +160,9 @@ describe("runReap — the dry run mutates nothing", () => {
 	});
 
 	it("reads another tree's status WITHOUT refreshing its index", async () => {
-		const {calls} = await run([
+		const { calls } = await run([
 			...GROUND,
-			[TREES, trees(PRIMARY, {path: DEAD})],
+			[TREES, trees(PRIMARY, { path: DEAD })],
 			[STATUS, okOut("")],
 			[ANCESTOR, okOut("")],
 		]);
@@ -171,9 +171,9 @@ describe("runReap — the dry run mutates nothing", () => {
 	});
 
 	it("names both halves of the report — what would go and what is kept", async () => {
-		const {out} = await run([
+		const { out } = await run([
 			...GROUND,
-			[TREES, trees(PRIMARY, {path: DEAD}, {path: OTHER, head: AHEAD})],
+			[TREES, trees(PRIMARY, { path: DEAD }, { path: OTHER, head: AHEAD })],
 			[STATUS, okOut("")],
 			[new RegExp(`^git merge-base --is-ancestor ${LANDED} `), okOut("")],
 			...UNLANDED,
@@ -183,16 +183,16 @@ describe("runReap — the dry run mutates nothing", () => {
 		const report = out.stderr.join("\n");
 		expect(report).toMatch(new RegExp(`REMOVE ${DEAD}`));
 		expect(report).toMatch(new RegExp(`KEEP ${OTHER}`));
-		expect(JSON.parse(out.stdout).kept).toMatchObject([{path: OTHER}]);
+		expect(JSON.parse(out.stdout).kept).toMatchObject([{ path: OTHER }]);
 	});
 });
 
 describe("runReap — what the trunk proves", () => {
 	it("reaps a squash-landed branch whose patch id matches a trunk commit's", async () => {
-		const {out} = await run(
+		const { out } = await run(
 			[
 				...GROUND,
-				[once(TREES), trees(PRIMARY, {path: DEAD, head: AHEAD, branch: "build/4082-x-43cc"})],
+				[once(TREES), trees(PRIMARY, { path: DEAD, head: AHEAD, branch: "build/4082-x-43cc" })],
 				[STATUS, okOut("")],
 				[ANCESTOR, errOut("exit 1")],
 				[NAMES, okOut("packages/db-schema/README.md\0")],
@@ -208,14 +208,14 @@ describe("runReap — what the trunk proves", () => {
 		);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout).removed).toMatchObject([{path: DEAD, license: "squashed"}]);
+		expect(JSON.parse(out.stdout).removed).toMatchObject([{ path: DEAD, license: "squashed" }]);
 	});
 
 	it("keeps unreached commits whose patch matches nothing on the trunk", async () => {
-		const {out, calls} = await run(
+		const { out, calls } = await run(
 			[
 				...GROUND,
-				[TREES, trees(PRIMARY, {path: DEAD, head: AHEAD})],
+				[TREES, trees(PRIMARY, { path: DEAD, head: AHEAD })],
 				[STATUS, okOut("")],
 				[REVLIST, okOut("1\n")],
 				[ANCESTOR, errOut("exit 1")],
@@ -230,15 +230,15 @@ describe("runReap — what the trunk proves", () => {
 		);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "reaped", removed: []});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "reaped", removed: [] });
 		expect(calls.some((line) => REMOVE.test(line))).toBe(false);
 	});
 
 	it("keeps unreached commits whose landing read failed — UNKNOWN is never 'landed'", async () => {
-		const {out, calls} = await run(
+		const { out, calls } = await run(
 			[
 				...GROUND,
-				[TREES, trees(PRIMARY, {path: DEAD, head: AHEAD})],
+				[TREES, trees(PRIMARY, { path: DEAD, head: AHEAD })],
 				[STATUS, okOut("")],
 				[REVLIST, okOut("1\n")],
 				[ANCESTOR, errOut("exit 1")],
@@ -247,7 +247,7 @@ describe("runReap — what the trunk proves", () => {
 			true,
 		);
 
-		expect(JSON.parse(out.stdout).kept).toMatchObject([{path: DEAD}]);
+		expect(JSON.parse(out.stdout).kept).toMatchObject([{ path: DEAD }]);
 		expect(out.stderr.join("\n")).toMatch(/UNKNOWN/);
 		expect(calls.some((line) => REMOVE.test(line))).toBe(false);
 	});
@@ -261,7 +261,7 @@ describe("runReap — what the trunk proves", () => {
 describe("runReap — an unreachable merge base names its remedy when there is one", () => {
 	const beyondBoundary = (shallow: ExecResult): ReadonlyArray<Scripted> => [
 		...GROUND,
-		[TREES, trees(PRIMARY, {path: DEAD, head: AHEAD})],
+		[TREES, trees(PRIMARY, { path: DEAD, head: AHEAD })],
 		[STATUS, okOut("")],
 		[REVLIST, okOut("1\n")],
 		[ANCESTOR, errOut("exit 1")],
@@ -276,11 +276,11 @@ describe("runReap — an unreachable merge base names its remedy when there is o
 	const BARE =
 		"(whether its work landed is UNKNOWN: it shares no merge base with origin/main: git merge-base exited 1)";
 
-	const keptReason = (out: {readonly stdout: string}): string =>
+	const keptReason = (out: { readonly stdout: string }): string =>
 		JSON.parse(out.stdout).kept[0]?.reason ?? "";
 
 	it("names the shallow clone and `git fetch --unshallow origin`", async () => {
-		const {out} = await run(beyondBoundary(okOut("true\n")));
+		const { out } = await run(beyondBoundary(okOut("true\n")));
 
 		const reason = keptReason(out);
 		expect(reason).toContain("this clone is shallow");
@@ -291,14 +291,14 @@ describe("runReap — an unreachable merge base names its remedy when there is o
 	});
 
 	it("carries git's reason alone when the clone is not shallow", async () => {
-		const {out} = await run(beyondBoundary(okOut("false\n")));
+		const { out } = await run(beyondBoundary(okOut("false\n")));
 
 		expect(keptReason(out)).toContain(BARE);
 	});
 
 	// A probe that cannot answer names an unreadable read no more precisely — and never less.
 	it("carries git's reason alone when the shallow probe itself fails", async () => {
-		const {out} = await run(beyondBoundary(errOut("rev-parse blew up")));
+		const { out } = await run(beyondBoundary(errOut("rev-parse blew up")));
 
 		expect(keptReason(out)).toContain(BARE);
 	});
@@ -308,18 +308,18 @@ describe("runReap — a live seat is read off the tree, not off git", () => {
 	/** The incident shape: a seat's tree, clean, unlocked, HEAD on the trunk, touched minutes ago. */
 	const seat: ReadonlyArray<Scripted> = [
 		...GROUND,
-		[TREES, trees(PRIMARY, {path: DEAD})],
+		[TREES, trees(PRIMARY, { path: DEAD })],
 		[STATUS, okOut("")],
 		[ANCESTOR, okOut("")],
 	];
 
 	it("keeps it, and never asks git to remove it", async () => {
-		const {out, calls} = await run(seat, true, {
+		const { out, calls } = await run(seat, true, {
 			directories: [HERE, DEAD],
-			mtimes: {[HERE]: ago(2_592_000), [DEAD]: ago(2_400)},
+			mtimes: { [HERE]: ago(2_592_000), [DEAD]: ago(2_400) },
 		});
 
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "reaped", removed: []});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "reaped", removed: [] });
 		expect(calls.some((line) => REMOVE.test(line))).toBe(false);
 		expect(out.stderr.join("\n")).toMatch(
 			new RegExp(`KEEP ${DEAD} \\(detached\\) — it reads live`),
@@ -327,9 +327,9 @@ describe("runReap — a live seat is read off the tree, not off git", () => {
 	});
 
 	it("names the signal that held, so the plan says why the seat survived", async () => {
-		const {out} = await run(seat, false, {
+		const { out } = await run(seat, false, {
 			directories: [HERE, DEAD],
-			mtimes: {[HERE]: ago(2_592_000), [DEAD]: ago(2_400)},
+			mtimes: { [HERE]: ago(2_592_000), [DEAD]: ago(2_400) },
 		});
 
 		expect(JSON.parse(out.stdout).kept[0].reason).toMatch(
@@ -338,24 +338,24 @@ describe("runReap — a live seat is read off the tree, not off git", () => {
 	});
 
 	it("keeps it when its directory cannot be stat'd at all — UNKNOWN never licenses a removal", async () => {
-		const {out, calls} = await run(seat, true, {directories: [HERE], unstatable: [DEAD]});
+		const { out, calls } = await run(seat, true, { directories: [HERE], unstatable: [DEAD] });
 
-		expect(JSON.parse(out.stdout).kept).toMatchObject([{path: DEAD}]);
+		expect(JSON.parse(out.stdout).kept).toMatchObject([{ path: DEAD }]);
 		expect(out.stderr.join("\n")).toMatch(/whether its directory is still there is UNKNOWN/);
 		expect(calls.some((line) => REMOVE.test(line))).toBe(false);
 	});
 
 	it("keeps it when the platform reports no modification time", async () => {
-		const {out} = await run(seat, false, {directories: [HERE, DEAD]});
+		const { out } = await run(seat, false, { directories: [HERE, DEAD] });
 
 		expect(JSON.parse(out.stdout).kept[0].reason).toMatch(/no modification time/);
 	});
 
 	it("removes the same tree once it has gone cold", async () => {
-		const {out} = await run(
+		const { out } = await run(
 			[
 				...GROUND,
-				[once(TREES), trees(PRIMARY, {path: DEAD})],
+				[once(TREES), trees(PRIMARY, { path: DEAD })],
 				[STATUS, okOut("")],
 				[ANCESTOR, okOut("")],
 				[REMOVE, okOut("")],
@@ -364,47 +364,47 @@ describe("runReap — a live seat is read off the tree, not off git", () => {
 			true,
 		);
 
-		expect(JSON.parse(out.stdout).removed).toMatchObject([{path: DEAD, license: "ancestor"}]);
+		expect(JSON.parse(out.stdout).removed).toMatchObject([{ path: DEAD, license: "ancestor" }]);
 	});
 
 	it("one tree's failed liveness read costs its own row, not the sweep", async () => {
-		const {out} = await run(
+		const { out } = await run(
 			[
 				...GROUND,
-				[once(TREES), trees(PRIMARY, {path: DEAD}, {path: OTHER})],
+				[once(TREES), trees(PRIMARY, { path: DEAD }, { path: OTHER })],
 				[STATUS, okOut("")],
 				[ANCESTOR, okOut("")],
 				[REMOVE, okOut("")],
-				[TREES, trees(PRIMARY, {path: DEAD})],
+				[TREES, trees(PRIMARY, { path: DEAD })],
 			],
 			true,
 			{
 				directories: [HERE, OTHER],
 				unstatable: [DEAD],
-				mtimes: {[HERE]: ago(2_592_000), [OTHER]: ago(2_592_000)},
+				mtimes: { [HERE]: ago(2_592_000), [OTHER]: ago(2_592_000) },
 			},
 		);
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			answer: "reaped",
-			removed: [{path: OTHER}],
-			kept: [{path: DEAD}],
+			removed: [{ path: OTHER }],
+			kept: [{ path: DEAD }],
 		});
 	});
 });
 
 describe("runReap — one unreadable tree costs its own row, not the sweep", () => {
 	it("keeps the tree whose status failed and still reaps the readable one", async () => {
-		const {out} = await run(
+		const { out } = await run(
 			[
 				...GROUND,
-				[once(TREES), trees(PRIMARY, {path: DEAD}, {path: OTHER})],
+				[once(TREES), trees(PRIMARY, { path: DEAD }, { path: OTHER })],
 				[new RegExp(`^git -C ${DEAD} `), errOut("not a git repository")],
 				[STATUS, okOut("")],
 				[ANCESTOR, okOut("")],
 				[REMOVE, okOut("")],
-				[TREES, trees(PRIMARY, {path: DEAD})],
+				[TREES, trees(PRIMARY, { path: DEAD })],
 			],
 			true,
 		);
@@ -412,18 +412,18 @@ describe("runReap — one unreadable tree costs its own row, not the sweep", () 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			answer: "reaped",
-			removed: [{path: OTHER}],
-			kept: [{path: DEAD}],
+			removed: [{ path: OTHER }],
+			kept: [{ path: DEAD }],
 		});
 	});
 });
 
 describe("runReap — the removals are proven, never reported", () => {
 	it("removes WITHOUT --force — it is banned on every path", async () => {
-		const {calls} = await run(
+		const { calls } = await run(
 			[
 				...GROUND,
-				[once(TREES), trees(PRIMARY, {path: DEAD})],
+				[once(TREES), trees(PRIMARY, { path: DEAD })],
 				[STATUS, okOut("")],
 				[ANCESTOR, okOut("")],
 				[REMOVE, okOut("")],
@@ -437,15 +437,15 @@ describe("runReap — the removals are proven, never reported", () => {
 	});
 
 	it("reports a refused removal, leaves the tree registered, and still counts the one that went", async () => {
-		const {out} = await run(
+		const { out } = await run(
 			[
 				...GROUND,
-				[once(TREES), trees(PRIMARY, {path: DEAD}, {path: OTHER})],
+				[once(TREES), trees(PRIMARY, { path: DEAD }, { path: OTHER })],
 				[STATUS, okOut("")],
 				[ANCESTOR, okOut("")],
 				[new RegExp(`^git worktree remove ${DEAD}$`), errOut("cannot remove a locked tree")],
 				[REMOVE, okOut("")],
-				[TREES, trees(PRIMARY, {path: DEAD})],
+				[TREES, trees(PRIMARY, { path: DEAD })],
 			],
 			true,
 		);
@@ -458,14 +458,14 @@ describe("runReap — the removals are proven, never reported", () => {
 	});
 
 	it("is READBACK_MISMATCH when git exits 0 and the registration survives", async () => {
-		const {out} = await run(
+		const { out } = await run(
 			[
 				...GROUND,
-				[once(TREES), trees(PRIMARY, {path: DEAD})],
+				[once(TREES), trees(PRIMARY, { path: DEAD })],
 				[STATUS, okOut("")],
 				[ANCESTOR, okOut("")],
 				[REMOVE, okOut("")],
-				[TREES, trees(PRIMARY, {path: DEAD})],
+				[TREES, trees(PRIMARY, { path: DEAD })],
 			],
 			true,
 		);
@@ -475,10 +475,10 @@ describe("runReap — the removals are proven, never reported", () => {
 	});
 
 	it("is READBACK_MISMATCH when the registrations cannot be read back at all", async () => {
-		const {out} = await run(
+		const { out } = await run(
 			[
 				...GROUND,
-				[once(TREES), trees(PRIMARY, {path: DEAD})],
+				[once(TREES), trees(PRIMARY, { path: DEAD })],
 				[STATUS, okOut("")],
 				[ANCESTOR, okOut("")],
 				[REMOVE, okOut("")],
@@ -500,25 +500,25 @@ describe("runReap — the stale registrations go in the same pass", () => {
 	 */
 	const GONE_FS: FakeFsOptions = {
 		directories: [HERE, OTHER],
-		mtimes: {[HERE]: ago(2_592_000), [OTHER]: ago(2_592_000)},
+		mtimes: { [HERE]: ago(2_592_000), [OTHER]: ago(2_592_000) },
 		unprobeable: [DEAD],
 	};
 
 	const gone: ReadonlyArray<Scripted> = [
 		...GROUND,
-		[once(TREES), trees(PRIMARY, {path: DEAD, prunable: true})],
+		[once(TREES), trees(PRIMARY, { path: DEAD, prunable: true })],
 		[PRUNE, okOut("")],
 		[TREES, trees(PRIMARY)],
 	];
 
 	it("plans a PRUNE for a registration whose directory the stat proves gone, and prunes nothing", async () => {
-		const {out, calls} = await run(
-			[...GROUND, [TREES, trees(PRIMARY, {path: DEAD, prunable: true})]],
+		const { out, calls } = await run(
+			[...GROUND, [TREES, trees(PRIMARY, { path: DEAD, prunable: true })]],
 			false,
 			GONE_FS,
 		);
 
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "planned", stale: [{path: DEAD}]});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "planned", stale: [{ path: DEAD }] });
 		expect(out.stderr.join("\n")).toMatch(new RegExp(`PRUNE ${DEAD}`));
 		expect(calls.some((line) => PRUNE.test(line))).toBe(false);
 	});
@@ -528,20 +528,20 @@ describe("runReap — the stale registrations go in the same pass", () => {
 	// that flag cleared such a record — and `.git/worktrees/<id>` with it, the only ref a commit
 	// living in that worktree alone has.
 	it("keeps a prunable registration whose directory is still there — the flag is a hint, the stat is the proof", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			...GROUND,
-			[TREES, trees(PRIMARY, {path: DEAD, prunable: true})],
+			[TREES, trees(PRIMARY, { path: DEAD, prunable: true })],
 			[STATUS, okOut(" M unsaved.txt\n")],
 		]);
 
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "planned", stale: [], removable: []});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "planned", stale: [], removable: [] });
 		expect(out.stderr.join("\n")).toMatch(new RegExp(`KEEP ${DEAD}`));
 		expect(calls.some((line) => PRUNE.test(line))).toBe(false);
 	});
 
 	it("pays no git read for it — a registration with no directory has nothing to ask git about", async () => {
-		const {calls} = await run(
-			[...GROUND, [TREES, trees(PRIMARY, {path: DEAD, prunable: true})]],
+		const { calls } = await run(
+			[...GROUND, [TREES, trees(PRIMARY, { path: DEAD, prunable: true })]],
 			false,
 			GONE_FS,
 		);
@@ -551,25 +551,29 @@ describe("runReap — the stale registrations go in the same pass", () => {
 	});
 
 	it("prunes it under --execute and proves it off the read-back", async () => {
-		const {out, calls} = await run(gone, true, GONE_FS);
+		const { out, calls } = await run(gone, true, GONE_FS);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "reaped", pruned: [DEAD], unpruned: []});
+		expect(JSON.parse(out.stdout)).toMatchObject({
+			answer: "reaped",
+			pruned: [DEAD],
+			unpruned: [],
+		});
 		expect(calls).toContain("git worktree prune");
 		expect(out.stderr.join("\n")).toMatch(new RegExp(`pruned the stale registration ${DEAD}`));
 	});
 
 	it("unlocks a locked one first — prune skips a locked entry, and this lock guards no checkout", async () => {
-		const {calls} = await run(
+		const { calls } = await run(
 			[
 				...GROUND,
-				[once(TREES), trees(PRIMARY, {path: DEAD, locked: "claude agent (pid 84894)"})],
+				[once(TREES), trees(PRIMARY, { path: DEAD, locked: "claude agent (pid 84894)" })],
 				[UNLOCK, okOut("")],
 				[PRUNE, okOut("")],
 				[TREES, trees(PRIMARY)],
 			],
 			true,
-			{directories: [HERE], unprobeable: [DEAD]},
+			{ directories: [HERE], unprobeable: [DEAD] },
 		);
 
 		expect(calls).toContain(`git worktree unlock ${DEAD}`);
@@ -579,20 +583,20 @@ describe("runReap — the stale registrations go in the same pass", () => {
 	});
 
 	it("reports an unlock git refused, leaves that registration standing, and reds nothing", async () => {
-		const {out, calls} = await run(
+		const { out, calls } = await run(
 			[
 				...GROUND,
-				[once(TREES), trees(PRIMARY, {path: DEAD, locked: "claude agent (pid 84894)"})],
+				[once(TREES), trees(PRIMARY, { path: DEAD, locked: "claude agent (pid 84894)" })],
 				[UNLOCK, errOut("permission denied")],
 				[PRUNE, okOut("")],
-				[TREES, trees(PRIMARY, {path: DEAD, locked: "claude agent (pid 84894)"})],
+				[TREES, trees(PRIMARY, { path: DEAD, locked: "claude agent (pid 84894)" })],
 			],
 			true,
-			{directories: [HERE], unprobeable: [DEAD]},
+			{ directories: [HERE], unprobeable: [DEAD] },
 		);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({pruned: [], unpruned: [DEAD]});
+		expect(JSON.parse(out.stdout)).toMatchObject({ pruned: [], unpruned: [DEAD] });
 		expect(out.stderr.join("\n")).toMatch(
 			new RegExp(`FAILED to unlock ${DEAD}: permission denied`),
 		);
@@ -601,29 +605,29 @@ describe("runReap — the stale registrations go in the same pass", () => {
 	});
 
 	it("reports a registration that survived the prune without redding the sweep", async () => {
-		const {out} = await run(
+		const { out } = await run(
 			[
 				...GROUND,
-				[once(TREES), trees(PRIMARY, {path: DEAD, prunable: true})],
+				[once(TREES), trees(PRIMARY, { path: DEAD, prunable: true })],
 				[PRUNE, okOut("")],
-				[TREES, trees(PRIMARY, {path: DEAD, prunable: true})],
+				[TREES, trees(PRIMARY, { path: DEAD, prunable: true })],
 			],
 			true,
 			GONE_FS,
 		);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({pruned: [], unpruned: [DEAD]});
+		expect(JSON.parse(out.stdout)).toMatchObject({ pruned: [], unpruned: [DEAD] });
 		expect(out.stderr.join("\n")).toMatch(new RegExp(`UNPRUNED — ${DEAD}`));
 	});
 
 	it("reports a prune git refused, and no tree removal is affected", async () => {
-		const {out} = await run(
+		const { out } = await run(
 			[
 				...GROUND,
-				[once(TREES), trees(PRIMARY, {path: DEAD, prunable: true})],
+				[once(TREES), trees(PRIMARY, { path: DEAD, prunable: true })],
 				[PRUNE, errOut("permission denied")],
-				[TREES, trees(PRIMARY, {path: DEAD, prunable: true})],
+				[TREES, trees(PRIMARY, { path: DEAD, prunable: true })],
 			],
 			true,
 			GONE_FS,
@@ -633,10 +637,10 @@ describe("runReap — the stale registrations go in the same pass", () => {
 	});
 
 	it("clears what a removal just left behind — one clone-wide prune ends the pass", async () => {
-		const {calls} = await run(
+		const { calls } = await run(
 			[
 				...GROUND,
-				[once(TREES), trees(PRIMARY, {path: DEAD})],
+				[once(TREES), trees(PRIMARY, { path: DEAD })],
 				[STATUS, okOut("")],
 				[ANCESTOR, okOut("")],
 				[REMOVE, okOut("")],
@@ -654,25 +658,30 @@ describe("runReap — the population is both harness namings", () => {
 	const PI = "/private/tmp/worktrees/slug/pi-worktree-0036baa5-s0-0";
 
 	it("sweeps a tree the harness named its own way, outside the repository entirely", async () => {
-		const {out} = await run(
-			[...GROUND, [TREES, trees(PRIMARY, {path: PI})], [STATUS, okOut("")], [ANCESTOR, okOut("")]],
+		const { out } = await run(
+			[
+				...GROUND,
+				[TREES, trees(PRIMARY, { path: PI })],
+				[STATUS, okOut("")],
+				[ANCESTOR, okOut("")],
+			],
 			false,
 			{
 				directories: [HERE, PI],
-				mtimes: {[HERE]: ago(2_592_000), [PI]: ago(2_592_000)},
+				mtimes: { [HERE]: ago(2_592_000), [PI]: ago(2_592_000) },
 			},
 		);
 
-		expect(JSON.parse(out.stdout)).toMatchObject({scanned: 1, removable: [{path: PI}]});
+		expect(JSON.parse(out.stdout)).toMatchObject({ scanned: 1, removable: [{ path: PI }] });
 	});
 });
 
 describe("runReap — what it refuses to touch", () => {
 	it("never removes the tree this run is standing in", async () => {
-		const {out, calls} = await run(
+		const { out, calls } = await run(
 			[
 				...GROUND,
-				[TREES, trees(PRIMARY, {path: HERE})],
+				[TREES, trees(PRIMARY, { path: HERE })],
 				[STATUS, okOut("")],
 				[ANCESTOR, okOut("")],
 			],
@@ -684,22 +693,22 @@ describe("runReap — what it refuses to touch", () => {
 	});
 
 	it("answers none — never a refusal — when no agent tree is registered", async () => {
-		const {out, requests} = await run([...GROUND, [TREES, trees(PRIMARY)]]);
+		const { out, requests } = await run([...GROUND, [TREES, trees(PRIMARY)]]);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "none", removed: [], kept: []});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "none", removed: [], kept: [] });
 		expect(requests.some((line) => TRUNK.test(line))).toBe(false);
 	});
 
 	it("is UNKNOWN when this run cannot recognise its own tree", async () => {
-		const {out, calls} = await run([[SELF, errOut("not a git repository")]]);
+		const { out, calls } = await run([[SELF, errOut("not a git repository")]]);
 
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(calls.some((line) => TREES.test(line))).toBe(false);
 	});
 
 	it("is UNKNOWN when the registrations cannot be read", async () => {
-		const {out} = await run([
+		const { out } = await run([
 			[SELF, here],
 			[TREES, errOut("index.lock exists")],
 		]);
@@ -710,7 +719,7 @@ describe("runReap — what it refuses to touch", () => {
 
 	it("refuses a --limit that is not a positive integer before it reads anything", async () => {
 		for (const limit of [0, -1, 2.5]) {
-			const {out, calls} = await run([[SELF, here]], true, QUIET_FS, limit);
+			const { out, calls } = await run([[SELF, here]], true, QUIET_FS, limit);
 
 			expect(out.code).toBe(FAILED);
 			expect(calls).toEqual([]);
@@ -719,11 +728,11 @@ describe("runReap — what it refuses to touch", () => {
 	});
 
 	it("is UNKNOWN — and reaps nothing — when the trunk cannot be named", async () => {
-		const {out, calls} = await run(
+		const { out, calls } = await run(
 			[
 				[SELF, here],
-				[TREES, trees(PRIMARY, {path: DEAD})],
-				[TRUNK, {status: 502, body: '{"message":"Bad Gateway"}'}],
+				[TREES, trees(PRIMARY, { path: DEAD })],
+				[TRUNK, { status: 502, body: '{"message":"Bad Gateway"}' }],
 			],
 			true,
 		);
@@ -734,16 +743,16 @@ describe("runReap — what it refuses to touch", () => {
 	});
 });
 
-const journalRows = (journal: string): ReadonlyArray<{readonly [key: string]: unknown}> =>
+const journalRows = (journal: string): ReadonlyArray<{ readonly [key: string]: unknown }> =>
 	journal
 		.trimEnd()
 		.split("\n")
-		.map((line) => JSON.parse(line) as {readonly [key: string]: unknown});
+		.map((line) => JSON.parse(line) as { readonly [key: string]: unknown });
 
 /** A two-tree sweep, both removable, whose second half the caller scripts. */
 const twoRemovable = (...tail: ReadonlyArray<Scripted>): ReadonlyArray<Scripted> => [
 	...GROUND,
-	[once(TREES), trees(PRIMARY, {path: DEAD}, {path: OTHER})],
+	[once(TREES), trees(PRIMARY, { path: DEAD }, { path: OTHER })],
 	[STATUS, okOut("")],
 	[ANCESTOR, okOut("")],
 	...tail,
@@ -751,7 +760,7 @@ const twoRemovable = (...tail: ReadonlyArray<Scripted>): ReadonlyArray<Scripted>
 
 describe("runReap — the journal is what survives a killed sweep", () => {
 	it("appends one line per removal, naming the run, the trunk, the path and its license", async () => {
-		const {out, journal} = await run(
+		const { out, journal } = await run(
 			twoRemovable([REMOVE, okOut("")], [TREES, trees(PRIMARY)]),
 			true,
 		);
@@ -759,8 +768,8 @@ describe("runReap — the journal is what survives a killed sweep", () => {
 		expect(out.code).toBe(0);
 		const lines = journalRows(journal);
 		expect(lines).toMatchObject([
-			{trunk: "origin/main", path: DEAD, license: "ancestor"},
-			{trunk: "origin/main", path: OTHER, license: "ancestor"},
+			{ trunk: "origin/main", path: DEAD, license: "ancestor" },
+			{ trunk: "origin/main", path: OTHER, license: "ancestor" },
 		]);
 		expect(new Set(lines.map((row) => row.run)).size).toBe(1);
 		expect(JSON.parse(out.stdout).journal).toBe(JOURNAL);
@@ -770,34 +779,34 @@ describe("runReap — the journal is what survives a killed sweep", () => {
 	// reaches it prints nothing at all. The disk is the only place the executed set can be read from,
 	// and a refusal is the closest a runnable verb comes to a process that was killed.
 	it("holds the executed set even when the run's own answer names none of it", async () => {
-		const {out, journal} = await run(
+		const { out, journal } = await run(
 			twoRemovable([REMOVE, okOut("")], [TREES, errOut("index.lock exists")]),
 			true,
 		);
 
 		expect(out.code).toBe(READBACK_MISMATCH);
 		expect(out.stdout).toBe("");
-		expect(journalRows(journal)).toMatchObject([{path: DEAD}, {path: OTHER}]);
+		expect(journalRows(journal)).toMatchObject([{ path: DEAD }, { path: OTHER }]);
 	});
 
 	it("keeps a proven removal proven when its journal write fails, and says so", async () => {
-		const {out} = await run(twoRemovable([REMOVE, okOut("")], [TREES, trees(PRIMARY)]), true, {
+		const { out } = await run(twoRemovable([REMOVE, okOut("")], [TREES, trees(PRIMARY)]), true, {
 			...QUIET_FS,
 			unwritable: [JOURNAL],
 		});
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout).removed).toMatchObject([{path: DEAD}, {path: OTHER}]);
+		expect(JSON.parse(out.stdout).removed).toMatchObject([{ path: DEAD }, { path: OTHER }]);
 		expect(out.stderr.join("\n")).toMatch(new RegExp(`NOT JOURNALLED — ${DEAD} was removed`));
 	});
 });
 
 describe("runReap — a clean tree a ref reaches goes on git's word alone", () => {
 	it("removes it with no board read, though the trunk does not carry its HEAD", async () => {
-		const {out, requests} = await run(
+		const { out, requests } = await run(
 			[
 				...GROUND,
-				[once(TREES), trees(PRIMARY, {path: DEAD, head: AHEAD, branch: "build/4082-x-43cc4b51"})],
+				[once(TREES), trees(PRIMARY, { path: DEAD, head: AHEAD, branch: "build/4082-x-43cc4b51" })],
 				[STATUS, okOut("")],
 				...UNLANDED,
 				[REVLIST, okOut("0\n")],
@@ -809,7 +818,7 @@ describe("runReap — a clean tree a ref reaches goes on git's word alone", () =
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).removed).toEqual([
-			{path: DEAD, license: "ref-reached", salvaged: 0},
+			{ path: DEAD, license: "ref-reached", salvaged: 0 },
 		]);
 		expect(requests.some((line) => BOARD.test(line))).toBe(false);
 	});
@@ -820,7 +829,7 @@ describe("runReap — the board releases what a tree still holds", () => {
 	/** A quiet tree on a lane branch, holding three uncommitted paths. */
 	const dirty = (branch: string = LANE): ReadonlyArray<Scripted> => [
 		...GROUND,
-		[once(TREES), trees(PRIMARY, {path: DEAD, head: AHEAD, branch})],
+		[once(TREES), trees(PRIMARY, { path: DEAD, head: AHEAD, branch })],
 		[STATUS, okOut(" M a.ts\n M b.ts\n?? c.ts\n")],
 		...UNLANDED,
 		[REVLIST, okOut("0\n")],
@@ -829,10 +838,10 @@ describe("runReap — the board releases what a tree still holds", () => {
 		calls.some((line) => REMOVE.test(line) || ADD.test(line) || SALVAGE.test(line));
 
 	it("commits the uncommitted paths onto the branch, then removes plainly, when its pull request is merged", async () => {
-		const {out, calls, journal} = await run(
+		const { out, calls, journal } = await run(
 			[
 				...dirty(),
-				[PULLS, pullsOn({number: 8580, state: "closed", merged: true})],
+				[PULLS, pullsOn({ number: 8580, state: "closed", merged: true })],
 				[ADD, okOut("")],
 				[SALVAGE, okOut("")],
 				[REMOVE, okOut("")],
@@ -843,20 +852,20 @@ describe("runReap — the board releases what a tree still holds", () => {
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).removed).toEqual([
-			{path: DEAD, license: "branch-ended", salvaged: 3},
+			{ path: DEAD, license: "branch-ended", salvaged: 3 },
 		]);
 		expect(calls.findIndex((line) => SALVAGE.test(line))).toBeLessThan(
 			calls.indexOf(`git worktree remove ${DEAD}`),
 		);
 		expect(calls.some((line) => line.includes("--force"))).toBe(false);
-		expect(journalRows(journal)).toMatchObject([{license: "branch-ended", salvaged: 3}]);
+		expect(journalRows(journal)).toMatchObject([{ license: "branch-ended", salvaged: 3 }]);
 	});
 
 	it("removes it when its pull request is closed unmerged", async () => {
-		const {out} = await run(
+		const { out } = await run(
 			[
 				...dirty(),
-				[PULLS, pullsOn({number: 8580, state: "closed"})],
+				[PULLS, pullsOn({ number: 8580, state: "closed" })],
 				[ADD, okOut("")],
 				[SALVAGE, okOut("")],
 				[REMOVE, okOut("")],
@@ -865,15 +874,15 @@ describe("runReap — the board releases what a tree still holds", () => {
 			true,
 		);
 
-		expect(JSON.parse(out.stdout).removed).toMatchObject([{license: "branch-ended"}]);
+		expect(JSON.parse(out.stdout).removed).toMatchObject([{ license: "branch-ended" }]);
 	});
 
 	it("removes it when no pull request has the branch and the issue it is named for is closed", async () => {
-		const {out} = await run(
+		const { out } = await run(
 			[
 				...dirty("epic/8160"),
 				[PULLS, pullsOn()],
-				[ISSUE, issue({number: 8160, state: "closed"})],
+				[ISSUE, issue({ number: 8160, state: "closed" })],
 				[ADD, okOut("")],
 				[SALVAGE, okOut("")],
 				[REMOVE, okOut("")],
@@ -882,12 +891,12 @@ describe("runReap — the board releases what a tree still holds", () => {
 			true,
 		);
 
-		expect(JSON.parse(out.stdout).removed).toMatchObject([{license: "branch-ended"}]);
+		expect(JSON.parse(out.stdout).removed).toMatchObject([{ license: "branch-ended" }]);
 	});
 
 	it("keeps it while a pull request on the branch is open, naming the count and the live branch", async () => {
-		const {out, calls} = await run(
-			[...dirty(), [PULLS, pullsOn({number: 8580, state: "open"})]],
+		const { out, calls } = await run(
+			[...dirty(), [PULLS, pullsOn({ number: 8580, state: "open" })]],
 			true,
 		);
 
@@ -898,8 +907,8 @@ describe("runReap — the board releases what a tree still holds", () => {
 	});
 
 	it("keeps it when the board does not answer — a failed read proves nothing", async () => {
-		const {out, calls} = await run(
-			[...dirty(), [PULLS, {status: 502, body: '{"message":"Bad Gateway"}'}]],
+		const { out, calls } = await run(
+			[...dirty(), [PULLS, { status: 502, body: '{"message":"Bad Gateway"}' }]],
 			true,
 		);
 
@@ -912,10 +921,10 @@ describe("runReap — the board releases what a tree still holds", () => {
 	// The founder's long-running desk, were it ever named like an agent tree: detached, dirty,
 	// months old, made by no lane. There is no branch to ask about, so the board is never read.
 	it("keeps a detached, dirty, long-lived tree no lane made, and asks the board nothing", async () => {
-		const {out, calls, requests} = await run(
+		const { out, calls, requests } = await run(
 			[
 				...GROUND,
-				[TREES, trees(PRIMARY, {path: DEAD})],
+				[TREES, trees(PRIMARY, { path: DEAD })],
 				[STATUS, okOut(" M .fabrika.jsonc\n?? desk.log\n")],
 				[ANCESTOR, okOut("")],
 				[REVLIST, okOut("0\n")],
@@ -931,10 +940,10 @@ describe("runReap — the board releases what a tree still holds", () => {
 	});
 
 	it("leaves the tree standing when the salvage commit fails, and never removes it", async () => {
-		const {out, calls} = await run(
+		const { out, calls } = await run(
 			[
 				...dirty(),
-				[PULLS, pullsOn({number: 8580, state: "closed", merged: true})],
+				[PULLS, pullsOn({ number: 8580, state: "closed", merged: true })],
 				[ADD, okOut("")],
 				[SALVAGE, errOut("index.lock exists")],
 			],
@@ -947,15 +956,15 @@ describe("runReap — the board releases what a tree still holds", () => {
 	});
 
 	it("plans the removal on a dry run and touches nothing", async () => {
-		const {out, calls} = await run([
+		const { out, calls } = await run([
 			...dirty(),
-			[TREES, trees(PRIMARY, {path: DEAD, head: AHEAD, branch: LANE})],
-			[PULLS, pullsOn({number: 8580, state: "closed", merged: true})],
+			[TREES, trees(PRIMARY, { path: DEAD, head: AHEAD, branch: LANE })],
+			[PULLS, pullsOn({ number: 8580, state: "closed", merged: true })],
 		]);
 
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			answer: "planned",
-			removable: [{path: DEAD, license: "branch-ended"}],
+			removable: [{ path: DEAD, license: "branch-ended" }],
 		});
 		expect(mutated(calls)).toBe(false);
 	});
@@ -966,14 +975,14 @@ describe("runReap — --limit bounds the sweep", () => {
 		const THIRD = "/repo/.claude/worktrees/agent-third";
 		const FOURTH = "/repo/.claude/worktrees/agent-fourth";
 		const all = [DEAD, OTHER, THIRD, FOURTH];
-		const {out, calls, journal} = await run(
+		const { out, calls, journal } = await run(
 			[
 				...GROUND,
-				[once(TREES), trees(PRIMARY, ...all.map((path) => ({path})))],
+				[once(TREES), trees(PRIMARY, ...all.map((path) => ({ path })))],
 				[STATUS, okOut("")],
 				[ANCESTOR, okOut("")],
 				[REMOVE, okOut("")],
-				[TREES, trees(PRIMARY, {path: THIRD}, {path: FOURTH})],
+				[TREES, trees(PRIMARY, { path: THIRD }, { path: FOURTH })],
 			],
 			true,
 			{
@@ -988,7 +997,7 @@ describe("runReap — --limit bounds the sweep", () => {
 			answer: "reaped",
 			scanned: 2,
 			unscanned: 2,
-			removed: [{path: DEAD}, {path: OTHER}],
+			removed: [{ path: DEAD }, { path: OTHER }],
 		});
 		// The trees past the second removal were never given a git read of any kind.
 		expect(calls.filter((line) => STATUS.test(line))).toEqual([
@@ -1000,7 +1009,7 @@ describe("runReap — --limit bounds the sweep", () => {
 		expect(calls.indexOf(`git worktree remove ${DEAD}`)).toBeLessThan(
 			calls.indexOf(`git -C ${OTHER} --no-optional-locks status --porcelain`),
 		);
-		expect(journalRows(journal)).toMatchObject([{path: DEAD}, {path: OTHER}]);
+		expect(journalRows(journal)).toMatchObject([{ path: DEAD }, { path: OTHER }]);
 		expect(out.stderr.join("\n")).toMatch(
 			/--limit 2 was spent with 2 of 4 tree\(s\) still unjudged/,
 		);
@@ -1012,19 +1021,25 @@ describe("runReap — --limit bounds the sweep", () => {
 		const GONE = "/repo/.claude/worktrees/agent-gone";
 		const LIVE = "/repo/.claude/worktrees/agent-live";
 		const lock = "claude agent (pid 84894)";
-		const {out, calls, requests} = await run(
+		const { out, calls, requests } = await run(
 			[
 				...GROUND,
 				[
 					once(TREES),
-					trees(PRIMARY, {path: DEAD}, {path: OTHER}, {path: GONE, locked: lock}, {path: LIVE}),
+					trees(
+						PRIMARY,
+						{ path: DEAD },
+						{ path: OTHER },
+						{ path: GONE, locked: lock },
+						{ path: LIVE },
+					),
 				],
 				[STATUS, okOut("")],
 				[ANCESTOR, okOut("")],
 				[REMOVE, okOut("")],
 				[UNLOCK, okOut("")],
 				[PRUNE, okOut("")],
-				[TREES, trees(PRIMARY, {path: OTHER}, {path: LIVE})],
+				[TREES, trees(PRIMARY, { path: OTHER }, { path: LIVE })],
 			],
 			true,
 			{
@@ -1037,7 +1052,7 @@ describe("runReap — --limit bounds the sweep", () => {
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
-			removed: [{path: DEAD}],
+			removed: [{ path: DEAD }],
 			pruned: [GONE],
 			unpruned: [],
 			unscanned: 2,
@@ -1058,14 +1073,14 @@ describe("runReap — --limit bounds the sweep", () => {
 	});
 
 	it("names the bound on a dry run without narrowing what it calls removable", async () => {
-		const {out} = await run(
-			twoRemovable([TREES, trees(PRIMARY, {path: DEAD}, {path: OTHER})]),
+		const { out } = await run(
+			twoRemovable([TREES, trees(PRIMARY, { path: DEAD }, { path: OTHER })]),
 			false,
 			QUIET_FS,
 			1,
 		);
 
-		expect(JSON.parse(out.stdout).removable).toMatchObject([{path: DEAD}, {path: OTHER}]);
+		expect(JSON.parse(out.stdout).removable).toMatchObject([{ path: DEAD }, { path: OTHER }]);
 		expect(out.stderr.join("\n")).toMatch(/--limit 1 bounds this sweep to 1 of 2 removable/);
 	});
 });

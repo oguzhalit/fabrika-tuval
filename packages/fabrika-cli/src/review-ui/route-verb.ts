@@ -65,9 +65,9 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9196#issuecomment-5688739893
  * @ruling https://github.com/kamp-us/phoenix/issues/10038#issuecomment-5860347862
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type CommentRecord, createComment, getComment, listComments} from "../io/issues.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type CommentRecord, createComment, getComment, listComments } from "../io/issues.ts";
 import {
 	COMPARE_FILE_CAP,
 	compareFiles,
@@ -75,16 +75,16 @@ import {
 	patchComment,
 	viewerLogin,
 } from "../io/pulls.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {type AuthoredSurface, leakRefusal, readAuthored} from "../review/authored.ts";
-import {classConfigOfPull} from "../review/class-config.ts";
-import {isUiSurface} from "../review/classes.ts";
-import {headContentFor} from "../review/head-content.ts";
-import {platformCapLine, platformFileSet} from "../review/local-file-set.ts";
-import {openPull, resolveTargetRepo, scannedLine} from "../review/target.ts";
-import {controlPlaneRoster} from "../ship/roster.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { type AuthoredSurface, leakRefusal, readAuthored } from "../review/authored.ts";
+import { classConfigOfPull } from "../review/class-config.ts";
+import { isUiSurface } from "../review/classes.ts";
+import { headContentFor } from "../review/head-content.ts";
+import { platformCapLine, platformFileSet } from "../review/local-file-set.ts";
+import { openPull, resolveTargetRepo, scannedLine } from "../review/target.ts";
+import { controlPlaneRoster } from "../ship/roster.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	emit as emitRecord,
 	headSha,
@@ -92,8 +92,8 @@ import {
 	readNamespaced,
 	clause as toClause,
 } from "../wire/routed-elsewhere.ts";
-import {read as readMarker} from "../wire/verdict-marker.ts";
-import {handCheckNote, isCantSeeNote, noteLines, requireRenderNote} from "./cant-see-note.ts";
+import { read as readMarker } from "../wire/verdict-marker.ts";
+import { handCheckNote, isCantSeeNote, noteLines, requireRenderNote } from "./cant-see-note.ts";
 import {
 	HAND_CHECK_INADMISSIBLE,
 	NO_PREVIEW_MODE_UNMET,
@@ -106,11 +106,16 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {admitHandCheck, findHandCheck, handCheckCommentId, nearMisses} from "./hand-check.ts";
-import {filesAtMode, type NoPreviewMode, type NoPreviewRule, noPreviewMode} from "./no-preview.ts";
-import {NAMESPACE} from "./post-verb.ts";
-import {resolvePreview} from "./preview.ts";
-import {standingTextVerdict, TEXT_NAMESPACE, textClaims} from "./text-verdict.ts";
+import { admitHandCheck, findHandCheck, handCheckCommentId, nearMisses } from "./hand-check.ts";
+import {
+	filesAtMode,
+	type NoPreviewMode,
+	type NoPreviewRule,
+	noPreviewMode,
+} from "./no-preview.ts";
+import { NAMESPACE } from "./post-verb.ts";
+import { resolvePreview } from "./preview.ts";
+import { standingTextVerdict, TEXT_NAMESPACE, textClaims } from "./text-verdict.ts";
 
 const VERB = "review-ui route";
 
@@ -162,8 +167,8 @@ const basisUnder = (
 	pr: number,
 	decisive: ReadonlyArray<string>,
 ):
-	| {readonly _tag: "Basis"; readonly basis: RouteBasis}
-	| {readonly _tag: "Unmet"; readonly why: string; readonly note: string} => {
+	| { readonly _tag: "Basis"; readonly basis: RouteBasis }
+	| { readonly _tag: "Unmet"; readonly why: string; readonly note: string } => {
 	const files = decisive.join(", ");
 	if (mode === "require-render") {
 		return {
@@ -173,8 +178,8 @@ const basisUnder = (
 		};
 	}
 	return offered || mode === "hand-check"
-		? {_tag: "Basis", basis: "hand-check"}
-		: {_tag: "Basis", basis: "skip"};
+		? { _tag: "Basis", basis: "hand-check" }
+		: { _tag: "Basis", basis: "skip" };
 };
 
 /**
@@ -185,7 +190,7 @@ const previewAbsence = (
 	pr: number,
 	sha: string,
 	comments: ReadonlyArray<CommentRecord>,
-): {readonly code: number; readonly message: string} | null => {
+): { readonly code: number; readonly message: string } | null => {
 	const preview = resolvePreview(comments, null, sha);
 	switch (preview._tag) {
 		case "NoPreview":
@@ -223,7 +228,7 @@ export const runRoute = (
 	options: RouteOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr} = options;
+		const { pr } = options;
 		if (!Number.isInteger(pr) || pr <= 0) {
 			return refuse(FAILED, `${VERB}: ${pr} is not a pull-request number.`);
 		}
@@ -349,7 +354,7 @@ export const runRoute = (
 		}
 		if (ui.length === 0) {
 			return answer(
-				JSON.stringify({answer: "none", namespace: NAMESPACE, sha: inspected, uiFiles: 0}),
+				JSON.stringify({ answer: "none", namespace: NAMESPACE, sha: inspected, uiFiles: 0 }),
 				[
 					...diagnostics,
 					`${VERB}: #${pr}'s diff raises no ui class, so ship gate requires no ${NAMESPACE} namespace — there is nothing to route; nothing was posted.`,
@@ -410,7 +415,7 @@ export const runRoute = (
 				...noteLines(
 					VERB,
 					pr,
-					handCheckNote({repo, pr}, live, nearMisses(attempts, live, roster.logins)),
+					handCheckNote({ repo, pr }, live, nearMisses(attempts, live, roster.logins)),
 				),
 			];
 			let admitted: CommentRecord;
@@ -535,8 +540,8 @@ export const runRoute = (
 
 		const route =
 			basis === null
-				? {namespace: NAMESPACE, sha: inspected, clause}
-				: {namespace: NAMESPACE, sha: inspected, clause, basis};
+				? { namespace: NAMESPACE, sha: inspected, clause }
+				: { namespace: NAMESPACE, sha: inspected, clause, basis };
 		const composed = `${emitRecord(route)}\n${authored.text.replace(/\n+$/, "")}\n${handCheckLine}`;
 		const leaked = leakRefusal(SURFACE, composed);
 		if (leaked !== null) return leaked;
@@ -560,16 +565,16 @@ export const runRoute = (
 				return comment.id > newest.id ? comment : newest;
 			}, undefined);
 
-		let landed: {readonly id: number; readonly url: string} | null = null;
+		let landed: { readonly id: number; readonly url: string } | null = null;
 		let failure: string | null = null;
 		if (mine === undefined) {
 			const created = yield* createComment(repo, pr, composed);
 			if (created._tag === "Failure") failure = created.reason;
-			else landed = {id: created.value.id, url: created.value.url};
+			else landed = { id: created.value.id, url: created.value.url };
 		} else {
 			const edited = yield* patchComment(repo, mine.id, composed);
 			if (edited._tag === "Failure") failure = edited.reason;
-			else landed = {id: mine.id, url: edited.value};
+			else landed = { id: mine.id, url: edited.value };
 		}
 		if (landed === null) {
 			return refuse(
@@ -617,7 +622,7 @@ export const runRoute = (
 				uiFiles: ui.length,
 				verifiedAt: verified,
 				basis,
-				...(handCheckComment === null ? {} : {handCheck: handCheckComment}),
+				...(handCheckComment === null ? {} : { handCheck: handCheckComment }),
 				textReview: text === null ? "absent" : "pass",
 				upsert: mine === undefined ? "created" : "edited",
 				commentUrl: landed.url,

@@ -7,8 +7,8 @@
  * nothing — the SHAs it names do not survive the merge it exists to survive — so it must read
  * `Malformed` rather than as a weaker verdict, and a head-bound marker must not read as a range one.
  */
-import {describe, expect, it} from "vitest";
-import {clause, contentDigest, headSha} from "./marker-line.ts";
+import { describe, expect, it } from "vitest";
+import { clause, contentDigest, headSha } from "./marker-line.ts";
 import {
 	emit,
 	emitFromFields,
@@ -19,7 +19,7 @@ import {
 	readToLines,
 	renderMarker,
 } from "./range-verdict-marker.ts";
-import {read as readHeadMarker} from "./verdict-marker.ts";
+import { read as readHeadMarker } from "./verdict-marker.ts";
 
 const sha = (raw: string) => {
 	const value = headSha(raw);
@@ -44,7 +44,7 @@ const CONTENT = "2f1a9c4e0b7d";
 const MARKER: RangeVerdictMarker = {
 	namespace: "review-child",
 	polarity: "PASS",
-	range: {base: sha(BASE), tip: sha(TIP)},
+	range: { base: sha(BASE), tip: sha(TIP) },
 	content: digest(CONTENT),
 	clause: text("every criterion met"),
 };
@@ -75,7 +75,7 @@ describe("read", () => {
 
 	it("reads a bolded marker, closer and all", () => {
 		expect(found(`**review-child: PASS range:${BASE}..${TIP} content:${CONTENT} — done**`)).toEqual(
-			{...MARKER, clause: text("done")},
+			{ ...MARKER, clause: text("done") },
 		);
 	});
 
@@ -175,7 +175,7 @@ describe("the registry adapters", () => {
 		if (composed._tag !== "Composed") return;
 		expect(readToLines(composed.bytes)).toEqual({
 			_tag: "Found",
-			value: renderMarker({...MARKER, polarity: "FAIL", clause: text("two criteria unmet")}),
+			value: renderMarker({ ...MARKER, polarity: "FAIL", clause: text("two criteria unmet") }),
 		});
 	});
 });

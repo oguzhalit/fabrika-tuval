@@ -4,24 +4,24 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9020#issuecomment-5625285600
  */
-import {describe, expect, it} from "vitest";
-import {CONFIG_PATH, LOCAL_CONFIG_PATH, readDocument} from "./document.ts";
-import {type Decoded, type KeyGroup, register, resolveKey} from "./key-group.ts";
-import {CAP_CLEAR_AUTHORS} from "./keys/cap-clear-authors.ts";
-import {CODE_VALIDATORS} from "./keys/code-validators.ts";
-import {GOVERNED_ROOTS} from "./keys/governed-roots.ts";
+import { describe, expect, it } from "vitest";
+import { CONFIG_PATH, LOCAL_CONFIG_PATH, readDocument } from "./document.ts";
+import { type Decoded, type KeyGroup, register, resolveKey } from "./key-group.ts";
+import { CAP_CLEAR_AUTHORS } from "./keys/cap-clear-authors.ts";
+import { CODE_VALIDATORS } from "./keys/code-validators.ts";
+import { GOVERNED_ROOTS } from "./keys/governed-roots.ts";
 import {
 	LANE_CONCURRENCY_CAP,
 	laneConcurrencyCapKey,
 	SHIPPED_LANE_CONCURRENCY_CAP,
 } from "./keys/lane-concurrency-cap.ts";
-import {type ConfigLayers, loadConfig, loadLayeredConfig, resolve} from "./load.ts";
-import {machineLocalKeys} from "./machine-local.ts";
-import {KEY_GROUPS} from "./registry.ts";
+import { type ConfigLayers, loadConfig, loadLayeredConfig, resolve } from "./load.ts";
+import { machineLocalKeys } from "./machine-local.ts";
+import { KEY_GROUPS } from "./registry.ts";
 
 const layers = (tracked: string | null, local: string | null): ConfigLayers => ({
-	tracked: tracked === null ? {_tag: "Absent"} : {_tag: "Text", text: tracked},
-	local: local === null ? {_tag: "Absent"} : {_tag: "Text", text: local},
+	tracked: tracked === null ? { _tag: "Absent" } : { _tag: "Text", text: tracked },
+	local: local === null ? { _tag: "Absent" } : { _tag: "Text", text: local },
 });
 
 const documentsOf = (input: ConfigLayers) => ({
@@ -36,7 +36,7 @@ describe("the machine-local file", () => {
 	it("is read by the same comment-stripping parser as the tracked one", () => {
 		expect(
 			cap(null, `{\n\t// this laptop drives ten lanes\n\t"${LANE_CONCURRENCY_CAP}": 10\n}\n`),
-		).toEqual({_tag: "Declared", layer: "local", value: 10});
+		).toEqual({ _tag: "Declared", layer: "local", value: 10 });
 	});
 
 	it("wins over a different tracked value, per key", () => {
@@ -83,8 +83,8 @@ describe("the machine-local file", () => {
 describe("a local value replaces the tracked one whole", () => {
 	const decode = (raw: unknown): Decoded<ReadonlyArray<string>> =>
 		Array.isArray(raw) && raw.every((one) => typeof one === "string")
-			? {_tag: "Value", value: raw}
-			: {_tag: "Malformed", reason: "not a list of strings"};
+			? { _tag: "Value", value: raw }
+			: { _tag: "Malformed", reason: "not a list of strings" };
 
 	const listKey: KeyGroup<ReadonlyArray<string>> = {
 		key: "testOnlyList",
@@ -98,7 +98,7 @@ describe("a local value replaces the tracked one whole", () => {
 			documentsOf(layers('{"testOnlyList": ["a", "b"]}', '{"testOnlyList": ["c"]}')),
 			listKey,
 		);
-		expect(resolved).toEqual({_tag: "Declared", layer: "local", value: ["c"]});
+		expect(resolved).toEqual({ _tag: "Declared", layer: "local", value: ["c"] });
 	});
 
 	it("replaces an object rather than merging its properties", () => {
@@ -108,21 +108,24 @@ describe("a local value replaces the tracked one whole", () => {
 			machineLocal: true,
 			decode: (raw) =>
 				typeof raw === "object" && raw !== null && !Array.isArray(raw)
-					? {_tag: "Value", value: raw as Record<string, unknown>}
-					: {_tag: "Malformed", reason: "not an object"},
+					? { _tag: "Value", value: raw as Record<string, unknown> }
+					: { _tag: "Malformed", reason: "not an object" },
 		};
 		const resolved = resolveKey(
 			documentsOf(layers('{"testOnlyObject": {"a": 1, "b": 2}}', '{"testOnlyObject": {"b": 9}}')),
 			objectKey,
 		);
-		expect(resolved).toEqual({_tag: "Declared", layer: "local", value: {b: 9}});
+		expect(resolved).toEqual({ _tag: "Declared", layer: "local", value: { b: 9 } });
 	});
 
 	it("carries the eligibility through `register` rather than leaving it on the key group", () => {
 		expect(register(listKey).machineLocal).toBe(true);
 		expect(
-			register({key: "testOnlyPlain", shippedDefault: 0, decode: () => ({_tag: "Value", value: 0})})
-				.machineLocal,
+			register({
+				key: "testOnlyPlain",
+				shippedDefault: 0,
+				decode: () => ({ _tag: "Value", value: 0 }),
+			}).machineLocal,
 		).toBe(false);
 	});
 });
@@ -183,8 +186,8 @@ describe("the allow-list", () => {
 describe("an unreadable machine-local file", () => {
 	it("resolves every key UNKNOWN rather than falling through to the tracked value", () => {
 		const load = loadLayeredConfig({
-			tracked: {_tag: "Text", text: `{"${LANE_CONCURRENCY_CAP}": 2}`},
-			local: {_tag: "Unreadable", reason: "EACCES: permission denied"},
+			tracked: { _tag: "Text", text: `{"${LANE_CONCURRENCY_CAP}": 2}` },
+			local: { _tag: "Unreadable", reason: "EACCES: permission denied" },
 		});
 		expect(load._tag).toBe("Config");
 		expect(resolve(load, laneConcurrencyCapKey)).toEqual({
@@ -217,8 +220,8 @@ describe("an unreadable machine-local file", () => {
  */
 describe("the one-source door every ref-based read takes", () => {
 	it("resolves a local layer that is absent by construction, never one it opened", () => {
-		const load = loadConfig({_tag: "Text", text: `{"${LANE_CONCURRENCY_CAP}": 2}`});
-		expect(load._tag === "Config" && load.documents.local).toEqual({_tag: "Absent"});
+		const load = loadConfig({ _tag: "Text", text: `{"${LANE_CONCURRENCY_CAP}": 2}` });
+		expect(load._tag === "Config" && load.documents.local).toEqual({ _tag: "Absent" });
 		expect(resolve(load, laneConcurrencyCapKey)).toEqual({
 			_tag: "Declared",
 			layer: "tracked",

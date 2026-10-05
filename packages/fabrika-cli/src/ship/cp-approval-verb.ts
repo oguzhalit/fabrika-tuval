@@ -39,17 +39,17 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9322#issuecomment-5703498377
  * @ruling https://github.com/kamp-us/phoenix/issues/9990
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {listComments} from "../io/issues.ts";
-import {listPullFiles} from "../io/pulls.ts";
-import {platformCapLine, platformFileSet} from "../review/local-file-set.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {readBoundary} from "./boundary.ts";
-import {classify, controlPlaneOwnersOf, splitTeam} from "./codeowners.ts";
-import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {behindBase, listReviews, listTeamMembers} from "./github.ts";
-import {isBaseConflict, readDefiniteMergeability} from "./mergeability.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { listComments } from "../io/issues.ts";
+import { listPullFiles } from "../io/pulls.ts";
+import { platformCapLine, platformFileSet } from "../review/local-file-set.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { readBoundary } from "./boundary.ts";
+import { classify, controlPlaneOwnersOf, splitTeam } from "./codeowners.ts";
+import { INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { behindBase, listReviews, listTeamMembers } from "./github.ts";
+import { isBaseConflict, readDefiniteMergeability } from "./mergeability.ts";
 import {
 	badNumber,
 	inspectedSha,
@@ -81,7 +81,7 @@ export interface CpApprovalOptions {
 }
 
 /** Latest-per-author, computed **after** the pages are joined — never per page. */
-export const latestPerAuthor = <A extends {login: string; submittedAt: string}>(
+export const latestPerAuthor = <A extends { login: string; submittedAt: string }>(
 	reviews: ReadonlyArray<A>,
 ): ReadonlyArray<A> => {
 	const byAuthor = new Map<string, A>();
@@ -98,7 +98,7 @@ export const runCpApproval = (
 	options: CpApprovalOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 		const bound = inspectedSha(VERB, options.sha);
@@ -175,7 +175,7 @@ export const runCpApproval = (
 		const emit = (outcome: CpApprovalOutcome, mechanism: string, roster: number): VerbOutcome =>
 			json
 				? answer(
-						JSON.stringify({outcome, mechanism, sha: bound, roster, baseDrift: behind}),
+						JSON.stringify({ outcome, mechanism, sha: bound, roster, baseDrift: behind }),
 						diagnostics,
 					)
 				: answer(`cp-approval\t${outcome}\t${mechanism}`, diagnostics);

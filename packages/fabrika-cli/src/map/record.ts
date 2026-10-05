@@ -9,7 +9,7 @@
  * than two writes.
  */
 
-import {appendOnly} from "../review/append.ts";
+import { appendOnly } from "../review/append.ts";
 import {
 	type DecisionEntry,
 	type MapBody,
@@ -24,8 +24,8 @@ export const QUESTION_ID = /^R\d+\.\d+$/;
 
 /** The composed body, or the reason it is not one a later read could hold. */
 export type RecordApply =
-	| {readonly _tag: "Applied"; readonly body: string}
-	| {readonly _tag: "Refused"; readonly reason: string};
+	| { readonly _tag: "Applied"; readonly body: string }
+	| { readonly _tag: "Refused"; readonly reason: string };
 
 /**
  * The body with the answer appended under `## Decisions` and the ticket's row gone from
@@ -79,7 +79,7 @@ export const applyRecord = (body: MapBody, ticket: number, entry: DecisionEntry)
 	const next = spliceSection(reparsed.value, "Decisions", composed);
 	const read = parseBody(next);
 	if (read._tag === "Malformed") {
-		return {_tag: "Refused", reason: `the composed body does not parse (${read.reason})`};
+		return { _tag: "Refused", reason: `the composed body does not parse (${read.reason})` };
 	}
 	const landed = read.value.decisions;
 	const last = landed.at(-1);
@@ -89,7 +89,7 @@ export const applyRecord = (body: MapBody, ticket: number, entry: DecisionEntry)
 		last !== undefined &&
 		renderDecision(last) === row;
 	return grew
-		? {_tag: "Applied", body: next}
+		? { _tag: "Applied", body: next }
 		: {
 				_tag: "Refused",
 				reason:

@@ -16,24 +16,24 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9989
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {parseCampaigns} from "../build/scope-admission.ts";
-import {locateRoadmap} from "../campaign/guards.ts";
-import {appetiteSizesKey} from "../config/keys/appetite-sizes.ts";
-import {type Boards, boardsKey} from "../config/keys/boards.ts";
-import {type TableSettings, tableKey} from "../config/keys/table.ts";
-import {readKey} from "../config/read-key.ts";
-import {exists, readFile} from "../io/fs.ts";
-import {type Attempt, fail, ok} from "../io/git.ts";
-import {getIssue, type ListedIssue, listOpenIssueFacts, resolveRepo} from "../io/issues.ts";
-import {withProjects} from "../io/projects.ts";
-import {controlPlaneRoster} from "../ship/roster.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import type {LaneRecord} from "../wire/lane-record.ts";
-import {tableDayOf} from "./agenda.ts";
-import {BET_STAGE} from "./bets.ts";
-import {CONFIG_MALFORMED, PRECONDITION_UNKNOWN} from "./codes.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { parseCampaigns } from "../build/scope-admission.ts";
+import { locateRoadmap } from "../campaign/guards.ts";
+import { appetiteSizesKey } from "../config/keys/appetite-sizes.ts";
+import { type Boards, boardsKey } from "../config/keys/boards.ts";
+import { type TableSettings, tableKey } from "../config/keys/table.ts";
+import { readKey } from "../config/read-key.ts";
+import { exists, readFile } from "../io/fs.ts";
+import { type Attempt, fail, ok } from "../io/git.ts";
+import { getIssue, type ListedIssue, listOpenIssueFacts, resolveRepo } from "../io/issues.ts";
+import { withProjects } from "../io/projects.ts";
+import { controlPlaneRoster } from "../ship/roster.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import type { LaneRecord } from "../wire/lane-record.ts";
+import { tableDayOf } from "./agenda.ts";
+import { BET_STAGE } from "./bets.ts";
+import { CONFIG_MALFORMED, PRECONDITION_UNKNOWN } from "./codes.ts";
 import {
 	type Campaigns,
 	type Deciders,
@@ -46,10 +46,10 @@ import {
 	type ShareWeek,
 	weekLanes,
 } from "./flags.ts";
-import {readHeads} from "./flags-read.ts";
-import {onCallItemsOf, readOnCall} from "./on-call-prep.ts";
-import type {Row} from "./sync.ts";
-import {githubWave, locateTable, syncBoard, type TableBoard} from "./sync-verb.ts";
+import { readHeads } from "./flags-read.ts";
+import { onCallItemsOf, readOnCall } from "./on-call-prep.ts";
+import type { Row } from "./sync.ts";
+import { githubWave, locateTable, syncBoard, type TableBoard } from "./sync-verb.ts";
 import {
 	nextTableDay,
 	parseTableDay,
@@ -107,7 +107,7 @@ export const shareWindow = (
 		const parsed = cell === null ? null : parseTableDay(cell);
 		return parsed === null ? [] : [parsed];
 	});
-	return {...weekBefore(day, settings.timeZone), table: tableNumber(dated, day)};
+	return { ...weekBefore(day, settings.timeZone), table: tableNumber(dated, day) };
 };
 
 /**
@@ -125,20 +125,20 @@ const readShare = <R>(
 	now: Date,
 ): Effect.Effect<ShareWeek, never, R> =>
 	Effect.gen(function* () {
-		const unread = (reason: string): ShareWeek => ({_tag: "Unread", reason});
+		const unread = (reason: string): ShareWeek => ({ _tag: "Unread", reason });
 		const labels = settings.fabrikaShare.labels;
 		if (labels.length === 0) return NOT_ASKED;
 		const week = shareWindow(settings, rows, now);
-		const {start, end} = week;
+		const { start, end } = week;
 		const fabrika = new Set<number>();
-		for (const issue of weekLanes(records, {start, end}).keys()) {
+		for (const issue of weekLanes(records, { start, end }).keys()) {
 			const carried = yield* board.labels(repo, issue);
 			if (carried._tag === "Failure") {
 				return unread(`cannot read #${issue}'s labels: ${carried.reason}`);
 			}
 			if (carried.value.some((label) => labels.includes(label))) fabrika.add(issue);
 		}
-		return {_tag: "Week", ...week, fabrika};
+		return { _tag: "Week", ...week, fabrika };
 	});
 
 /** The on-call board as the whole-table run judges it; `NotAsked` with one board. */
@@ -153,26 +153,26 @@ const readOnCallFlags = <R>(
 	Effect.gen(function* () {
 		const read = yield* readOnCall(board, VERB, repo, boards);
 		if (read._tag === "One") return NOT_ASKED;
-		if (read._tag === "Refused") return {_tag: "Unread", reason: read.reason};
+		if (read._tag === "Refused") return { _tag: "Unread", reason: read.reason };
 		const listing = yield* board.openIssues(repo);
 		if (listing._tag === "Failure") {
-			return {_tag: "Unread", reason: `cannot read ${repo}'s open issues: ${listing.reason}`};
+			return { _tag: "Unread", reason: `cannot read ${repo}'s open issues: ${listing.reason}` };
 		}
 		const open = new Map(listing.value.map((issue) => [issue.number, issue] as const));
-		const {start, end} = shareWindow(settings, rows, now);
+		const { start, end } = shareWindow(settings, rows, now);
 		return {
 			_tag: "OnCall",
 			settings: read.settings,
 			boardCreatedAt: read.project.createdAt,
 			issues: new Set(read.rows.keys()),
 			open: onCallItemsOf(read.rows, open, []),
-			week: {_tag: "Week", start, end},
+			week: { _tag: "Week", start, end },
 		};
 	});
 
 const flagJson = (flag: Flag, settings: TableSettings) => {
-	const {_tag, ...fields} = flag;
-	return {flag: flagName(flag), ...fields, rec: recOf(flag, settings)};
+	const { _tag, ...fields } = flag;
+	return { flag: flagName(flag), ...fields, rec: recOf(flag, settings) };
 };
 
 const flagLine = (flag: Flag, settings: TableSettings): string =>
@@ -210,7 +210,7 @@ export const runFlags = <R>(
 			);
 		}
 		const repo = resolved.value;
-		const {board, now} = options;
+		const { board, now } = options;
 		const heads = yield* readHeads(board, VERB, repo, settings.value, options.issues);
 		if (heads._tag === "Refused") return refuse(heads.code, heads.reason);
 
@@ -237,12 +237,12 @@ export const runFlags = <R>(
 			onCall,
 		});
 
-		const {project} = heads;
+		const { project } = heads;
 		return answer(
 			`${JSON.stringify({
 				answer: report.flags.length > 0 ? "flagged" : "clear",
 				repo,
-				project: {number: project.number, title: project.title, url: project.url},
+				project: { number: project.number, title: project.title, url: project.url },
 				scope: whole ? "table" : "issues",
 				rows: heads.rows.map((row) => row.group.head),
 				flags: report.flags.map((flag) => flagJson(flag, settings.value)),
@@ -268,21 +268,21 @@ const readActiveCampaigns = (
 	Effect.gen(function* () {
 		const located = yield* locateRoadmap(VERB, cwd, null);
 		if (located._tag === "Refused") {
-			return {_tag: "Unread", reason: located.outcome.stderr.join(" ")};
+			return { _tag: "Unread", reason: located.outcome.stderr.join(" ") };
 		}
-		const {path, display} = located.located;
+		const { path, display } = located.located;
 		const present = yield* Effect.result(exists(path));
 		if (present._tag === "Failure") {
-			return {_tag: "Unread", reason: `cannot probe ${display}: ${present.failure.reason}`};
+			return { _tag: "Unread", reason: `cannot probe ${display}: ${present.failure.reason}` };
 		}
-		if (!present.success) return {_tag: "Read", active: []};
+		if (!present.success) return { _tag: "Read", active: [] };
 		const text = yield* Effect.result(readFile(path));
 		if (text._tag === "Failure") {
-			return {_tag: "Unread", reason: `cannot read ${display}: ${text.failure.reason}`};
+			return { _tag: "Unread", reason: `cannot read ${display}: ${text.failure.reason}` };
 		}
 		const table = parseCampaigns(text.success);
 		if (table._tag === "Malformed") {
-			return {_tag: "Unread", reason: `${display}: ${table.reason}`};
+			return { _tag: "Unread", reason: `${display}: ${table.reason}` };
 		}
 		return {
 			_tag: "Read",
@@ -310,8 +310,8 @@ export const flagsBoard: FlagsBoard<
 			controlPlaneRoster(repo),
 			(roster): Deciders =>
 				roster._tag === "Roster"
-					? {_tag: "Roster", logins: roster.logins}
-					: {_tag: "Unread", reason: `cannot read the control-plane set: ${roster.reason}`},
+					? { _tag: "Roster", logins: roster.logins }
+					: { _tag: "Unread", reason: `cannot read the control-plane set: ${roster.reason}` },
 		),
 	campaigns: readActiveCampaigns,
 	openIssues: listOpenIssueFacts,

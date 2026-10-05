@@ -1,9 +1,9 @@
 /** The reads that decide whether an epic run's assembly seat is the driver's own checkout. */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeShell, okOut} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import type {Shell} from "../io/git.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeShell, okOut } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import type { Shell } from "../io/git.ts";
 import {
 	assemblySeat,
 	assemblyWorktreePath,
@@ -44,23 +44,23 @@ const run = <A>(effect: Shell<A>, script: ExecResult): Promise<A> =>
 describe("parseWorktreeList", () => {
 	it("reads every tree with its short branch, main first — git's own ordering", () => {
 		expect(parseWorktreeList(LIST)).toEqual([
-			{path: MAIN, branch: "main", prunable: false},
-			{path: `${MAIN}/.claude/worktrees/epic-5680`, branch: "epic/5680", prunable: false},
-			{path: `${MAIN}/.claude/worktrees/agent-77`, branch: null, prunable: false},
+			{ path: MAIN, branch: "main", prunable: false },
+			{ path: `${MAIN}/.claude/worktrees/epic-5680`, branch: "epic/5680", prunable: false },
+			{ path: `${MAIN}/.claude/worktrees/agent-77`, branch: null, prunable: false },
 		]);
 	});
 
 	it("keeps the prunable flag git prints for a record whose directory is gone", () => {
 		expect(parseWorktreeList(STALE)).toEqual([
-			{path: MAIN, branch: "main", prunable: false},
-			{path: `${MAIN}/.claude/worktrees/epic-5680`, branch: "epic/5680", prunable: true},
+			{ path: MAIN, branch: "main", prunable: false },
+			{ path: `${MAIN}/.claude/worktrees/epic-5680`, branch: "epic/5680", prunable: true },
 		]);
 	});
 
 	it("reads a bare `prunable` line too, which git prints when it carries no reason", () => {
 		expect(
 			parseWorktreeList("worktree /gone\nHEAD aaaa111\nbranch refs/heads/epic/5680\nprunable\n"),
-		).toEqual([{path: "/gone", branch: "epic/5680", prunable: true}]);
+		).toEqual([{ path: "/gone", branch: "epic/5680", prunable: true }]);
 	});
 
 	it("answers no tree at all for bytes carrying no worktree record, so a caller cannot read one", () => {
@@ -142,7 +142,7 @@ branch refs/heads/epic/5680
 
 describe("worktrees", () => {
 	it("fails rather than answering an empty list git never printed", async () => {
-		await expect(run(worktrees, okOut(""))).resolves.toMatchObject({_tag: "Failure"});
+		await expect(run(worktrees, okOut(""))).resolves.toMatchObject({ _tag: "Failure" });
 	});
 
 	it("fails on a read fault instead of resolving to no trees", async () => {
@@ -158,13 +158,13 @@ describe("standingInLinkedWorktree", () => {
 	it("reads the main working tree, where the two git dirs are one path", async () => {
 		await expect(
 			run(standingInLinkedWorktree, paths(`${MAIN}/.git`, `${MAIN}/.git`)),
-		).resolves.toEqual({_tag: "Ok", value: false});
+		).resolves.toEqual({ _tag: "Ok", value: false });
 	});
 
 	it("reads a linked worktree, where --git-dir sits under the common dir", async () => {
 		await expect(
 			run(standingInLinkedWorktree, paths(`${MAIN}/.git/worktrees/epic-5680`, `${MAIN}/.git`)),
-		).resolves.toEqual({_tag: "Ok", value: true});
+		).resolves.toEqual({ _tag: "Ok", value: true });
 	});
 
 	it("is UNKNOWN on a read fault — never the permissive `linked`", async () => {

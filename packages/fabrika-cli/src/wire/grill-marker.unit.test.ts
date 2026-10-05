@@ -6,7 +6,7 @@
  * timestamp name different fields, and that the three keys stay strangers to one another. A reader
  * told only "malformed" re-posts the same marker.
  */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import * as grillAnswer from "./grill-answer.ts";
 import {
 	composeQuestionId,
@@ -24,44 +24,34 @@ describe("the branded fields admit exactly their own shape", () => {
 		expect(questionId(raw)).toBe(raw);
 	});
 
-	it.each([
-		"1.1",
-		"R0.1",
-		"R1.0",
-		"R1",
-		"R1.1.1",
-		"",
-		"question one",
-	])("refuses the question id %s", (raw) => {
-		expect(questionId(raw)).toBeNull();
-	});
+	it.each(["1.1", "R0.1", "R1.0", "R1", "R1.1.1", "", "question one"])(
+		"refuses the question id %s",
+		(raw) => {
+			expect(questionId(raw)).toBeNull();
+		},
+	);
 
 	it.each(["a1b2c3d4e5f6", "000000000000"])("accepts the digest %s", (raw) => {
 		expect(roundDigest(raw)).toBe(raw);
 	});
 
-	it.each([
-		"A1B2C3D4E5F6",
-		"a1b2c3d4e5f",
-		"a1b2c3d4e5f6a",
-		"nothexatall",
-		"",
-	])("refuses the digest %s", (raw) => {
-		expect(roundDigest(raw)).toBeNull();
-	});
+	it.each(["A1B2C3D4E5F6", "a1b2c3d4e5f", "a1b2c3d4e5f6a", "nothexatall", ""])(
+		"refuses the digest %s",
+		(raw) => {
+			expect(roundDigest(raw)).toBeNull();
+		},
+	);
 
 	it.each(["2026-08-09T18:36:48Z", "2026-08-09T18:36:48.123Z"])("accepts the stamp %s", (raw) => {
 		expect(markerTime(raw)).toBe(raw);
 	});
 
-	it.each([
-		"2026-08-09 18:36:48",
-		"2026-08-09T18:36:48+03:00",
-		"yesterday",
-		"",
-	])("refuses the stamp %s", (raw) => {
-		expect(markerTime(raw)).toBeNull();
-	});
+	it.each(["2026-08-09 18:36:48", "2026-08-09T18:36:48+03:00", "yesterday", ""])(
+		"refuses the stamp %s",
+		(raw) => {
+			expect(markerTime(raw)).toBeNull();
+		},
+	);
 
 	it("reads a question id's round back without re-parsing the string at the call site", () => {
 		expect(roundOf(questionId("R12.7") ?? ("" as never))).toBe(12);

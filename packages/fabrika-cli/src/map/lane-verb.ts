@@ -7,14 +7,14 @@
  * prove it still owns the lane without a second claim.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {createComment, getComment} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {KIND_MISMATCH, LANE_NOT_MINE, READBACK_MISMATCH, WRITE_UNKNOWN} from "./codes.ts";
-import {notTerminal, requireMapForState, requireTicket, targetRepo} from "./guards.ts";
-import {composeLaneMarker, isNonce} from "./markers.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { createComment, getComment } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { KIND_MISMATCH, LANE_NOT_MINE, READBACK_MISMATCH, WRITE_UNKNOWN } from "./codes.ts";
+import { notTerminal, requireMapForState, requireTicket, targetRepo } from "./guards.ts";
+import { composeLaneMarker, isNonce } from "./markers.ts";
 
 export interface LaneOptions {
 	readonly map: number;
@@ -52,7 +52,7 @@ export const runLane = (
 			options.ticket,
 		);
 		if (resolved._tag === "Refused") return resolved.outcome;
-		const {ticket} = resolved.value;
+		const { ticket } = resolved.value;
 
 		const left = notTerminal(VERB, ticket, "there is nothing left to research.");
 		if (left !== null) return left;

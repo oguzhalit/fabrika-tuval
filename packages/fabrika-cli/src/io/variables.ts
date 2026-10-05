@@ -9,11 +9,11 @@
  * read variables answers 403, which is `Unknown`, so "nobody set it" and "you may not look" stay
  * two answers.
  */
-import {Effect, Redacted} from "effect";
-import {authedExistence, existenceOf, restRead} from "./gh-api.ts";
-import {fail, ok, type Shell} from "./git.ts";
-import type {Existence} from "./issues.ts";
-import {isRecord} from "./json.ts";
+import { Effect, Redacted } from "effect";
+import { authedExistence, existenceOf, restRead } from "./gh-api.ts";
+import { fail, ok, type Shell } from "./git.ts";
+import type { Existence } from "./issues.ts";
+import { isRecord } from "./json.ts";
 
 export const getRepoVariable = (
 	repo: string,

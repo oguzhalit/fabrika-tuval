@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, once, type Scripted} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, once, type Scripted } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
 import * as buildDeviations from "../wire/build-deviations.ts";
 import * as deviations from "../wire/deviations.ts";
 import {
@@ -15,7 +15,7 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {runDeviations} from "./deviations-verb.ts";
+import { runDeviations } from "./deviations-verb.ts";
 import {
 	comments,
 	GATEWAY,
@@ -38,9 +38,9 @@ const PATCH = /PATCH .*\/repos\/o\/r\/issues\/comments\/(\d+)$/;
 const DELETE_ONE = /DELETE .*\/repos\/o\/r\/issues\/comments\/(\d+)$/;
 const getComment = (id: number) => new RegExp(`GET .*/repos/o/r/issues/comments/${id}$`);
 
-const WRITE = served({permission: "write"});
-const ME = served({login: "agent"});
-const CLAIM = {id: 1, body: marker("s-9f2e", LANE_UUID)};
+const WRITE = served({ permission: "write" });
+const ME = served({ login: "agent" });
+const CLAIM = { id: 1, body: marker("s-9f2e", LANE_UUID) };
 
 const NONE = "## Deviations\n\nNone.\n";
 const FULL = [
@@ -129,11 +129,11 @@ const options = {
 	token: LANE_TOKEN,
 	standing: false,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e", ...GH_TOKEN_ENV} as Record<
+	env: { CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e", ...GH_TOKEN_ENV } as Record<
 		string,
 		string | undefined
 	>,
-	stdin: Effect.succeed<StdinRead>({_tag: "Text", text: NONE}),
+	stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: NONE }),
 };
 
 const seamsFor = (script: ReadonlyArray<Scripted>) => fakeSeams(script);
@@ -159,13 +159,13 @@ const writtenBody = (seams: ReturnType<typeof seamsFor>, pattern: RegExp): strin
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
-		Effect.provide(runDeviations({...options, ...overrides}), seamsFor(script).layer),
+		Effect.provide(runDeviations({ ...options, ...overrides }), seamsFor(script).layer),
 	);
 
 /** The script for an issue whose comments are `rows` — claim marker included. */
-const board = (...rows: ReadonlyArray<{readonly id: number; readonly body: string}>) =>
+const board = (...rows: ReadonlyArray<{ readonly id: number; readonly body: string }>) =>
 	[
-		[IS_ISSUE, served({number: ISSUE})],
+		[IS_ISSUE, served({ number: ISSUE })],
 		[COMMENTS, comments(CLAIM, ...rows)],
 		[PERM, WRITE],
 		[USER, ME],
@@ -175,8 +175,8 @@ describe("runDeviations", () => {
 	it("creates the marker when the child carries none", async () => {
 		const seams = seamsFor([
 			...board(),
-			[POST, served({id: 900, html_url: "https://example.test/o/r/issues/6566#c900"}, 201)],
-			[getComment(900), served({body: composed(NONE)})],
+			[POST, served({ id: 900, html_url: "https://example.test/o/r/issues/6566#c900" }, 201)],
+			[getComment(900), served({ body: composed(NONE) })],
 		]);
 		const out = await Effect.runPromise(Effect.provide(runDeviations(options), seams.layer));
 		expect(out.code).toBe(0);
@@ -199,8 +199,8 @@ describe("runDeviations", () => {
 	it("edits the standing marker on a second disclosure, and posts no second comment", async () => {
 		const first = seamsFor([
 			...board(),
-			[POST, served({id: 900, html_url: "https://example.test/o/r/issues/6566#c900"}, 201)],
-			[getComment(900), served({body: composed(NONE)})],
+			[POST, served({ id: 900, html_url: "https://example.test/o/r/issues/6566#c900" }, 201)],
+			[getComment(900), served({ body: composed(NONE) })],
 		]);
 		const opened = await Effect.runPromise(Effect.provide(runDeviations(options), first.layer));
 		expect(opened.code).toBe(0);
@@ -208,14 +208,14 @@ describe("runDeviations", () => {
 
 		// The second round reads the board the first round left, not a hand-written stand-in.
 		const second = seamsFor([
-			...board({id: 900, body: landed}),
-			[PATCH, served({id: 900, html_url: "https://example.test/o/r/issues/6566#c900"})],
-			[getComment(900), served({body: composed(FULL)})],
-			[POST, served({message: "a second comment must never be created"}, 500)],
+			...board({ id: 900, body: landed }),
+			[PATCH, served({ id: 900, html_url: "https://example.test/o/r/issues/6566#c900" })],
+			[getComment(900), served({ body: composed(FULL) })],
+			[POST, served({ message: "a second comment must never be created" }, 500)],
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runDeviations({...options, stdin: Effect.succeed({_tag: "Text", text: FULL})}),
+				runDeviations({ ...options, stdin: Effect.succeed({ _tag: "Text", text: FULL }) }),
 				second.layer,
 			),
 		);
@@ -232,22 +232,22 @@ describe("runDeviations", () => {
 
 	it("lands a repair round that carries the standing entries beside its own", async () => {
 		const seams = seamsFor([
-			...board({id: 900, body: composed(ROUND_ONE)}),
-			[PATCH, served({id: 900, html_url: "https://example.test/o/r/issues/6566#c900"})],
-			[getComment(900), served({body: composed(ROUND_TWO_COMPLETE)})],
-			[POST, served({message: "a second comment must never be created"}, 500)],
+			...board({ id: 900, body: composed(ROUND_ONE) }),
+			[PATCH, served({ id: 900, html_url: "https://example.test/o/r/issues/6566#c900" })],
+			[getComment(900), served({ body: composed(ROUND_TWO_COMPLETE) })],
+			[POST, served({ message: "a second comment must never be created" }, 500)],
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
 				runDeviations({
 					...options,
-					stdin: Effect.succeed({_tag: "Text", text: ROUND_TWO_COMPLETE}),
+					stdin: Effect.succeed({ _tag: "Text", text: ROUND_TWO_COMPLETE }),
 				}),
 				seams.layer,
 			),
 		);
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({commentId: 900, upsert: "edited"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ commentId: 900, upsert: "edited" });
 
 		// One marker, four entries: the three round 1 disclosed and the one round 2 added — so a cold
 		// later reviewer reads the whole range off the standing text, never off the edit history.
@@ -267,10 +267,13 @@ describe("runDeviations", () => {
 	 * entries — still true of the range the next reviewer grades — go with it.
 	 */
 	it("refuses a replacement that drops a standing entry, naming each one, before any write", async () => {
-		const seams = seamsFor(board({id: 900, body: composed(ROUND_ONE)}));
+		const seams = seamsFor(board({ id: 900, body: composed(ROUND_ONE) }));
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runDeviations({...options, stdin: Effect.succeed({_tag: "Text", text: ROUND_TWO_RESET})}),
+				runDeviations({
+					...options,
+					stdin: Effect.succeed({ _tag: "Text", text: ROUND_TWO_RESET }),
+				}),
 				seams.layer,
 			),
 		);
@@ -283,23 +286,23 @@ describe("runDeviations", () => {
 	});
 
 	it('refuses a replacement that resets the disclosure to "None."', async () => {
-		const out = await run(board({id: 900, body: composed(ROUND_ONE)}), {
-			stdin: Effect.succeed({_tag: "Text", text: NONE}),
+		const out = await run(board({ id: 900, body: composed(ROUND_ONE) }), {
+			stdin: Effect.succeed({ _tag: "Text", text: NONE }),
 		});
 		expect(out.code).toBe(DISCLOSURE_INCOMPLETE);
 	});
 
 	it("takes a re-stated entry as carried however its later fields read", async () => {
 		const seams = seamsFor([
-			...board({id: 900, body: composed(sectionOf(UNSETTLED_STREAM))}),
-			[PATCH, served({id: 900, html_url: "https://example.test/o/r/issues/6566#c900"})],
-			[getComment(900), served({body: composed(sectionOf(UNSETTLED_STREAM_RETIRED))})],
+			...board({ id: 900, body: composed(sectionOf(UNSETTLED_STREAM)) }),
+			[PATCH, served({ id: 900, html_url: "https://example.test/o/r/issues/6566#c900" })],
+			[getComment(900), served({ body: composed(sectionOf(UNSETTLED_STREAM_RETIRED)) })],
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
 				runDeviations({
 					...options,
-					stdin: Effect.succeed({_tag: "Text", text: sectionOf(UNSETTLED_STREAM_RETIRED)}),
+					stdin: Effect.succeed({ _tag: "Text", text: sectionOf(UNSETTLED_STREAM_RETIRED) }),
 				}),
 				seams.layer,
 			),
@@ -309,9 +312,9 @@ describe("runDeviations", () => {
 	});
 
 	it("prints the standing disclosure under --standing, and writes nothing", async () => {
-		const seams = seamsFor(board({id: 900, body: composed(ROUND_ONE)}));
+		const seams = seamsFor(board({ id: 900, body: composed(ROUND_ONE) }));
 		const out = await Effect.runPromise(
-			Effect.provide(runDeviations({...options, standing: true, stdin: UNREAD}), seams.layer),
+			Effect.provide(runDeviations({ ...options, standing: true, stdin: UNREAD }), seams.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(deviations.emit(disclosureOf(composed(ROUND_ONE))));
@@ -320,7 +323,7 @@ describe("runDeviations", () => {
 	});
 
 	it("prints nothing under --standing when the child carries no marker yet", async () => {
-		const out = await run(board(), {standing: true, stdin: UNREAD});
+		const out = await run(board(), { standing: true, stdin: UNREAD });
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.join("\n")).toContain("no standing marker");
@@ -328,20 +331,20 @@ describe("runDeviations", () => {
 
 	it("retracts a stacked marker a pre-fix lane left, so one comment survives", async () => {
 		const seams = seamsFor([
-			...board({id: 900, body: composed(NONE)}, {id: 901, body: composed(NONE)}),
-			[PATCH, served({id: 901, html_url: "https://example.test/o/r/issues/6566#c901"})],
-			[getComment(901), served({body: composed(FULL)})],
+			...board({ id: 900, body: composed(NONE) }, { id: 901, body: composed(NONE) }),
+			[PATCH, served({ id: 901, html_url: "https://example.test/o/r/issues/6566#c901" })],
+			[getComment(901), served({ body: composed(FULL) })],
 			[DELETE_ONE, served({}, 204)],
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runDeviations({...options, stdin: Effect.succeed({_tag: "Text", text: FULL})}),
+				runDeviations({ ...options, stdin: Effect.succeed({ _tag: "Text", text: FULL }) }),
 				seams.layer,
 			),
 		);
 		expect(out.code).toBe(0);
 		// The NEWEST standing marker is the one edited; the older is deleted.
-		expect(JSON.parse(out.stdout)).toMatchObject({commentId: 901, retracted: 1});
+		expect(JSON.parse(out.stdout)).toMatchObject({ commentId: 901, retracted: 1 });
 		expect(seams.requests.some((line) => /DELETE .*\/issues\/comments\/900$/.test(line))).toBe(
 			true,
 		);
@@ -350,12 +353,12 @@ describe("runDeviations", () => {
 	it("is UNKNOWN when a superseded marker survives its retraction", async () => {
 		const out = await run(
 			[
-				...board({id: 900, body: composed(NONE)}, {id: 901, body: composed(NONE)}),
-				[PATCH, served({id: 901, html_url: "https://example.test/o/r/issues/6566#c901"})],
-				[getComment(901), served({body: composed(FULL)})],
+				...board({ id: 900, body: composed(NONE) }, { id: 901, body: composed(NONE) }),
+				[PATCH, served({ id: 901, html_url: "https://example.test/o/r/issues/6566#c901" })],
+				[getComment(901), served({ body: composed(FULL) })],
 				[DELETE_ONE, GATEWAY],
 			],
-			{stdin: Effect.succeed({_tag: "Text", text: FULL})},
+			{ stdin: Effect.succeed({ _tag: "Text", text: FULL }) },
 		);
 		expect(out.code).toBe(WRITE_UNKNOWN);
 		expect(out.stderr.join("\n")).toContain("900");
@@ -364,22 +367,22 @@ describe("runDeviations", () => {
 	it("never edits another issue's marker, nor a comment this account did not write", async () => {
 		const seams = seamsFor([
 			...board(
-				{id: 800, body: `${buildDeviations.KEY_PREFIX} #6567\n\n${NONE}`},
-				{id: 801, body: "quoting build-deviations: #6566 in prose"},
+				{ id: 800, body: `${buildDeviations.KEY_PREFIX} #6567\n\n${NONE}` },
+				{ id: 801, body: "quoting build-deviations: #6566 in prose" },
 			),
-			[POST, served({id: 900, html_url: "https://example.test/o/r/issues/6566#c900"}, 201)],
-			[getComment(900), served({body: composed(NONE)})],
+			[POST, served({ id: 900, html_url: "https://example.test/o/r/issues/6566#c900" }, 201)],
+			[getComment(900), served({ body: composed(NONE) })],
 		]);
 		const out = await Effect.runPromise(Effect.provide(runDeviations(options), seams.layer));
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({upsert: "created", retracted: 0});
+		expect(JSON.parse(out.stdout)).toMatchObject({ upsert: "created", retracted: 0 });
 	});
 
 	it("composes the marker line from the positional, not from stdin", async () => {
 		const seams = seamsFor([
 			...board(),
-			[POST, served({id: 900, html_url: "https://example.test/o/r/issues/6566#c900"}, 201)],
-			[getComment(900), served({body: composed(NONE)})],
+			[POST, served({ id: 900, html_url: "https://example.test/o/r/issues/6566#c900" }, 201)],
+			[getComment(900), served({ body: composed(NONE) })],
 		]);
 		await Effect.runPromise(
 			Effect.provide(
@@ -402,7 +405,10 @@ describe("runDeviations", () => {
 		const seams = seamsFor(board());
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runDeviations({...options, stdin: Effect.succeed({_tag: "Text", text: "no heading here"})}),
+				runDeviations({
+					...options,
+					stdin: Effect.succeed({ _tag: "Text", text: "no heading here" }),
+				}),
 				seams.layer,
 			),
 		);
@@ -412,20 +418,20 @@ describe("runDeviations", () => {
 
 	it("refuses an entry missing a field, naming the field", async () => {
 		const out = await run(board(), {
-			stdin: Effect.succeed({_tag: "Text", text: "## Deviations\n\n- **Said:** only this.\n"}),
+			stdin: Effect.succeed({ _tag: "Text", text: "## Deviations\n\n- **Said:** only this.\n" }),
 		});
 		expect(out.code).toBe(BAD_SECTIONS);
 		expect(out.stderr.join("\n")).toContain("**Did:**");
 	});
 
 	it("refuses empty stdin rather than reading it as nothing to disclose", async () => {
-		const out = await run(board(), {stdin: Effect.succeed({_tag: "Text", text: "  \n"})});
+		const out = await run(board(), { stdin: Effect.succeed({ _tag: "Text", text: "  \n" }) });
 		expect(out.code).toBe(EMPTY_STDIN);
 	});
 
 	it("refuses a pull request — a PR discloses in its body", async () => {
 		const out = await run([
-			[IS_ISSUE, served({number: ISSUE, pull_request: {url: "…"}})],
+			[IS_ISSUE, served({ number: ISSUE, pull_request: { url: "…" } })],
 			[COMMENTS, comments(CLAIM)],
 			[PERM, WRITE],
 		]);
@@ -439,7 +445,7 @@ describe("runDeviations", () => {
 
 	it("is UNKNOWN when the authenticated user cannot be read, and writes nothing", async () => {
 		const seams = seamsFor([
-			[IS_ISSUE, served({number: ISSUE})],
+			[IS_ISSUE, served({ number: ISSUE })],
 			[COMMENTS, comments(CLAIM)],
 			[PERM, WRITE],
 			[USER, GATEWAY],
@@ -453,7 +459,7 @@ describe("runDeviations", () => {
 		// The claim resolver reads the same endpoint first, so only the SECOND read can be the one
 		// that fails — `once` spends the served row, and the verb's own read falls through to the 502.
 		const seams = seamsFor([
-			[IS_ISSUE, served({number: ISSUE})],
+			[IS_ISSUE, served({ number: ISSUE })],
 			[once(COMMENTS), comments(CLAIM)],
 			[COMMENTS, GATEWAY],
 			[PERM, WRITE],
@@ -467,8 +473,8 @@ describe("runDeviations", () => {
 
 	it("refuses when this lane does not hold the claim", async () => {
 		const out = await run([
-			[IS_ISSUE, served({number: ISSUE})],
-			[COMMENTS, comments({id: 1, body: marker("other", LANE_UUID)})],
+			[IS_ISSUE, served({ number: ISSUE })],
+			[COMMENTS, comments({ id: 1, body: marker("other", LANE_UUID) })],
 			[PERM, WRITE],
 		]);
 		expect(out.code).toBe(CLAIM_NOT_MINE);
@@ -477,8 +483,8 @@ describe("runDeviations", () => {
 	it("refuses when the landed comment does not read back as this disclosure", async () => {
 		const out = await run([
 			...board(),
-			[POST, served({id: 900, html_url: "https://example.test/o/r/issues/6566#c900"}, 201)],
-			[getComment(900), served({body: "the marker never landed"})],
+			[POST, served({ id: 900, html_url: "https://example.test/o/r/issues/6566#c900" }, 201)],
+			[getComment(900), served({ body: "the marker never landed" })],
 		]);
 		expect(out.code).toBe(READBACK_MISMATCH);
 	});

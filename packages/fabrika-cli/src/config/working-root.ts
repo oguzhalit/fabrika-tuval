@@ -16,11 +16,11 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9020#issuecomment-5625285600
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import type {ConfigSource} from "./document.ts";
-import {type ConfigLayers, type Load, loadLayeredConfig} from "./load.ts";
-import {readConfigLayers, readConfigSource} from "./source.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import type { ConfigSource } from "./document.ts";
+import { type ConfigLayers, type Load, loadLayeredConfig } from "./load.ts";
+import { readConfigLayers, readConfigSource } from "./source.ts";
 
 /**
  * The config at the repo root above `cwd`, both layers, loaded.
@@ -70,7 +70,7 @@ export const repoConfigLayers = (
 			// would be the claim "this machine declared nothing" about a machine nobody looked at, and
 			// a per-key fall-through to a tracked layer that is itself UNKNOWN reads as the same green.
 			const reason = unlocated(cwd, root.failure.reason);
-			return {tracked: reason, local: reason};
+			return { tracked: reason, local: reason };
 		}
 		return yield* readConfigLayers(root.success ?? cwd);
 	});

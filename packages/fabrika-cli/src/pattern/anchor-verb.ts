@@ -10,11 +10,11 @@
  * absence named on stderr. A manifest that *does* carry a catalog this reader cannot comprehend is
  * UNKNOWN, never that degrade path. Conflicting pins refuse only when the doc declares that package.
  */
-import {Effect, type FileSystem, Result} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {exists} from "../io/fs.ts";
-import {fetchAndResolve, readFileAt} from "../io/git.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, type FileSystem, Result } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { exists } from "../io/fs.ts";
+import { fetchAndResolve, readFileAt } from "../io/git.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	type AnchorOutcome,
 	anchorOutcome,
@@ -23,9 +23,9 @@ import {
 	parseCatalog,
 	resolveDeclarations,
 } from "./anchor.ts";
-import {DOC_ABSENT, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {isKebabCase} from "./doc.ts";
-import {pathPresentAt} from "./git.ts";
+import { DOC_ABSENT, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { isKebabCase } from "./doc.ts";
+import { pathPresentAt } from "./git.ts";
 
 export interface AnchorOptions {
 	readonly slug: string;
@@ -81,7 +81,7 @@ export const runAnchor = (
 	FileSystem.FileSystem | ChildProcessSpawner.ChildProcessSpawner
 > =>
 	Effect.gen(function* () {
-		const {slug, dir, manifest, base} = options;
+		const { slug, dir, manifest, base } = options;
 		if (!isKebabCase(slug)) {
 			return refuse(
 				FAILED,

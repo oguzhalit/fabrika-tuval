@@ -22,15 +22,15 @@
  * text this verb already has open. A marked row is still
  * offered: the two exceptions are real, and a removed row cannot carry them.
  */
-import {Effect, Result} from "effect";
-import {dispatchMilestones, dispatchScopeLine, readCampaigns} from "../build/scope-admission.ts";
-import {exists, readFile} from "../io/fs.ts";
-import {listLabels, listOpenMilestones, resolveRepo} from "../io/issues.ts";
-import {answer, FAILED, refuse} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {parseRoadmap, type RoadmapRows, roadmapRowFor} from "./roadmap.ts";
-import {scannedLine} from "./scope.ts";
-import {offeredLanes, type StandingLane} from "./standing-lanes.ts";
+import { Effect, Result } from "effect";
+import { dispatchMilestones, dispatchScopeLine, readCampaigns } from "../build/scope-admission.ts";
+import { exists, readFile } from "../io/fs.ts";
+import { listLabels, listOpenMilestones, resolveRepo } from "../io/issues.ts";
+import { answer, FAILED, refuse } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { parseRoadmap, type RoadmapRows, roadmapRowFor } from "./roadmap.ts";
+import { scannedLine } from "./scope.ts";
+import { offeredLanes, type StandingLane } from "./standing-lanes.ts";
 
 /**
  * The roadmap side of the join: a file that was read and parsed, or one proven absent.
@@ -41,8 +41,8 @@ import {offeredLanes, type StandingLane} from "./standing-lanes.ts";
  * racing path answers about a different instant.) Absent joins to nothing; unreadable stays UNKNOWN.
  */
 type RoadmapSide =
-	| {readonly _tag: "Absent"}
-	| {readonly _tag: "Present"; readonly text: string; readonly rows: RoadmapRows};
+	| { readonly _tag: "Absent" }
+	| { readonly _tag: "Present"; readonly text: string; readonly rows: RoadmapRows };
 
 /** What the marked row says, on both channels — the subtraction, not a routing instruction. */
 export const RUNNING_MARKER = "running: p0/p1 or blocker";
@@ -80,7 +80,7 @@ const laneScopeLine = (
 };
 
 export const runHomes = Effect.fn("runHomes")(function* (options: HomesOptions) {
-	const {roadmap, json} = options;
+	const { roadmap, json } = options;
 
 	const repoAttempt = yield* resolveRepo(options.repo, options.env);
 	if (repoAttempt._tag === "Failure") {
@@ -134,7 +134,7 @@ export const runHomes = Effect.fn("runHomes")(function* (options: HomesOptions) 
 		);
 	}
 
-	let side: RoadmapSide = {_tag: "Absent"};
+	let side: RoadmapSide = { _tag: "Absent" };
 	if (probe.success) {
 		const read = yield* Effect.result(readFile(roadmap));
 		if (Result.isFailure(read)) {
@@ -144,7 +144,7 @@ export const runHomes = Effect.fn("runHomes")(function* (options: HomesOptions) 
 				[scope],
 			);
 		}
-		side = {_tag: "Present", text: read.success, rows: parseRoadmap(read.success)};
+		side = { _tag: "Present", text: read.success, rows: parseRoadmap(read.success) };
 	}
 
 	// Zero ARC rows is a failed parse, not a repo with no arcs: the table grammar belongs to the

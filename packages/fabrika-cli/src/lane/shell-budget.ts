@@ -24,7 +24,7 @@
  * reads once and records a verdict, a shipper walks a guard chain and enqueues — so
  * `build > review > ship` holds however the numbers move.
  */
-import {type ShellState, shellState} from "../wire/lane-brief.ts";
+import { type ShellState, shellState } from "../wire/lane-brief.ts";
 
 /** One kind of work's horizon, with the shape of the work that horizon is measuring. */
 export interface ShellBudget {
@@ -114,9 +114,9 @@ export const BUILD_CLAIM_BUDGET_MINUTES = SHELL_BUDGETS.build.minutes;
  * cost of a wrong eviction is a live shell's work.
  */
 export type Liveness =
-	| {readonly _tag: "Dead"; readonly ageMinutes: number; readonly budgetMinutes: number}
-	| {readonly _tag: "Live"; readonly ageMinutes: number; readonly budgetMinutes: number}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Dead"; readonly ageMinutes: number; readonly budgetMinutes: number }
+	| { readonly _tag: "Live"; readonly ageMinutes: number; readonly budgetMinutes: number }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 export const livenessOf = (
 	startedAt: string,
@@ -132,6 +132,6 @@ export const livenessOf = (
 	}
 	const ageMinutes = Math.max(0, Math.floor((nowEpochMs - startedEpochMs) / 60_000));
 	return ageMinutes >= budgetMinutes
-		? {_tag: "Dead", ageMinutes, budgetMinutes}
-		: {_tag: "Live", ageMinutes, budgetMinutes};
+		? { _tag: "Dead", ageMinutes, budgetMinutes }
+		: { _tag: "Live", ageMinutes, budgetMinutes };
 };

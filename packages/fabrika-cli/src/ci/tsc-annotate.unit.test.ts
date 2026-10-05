@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	type AnnotateContext,
 	annotationsFor,
@@ -8,8 +8,8 @@ import {
 
 const ctx: AnnotateContext = {
 	members: [
-		{name: "@example/lib", dir: "packages/lib"},
-		{name: "@example/site", dir: "apps/site"},
+		{ name: "@example/lib", dir: "packages/lib" },
+		{ name: "@example/site", dir: "apps/site" },
 	],
 	root: "/repo",
 };

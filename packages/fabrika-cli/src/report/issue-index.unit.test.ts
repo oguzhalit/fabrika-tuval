@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import type {IssueDocument} from "../io/issue-document.ts";
-import {closedCutoff, DuplicateIndex, inWindow, RETRIEVAL_LIMIT} from "./issue-index.ts";
+import { describe, expect, it } from "vitest";
+import type { IssueDocument } from "../io/issue-document.ts";
+import { closedCutoff, DuplicateIndex, inWindow, RETRIEVAL_LIMIT } from "./issue-index.ts";
 
 const issue = (number: number, title: string, body = ""): IssueDocument => ({
 	number,
@@ -29,7 +29,7 @@ describe("DuplicateIndex", () => {
 		expect(result.candidates.map((row) => row.number)).toContain(2);
 	});
 	it("excludes before ranking and breaks ties deterministically", () => {
-		const rows = Array.from({length: 22}, (_, i) => issue(i + 1, "retry helper"));
+		const rows = Array.from({ length: 22 }, (_, i) => issue(i + 1, "retry helper"));
 		const result = new DuplicateIndex(rows).search("retry helper", [], 1, 22);
 		expect(result.candidates[0]?.number).toBe(21);
 		expect(result.truncated).toBe(true);
@@ -68,10 +68,10 @@ describe("DuplicateIndex", () => {
 it("includes the closed boundary, excludes one millisecond before it, and keeps old open issues", () => {
 	const now = Date.parse("2026-09-19T12:00:00Z");
 	const cutoff = closedCutoff(now, 14);
-	const closed = {...issue(1, "old report"), state: "closed" as const, closed_at: cutoff};
+	const closed = { ...issue(1, "old report"), state: "closed" as const, closed_at: cutoff };
 	expect(inWindow(closed, cutoff, 14)).toBe(true);
 	expect(
-		inWindow({...closed, closed_at: new Date(Date.parse(cutoff) - 1).toISOString()}, cutoff, 14),
+		inWindow({ ...closed, closed_at: new Date(Date.parse(cutoff) - 1).toISOString() }, cutoff, 14),
 	).toBe(false);
 	expect(inWindow(closed, cutoff, 0)).toBe(false);
 	expect(inWindow(issue(2, "old open report"), cutoff, 14)).toBe(true);

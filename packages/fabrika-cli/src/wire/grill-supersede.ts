@@ -24,7 +24,7 @@
  * format's read output pipes straight back into its emit.
  */
 
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
 import {
 	FIELD_SEPARATOR,
 	type MarkerTime,
@@ -70,7 +70,7 @@ export const parseEntry = (payload: string): SupersedeEntry | string => {
 	if (at === null) {
 		return `"${afterRound.join(FIELD_SEPARATOR).trim()}" is not an ISO-8601 UTC timestamp — expected a Z-suffixed instant`;
 	}
-	return {question: head.question, digest: head.digest, round: Number(round), at};
+	return { question: head.question, digest: head.digest, round: Number(round), at };
 };
 
 export const read = (artifact: string): GrillSupersedeRead => {
@@ -94,7 +94,7 @@ export const read = (artifact: string): GrillSupersedeRead => {
 			artifact.slice(0, 120),
 		);
 	}
-	return {_tag: "Found", value: [first, ...rest]};
+	return { _tag: "Found", value: [first, ...rest] };
 };
 
 export const emitEntry = (entry: SupersedeEntry): string =>
@@ -128,7 +128,7 @@ export const emitFromFields = (fields: string): WireEmit => {
 	for (const [index, payload] of payloads.entries()) {
 		const parsed = parseEntry(payload.startsWith(`${KEY}:`) ? payloadOf(payload, KEY) : payload);
 		if (typeof parsed === "string")
-			return {_tag: "Unusable", reason: `line ${index + 1}: ${parsed}`};
+			return { _tag: "Unusable", reason: `line ${index + 1}: ${parsed}` };
 		entries.push(parsed);
 	}
 	const [first, ...rest] = entries;
@@ -138,11 +138,11 @@ export const emitFromFields = (fields: string): WireEmit => {
 			reason: "no entry lines were given — a supersede marker retires at least one question",
 		};
 	}
-	return {_tag: "Composed", bytes: emit([first, ...rest])};
+	return { _tag: "Composed", bytes: emit([first, ...rest]) };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderEntries(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderEntries(result.value) } : result;
 };

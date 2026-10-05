@@ -20,9 +20,9 @@
  * evidence before.
  */
 
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	attemptOf,
 	existenceOf,
@@ -31,9 +31,9 @@ import {
 	restRead,
 	restWrite,
 } from "../io/gh-api.ts";
-import {type Attempt, fail, ok} from "../io/git.ts";
-import {type Existence, type IssueRow, unknown} from "../io/issues.ts";
-import {isRecord} from "../io/json.ts";
+import { type Attempt, fail, ok } from "../io/git.ts";
+import { type Existence, type IssueRow, unknown } from "../io/issues.ts";
+import { isRecord } from "../io/json.ts";
 
 /**
  * What these functions need: the HTTP client they call over, and the spawner `resolveToken` may
@@ -117,7 +117,7 @@ export const openBacklog = (
 				return fail("GitHub answered 200 but one entry is not an issue row");
 			}
 			if (value.pull_request !== undefined && value.pull_request !== null) continue;
-			rows.push({number: value.number, title: value.title});
+			rows.push({ number: value.number, title: value.title });
 		}
 		return ok(rows);
 	});
@@ -158,11 +158,11 @@ export const createChildIssue = (
 			body: input.body,
 			labels: input.labels,
 			assignees: input.assignees,
-			...(input.milestone === null ? {} : {milestone: input.milestone}),
+			...(input.milestone === null ? {} : { milestone: input.milestone }),
 		});
 		return attemptOf(outcome, (payload) =>
 			isRecord(payload) && typeof payload.number === "number" && typeof payload.id === "number"
-				? ok({number: payload.number, id: payload.id})
+				? ok({ number: payload.number, id: payload.id })
 				: fail("GitHub answered 2xx but its body is not a created issue"),
 		);
 	});
@@ -202,7 +202,7 @@ export const unlinkSubIssue = (
 			token.value,
 			"DELETE",
 			`repos/${repo}/issues/${epic}/sub_issue`,
-			{sub_issue_id: id},
+			{ sub_issue_id: id },
 		);
 		return attemptOf(outcome, () => ok<void>(undefined));
 	});

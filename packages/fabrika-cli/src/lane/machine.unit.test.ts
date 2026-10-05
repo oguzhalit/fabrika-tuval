@@ -1,9 +1,9 @@
-import {describe, expect, it} from "vitest";
-import {readGoldenFixture} from "../golden-fixture.ts";
-import {classifyPark, isPark} from "../recipe/parks.ts";
-import {MACHINERY_LAP_BUDGET, RETRY_BUDGET} from "../retry-budget.ts";
-import {WAIT_BUDGET} from "../wait-budget.ts";
-import {seedClasses} from "./class-seed.ts";
+import { describe, expect, it } from "vitest";
+import { readGoldenFixture } from "../golden-fixture.ts";
+import { classifyPark, isPark } from "../recipe/parks.ts";
+import { MACHINERY_LAP_BUDGET, RETRY_BUDGET } from "../retry-budget.ts";
+import { WAIT_BUDGET } from "../wait-budget.ts";
+import { seedClasses } from "./class-seed.ts";
 import {
 	choreWorkflow,
 	coderTemplateText,
@@ -11,7 +11,7 @@ import {
 	stateNode,
 	twoPhaseWorkflow,
 } from "./fixtures.test-support.ts";
-import {applyEvent, foldLog, type LogEntry, standingCauses} from "./fold.ts";
+import { applyEvent, foldLog, type LogEntry, standingCauses } from "./fold.ts";
 import {
 	CANCELLED_EVENT,
 	CANCELLED_STATE,
@@ -26,7 +26,7 @@ import {
 	type TaskState,
 	topology,
 } from "./machine.ts";
-import {causeForEvent, eventForToken, routeForCause} from "./report.ts";
+import { causeForEvent, eventForToken, routeForCause } from "./report.ts";
 
 const compiled = (workflow: unknown) => {
 	const result = compile(workflow);
@@ -61,7 +61,7 @@ const drive = (
 	task: string,
 	events: ReadonlyArray<Step>,
 	classes: ReadonlyArray<string> | null = null,
-): {readonly leaves: ReadonlyArray<string>; readonly state: TaskState} => {
+): { readonly leaves: ReadonlyArray<string>; readonly state: TaskState } => {
 	const log: LogEntry[] = [];
 	const statesOf = () => {
 		const fold = foldLog(lane, log);
@@ -88,7 +88,7 @@ const drive = (
 		log.push(applied.entry);
 		return defined(statesOf()[task]).type;
 	});
-	return {leaves: reached, state: defined(statesOf()[task])};
+	return { leaves: reached, state: defined(statesOf()[task]) };
 };
 
 const leaves = (
@@ -113,7 +113,7 @@ const driven = (
 	task: string,
 	events: ReadonlyArray<string>,
 	cause: string | null = null,
-): {readonly state: TaskState; readonly cause: string | undefined} => {
+): { readonly state: TaskState; readonly cause: string | undefined } => {
 	const log: LogEntry[] = [];
 	const statesOf = () => {
 		const fold = foldLog(lane, log);
@@ -124,9 +124,9 @@ const driven = (
 		const applied = applyEvent(lane, statesOf(), task, event, "2026-08-20T00:00:00.000Z");
 		if (applied._tag !== "Applied") throw new Error(`${task} ${event}: ${applied.reason}`);
 		const last = index === events.length - 1 && cause !== null;
-		log.push(last ? {...applied.entry, cause} : applied.entry);
+		log.push(last ? { ...applied.entry, cause } : applied.entry);
 	}
-	return {state: defined(statesOf()[task]), cause: standingCauses(log)[task]};
+	return { state: defined(statesOf()[task]), cause: standingCauses(log)[task] };
 };
 
 /**
@@ -158,7 +158,7 @@ const cellTable = (lane: CompiledLane, taskId: string): string => {
 						maxLaps: MACHINERY_LAP_BUDGET,
 						was: "review",
 					};
-					const [next] = defined(cells[event])(from, {type: event, classes});
+					const [next] = defined(cells[event])(from, { type: event, classes });
 					const carried = classes.length === 0 ? "-" : classes.join(",");
 					rows.push(
 						`${state}\t${event}\t${carried}\t${retries}/${RETRY_BUDGET}\t-> ${next.type}\t${next.retries}/${RETRY_BUDGET}\t${next.laps}/${MACHINERY_LAP_BUDGET}`,
@@ -190,8 +190,8 @@ const machineStates = (
 
 /** Reach one phase-1 task region's `states` map, for a test to add a state to it. */
 const regionStates = (workflow: Record<string, unknown>, task: string): Record<string, unknown> => {
-	type Loose = Record<string, {states: Record<string, {states: Record<string, unknown>}>}>;
-	const phases = (workflow.machine as {states: Loose}).states;
+	type Loose = Record<string, { states: Record<string, { states: Record<string, unknown> }> }>;
+	const phases = (workflow.machine as { states: Loose }).states;
 	const region = phases.phase1?.states[task];
 	if (region === undefined) throw new Error(`fixture holds no task ${task}`);
 	return region.states;
@@ -201,8 +201,8 @@ describe("the compiler — structural recognition", () => {
 	it("compiles the committed coder template", () => {
 		const lane = compiled(coderWorkflow());
 
-		expect(lane.phases).toEqual([{name: "pipeline", tasks: ["issue"]}]);
-		expect(lane.terminals).toEqual({complete: "complete", tripped: "tripped"});
+		expect(lane.phases).toEqual([{ name: "pipeline", tasks: ["issue"] }]);
+		expect(lane.terminals).toEqual({ complete: "complete", tripped: "tripped" });
 		expect(defined(lane.tasks.issue).initial).toEqual({
 			type: "queued",
 			retries: 0,
@@ -246,8 +246,8 @@ describe("the compiler — structural recognition", () => {
 		// A WIP-guarded array spends `waits`, and its spent fallthrough is a park that names the stall
 		// — not a fall back into the error final a resume just left, so it is no resume hazard.
 		stateNode(workflow, "task_a", "doing").on["TASK_A.WIP"] = [
-			{target: "doing"},
-			{target: "tripped"},
+			{ target: "doing" },
+			{ target: "tripped" },
 		];
 
 		const lane = compiled(workflow);
@@ -279,8 +279,8 @@ describe("the compiler — structural recognition", () => {
 		const noNames = twoPhaseWorkflow();
 		// Strip every guard/action name — the arms are bare targets and must compile identically.
 		stateNode(noNames, "task_a", "checking").on["TASK_A.FAIL"] = [
-			{target: "doing"},
-			{target: "tripped"},
+			{ target: "doing" },
+			{ target: "tripped" },
 		];
 
 		const lane = compiled(noNames);
@@ -291,7 +291,7 @@ describe("the compiler — structural recognition", () => {
 		const lane = compiled(twoPhaseWorkflow());
 
 		expect(defined(lane.tasks.task_a).initial.maxRetries).toBe(2);
-		expect(defined(lane.tasks.task_a).extras).toEqual({code: true});
+		expect(defined(lane.tasks.task_a).extras).toEqual({ code: true });
 		expect(defined(lane.tasks.task_b).initial.maxRetries).toBe(3);
 	});
 
@@ -359,13 +359,13 @@ describe("the compiler — structural recognition", () => {
 		// moves a branch, so routing there re-verdicted an unchanged head and spent a retry per lap
 		// — so this template routes a ship FAIL to repair rather than back to review.
 		const roundTrip = ["FAIL", "DONE", "PASS"];
-		const repairs = Array.from({length: RETRY_BUDGET}, () => roundTrip).flat();
+		const repairs = Array.from({ length: RETRY_BUDGET }, () => roundTrip).flat();
 
 		expect(leaves(lane, "issue", ["WIP", "DONE", "PASS", ...repairs, "FAIL"])).toEqual([
 			"build",
 			"review",
 			"ship",
-			...Array.from({length: RETRY_BUDGET}, () => ["build", "review", "ship"]).flat(),
+			...Array.from({ length: RETRY_BUDGET }, () => ["build", "review", "ship"]).flat(),
 			"human:budget-spent",
 		]);
 	});
@@ -388,8 +388,8 @@ describe("the compiler — structural recognition", () => {
 			"head-behind-base",
 		);
 
-		expect(conflicted.state).toMatchObject({type: "build", retries: 0, laps: 1});
-		expect(drifted.state).toMatchObject({type: "ship", retries: 0, laps: 1});
+		expect(conflicted.state).toMatchObject({ type: "build", retries: 0, laps: 1 });
+		expect(drifted.state).toMatchObject({ type: "ship", retries: 0, laps: 1 });
 	});
 
 	it("routes a UI-class lane through build:ui and review:ui, and back to build:ui on a FAIL", () => {
@@ -432,7 +432,7 @@ describe("the compiler — structural recognition", () => {
 	it("returns a mixed lane's repair rounds to build:mixed out of either review cell", () => {
 		const lane = compiled(coderWorkflow());
 
-		const {leaves: reached, state} = drive(
+		const { leaves: reached, state } = drive(
 			lane,
 			"issue",
 			["WIP", "DONE", "FAIL", "DONE", "PASS", "FAIL"],
@@ -454,13 +454,13 @@ describe("the compiler — structural recognition", () => {
 		const lane = compiled(coderWorkflow());
 
 		expect(
-			leaves(lane, "issue", ["WIP", "DONE", {event: "FAIL", classes: ["code", "ui"]}], ["ui"]),
+			leaves(lane, "issue", ["WIP", "DONE", { event: "FAIL", classes: ["code", "ui"] }], ["ui"]),
 		).toEqual(["build:ui", "review", "build:mixed"]);
 	});
 
 	it("parks a mixed lane whose repair budget is spent instead of looping in build:mixed", () => {
 		const lane = compiled(coderWorkflow());
-		const rounds = Array.from({length: RETRY_BUDGET + 1}, () => ["DONE", "FAIL"]).flat();
+		const rounds = Array.from({ length: RETRY_BUDGET + 1 }, () => ["DONE", "FAIL"]).flat();
 
 		expect(leaves(lane, "issue", ["WIP", ...rounds], ["code", "ui"]).at(-1)).toBe(
 			"human:budget-spent",
@@ -499,7 +499,7 @@ describe("the compiler — structural recognition", () => {
 		if (seed._tag !== "Seeded") throw new Error(`expected a seeded document, got ${seed._tag}`);
 		const lane = compiled(JSON.parse(seed.text));
 
-		expect(leaves(lane, "issue", ["WIP", "DONE", {event: "PASS", classes: ["code"]}])).toEqual([
+		expect(leaves(lane, "issue", ["WIP", "DONE", { event: "PASS", classes: ["code"] }])).toEqual([
 			"build:ui",
 			"review",
 			"ship",
@@ -544,7 +544,7 @@ describe("the compiler — structural recognition", () => {
 	it("compiles the committed chore template, carrying its declared trigger", () => {
 		const lane = compiled(choreWorkflow());
 
-		expect(lane.phases).toEqual([{name: "sweep", tasks: ["park_sweep"]}]);
+		expect(lane.phases).toEqual([{ name: "sweep", tasks: ["park_sweep"] }]);
 		expect(lane.trigger).toBe("lane-parked");
 		expect(topology(lane).trigger).toBe("lane-parked");
 		expect(defined(lane.tasks.park_sweep).initial).toEqual({
@@ -593,7 +593,7 @@ describe("the compiler — structural recognition", () => {
 	it("refuses a document that names a state one of the compiler's board finals owns", () => {
 		for (const state of [CANCELLED_STATE, LANDED_STATE]) {
 			const workflow = twoPhaseWorkflow();
-			regionStates(workflow, "task_a")[state] = {type: "final"};
+			regionStates(workflow, "task_a")[state] = { type: "final" };
 
 			expect(defectsOf(workflow)).toContain(
 				`state "${state}" is one of the compiler's own board-proven finals`,
@@ -619,7 +619,7 @@ describe("the compiler — refusals", () => {
 
 	it("refuses a guarded array that is not the two-arm shape", () => {
 		const workflow = twoPhaseWorkflow();
-		stateNode(workflow, "task_a", "checking").on["TASK_A.FAIL"] = [{target: "doing"}];
+		stateNode(workflow, "task_a", "checking").on["TASK_A.FAIL"] = [{ target: "doing" }];
 
 		expect(defectsOf(workflow)).toContain("two-arm pair");
 	});
@@ -627,9 +627,9 @@ describe("the compiler — refusals", () => {
 	it("refuses a lap:<cause> arm on an event that carries no cause", () => {
 		const workflow = twoPhaseWorkflow();
 		stateNode(workflow, "task_a", "checking").on["TASK_A.FAIL"] = [
-			{target: "doing", guard: "lap:base-conflicted"},
-			{target: "doing", guard: "retriesRemaining", actions: "incrementRetries"},
-			{target: "tripped"},
+			{ target: "doing", guard: "lap:base-conflicted" },
+			{ target: "doing", guard: "retriesRemaining", actions: "incrementRetries" },
+			{ target: "tripped" },
 		];
 
 		expect(defectsOf(workflow)).toContain("could never be taken");
@@ -638,16 +638,16 @@ describe("the compiler — refusals", () => {
 	it("refuses a lap:<cause> arm that names no target", () => {
 		const workflow = twoPhaseWorkflow();
 		stateNode(workflow, "task_a", "checking").on["TASK_A.LAP"] = [
-			{guard: "lap:base-conflicted"},
-			{target: "checking", guard: "lapsRemaining", actions: "incrementLaps"},
-			{target: "tripped"},
+			{ guard: "lap:base-conflicted" },
+			{ target: "checking", guard: "lapsRemaining", actions: "incrementLaps" },
+			{ target: "tripped" },
 		];
 
 		expect(defectsOf(workflow)).toContain("routes nowhere");
 	});
 
 	it("refuses a machine with no parallel phase, and one with no readable onDone pair", () => {
-		expect(defectsOf({machine: {states: {alone: {type: "final"}}}})).toContain("parallel");
+		expect(defectsOf({ machine: { states: { alone: { type: "final" } } } })).toContain("parallel");
 
 		const noGate = twoPhaseWorkflow();
 		const phase1 = ((noGate.machine as Record<string, unknown>).states as Record<string, unknown>)
@@ -668,8 +668,8 @@ describe("the compiler — refusals", () => {
 	it("refuses an `onDone` target that names no machine-level state", () => {
 		const workflow = twoPhaseWorkflow();
 		defined(machineStates(workflow).phase2).onDone = [
-			{target: "compleet", guard: "noErrors"},
-			{target: "tripped"},
+			{ target: "compleet", guard: "noErrors" },
+			{ target: "tripped" },
 		];
 
 		expect(defectsOf(workflow)).toContain('unknown machine-level state "compleet"');
@@ -678,8 +678,8 @@ describe("the compiler — refusals", () => {
 	it("refuses a guard spelled like a routing one that matches none of the three", () => {
 		const workflow = twoPhaseWorkflow();
 		stateNode(workflow, "task_a", "doing").on["TASK_A.DONE"] = [
-			{target: "checking", guard: "done:diagnosiss"},
-			{target: "doing"},
+			{ target: "checking", guard: "done:diagnosiss" },
+			{ target: "doing" },
 		];
 
 		// Read as the budget guard it would compile, match nothing, spend a wait and land in the arm
@@ -690,8 +690,8 @@ describe("the compiler — refusals", () => {
 	it("leaves a bare guard word the budget guard it has always been", () => {
 		const workflow = twoPhaseWorkflow();
 		stateNode(workflow, "task_a", "doing").on["TASK_A.DONE"] = [
-			{target: "checking", guard: "retriesRemaining"},
-			{target: "doing"},
+			{ target: "checking", guard: "retriesRemaining" },
+			{ target: "doing" },
 		];
 
 		expect(compile(workflow)._tag).toBe("Compiled");
@@ -705,7 +705,7 @@ describe("the compiler — refusals", () => {
 
 	it("refuses a machine-level final no `onDone` pair reaches", () => {
 		const workflow = twoPhaseWorkflow();
-		machineStates(workflow).orphan = {type: "final"};
+		machineStates(workflow).orphan = { type: "final" };
 
 		expect(defectsOf(workflow)).toContain(
 			'machine-level final "orphan" is targeted by no phase\'s `onDone` pair',
@@ -713,7 +713,7 @@ describe("the compiler — refusals", () => {
 	});
 
 	it("refuses a `trigger` that is not a string, rather than ignoring the declaration", () => {
-		const workflow = {...twoPhaseWorkflow(), trigger: {on: "lane-parked"}};
+		const workflow = { ...twoPhaseWorkflow(), trigger: { on: "lane-parked" } };
 
 		expect(defectsOf(workflow)).toContain("`trigger` must be a string");
 	});
@@ -749,7 +749,7 @@ describe("`done:diagnosis` — an investigation's terminal skips the review it o
 	const lane = () => compiled(coderWorkflow());
 
 	it("carries a diagnosis-proven DONE straight to `diagnosed`, never through `review`", () => {
-		expect(leaves(lane(), "issue", ["WIP", {event: "DONE", diagnosis: true}])).toEqual([
+		expect(leaves(lane(), "issue", ["WIP", { event: "DONE", diagnosis: true }])).toEqual([
 			"build",
 			"diagnosed",
 		]);
@@ -764,7 +764,7 @@ describe("`done:diagnosis` — an investigation's terminal skips the review it o
 	it("leaves an epic child's DONE — `BUILT-NO-PR` — folding to `review` too", () => {
 		// The prover answers `diagnosis` off its no-PR arm alone, and a child's DONE is proven off the
 		// commits its range adds; the payload it carries here is the `false` that stands for both.
-		expect(leaves(lane(), "issue", ["WIP", {event: "DONE", diagnosis: false}])).toEqual([
+		expect(leaves(lane(), "issue", ["WIP", { event: "DONE", diagnosis: false }])).toEqual([
 			"build",
 			"review",
 		]);
@@ -772,17 +772,19 @@ describe("`done:diagnosis` — an investigation's terminal skips the review it o
 
 	it("is a terminal the lane cannot walk out of — nothing follows a finished investigation", () => {
 		expect(() =>
-			leaves(lane(), "issue", ["WIP", {event: "DONE", diagnosis: true}, "PASS"]),
+			leaves(lane(), "issue", ["WIP", { event: "DONE", diagnosis: true }, "PASS"]),
 		).toThrow(/diagnosed/);
 	});
 
 	it("spends neither budget reaching it", () => {
-		expect(drive(lane(), "issue", ["WIP", {event: "DONE", diagnosis: true}]).state).toMatchObject({
-			type: "diagnosed",
-			retries: 0,
-			waits: 0,
-			laps: 0,
-		});
+		expect(drive(lane(), "issue", ["WIP", { event: "DONE", diagnosis: true }]).state).toMatchObject(
+			{
+				type: "diagnosed",
+				retries: 0,
+				waits: 0,
+				laps: 0,
+			},
+		);
 	});
 });
 
@@ -796,14 +798,14 @@ describe("`merge:partial` — a merge that closed nothing sends the lane round",
 	});
 
 	it("sends a `Part of #N` merge back to `queued`, a state an operator can spawn against", () => {
-		expect(leaves(lane(), "issue", [...toShip, {event: "DONE", partial: true}])).toEqual([
+		expect(leaves(lane(), "issue", [...toShip, { event: "DONE", partial: true }])).toEqual([
 			...reached,
 			"queued",
 		]);
 	});
 
 	it("takes the same arm out of the queue dwell, where a partial merge also lands", () => {
-		expect(leaves(lane(), "issue", [...toShip, "WIP", {event: "DONE", partial: true}])).toEqual([
+		expect(leaves(lane(), "issue", [...toShip, "WIP", { event: "DONE", partial: true }])).toEqual([
 			...reached,
 			"ship:queued",
 			"queued",
@@ -814,7 +816,7 @@ describe("`merge:partial` — a merge that closed nothing sends the lane round",
 	it("folds to `shipped` on the round whose merge does close the issue", () => {
 		const round: ReadonlyArray<Step> = [
 			...toShip,
-			{event: "DONE", partial: true},
+			{ event: "DONE", partial: true },
 			...toShip,
 			"DONE",
 		];
@@ -827,9 +829,9 @@ describe("`merge:partial` — a merge that closed nothing sends the lane round",
 	it("spends neither budget on the way round", () => {
 		const twice: ReadonlyArray<Step> = [
 			...toShip,
-			{event: "DONE", partial: true},
+			{ event: "DONE", partial: true },
 			...toShip,
-			{event: "DONE", partial: true},
+			{ event: "DONE", partial: true },
 		];
 
 		expect(drive(lane(), "issue", twice).state).toMatchObject({
@@ -860,11 +862,11 @@ describe("`ship:queued` — a proven-clean enqueue is a wait, not a park", () =>
 	});
 
 	it("re-enters itself for WAIT_BUDGET re-folds, then escalates to its own human park", () => {
-		const waiting = Array.from({length: WAIT_BUDGET + 2}, () => "WIP");
+		const waiting = Array.from({ length: WAIT_BUDGET + 2 }, () => "WIP");
 
 		expect(leaves(compiled(coderWorkflow()), "issue", [...toShip, ...waiting])).toEqual([
 			...reached,
-			...Array.from({length: WAIT_BUDGET + 1}, () => "ship:queued"),
+			...Array.from({ length: WAIT_BUDGET + 1 }, () => "ship:queued"),
 			"human:queue-stall",
 		]);
 	});
@@ -874,29 +876,29 @@ describe("`ship:queued` — a proven-clean enqueue is a wait, not a park", () =>
 	// all, since the §CP row keys on the approval wait's cause; its own leaf is what seats it on the
 	// queue-moved recipe instead.
 	it("escalates to a park the recipe table seats on its own row, never the §CP one", () => {
-		const stalled = [...toShip, ...Array.from({length: WAIT_BUDGET + 2}, () => "WIP")];
+		const stalled = [...toShip, ...Array.from({ length: WAIT_BUDGET + 2 }, () => "WIP")];
 		const leaf = defined(leaves(compiled(coderWorkflow()), "issue", stalled).at(-1));
 		const seated = classifyPark(leaf, null);
 
 		expect(isPark(leaf)).toBe(true);
-		expect(seated).toMatchObject({_tag: "Known", recipe: {clearance: "queue-moved"}});
-		expect(classifyPark("human:cp-approval", null)).toMatchObject({_tag: "Novel"});
+		expect(seated).toMatchObject({ _tag: "Known", recipe: { clearance: "queue-moved" } });
+		expect(classifyPark("human:cp-approval", null)).toMatchObject({ _tag: "Novel" });
 	});
 
 	it("clears the stall back into the wait cell only on a resume that grants the waits", () => {
-		const stalled = [...toShip, ...Array.from({length: WAIT_BUDGET + 2}, () => "WIP")];
+		const stalled = [...toShip, ...Array.from({ length: WAIT_BUDGET + 2 }, () => "WIP")];
 		const lane = compiled(coderWorkflow());
 
 		expect(() => leaves(lane, "issue", [...stalled, "UNBLOCKED"])).toThrow(
 			/the state comes back and the wait budget does not/,
 		);
-		expect(leaves(lane, "issue", [...stalled, {event: "UNBLOCKED", waitGrant: 1}]).at(-1)).toBe(
+		expect(leaves(lane, "issue", [...stalled, { event: "UNBLOCKED", waitGrant: 1 }]).at(-1)).toBe(
 			"ship:queued",
 		);
 	});
 
 	it("spends `waits`, leaving the repair budget a later FAIL draws on untouched", () => {
-		const waiting = Array.from({length: WAIT_BUDGET + 1}, () => "WIP");
+		const waiting = Array.from({ length: WAIT_BUDGET + 1 }, () => "WIP");
 
 		expect(budgets(compiled(coderWorkflow()), "issue", [...toShip, ...waiting])).toMatchObject({
 			type: "ship:queued",
@@ -910,7 +912,7 @@ describe("`ship:queued` — a proven-clean enqueue is a wait, not a park", () =>
 		const ejected = [...toShip, "WIP", "FAIL"];
 
 		expect(leaves(lane, "issue", ejected)).toEqual([...reached, "ship:queued", "build"]);
-		expect(budgets(lane, "issue", ejected)).toMatchObject({retries: 1, waits: 0});
+		expect(budgets(lane, "issue", ejected)).toMatchObject({ retries: 1, waits: 0 });
 	});
 
 	it("still parks a genuine block out of `ship` on `human:cp-approval`", () => {
@@ -934,7 +936,7 @@ describe("`ship:queued` — a proven-clean enqueue is a wait, not a park", () =>
 			"ship",
 			"human:cp-approval",
 		]);
-		expect(budgets(lane, "issue", rereviewed)).toMatchObject({retries: 0, waits: 0, laps: 0});
+		expect(budgets(lane, "issue", rereviewed)).toMatchObject({ retries: 0, waits: 0, laps: 0 });
 		expect(leaves(lane, "issue", [...rereviewed, "UNBLOCKED"]).at(-1)).toBe("ship");
 	});
 
@@ -944,7 +946,7 @@ describe("`ship:queued` — a proven-clean enqueue is a wait, not a park", () =>
 		const failed = [...toShip, "BLOCKED", "WIP", "FAIL"];
 
 		expect(leaves(lane, "issue", failed).slice(-2)).toEqual(["review", "build"]);
-		expect(budgets(lane, "issue", failed)).toMatchObject({type: "build", retries: 1});
+		expect(budgets(lane, "issue", failed)).toMatchObject({ type: "build", retries: 1 });
 	});
 
 	// The landing's route out: it is recorded from the state the lane resumes into by `UNBLOCKED`,
@@ -985,7 +987,7 @@ describe("`ship` FAIL routes to repair, and a base-drift stop spends nothing", (
 		const lane = compiled(coderWorkflow());
 		const spent = [
 			...toShip,
-			...Array.from({length: RETRY_BUDGET}, () => ["FAIL", "DONE", "PASS"]).flat(),
+			...Array.from({ length: RETRY_BUDGET }, () => ["FAIL", "DONE", "PASS"]).flat(),
 			"FAIL",
 		];
 
@@ -1024,7 +1026,7 @@ describe("`ship` FAIL routes to repair, and a base-drift stop spends nothing", (
 		const lane = compiled(coderWorkflow());
 		const spent = [
 			...toShip,
-			...Array.from({length: RETRY_BUDGET}, () => ["FAIL", "DONE", "PASS"]).flat(),
+			...Array.from({ length: RETRY_BUDGET }, () => ["FAIL", "DONE", "PASS"]).flat(),
 			"BLOCKED",
 			"FAIL",
 		];
@@ -1089,18 +1091,18 @@ describe("`class:<name>` leading a budget pair — a route, not the cell", () =>
 	const routed = (): Record<string, unknown> => {
 		const workflow = twoPhaseWorkflow();
 		regionStates(workflow, "task_a")["doing:ui"] = {
-			on: {"TASK_A.DONE": "checking", "TASK_A.BLOCKED": "blocked"},
+			on: { "TASK_A.DONE": "checking", "TASK_A.BLOCKED": "blocked" },
 		};
 		stateNode(workflow, "task_a", "checking").on["TASK_A.FAIL"] = [
-			{target: "doing:ui", guard: "class:ui"},
-			{target: "doing", guard: "retriesRemaining", actions: "incrementRetries"},
-			{target: "tripped"},
+			{ target: "doing:ui", guard: "class:ui" },
+			{ target: "doing", guard: "retriesRemaining", actions: "incrementRetries" },
+			{ target: "tripped" },
 		];
 		return workflow;
 	};
 
 	it("routes a classed FAIL to the class's own cell, and spends the retry doing it", () => {
-		const {state} = drive(compiled(routed()), "task_a", ["DONE", "FAIL"], ["ui"]);
+		const { state } = drive(compiled(routed()), "task_a", ["DONE", "FAIL"], ["ui"]);
 
 		expect(state.type).toBe("doing:ui");
 		expect(state.retries).toBe(1);
@@ -1126,9 +1128,9 @@ describe("`class:<name>` leading a budget pair — a route, not the cell", () =>
 	it("refuses a leading class arm that names no target", () => {
 		const workflow = routed();
 		stateNode(workflow, "task_a", "checking").on["TASK_A.FAIL"] = [
-			{guard: "class:ui"},
-			{target: "doing", guard: "retriesRemaining", actions: "incrementRetries"},
-			{target: "tripped"},
+			{ guard: "class:ui" },
+			{ target: "doing", guard: "retriesRemaining", actions: "incrementRetries" },
+			{ target: "tripped" },
 		];
 
 		expect(defectsOf(workflow)).toContain("routes nowhere");
@@ -1144,15 +1146,15 @@ describe("`class:<name>` arms above a fallthrough — the cell itself", () => {
 	const celled = (arms: ReadonlyArray<Record<string, unknown>>): Record<string, unknown> => {
 		const workflow = twoPhaseWorkflow();
 		for (const name of ["doing:ui", "doing:mixed"]) {
-			regionStates(workflow, "task_a")[name] = {on: {"TASK_A.DONE": "checking"}};
+			regionStates(workflow, "task_a")[name] = { on: { "TASK_A.DONE": "checking" } };
 		}
 		stateNode(workflow, "task_a", "checking").on["TASK_A.WIP"] = arms;
 		return workflow;
 	};
 	const threeArms = [
-		{target: "doing:mixed", guard: "class:mixed"},
-		{target: "doing:ui", guard: "class:ui"},
-		{target: "doing"},
+		{ target: "doing:mixed", guard: "class:mixed" },
+		{ target: "doing:ui", guard: "class:ui" },
+		{ target: "doing" },
 	];
 
 	it.each([
@@ -1161,49 +1163,49 @@ describe("`class:<name>` arms above a fallthrough — the cell itself", () => {
 		["the fallthrough when no arm's class stands", ["code"], "doing"],
 		["the fallthrough on an unclassed task", null, "doing"],
 	])("takes %s, spending nothing", (_, classes, target) => {
-		const {state} = drive(compiled(celled(threeArms)), "task_a", [
+		const { state } = drive(compiled(celled(threeArms)), "task_a", [
 			"DONE",
-			{event: "WIP", ...(classes === null ? {} : {classes})},
+			{ event: "WIP", ...(classes === null ? {} : { classes }) },
 		]);
 
-		expect(state).toMatchObject({type: target, retries: 0, waits: 0, laps: 0});
+		expect(state).toMatchObject({ type: target, retries: 0, waits: 0, laps: 0 });
 	});
 
 	it("keeps the two-arm class form the cell it always was", () => {
-		const twoArms = [{target: "doing:ui", guard: "class:ui"}, {target: "doing"}];
-		const {state} = drive(compiled(celled(twoArms)), "task_a", [
+		const twoArms = [{ target: "doing:ui", guard: "class:ui" }, { target: "doing" }];
+		const { state } = drive(compiled(celled(twoArms)), "task_a", [
 			"DONE",
-			{event: "WIP", classes: ["ui"]},
+			{ event: "WIP", classes: ["ui"] },
 		]);
 
-		expect(state).toMatchObject({type: "doing:ui", retries: 0, waits: 0});
+		expect(state).toMatchObject({ type: "doing:ui", retries: 0, waits: 0 });
 	});
 
 	it("refuses an array whose non-final arm carries no class guard", () => {
 		const workflow = celled([
-			{target: "doing:mixed", guard: "class:mixed"},
-			{target: "doing:ui"},
-			{target: "doing:ui", guard: "class:ui"},
-			{target: "doing"},
+			{ target: "doing:mixed", guard: "class:mixed" },
+			{ target: "doing:ui" },
+			{ target: "doing:ui", guard: "class:ui" },
+			{ target: "doing" },
 		]);
 
 		expect(defectsOf(workflow)).toContain("must end in a two-arm pair");
 	});
 
 	it("refuses a class arm that names no target", () => {
-		const workflow = celled([{guard: "class:mixed"}, ...threeArms.slice(1)]);
+		const workflow = celled([{ guard: "class:mixed" }, ...threeArms.slice(1)]);
 
 		expect(defectsOf(workflow)).toContain("routes nowhere");
 	});
 
 	it("leaves the two-arm budget cell spending its event's own counter", () => {
 		const workflow = celled([
-			{target: "checking", guard: "waitsRemaining", actions: "incrementWaits"},
-			{target: "tripped"},
+			{ target: "checking", guard: "waitsRemaining", actions: "incrementWaits" },
+			{ target: "tripped" },
 		]);
 		const lane = compiled(workflow);
 
-		expect(drive(lane, "task_a", ["DONE", "WIP"]).state).toMatchObject({retries: 0, waits: 1});
-		expect(drive(lane, "task_a", ["DONE", "FAIL"]).state).toMatchObject({retries: 1, waits: 0});
+		expect(drive(lane, "task_a", ["DONE", "WIP"]).state).toMatchObject({ retries: 0, waits: 1 });
+		expect(drive(lane, "task_a", ["DONE", "FAIL"]).state).toMatchObject({ retries: 1, waits: 0 });
 	});
 });

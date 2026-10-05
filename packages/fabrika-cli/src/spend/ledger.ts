@@ -13,8 +13,8 @@
  * runner — `eval`'s `SpendRow` satisfies it, and so does a synthetic row in a test — which is
  * what lets the roll-up read this ledger without depending on the eval harness that writes it.
  */
-import {Result} from "effect";
-import type {RunSpend, StageSpend} from "./token-spend.ts";
+import { Result } from "effect";
+import type { RunSpend, StageSpend } from "./token-spend.ts";
 
 /**
  * The default ledger, stated repo-relative so no machine-local path literal reaches a source file.
@@ -123,8 +123,8 @@ const num = (value: unknown): number | null =>
  */
 const decodeSpend = (value: unknown): RunSpend | null => {
 	if (!isRecord(value)) return null;
-	if (value._tag === "TranscriptMissing") return {_tag: "TranscriptMissing"};
-	if (value._tag === "NoBilledTurns") return {_tag: "NoBilledTurns"};
+	if (value._tag === "TranscriptMissing") return { _tag: "TranscriptMissing" };
+	if (value._tag === "NoBilledTurns") return { _tag: "NoBilledTurns" };
 	if (value._tag !== "Reconstructed" || !isRecord(value.spend)) return null;
 	const raw = value.spend;
 	const input = num(raw.input);
@@ -157,20 +157,20 @@ const decodeSpend = (value: unknown): RunSpend | null => {
 		assistantTurns,
 		model,
 	};
-	return {_tag: "Reconstructed", spend};
+	return { _tag: "Reconstructed", spend };
 };
 
 /** One line's three outcomes — the same split {@link LedgerSkips} reports. */
 type LineRead =
-	| {readonly _tag: "Row"; readonly row: LedgerRow}
-	| {readonly _tag: "NewerVersion"}
-	| {readonly _tag: "Malformed"};
+	| { readonly _tag: "Row"; readonly row: LedgerRow }
+	| { readonly _tag: "NewerVersion" }
+	| { readonly _tag: "Malformed" };
 
-const MALFORMED: LineRead = {_tag: "Malformed"};
-const NEWER_VERSION: LineRead = {_tag: "NewerVersion"};
+const MALFORMED: LineRead = { _tag: "Malformed" };
+const NEWER_VERSION: LineRead = { _tag: "NewerVersion" };
 
 const decodeLine = (line: string): LineRead => {
-	const decoded = Result.try({try: (): unknown => JSON.parse(line), catch: () => null});
+	const decoded = Result.try({ try: (): unknown => JSON.parse(line), catch: () => null });
 	if (Result.isFailure(decoded)) return MALFORMED;
 	const parsed = decoded.success;
 	if (!isRecord(parsed)) return MALFORMED;
@@ -201,7 +201,7 @@ const decodeLine = (line: string): LineRead => {
 	if (cliVersion !== null && typeof cliVersion !== "string") return MALFORMED;
 	return {
 		_tag: "Row",
-		row: {skillName, stage, caseId, arm, model, sessionId, cliVersion, recordedAt, spend},
+		row: { skillName, stage, caseId, arm, model, sessionId, cliVersion, recordedAt, spend },
 	};
 };
 
@@ -226,5 +226,5 @@ export const readSpendLedger = (text: string): LedgerRead => {
 		else if (read._tag === "NewerVersion") newerVersion += 1;
 		else malformed += 1;
 	}
-	return {rows, skipped: malformed + newerVersion, skips: {malformed, newerVersion}};
+	return { rows, skipped: malformed + newerVersion, skips: { malformed, newerVersion } };
 };

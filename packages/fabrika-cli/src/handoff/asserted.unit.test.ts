@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import {parseAsserted} from "./asserted.ts";
-import {ASSERTED} from "./fixtures.test-support.ts";
+import { describe, expect, it } from "vitest";
+import { parseAsserted } from "./asserted.ts";
+import { ASSERTED } from "./fixtures.test-support.ts";
 
 describe("parseAsserted", () => {
 	it("reads the four sections a caller wrote", () => {
@@ -13,7 +13,7 @@ describe("parseAsserted", () => {
 
 	it("refuses an empty Unsure — a successor reads an empty Unsure as certainty", () => {
 		const parsed = parseAsserted(ASSERTED.replace("Whether one level is enough.", ""));
-		expect(parsed).toMatchObject({problem: {_tag: "Empty", heading: "## Unsure"}});
+		expect(parsed).toMatchObject({ problem: { _tag: "Empty", heading: "## Unsure" } });
 	});
 
 	it("refuses a section out of order", () => {
@@ -27,20 +27,20 @@ describe("parseAsserted", () => {
 			"## Unsure",
 			"four",
 		].join("\n");
-		expect(parseAsserted(swapped)).toMatchObject({problem: {_tag: "Shape"}});
+		expect(parseAsserted(swapped)).toMatchObject({ problem: { _tag: "Shape" } });
 	});
 
 	it("refuses a fifth heading and prose before the first — the section set is closed", () => {
 		expect(parseAsserted(`${ASSERTED}\n## Note\nAlso do this.\n`)).toMatchObject({
-			problem: {_tag: "Outside"},
+			problem: { _tag: "Outside" },
 		});
 		expect(parseAsserted(`Read this first.\n${ASSERTED}`)).toMatchObject({
-			problem: {_tag: "Outside"},
+			problem: { _tag: "Outside" },
 		});
 	});
 
 	it("refuses bytes carrying no section at all rather than answering an empty half", () => {
-		expect(parseAsserted("just some prose")).toMatchObject({problem: {_tag: "Outside"}});
-		expect(parseAsserted("")).toMatchObject({problem: {_tag: "Shape"}});
+		expect(parseAsserted("just some prose")).toMatchObject({ problem: { _tag: "Outside" } });
+		expect(parseAsserted("")).toMatchObject({ problem: { _tag: "Shape" } });
 	});
 });

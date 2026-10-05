@@ -1,6 +1,6 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {BAD_SECTIONS, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { BAD_SECTIONS, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
 import {
 	CHILD,
 	CWD,
@@ -17,7 +17,7 @@ import {
 	SUB_ISSUES,
 	subIssues,
 } from "./fixtures.test-support.ts";
-import {runRead} from "./read-verb.ts";
+import { runRead } from "./read-verb.ts";
 
 const EPIC = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4300$/;
 const SUBS = SUB_ISSUES;
@@ -25,7 +25,7 @@ const CHILD_1 = CHILD(4301);
 const CHILD_2 = CHILD(4302);
 const CYCLE = CYCLE_DOC;
 
-const options = {number: 4300, repo: null, env: ENV, cwd: CWD};
+const options = { number: 4300, repo: null, env: ENV, cwd: CWD };
 
 const run = (script: ReadonlyArray<Scripted>) =>
 	Effect.runPromise(Effect.provide(runRead(options), planSeams(script).layer));
@@ -33,8 +33,8 @@ const run = (script: ReadonlyArray<Scripted>) =>
 const CLEAN: ReadonlyArray<Scripted> = [
 	[EPIC, epic()],
 	[SUBS, subIssues(4301, 4302)],
-	[CHILD_1, child({number: 4301})],
-	[CHILD_2, child({number: 4302, body: childBody({stories: "2"})})],
+	[CHILD_1, child({ number: 4301 })],
+	[CHILD_2, child({ number: 4302, body: childBody({ stories: "2" }) })],
 	[CYCLE, cycleDoc],
 ];
 
@@ -47,9 +47,9 @@ describe("runRead", () => {
 		expect(answer.epic).toBe(4300);
 		expect(answer.epicStories).toEqual([1, 2]);
 		expect(answer.cycleDoc).toBe("present");
-		expect(answer.topology).toEqual({phases: [["#4301", "#4302"]], edges: []});
+		expect(answer.topology).toEqual({ phases: [["#4301", "#4302"]], edges: [] });
 		expect(answer.digest).toMatch(/^[0-9a-f]{12}$/);
-		expect(answer.children.map((c: {number: number}) => c.number)).toEqual([4301, 4302]);
+		expect(answer.children.map((c: { number: number }) => c.number)).toEqual([4301, 4302]);
 	});
 
 	it("names the scanned set on stderr, count first", async () => {
@@ -66,13 +66,13 @@ describe("runRead", () => {
 		const out = await run([
 			[EPIC, epic()],
 			[SUBS, subIssues(4301, 4302)],
-			[CHILD_1, child({number: 4301, assignees: null})],
-			[CHILD_2, child({number: 4302, assignees: ["rmoreno"]})],
+			[CHILD_1, child({ number: 4301, assignees: null })],
+			[CHILD_2, child({ number: 4302, assignees: ["rmoreno"] })],
 			[CYCLE, cycleDoc],
 		]);
 		const [first, second] = JSON.parse(out.stdout).children;
-		expect(first).toMatchObject({assignees: null, assigneesObserved: false});
-		expect(second).toMatchObject({assignees: ["rmoreno"], assigneesObserved: true});
+		expect(first).toMatchObject({ assignees: null, assigneesObserved: false });
+		expect(second).toMatchObject({ assignees: ["rmoreno"], assigneesObserved: true });
 	});
 
 	it("refuses zero sub-issue children on 7, with nothing on stdout", async () => {
@@ -86,22 +86,22 @@ describe("runRead", () => {
 	});
 
 	it("refuses a non-epic on 10", async () => {
-		const out = await run([[EPIC, epic({labels: [{name: "type:feature"}]})]]);
+		const out = await run([[EPIC, epic({ labels: [{ name: "type:feature" }] })]]);
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toContain("is not a type:epic");
 	});
 
 	it("refuses a proven-absent epic on 7 and an unreadable one on 11", async () => {
-		const absent = await run([[EPIC, {status: 404, body: '{"message":"Not Found"}'}]]);
+		const absent = await run([[EPIC, { status: 404, body: '{"message":"Not Found"}' }]]);
 		expect(absent.code).toBe(ZERO_SCOPE);
-		const unknown = await run([[EPIC, {status: 502, body: '{"message":"Bad gateway"}'}]]);
+		const unknown = await run([[EPIC, { status: 502, body: '{"message":"Bad gateway"}' }]]);
 		expect(unknown.code).toBe(PRECONDITION_UNKNOWN);
 	});
 
 	describe("the ledger grammar refuses on 4", () => {
 		it("a section declared twice", async () => {
 			const out = await run([
-				[EPIC, epic({body: `${epicBody()}\n## Dependencies\n\n- phase 2: #4302\n`})],
+				[EPIC, epic({ body: `${epicBody()}\n## Dependencies\n\n- phase 2: #4302\n` })],
 			]);
 			expect(out.code).toBe(BAD_SECTIONS);
 			expect(out.stderr.at(-1)).toContain('carries 2 "## Dependencies" sections');
@@ -109,14 +109,14 @@ describe("runRead", () => {
 
 		it("an unparseable dependencies block", async () => {
 			const out = await run([
-				[EPIC, epic({body: epicBody({dependencies: "- whenever #4301 feels ready"})})],
+				[EPIC, epic({ body: epicBody({ dependencies: "- whenever #4301 feels ready" }) })],
 			]);
 			expect(out.code).toBe(BAD_SECTIONS);
 			expect(out.stderr.at(-1)).toContain("is unparseable at line");
 		});
 
 		it("a non-empty story list that is not contiguous from 1", async () => {
-			const out = await run([[EPIC, epic({body: epicBody({stories: "1. one\n3. three"})})]]);
+			const out = await run([[EPIC, epic({ body: epicBody({ stories: "1. one\n3. three" }) })]]);
 			expect(out.code).toBe(BAD_SECTIONS);
 			expect(out.stderr.at(-1)).toContain("must run from 1 with no gaps or repeats");
 		});
@@ -126,7 +126,7 @@ describe("runRead", () => {
 			const out = await run([
 				[EPIC, epic()],
 				[SUBS, subIssues(4301)],
-				[CHILD_1, child({number: 4301, body: twice})],
+				[CHILD_1, child({ number: 4301, body: twice })],
 			]);
 			expect(out.code).toBe(BAD_SECTIONS);
 			expect(out.stderr.at(-1)).toContain('carries 2 "**Stories:**" lines');
@@ -137,7 +137,7 @@ describe("runRead", () => {
 		const out = await run([
 			[EPIC, epic()],
 			[SUBS, subIssues(4301)],
-			[CHILD_1, {status: 502, body: '{"message":"Bad gateway"}'}],
+			[CHILD_1, { status: 502, body: '{"message":"Bad gateway"}' }],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -150,7 +150,7 @@ describe("runRead", () => {
 	it("refuses a sub-issue list of the wrong shape on 11", async () => {
 		const out = await run([
 			[EPIC, epic()],
-			[SUBS, {status: 200, body: '[{"id": 1}]'}],
+			[SUBS, { status: 200, body: '[{"id": 1}]' }],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 	});
@@ -158,13 +158,13 @@ describe("runRead", () => {
 	describe("the cycle-doc probe is three-valued", () => {
 		it.each([
 			["present", cycleDoc],
-			["absent", {status: 404, body: '{"message":"Not Found"}'}],
-			["unknown", {status: 502, body: '{"message":"Bad gateway"}'}],
+			["absent", { status: 404, body: '{"message":"Not Found"}' }],
+			["unknown", { status: 502, body: '{"message":"Bad gateway"}' }],
 		] as const)("reads %s", async (expected, response) => {
 			const out = await run([
 				[EPIC, epic()],
 				[SUBS, subIssues(4301)],
-				[CHILD_1, child({number: 4301})],
+				[CHILD_1, child({ number: 4301 })],
 				[CYCLE, response],
 			]);
 			expect(JSON.parse(out.stdout).cycleDoc).toBe(expected);

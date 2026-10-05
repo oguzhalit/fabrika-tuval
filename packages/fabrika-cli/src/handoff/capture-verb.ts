@@ -10,13 +10,13 @@
  * pull request has this head ref), not an absence, and so is `git.upstream` being `null`.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {resolveTrunk, trunkUnresolved} from "../io/trunk.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {deriveGround, renderGround} from "./ground.ts";
-import {requireIssue, targetRepo} from "./guards.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { resolveTrunk, trunkUnresolved } from "../io/trunk.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { deriveGround, renderGround } from "./ground.ts";
+import { requireIssue, targetRepo } from "./guards.ts";
 
 export interface CaptureOptions {
 	readonly issue: number;
@@ -56,7 +56,7 @@ export const runCapture = (
 			issue: options.issue,
 			ref: null,
 			base,
-			board: {state: issue.value.state, labels: issue.value.labels},
+			board: { state: issue.value.state, labels: issue.value.labels },
 			now: options.now,
 		});
 		if (ground._tag === "Failed") {

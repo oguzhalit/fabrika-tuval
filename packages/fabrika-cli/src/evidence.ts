@@ -65,5 +65,5 @@ export interface CapAndCount<A> {
  */
 export const capAndCount = <A>(rows: ReadonlyArray<A>, cap: number): CapAndCount<A> => {
 	const kept = Number.isInteger(cap) && cap > 0 ? Math.min(cap, rows.length) : 0;
-	return {rows: rows.slice(0, kept), more: rows.length - kept};
+	return { rows: rows.slice(0, kept), more: rows.length - kept };
 };

@@ -1,10 +1,10 @@
-import {Effect, FileSystem, PlatformError} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs} from "../fakes.test-support.ts";
-import {FAILED} from "../verb.ts";
-import {type AuthoredSurface, leakRefusal} from "./authored.ts";
-import {LEAKED_PATH, OFF_VOCABULARY} from "./codes.ts";
-import {runScratch} from "./scratch-verb.ts";
+import { Effect, FileSystem, PlatformError } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs } from "../fakes.test-support.ts";
+import { FAILED } from "../verb.ts";
+import { type AuthoredSurface, leakRefusal } from "./authored.ts";
+import { LEAKED_PATH, OFF_VOCABULARY } from "./codes.ts";
+import { runScratch } from "./scratch-verb.ts";
 
 const SHA = "03135b91aa1c4d6f8e2b7c9d0a1e3f5b7c9d0a1e";
 
@@ -13,12 +13,12 @@ const options = {
 	slug: "diff",
 	lane: "4287",
 	sha: SHA,
-	env: {CLAUDE_CODE_SESSION_ID: "s-9f2e"} as Record<string, string | undefined>,
+	env: { CLAUDE_CODE_SESSION_ID: "s-9f2e" } as Record<string, string | undefined>,
 	tmpRoot: "/scratch-root",
 };
 
 const run = (overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runScratch({...options, ...overrides}), fakeFs({}).layer));
+	Effect.runPromise(Effect.provide(runScratch({ ...options, ...overrides }), fakeFs({}).layer));
 
 describe("runScratch", () => {
 	it("prints one absolute path under the group's own namespace", async () => {
@@ -34,8 +34,8 @@ describe("runScratch", () => {
 	 * concurrent lane replaced the bytes between two offset reads.
 	 */
 	it("resolves two lanes of ONE session to different directories", async () => {
-		const first = await run({lane: "4287"});
-		const second = await run({lane: "5830", pr: 4321, sha: SHA});
+		const first = await run({ lane: "4287" });
+		const second = await run({ lane: "5830", pr: 4321, sha: SHA });
 		expect(first.code).toBe(0);
 		expect(second.code).toBe(0);
 		expect(first.stdout).not.toBe(second.stdout);
@@ -44,38 +44,38 @@ describe("runScratch", () => {
 	/** Two rounds of one lane are two reviews of two trees, so round 2 must not read round 1's bytes. */
 	it("resolves two rounds of ONE lane to different directories", async () => {
 		const first = await run();
-		const second = await run({sha: "9f2c1abbb3d4e5f60718293a4b5c6d7e8f901234"});
+		const second = await run({ sha: "9f2c1abbb3d4e5f60718293a4b5c6d7e8f901234" });
 		expect(first.stdout).not.toBe(second.stdout);
 	});
 
 	it("resolves every call of one lane to the SAME directory", async () => {
-		expect((await run({slug: "diff"})).stdout.replace(/diff\n$/, "")).toBe(
-			(await run({slug: "notes"})).stdout.replace(/notes\n$/, ""),
+		expect((await run({ slug: "diff" })).stdout.replace(/diff\n$/, "")).toBe(
+			(await run({ slug: "notes" })).stdout.replace(/notes\n$/, ""),
 		);
 	});
 
 	it("refuses a blank --lane on 1 rather than falling back to the session's directory", async () => {
-		const out = await run({lane: "   "});
+		const out = await run({ lane: "   " });
 		expect(out.code).toBe(FAILED);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain("--lane is blank");
 	});
 
 	it("refuses an unset session id on 1 — an unattributable session names no lane either", async () => {
-		const out = await run({env: {}});
+		const out = await run({ env: {} });
 		expect(out.code).toBe(FAILED);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain("no session id is set");
 	});
 
 	it("refuses a session id that is not one path segment on 1", async () => {
-		const out = await run({env: {CLAUDE_CODE_SESSION_ID: "s/9f2e"}});
+		const out = await run({ env: { CLAUDE_CODE_SESSION_ID: "s/9f2e" } });
 		expect(out.code).toBe(FAILED);
 		expect(out.stderr.at(-1)).toContain("not one path segment");
 	});
 
 	it("refuses a slug carrying a path separator on 10", async () => {
-		const out = await run({slug: "notes/inner"});
+		const out = await run({ slug: "notes/inner" });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toBe(
 			'review scratch: --slug "notes/inner" must be a kebab-case leaf, no path separators.',
@@ -83,11 +83,11 @@ describe("runScratch", () => {
 	});
 
 	it("refuses a non-kebab slug on 10", async () => {
-		expect((await run({slug: "Notes"})).code).toBe(OFF_VOCABULARY);
+		expect((await run({ slug: "Notes" })).code).toBe(OFF_VOCABULARY);
 	});
 
 	it("refuses a --sha that is not a head SHA on 10", async () => {
-		const out = await run({sha: "not-a-sha"});
+		const out = await run({ sha: "not-a-sha" });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toContain("is not a head SHA");
 	});
@@ -122,7 +122,7 @@ describe("runScratch", () => {
 			bareAtMessage: "bare @",
 			leakCorrection: "cite it repo-relative or by class root.",
 		};
-		const path = (await run({tmpRoot: "/var/folders/kx"})).stdout.trim();
+		const path = (await run({ tmpRoot: "/var/folders/kx" })).stdout.trim();
 		const refusal = leakRefusal(surface, `PASS — staged the diff at ${path}`);
 		expect(refusal?.code).toBe(LEAKED_PATH);
 	});

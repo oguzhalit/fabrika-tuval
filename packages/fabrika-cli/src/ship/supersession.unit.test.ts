@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import type {ShipCheckRun, WorkflowRun} from "./github.ts";
-import {isSuperseded, supersededSuites} from "./supersession.ts";
+import { describe, expect, it } from "vitest";
+import type { ShipCheckRun, WorkflowRun } from "./github.ts";
+import { isSuperseded, supersededSuites } from "./supersession.ts";
 
 const workflowRun = (shape: {
 	id: number;
@@ -32,33 +32,33 @@ const checkRun = (conclusion: string, checkSuiteId: number): ShipCheckRun => ({
 describe("supersededSuites", () => {
 	it("names the suite of every run a later run of the same workflow replaced", () => {
 		const suites = supersededSuites([
-			workflowRun({id: 11, workflowId: 7, conclusion: "cancelled"}),
-			workflowRun({id: 12, workflowId: 7}),
+			workflowRun({ id: 11, workflowId: 7, conclusion: "cancelled" }),
+			workflowRun({ id: 12, workflowId: 7 }),
 		]);
 		expect([...suites]).toEqual([11]);
 	});
 
 	it("leaves the newest run of a workflow alone, however many preceded it", () => {
 		const suites = supersededSuites([
-			workflowRun({id: 11, workflowId: 7, conclusion: "cancelled"}),
-			workflowRun({id: 12, workflowId: 7, conclusion: "cancelled"}),
-			workflowRun({id: 13, workflowId: 7}),
+			workflowRun({ id: 11, workflowId: 7, conclusion: "cancelled" }),
+			workflowRun({ id: 12, workflowId: 7, conclusion: "cancelled" }),
+			workflowRun({ id: 13, workflowId: 7 }),
 		]);
 		expect([...suites].sort()).toEqual([11, 12]);
 	});
 
 	it("never crosses workflows — a newer run of a different workflow supersedes nothing", () => {
 		const suites = supersededSuites([
-			workflowRun({id: 11, workflowId: 7, conclusion: "cancelled"}),
-			workflowRun({id: 12, workflowId: 8}),
+			workflowRun({ id: 11, workflowId: 7, conclusion: "cancelled" }),
+			workflowRun({ id: 12, workflowId: 8 }),
 		]);
 		expect([...suites]).toEqual([]);
 	});
 
 	it("skips a run naming no suite — there is nothing to join a check context to", () => {
 		const suites = supersededSuites([
-			workflowRun({id: 11, workflowId: 7, suite: null, conclusion: "cancelled"}),
-			workflowRun({id: 12, workflowId: 7}),
+			workflowRun({ id: 11, workflowId: 7, suite: null, conclusion: "cancelled" }),
+			workflowRun({ id: 12, workflowId: 7 }),
 		]);
 		expect([...suites]).toEqual([]);
 	});

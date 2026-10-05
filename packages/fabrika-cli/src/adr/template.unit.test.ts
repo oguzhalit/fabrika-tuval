@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {parseTags, recordFilename, renderTemplate, titleFromSlug} from "./template.ts";
+import { describe, expect, it } from "vitest";
+import { parseTags, recordFilename, renderTemplate, titleFromSlug } from "./template.ts";
 
 const rendered = renderTemplate({
 	id: "0240",

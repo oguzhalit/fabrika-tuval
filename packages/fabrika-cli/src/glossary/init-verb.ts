@@ -7,12 +7,12 @@
  * The refusal on an existing register is `adr new`'s idiom reseated on this group's `12` — a register
  * is the one artefact whose accidental overwrite destroys the most work.
  */
-import {Effect, Path, Result} from "effect";
-import {exists, readFile, writeFile} from "../io/fs.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, READBACK_MISMATCH, TERM_COLLISION, WRITE_UNKNOWN} from "./codes.ts";
-import {type GlossaryEffect, registerFilesIn, resolveDir, selectRegisters} from "./guards.ts";
-import {registerTemplate} from "./template.ts";
+import { Effect, Path, Result } from "effect";
+import { exists, readFile, writeFile } from "../io/fs.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, READBACK_MISMATCH, TERM_COLLISION, WRITE_UNKNOWN } from "./codes.ts";
+import { type GlossaryEffect, registerFilesIn, resolveDir, selectRegisters } from "./guards.ts";
+import { registerTemplate } from "./template.ts";
 
 const VERB = "glossary init";
 
@@ -75,7 +75,7 @@ export const runInit = (options: InitOptions): GlossaryEffect<VerbOutcome> =>
 
 		const scope = [`${VERB}: created ${file.display} for register ${register}.`];
 		if (options.json) {
-			return answer(JSON.stringify({action: "created", path: file.display, register}), scope);
+			return answer(JSON.stringify({ action: "created", path: file.display, register }), scope);
 		}
 		return answer(`created\t${file.display}`, scope);
 	});

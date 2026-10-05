@@ -1,8 +1,8 @@
-import {describe, expect, it} from "vitest";
-import {stripJsonComments} from "./document.ts";
-import {setJsoncValue} from "./jsonc-edit.ts";
+import { describe, expect, it } from "vitest";
+import { stripJsonComments } from "./document.ts";
+import { setJsoncValue } from "./jsonc-edit.ts";
 
-const RULES = [{paths: ["**"], mode: "hand-check"}];
+const RULES = [{ paths: ["**"], mode: "hand-check" }];
 
 const edited = (text: string, path: readonly [string, ...string[]], value: unknown): string => {
 	const edit = setJsoncValue(text, path, value);
@@ -51,14 +51,14 @@ describe("setJsoncValue", () => {
 		const after = edited(before, ["reviewUi", "whenNoPreview"], RULES);
 		expect(after).toContain('// rules land here\n    "whenNoPreview": [');
 		expect(after.endsWith('  },\n  "trunk": "main"\n}\n')).toBe(true);
-		expect(parsed(after)).toEqual({reviewUi: {whenNoPreview: RULES}, trunk: "main"});
+		expect(parsed(after)).toEqual({ reviewUi: { whenNoPreview: RULES }, trunk: "main" });
 	});
 
 	it("replaces a value already there and nothing around it", () => {
 		const before = '{\n\t"reviewUi": {"whenNoPreview": [] /* none yet */},\n\t"trunk": "main"\n}\n';
 		const after = edited(before, ["reviewUi", "whenNoPreview"], RULES);
 		expect(after).toContain('/* none yet */},\n\t"trunk": "main"\n}\n');
-		expect(parsed(after)).toEqual({reviewUi: {whenNoPreview: RULES}, trunk: "main"});
+		expect(parsed(after)).toEqual({ reviewUi: { whenNoPreview: RULES }, trunk: "main" });
 	});
 
 	it("fills an empty list after the comments inside its brackets, keeping each one", () => {
@@ -96,7 +96,7 @@ describe("setJsoncValue", () => {
 		const before = '{"reviewUi": {"whenNoPreview": [ /* none yet */ ]}}';
 		const after = edited(before, ["reviewUi", "whenNoPreview"], RULES);
 		expect(after).toContain("[ /* none yet */\n");
-		expect(parsed(after)).toEqual({reviewUi: {whenNoPreview: RULES}});
+		expect(parsed(after)).toEqual({ reviewUi: { whenNoPreview: RULES } });
 	});
 
 	it("refuses to replace a value whose content carries a comment", () => {
@@ -109,21 +109,21 @@ describe("setJsoncValue", () => {
 
 	it("replaces a value whose string holds a comment marker", () => {
 		const before = '{"docs": "https://example.test/a//b"}';
-		expect(parsed(edited(before, ["docs"], "none"))).toEqual({docs: "none"});
+		expect(parsed(edited(before, ["docs"], "none"))).toEqual({ docs: "none" });
 	});
 
 	it("reads comment markers and braces inside a string as part of the string", () => {
 		const before = '{"docs": "https://example.test/a//b", "note": "} // not a comment"}';
-		expect(parsed(edited(before, ["reviewUi"], {whenNoPreview: RULES}))).toEqual({
+		expect(parsed(edited(before, ["reviewUi"], { whenNoPreview: RULES }))).toEqual({
 			docs: "https://example.test/a//b",
 			note: "} // not a comment",
-			reviewUi: {whenNoPreview: RULES},
+			reviewUi: { whenNoPreview: RULES },
 		});
 	});
 
 	it("fills an empty object", () => {
 		expect(parsed(edited("{}\n", ["reviewUi", "whenNoPreview"], RULES))).toEqual({
-			reviewUi: {whenNoPreview: RULES},
+			reviewUi: { whenNoPreview: RULES },
 		});
 	});
 

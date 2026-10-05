@@ -14,7 +14,7 @@
 declare const RepoPredicateBrand: unique symbol;
 
 /** A clause that reads as a predicate of the repo root. Built only by {@link repoPredicate}. */
-export type RepoPredicate = string & {readonly [RepoPredicateBrand]: true};
+export type RepoPredicate = string & { readonly [RepoPredicateBrand]: true };
 
 /**
  * Tag a template literal as a repo-root predicate: `` repoPredicate`has no local install` ``.

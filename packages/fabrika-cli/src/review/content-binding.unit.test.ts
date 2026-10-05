@@ -8,10 +8,10 @@
  * the three-dot diff identical and the merged file different. Both are what the ruling is about, so
  * both are asserted from a fixture rather than argued in a comment.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeShell, okOut} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeShell, okOut } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
 import {
 	bindRange,
 	contentDigest,
@@ -22,7 +22,7 @@ import {
 	rangeDigestOnto,
 	serializeContent,
 } from "./content-binding.ts";
-import {BASE, HEAD, OLD_HEAD, RAW, RAW_AT, RAW_ONTO} from "./fixtures.test-support.ts";
+import { BASE, HEAD, OLD_HEAD, RAW, RAW_AT, RAW_ONTO } from "./fixtures.test-support.ts";
 
 const oid = (letter: string) => letter.repeat(40);
 
@@ -68,8 +68,8 @@ describe("parseRaw", () => {
 			record("R100", oid("a"), oid("b"), "src/new.ts", "src/old.ts") +
 			record("M", oid("c"), oid("d"), "README.md");
 		expect(rows(stream)).toHaveLength(2);
-		expect(rows(stream)[0]).toMatchObject({srcPath: "src/old.ts", path: "src/new.ts"});
-		expect(rows(stream)[1]).toMatchObject({srcPath: null, path: "README.md"});
+		expect(rows(stream)[0]).toMatchObject({ srcPath: "src/old.ts", path: "src/new.ts" });
+		expect(rows(stream)[1]).toMatchObject({ srcPath: null, path: "README.md" });
 	});
 
 	it("refuses a stream it cannot fully account for rather than digesting a partial one", () => {
@@ -121,7 +121,7 @@ describe("contentDigestAt", () => {
 
 	it("digests the bound range's raw stream", async () => {
 		const out = await run([[RAW_AT(), okOut(RAW)]]);
-		expect(out).toEqual({_tag: "Ok", value: digestOf(RAW)});
+		expect(out).toEqual({ _tag: "Ok", value: digestOf(RAW) });
 	});
 
 	it("FAILS on an empty range rather than minting one value every empty PR would share", async () => {
@@ -141,7 +141,7 @@ describe("the range scope", () => {
 
 	const range = (script: ReadonlyArray<readonly [RegExp, ExecResult]>) =>
 		Effect.runPromise(
-			Effect.provide(rangeContentAt({base: BASE, tip: HEAD}), fakeShell(script).layer),
+			Effect.provide(rangeContentAt({ base: BASE, tip: HEAD }), fakeShell(script).layer),
 		);
 	const onto = (script: ReadonlyArray<readonly [RegExp, ExecResult]>) =>
 		Effect.runPromise(
@@ -155,7 +155,7 @@ describe("the range scope", () => {
 
 	it("digests a range through the SAME serialization the PR scope uses", async () => {
 		const out = await range([[RAW_AT(), okOut(RAW)]]);
-		expect(out).toEqual({_tag: "Ok", value: {digest: digestOf(RAW), paths: JUDGED}});
+		expect(out).toEqual({ _tag: "Ok", value: { digest: digestOf(RAW), paths: JUDGED } });
 	});
 
 	it("FAILS on an empty range rather than binding a verdict to nothing", async () => {
@@ -163,11 +163,11 @@ describe("the range scope", () => {
 	});
 
 	it("re-derives from a later state over the judged paths only", async () => {
-		expect(await onto([[ONTO, okOut(RAW)]])).toEqual({_tag: "Digest", digest: digestOf(RAW)});
+		expect(await onto([[ONTO, okOut(RAW)]])).toEqual({ _tag: "Digest", digest: digestOf(RAW) });
 	});
 
 	it("tells a state that carries none of the judged change from one it could not read", async () => {
-		expect(await onto([[ONTO, okOut("")]])).toEqual({_tag: "Unchanged"});
+		expect(await onto([[ONTO, okOut("")]])).toEqual({ _tag: "Unchanged" });
 		expect((await onto([[ONTO, okOut("src/cart.ts\0")]]))._tag).toBe("Unreadable");
 	});
 });
@@ -176,14 +176,14 @@ describe("bindRange", () => {
 	const CLAIMED = "7af166f42fdb";
 
 	it("is Current only when the state re-derives the claimed digest", () => {
-		expect(bindRange({content: CLAIMED}, {_tag: "Digest", digest: CLAIMED})).toEqual({
+		expect(bindRange({ content: CLAIMED }, { _tag: "Digest", digest: CLAIMED })).toEqual({
 			_tag: "Current",
 			digest: CLAIMED,
 		});
 	});
 
 	it("is Stale when the state derives a different digest", () => {
-		expect(bindRange({content: CLAIMED}, {_tag: "Digest", digest: "0123456789ab"})).toEqual({
+		expect(bindRange({ content: CLAIMED }, { _tag: "Digest", digest: "0123456789ab" })).toEqual({
 			_tag: "Stale",
 			claimed: CLAIMED,
 			found: "0123456789ab",
@@ -191,7 +191,7 @@ describe("bindRange", () => {
 	});
 
 	it("is Stale, not Unbindable, when the state carries none of the judged change", () => {
-		expect(bindRange({content: CLAIMED}, {_tag: "Unchanged"})._tag).toBe("Stale");
+		expect(bindRange({ content: CLAIMED }, { _tag: "Unchanged" })._tag).toBe("Stale");
 	});
 
 	/**
@@ -200,11 +200,13 @@ describe("bindRange", () => {
 	 * wrong cause and send an operator to re-review instead of to a broken checkout.
 	 */
 	it("is Unbindable when the derivation could not be made", () => {
-		const out = bindRange({content: CLAIMED}, {_tag: "Unreadable", reason: "no merge base"});
+		const out = bindRange({ content: CLAIMED }, { _tag: "Unreadable", reason: "no merge base" });
 		expect(out._tag).toBe("Unbindable");
 	});
 
 	it("is Unbindable on a claim that is not a digest — never a comparison against a typo", () => {
-		expect(bindRange({content: "nope"}, {_tag: "Digest", digest: CLAIMED})._tag).toBe("Unbindable");
+		expect(bindRange({ content: "nope" }, { _tag: "Digest", digest: CLAIMED })._tag).toBe(
+			"Unbindable",
+		);
 	});
 });

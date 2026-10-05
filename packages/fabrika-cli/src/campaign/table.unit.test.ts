@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import {parseCampaigns, readCampaigns, scanCampaigns} from "../build/scope-admission.ts";
-import {TWO_ROWS} from "./fixtures.test-support.ts";
-import {appendRow, nameFitsCell, placedRows, rewriteState, rowLine, selects} from "./table.ts";
+import { describe, expect, it } from "vitest";
+import { parseCampaigns, readCampaigns, scanCampaigns } from "../build/scope-admission.ts";
+import { TWO_ROWS } from "./fixtures.test-support.ts";
+import { appendRow, nameFitsCell, placedRows, rewriteState, rowLine, selects } from "./table.ts";
 
 const rowsOf = (text: string) => {
 	const parsed = parseCampaigns(text);
@@ -12,26 +12,26 @@ const rowsOf = (text: string) => {
 describe("parseCampaigns — the extraction the fence narrows", () => {
 	it("returns every row whatever its state, where readCampaigns keeps only the active ones", () => {
 		expect(rowsOf(TWO_ROWS)).toEqual([
-			{milestone: 42, state: "paused", name: "Taste-Skill Library"},
-			{milestone: 47, state: "active", name: "fabrika everywhere"},
+			{ milestone: 42, state: "paused", name: "Taste-Skill Library" },
+			{ milestone: 47, state: "active", name: "fabrika everywhere" },
 		]);
 		expect(readCampaigns(TWO_ROWS)).toEqual({
 			_tag: "Active",
-			campaigns: [{milestone: 47, name: "fabrika everywhere"}],
+			campaigns: [{ milestone: 47, name: "fabrika everywhere" }],
 		});
 	});
 
 	it("calls an all-paused table rows, where the fence calls the same table None", () => {
 		const paused = TWO_ROWS.replace("| active |", "| paused |");
 		expect(rowsOf(paused)).toHaveLength(2);
-		expect(readCampaigns(paused)).toEqual({_tag: "None"});
+		expect(readCampaigns(paused)).toEqual({ _tag: "None" });
 	});
 
 	it("reads an absent heading and an empty table as the same well-formed default", () => {
-		expect(parseCampaigns("# Roadmap\n")).toEqual({_tag: "Rows", rows: []});
+		expect(parseCampaigns("# Roadmap\n")).toEqual({ _tag: "Rows", rows: [] });
 		expect(
 			parseCampaigns("## Campaigns\n\n| Campaign | Milestone | State |\n|---|---|---|\n"),
-		).toEqual({_tag: "Rows", rows: []});
+		).toEqual({ _tag: "Rows", rows: [] });
 	});
 
 	it("makes the WHOLE table unreadable on one bad row, never a partial read", () => {
@@ -80,14 +80,14 @@ describe("appendRow", () => {
 
 	it("scaffolds the header under an existing heading that carries no table", () => {
 		const next = appendRow("# Roadmap\n\n## Campaigns\n\nprose.\n", "First", 1);
-		expect(rowsOf(next)).toEqual([{milestone: 1, state: "paused", name: "First"}]);
+		expect(rowsOf(next)).toEqual([{ milestone: 1, state: "paused", name: "First" }]);
 		expect(next).toContain("| Campaign | Milestone | State |");
 	});
 
 	it("writes the heading as the last section when the file has none", () => {
 		const next = appendRow("# Roadmap\n\n## Arcs\n\nprose.\n", "First", 1);
 		expect(next.endsWith("| First | #1 | paused |\n")).toBe(true);
-		expect(rowsOf(next)).toEqual([{milestone: 1, state: "paused", name: "First"}]);
+		expect(rowsOf(next)).toEqual([{ milestone: 1, state: "paused", name: "First" }]);
 	});
 });
 
@@ -113,7 +113,11 @@ describe("rewriteState", () => {
 		const open = TWO_ROWS.replace("| #42 | paused |", "| #42 | paused");
 		const at = scanCampaigns(open).rows[0]?.index ?? -1;
 		const next = rewriteState(open, at, "active") ?? "";
-		expect(rowsOf(next)[0]).toEqual({milestone: 42, state: "active", name: "Taste-Skill Library"});
+		expect(rowsOf(next)[0]).toEqual({
+			milestone: 42,
+			state: "active",
+			name: "Taste-Skill Library",
+		});
 		const before = open.split("\n");
 		expect(next.split("\n").filter((row, index) => row !== before[index])).toEqual([
 			"| Taste-Skill Library | #42 | active",
@@ -158,7 +162,7 @@ describe("selects", () => {
 
 describe("rowLine and nameFitsCell", () => {
 	it("prints a row as #<milestone>\\t<state>\\t<name>", () => {
-		expect(rowLine({milestone: 47, state: "active", name: "fabrika everywhere"})).toBe(
+		expect(rowLine({ milestone: 47, state: "active", name: "fabrika everywhere" })).toBe(
 			"#47\tactive\tfabrika everywhere",
 		);
 	});

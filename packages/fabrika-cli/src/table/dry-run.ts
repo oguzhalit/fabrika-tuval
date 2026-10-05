@@ -11,8 +11,8 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10086
  */
 
-import {Effect} from "effect";
-import {type Attempt, ok} from "../io/git.ts";
+import { Effect } from "effect";
+import { type Attempt, ok } from "../io/git.ts";
 import type {
 	FieldValue,
 	ItemFieldValue,
@@ -23,13 +23,13 @@ import type {
 	StatusUpdateInput,
 	StatusUpdateStatus,
 } from "../io/projects.ts";
-import type {PrepBoard} from "./prep-verb.ts";
-import type {RouteBoard} from "./route-verb.ts";
-import type {SyncBoard} from "./sync-verb.ts";
+import type { PrepBoard } from "./prep-verb.ts";
+import type { RouteBoard } from "./route-verb.ts";
+import type { SyncBoard } from "./sync-verb.ts";
 
 /** One write a dry run planned and did not send. `project` is the project's number. */
 export type PlannedWrite =
-	| {readonly _tag: "Add"; readonly project: number | null; readonly issue: number}
+	| { readonly _tag: "Add"; readonly project: number | null; readonly issue: number }
 	| {
 			readonly _tag: "Set";
 			readonly project: number | null;
@@ -43,8 +43,8 @@ export type PlannedWrite =
 			readonly issue: number | null;
 			readonly field: string;
 	  }
-	| {readonly _tag: "Delete"; readonly project: number | null; readonly issue: number | null}
-	| {readonly _tag: "Comment"; readonly issue: number; readonly body: string}
+	| { readonly _tag: "Delete"; readonly project: number | null; readonly issue: number | null }
+	| { readonly _tag: "Comment"; readonly issue: number; readonly body: string }
 	| {
 			readonly _tag: "Post";
 			readonly project: number | null;
@@ -87,7 +87,8 @@ interface Added {
 
 type Target = Parameters<SyncBoard<never>["set"]>[0];
 
-const done = <A>(value: A): Effect.Effect<ProjectsAnswer<A>> => Effect.succeed({_tag: "Ok", value});
+const done = <A>(value: A): Effect.Effect<ProjectsAnswer<A>> =>
+	Effect.succeed({ _tag: "Ok", value });
 
 /** The shared recorder: the project view every wrapped board method reads and writes. */
 const recorder = <R>(base: Pick<SyncBoard<R>, "locate" | "items">, at: string) => {
@@ -104,19 +105,19 @@ const recorder = <R>(base: Pick<SyncBoard<R>, "locate" | "items">, at: string) =
 	const readValue = (projectId: string, fieldId: string, value: FieldValue): ItemFieldValue => {
 		const field = projects.get(projectId)?.fields.find((one) => one.id === fieldId);
 		const fieldName = field?.name ?? fieldId;
-		const stamp = {fieldId, fieldName, creator: null, updatedAt: at};
+		const stamp = { fieldId, fieldName, creator: null, updatedAt: at };
 		switch (value._tag) {
 			case "Option": {
 				const option =
 					field?._tag === "SingleSelect"
 						? field.options.find((one) => one.id === value.optionId)
 						: undefined;
-				return {...stamp, value: {...value, name: option?.name ?? value.optionId}};
+				return { ...stamp, value: { ...value, name: option?.name ?? value.optionId } };
 			}
 			case "Iteration":
-				return {...stamp, value: {...value, title: value.iterationId}};
+				return { ...stamp, value: { ...value, title: value.iterationId } };
 			default:
-				return {...stamp, value};
+				return { ...stamp, value };
 		}
 	};
 	const shown = (value: ItemFieldValue["value"]): string | number => {
@@ -138,7 +139,7 @@ const recorder = <R>(base: Pick<SyncBoard<R>, "locate" | "items">, at: string) =
 		if (over === undefined) return item;
 		const values = item.values.filter((one) => !over.has(one.fieldId));
 		for (const value of over.values()) if (value !== null) values.push(value);
-		return {...item, values};
+		return { ...item, values };
 	};
 	const fold = (
 		projectId: string,
@@ -182,16 +183,16 @@ const recorder = <R>(base: Pick<SyncBoard<R>, "locate" | "items">, at: string) =
 			Effect.map(
 				base.items(projectId),
 				(answer): ProjectsAnswer<ReadonlyArray<ProjectItem>> =>
-					answer._tag === "Ok" ? {_tag: "Ok", value: fold(projectId, answer.value)} : answer,
+					answer._tag === "Ok" ? { _tag: "Ok", value: fold(projectId, answer.value) } : answer,
 			)) satisfies SyncBoard<R>["items"],
 		add: (projectId: string, repo: string, issue: number) =>
 			Effect.suspend(() => {
 				const onProject = added.get(projectId) ?? new Map<number, Added>();
 				added.set(projectId, onProject);
 				const itemId = onProject.get(issue)?.itemId ?? `dry-run:${projectId}:${issue}`;
-				onProject.set(issue, {itemId, repo});
+				onProject.set(issue, { itemId, repo });
 				issueOf.set(itemId, issue);
-				planned.push({_tag: "Add", project: numberOf(projectId), issue});
+				planned.push({ _tag: "Add", project: numberOf(projectId), issue });
 				return done(itemId);
 			}),
 		set: (target: Target, value: FieldValue) =>
@@ -234,7 +235,7 @@ const recorder = <R>(base: Pick<SyncBoard<R>, "locate" | "items">, at: string) =
 		comment: (issue: number, body: string): Effect.Effect<Attempt<unknown>> =>
 			Effect.sync(() => {
 				comments.set(issue, [...(comments.get(issue) ?? []), body]);
-				planned.push({_tag: "Comment", issue, body});
+				planned.push({ _tag: "Comment", issue, body });
 				return ok(undefined);
 			}),
 		commentsOn: (issue: number): ReadonlyArray<string> => comments.get(issue) ?? [],
@@ -244,7 +245,7 @@ const recorder = <R>(base: Pick<SyncBoard<R>, "locate" | "items">, at: string) =
 				const id = `dry-run:${projectId}:update:${standing.length}`;
 				posts.set(projectId, [
 					...standing,
-					{id, body: update.body, startDate: update.startDate ?? null},
+					{ id, body: update.body, startDate: update.startDate ?? null },
 				]);
 				planned.push({
 					_tag: "Post",
@@ -262,7 +263,7 @@ const recorder = <R>(base: Pick<SyncBoard<R>, "locate" | "items">, at: string) =
 export const dryRunSync = <R>(board: SyncBoard<R>, at: string): DryRun<SyncBoard<R>> => {
 	const r = recorder(board, at);
 	return {
-		board: {...board, locate: r.locate, items: r.items, add: r.add, set: r.set, clear: r.clear},
+		board: { ...board, locate: r.locate, items: r.items, add: r.add, set: r.set, clear: r.clear },
 		planned: r.planned,
 	};
 };
@@ -287,7 +288,9 @@ export const dryRunPrep = <R>(board: PrepBoard<R>, at: string): DryRun<PrepBoard
 			post: r.post,
 			statusUpdates: (projectId) =>
 				Effect.map(board.statusUpdates(projectId), (read) =>
-					read._tag === "Ok" ? {_tag: "Ok", value: [...read.value, ...r.postsOn(projectId)]} : read,
+					read._tag === "Ok"
+						? { _tag: "Ok", value: [...read.value, ...r.postsOn(projectId)] }
+						: read,
 				),
 		},
 		planned: r.planned,

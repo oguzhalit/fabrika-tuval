@@ -1,11 +1,11 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {CP_ROSTER} from "../build/fixtures.test-support.ts";
-import {capReached, effectiveCap} from "../cap-clearance.ts";
-import {fakeFs, fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import {CAP_ROUND, RETRY_BUDGET} from "../retry-budget.ts";
-import {runClear} from "./clear-verb.ts";
-import {recordClearedRound} from "./clearance.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { CP_ROSTER } from "../build/fixtures.test-support.ts";
+import { capReached, effectiveCap } from "../cap-clearance.ts";
+import { fakeFs, fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import { CAP_ROUND, RETRY_BUDGET } from "../retry-budget.ts";
+import { runClear } from "./clear-verb.ts";
+import { recordClearedRound } from "./clearance.ts";
 import {
 	APPEND_UNKNOWN,
 	GRANT_REFUSED,
@@ -15,10 +15,10 @@ import {
 	PR_AMBIGUOUS,
 	RATIONALE_REFUSED,
 } from "./codes.ts";
-import {coderTemplateText, fakeProver, parkCauseRead} from "./fixtures.test-support.ts";
-import {foldLog, parseLog} from "./fold.ts";
-import {compileText} from "./machine.ts";
-import {runTransition} from "./transition-verb.ts";
+import { coderTemplateText, fakeProver, parkCauseRead } from "./fixtures.test-support.ts";
+import { foldLog, parseLog } from "./fold.ts";
+import { compileText } from "./machine.ts";
+import { runTransition } from "./transition-verb.ts";
 
 const ROOT = ".fabrika/lanes";
 const WORKFLOW = `${ROOT}/42/workflow.json`;
@@ -37,14 +37,14 @@ const NO_CLOSERS: HttpReply = served({
 		repository: {
 			issue: {
 				closedByPullRequestsReferences: {
-					pageInfo: {hasNextPage: false, endCursor: null},
+					pageInfo: { hasNextPage: false, endCursor: null },
 					nodes: [],
 				},
 			},
 		},
 	},
 });
-const NO_NOMINATIONS: HttpReply = served({total_count: 0, items: []});
+const NO_NOMINATIONS: HttpReply = served({ total_count: 0, items: [] });
 
 const CLOSERS = /^POST \S+\/graphql$/;
 const SEARCH = /^GET \S+\/search\/issues\?/;
@@ -56,13 +56,13 @@ const NO_PULL: ReadonlyArray<Scripted> = [
 ];
 
 const line = (event: string, extra: Record<string, unknown> = {}): string =>
-	`${JSON.stringify({task: "issue", event: `ISSUE.${event}`, at: "2026-09-10T00:00:00.000Z", ...extra})}\n`;
+	`${JSON.stringify({ task: "issue", event: `ISSUE.${event}`, at: "2026-09-10T00:00:00.000Z", ...extra })}\n`;
 
 /** WIP, then a DONE/FAIL round per retry until the budget is spent and the task parks. */
 const spent = (): string =>
 	[
 		line("WIP"),
-		...Array.from({length: RETRY_BUDGET + 1}, () => `${line("DONE")}${line("FAIL")}`),
+		...Array.from({ length: RETRY_BUDGET + 1 }, () => `${line("DONE")}${line("FAIL")}`),
 	].join("");
 
 const run = (
@@ -79,12 +79,12 @@ const run = (
 				task: null,
 				rationale,
 				repo: null,
-				env: {CLAUDE_PIPELINE_REPO: "o/r"},
+				env: { CLAUDE_PIPELINE_REPO: "o/r" },
 				now: () => NOW,
 			}),
 			Layer.merge(fs.layer, seams.layer),
 		),
-	).then((outcome) => ({...outcome, requests: seams.requests, bodies: seams.bodies}));
+	).then((outcome) => ({ ...outcome, requests: seams.requests, bodies: seams.bodies }));
 };
 
 /** The retries the lane's own fold reads back off its log — the guard's half of the grant. */
@@ -99,7 +99,7 @@ const laneBudgetOf = (log: string): number => {
 };
 
 const laneWith = (log: string, extra: Parameters<typeof fakeFs>[0] = {}) =>
-	fakeFs({files: {[WORKFLOW]: coderTemplateText(), [LOG]: log}, ...extra});
+	fakeFs({ files: { [WORKFLOW]: coderTemplateText(), [LOG]: log }, ...extra });
 
 describe("lane clear — the grant", () => {
 	it("resumes a legacy cap-2 lane for exactly one repair without rewriting its history", async () => {
@@ -107,7 +107,7 @@ describe("lane clear — the grant", () => {
 		workflow.machine.context.issue.maxRetries = 2;
 		const workflowText = JSON.stringify(workflow).replaceAll("human:budget-spent", "frozen");
 		const history = `${line("WIP")}${`${line("DONE")}${line("FAIL")}`.repeat(3)}`;
-		const fs = fakeFs({files: {[WORKFLOW]: workflowText, [LOG]: history}});
+		const fs = fakeFs({ files: { [WORKFLOW]: workflowText, [LOG]: history } });
 		const transition = (event: string) =>
 			Effect.runPromise(
 				Effect.provide(
@@ -147,18 +147,18 @@ describe("lane clear — the grant", () => {
 		expect(CAP_ROUND).toBe(4);
 		expect((await transition("UNBLOCKED")).code).toBe(36);
 		expect(fs.written.size).toBe(0);
-		expect(state(history)).toMatchObject({type: "frozen", retries: 2, maxRetries: 2});
+		expect(state(history)).toMatchObject({ type: "frozen", retries: 2, maxRetries: 2 });
 
 		const grant = await run(fs);
 		expect(grant.code).toBe(0);
-		expect(JSON.parse(grant.stdout)).toMatchObject({answer: "cleared", round: 3, budget: 3});
+		expect(JSON.parse(grant.stdout)).toMatchObject({ answer: "cleared", round: 3, budget: 3 });
 		const grantedLog = fs.written.get(LOG) ?? "";
 		expect(grantedLog.slice(0, history.length)).toBe(history);
-		expect(state(grantedLog)).toMatchObject({type: "frozen", retries: 2, maxRetries: 3});
-		expect(state(`${grantedLog}${line("CLEARED", {round: 3})}`)).toEqual(state(grantedLog));
+		expect(state(grantedLog)).toMatchObject({ type: "frozen", retries: 2, maxRetries: 3 });
+		expect(state(`${grantedLog}${line("CLEARED", { round: 3 })}`)).toEqual(state(grantedLog));
 
 		const repeated = await Effect.runPromise(
-			Effect.provide(recordClearedRound({root: ROOT, lane: "42"}, "issue", 3), fs.layer),
+			Effect.provide(recordClearedRound({ root: ROOT, lane: "42" }, "issue", 3), fs.layer),
 		);
 		expect(repeated._tag).toBe("AlreadyHeld");
 		expect((await run(fs)).code).toBe(GRANT_REFUSED);
@@ -166,7 +166,9 @@ describe("lane clear — the grant", () => {
 
 		const resumed = await transition("UNBLOCKED");
 		expect(resumed.code).toBe(0);
-		expect(JSON.parse(resumed.stdout)).toMatchObject({current: {pipeline: {issue: "review"}}});
+		expect(JSON.parse(resumed.stdout)).toMatchObject({
+			current: { pipeline: { issue: "review" } },
+		});
 		expect((await transition("FAIL")).code).toBe(0);
 		expect(state(fs.written.get(LOG) ?? "")).toMatchObject({
 			type: "build",
@@ -210,7 +212,7 @@ describe("lane clear — the grant", () => {
 
 	it("grants one round per call — the second call derives the round after the first", async () => {
 		const fs = laneWith(
-			`${spent()}${line("CLEARED", {round: CAP_ROUND})}${line("UNBLOCKED")}${line("FAIL")}`,
+			`${spent()}${line("CLEARED", { round: CAP_ROUND })}${line("UNBLOCKED")}${line("FAIL")}`,
 		);
 
 		expect(JSON.parse((await run(fs)).stdout)).toMatchObject({
@@ -240,7 +242,7 @@ describe("lane clear — the refusals, each with the log unappended", () => {
 	});
 
 	it("refuses a blank rationale for the same reason, before it reads the lane at all", async () => {
-		const fs = fakeFs({files: {}});
+		const fs = fakeFs({ files: {} });
 
 		const out = await run(fs, "   ");
 		expect(out.code).toBe(RATIONALE_REFUSED);
@@ -248,13 +250,13 @@ describe("lane clear — the refusals, each with the log unappended", () => {
 	});
 
 	it("refuses an absent lane", async () => {
-		const fs = fakeFs({files: {}});
+		const fs = fakeFs({ files: {} });
 
 		expect((await run(fs)).code).toBe(LANE_ABSENT);
 	});
 
 	it("reports a failed append as UNKNOWN, never as a cleared round", async () => {
-		const fs = laneWith(spent(), {unwritable: [LOG]});
+		const fs = laneWith(spent(), { unwritable: [LOG] });
 
 		const out = await run(fs);
 		expect(out.code).toBe(APPEND_UNKNOWN);
@@ -285,7 +287,7 @@ describe("lane clear — the PR-side grant", () => {
 				repository: {
 					issue: {
 						closedByPullRequestsReferences: {
-							pageInfo: {hasNextPage: false, endCursor: null},
+							pageInfo: { hasNextPage: false, endCursor: null },
 							nodes: numbers.map((number) => ({
 								number,
 								url: `https://forge.example/o/r/pull/${number}`,
@@ -300,8 +302,8 @@ describe("lane clear — the PR-side grant", () => {
 	const openPull = served({
 		number: PR,
 		state: "open",
-		head: {sha: "03135b9188d2be6c0a4b7bd0b7a3ff9c53f0f2b1"},
-		base: {ref: "main"},
+		head: { sha: "03135b9188d2be6c0a4b7bd0b7a3ff9c53f0f2b1" },
+		base: { ref: "main" },
 		body: "Fixes #42\n\n## Deviations\nNone.\n",
 		changed_files: 2,
 		comments: 0,
@@ -310,10 +312,10 @@ describe("lane clear — the PR-side grant", () => {
 
 	/** One graded head per round, so the PR's own budget reads as spent. */
 	const failRounds = (rounds: number): ReadonlyArray<Record<string, unknown>> =>
-		Array.from({length: rounds}, (_unused, index) => ({
+		Array.from({ length: rounds }, (_unused, index) => ({
 			id: index + 1,
 			body: `review-code: FAIL @ ${index + 1}c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f — round ${index + 1}`,
-			user: {login: "agent"},
+			user: { login: "agent" },
 			created_at: `2026-09-1${index + 1}T00:00:00Z`,
 		}));
 
@@ -322,8 +324,8 @@ describe("lane clear — the PR-side grant", () => {
 		request.startsWith("POST") && request.includes(`/issues/${PR}/comments`);
 
 	/** A config at the base still declaring the retired key — named in a notice, deciding nothing. */
-	const RETIRED_KEY: HttpReply = {status: 200, body: '{"capClearAuthors": ["@someone-else"]}'};
-	const POSTED: HttpReply = served({id: 900, html_url: "https://forge.example/c"}, 201);
+	const RETIRED_KEY: HttpReply = { status: 200, body: '{"capClearAuthors": ["@someone-else"]}' };
+	const POSTED: HttpReply = served({ id: 900, html_url: "https://forge.example/c" }, 201);
 
 	const board = (
 		rounds: number,
@@ -334,15 +336,15 @@ describe("lane clear — the PR-side grant", () => {
 		[SEARCH, NO_NOMINATIONS],
 		[PULL, openPull],
 		[COMMENTS, served(failRounds(rounds))],
-		[VIEWER, served({login: "usirin"})],
+		[VIEWER, served({ login: "usirin" })],
 		...CP_ROSTER,
-		[PERMISSION, served({permission: "admin"})],
+		[PERMISSION, served({ permission: "admin" })],
 		[POST, POSTED],
 		[
 			GET_COMMENT,
 			served({
 				body: `cap-cleared: round ${CAP_ROUND} · 2026-09-15T07:16:03Z\n`,
-				user: {login: "usirin"},
+				user: { login: "usirin" },
 			}),
 		],
 	];
@@ -356,7 +358,7 @@ describe("lane clear — the PR-side grant", () => {
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			answer: "cleared",
 			round: CAP_ROUND,
-			pr: {number: PR, answer: "cleared", round: CAP_ROUND, cap: CAP_ROUND + 1},
+			pr: { number: PR, answer: "cleared", round: CAP_ROUND, cap: CAP_ROUND + 1 },
 		});
 		const posted = out.bodies.filter((_body, index) => wrote(out.requests[index] ?? ""));
 		expect(posted[0]).toContain(WHY);
@@ -381,7 +383,7 @@ describe("lane clear — the PR-side grant", () => {
 	it("refuses whole when the account may not clear a round, log unappended", async () => {
 		const fs = laneWith(spent());
 
-		const out = await run(fs, WHY, board(CAP_ROUND, [[VIEWER, served({login: "someone-else"})]]));
+		const out = await run(fs, WHY, board(CAP_ROUND, [[VIEWER, served({ login: "someone-else" })]]));
 
 		expect(out.code).toBe(GRANT_UNAUTHORIZED);
 		expect(out.stderr.join(" ")).toContain("is not in o/r's control-plane set at main");
@@ -407,13 +409,13 @@ describe("lane clear — the PR-side grant", () => {
 			{
 				id: 800,
 				body: "Driver grant · lane 42 · task issue · 2026-09-14\n\nthe earlier round\n",
-				user: {login: "usirin"},
+				user: { login: "usirin" },
 				created_at: "2026-09-14T00:00:00Z",
 			},
 			{
 				id: 801,
 				body: `cap-cleared: round ${CAP_ROUND} · 2026-09-14T00:00:01Z\n`,
-				user: {login: "usirin"},
+				user: { login: "usirin" },
 				created_at: "2026-09-14T00:00:01Z",
 			},
 		];
@@ -424,11 +426,11 @@ describe("lane clear — the PR-side grant", () => {
 			[PULL, openPull],
 			[COMMENTS, served(standing)],
 			...CP_ROSTER,
-			[PERMISSION, served({permission: "admin"})],
+			[PERMISSION, served({ permission: "admin" })],
 		]);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout).pr).toMatchObject({answer: "held", round: CAP_ROUND});
+		expect(JSON.parse(out.stdout).pr).toMatchObject({ answer: "held", round: CAP_ROUND });
 		expect(out.requests.some(wrote)).toBe(false);
 	});
 
@@ -440,7 +442,7 @@ describe("lane clear — the PR-side grant", () => {
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			answer: "cleared",
-			pr: {number: PR, answer: "unspent", round: 1},
+			pr: { number: PR, answer: "unspent", round: 1 },
 		});
 		expect(out.stderr.join(" ")).toContain("budget is not spent");
 		expect(out.requests.some(wrote)).toBe(false);
@@ -469,7 +471,7 @@ describe("lane clear — the PR-side grant", () => {
 			[PULL, openPull],
 			[
 				new RegExp(`^GET \\S+/repos/o/r/pulls/${PR + 1}$`),
-				served({...JSON.parse(openPull.body), number: PR + 1}),
+				served({ ...JSON.parse(openPull.body), number: PR + 1 }),
 			],
 		]);
 

@@ -1,16 +1,16 @@
-import {describe, expect, it} from "vitest";
-import {loadConfig, resolve} from "../load.ts";
-import {AUDIT_CATALOGS, auditCatalogsKey} from "./audit-catalogs.ts";
+import { describe, expect, it } from "vitest";
+import { loadConfig, resolve } from "../load.ts";
+import { AUDIT_CATALOGS, auditCatalogsKey } from "./audit-catalogs.ts";
 
 const declared = (value: unknown) =>
 	resolve(
-		loadConfig({_tag: "Text", text: JSON.stringify({[AUDIT_CATALOGS]: value})}),
+		loadConfig({ _tag: "Text", text: JSON.stringify({ [AUDIT_CATALOGS]: value }) }),
 		auditCatalogsKey,
 	);
 
 describe("a repo that declares nothing runs the gate at its shipped coverage", () => {
 	it("resolves the empty list for a repo with no config at all", () => {
-		const resolved = resolve(loadConfig({_tag: "Absent"}), auditCatalogsKey);
+		const resolved = resolve(loadConfig({ _tag: "Absent" }), auditCatalogsKey);
 		expect(resolved._tag).toBe("Default");
 		if (resolved._tag !== "Default") return;
 		expect(resolved.value).toEqual([]);
@@ -35,11 +35,11 @@ describe("a declared value is repo-relative markdown paths", () => {
 	});
 
 	it.each([
-		{value: "docs/smells.md", why: "not an array"},
-		{value: [42], why: "an entry that is not a string"},
-		{value: [""], why: "an empty entry"},
-		{value: ["   "], why: "a whitespace-only entry"},
-	])("refuses $why, naming the key", ({value}) => {
+		{ value: "docs/smells.md", why: "not an array" },
+		{ value: [42], why: "an entry that is not a string" },
+		{ value: [""], why: "an empty entry" },
+		{ value: ["   "], why: "a whitespace-only entry" },
+	])("refuses $why, naming the key", ({ value }) => {
 		const resolved = declared(value);
 		expect(resolved._tag).toBe("Malformed");
 		if (resolved._tag !== "Malformed") return;
@@ -49,11 +49,11 @@ describe("a declared value is repo-relative markdown paths", () => {
 
 describe("a path the gate could not read is refused, never repaired", () => {
 	it.each([
-		{value: ["/etc/smells.md"], fragment: "absolute path"},
-		{value: ["../sibling/smells.md"], fragment: "climbs out of the repo"},
-		{value: ["docs/smells.txt"], fragment: "not a `.md` file"},
-		{value: ["docs/smells.md", "docs/smells.md"], fragment: "twice"},
-	])("refuses $value, saying why", ({value, fragment}) => {
+		{ value: ["/etc/smells.md"], fragment: "absolute path" },
+		{ value: ["../sibling/smells.md"], fragment: "climbs out of the repo" },
+		{ value: ["docs/smells.txt"], fragment: "not a `.md` file" },
+		{ value: ["docs/smells.md", "docs/smells.md"], fragment: "twice" },
+	])("refuses $value, saying why", ({ value, fragment }) => {
 		const resolved = declared(value);
 		expect(resolved._tag).toBe("Malformed");
 		if (resolved._tag !== "Malformed") return;

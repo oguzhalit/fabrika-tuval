@@ -8,10 +8,10 @@
  * instruction the agent actually executes was wrong. These are data tests over the real skill files,
  * so dropping the flag turns the suite red.
  */
-import {readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import {assert, describe, it} from "@effect/vitest";
-import {audienceAxisBinds, type ClaimPurpose} from "./scope-admission.ts";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { assert, describe, it } from "@effect/vitest";
+import { audienceAxisBinds, type ClaimPurpose } from "./scope-admission.ts";
 
 /** The skill directory of each exempt lane, and the purpose its claim must carry. */
 const EXEMPT_LANES: Readonly<Record<string, ClaimPurpose>> = {

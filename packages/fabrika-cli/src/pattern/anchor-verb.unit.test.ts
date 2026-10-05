@@ -1,9 +1,9 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeFs, fakeShell, okOut} from "../fakes.test-support.ts";
-import {runAnchor} from "./anchor-verb.ts";
-import {DOC_ABSENT, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {ANCHORED_DOC, FIXTURE_MANIFEST, FIXTURES, PLAIN_DOC} from "./fixtures.test-support.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeFs, fakeShell, okOut } from "../fakes.test-support.ts";
+import { runAnchor } from "./anchor-verb.ts";
+import { DOC_ABSENT, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { ANCHORED_DOC, FIXTURE_MANIFEST, FIXTURES, PLAIN_DOC } from "./fixtures.test-support.ts";
 
 const SHA = "49a22902d1e0c7b3f5a8e4126b9d0f3c7a1e5b82";
 const DIR = `${FIXTURES}/anchored`;
@@ -39,8 +39,8 @@ const run = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runAnchor({...options, ...opts}),
-			Layer.merge(shell(overrides, opts.slug ?? options.slug).layer, fakeFs({files}).layer),
+			runAnchor({ ...options, ...opts }),
+			Layer.merge(shell(overrides, opts.slug ?? options.slug).layer, fakeFs({ files }).layer),
 		),
 	);
 
@@ -62,14 +62,14 @@ describe("runAnchor", () => {
 	// The contract's second worked example. `unanchored` is a FACT, not a fault: most pattern docs
 	// describe in-repo shapes and are anchored to no dependency at all.
 	it("answers `unanchored` for a doc that declares nothing", async () => {
-		const out = await run([], {slug: "plain-doc"});
+		const out = await run([], { slug: "plain-doc" });
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("anchor\tunanchored\t0\t0\t0\t0\n");
 	});
 
 	// The contract's third worked example.
 	it("carries the whole record through --json", async () => {
-		const out = await run([], {json: true});
+		const out = await run([], { json: true });
 		expect(out.stdout).toBe(
 			`{"outcome":"moved","declared":2,"moved":1,"unpinned":1,"malformed":0,"packages":[{"package":"acme-queue","declaredVersion":"4.1.0","pinnedVersion":"4.2.0","state":"moved"},{"package":"@acme/retry","declaredVersion":"2.0.0","pinnedVersion":null,"state":"unpinned"}],"manifest":"${MANIFEST}","baseRef":"origin/main","baseSha":"${SHA}"}\n`,
 		);
@@ -132,7 +132,7 @@ describe("runAnchor", () => {
 		const out = await run(manifest(text));
 		expect(out.code).toBe(0);
 		expect(out.stdout).toContain("pkg\tacme-queue\t4.1.0\t4.1.0\tmatched");
-		const plain = await run(manifest(text), {slug: "plain-doc"});
+		const plain = await run(manifest(text), { slug: "plain-doc" });
 		expect(plain.code).toBe(0);
 		expect(plain.stdout).toBe("anchor\tunanchored\t0\t0\t0\t0\n");
 	});
@@ -161,7 +161,7 @@ describe("runAnchor", () => {
 		]);
 		expect(malformed.code).toBe(0);
 		expect(malformed.stdout).toContain("anchor\tmalformed\t1\t0\t0\t1");
-		const invalid = await run(manifest("catalogs: []\n"), {slug: "plain-doc"});
+		const invalid = await run(manifest("catalogs: []\n"), { slug: "plain-doc" });
 		expect(invalid.code).toBe(PRECONDITION_UNKNOWN);
 		expect(invalid.stdout).toBe("");
 	});

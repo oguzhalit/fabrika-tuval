@@ -5,14 +5,14 @@
  * refusal is {@link ZERO_SCOPE}, not a usage error: a verb asked to judge a format it does not have
  * judged nothing, and a check over nothing that exits 0 is a vacuous pass.
  */
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {ZERO_SCOPE} from "./codes.ts";
-import type {WireFormat} from "./format.ts";
-import {findFormat, registeredKeys} from "./registry.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { ZERO_SCOPE } from "./codes.ts";
+import type { WireFormat } from "./format.ts";
+import { findFormat, registeredKeys } from "./registry.ts";
 
 export type FormatLookup =
-	| {readonly _tag: "Format"; readonly format: WireFormat}
-	| {readonly _tag: "Refusal"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Format"; readonly format: WireFormat }
+	| { readonly _tag: "Refusal"; readonly outcome: VerbOutcome };
 
 export const resolveFormat = (verb: string, key: string): FormatLookup => {
 	const keys = registeredKeys();
@@ -35,5 +35,5 @@ export const resolveFormat = (verb: string, key: string): FormatLookup => {
 			),
 		};
 	}
-	return {_tag: "Format", format};
+	return { _tag: "Format", format };
 };

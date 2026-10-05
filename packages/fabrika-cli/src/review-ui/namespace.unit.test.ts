@@ -7,9 +7,9 @@
  * a future narrowing of the pattern reds here rather than silently making this group's every
  * verdict unreadable.
  */
-import {assert, describe, it} from "@effect/vitest";
-import {clause, emit, headSha, read} from "../wire/verdict-marker.ts";
-import {NAMESPACE} from "./post-verb.ts";
+import { assert, describe, it } from "@effect/vitest";
+import { clause, emit, headSha, read } from "../wire/verdict-marker.ts";
+import { NAMESPACE } from "./post-verb.ts";
 
 const HEAD = "03135b91aa04f7e2c9d8b1640a5c22e9f01b7d3c";
 

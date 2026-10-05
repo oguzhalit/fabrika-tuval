@@ -11,9 +11,9 @@
  * workspace globs actually match the closest package. `package.json` only; no lockfile, no marker
  * file. No root found is not an error.
  */
-import {Effect, type FileSystem, Path} from "effect";
-import {exists, type ReadFailed, readFile} from "../io/fs.ts";
-import {isRecord, parseJson} from "../io/json.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { exists, type ReadFailed, readFile } from "../io/fs.ts";
+import { isRecord, parseJson } from "../io/json.ts";
 
 /** An ancestor that holds a `package.json`, with whatever workspace globs that manifest declares. */
 export interface PackageDir {
@@ -159,7 +159,7 @@ export const discoverRepoRoot = (
 			const globs = (yield* exists(pnpmPath))
 				? pnpmWorkspaceGlobs(yield* readFile(pnpmPath))
 				: manifestWorkspaceGlobs(yield* readFile(manifestPath));
-			candidates.push({dir, globs});
+			candidates.push({ dir, globs });
 		}
 		return chooseRoot(path, candidates);
 	});
@@ -172,8 +172,8 @@ export const discoverRepoRoot = (
  * means "undecided", so a caller either has an answer or is holding an `Effect` that failed.
  */
 export type SelfOrigin =
-	| {readonly _tag: "no-checkout"}
-	| {readonly _tag: "checkout"; readonly root: string};
+	| { readonly _tag: "no-checkout" }
+	| { readonly _tag: "checkout"; readonly root: string };
 
 const NODE_MODULES = "node_modules";
 
@@ -194,11 +194,11 @@ export const originOf = (
 	Effect.gen(function* () {
 		const path = yield* Path.Path;
 		const resolved = path.resolve(packageRoot);
-		if (resolved.split(path.sep).includes(NODE_MODULES)) return {_tag: "no-checkout"} as const;
+		if (resolved.split(path.sep).includes(NODE_MODULES)) return { _tag: "no-checkout" } as const;
 		const parent = path.dirname(resolved);
-		if (parent === resolved) return {_tag: "no-checkout"} as const;
+		if (parent === resolved) return { _tag: "no-checkout" } as const;
 		const root = yield* discoverRepoRoot(parent);
 		return root === undefined
-			? ({_tag: "no-checkout"} as const)
-			: ({_tag: "checkout", root} as const);
+			? ({ _tag: "no-checkout" } as const)
+			: ({ _tag: "checkout", root } as const);
 	});

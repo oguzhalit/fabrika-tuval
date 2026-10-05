@@ -19,9 +19,9 @@ export interface AsOf {
 	readonly kind: AsOfKind | null;
 }
 
-export const readNow = (at: string): AsOf => ({at, kind: "read-now"});
-export const fromArtifact = (at: string): AsOf => ({at, kind: "artifact"});
-export const noAsOf: AsOf = {at: null, kind: null};
+export const readNow = (at: string): AsOf => ({ at, kind: "read-now" });
+export const fromArtifact = (at: string): AsOf => ({ at, kind: "artifact" });
+export const noAsOf: AsOf = { at: null, kind: null };
 
 export const asOfToken = (asOf: AsOf): string => asOf.at ?? UNKNOWN_AS_OF;
 

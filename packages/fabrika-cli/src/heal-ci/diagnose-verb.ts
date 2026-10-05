@@ -25,14 +25,14 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9322#issuecomment-5703498377
  */
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type Producer, producerFor, resolveCi} from "../config/ci-producer.ts";
-import type {Resolution} from "../config/key-group.ts";
-import type {CiSurface} from "../config/keys/ci.ts";
-import {ok} from "../io/git.ts";
-import {type CommentRecord, listComments} from "../io/issues.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type Producer, producerFor, resolveCi } from "../config/ci-producer.ts";
+import type { Resolution } from "../config/key-group.ts";
+import type { CiSurface } from "../config/keys/ci.ts";
+import { ok } from "../io/git.ts";
+import { type CommentRecord, listComments } from "../io/issues.ts";
 import {
 	commitExists,
 	getPullRequest,
@@ -40,14 +40,19 @@ import {
 	type PullRecord,
 	permissionFor,
 } from "../io/pulls.ts";
-import {prOwnershipLine} from "../ownership/pr-ownership.ts";
-import {readPrOwnership} from "../ownership/read.ts";
-import {authorityNote, readBlockingSet, reportedLine, unreadableCause} from "../review/blocking.ts";
-import {classConfigOfPull} from "../review/class-config.ts";
-import {partitionWithUi, shipNamespacesOf, touchesGovernanceRoot} from "../review/classes.ts";
-import {platformCapLine, platformFileSet} from "../review/local-file-set.ts";
-import {isStalled, rollupOf, statusOf} from "../review/rollup.ts";
-import {inForce, ROUTABLE} from "../ship/gate-verb.ts";
+import { prOwnershipLine } from "../ownership/pr-ownership.ts";
+import { readPrOwnership } from "../ownership/read.ts";
+import {
+	authorityNote,
+	readBlockingSet,
+	reportedLine,
+	unreadableCause,
+} from "../review/blocking.ts";
+import { classConfigOfPull } from "../review/class-config.ts";
+import { partitionWithUi, shipNamespacesOf, touchesGovernanceRoot } from "../review/classes.ts";
+import { platformCapLine, platformFileSet } from "../review/local-file-set.ts";
+import { isStalled, rollupOf, statusOf } from "../review/rollup.ts";
+import { inForce, ROUTABLE } from "../ship/gate-verb.ts";
 import {
 	behindBase,
 	countWorkflowRuns,
@@ -58,7 +63,7 @@ import {
 	pullTimeline,
 	type ShipCheckRun,
 } from "../ship/github.ts";
-import {queueStateOf} from "../ship/queue.ts";
+import { queueStateOf } from "../ship/queue.ts";
 import {
 	badNumber,
 	inspectedSha,
@@ -66,15 +71,15 @@ import {
 	prefixMatch,
 	resolveTargetRepo,
 } from "../ship/target.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {read as readRoute} from "../wire/routed-elsewhere.ts";
-import {read as readMarker} from "../wire/verdict-marker.ts";
-import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {commitPushedAt, readBaseConflict} from "./github.ts";
-import {buildBound, type LaneToken, laneFor, type Standing} from "./lane.ts";
-import {type Link, linkOf, renderLink} from "./link.ts";
-import {type CiToken, classifyStall, type StallToken, strandAgeMinutes} from "./stall.ts";
-import {compare} from "./surface.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { read as readRoute } from "../wire/routed-elsewhere.ts";
+import { read as readMarker } from "../wire/verdict-marker.ts";
+import { INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { commitPushedAt, readBaseConflict } from "./github.ts";
+import { buildBound, type LaneToken, laneFor, type Standing } from "./lane.ts";
+import { type Link, linkOf, renderLink } from "./link.ts";
+import { type CiToken, classifyStall, type StallToken, strandAgeMinutes } from "./stall.ts";
+import { compare } from "./surface.ts";
 
 const VERB = "heal-ci diagnose";
 
@@ -157,21 +162,21 @@ export interface Diagnosis {
 	 * Who opened the PR, and whether the pipeline owns it. The standing is read only for a class whose
 	 * work can reach `build` (`./lane.ts`'s `buildBound`), and is `unread` otherwise.
 	 */
-	readonly author: {readonly login: string; readonly standing: Standing};
-	readonly gates: {readonly state: string; readonly pass: number; readonly required: number};
-	readonly ci: {readonly rollup: CiToken; readonly contexts: number};
+	readonly author: { readonly login: string; readonly standing: Standing };
+	readonly gates: { readonly state: string; readonly pass: number; readonly required: number };
+	readonly ci: { readonly rollup: CiToken; readonly contexts: number };
 	readonly queue: string;
 	readonly link: Link;
-	readonly scanned: {readonly comments: number; readonly checks: number};
+	readonly scanned: { readonly comments: number; readonly checks: number };
 	readonly behindBase: number;
 	readonly notices: ReadonlyArray<string>;
 }
 
 export type DiagnoseResult =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
 	/** The PR closed or merged between a sweep's list read and its classification. */
-	| {readonly _tag: "Gone"}
-	| {readonly _tag: "Diagnosis"; readonly diagnosis: Diagnosis};
+	| { readonly _tag: "Gone" }
+	| { readonly _tag: "Diagnosis"; readonly diagnosis: Diagnosis };
 
 const unreadable = (what: string, forPr: number, reason: string): string =>
 	`${VERB}: cannot read ${what} for #${forPr}: ${reason} — the stall class is UNKNOWN, never "attended".`;
@@ -193,12 +198,12 @@ const ciTokenOf = (
 	producer: Producer,
 	runCount: number,
 	wedged: boolean,
-): CiToken | {readonly refusal: Extract<Producer, {readonly reason: string}>} => {
+): CiToken | { readonly refusal: Extract<Producer, { readonly reason: string }> } => {
 	if (wedged) return "wedged";
 	if (runs.length > 0) return rollupOf(runs);
 	if (producer._tag === "OptedOut") return "none";
 	if (producer._tag === "Present") return runCount === 0 ? "no-runs" : "pending";
-	return {refusal: producer};
+	return { refusal: producer };
 };
 
 /**
@@ -225,7 +230,7 @@ export const diagnoseOne = (
 		// Read directly rather than through `resolvePull`: a 404 here is `Gone`, which a sweep counts as
 		// scanned-but-not-stalled and a direct call turns into its own `7` refusal.
 		const found = yield* getPullRequest(repo, pr);
-		if (found._tag === "Absent") return {_tag: "Gone" as const};
+		if (found._tag === "Absent") return { _tag: "Gone" as const };
 		if (found._tag === "Unknown") {
 			return {
 				_tag: "Refused" as const,
@@ -429,12 +434,12 @@ export const diagnoseOne = (
 			VERB,
 			'the required namespace set and the §CP flag are UNKNOWN, never "attended".',
 			repo,
-			{headSha: bound, baseRef: pull.baseRef},
+			{ headSha: bound, baseRef: pull.baseRef },
 		);
 		if (classConfig._tag === "Refused") {
 			return refused(PRECONDITION_UNKNOWN, classConfig.message);
 		}
-		const {governedRoots, uiPrefixes} = classConfig.config;
+		const { governedRoots, uiPrefixes } = classConfig.config;
 		const required = shipNamespacesOf(partitionWithUi(changed, governedRoots, uiPrefixes));
 		const authorized = new Map<string, boolean>();
 		const candidates: Array<{
@@ -463,7 +468,7 @@ export const diagnoseOne = (
 				);
 			}
 			if (authorized.get(comment.author) !== true) continue;
-			candidates.push({...claim, stamp: comment.updatedAt, commentId: comment.id});
+			candidates.push({ ...claim, stamp: comment.updatedAt, commentId: comment.id });
 		}
 		const passes = required.filter((name) => {
 			const winner = inForce(
@@ -550,7 +555,7 @@ export const diagnoseOne = (
 		if (buildBound(verdict.token, owner)) {
 			const read = yield* readPrOwnership(
 				repo,
-				{number: pr, author: pull.authorLogin, baseRef: pull.baseRef},
+				{ number: pr, author: pull.authorLogin, baseRef: pull.baseRef },
 				Effect.succeed(ok(commented.value)),
 			);
 			if (read._tag === "Unknown") {
@@ -580,11 +585,15 @@ export const diagnoseOne = (
 			diagnosis: {
 				pr,
 				token: verdict.token,
-				lane: laneFor(verdict.token, {ownerLogin: owner, authorLogin: pull.authorLogin, standing}),
+				lane: laneFor(verdict.token, {
+					ownerLogin: owner,
+					authorLogin: pull.authorLogin,
+					standing,
+				}),
 				head: bound,
 				ageMinutes: strandAgeMinutes(pushedAt.value, lastActivityAt, params.now),
-				owner: {login: owner, claimedAt, lastActivityAt},
-				author: {login: pull.authorLogin, standing},
+				owner: { login: owner, claimedAt, lastActivityAt },
+				author: { login: pull.authorLogin, standing },
 				gates: {
 					state:
 						required.length === 0
@@ -595,10 +604,10 @@ export const diagnoseOne = (
 					pass: passes,
 					required: required.length,
 				},
-				ci: {rollup: token, contexts: failingOrStranded},
+				ci: { rollup: token, contexts: failingOrStranded },
 				queue,
 				link,
-				scanned: {comments: commented.value.length, checks: blocking.length},
+				scanned: { comments: commented.value.length, checks: blocking.length },
 				behindBase: drift.value,
 				notices,
 			},
@@ -617,10 +626,14 @@ export const renderDiagnosis = (found: Diagnosis, json: boolean): VerbOutcome =>
 					ageMinutes: found.ageMinutes,
 					owner: found.owner,
 					author: found.author,
-					gates: {state: found.gates.state, pass: found.gates.pass, required: found.gates.required},
-					ci: {rollup: found.ci.rollup, contexts: found.ci.contexts},
+					gates: {
+						state: found.gates.state,
+						pass: found.gates.pass,
+						required: found.gates.required,
+					},
+					ci: { rollup: found.ci.rollup, contexts: found.ci.contexts },
 					queue: found.queue,
-					link: {kind: found.link.kind, number: found.link.number},
+					link: { kind: found.link.kind, number: found.link.number },
 					scanned: found.scanned,
 					behindBase: found.behindBase,
 				}),

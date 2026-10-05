@@ -11,11 +11,18 @@
  * core's firewall predicate, so the founder-authored normative manifest has no path here at all.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {exists, type ReadFailed, readDir, readFile, type WriteFailed, writeFile} from "../io/fs.ts";
-import {answer, type VerbOutcome} from "../verb.ts";
-import {atFile} from "./annotate.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import {
+	exists,
+	type ReadFailed,
+	readDir,
+	readFile,
+	type WriteFailed,
+	writeFile,
+} from "../io/fs.ts";
+import { answer, type VerbOutcome } from "../verb.ts";
+import { atFile } from "./annotate.ts";
 import {
 	buildInventory,
 	INVENTORY_ARTIFACT,

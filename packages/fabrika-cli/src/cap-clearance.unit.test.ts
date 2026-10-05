@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	budgetWith,
 	capReached,
@@ -7,7 +7,7 @@ import {
 	effectiveCap,
 	grantedRounds,
 } from "./cap-clearance.ts";
-import {CAP_ROUND, RETRY_BUDGET} from "./retry-budget.ts";
+import { CAP_ROUND, RETRY_BUDGET } from "./retry-budget.ts";
 
 describe("clearances against the declared cap", () => {
 	it("honours a legacy lane's round below the current PR cap exactly once", () => {
@@ -18,15 +18,10 @@ describe("clearances against the declared cap", () => {
 		expect(effectiveCap([3])).toBe(CAP_ROUND);
 	});
 
-	it.each([
-		0,
-		-1,
-		2,
-		2.5,
-		Number.NaN,
-		Number.POSITIVE_INFINITY,
-	])("ignores invalid or premature round %s on a legacy lane", (round) =>
-		expect(budgetWith(2, [round])).toBe(2));
+	it.each([0, -1, 2, 2.5, Number.NaN, Number.POSITIVE_INFINITY])(
+		"ignores invalid or premature round %s on a legacy lane",
+		(round) => expect(budgetWith(2, [round])).toBe(2),
+	);
 
 	it("filters against a higher declared cap and keeps valid higher grants", () => {
 		expect(capWith(6, [4, 5])).toBe(6);
@@ -73,16 +68,14 @@ describe("capReached", () => {
 	 * `CAP_ROUND + grants` it landed exactly ON the new cap and bought nothing, so the lane sat with
 	 * an honoured clearance and no round to build.
 	 */
-	it.each([
-		CAP_ROUND,
-		CAP_ROUND + 1,
-		CAP_ROUND + 4,
-		CAP_ROUND + 9,
-	])("lets round %i through when the grant was stamped at it, with no earlier grant", (round) => {
-		expect(capReached(round, [round])).toBe(false);
-		expect(capReached(round + 1, [round])).toBe(true);
-		expect(effectiveCap([round])).toBe(round + 1);
-	});
+	it.each([CAP_ROUND, CAP_ROUND + 1, CAP_ROUND + 4, CAP_ROUND + 9])(
+		"lets round %i through when the grant was stamped at it, with no earlier grant",
+		(round) => {
+			expect(capReached(round, [round])).toBe(false);
+			expect(capReached(round + 1, [round])).toBe(true);
+			expect(effectiveCap([round])).toBe(round + 1);
+		},
+	);
 });
 
 /**
@@ -96,15 +89,15 @@ describe("the lane guard and the verdict fold spend the same grant", () => {
 		rounds - 1 >= effectiveBudget(cleared);
 
 	it.each([
-		{rounds: CAP_ROUND - 1, cleared: []},
-		{rounds: CAP_ROUND, cleared: []},
-		{rounds: CAP_ROUND, cleared: [CAP_ROUND]},
-		{rounds: CAP_ROUND + 1, cleared: [CAP_ROUND]},
-		{rounds: CAP_ROUND + 1, cleared: [CAP_ROUND, CAP_ROUND + 1]},
-		{rounds: CAP_ROUND + 2, cleared: [CAP_ROUND, CAP_ROUND + 1]},
-		{rounds: CAP_ROUND + 3, cleared: [CAP_ROUND + 3]},
-		{rounds: CAP_ROUND + 4, cleared: [CAP_ROUND + 3]},
-	])("agrees at $rounds round(s) with $cleared cleared", ({rounds, cleared}) => {
+		{ rounds: CAP_ROUND - 1, cleared: [] },
+		{ rounds: CAP_ROUND, cleared: [] },
+		{ rounds: CAP_ROUND, cleared: [CAP_ROUND] },
+		{ rounds: CAP_ROUND + 1, cleared: [CAP_ROUND] },
+		{ rounds: CAP_ROUND + 1, cleared: [CAP_ROUND, CAP_ROUND + 1] },
+		{ rounds: CAP_ROUND + 2, cleared: [CAP_ROUND, CAP_ROUND + 1] },
+		{ rounds: CAP_ROUND + 3, cleared: [CAP_ROUND + 3] },
+		{ rounds: CAP_ROUND + 4, cleared: [CAP_ROUND + 3] },
+	])("agrees at $rounds round(s) with $cleared cleared", ({ rounds, cleared }) => {
 		expect(laneFreezes(rounds, cleared)).toBe(capReached(rounds, cleared));
 	});
 

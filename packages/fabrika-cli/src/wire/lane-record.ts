@@ -26,8 +26,8 @@
  * state. A record where they disagree is `Malformed`, never a record carrying two numbers.
  */
 
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
-import {absent, firstNonBlankLine, malformed, reachesFor} from "./grill-marker.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
+import { absent, firstNonBlankLine, malformed, reachesFor } from "./grill-marker.ts";
 
 /** The key that names these bytes. */
 export const KEY = "lane-record";
@@ -35,7 +35,7 @@ export const KEY = "lane-record";
 declare const INSTANT: unique symbol;
 
 /** An ISO-8601 date or UTC instant. Branded so a record cannot carry a time nobody can compare. */
-export type Instant = string & {readonly [INSTANT]: true};
+export type Instant = string & { readonly [INSTANT]: true };
 
 const INSTANT_RE = /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2}))?$/;
 
@@ -77,12 +77,12 @@ export interface Park {
 
 /** Dollars, or the reason there is no dollar figure. There is no measured zero standing in for "unread". */
 export type Spent =
-	| {readonly _tag: "Measured"; readonly usd: number}
-	| {readonly _tag: "Unmeasured"; readonly reason: string};
+	| { readonly _tag: "Measured"; readonly usd: number }
+	| { readonly _tag: "Unmeasured"; readonly reason: string };
 
 export type Waiting =
-	| {readonly _tag: "None"}
-	| {readonly _tag: "Until"; readonly on: string; readonly until: Instant};
+	| { readonly _tag: "None" }
+	| { readonly _tag: "Until"; readonly on: string; readonly until: Instant };
 
 export interface LaneRecord {
 	readonly issue: number;
@@ -205,10 +205,10 @@ const PARK = /^`([^`]+)` on (\S+) \(([^,]+), (driver|founder)\) at (\S+)$/;
 const COUNT = /^\d+$/;
 
 type Parsed<A> =
-	| {readonly ok: true; readonly value: A}
-	| {readonly ok: false; readonly reason: string};
-const good = <A>(value: A): Parsed<A> => ({ok: true, value});
-const bad = <A>(reason: string): Parsed<A> => ({ok: false, reason});
+	| { readonly ok: true; readonly value: A }
+	| { readonly ok: false; readonly reason: string };
+const good = <A>(value: A): Parsed<A> => ({ ok: true, value });
+const bad = <A>(reason: string): Parsed<A> => ({ ok: false, reason });
 
 const parseCount = (row: Row, cell: string): Parsed<number> =>
 	COUNT.test(cell) ? good(Number(cell)) : bad(`the ${row} row "${cell}" is not a whole count`);
@@ -241,23 +241,23 @@ const parseSpent = (cell: string): Parsed<Spent> => {
 		const reason = cell.slice(UNMEASURED.length).trim();
 		return reason === ""
 			? bad("the Spent $ row is unmeasured and names no reason")
-			: good({_tag: "Unmeasured", reason});
+			: good({ _tag: "Unmeasured", reason });
 	}
 	const matched = /^\$(\d+(?:\.\d+)?)$/.exec(cell);
 	return matched === null
 		? bad(`the Spent $ row "${cell}" is neither "$<amount>" nor "unmeasured — <reason>"`)
-		: good({_tag: "Measured", usd: Number(matched[1])});
+		: good({ _tag: "Measured", usd: Number(matched[1]) });
 };
 
 const parseWaiting = (cell: string): Parsed<Waiting> => {
-	if (cell === NONE) return good({_tag: "None"});
+	if (cell === NONE) return good({ _tag: "None" });
 	const split = cell.lastIndexOf(" until ");
 	const until = split === -1 ? null : instant(cell.slice(split + " until ".length));
 	const on = split === -1 ? "" : cell.slice(0, split).replace(/^on /, "").trim();
 	if (!cell.startsWith("on ") || until === null || on === "") {
 		return bad(`the Waiting row "${cell}" is neither "none" nor "on <what> until <date>"`);
 	}
-	return good({_tag: "Until", on, until});
+	return good({ _tag: "Until", on, until });
 };
 
 const parsePrs = (cell: string): Parsed<ReadonlyArray<number>> => {
@@ -380,7 +380,7 @@ export const read = (artifact: string): LaneRecordRead => {
 	if (wall[1] !== span) {
 		return malformed(`the Wall-clock row reads "${wall[1]}" and its own span is ${span}`, evidence);
 	}
-	return {_tag: "Found", value: record};
+	return { _tag: "Found", value: record };
 };
 
 /** The `wire read` answer: one tab-separated line per field, a line per park, PR and log line. */
@@ -465,7 +465,7 @@ export const decode = (value: unknown): Parsed<LaneRecord> => {
 		typeof spentRaw.usd === "number" &&
 		spentRaw.usd >= 0
 	) {
-		spent = {_tag: "Measured", usd: spentRaw.usd};
+		spent = { _tag: "Measured", usd: spentRaw.usd };
 	} else if (
 		isRecord(spentRaw) &&
 		spentRaw._tag === "Unmeasured" &&
@@ -473,14 +473,14 @@ export const decode = (value: unknown): Parsed<LaneRecord> => {
 		spentRaw.reason.trim() !== "" &&
 		!spentRaw.reason.includes("\n")
 	) {
-		spent = {_tag: "Unmeasured", reason: spentRaw.reason.trim()};
+		spent = { _tag: "Unmeasured", reason: spentRaw.reason.trim() };
 	} else {
 		return bad("spent is neither {_tag: Measured, usd} nor {_tag: Unmeasured, reason}");
 	}
 	const waitingRaw = value.waiting;
 	let waiting: Waiting;
 	if (isRecord(waitingRaw) && waitingRaw._tag === "None") {
-		waiting = {_tag: "None"};
+		waiting = { _tag: "None" };
 	} else {
 		const until = isRecord(waitingRaw) ? instant(String(waitingRaw.until ?? "")) : null;
 		const on =
@@ -488,7 +488,7 @@ export const decode = (value: unknown): Parsed<LaneRecord> => {
 		if (!isRecord(waitingRaw) || waitingRaw._tag !== "Until" || until === null || !waitingOn(on)) {
 			return bad("waiting is neither {_tag: None} nor {_tag: Until, on, until}");
 		}
-		waiting = {_tag: "Until", on, until};
+		waiting = { _tag: "Until", on, until };
 	}
 	if (!Array.isArray(value.prs) || !value.prs.every((pr) => isCount(pr) && pr > 0)) {
 		return bad("prs is not a list of pull request numbers");
@@ -531,12 +531,12 @@ export const emitFromFields = (fields: string): WireEmit => {
 	}
 	const decoded = decode(parsed);
 	return decoded.ok
-		? {_tag: "Composed", bytes: emit(decoded.value)}
-		: {_tag: "Unusable", reason: decoded.reason};
+		? { _tag: "Composed", bytes: emit(decoded.value) }
+		: { _tag: "Unusable", reason: decoded.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: render(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: render(result.value) } : result;
 };

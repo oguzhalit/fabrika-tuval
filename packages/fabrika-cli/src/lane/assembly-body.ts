@@ -15,13 +15,13 @@
  * child by contract, and refusing those would refuse the shape `operate` asks for.
  */
 
-import {issueRefsOf} from "../review/classes.ts";
+import { issueRefsOf } from "../review/classes.ts";
 
 export type TailBodyRead =
 	/** A closing keyword aims at the epic — the body is the run's landing it claims to be. */
-	| {readonly _tag: "Closes"}
+	| { readonly _tag: "Closes" }
 	/** It does not, and `read` says in the reader's own words what the body reaches the epic by. */
-	| {readonly _tag: "Unclosing"; readonly read: string};
+	| { readonly _tag: "Unclosing"; readonly read: string };
 
 /**
  * Whether `body` closes `epic`, and what it says instead when it does not.
@@ -32,9 +32,9 @@ export type TailBodyRead =
  */
 export const tailBodyRead = (body: string, epic: number): TailBodyRead => {
 	const refs = issueRefsOf(body);
-	if (refs.kind === "fixes" && refs.numbers.includes(epic)) return {_tag: "Closes"};
+	if (refs.kind === "fixes" && refs.numbers.includes(epic)) return { _tag: "Closes" };
 	if (refs.kind === "none") {
-		return {_tag: "Unclosing", read: "it links no issue at all"};
+		return { _tag: "Unclosing", read: "it links no issue at all" };
 	}
 	const links = refs.numbers.map((number) => `#${number}`).join(", ");
 	return {

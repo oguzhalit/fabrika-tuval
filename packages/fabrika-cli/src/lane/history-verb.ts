@@ -7,10 +7,10 @@
  * The log IS the history; `from`/`to` are reconstructible by folding, never stored. A fresh lane
  * answers `[]` — no events yet is a well-formed empty history, not a fault.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import {answer, type VerbOutcome} from "../verb.ts";
-import {loadRefusal} from "./refusals.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { answer, type VerbOutcome } from "../verb.ts";
+import { loadRefusal } from "./refusals.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane history";
 

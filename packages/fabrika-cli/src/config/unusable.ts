@@ -16,9 +16,9 @@
  * names its key, and the decoder's words are the ones that repair the file.
  */
 
-import {type DocumentState, LOCAL_CONFIG_PATH} from "./document.ts";
-import type {Load} from "./load.ts";
-import {KEY_GROUPS} from "./registry.ts";
+import { type DocumentState, LOCAL_CONFIG_PATH } from "./document.ts";
+import type { Load } from "./load.ts";
+import { KEY_GROUPS } from "./registry.ts";
 
 const documentReason = (state: DocumentState): string | null => {
 	switch (state._tag) {

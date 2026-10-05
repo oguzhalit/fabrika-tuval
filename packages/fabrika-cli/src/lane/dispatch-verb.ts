@@ -1,29 +1,29 @@
-import {Effect, FileSystem, Path, Result, Stream} from "effect";
-import {ChildProcess, ChildProcessSpawner} from "effect/unstable/process";
-import {assemblyRefreshKey} from "../config/keys/assembly-refresh.ts";
-import {dependencyReconcilerKey} from "../config/keys/dependency-reconciler.ts";
-import {readKey} from "../config/read-key.ts";
-import {execCapture, execStatus} from "../io/exec.ts";
-import {sessionIdFrom, sessionIdUnset} from "../io/session-id.ts";
-import {collectCodexDispatch} from "../spend/codex-dispatch-collector.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {read as readBrief} from "../wire/lane-brief.ts";
-import type {BriefOptions} from "./brief-verb.ts";
-import {LANE_UNREADABLE, NO_SHELL, PROOF_ABSENT} from "./codes.ts";
-import {CODEX_ROLE_SKILLS, codexPrompt, reportedTerminal} from "./codex-dispatch.ts";
-import {applyEvent, foldLog, resolveTask} from "./fold.ts";
-import {configRootOrRefuse} from "./ground.ts";
-import {bareEvent} from "./machine.ts";
-import {epicOf, roleOf} from "./prove.ts";
-import type {ProveOptions} from "./prove-verb.ts";
-import type {RefreshOptions} from "./refresh-verb.ts";
-import {loadRefusal, replayRefusal} from "./refusals.ts";
-import {type LoadedLane, loadLane} from "./store.ts";
-import {handTree} from "./worktree-verb.ts";
+import { Effect, FileSystem, Path, Result, Stream } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
+import { assemblyRefreshKey } from "../config/keys/assembly-refresh.ts";
+import { dependencyReconcilerKey } from "../config/keys/dependency-reconciler.ts";
+import { readKey } from "../config/read-key.ts";
+import { execCapture, execStatus } from "../io/exec.ts";
+import { sessionIdFrom, sessionIdUnset } from "../io/session-id.ts";
+import { collectCodexDispatch } from "../spend/codex-dispatch-collector.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { read as readBrief } from "../wire/lane-brief.ts";
+import type { BriefOptions } from "./brief-verb.ts";
+import { LANE_UNREADABLE, NO_SHELL, PROOF_ABSENT } from "./codes.ts";
+import { CODEX_ROLE_SKILLS, codexPrompt, reportedTerminal } from "./codex-dispatch.ts";
+import { applyEvent, foldLog, resolveTask } from "./fold.ts";
+import { configRootOrRefuse } from "./ground.ts";
+import { bareEvent } from "./machine.ts";
+import { epicOf, roleOf } from "./prove.ts";
+import type { ProveOptions } from "./prove-verb.ts";
+import type { RefreshOptions } from "./refresh-verb.ts";
+import { loadRefusal, replayRefusal } from "./refusals.ts";
+import { type LoadedLane, loadLane } from "./store.ts";
+import { handTree } from "./worktree-verb.ts";
 
 const VERB = "fabrika lane dispatch";
 type Services = FileSystem.FileSystem | Path.Path | ChildProcessSpawner.ChildProcessSpawner;
-type Snapshot = Extract<LoadedLane, {_tag: "Loaded"}>;
+type Snapshot = Extract<LoadedLane, { _tag: "Loaded" }>;
 
 export interface DispatchOptions extends BriefOptions {
 	readonly cwd: string;
@@ -36,9 +36,9 @@ type Refresher = (options: RefreshOptions) => Effect.Effect<VerbOutcome, never, 
 
 type PreRefresh =
 	/** Not an epic child, so no assembly branch is about to be cut from. */
-	| {readonly _tag: "Skipped"}
-	| {readonly _tag: "Refreshed"; readonly notes: ReadonlyArray<string>}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Skipped" }
+	| { readonly _tag: "Refreshed"; readonly notes: ReadonlyArray<string> }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * Put the trunk under the assembly branch before a child's worktree is cut from it.
@@ -59,7 +59,7 @@ const refreshBeforeChild = (
 	refresh: Refresher,
 ): Effect.Effect<PreRefresh, never, Services> =>
 	Effect.gen(function* () {
-		const skipped = {_tag: "Skipped"} as const;
+		const skipped = { _tag: "Skipped" } as const;
 		const loaded = yield* loadLane(options);
 		if (loaded._tag !== "Loaded") return skipped;
 		const epic = epicOf(Object.keys(loaded.lane.tasks));
@@ -70,7 +70,7 @@ const refreshBeforeChild = (
 		// gate reads belongs to the repository that owns it, exactly as `lane refresh --on-review`
 		// reads its own.
 		const configRoot = yield* configRootOrRefuse(VERB, options.cwd);
-		if (typeof configRoot !== "string") return {_tag: "Refused", outcome: configRoot} as const;
+		if (typeof configRoot !== "string") return { _tag: "Refused", outcome: configRoot } as const;
 		const assemblyRefresh = yield* readKey(configRoot, assemblyRefreshKey);
 		const outcome = yield* refresh({
 			...options,
@@ -80,8 +80,8 @@ const refreshBeforeChild = (
 			assemblyRefresh,
 		});
 		return outcome.code === 0
-			? ({_tag: "Refreshed", notes: outcome.stderr} as const)
-			: ({_tag: "Refused", outcome} as const);
+			? ({ _tag: "Refreshed", notes: outcome.stderr } as const)
+			: ({ _tag: "Refused", outcome } as const);
 	});
 
 export const runDispatch = Effect.fn("lane.dispatch")(function* (
@@ -270,7 +270,7 @@ export const runDispatch = Effect.fn("lane.dispatch")(function* (
 				);
 				const handle = yield* ChildProcess.make("codex", ["exec", "--cd", actual, "-"], {
 					cwd: actual,
-					env: {...options.env, FABRIKA_SESSION_ID: identity},
+					env: { ...options.env, FABRIKA_SESSION_ID: identity },
 					extendEnv: false,
 					stdin: Stream.fromIterable([
 						new TextEncoder().encode(codexPrompt(skills, emitted.stdout)),
@@ -282,7 +282,7 @@ export const runDispatch = Effect.fn("lane.dispatch")(function* (
 						Stream.run(handle.stderr, fs.sink(path.join(loaded.dir, `dispatch-${task}.stderr`))),
 						handle.exitCode,
 					],
-					{concurrency: "unbounded"},
+					{ concurrency: "unbounded" },
 				);
 				return code;
 			}),
@@ -320,13 +320,12 @@ export const runDispatch = Effect.fn("lane.dispatch")(function* (
 			),
 		);
 		if (proof.code !== 0) return proof;
-		return answer(JSON.stringify({harness: "codex", task, event: report.event, worktree: actual}), [
-			...refreshNotes,
-			...handedNotes,
-			...proof.stderr,
-		]);
+		return answer(
+			JSON.stringify({ harness: "codex", task, event: report.event, worktree: actual }),
+			[...refreshNotes, ...handedNotes, ...proof.stderr],
+		);
 	}).pipe(
-		Effect.ensuring(Effect.ignore(fs.remove(lock, {recursive: true}))),
+		Effect.ensuring(Effect.ignore(fs.remove(lock, { recursive: true }))),
 		Effect.catchTag("PlatformError", (error) =>
 			Effect.succeed(
 				refuse(

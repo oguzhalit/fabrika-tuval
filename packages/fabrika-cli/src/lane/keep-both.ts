@@ -27,11 +27,11 @@ const isEnd = (line: string): boolean => marks(line, ">");
 
 export type KeepBoth =
 	/** Every hunk was a plain keep-both, and this is the text that keeps them. */
-	| {readonly _tag: "KeepBoth"; readonly text: string; readonly hunks: number}
+	| { readonly _tag: "KeepBoth"; readonly text: string; readonly hunks: number }
 	/** Not this verb's to resolve, for the reason named. */
-	| {readonly _tag: "NotKeepBoth"; readonly reason: string};
+	| { readonly _tag: "NotKeepBoth"; readonly reason: string };
 
-const not = (reason: string): KeepBoth => ({_tag: "NotKeepBoth", reason});
+const not = (reason: string): KeepBoth => ({ _tag: "NotKeepBoth", reason });
 
 const UNTERMINATED = "a conflict block runs to the end of the file unterminated";
 
@@ -121,5 +121,5 @@ export const resolveKeepBoth = (text: string): KeepBoth => {
 	// a wrong acceptance rather than a wrong refusal — the caller stages and commits a live marker —
 	// so the answer is refused unless the text it carries is marker-free.
 	if (out.some(isMarker)) return not(MARKER_SURVIVED);
-	return {_tag: "KeepBoth", text: out.join("\n"), hunks};
+	return { _tag: "KeepBoth", text: out.join("\n"), hunks };
 };

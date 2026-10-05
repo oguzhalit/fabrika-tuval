@@ -10,11 +10,11 @@
  * worked is `--state active`, and only there does such a table answer `none`.
  */
 
-import {Effect} from "effect";
-import {CAMPAIGN_STATES} from "../build/scope-admission.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {type FileEffect, locateRoadmap, readRoadmap} from "./guards.ts";
-import {rowLine} from "./table.ts";
+import { Effect } from "effect";
+import { CAMPAIGN_STATES } from "../build/scope-admission.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { type FileEffect, locateRoadmap, readRoadmap } from "./guards.ts";
+import { rowLine } from "./table.ts";
 
 export interface ListOptions {
 	readonly state: string | null;
@@ -37,7 +37,7 @@ export const runList = (options: ListOptions): FileEffect<VerbOutcome> =>
 
 		const located = yield* locateRoadmap(VERB, options.cwd, options.file);
 		if (located._tag === "Refused") return located.outcome;
-		const {display} = located.located;
+		const { display } = located.located;
 
 		const read = yield* readRoadmap(VERB, located.located, "nothing was parsed");
 		if (read._tag === "Refused") return read.outcome;
@@ -48,7 +48,7 @@ export const runList = (options: ListOptions): FileEffect<VerbOutcome> =>
 
 		const scope = `${VERB}: read ${display} — ${all.length} campaign row(s), ${active} active; printed ${rows.length}.`;
 		if (options.json) {
-			return answer(`${JSON.stringify({rows, file: display})}\n`, [scope]);
+			return answer(`${JSON.stringify({ rows, file: display })}\n`, [scope]);
 		}
 		return answer(rows.length === 0 ? "none\n" : `${rows.map(rowLine).join("\n")}\n`, [scope]);
 	});

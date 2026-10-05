@@ -13,7 +13,7 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9844#issuecomment-5851228368
  */
 
-import {read as readGrant} from "../wire/takeover-grant.ts";
+import { read as readGrant } from "../wire/takeover-grant.ts";
 
 /** Who counts as ours: the declared `ownAccounts` set, or the running account alone. */
 export type OwnSet =
@@ -47,8 +47,8 @@ export interface GrantRow {
 
 /** The control-plane set `.github/CODEOWNERS` names, or why nobody may grant. */
 export type Grantors =
-	| {readonly _tag: "Set"; readonly holds: (login: string) => boolean}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Set"; readonly holds: (login: string) => boolean }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 /** One comment, as much of it as grant judging reads. */
 export interface GrantComment {
@@ -108,13 +108,13 @@ export const judgeGrants = (
 			commentId: comment.id,
 			by: comment.author,
 			honoured: reason === null,
-			...(reason === null ? {} : {reason}),
+			...(reason === null ? {} : { reason }),
 		};
 	});
 
 export type PrOwnership =
-	| {readonly _tag: "Own"; readonly author: string; readonly basis: string}
-	| {readonly _tag: "Granted"; readonly author: string; readonly grant: GrantRow}
+	| { readonly _tag: "Own"; readonly author: string; readonly basis: string }
+	| { readonly _tag: "Granted"; readonly author: string; readonly grant: GrantRow }
 	| {
 			readonly _tag: "Foreign";
 			readonly author: string;
@@ -140,11 +140,11 @@ export const prOwnershipOf = (
 	grants: ReadonlyArray<GrantRow>,
 ): PrOwnership => {
 	if (author.trim() !== "" && ownSetHolds(own, author)) {
-		return {_tag: "Own", author, basis: ownSetText(own)};
+		return { _tag: "Own", author, basis: ownSetText(own) };
 	}
 	const honoured = grants.find((grant) => grant.honoured);
-	if (honoured !== undefined) return {_tag: "Granted", author, grant: honoured};
-	return {_tag: "Foreign", author, basis: ownSetText(own), grants};
+	if (honoured !== undefined) return { _tag: "Granted", author, grant: honoured };
+	return { _tag: "Foreign", author, basis: ownSetText(own), grants };
 };
 
 /** Whether the pipeline may drive the PR. */

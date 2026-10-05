@@ -16,11 +16,11 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10302
  */
 
-import type {ResponseTargets} from "../config/keys/boards.ts";
-import type {ChatTool, DigestSection, DigestSettings} from "../config/keys/digest.ts";
-import type {ListedIssue} from "../io/issues.ts";
-import {NEEDS_TRIAGE} from "../labels.ts";
-import {type OnCallItem, pastTargetOf} from "./flags.ts";
+import type { ResponseTargets } from "../config/keys/boards.ts";
+import type { ChatTool, DigestSection, DigestSettings } from "../config/keys/digest.ts";
+import type { ListedIssue } from "../io/issues.ts";
+import { NEEDS_TRIAGE } from "../labels.ts";
+import { type OnCallItem, pastTargetOf } from "./flags.ts";
 
 const HOUR_MS = 3_600_000;
 
@@ -105,8 +105,8 @@ const onCallLate = (input: DigestInput, queue: OnCallQueue): ReadonlyArray<Late>
 		.flatMap((item): ReadonlyArray<Late> => {
 			const past = pastTargetOf(item, queue.targets, queue.boardCreatedAt, input.now);
 			if (past === null) return [];
-			const {_tag, ...fields} = past;
-			return [{...fields, title: titles.get(item.issue) ?? ""}];
+			const { _tag, ...fields } = past;
+			return [{ ...fields, title: titles.get(item.issue) ?? "" }];
 		})
 		.sort(oldestFirst);
 };
@@ -115,11 +115,11 @@ export const digestOf = (input: DigestInput): DigestReport => {
 	const sections: SectionReport[] = [];
 	const notAsked: DigestSection[] = [];
 	for (const section of input.settings.sections) {
-		if (section === "triage") sections.push({section, late: triageLate(input)});
+		if (section === "triage") sections.push({ section, late: triageLate(input) });
 		else if (input.onCall === null) notAsked.push(section);
-		else sections.push({section, late: onCallLate(input, input.onCall)});
+		else sections.push({ section, late: onCallLate(input, input.onCall) });
 	}
-	return {sections, notAsked};
+	return { sections, notAsked };
 };
 
 export const lateCount = (report: DigestReport): number =>
@@ -193,5 +193,5 @@ const SUPPRESS_EMBEDS = 1 << 2;
  */
 export const payloadOf = (tool: ChatTool, text: string): Readonly<Record<string, unknown>> =>
 	tool === "slack"
-		? {text}
-		: {content: text, allowed_mentions: {parse: []}, flags: SUPPRESS_EMBEDS};
+		? { text }
+		: { content: text, allowed_mentions: { parse: [] }, flags: SUPPRESS_EMBEDS };

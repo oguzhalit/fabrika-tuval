@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import {atFile} from "./annotate.ts";
-import {PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE} from "./codes.ts";
+import { describe, expect, it } from "vitest";
+import { atFile } from "./annotate.ts";
+import { PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE } from "./codes.ts";
 import {
 	annotationsOrNone,
 	clean,
@@ -12,7 +12,7 @@ import {
 	zeroScope,
 } from "./verdict.ts";
 
-const ACTIONS = {GITHUB_ACTIONS: "true"};
+const ACTIONS = { GITHUB_ACTIONS: "true" };
 
 describe("verdictCode", () => {
 	// The three refusals are three numbers on purpose: CI reds on all of them, and a human

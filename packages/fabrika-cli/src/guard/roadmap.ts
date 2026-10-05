@@ -186,7 +186,7 @@ export const judge = (
 	}
 
 	if (violations.length > 0) {
-		return {pass: false, reason: "violations", violations};
+		return { pass: false, reason: "violations", violations };
 	}
 	return {
 		pass: true,

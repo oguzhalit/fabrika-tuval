@@ -9,9 +9,9 @@
  * left for a data test is the one claim a data test can make, that the skill routes to the verb
  * rather than back to the pieces.
  */
-import {readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import {assert, describe, it} from "@effect/vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { assert, describe, it } from "@effect/vitest";
 
 const BUILD_SKILL = fileURLToPath(
 	new URL("../../../../claude-plugins/fabrika/skills/build/SKILL.md", import.meta.url),

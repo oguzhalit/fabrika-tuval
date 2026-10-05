@@ -12,8 +12,12 @@
  * drives the whole orchestration with fakes, no browser and no store (the
  * pure-core + injected-impure-leg idiom `renderLocal`/`captureAndUpload` already use).
  */
-import {Effect} from "effect";
-import {assembleCandidateSet, type CandidateSet, type RenderedCandidate} from "./candidate-set.ts";
+import { Effect } from "effect";
+import {
+	assembleCandidateSet,
+	type CandidateSet,
+	type RenderedCandidate,
+} from "./candidate-set.ts";
 import {
 	CaptureError,
 	type CaptureOptions,
@@ -21,7 +25,7 @@ import {
 	requireWritten,
 	type ShotCapture,
 } from "./capture.ts";
-import {buildCapturePlan, DEFAULT_VIEWPORT, type Shot, type Viewport} from "./plan.ts";
+import { buildCapturePlan, DEFAULT_VIEWPORT, type Shot, type Viewport } from "./plan.ts";
 import {
 	type PrioritySurfaceParams,
 	type PrioritySurfaceSpec,
@@ -108,11 +112,11 @@ export const renderCandidateSet = <E = never, R = never>(
 				surfaces.map((s) => s.surface),
 				viewport,
 			);
-			return {surfaces, plan};
+			return { surfaces, plan };
 		},
-		catch: (cause) => new CaptureError({message: "failed to build candidate-render plan", cause}),
+		catch: (cause) => new CaptureError({ message: "failed to build candidate-render plan", cause }),
 	}).pipe(
-		Effect.flatMap(({surfaces, plan}) =>
+		Effect.flatMap(({ surfaces, plan }) =>
 			capture(plan, request.outDir, request.captureOptions ?? {}).pipe(
 				Effect.flatMap(requireWritten),
 				Effect.flatMap((captured) =>
@@ -130,7 +134,7 @@ export const renderCandidateSet = <E = never, R = never>(
 									}),
 								),
 							),
-						{concurrency: 1},
+						{ concurrency: 1 },
 					),
 				),
 				Effect.map((rendered) =>

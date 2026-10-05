@@ -41,14 +41,14 @@
  * leaves an unclaimed lane where it was, which the next run archives; the reverse leaves a claim on
  * a lane nothing can release.
  */
-import {Effect, type FileSystem, Path, Result} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type Claimants, readClaimants} from "../build/claim.ts";
-import {exists, readFile, rename} from "../io/fs.ts";
-import {deleteComment, resolveRepo} from "../io/issues.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {judgeArchive, judgeRetriage} from "./archive.ts";
-import {LANE_CLAIM} from "./claim.ts";
+import { Effect, type FileSystem, Path, Result } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type Claimants, readClaimants } from "../build/claim.ts";
+import { exists, readFile, rename } from "../io/fs.ts";
+import { deleteComment, resolveRepo } from "../io/issues.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { judgeArchive, judgeRetriage } from "./archive.ts";
+import { LANE_CLAIM } from "./claim.ts";
 import {
 	APPEND_UNKNOWN,
 	CLAIM_NOT_MINE,
@@ -58,19 +58,19 @@ import {
 	MARKER_READBACK,
 	NOT_DIAGNOSED,
 } from "./codes.ts";
-import {loadRefusal} from "./refusals.ts";
-import {type LaneRef, type LoadedLane, loadLane} from "./store.ts";
+import { loadRefusal } from "./refusals.ts";
+import { type LaneRef, type LoadedLane, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane archive";
 
-type LoadedLaneRecord = Extract<LoadedLane, {readonly _tag: "Loaded"}>;
+type LoadedLaneRecord = Extract<LoadedLane, { readonly _tag: "Loaded" }>;
 
 export type ClaimsReader<R> = (issue: number) => Effect.Effect<Claimants, never, R>;
 
 /** The retraction of one marker comment. A write that failed is `Failed`, never a silent success. */
 export type Retraction =
-	| {readonly _tag: "Retracted"}
-	| {readonly _tag: "Failed"; readonly reason: string};
+	| { readonly _tag: "Retracted" }
+	| { readonly _tag: "Failed"; readonly reason: string };
 
 export type ClaimRetractor<R> = (
 	issue: number,
@@ -99,17 +99,17 @@ export const boardClaimSeams = (
 		claims: (issue) =>
 			Effect.gen(function* () {
 				const name = yield* target;
-				if (name === null) return {_tag: "Unknown" as const, reason: unresolved};
+				if (name === null) return { _tag: "Unknown" as const, reason: unresolved };
 				return yield* readClaimants(name, issue, LANE_CLAIM);
 			}),
 		retract: (_issue, commentId) =>
 			Effect.gen(function* () {
 				const name = yield* target;
-				if (name === null) return {_tag: "Failed" as const, reason: unresolved};
+				if (name === null) return { _tag: "Failed" as const, reason: unresolved };
 				const deleted = yield* deleteComment(name, commentId);
 				return deleted._tag === "Failure"
-					? {_tag: "Failed" as const, reason: deleted.reason}
-					: {_tag: "Retracted" as const};
+					? { _tag: "Failed" as const, reason: deleted.reason }
+					: { _tag: "Retracted" as const };
 			}),
 	};
 };
@@ -124,11 +124,11 @@ type Entitlement =
 			readonly through: "current" | "candidate";
 			readonly defects: ReadonlyArray<string>;
 	  }
-	| {readonly route: "retriaged"; readonly state: string};
+	| { readonly route: "retriaged"; readonly state: string };
 
 type Judged =
-	| {readonly _tag: "Entitled"; readonly entitlement: Entitlement}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Entitled"; readonly entitlement: Entitlement }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * How many archived slots one key may take on the re-triage route — `<lane>`, then
@@ -140,7 +140,7 @@ const ARCHIVE_SLOTS = 100;
 const slotLeaf = (lane: string, slot: number): string =>
 	slot === 1 ? lane : `${lane}.archived-${slot}`;
 
-const refused = (outcome: VerbOutcome): Judged => ({_tag: "Refused", outcome});
+const refused = (outcome: VerbOutcome): Judged => ({ _tag: "Refused", outcome });
 
 const judgeUnreplayable = (
 	loaded: LoadedLaneRecord,
@@ -191,7 +191,7 @@ const judgeUnreplayable = (
 		}
 		return {
 			_tag: "Entitled",
-			entitlement: {route: "unreplayable", through: judged.through, defects: judged.defects},
+			entitlement: { route: "unreplayable", through: judged.through, defects: judged.defects },
 		};
 	});
 
@@ -199,7 +199,7 @@ const judgeRetriaged = (loaded: LoadedLaneRecord): Judged => {
 	const judged = judgeRetriage(loaded.lane, loaded.entries);
 	switch (judged._tag) {
 		case "Diagnosed":
-			return {_tag: "Entitled", entitlement: {route: "retriaged", state: judged.state}};
+			return { _tag: "Entitled", entitlement: { route: "retriaged", state: judged.state } };
 		case "Unreplayable":
 			return refused(
 				refuse(
@@ -252,7 +252,7 @@ export const runArchive = <R = never>(
 ): Effect.Effect<VerbOutcome, never, R | FileSystem.FileSystem | Path.Path> =>
 	Effect.gen(function* () {
 		const path = yield* Path.Path;
-		const {ref, issue} = options;
+		const { ref, issue } = options;
 
 		const loaded = yield* loadLane(ref);
 		if (loaded._tag !== "Loaded") return loadRefusal(VERB, loaded);
@@ -262,7 +262,7 @@ export const runArchive = <R = never>(
 				? judgeRetriaged(loaded)
 				: yield* judgeUnreplayable(loaded, options.templatePaths);
 		if (judged._tag === "Refused") return judged.outcome;
-		const {entitlement} = judged;
+		const { entitlement } = judged;
 
 		const retracted: number[] = [];
 		if (issue !== null) {
@@ -351,8 +351,8 @@ export const runArchive = <R = never>(
 
 		const proven =
 			entitlement.route === "retriaged"
-				? {state: entitlement.state}
-				: {through: entitlement.through, defects: entitlement.defects};
+				? { state: entitlement.state }
+				: { through: entitlement.through, defects: entitlement.defects };
 		return answer(
 			JSON.stringify({
 				answer: "archived",

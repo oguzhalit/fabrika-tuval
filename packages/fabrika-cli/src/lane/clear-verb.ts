@@ -28,17 +28,17 @@
  * reason the grant is keyed by its round at all: two drivers deriving the same round concurrently
  * leave one `Recorded` and one `AlreadyHeld`, never two grants.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {budgetWith, capWith} from "../cap-clearance.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {recordClearedRound} from "./clearance.ts";
-import {APPEND_UNKNOWN, GRANT_REFUSED, RATIONALE_REFUSED, TASK_UNKNOWN} from "./codes.ts";
-import {foldLog, resolveTask} from "./fold.ts";
-import {grantPrRound, prGrantAnswer, prGrantNote} from "./pr-grant.ts";
-import {epicOf, issueOf, roleOf} from "./prove.ts";
-import {loadRefusal, replayRefusal} from "./refusals.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { budgetWith, capWith } from "../cap-clearance.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { recordClearedRound } from "./clearance.ts";
+import { APPEND_UNKNOWN, GRANT_REFUSED, RATIONALE_REFUSED, TASK_UNKNOWN } from "./codes.ts";
+import { foldLog, resolveTask } from "./fold.ts";
+import { grantPrRound, prGrantAnswer, prGrantNote } from "./pr-grant.ts";
+import { epicOf, issueOf, roleOf } from "./prove.ts";
+import { loadRefusal, replayRefusal } from "./refusals.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane clear";
 
@@ -118,7 +118,7 @@ export const runClear = (
 		}
 
 		const recorded = yield* recordClearedRound(options, task.taskId, round, rationale);
-		if (recorded._tag === "NoLane") return loadRefusal(VERB, {_tag: "Absent", dir: recorded.dir});
+		if (recorded._tag === "NoLane") return loadRefusal(VERB, { _tag: "Absent", dir: recorded.dir });
 		if (recorded._tag === "Unusable") {
 			return refuse(
 				APPEND_UNKNOWN,

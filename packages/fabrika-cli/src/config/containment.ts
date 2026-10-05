@@ -23,8 +23,8 @@
 
 /** What a facet owns: a regular expression over labels, or an explicit set of them. */
 export type Ownership =
-	| {readonly _tag: "Pattern"; readonly source: string}
-	| {readonly _tag: "Set"; readonly labels: ReadonlyArray<string>};
+	| { readonly _tag: "Pattern"; readonly source: string }
+	| { readonly _tag: "Set"; readonly labels: ReadonlyArray<string> };
 
 /** One facet's vocabulary: what it owns, and every label an input can make it keep. */
 export interface FacetVocabulary {

@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	candidatesFor,
 	isQuestion,
@@ -72,8 +72,8 @@ describe("namesSameThing", () => {
 describe("candidatesFor", () => {
 	it("reports the board rows that rank, with their scores", () => {
 		const candidates = candidatesFor("does weight inherit from a kefil?", [
-			{number: 9098, title: "Moderation weight is inherited from the kefil today"},
-			{number: 9099, title: "The invite acceptance form needs a spinner"},
+			{ number: 9098, title: "Moderation weight is inherited from the kefil today" },
+			{ number: 9099, title: "The invite acceptance form needs a spinner" },
 		]);
 		expect(candidates.map((candidate) => candidate.issue)).toEqual([9098]);
 		expect(candidates[0]?.score).toBeGreaterThan(1);

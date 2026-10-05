@@ -25,16 +25,16 @@
  * backticks escapes the guard too.
  */
 
-import {closingKeywords} from "../wire/closing-keyword.ts";
-import {read as readDeviations} from "../wire/deviations.ts";
-import {read as readReport} from "../wire/report.ts";
+import { closingKeywords } from "../wire/closing-keyword.ts";
+import { read as readDeviations } from "../wire/deviations.ts";
+import { read as readReport } from "../wire/report.ts";
 
 const PART_OF_RE = /\bpart of\s+#(\d+)\b/i;
 
-const CLASSIFICATION_PATTERNS: ReadonlyArray<{readonly name: string; readonly re: RegExp}> = [
-	{name: "control-plane", re: /(not[ -])?control[ -]plane/i},
-	{name: "type", re: /\btype:[a-z]+\b/i},
-	{name: "priority", re: /(^|\s)p[0-3](\s|$|[.,;:!?])/i},
+const CLASSIFICATION_PATTERNS: ReadonlyArray<{ readonly name: string; readonly re: RegExp }> = [
+	{ name: "control-plane", re: /(not[ -])?control[ -]plane/i },
+	{ name: "type", re: /\btype:[a-z]+\b/i },
+	{ name: "priority", re: /(^|\s)p[0-3](\s|$|[.,;:!?])/i },
 ];
 
 /**
@@ -93,21 +93,21 @@ export const closingTargets = (prose: string): ReadonlyArray<number> => {
 
 /** The first classification a body asserts, or `null` — the closed pattern set, over prose only. */
 export const classificationIn = (prose: string): string | null =>
-	CLASSIFICATION_PATTERNS.find(({re}) => re.test(prose))?.name ?? null;
+	CLASSIFICATION_PATTERNS.find(({ re }) => re.test(prose))?.name ?? null;
 
 export type BodyDefect =
 	/** The section is absent, or present in a shape the review gate reads as malformed. */
-	| {readonly _tag: "NoDeviations"; readonly reason: string}
+	| { readonly _tag: "NoDeviations"; readonly reason: string }
 	/** A heading reaches for `## Report` in a shape the review gate reads as malformed. */
-	| {readonly _tag: "MalformedReport"; readonly reason: string}
+	| { readonly _tag: "MalformedReport"; readonly reason: string }
 	/** A closing keyword aimed somewhere other than this PR's issue. */
-	| {readonly _tag: "StrayClosing"; readonly target: number}
+	| { readonly _tag: "StrayClosing"; readonly target: number }
 	/** `--partial` was given and the body still auto-closes. */
-	| {readonly _tag: "ClosesWhilePartial"; readonly target: number}
+	| { readonly _tag: "ClosesWhilePartial"; readonly target: number }
 	/** The body names no link to its issue at all, in whichever form this run requires. */
-	| {readonly _tag: "NoLink"}
+	| { readonly _tag: "NoLink" }
 	/** More than one closing keyword aimed at this PR's own issue. */
-	| {readonly _tag: "DuplicateClosing"};
+	| { readonly _tag: "DuplicateClosing" };
 
 /**
  * The first shape defect in `body` for a PR serving `issue`, or `null`.
@@ -117,21 +117,21 @@ export type BodyDefect =
  */
 export const bodyDefect = (body: string, issue: number, partial: boolean): BodyDefect | null => {
 	const deviations = deviationsDefect(body);
-	if (deviations !== null) return {_tag: "NoDeviations", reason: deviations};
+	if (deviations !== null) return { _tag: "NoDeviations", reason: deviations };
 
 	const report = reportDefect(body);
-	if (report !== null) return {_tag: "MalformedReport", reason: report};
+	if (report !== null) return { _tag: "MalformedReport", reason: report };
 
 	const prose = proseOf(body);
 	const targets = closingTargets(prose);
 	const stray = targets.find((target) => target !== issue);
-	if (stray !== undefined) return {_tag: "StrayClosing", target: stray};
+	if (stray !== undefined) return { _tag: "StrayClosing", target: stray };
 
 	const own = targets.filter((target) => target === issue);
 	if (partial) {
-		if (own.length > 0) return {_tag: "ClosesWhilePartial", target: issue};
-		return PART_OF_RE.exec(prose)?.[1] === String(issue) ? null : {_tag: "NoLink"};
+		if (own.length > 0) return { _tag: "ClosesWhilePartial", target: issue };
+		return PART_OF_RE.exec(prose)?.[1] === String(issue) ? null : { _tag: "NoLink" };
 	}
-	if (own.length === 0) return {_tag: "NoLink"};
-	return own.length > 1 ? {_tag: "DuplicateClosing"} : null;
+	if (own.length === 0) return { _tag: "NoLink" };
+	return own.length > 1 ? { _tag: "DuplicateClosing" } : null;
 };

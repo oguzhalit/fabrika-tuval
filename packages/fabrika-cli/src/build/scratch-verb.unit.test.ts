@@ -1,8 +1,8 @@
-import {Effect, FileSystem, Layer, PlatformError} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs, fakeSeams, type Scripted} from "../fakes.test-support.ts";
-import {FAILED} from "../verb.ts";
-import {CLAIM_NOT_MINE, OFF_VOCABULARY} from "./codes.ts";
+import { Effect, FileSystem, Layer, PlatformError } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs, fakeSeams, type Scripted } from "../fakes.test-support.ts";
+import { FAILED } from "../verb.ts";
+import { CLAIM_NOT_MINE, OFF_VOCABULARY } from "./codes.ts";
 import {
 	comments,
 	issue,
@@ -12,10 +12,10 @@ import {
 	NONCE,
 	served,
 } from "./fixtures.test-support.ts";
-import {runScratch} from "./scratch-verb.ts";
+import { runScratch } from "./scratch-verb.ts";
 
 /** The write permission the marker's author holds — what authorizes a claim. */
-const WRITE = served({permission: "write"});
+const WRITE = served({ permission: "write" });
 
 const ISSUE = /GET .*\/repos\/o\/r\/issues\/4312$/;
 const COMMENTS = /GET .*\/repos\/o\/r\/issues\/4312\/comments/;
@@ -23,7 +23,7 @@ const PERM = /GET .*\/repos\/o\/r\/collaborators\/agent\/permission/;
 
 const CLAIMED: ReadonlyArray<Scripted> = [
 	[ISSUE, issue()],
-	[COMMENTS, comments({id: 1, body: marker("s-9f2e", LANE_UUID)})],
+	[COMMENTS, comments({ id: 1, body: marker("s-9f2e", LANE_UUID) })],
 	[PERM, WRITE],
 ];
 
@@ -32,7 +32,7 @@ const options = {
 	slug: "notes",
 	token: LANE_TOKEN,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e"} as Record<
+	env: { CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e" } as Record<
 		string,
 		string | undefined
 	>,
@@ -42,7 +42,7 @@ const options = {
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
 		Effect.provide(
-			runScratch({...options, ...overrides}),
+			runScratch({ ...options, ...overrides }),
 			Layer.merge(fakeSeams(script).layer, fakeFs({}).layer),
 		),
 	);
@@ -59,7 +59,7 @@ describe("runScratch", () => {
 	});
 
 	it("refuses a slug carrying a path separator on 10", async () => {
-		const out = await run([], {slug: "notes/inner"});
+		const out = await run([], { slug: "notes/inner" });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toBe(
 			'build scratch: --slug "notes/inner" must be a kebab-case leaf, no path separators.',
@@ -67,14 +67,14 @@ describe("runScratch", () => {
 	});
 
 	it("refuses a non-kebab slug on 10", async () => {
-		const out = await run([], {slug: "Notes"});
+		const out = await run([], { slug: "Notes" });
 		expect(out.code).toBe(OFF_VOCABULARY);
 	});
 
 	it("refuses a foreign claim on 15 — no lane, no namespace", async () => {
 		const out = await run([
 			[ISSUE, issue()],
-			[COMMENTS, comments({id: 1, body: marker("s-77aa", LANE_UUID)})],
+			[COMMENTS, comments({ id: 1, body: marker("s-77aa", LANE_UUID) })],
 			[PERM, WRITE],
 		]);
 		expect(out.code).toBe(CLAIM_NOT_MINE);

@@ -8,11 +8,11 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/10099
  */
-import {fileURLToPath} from "node:url";
-import {Duration, Effect, Option} from "effect";
-import {execCapture} from "./io/exec.ts";
-import type {Shell} from "./io/git.ts";
-import {displayVersion, type SourceReading, VERSION} from "./version.ts";
+import { fileURLToPath } from "node:url";
+import { Duration, Effect, Option } from "effect";
+import { execCapture } from "./io/exec.ts";
+import type { Shell } from "./io/git.ts";
+import { displayVersion, type SourceReading, VERSION } from "./version.ts";
 
 export const SOURCE_READ_BOUND = Duration.seconds(2);
 
@@ -44,7 +44,7 @@ export const readSource = (dir: string): Shell<SourceReading | null> =>
 			"--untracked-files=no",
 		]);
 		if (!status.ok) return null;
-		return {sha, dirty: status.stdout.trim() !== ""};
+		return { sha, dirty: status.stdout.trim() !== "" };
 	}).pipe(Effect.timeoutOption(SOURCE_READ_BOUND), Effect.map(Option.getOrNull));
 
 /** The version string to hand `Command.run` for this invocation. */

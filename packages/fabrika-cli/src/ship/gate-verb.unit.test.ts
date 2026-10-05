@@ -1,5 +1,5 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	errOut,
 	fakeSeams,
@@ -10,18 +10,18 @@ import {
 	unconfigured,
 	unconfiguredOnPlatform,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {PULL_FILES_CAP} from "../io/pulls.ts";
-import {SHIPPED_GOVERNED_ROOTS} from "../review/classes.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { PULL_FILES_CAP } from "../io/pulls.ts";
+import { SHIPPED_GOVERNED_ROOTS } from "../review/classes.ts";
 import {
 	evidenceDoesNotOpen,
 	evidenced,
 	evidenceOpens,
 	evidenceUnreadable,
 } from "../review-ui/evidence.test-support.ts";
-import {INCOMPLETE_SCAN, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {comments, ENV, files, HEAD, OTHER_HEAD, pull} from "./fixtures.test-support.ts";
-import {inForce, requiredWithFloor, runGate} from "./gate-verb.ts";
+import { INCOMPLETE_SCAN, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { comments, ENV, files, HEAD, OTHER_HEAD, pull } from "./fixtures.test-support.ts";
+import { inForce, requiredWithFloor, runGate } from "./gate-verb.ts";
 
 const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4321$/;
 const FILES = /^GET \S+\/repos\/o\/r\/pulls\/4321\/files\?/;
@@ -34,13 +34,13 @@ const ACL = /^GET \S+\/repos\/o\/r\/collaborators\/[^/]+\/permission$/;
  * `rel="next"` link, so `next` is how a test scripts a read that can never prove itself complete.
  */
 const reviewPage = (
-	rows: ReadonlyArray<{login: string; state: string; commit: string; at?: string}> = [],
-	options: {next?: boolean} = {},
+	rows: ReadonlyArray<{ login: string; state: string; commit: string; at?: string }> = [],
+	options: { next?: boolean } = {},
 ): HttpReply => ({
 	status: 200,
 	body: JSON.stringify(
 		rows.map((row) => ({
-			user: {login: row.login},
+			user: { login: row.login },
 			state: row.state,
 			commit_id: row.commit,
 			submitted_at: row.at ?? "2026-08-08T00:00:00Z",
@@ -50,17 +50,17 @@ const reviewPage = (
 });
 
 /** A canned `ExecResult` fixture as the body of a 200 — the same payload, off the served seam. */
-const served = (result: ExecResult): HttpReply => ({status: 200, body: result.stdout});
+const served = (result: ExecResult): HttpReply => ({ status: 200, body: result.stdout });
 
 /** The comment sweep's page, served. */
 const commentsServed = (
-	...rows: ReadonlyArray<{id: number; body: string; author?: string; updatedAt?: string}>
+	...rows: ReadonlyArray<{ id: number; body: string; author?: string; updatedAt?: string }>
 ): HttpReply => served(comments(...rows));
 
 /** The permission endpoint's own shape — a `{permission}` record, not a bare word. */
 const permission = (level: string): HttpReply => ({
 	status: 200,
-	body: JSON.stringify({permission: level}),
+	body: JSON.stringify({ permission: level }),
 });
 
 /** No reviews at all — the answer every test that is not about the native fold reads. */
@@ -97,7 +97,7 @@ const run = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runGate({...options, ...overrides}),
+			runGate({ ...options, ...overrides }),
 			Layer.merge(
 				fakeSeams([...script, ...http, ORDINARY, NO_REVIEWS, ...unconfiguredOnPlatform()]).layer,
 				unconfigured,
@@ -133,8 +133,8 @@ describe("inForce", () => {
 	it("orders by the WRITE stamp among equally-bound candidates (#4200)", () => {
 		const winner = inForce(
 			[
-				{...candidate(HEAD, "2026-08-08T01:00:00Z"), commentId: 1},
-				{...candidate(HEAD, "2026-08-08T03:00:00Z"), polarity: "FAIL", commentId: 2},
+				{ ...candidate(HEAD, "2026-08-08T01:00:00Z"), commentId: 1 },
+				{ ...candidate(HEAD, "2026-08-08T03:00:00Z"), polarity: "FAIL", commentId: 2 },
 			],
 			HEAD,
 		);
@@ -146,17 +146,17 @@ describe("runGate", () => {
 	it("prints one ns line per required namespace and satisfies only when all pass", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({comments: 2}))],
+				[PULL, served(pull({ comments: 2 }))],
 				[
 					COMMENTS,
 					commentsServed(
-						{id: 1, body: marker("review-code", "PASS", HEAD)},
-						{id: 2, body: marker("review-doc", "PASS", HEAD)},
+						{ id: 1, body: marker("review-code", "PASS", HEAD) },
+						{ id: 2, body: marker("review-doc", "PASS", HEAD) },
 					),
 				],
 				[ACL, permission("write")],
 			],
-			{require: ["review-code", "review-doc"]},
+			{ require: ["review-code", "review-doc"] },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(
@@ -172,17 +172,17 @@ describe("runGate", () => {
 	it("does not collapse repeated --require: a live FAIL in the second namespace blocks (#4520)", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({comments: 2}))],
+				[PULL, served(pull({ comments: 2 }))],
 				[
 					COMMENTS,
 					commentsServed(
-						{id: 1, body: marker("review-code", "PASS", HEAD)},
-						{id: 2, body: marker("review-doc", "FAIL", HEAD)},
+						{ id: 1, body: marker("review-code", "PASS", HEAD) },
+						{ id: 2, body: marker("review-doc", "FAIL", HEAD) },
 					),
 				],
 				[ACL, permission("write")],
 			],
-			{require: ["review-code", "review-doc"]},
+			{ require: ["review-code", "review-doc"] },
 		);
 		expect(out.stdout.split("\n")[0]).toBe(`gate\tblocked\t${HEAD}`);
 		expect(out.stdout).toContain("ns\treview-doc\tfail\tmarker");
@@ -201,8 +201,8 @@ describe("runGate", () => {
 
 	it("blocks on `stale` and keeps it a distinct token from absent", async () => {
 		const out = await run([
-			[PULL, served(pull({comments: 1}))],
-			[COMMENTS, served(comments({id: 1, body: marker("review-code", "PASS", OTHER_HEAD)}))],
+			[PULL, served(pull({ comments: 1 }))],
+			[COMMENTS, served(comments({ id: 1, body: marker("review-code", "PASS", OTHER_HEAD) }))],
 			[ACL, permission("write")],
 		]);
 		expect(out.stdout).toContain("ns\treview-code\tstale\tmarker");
@@ -210,8 +210,8 @@ describe("runGate", () => {
 
 	it("drops an unauthorized author's marker rather than counting it", async () => {
 		const out = await run([
-			[PULL, served(pull({comments: 1}))],
-			[COMMENTS, served(comments({id: 1, body: marker("review-code", "PASS", HEAD)}))],
+			[PULL, served(pull({ comments: 1 }))],
+			[COMMENTS, served(comments({ id: 1, body: marker("review-code", "PASS", HEAD) }))],
 			[ACL, permission("read")],
 		]);
 		expect(out.stdout).toContain("ns\treview-code\tabsent\t-");
@@ -219,9 +219,9 @@ describe("runGate", () => {
 
 	it("refuses on 11 when the ACL lookup itself fails — never `absent`", async () => {
 		const out = await run([
-			[PULL, served(pull({comments: 1}))],
-			[COMMENTS, served(comments({id: 1, body: marker("review-code", "PASS", HEAD)}))],
-			[ACL, {status: 502, body: '{"message":"Bad gateway"}'}],
+			[PULL, served(pull({ comments: 1 }))],
+			[COMMENTS, served(comments({ id: 1, body: marker("review-code", "PASS", HEAD) }))],
+			[ACL, { status: 502, body: '{"message":"Bad gateway"}' }],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -234,7 +234,7 @@ describe("runGate", () => {
 				[COMMENTS, served(comments())],
 			],
 			{},
-			[[REVIEWS, reviewPage([{login: "cansirin", state: "APPROVED", commit: HEAD}])]],
+			[[REVIEWS, reviewPage([{ login: "cansirin", state: "APPROVED", commit: HEAD }])]],
 		);
 		expect(out.stdout).toContain("ns\treview-code\tpass\treview-fold");
 	});
@@ -242,7 +242,7 @@ describe("runGate", () => {
 	it("treats a §CP advisory carrying a [FAIL] row as fail and says so", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({comments: 1}))],
+				[PULL, served(pull({ comments: 1 }))],
 				[
 					COMMENTS,
 					commentsServed({
@@ -252,7 +252,7 @@ describe("runGate", () => {
 				],
 				[ACL, permission("write")],
 			],
-			{cp: true},
+			{ cp: true },
 		);
 		expect(out.stdout).toContain("ns\treview-code\tfail\tadvisory");
 		expect(out.stderr.some((line) => line.includes("an invalid emission"))).toBe(true);
@@ -266,12 +266,12 @@ describe("runGate", () => {
 
 		it("explains a `stale` row the earlier-head marker left behind", async () => {
 			const out = await run([
-				[PULL, served(pull({comments: 2}))],
+				[PULL, served(pull({ comments: 2 }))],
 				[
 					COMMENTS,
 					commentsServed(
-						{id: 1, body: marker("review-code", "PASS", OTHER_HEAD)},
-						{id: 2, body: advisory(HEAD), updatedAt: "2026-08-09T00:00:00Z"},
+						{ id: 1, body: marker("review-code", "PASS", OTHER_HEAD) },
+						{ id: 2, body: advisory(HEAD), updatedAt: "2026-08-09T00:00:00Z" },
 					),
 				],
 				[ACL, permission("write")],
@@ -290,7 +290,7 @@ describe("runGate", () => {
 
 		it("explains a `fail` row from a same-head FAIL a later advisory PASS replaced (#9772)", async () => {
 			const out = await run([
-				[PULL, served(pull({comments: 2}))],
+				[PULL, served(pull({ comments: 2 }))],
 				[
 					COMMENTS,
 					commentsServed(
@@ -299,7 +299,7 @@ describe("runGate", () => {
 							body: marker("review-code", "FAIL", HEAD),
 							updatedAt: "2026-09-24T10:31:28Z",
 						},
-						{id: 2, body: advisory(HEAD), updatedAt: "2026-09-24T10:32:54Z"},
+						{ id: 2, body: advisory(HEAD), updatedAt: "2026-09-24T10:32:54Z" },
 					),
 				],
 				[ACL, permission("write")],
@@ -314,8 +314,8 @@ describe("runGate", () => {
 
 		it("explains an `absent` row, and the advisory still never satisfies", async () => {
 			const out = await run([
-				[PULL, served(pull({comments: 1}))],
-				[COMMENTS, commentsServed({id: 7, body: advisory(HEAD)})],
+				[PULL, served(pull({ comments: 1 }))],
+				[COMMENTS, commentsServed({ id: 7, body: advisory(HEAD) })],
 				[ACL, permission("write")],
 			]);
 			expect(out.stdout).toBe(
@@ -328,21 +328,21 @@ describe("runGate", () => {
 		it("keeps --json state tokens unchanged beside the notice", async () => {
 			const out = await run(
 				[
-					[PULL, served(pull({comments: 2}))],
+					[PULL, served(pull({ comments: 2 }))],
 					[
 						COMMENTS,
 						commentsServed(
-							{id: 1, body: marker("review-code", "PASS", HEAD)},
-							{id: 2, body: advisory(HEAD), updatedAt: "2026-08-09T00:00:00Z"},
+							{ id: 1, body: marker("review-code", "PASS", HEAD) },
+							{ id: 2, body: advisory(HEAD), updatedAt: "2026-08-09T00:00:00Z" },
 						),
 					],
 					[ACL, permission("write")],
 				],
-				{json: true},
+				{ json: true },
 			);
 			expect(JSON.parse(out.stdout)).toMatchObject({
 				outcome: "satisfied",
-				namespaces: [{name: "review-code", state: "pass", carrier: "marker", commentId: 1}],
+				namespaces: [{ name: "review-code", state: "pass", carrier: "marker", commentId: 1 }],
 			});
 			expect(withheldLines(out.stderr)[0]).toContain("reads pass");
 		});
@@ -350,17 +350,17 @@ describe("runGate", () => {
 		it("emits nothing under --cp, where the advisory resolves the namespace itself", async () => {
 			const out = await run(
 				[
-					[PULL, served(pull({comments: 2}))],
+					[PULL, served(pull({ comments: 2 }))],
 					[
 						COMMENTS,
 						commentsServed(
-							{id: 1, body: marker("review-code", "PASS", OTHER_HEAD)},
-							{id: 2, body: advisory(HEAD), updatedAt: "2026-08-09T00:00:00Z"},
+							{ id: 1, body: marker("review-code", "PASS", OTHER_HEAD) },
+							{ id: 2, body: advisory(HEAD), updatedAt: "2026-08-09T00:00:00Z" },
 						),
 					],
 					[ACL, permission("write")],
 				],
-				{cp: true},
+				{ cp: true },
 			);
 			expect(out.stdout).toContain("ns\treview-code\tpass\tadvisory");
 			expect(withheldLines(out.stderr)).toEqual([]);
@@ -368,12 +368,12 @@ describe("runGate", () => {
 
 		it("emits nothing when the advisory binds another head", async () => {
 			const out = await run([
-				[PULL, served(pull({comments: 2}))],
+				[PULL, served(pull({ comments: 2 }))],
 				[
 					COMMENTS,
 					commentsServed(
-						{id: 1, body: marker("review-code", "PASS", OTHER_HEAD)},
-						{id: 2, body: advisory(OTHER_HEAD)},
+						{ id: 1, body: marker("review-code", "PASS", OTHER_HEAD) },
+						{ id: 2, body: advisory(OTHER_HEAD) },
 					),
 				],
 				[ACL, permission("write")],
@@ -384,8 +384,8 @@ describe("runGate", () => {
 
 		it("emits nothing for an advisory whose author is below write+", async () => {
 			const out = await run([
-				[PULL, served(pull({comments: 1}))],
-				[COMMENTS, commentsServed({id: 2, body: advisory(HEAD)})],
+				[PULL, served(pull({ comments: 1 }))],
+				[COMMENTS, commentsServed({ id: 2, body: advisory(HEAD) })],
 				[ACL, permission("read")],
 			]);
 			expect(withheldLines(out.stderr)).toEqual([]);
@@ -393,9 +393,9 @@ describe("runGate", () => {
 
 		it("reports an unreadable ACL on a withheld advisory as a notice, never 11", async () => {
 			const out = await run([
-				[PULL, served(pull({comments: 1}))],
-				[COMMENTS, commentsServed({id: 2, body: advisory(HEAD)})],
-				[ACL, {status: 502, body: '{"message":"Bad gateway"}'}],
+				[PULL, served(pull({ comments: 1 }))],
+				[COMMENTS, commentsServed({ id: 2, body: advisory(HEAD) })],
+				[ACL, { status: 502, body: '{"message":"Bad gateway"}' }],
 			]);
 			expect(out.code).toBe(0);
 			expect(out.stdout).toContain("ns\treview-code\tabsent\t-");
@@ -404,7 +404,7 @@ describe("runGate", () => {
 	});
 
 	it("refuses an off-vocabulary --require on 10", async () => {
-		const out = await run([[PULL, served(pull())]], {require: ["review-vibes"]});
+		const out = await run([[PULL, served(pull())]], { require: ["review-vibes"] });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toContain("is not a gateable namespace");
 	});
@@ -415,7 +415,7 @@ describe("runGate", () => {
 				[PULL, served(pull())],
 				[COMMENTS, served(comments())],
 			],
-			{require: ["governance"]},
+			{ require: ["governance"] },
 		);
 		expect(out.code).not.toBe(OFF_VOCABULARY);
 		expect(out.stdout).toBe([`gate\tblocked\t${HEAD}`, "ns\tgovernance\tabsent\t-", ""].join("\n"));
@@ -429,11 +429,11 @@ describe("runGate", () => {
 	it("satisfies the namespace from a posted governance PASS marker (#5199 surface change 2)", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({comments: 1}))],
-				[COMMENTS, served(comments({id: 1, body: marker("governance", "PASS", HEAD)}))],
+				[PULL, served(pull({ comments: 1 }))],
+				[COMMENTS, served(comments({ id: 1, body: marker("governance", "PASS", HEAD) }))],
 				[ACL, permission("write")],
 			],
-			{require: ["governance"]},
+			{ require: ["governance"] },
 		);
 		expect(out.stdout).toBe(
 			[`gate\tsatisfied\t${HEAD}`, "ns\tgovernance\tpass\tmarker", ""].join("\n"),
@@ -443,11 +443,11 @@ describe("runGate", () => {
 	it("blocks on a posted governance FAIL rather than passing it — the widening carries both polarities", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({comments: 1}))],
-				[COMMENTS, served(comments({id: 1, body: marker("governance", "FAIL", HEAD)}))],
+				[PULL, served(pull({ comments: 1 }))],
+				[COMMENTS, served(comments({ id: 1, body: marker("governance", "FAIL", HEAD) }))],
 				[ACL, permission("write")],
 			],
-			{require: ["governance"]},
+			{ require: ["governance"] },
 		);
 		expect(out.stdout).toBe(
 			[`gate\tblocked\t${HEAD}`, "ns\tgovernance\tfail\tmarker", ""].join("\n"),
@@ -460,11 +460,11 @@ describe("runGate", () => {
 	it("resolves review-ui as routed from a head-bound routed-elsewhere record, and satisfies", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({comments: 1}))],
-				[COMMENTS, commentsServed({id: 1, body: route("review-ui", HEAD)})],
+				[PULL, served(pull({ comments: 1 }))],
+				[COMMENTS, commentsServed({ id: 1, body: route("review-ui", HEAD) })],
 				[ACL, permission("write")],
 			],
-			{require: ["review-ui"]},
+			{ require: ["review-ui"] },
 		);
 		expect(out.stdout).toBe(
 			[`gate\tsatisfied\t${HEAD}`, "ns\treview-ui\trouted\trouted-elsewhere", ""].join("\n"),
@@ -479,32 +479,32 @@ describe("runGate", () => {
 	] as const)("reads a basis:%s route as routed and flags it on the row", async (basis, said) => {
 		const flagged = route("review-ui", HEAD).replace(`@ ${HEAD} —`, `@ ${HEAD} basis:${basis} —`);
 		const script: ReadonlyArray<Scripted> = [
-			[PULL, served(pull({comments: 1}))],
-			[COMMENTS, commentsServed({id: 1, body: flagged})],
+			[PULL, served(pull({ comments: 1 }))],
+			[COMMENTS, commentsServed({ id: 1, body: flagged })],
 			[ACL, permission("write")],
 		];
-		const out = await run(script, {require: ["review-ui"]});
+		const out = await run(script, { require: ["review-ui"] });
 		expect(out.stdout).toBe(
 			[`gate\tsatisfied\t${HEAD}`, `ns\treview-ui\trouted\trouted-elsewhere\t${basis}`, ""].join(
 				"\n",
 			),
 		);
 		expect(out.stderr.join("\n")).toContain(said);
-		const json = await run(script, {require: ["review-ui"], json: true});
+		const json = await run(script, { require: ["review-ui"], json: true });
 		expect(JSON.parse(json.stdout)).toMatchObject({
 			outcome: "satisfied",
-			namespaces: [{name: "review-ui", state: "routed", basis}],
+			namespaces: [{ name: "review-ui", state: "routed", basis }],
 		});
 	});
 
 	it("blocks when the route binds a head that has moved — a push re-opens the question", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({comments: 1}))],
-				[COMMENTS, commentsServed({id: 1, body: route("review-ui", OTHER_HEAD)})],
+				[PULL, served(pull({ comments: 1 }))],
+				[COMMENTS, commentsServed({ id: 1, body: route("review-ui", OTHER_HEAD) })],
 				[ACL, permission("write")],
 			],
-			{require: ["review-ui"]},
+			{ require: ["review-ui"] },
 		);
 		expect(out.stdout).toBe(
 			[`gate\tblocked\t${HEAD}`, "ns\treview-ui\tstale\trouted-elsewhere", ""].join("\n"),
@@ -514,11 +514,11 @@ describe("runGate", () => {
 	it("ignores a route aimed at any namespace but review-ui — governance stays absent", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({comments: 1}))],
-				[COMMENTS, commentsServed({id: 1, body: route("governance", HEAD)})],
+				[PULL, served(pull({ comments: 1 }))],
+				[COMMENTS, commentsServed({ id: 1, body: route("governance", HEAD) })],
 				[ACL, permission("write")],
 			],
-			{require: ["governance"]},
+			{ require: ["governance"] },
 		);
 		expect(out.stdout).toBe([`gate\tblocked\t${HEAD}`, "ns\tgovernance\tabsent\t-", ""].join("\n"));
 	});
@@ -526,11 +526,11 @@ describe("runGate", () => {
 	it("refuses a route from an author below write+ — the ACL binds it as it binds a verdict", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({comments: 1}))],
-				[COMMENTS, commentsServed({id: 1, body: route("review-ui", HEAD)})],
+				[PULL, served(pull({ comments: 1 }))],
+				[COMMENTS, commentsServed({ id: 1, body: route("review-ui", HEAD) })],
 				[ACL, permission("read")],
 			],
-			{require: ["review-ui"]},
+			{ require: ["review-ui"] },
 		);
 		expect(out.stdout).toBe([`gate\tblocked\t${HEAD}`, "ns\treview-ui\tabsent\t-", ""].join("\n"));
 	});
@@ -538,11 +538,11 @@ describe("runGate", () => {
 	it("lets a FAIL verdict written after a route win the namespace back", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({comments: 2}))],
+				[PULL, served(pull({ comments: 2 }))],
 				[
 					COMMENTS,
 					commentsServed(
-						{id: 1, body: route("review-ui", HEAD), updatedAt: "2026-08-19T01:00:00Z"},
+						{ id: 1, body: route("review-ui", HEAD), updatedAt: "2026-08-19T01:00:00Z" },
 						{
 							id: 2,
 							body: evidenced(marker("review-ui", "FAIL", HEAD)),
@@ -553,7 +553,7 @@ describe("runGate", () => {
 				[ACL, permission("write")],
 				...evidenceOpens("o/r", 2),
 			],
-			{require: ["review-ui"]},
+			{ require: ["review-ui"] },
 		);
 		expect(out.stdout).toBe(
 			[`gate\tblocked\t${HEAD}`, "ns\treview-ui\tfail\tmarker", ""].join("\n"),
@@ -566,12 +566,12 @@ describe("runGate", () => {
 		const uiPass = (body: string, http: ReadonlyArray<Scripted>) =>
 			run(
 				[
-					[PULL, served(pull({comments: 1}))],
-					[COMMENTS, commentsServed({id: 7, body})],
+					[PULL, served(pull({ comments: 1 }))],
+					[COMMENTS, commentsServed({ id: 7, body })],
 					[ACL, permission("write")],
 					...http,
 				],
-				{require: ["review-ui"]},
+				{ require: ["review-ui"] },
 			);
 
 		it("counts a PASS whose evidence opens as the judged bytes", async () => {
@@ -601,7 +601,7 @@ describe("runGate", () => {
 		it("does not count a PASS whose capture serves other bytes", async () => {
 			const out = await uiPass(
 				evidenced(marker("review-ui", "PASS", HEAD)),
-				evidenceDoesNotOpen("o/r", 7, {status: 200, body: "other bytes"}),
+				evidenceDoesNotOpen("o/r", 7, { status: 200, body: "other bytes" }),
 			);
 			expect(out.stdout).toContain("ns\treview-ui\tunopened\tmarker");
 		});
@@ -626,8 +626,8 @@ describe("runGate", () => {
 
 		it("reads only the review-ui namespace's evidence — review-code is counted as before", async () => {
 			const out = await run([
-				[PULL, served(pull({comments: 1}))],
-				[COMMENTS, commentsServed({id: 7, body: marker("review-code", "PASS", HEAD)})],
+				[PULL, served(pull({ comments: 1 }))],
+				[COMMENTS, commentsServed({ id: 7, body: marker("review-code", "PASS", HEAD) })],
 				[ACL, permission("write")],
 			]);
 			expect(out.stdout).toBe(
@@ -638,8 +638,8 @@ describe("runGate", () => {
 
 	it("refuses a truncated comment sweep on 13", async () => {
 		const out = await run([
-			[PULL, served(pull({comments: 9}))],
-			[COMMENTS, served(comments({id: 1, body: "hi"}))],
+			[PULL, served(pull({ comments: 9 }))],
+			[COMMENTS, served(comments({ id: 1, body: "hi" }))],
 		]);
 		expect(out.code).toBe(INCOMPLETE_SCAN);
 	});
@@ -652,7 +652,7 @@ describe("runGate", () => {
 				[COMMENTS, served(comments())],
 			],
 			{},
-			[[REVIEWS, reviewPage([], {next: true})]],
+			[[REVIEWS, reviewPage([], { next: true })]],
 		);
 		expect(out.code).toBe(INCOMPLETE_SCAN);
 		expect(out.stderr.at(-1)).toBe(
@@ -661,7 +661,7 @@ describe("runGate", () => {
 	});
 
 	it("refuses a closed PR on 7", async () => {
-		const out = await run([[PULL, served(pull({state: "closed"}))]]);
+		const out = await run([[PULL, served(pull({ state: "closed" }))]]);
 		expect(out.code).toBe(ZERO_SCOPE);
 	});
 
@@ -670,8 +670,8 @@ describe("runGate", () => {
 	// the enqueue with no act available to clear it.
 	it("reports a file list short of the declared count and still gates (#9322)", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 9, comments: 1}))],
-			[COMMENTS, commentsServed({id: 1, body: marker("review-code", "PASS", HEAD)})],
+			[PULL, served(pull({ changedFiles: 9, comments: 1 }))],
+			[COMMENTS, commentsServed({ id: 1, body: marker("review-code", "PASS", HEAD) })],
 			[ACL, permission("write")],
 			[FILES, served(files("apps/site/src/a.ts"))],
 		]);
@@ -686,7 +686,7 @@ describe("runGate", () => {
 	// than the declared count: a zero can never render as a satisfied conjunction.
 	it("refuses an empty file list on 7 even where the record declares files (#9322)", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 9}))],
+			[PULL, served(pull({ changedFiles: 9 }))],
 			[FILES, served(files())],
 		]);
 		expect(out.code).toBe(ZERO_SCOPE);
@@ -701,10 +701,12 @@ describe("runGate", () => {
 	// case by accident; `capped` catches it on purpose.
 	it("refuses a file list at the 3000-file ceiling on 13 (#9322)", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: PULL_FILES_CAP}))],
+			[PULL, served(pull({ changedFiles: PULL_FILES_CAP }))],
 			[
 				FILES,
-				served(files(...Array.from({length: PULL_FILES_CAP}, (_, i) => `apps/site/src/f${i}.ts`))),
+				served(
+					files(...Array.from({ length: PULL_FILES_CAP }, (_, i) => `apps/site/src/f${i}.ts`)),
+				),
 			],
 		]);
 		expect(out.code).toBe(INCOMPLETE_SCAN);
@@ -721,12 +723,12 @@ describe("runGate — the governance floor", () => {
 	it("requires governance on a fabrika-tree diff the caller never asked to gate on it", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({comments: 1}))],
+				[PULL, served(pull({ comments: 1 }))],
 				FABRIKA_TREE,
-				[COMMENTS, served(comments({id: 1, body: marker("review-skill", "PASS", HEAD)}))],
+				[COMMENTS, served(comments({ id: 1, body: marker("review-skill", "PASS", HEAD) }))],
 				[ACL, permission("write")],
 			],
-			{require: ["review-skill"]},
+			{ require: ["review-skill"] },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(
@@ -745,18 +747,18 @@ describe("runGate — the governance floor", () => {
 	it("satisfies the floored namespace from a posted governance PASS", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({comments: 2}))],
+				[PULL, served(pull({ comments: 2 }))],
 				FABRIKA_TREE,
 				[
 					COMMENTS,
 					commentsServed(
-						{id: 1, body: marker("review-skill", "PASS", HEAD)},
-						{id: 2, body: marker("governance", "PASS", HEAD)},
+						{ id: 1, body: marker("review-skill", "PASS", HEAD) },
+						{ id: 2, body: marker("governance", "PASS", HEAD) },
 					),
 				],
 				[ACL, permission("write")],
 			],
-			{require: ["review-skill"]},
+			{ require: ["review-skill"] },
 		);
 		expect(out.stdout).toBe(
 			[
@@ -773,18 +775,18 @@ describe("runGate — the governance floor", () => {
 			require: ["review-skill"],
 			json: true,
 		});
-		expect(JSON.parse(out.stdout)).toMatchObject({outcome: "blocked", required: 2});
+		expect(JSON.parse(out.stdout)).toMatchObject({ outcome: "blocked", required: 2 });
 	});
 
 	it("leaves a diff under no governance root gated exactly as before", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({comments: 1}))],
+				[PULL, served(pull({ comments: 1 }))],
 				ORDINARY,
-				[COMMENTS, served(comments({id: 1, body: marker("review-code", "PASS", HEAD)}))],
+				[COMMENTS, served(comments({ id: 1, body: marker("review-code", "PASS", HEAD) }))],
 				[ACL, permission("write")],
 			],
-			{require: ["review-code"]},
+			{ require: ["review-code"] },
 		);
 		expect(out.stdout).toBe(
 			[`gate\tsatisfied\t${HEAD}`, "ns\treview-code\tpass\tmarker", ""].join("\n"),
@@ -860,8 +862,8 @@ describe("runGate — staleness is the content question", () => {
 		`review-code: PASS @ ${sha}${content === null ? "" : ` content:${content}`} — the clause`;
 
 	const atMovedHead = (content: string | null, raw: ExecResult): ReadonlyArray<Scripted> => [
-		[PULL, served(pull({comments: 1}))],
-		[COMMENTS, served(comments({id: 1, body: bindingMarker(OTHER_HEAD, content)}))],
+		[PULL, served(pull({ comments: 1 }))],
+		[COMMENTS, served(comments({ id: 1, body: bindingMarker(OTHER_HEAD, content) }))],
 		[ACL, permission("write")],
 		...bound(raw),
 	];
@@ -881,8 +883,8 @@ describe("runGate — staleness is the content question", () => {
 
 	it("blocks a moved-head verdict carrying NO content field, and reads no git for it", async () => {
 		const seams = fakeSeams([
-			[PULL, served(pull({comments: 1}))],
-			[COMMENTS, served(comments({id: 1, body: bindingMarker(OTHER_HEAD, null)}))],
+			[PULL, served(pull({ comments: 1 }))],
+			[COMMENTS, served(comments({ id: 1, body: bindingMarker(OTHER_HEAD, null) }))],
 			[ACL, permission("write")],
 			ORDINARY,
 			NO_REVIEWS,
@@ -904,8 +906,8 @@ describe("runGate — staleness is the content question", () => {
 
 	it("reads no git at all when every verdict is already at this head — the common path", async () => {
 		const seams = fakeSeams([
-			[PULL, served(pull({comments: 1}))],
-			[COMMENTS, served(comments({id: 1, body: bindingMarker(HEAD, DIGEST)}))],
+			[PULL, served(pull({ comments: 1 }))],
+			[COMMENTS, served(comments({ id: 1, body: bindingMarker(HEAD, DIGEST) }))],
 			[ACL, permission("write")],
 			ORDINARY,
 			NO_REVIEWS,

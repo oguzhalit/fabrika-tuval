@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {droppedEntries, parseFields, read} from "./deviations.ts";
+import { describe, expect, it } from "vitest";
+import { droppedEntries, parseFields, read } from "./deviations.ts";
 
 const ENTRY =
 	"- **Scope narrowing** — **Said:** four gates. **Did:** three plus a bounce. **Why:** the fourth emits a trivial verdict. **Disposition:** stated here.";

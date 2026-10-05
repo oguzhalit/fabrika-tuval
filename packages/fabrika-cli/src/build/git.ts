@@ -14,8 +14,8 @@
  *   evidence: a push that died mid-hook read as sent. {@link remoteSha} asks the remote
  *   directly, and the caller compares.
  */
-import {Effect} from "effect";
-import {execCapture, execCaptureInput} from "../io/exec.ts";
+import { Effect } from "effect";
+import { execCapture, execCaptureInput } from "../io/exec.ts";
 import {
 	type Attempt,
 	fail,
@@ -27,7 +27,7 @@ import {
 	type Shell,
 	splitRemoteRef,
 } from "../io/git.ts";
-import type {Released} from "./retire.ts";
+import type { Released } from "./retire.ts";
 
 /** The tree's HEAD commit. */
 export const headSha: Shell<Attempt<string>> = Effect.gen(function* () {
@@ -48,9 +48,9 @@ export const headSha: Shell<Attempt<string>> = Effect.gen(function* () {
  * whatever this clone last integrated.
  */
 export type BaseRef =
-	| {readonly _tag: "Remote"; readonly remote: string; readonly ref: string}
-	| {readonly _tag: "LocalOnly"; readonly ref: string}
-	| {readonly _tag: "Commit"; readonly sha: string};
+	| { readonly _tag: "Remote"; readonly remote: string; readonly ref: string }
+	| { readonly _tag: "LocalOnly"; readonly ref: string }
+	| { readonly _tag: "Commit"; readonly sha: string };
 
 /** How a base reads in a note or a refusal — the spelling a caller can hand back to git. */
 export const baseLabel = (base: BaseRef): string =>
@@ -69,10 +69,11 @@ export const baseLabel = (base: BaseRef): string =>
  */
 export const classifyBase = (base: string): Shell<Attempt<BaseRef>> =>
 	Effect.gen(function* () {
-		if (isObjectName(base)) return ok({_tag: "Commit", sha: base} as const);
+		if (isObjectName(base)) return ok({ _tag: "Commit", sha: base } as const);
 		const names = yield* remotes;
 		const split = splitRemoteRef(base, names);
-		if (split !== null) return ok({_tag: "Remote", remote: split.remote, ref: split.ref} as const);
+		if (split !== null)
+			return ok({ _tag: "Remote", remote: split.remote, ref: split.ref } as const);
 		const remote = names.includes("origin") ? "origin" : names.length === 1 ? names[0] : undefined;
 		return remote === undefined
 			? fail(
@@ -80,7 +81,7 @@ export const classifyBase = (base: string): Shell<Attempt<BaseRef>> =>
 						? `"${base}" names no configured remote and this clone has none to qualify it against`
 						: `"${base}" names none of this clone's remotes (${names.join(", ")}) and there is no origin to qualify it against — spell it <remote>/<ref>`,
 				)
-			: ok({_tag: "Remote", remote, ref: base} as const);
+			: ok({ _tag: "Remote", remote, ref: base } as const);
 	});
 
 /** Fetch `base` and resolve what was fetched, so a cut never uses a stale ref. */
@@ -182,7 +183,7 @@ export const worktreeCheckouts: Shell<Attempt<ReadonlyArray<WorktreeCheckout>>> 
 		for (const line of r.stdout.split("\n")) {
 			if (line.startsWith("worktree ")) path = line.slice("worktree ".length).trim();
 			else if (line.startsWith("branch refs/heads/") && path !== "") {
-				held.push({path, branch: line.slice("branch refs/heads/".length).trim()});
+				held.push({ path, branch: line.slice("branch refs/heads/".length).trim() });
 			}
 		}
 		return ok(held);
@@ -217,7 +218,7 @@ export const worktreeRegistrations: Shell<Attempt<ReadonlyArray<WorktreeRegistra
 		const r = yield* execCapture("git", ["worktree", "list", "--porcelain"]);
 		if (!r.ok) return fail(r.reason);
 		const records: Array<WorktreeRegistration> = [];
-		let open: {path: string; head: string; branch: string | null; locked: string | null} | null =
+		let open: { path: string; head: string; branch: string | null; locked: string | null } | null =
 			null;
 		const close = () => {
 			if (open !== null) records.push(open);
@@ -226,7 +227,12 @@ export const worktreeRegistrations: Shell<Attempt<ReadonlyArray<WorktreeRegistra
 		for (const line of r.stdout.split("\n")) {
 			if (line.startsWith("worktree ")) {
 				close();
-				open = {path: line.slice("worktree ".length).trim(), head: "", branch: null, locked: null};
+				open = {
+					path: line.slice("worktree ".length).trim(),
+					head: "",
+					branch: null,
+					locked: null,
+				};
 			} else if (open === null) continue;
 			else if (line.startsWith("HEAD ")) open.head = line.slice("HEAD ".length).trim();
 			else if (line.startsWith("branch refs/heads/")) {
@@ -411,7 +417,7 @@ export const setUpstream = (name: string, remote: string, ref: string): Shell<At
 	});
 
 /** `<remote>\t<ref>` of the checked-out branch's upstream, or `null` when it tracks nothing. */
-export const upstreamOf = (branch: string): Shell<{remote: string; ref: string} | null> =>
+export const upstreamOf = (branch: string): Shell<{ remote: string; ref: string } | null> =>
 	Effect.gen(function* () {
 		const r = yield* execCapture("git", [
 			"rev-parse",
@@ -421,7 +427,7 @@ export const upstreamOf = (branch: string): Shell<{remote: string; ref: string} 
 		]);
 		if (!r.ok) return null;
 		const split = splitRemoteRef(r.stdout.trim(), yield* remotes);
-		return split === null ? null : {remote: split.remote, ref: split.ref};
+		return split === null ? null : { remote: split.remote, ref: split.ref };
 	});
 
 /**
@@ -433,9 +439,9 @@ export const upstreamOf = (branch: string): Shell<{remote: string; ref: string} 
  * bug found twice. The fallback keeps a fresh lane, whose branch carries no upstream until its first
  * push, answering its own name.
  */
-export const publishTarget = (branch: string): Shell<{remote: string; ref: string}> =>
+export const publishTarget = (branch: string): Shell<{ remote: string; ref: string }> =>
 	Effect.gen(function* () {
-		return (yield* upstreamOf(branch)) ?? {remote: "origin", ref: branch};
+		return (yield* upstreamOf(branch)) ?? { remote: "origin", ref: branch };
 	});
 
 /** The SHA a remote's ref points at, read from the remote itself — the push's independent witness. */
@@ -479,7 +485,7 @@ const DROPPED_SHOWN = 10;
 export const commitsDropped = (
 	local: string,
 	remoteHead: string,
-): Shell<{readonly lines: ReadonlyArray<string>; readonly truncated: boolean}> =>
+): Shell<{ readonly lines: ReadonlyArray<string>; readonly truncated: boolean }> =>
 	Effect.gen(function* () {
 		const r = yield* execCapture("git", [
 			"log",
@@ -489,12 +495,12 @@ export const commitsDropped = (
 			`${DROPPED_SHOWN + 1}`,
 			`${local}..${remoteHead}`,
 		]);
-		if (!r.ok) return {lines: [], truncated: false};
+		if (!r.ok) return { lines: [], truncated: false };
 		const lines = r.stdout
 			.split("\n")
 			.map((l) => l.trim())
 			.filter((l) => l !== "");
-		return {lines: lines.slice(0, DROPPED_SHOWN), truncated: lines.length > DROPPED_SHOWN};
+		return { lines: lines.slice(0, DROPPED_SHOWN), truncated: lines.length > DROPPED_SHOWN };
 	});
 
 export const push = (remote: string, ref: string, force: boolean): Shell<Attempt<void>> =>

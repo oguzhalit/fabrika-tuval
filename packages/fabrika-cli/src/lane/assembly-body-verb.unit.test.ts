@@ -1,15 +1,15 @@
 /** `lane assembly-body` — the relay, the refusal that empties the pipe, and the stdin seats. */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {StdinRead} from "../io/stdin.ts";
-import {FAILED} from "../verb.ts";
-import {runAssemblyBody} from "./assembly-body-verb.ts";
-import {BARE_AT_PATH, EMPTY_STDIN, LEAKED_PATH, TAIL_NOT_CLOSING} from "./codes.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { StdinRead } from "../io/stdin.ts";
+import { FAILED } from "../verb.ts";
+import { runAssemblyBody } from "./assembly-body-verb.ts";
+import { BARE_AT_PATH, EMPTY_STDIN, LEAKED_PATH, TAIL_NOT_CLOSING } from "./codes.ts";
 
 const run = (read: StdinRead) =>
-	Effect.runPromise(runAssemblyBody({epic: 4300, stdin: Effect.succeed(read)}));
+	Effect.runPromise(runAssemblyBody({ epic: 4300, stdin: Effect.succeed(read) }));
 
-const piped = (text: string): StdinRead => ({_tag: "Text", text});
+const piped = (text: string): StdinRead => ({ _tag: "Text", text });
 
 const BODY = "## About this epic\n\nFixes #4301\nFixes #4300\n\n## Deviations\n\nNone.\n";
 
@@ -63,6 +63,6 @@ describe("lane assembly-body", () => {
 	// body, and the first is no answer at all.
 	it("seats a read-but-empty pipe apart from one that could not be read", async () => {
 		expect((await run(piped("   \n"))).code).toBe(EMPTY_STDIN);
-		expect((await run({_tag: "Failed", reason: "EIO"})).code).toBe(FAILED);
+		expect((await run({ _tag: "Failed", reason: "EIO" })).code).toBe(FAILED);
 	});
 });

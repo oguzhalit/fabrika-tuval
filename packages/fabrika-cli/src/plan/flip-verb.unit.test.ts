@@ -1,7 +1,12 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {comments, LANE_UUID, marker, LANE_TOKEN as TOKEN} from "../build/fixtures.test-support.ts";
-import {type HttpReply, once} from "../fakes.test-support.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import {
+	comments,
+	LANE_UUID,
+	marker,
+	LANE_TOKEN as TOKEN,
+} from "../build/fixtures.test-support.ts";
+import { type HttpReply, once } from "../fakes.test-support.ts";
 import {
 	CLAIM_NOT_MINE,
 	FLOOR_DEFECTIVE,
@@ -32,7 +37,7 @@ import {
 	SUB_ISSUES,
 	subIssues,
 } from "./fixtures.test-support.ts";
-import {childrenEvidence, runFlip} from "./flip-verb.ts";
+import { childrenEvidence, runFlip } from "./flip-verb.ts";
 
 const EPIC = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4300$/;
 const SUBS = SUB_ISSUES;
@@ -47,13 +52,13 @@ const ADD_EPIC = /^POST .*\/repos\/o\/r\/issues\/4300\/labels$/;
 const REMOVE_EPIC = /^DELETE .*\/repos\/o\/r\/issues\/4300\/labels\//;
 /** Any label write at all — what an assertion that nothing was written reads. */
 const LABEL_WRITE = /^(POST|DELETE) .*\/labels/;
-const SERVED_LABELS: HttpReply = {status: 200, body: "[]"};
-const BAD_GATEWAY: HttpReply = {status: 502, body: '{"message":"Bad gateway"}'};
+const SERVED_LABELS: HttpReply = { status: 200, body: "[]" };
+const BAD_GATEWAY: HttpReply = { status: 502, body: '{"message":"Bad gateway"}' };
 
 const oneChildEpic = (labels: ReadonlyArray<string>): HttpReply =>
 	epic({
-		body: epicBody({dependencies: "- phase 1: #4301"}),
-		labels: labels.map((name) => ({name})),
+		body: epicBody({ dependencies: "- phase 1: #4301" }),
+		labels: labels.map((name) => ({ name })),
 	});
 
 const ONE_CHILD_EPIC = oneChildEpic(["type:epic", "ready-for:human"]);
@@ -72,19 +77,19 @@ const env = {
  * be a row here rather than a second scripted `COMMENTS` entry nothing would reach.
  */
 const claimed = (digest: string): ReadonlyArray<Scripted> => [
-	[COMMENTS, comments({id: 1, body: marker(SESSION, LANE_UUID)}, approvalRow(digest))],
-	[PERM, {status: 200, body: '{"permission":"write"}'}],
+	[COMMENTS, comments({ id: 1, body: marker(SESSION, LANE_UUID) }, approvalRow(digest))],
+	[PERM, { status: 200, body: '{"permission":"write"}' }],
 	...ROSTER,
 ];
 
-const PLANNED = child({number: 4301, labels: ["type:feature", "p1", "status:planned"]});
-const TRIAGED = child({number: 4301, labels: ["type:feature", "p1", "status:triaged"]});
+const PLANNED = child({ number: 4301, labels: ["type:feature", "p1", "status:planned"] });
+const TRIAGED = child({ number: 4301, labels: ["type:feature", "p1", "status:triaged"] });
 
 /** The ledger reads, in the order the flip issues them; `once` lets each re-read differ. */
 const ledger = (
 	first: HttpReply,
 	reread: HttpReply,
-	epics: {first?: HttpReply; reread?: HttpReply} = {},
+	epics: { first?: HttpReply; reread?: HttpReply } = {},
 ): ReadonlyArray<Scripted> => [
 	[once(EPIC), epics.first ?? ONE_CHILD_EPIC],
 	[SUBS, subIssues(4301)],
@@ -94,7 +99,7 @@ const ledger = (
 	[EPIC, epics.reread ?? AGENT_EPIC],
 ];
 
-const digestOf = (script: ReadonlyArray<Scripted>): Promise<string> => digestOver(script, {env});
+const digestOf = (script: ReadonlyArray<Scripted>): Promise<string> => digestOver(script, { env });
 
 const CLEAN_READ: ReadonlyArray<Scripted> = [
 	[EPIC, ONE_CHILD_EPIC],
@@ -107,19 +112,19 @@ const run = (digest: string, script: ReadonlyArray<Scripted>, config?: string) =
 	const seams = planSeams(script, config);
 	return Effect.runPromise(
 		Effect.provide(
-			runFlip({number: 4300, digest, token: TOKEN, repo: null, env, cwd: CWD}),
+			runFlip({ number: 4300, digest, token: TOKEN, repo: null, env, cwd: CWD }),
 			seams.layer,
 		),
-	).then((outcome) => ({outcome, calls: seams.http.calls, bodies: seams.http.bodies}));
+	).then((outcome) => ({ outcome, calls: seams.http.calls, bodies: seams.http.bodies }));
 };
 
 describe("runFlip", () => {
 	it("flips between the labels a repo renamed planned and triaged to, never the shipped names", async () => {
 		const config = JSON.stringify({
-			boardVocabulary: {statuses: {planned: "status:drafted", triaged: "status:ready"}},
+			boardVocabulary: { statuses: { planned: "status:drafted", triaged: "status:ready" } },
 		});
-		const drafted = child({number: 4301, labels: ["type:feature", "p1", "status:drafted"]});
-		const ready = child({number: 4301, labels: ["type:feature", "p1", "status:ready"]});
+		const drafted = child({ number: 4301, labels: ["type:feature", "p1", "status:drafted"] });
+		const ready = child({ number: 4301, labels: ["type:feature", "p1", "status:ready"] });
 		const digest = await digestOver(
 			[
 				[EPIC, ONE_CHILD_EPIC],
@@ -127,9 +132,9 @@ describe("runFlip", () => {
 				[CHILD, drafted],
 				[CYCLE, cycleDoc],
 			],
-			{env, config},
+			{ env, config },
 		);
-		const {outcome, calls, bodies} = await run(
+		const { outcome, calls, bodies } = await run(
 			digest,
 			[
 				...claimed(digest),
@@ -143,7 +148,7 @@ describe("runFlip", () => {
 			config,
 		);
 		expect(outcome.code).toBe(0);
-		expect(JSON.parse(outcome.stdout)).toMatchObject({terminal: "flipped-all", flipped: 1});
+		expect(JSON.parse(outcome.stdout)).toMatchObject({ terminal: "flipped-all", flipped: 1 });
 		expect(JSON.parse(bodies[calls.findIndex((line) => ADD.test(line))] ?? "{}")).toEqual({
 			labels: ["status:ready"],
 		});
@@ -151,10 +156,10 @@ describe("runFlip", () => {
 	});
 
 	it("refuses a config that gives no board on 11, writing nothing", async () => {
-		const {outcome, calls} = await run(
+		const { outcome, calls } = await run(
 			"4d90e1bb27ac",
 			[...claimed("4d90e1bb27ac"), ...ledger(PLANNED, TRIAGED)],
-			JSON.stringify({boardVocabulary: {statuses: "ready"}}),
+			JSON.stringify({ boardVocabulary: { statuses: "ready" } }),
 		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.at(-1)).toContain(
@@ -165,7 +170,7 @@ describe("runFlip", () => {
 
 	it("flips a planned child and reports the OBSERVED results as a count plus histogram", async () => {
 		const digest = await digestOf(CLEAN_READ);
-		const {outcome} = await run(digest, [
+		const { outcome } = await run(digest, [
 			...claimed(digest),
 			...ledger(PLANNED, TRIAGED),
 			[LABELS, labelSet("status:planned", "status:triaged", "ready-for:agent", "type:feature")],
@@ -180,12 +185,12 @@ describe("runFlip", () => {
 			terminal: "flipped-all",
 			flipped: 1,
 			already: 0,
-			children: {count: 1, results: {flipped: 1}},
-			audience: {result: "flipped", observed: ["ready-for:agent", "type:epic"]},
+			children: { count: 1, results: { flipped: 1 } },
+			audience: { result: "flipped", observed: ["ready-for:agent", "type:epic"] },
 		});
 		// `audience.observed` is the answer and stays whole; the child's own observed labels were the
 		// evidence, and the collapse is only real if none of them reached stdout.
-		expect(JSON.parse(outcome.stdout).children).toEqual({count: 1, results: {flipped: 1}});
+		expect(JSON.parse(outcome.stdout).children).toEqual({ count: 1, results: { flipped: 1 } });
 		expect(outcome.stdout).not.toContain("4301");
 	});
 
@@ -204,7 +209,7 @@ describe("runFlip", () => {
 			[ADD_EPIC, SERVED_LABELS],
 			[REMOVE_EPIC, SERVED_LABELS],
 		];
-		const {calls} = await run(digest, script);
+		const { calls } = await run(digest, script);
 		const childWrite = calls.findIndex((line) => REMOVE.test(line));
 		const epicAdd = calls.findIndex((line) => ADD_EPIC.test(line));
 		const epicRemove = calls.findIndex((line) => REMOVE_EPIC.test(line));
@@ -216,7 +221,7 @@ describe("runFlip", () => {
 		// leaves undone: an epic nobody proved pickable is never admitted.
 		const unread = await run(digest, [
 			...claimed(digest),
-			...ledger(PLANNED, {status: 502, body: '{"message":"Bad gateway"}'}),
+			...ledger(PLANNED, { status: 502, body: '{"message":"Bad gateway"}' }),
 			[LABELS, labelSet("status:planned", "status:triaged", "ready-for:agent")],
 			[ADD, SERVED_LABELS],
 			[REMOVE, SERVED_LABELS],
@@ -228,9 +233,9 @@ describe("runFlip", () => {
 
 	it("refuses 22 when the re-read proves the epic did not reach ready-for:agent", async () => {
 		const digest = await digestOf(CLEAN_READ);
-		const {outcome} = await run(digest, [
+		const { outcome } = await run(digest, [
 			...claimed(digest),
-			...ledger(PLANNED, TRIAGED, {reread: ONE_CHILD_EPIC}),
+			...ledger(PLANNED, TRIAGED, { reread: ONE_CHILD_EPIC }),
 			[LABELS, labelSet("status:planned", "status:triaged", "ready-for:agent")],
 			[ADD, SERVED_LABELS],
 			[REMOVE, SERVED_LABELS],
@@ -246,9 +251,9 @@ describe("runFlip", () => {
 
 	it("refuses 8 when the epic's audience write cannot be proven", async () => {
 		const digest = await digestOf(CLEAN_READ);
-		const {outcome} = await run(digest, [
+		const { outcome } = await run(digest, [
 			...claimed(digest),
-			...ledger(PLANNED, TRIAGED, {reread: BAD_GATEWAY}),
+			...ledger(PLANNED, TRIAGED, { reread: BAD_GATEWAY }),
 			[LABELS, labelSet("status:planned", "status:triaged", "ready-for:agent")],
 			[ADD, SERVED_LABELS],
 			[REMOVE, SERVED_LABELS],
@@ -260,14 +265,14 @@ describe("runFlip", () => {
 	});
 
 	it("refuses 23 when ready-for:agent is absent from the taxonomy, writing nothing", async () => {
-		const already = child({number: 4301, labels: ["type:feature", "p1", "status:triaged"]});
+		const already = child({ number: 4301, labels: ["type:feature", "p1", "status:triaged"] });
 		const digest = await digestOf([
 			[EPIC, ONE_CHILD_EPIC],
 			[SUBS, subIssues(4301)],
 			[CHILD, already],
 			[CYCLE, cycleDoc],
 		]);
-		const {outcome, calls} = await run(digest, [
+		const { outcome, calls } = await run(digest, [
 			...claimed(digest),
 			...ledger(already, already),
 			[LABELS, labelSet("status:planned", "status:triaged", "type:feature")],
@@ -285,7 +290,7 @@ describe("runFlip", () => {
 	 */
 	it("adds before it removes", async () => {
 		const digest = await digestOf(CLEAN_READ);
-		const {calls} = await run(digest, [
+		const { calls } = await run(digest, [
 			...claimed(digest),
 			...ledger(PLANNED, TRIAGED),
 			[LABELS, labelSet("status:planned", "status:triaged", "ready-for:agent")],
@@ -308,7 +313,7 @@ describe("runFlip", () => {
 		const defective = child({
 			number: 4301,
 			labels: ["type:feature", "p1", "status:planned"],
-			body: childBody({criteria: "no boxes"}),
+			body: childBody({ criteria: "no boxes" }),
 		});
 		const digest = await digestOf([
 			[EPIC, ONE_CHILD_EPIC],
@@ -316,7 +321,7 @@ describe("runFlip", () => {
 			[CHILD, defective],
 			[CYCLE, cycleDoc],
 		]);
-		const {outcome, calls} = await run(digest, [
+		const { outcome, calls } = await run(digest, [
 			...claimed(digest),
 			...ledger(defective, defective),
 			[LABELS, labelSet("status:planned", "status:triaged")],
@@ -329,7 +334,7 @@ describe("runFlip", () => {
 	/** The TOCTOU answer: the gap between deciding and writing is closed by re-deciding. */
 	it("refuses 21 when the recomputed digest differs from --digest", async () => {
 		const digest = await digestOf(CLEAN_READ);
-		const {outcome, calls} = await run("000000000000", [
+		const { outcome, calls } = await run("000000000000", [
 			...claimed(digest),
 			...ledger(PLANNED, TRIAGED),
 			[LABELS, labelSet("status:planned", "status:triaged")],
@@ -345,7 +350,7 @@ describe("runFlip", () => {
 	 */
 	it("refuses 23 when a label it must write is absent from the taxonomy", async () => {
 		const digest = await digestOf(CLEAN_READ);
-		const {outcome, calls} = await run(digest, [
+		const { outcome, calls } = await run(digest, [
 			...claimed(digest),
 			...ledger(PLANNED, TRIAGED),
 			[LABELS, labelSet("status:planned", "type:feature")],
@@ -357,23 +362,23 @@ describe("runFlip", () => {
 	});
 
 	it("skips the vocabulary check when there is nothing to flip", async () => {
-		const already = child({number: 4301, labels: ["type:feature", "p1", "status:triaged"]});
+		const already = child({ number: 4301, labels: ["type:feature", "p1", "status:triaged"] });
 		const digest = await digestOf([
 			[EPIC, AGENT_EPIC],
 			[SUBS, subIssues(4301)],
 			[CHILD, already],
 			[CYCLE, cycleDoc],
 		]);
-		const {outcome, calls} = await run(digest, [
+		const { outcome, calls } = await run(digest, [
 			...claimed(digest),
-			...ledger(already, already, {first: AGENT_EPIC}),
+			...ledger(already, already, { first: AGENT_EPIC }),
 		]);
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout)).toMatchObject({
 			terminal: "nothing-to-flip",
 			flipped: 0,
 			already: 1,
-			audience: {result: "already", observed: ["ready-for:agent", "type:epic"]},
+			audience: { result: "already", observed: ["ready-for:agent", "type:epic"] },
 		});
 		expect(calls.some((line) => LABELS.test(line))).toBe(false);
 		expect(calls.some((line) => LABEL_WRITE.test(line))).toBe(false);
@@ -381,14 +386,14 @@ describe("runFlip", () => {
 
 	/** An epic planned and gated before the audience flip existed, re-gated to earn that label. */
 	it("flips the epic alone when every child is already triaged", async () => {
-		const already = child({number: 4301, labels: ["type:feature", "p1", "status:triaged"]});
+		const already = child({ number: 4301, labels: ["type:feature", "p1", "status:triaged"] });
 		const digest = await digestOf([
 			[EPIC, ONE_CHILD_EPIC],
 			[SUBS, subIssues(4301)],
 			[CHILD, already],
 			[CYCLE, cycleDoc],
 		]);
-		const {outcome, calls} = await run(digest, [
+		const { outcome, calls } = await run(digest, [
 			...claimed(digest),
 			...ledger(already, already),
 			[LABELS, labelSet("ready-for:agent")],
@@ -400,7 +405,7 @@ describe("runFlip", () => {
 			terminal: "flipped-all",
 			flipped: 0,
 			already: 1,
-			audience: {result: "flipped", observed: ["ready-for:agent", "type:epic"]},
+			audience: { result: "flipped", observed: ["ready-for:agent", "type:epic"] },
 		});
 		expect(calls.some((line) => ADD.test(line) || REMOVE.test(line))).toBe(false);
 	});
@@ -415,7 +420,7 @@ describe("runFlip", () => {
 			number: 4301,
 			labels: ["type:feature", "p1", "status:planned", "status:triaged"],
 		});
-		const {outcome, calls} = await run(digest, [
+		const { outcome, calls } = await run(digest, [
 			...claimed(digest),
 			...ledger(PLANNED, stuck),
 			[LABELS, labelSet("status:planned", "status:triaged", "ready-for:agent")],
@@ -430,7 +435,7 @@ describe("runFlip", () => {
 
 	it("refuses 8 when a write landed and no re-read can prove its outcome", async () => {
 		const digest = await digestOf(CLEAN_READ);
-		const {outcome} = await run(digest, [
+		const { outcome } = await run(digest, [
 			...claimed(digest),
 			...ledger(PLANNED, BAD_GATEWAY),
 			[LABELS, labelSet("status:planned", "status:triaged", "ready-for:agent")],
@@ -442,17 +447,17 @@ describe("runFlip", () => {
 	});
 
 	it("refuses 15 when this session does not hold the epic's claim", async () => {
-		const {outcome, calls} = await run("4d90e1bb27ac", [
+		const { outcome, calls } = await run("4d90e1bb27ac", [
 			[EPIC, ONE_CHILD_EPIC],
-			[COMMENTS, comments({id: 1, body: marker("another-session", LANE_UUID)})],
-			[PERM, {status: 200, body: '{"permission":"write"}'}],
+			[COMMENTS, comments({ id: 1, body: marker("another-session", LANE_UUID) })],
+			[PERM, { status: 200, body: '{"permission":"write"}' }],
 		]);
 		expect(outcome.code).toBe(CLAIM_NOT_MINE);
 		expect(calls.some((line) => !line.startsWith("GET "))).toBe(false);
 	});
 
 	it("refuses 10 on a --digest that is not 12 lowercase hex, before any read", async () => {
-		const {outcome, calls} = await run("NOTHEX", []);
+		const { outcome, calls } = await run("NOTHEX", []);
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toContain("--digest must be 12 lowercase hex");
 		expect(calls).toEqual([]);
@@ -464,9 +469,9 @@ describe("runFlip", () => {
 	 */
 	it("refuses 25 on an unapproved plan, writing nothing", async () => {
 		const digest = await digestOf(CLEAN_READ);
-		const {outcome, calls} = await run(digest, [
-			[COMMENTS, comments({id: 1, body: marker(SESSION, LANE_UUID)})],
-			[PERM, {status: 200, body: '{"permission":"write"}'}],
+		const { outcome, calls } = await run(digest, [
+			[COMMENTS, comments({ id: 1, body: marker(SESSION, LANE_UUID) })],
+			[PERM, { status: 200, body: '{"permission":"write"}' }],
 			...ROSTER,
 			...ledger(PLANNED, TRIAGED),
 			[LABELS, labelSet("status:planned", "status:triaged", "ready-for:agent")],
@@ -478,9 +483,12 @@ describe("runFlip", () => {
 
 	it("refuses 25 on a stale approval — a re-plan does not inherit the old one", async () => {
 		const digest = await digestOf(CLEAN_READ);
-		const {outcome} = await run(digest, [
-			[COMMENTS, comments({id: 1, body: marker(SESSION, LANE_UUID)}, approvalRow("0000000000ff"))],
-			[PERM, {status: 200, body: '{"permission":"write"}'}],
+		const { outcome } = await run(digest, [
+			[
+				COMMENTS,
+				comments({ id: 1, body: marker(SESSION, LANE_UUID) }, approvalRow("0000000000ff")),
+			],
+			[PERM, { status: 200, body: '{"permission":"write"}' }],
 			...ROSTER,
 			...ledger(PLANNED, TRIAGED),
 			[LABELS, labelSet("status:planned", "status:triaged", "ready-for:agent")],
@@ -494,15 +502,15 @@ describe("childrenEvidence", () => {
 	it("counts every child and tallies the closed result vocabulary, count-descending", () => {
 		expect(
 			childrenEvidence([
-				{result: "already"},
-				{result: "flipped"},
-				{result: "already"},
-				{result: "not-planned"},
+				{ result: "already" },
+				{ result: "flipped" },
+				{ result: "already" },
+				{ result: "not-planned" },
 			]),
-		).toEqual({count: 4, results: {already: 2, flipped: 1, "not-planned": 1}});
+		).toEqual({ count: 4, results: { already: 2, flipped: 1, "not-planned": 1 } });
 	});
 
 	it("keeps `count` at zero rather than dropping the field, so a caller never reads absence", () => {
-		expect(childrenEvidence([])).toEqual({count: 0, results: {}});
+		expect(childrenEvidence([])).toEqual({ count: 0, results: {} });
 	});
 });

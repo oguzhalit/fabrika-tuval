@@ -1,11 +1,11 @@
-import {execFileSync, spawnSync} from "node:child_process";
-import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {afterEach, describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
-import type {rollUpUsage} from "./usage-rollup.ts";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterEach, describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
+import type { rollUpUsage } from "./usage-rollup.ts";
 
 const cli = fileURLToPath(new URL("../bin.ts", import.meta.url));
 const codexHook = new URL("./codex-hook-verb.ts", import.meta.url).href;
@@ -16,16 +16,16 @@ const nodeServices = new URL(
 const effect = new URL("../../node_modules/effect/dist/index.js", import.meta.url).href;
 const dirs: string[] = [];
 afterEach(() => {
-	for (const dir of dirs.splice(0)) rmSync(dir, {recursive: true, force: true});
+	for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 const write = (path: string, rows: unknown[]) =>
 	writeFileSync(path, rows.map((row) => JSON.stringify(row)).join("\n"));
 
-describe.skip("assembled usage journey", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
+describe.skip("assembled usage journey", { timeout: SUBPROCESS_TEST_TIMEOUT_MS }, () => {
 	it("records both hosts across interruption, restart, nested work and retries without recounting", () => {
 		const cwd = mkdtempSync(join(tmpdir(), "usage-journey-"));
 		dirs.push(cwd);
-		execFileSync("git", ["init", "--quiet"], {cwd});
+		execFileSync("git", ["init", "--quiet"], { cwd });
 		const ledger = join(cwd, ".fabrika/spend-ledger.jsonl");
 		const sessions = join(cwd, "sessions");
 		mkdirSync(sessions);
@@ -55,7 +55,13 @@ describe.skip("assembled usage journey", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, 
 				cwd,
 				...extra,
 			};
-			const options = {input: JSON.stringify(input), sessions, state, ledger, repo: "fixture/repo"};
+			const options = {
+				input: JSON.stringify(input),
+				sessions,
+				state,
+				ledger,
+				repo: "fixture/repo",
+			};
 			const program = `import {Effect} from ${JSON.stringify(effect)}; import {NodeServices} from ${JSON.stringify(nodeServices)}; import {runCodexHook} from ${JSON.stringify(codexHook)}; const result = await Effect.runPromise(runCodexHook(${JSON.stringify(options)}).pipe(Effect.provide(NodeServices.layer))); console.log(result.stdout);`;
 			const result = spawnSync(process.execPath, ["--input-type=module", "-e", program], {
 				cwd,
@@ -82,7 +88,7 @@ describe.skip("assembled usage journey", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, 
 					model_provider: "openai",
 				},
 			},
-			{type: "turn_context", payload: {turn_id: thread, model}},
+			{ type: "turn_context", payload: { turn_id: thread, model } },
 			{
 				type: "token_usage_record",
 				payload: {
@@ -100,7 +106,7 @@ describe.skip("assembled usage journey", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, 
 		const root = native("root", null, "codex-first");
 		write(join(sessions, "root.jsonl"), [...root, root[2]]);
 		codex("PreToolUse", {
-			tool_input: {command: "node packages/fabrika-cli/src/bin.ts build issue 8952"},
+			tool_input: { command: "node packages/fabrika-cli/src/bin.ts build issue 8952" },
 			agent_id: "late",
 		});
 
@@ -110,7 +116,7 @@ describe.skip("assembled usage journey", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, 
 			output_tokens: 7,
 			cache_read_input_tokens: 20,
 			cache_creation_input_tokens: 10,
-			cache_creation: {ephemeral_5m_input_tokens: 6, ephemeral_1h_input_tokens: 4},
+			cache_creation: { ephemeral_5m_input_tokens: 6, ephemeral_1h_input_tokens: 4 },
 		};
 		const response = (id: string, child?: string, model = "claude-first", tool?: string) => ({
 			type: "assistant",
@@ -123,7 +129,7 @@ describe.skip("assembled usage journey", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, 
 				role: "assistant",
 				model,
 				usage: claudeUsage,
-				content: tool ? [{type: "tool_use", id: tool, name: "Agent"}] : [],
+				content: tool ? [{ type: "tool_use", id: tool, name: "Agent" }] : [],
 			},
 		});
 		const claudeRoot = response("claude-root", undefined, "claude-first", "spawn-a");
@@ -136,7 +142,7 @@ describe.skip("assembled usage journey", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, 
 				hook_event_name: event,
 				...extra,
 			});
-		hook("SubagentStart", {agent_id: "a"});
+		hook("SubagentStart", { agent_id: "a" });
 		hook("StopFailure");
 		const early = JSON.parse(
 			run(["spend", "rollup", "--ledger", ledger, "--issue", "8952", "--json"]),
@@ -150,17 +156,17 @@ describe.skip("assembled usage journey", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, 
 		write(join(sessions, "late.jsonl"), [...native("late", "child", "codex-next"), ...root]);
 		write(join(sessions, "retry.jsonl"), native("retry", "child", "codex-next"));
 		const childDir = join(cwd, "claude/subagents");
-		mkdirSync(childDir, {recursive: true});
+		mkdirSync(childDir, { recursive: true });
 		const child = response("claude-child", "a", "claude-first", "spawn-b");
 		write(join(childDir, "agent-a.jsonl"), [claudeRoot, child]);
-		writeFileSync(join(childDir, "agent-a.meta.json"), JSON.stringify({toolUseId: "spawn-a"}));
+		writeFileSync(join(childDir, "agent-a.meta.json"), JSON.stringify({ toolUseId: "spawn-a" }));
 		write(join(childDir, "agent-b.jsonl"), [
 			claudeRoot,
 			child,
 			response("claude-nested", "b"),
 			response("claude-retry", "b", "claude-next"),
 		]);
-		writeFileSync(join(childDir, "agent-b.meta.json"), JSON.stringify({toolUseId: "spawn-b"}));
+		writeFileSync(join(childDir, "agent-b.meta.json"), JSON.stringify({ toolUseId: "spawn-b" }));
 		codex("SessionStart");
 		hook("SessionStart");
 		const args = ["spend", "rollup", "--ledger", ledger, "--run", runId, "--json"];
@@ -207,7 +213,7 @@ describe.skip("assembled usage journey", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, 
 		expect(JSON.parse(run(["spend", "read", "--ledger", ledger, "--json"])).usage.counters).toEqual(
 			recovered.counters,
 		);
-		write(transcript, [claudeRoot, {...response("unbound"), gitBranch: "main"}]);
+		write(transcript, [claudeRoot, { ...response("unbound"), gitBranch: "main" }]);
 		hook("Stop");
 		const overall = JSON.parse(run(args)).usage as ReturnType<typeof rollUpUsage>;
 		expect(overall.responses).toBe(9);

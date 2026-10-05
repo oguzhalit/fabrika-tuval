@@ -1,14 +1,14 @@
-import {describe, expect, it} from "vitest";
-import type {CommentRecord} from "../io/issues.ts";
-import {composeEvidence} from "../ui/evidence-verb.ts";
-import {admitHandCheck, findHandCheck, handCheckCommentId, nearMisses} from "./hand-check.ts";
+import { describe, expect, it } from "vitest";
+import type { CommentRecord } from "../io/issues.ts";
+import { composeEvidence } from "../ui/evidence-verb.ts";
+import { admitHandCheck, findHandCheck, handCheckCommentId, nearMisses } from "./hand-check.ts";
 
 const HEAD = "03135b91aa04f7e2c9d8b1640a5c22e9f01b7d3c";
 const OWNERS = new Set(["owner"]);
 // A hosted attachment's path ends in a UUID, the same shape as a session id in an agent stamp.
 const ASSET = "https://github.com/user-attachments/assets/0a1b2c3d-4e5f-6789-abcd-ef0123456789";
 const SHOT = `![row](${ASSET})`;
-const EVIDENCE = composeEvidence([{surface: "/board", before: null, after: ASSET}], HEAD);
+const EVIDENCE = composeEvidence([{ surface: "/board", before: null, after: ASSET }], HEAD);
 const STAMPED = `Hand-checked at ${HEAD}.\n\n${SHOT}\n\n<sub>Filed by an agent · branch \`main\`</sub>`;
 
 const comment = (body: string, author = "owner", id = 7001): CommentRecord => ({
@@ -56,7 +56,7 @@ describe("admitHandCheck", () => {
 		["a comment with no screenshot", [comment(`looks right at ${HEAD}`)], "no screenshot"],
 	])("refuses %s", (_name, comments, reason) => {
 		const answer = admitHandCheck(7001, comments, HEAD, OWNERS);
-		expect(answer).toMatchObject({_tag: "Inadmissible"});
+		expect(answer).toMatchObject({ _tag: "Inadmissible" });
 		if (answer._tag === "Inadmissible") expect(answer.reason).toContain(reason);
 	});
 });
@@ -64,8 +64,14 @@ describe("admitHandCheck", () => {
 describe("findHandCheck", () => {
 	it("finds the newest admissible hand-check, passing over the ones that fail a fact", () => {
 		const older = comment(`at ${HEAD} ${SHOT}`, "owner", 1);
-		const newer = {...comment(`at ${HEAD} ${SHOT}`, "owner", 2), updatedAt: "2026-09-29T01:00:00Z"};
-		const agent = {...comment(`at ${HEAD} ${SHOT}`, "agent", 3), updatedAt: "2026-09-29T02:00:00Z"};
+		const newer = {
+			...comment(`at ${HEAD} ${SHOT}`, "owner", 2),
+			updatedAt: "2026-09-29T01:00:00Z",
+		};
+		const agent = {
+			...comment(`at ${HEAD} ${SHOT}`, "agent", 3),
+			updatedAt: "2026-09-29T02:00:00Z",
+		};
 		expect(findHandCheck([older, newer, agent], HEAD, OWNERS)?.id).toBe(2);
 	});
 

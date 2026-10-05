@@ -18,10 +18,10 @@
  *   dispatch-failure policy point*) — so it seats {@link GROUND_UNKNOWN}, whose stderr the user sees
  *   while the command proceeds.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {StdinRead} from "../io/stdin.ts";
-import {deriveRepoRoot} from "../lane/ground.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { StdinRead } from "../io/stdin.ts";
+import { deriveRepoRoot } from "../lane/ground.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	EMPTY_STDIN,
 	ENVELOPE_UNKNOWN,
@@ -29,9 +29,9 @@ import {
 	MALFORMED_ENVELOPE,
 	WRONG_EVENT,
 } from "./codes.ts";
-import {classifyEnvelope, type Envelope, type EnvelopeRead} from "./envelope.ts";
-import {decideJump} from "./leading-jump.ts";
-import {bashCommandOf, type Decision, preToolUseStdout} from "./pre-tool-use.ts";
+import { classifyEnvelope, type Envelope, type EnvelopeRead } from "./envelope.ts";
+import { decideJump } from "./leading-jump.ts";
+import { bashCommandOf, type Decision, preToolUseStdout } from "./pre-tool-use.ts";
 
 const VERB = "fabrika hook pre-bash";
 
@@ -47,7 +47,7 @@ export interface PreBashOptions {
 type Requirements = FileSystem.FileSystem | Path.Path;
 
 const readEnvelope = (piped: StdinRead): EnvelopeRead =>
-	piped._tag === "Text" ? classifyEnvelope(piped.text) : {_tag: "Unknown", reason: piped.reason};
+	piped._tag === "Text" ? classifyEnvelope(piped.text) : { _tag: "Unknown", reason: piped.reason };
 
 const stdoutFor = (decision: Decision): string => preToolUseStdout("hook pre-bash", decision);
 
@@ -65,13 +65,14 @@ const judge = (
 			);
 		}
 		if (ground._tag === "NotARepo") {
-			return answer(stdoutFor({_tag: "Allow", because: `${envelope.cwd} is under no repository`}), [
-				`${VERB}: ${envelope.cwd} is under no working tree — nothing to escape from.`,
-			]);
+			return answer(
+				stdoutFor({ _tag: "Allow", because: `${envelope.cwd} is under no repository` }),
+				[`${VERB}: ${envelope.cwd} is under no working tree — nothing to escape from.`],
+			);
 		}
 		if (ground.workingTree === ground.repoRoot) {
 			return answer(
-				stdoutFor({_tag: "Allow", because: `${ground.workingTree} is the primary checkout`}),
+				stdoutFor({ _tag: "Allow", because: `${ground.workingTree} is the primary checkout` }),
 				[`${VERB}: ${ground.workingTree} is the primary checkout, not a linked worktree.`],
 			);
 		}

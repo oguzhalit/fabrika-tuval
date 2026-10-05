@@ -20,18 +20,18 @@
  * so it is what opens that arm and nothing weaker does — and on this repository's squash trunk the
  * proof is `../io/containment.ts`'s, never ancestry alone.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type Containment, containmentOf} from "../io/containment.ts";
-import {execCapture} from "../io/exec.ts";
-import {localBranches} from "../io/git.ts";
-import {resolveTrunk, trunkUnresolved} from "../io/trunk.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {epicBranch} from "../wire/lane-brief.ts";
-import {assemblySeat, worktrees} from "./assembly.ts";
-import {APPEND_UNKNOWN, LANE_UNREADABLE, PRIMARY_CHECKOUT} from "./codes.ts";
-import {loadRefusal} from "./refusals.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type Containment, containmentOf } from "../io/containment.ts";
+import { execCapture } from "../io/exec.ts";
+import { localBranches } from "../io/git.ts";
+import { resolveTrunk, trunkUnresolved } from "../io/trunk.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { epicBranch } from "../wire/lane-brief.ts";
+import { assemblySeat, worktrees } from "./assembly.ts";
+import { APPEND_UNKNOWN, LANE_UNREADABLE, PRIMARY_CHECKOUT } from "./codes.ts";
+import { loadRefusal } from "./refusals.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane assembly";
 
@@ -48,8 +48,8 @@ const seatOf = (epic: number, branch: string) =>
 	Effect.gen(function* () {
 		const listed = yield* worktrees;
 		return listed._tag === "Failure"
-			? ({_tag: "Unreadable", reason: listed.reason} as const)
-			: ({_tag: "Read", seat: assemblySeat(listed.value, epic, branch)} as const);
+			? ({ _tag: "Unreadable", reason: listed.reason } as const)
+			: ({ _tag: "Read", seat: assemblySeat(listed.value, epic, branch) } as const);
 	});
 
 /** Which proof opened the re-cut, named on stderr so a reader can re-run it by hand. */
@@ -155,7 +155,7 @@ export const runAssembly = (
 		// exception is a branch the trunk already carries: its content landed, it holds nothing
 		// the trunk lacks, and every child cut from it conflicts with what the trunk took since. That
 		// containment is the whole warrant for re-cutting, so an unreadable answer refuses instead.
-		let contained: Containment = {_tag: "Unlanded"};
+		let contained: Containment = { _tag: "Unlanded" };
 		if (existing) {
 			const trunk = yield* execCapture("git", ["rev-parse", "--verify", `${trunkRef}^{commit}`]);
 			if (!trunk.ok) {

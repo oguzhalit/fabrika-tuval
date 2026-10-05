@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import type {CommentRecord} from "../io/issues.ts";
+import { describe, expect, it } from "vitest";
+import type { CommentRecord } from "../io/issues.ts";
 import {
 	captureComment,
 	captureMarker,
@@ -43,7 +43,7 @@ describe("the composed title", () => {
 });
 
 describe("the issue body carries the nonce and never the workspace path", () => {
-	const body = issueBody({question: QUESTION, kind: "logic", nonce: NONCE, ticket: 9140});
+	const body = issueBody({ question: QUESTION, kind: "logic", nonce: NONCE, ticket: 9140 });
 
 	it("holds the four sections", () => {
 		expect(body).toContain("## Question");
@@ -59,7 +59,7 @@ describe("the issue body carries the nonce and never the workspace path", () => 
 	});
 
 	it("says standalone when no ticket is given", () => {
-		expect(issueBody({question: QUESTION, kind: "ui", nonce: NONCE, ticket: null})).toContain(
+		expect(issueBody({ question: QUESTION, kind: "ui", nonce: NONCE, ticket: null })).toContain(
 			"standalone",
 		);
 	});
@@ -102,20 +102,20 @@ describe("the capture predicate is mechanical", () => {
 
 describe("the run table is transcribed, not summarised", () => {
 	it("holds one row per recorded run with its command and status", () => {
-		const table = runTable([evidenceRecord(1), evidenceRecord(2, {commandExit: 1})], WORKSPACE);
+		const table = runTable([evidenceRecord(1), evidenceRecord(2, { commandExit: 1 })], WORKSPACE);
 		expect(table).toContain("| 1 | printf no\\n | 0 | false |");
 		expect(table).toContain("| 2 | printf no\\n | 1 | false |");
 	});
 
 	it("names a timed-out run rather than printing a null exit", () => {
-		const table = runTable([evidenceRecord(1, {commandExit: null, timedOut: true})], WORKSPACE);
+		const table = runTable([evidenceRecord(1, { commandExit: null, timedOut: true })], WORKSPACE);
 		expect(table).toContain("timed out");
 		expect(table).not.toContain("null");
 	});
 
 	it("masks the workspace root out of a transcribed argv rather than carrying it", () => {
 		const table = runTable(
-			[evidenceRecord(1, {command: ["bash", `${LEAKY_WORKSPACE}/probe.sh`]})],
+			[evidenceRecord(1, { command: ["bash", `${LEAKY_WORKSPACE}/probe.sh`] })],
 			LEAKY_WORKSPACE,
 		);
 		expect(table).toContain(`bash ${WORKSPACE_MASK}/probe.sh`);
@@ -124,7 +124,7 @@ describe("the run table is transcribed, not summarised", () => {
 
 	it("masks any other machine-local path in an argv by its class", () => {
 		const table = runTable(
-			[evidenceRecord(1, {command: ["cat", "/Users/someone/notes.txt"]})],
+			[evidenceRecord(1, { command: ["cat", "/Users/someone/notes.txt"] })],
 			LEAKY_WORKSPACE,
 		);
 		expect(table).toContain("/Users/<redacted>");

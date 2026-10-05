@@ -26,10 +26,10 @@
  * The marker line is composed here from the positional, never taken from stdin, so a disclosure
  * cannot name an issue other than the one it sits on.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {Attempt} from "../io/git.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { Attempt } from "../io/git.ts";
 import {
 	type CommentRecord,
 	createComment,
@@ -37,14 +37,14 @@ import {
 	getComment,
 	listComments,
 } from "../io/issues.ts";
-import {patchComment, viewerLogin} from "../io/pulls.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { patchComment, viewerLogin } from "../io/pulls.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import * as buildDeviations from "../wire/build-deviations.ts";
 import * as deviations from "../wire/deviations.ts";
-import {leakRefusal, readAuthored} from "./authored.ts";
-import {requireCallerToken, requireClaim, requireSession} from "./claim.ts";
+import { leakRefusal, readAuthored } from "./authored.ts";
+import { requireCallerToken, requireClaim, requireSession } from "./claim.ts";
 import {
 	BAD_SECTIONS,
 	DISCLOSURE_INCOMPLETE,
@@ -54,8 +54,8 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {isPullRequest} from "./github.ts";
-import {resolveTargetRepo} from "./target.ts";
+import { isPullRequest } from "./github.ts";
+import { resolveTargetRepo } from "./target.ts";
 
 const VERB = "build deviations";
 
@@ -100,23 +100,23 @@ const standingMarkers = (
 		if (comment.author !== me) return [];
 		const read = buildDeviations.read(comment.body);
 		return read._tag === "Found" && read.value.issue === issue
-			? [{comment, disclosure: read.value.disclosure}]
+			? [{ comment, disclosure: read.value.disclosure }]
 			: [];
 	});
 
 type Ask =
-	| {readonly _tag: "Read"}
+	| { readonly _tag: "Read" }
 	| {
 			readonly _tag: "Post";
 			readonly section: deviations.DeviationsDisclosure;
 			readonly composed: string;
 	  }
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /** The disclosure on stdin, composed for `issue` — or the refusal its bytes earned. */
 const askedDisclosure = (issue: number, stdin: StdinRead): Ask => {
 	const authored = readAuthored(SURFACE, stdin);
-	if (authored._tag === "Refused") return {_tag: "Refused", outcome: authored.outcome};
+	if (authored._tag === "Refused") return { _tag: "Refused", outcome: authored.outcome };
 
 	const section = deviations.read(authored.text);
 	if (section._tag === "Absent") {
@@ -140,7 +140,7 @@ const askedDisclosure = (issue: number, stdin: StdinRead): Ask => {
 	return {
 		_tag: "Post",
 		section: section.value,
-		composed: buildDeviations.emit({issue, disclosure: section.value}),
+		composed: buildDeviations.emit({ issue, disclosure: section.value }),
 	};
 };
 
@@ -178,10 +178,10 @@ export const runDeviations = (
 	ChildProcessSpawner.ChildProcessSpawner | HttpClient.HttpClient
 > =>
 	Effect.gen(function* () {
-		const {issue} = options;
+		const { issue } = options;
 
 		const ask: Ask = options.standing
-			? {_tag: "Read"}
+			? { _tag: "Read" }
 			: askedDisclosure(issue, yield* options.stdin);
 		if (ask._tag === "Refused") return ask.outcome;
 
@@ -266,16 +266,16 @@ export const runDeviations = (
 			);
 		}
 
-		let landed: {readonly id: number; readonly url: string} | null = null;
+		let landed: { readonly id: number; readonly url: string } | null = null;
 		let failure: string | null = null;
 		if (current === undefined) {
 			const created = yield* createComment(repo, issue, ask.composed);
 			if (created._tag === "Failure") failure = created.reason;
-			else landed = {id: created.value.id, url: created.value.url};
+			else landed = { id: created.value.id, url: created.value.url };
 		} else {
 			const edited = yield* patchComment(repo, current.comment.id, ask.composed);
 			if (edited._tag === "Failure") failure = edited.reason;
-			else landed = {id: current.comment.id, url: edited.value};
+			else landed = { id: current.comment.id, url: edited.value };
 		}
 		if (landed === null) {
 			return refuse(

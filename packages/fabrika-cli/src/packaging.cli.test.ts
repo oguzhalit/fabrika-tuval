@@ -13,13 +13,13 @@
  * real dependency install proves nothing further while putting the network on a gate path
  * (`.patterns/subprocess-test-budget.md`).
  */
-import {execFileSync} from "node:child_process";
-import {existsSync, mkdtempSync, readdirSync, readFileSync, symlinkSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {beforeAll, describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "./test-budget.ts";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, symlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { beforeAll, describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "./test-budget.ts";
 
 const PACKAGE_ROOT = fileURLToPath(new URL("..", import.meta.url));
 const SRC = join(PACKAGE_ROOT, "src");
@@ -30,7 +30,7 @@ const DIST = join(PACKAGE_ROOT, "dist");
  * what an asset is is the thing under test, so sharing it would let a defect in it hide itself.
  */
 const assetsUnder = (root: string): readonly string[] =>
-	readdirSync(root, {recursive: true, withFileTypes: true})
+	readdirSync(root, { recursive: true, withFileTypes: true })
 		.filter((entry) => entry.isFile() && !entry.name.endsWith(".ts"))
 		.map((entry) => join(entry.parentPath, entry.name).slice(root.length + 1))
 		.sort();
@@ -66,10 +66,14 @@ const bootLane = (key: string, root: string): Run => {
 				stdio: ["ignore", "pipe", "pipe"],
 			},
 		);
-		return {code: 0, stdout, stderr: ""};
+		return { code: 0, stdout, stderr: "" };
 	} catch (err) {
-		const failure = err as {status?: number; stdout?: string; stderr?: string};
-		return {code: failure.status ?? -1, stdout: failure.stdout ?? "", stderr: failure.stderr ?? ""};
+		const failure = err as { status?: number; stdout?: string; stderr?: string };
+		return {
+			code: failure.status ?? -1,
+			stdout: failure.stdout ?? "",
+			stderr: failure.stderr ?? "",
+		};
 	}
 };
 
@@ -93,7 +97,7 @@ describe("the packed package ships what it reads at run time (#6011)", {
 		pnpm(["run", "build"]);
 		const tarball = pnpm(["pack", "--pack-destination", tmp]).trim().split("\n").at(-1)?.trim();
 		if (tarball === undefined || tarball === "") throw new Error("pnpm pack named no tarball");
-		execFileSync("tar", ["-xzf", tarball, "-C", tmp], {stdio: ["ignore", "pipe", "pipe"]});
+		execFileSync("tar", ["-xzf", tarball, "-C", tmp], { stdio: ["ignore", "pipe", "pipe"] });
 		tarballRoot = join(tmp, "package");
 		symlinkSync(join(PACKAGE_ROOT, "node_modules"), join(tarballRoot, "node_modules"), "dir");
 		scratch = join(tmp, "scratch");

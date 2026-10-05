@@ -3,7 +3,7 @@
  * it fails, ported from v1's `roadmap-guard`. No IO. The clean sweep and the I4 zero-scope floor run
  * through the real file and milestone projection in `./roadmap-verb.unit.test.ts`.
  */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	judge,
 	type Milestone,
@@ -307,14 +307,14 @@ describe("parseSectionRows + parseRoadmap", () => {
 	});
 
 	it("parses arcs and campaigns into rows with pins + lowercased states", () => {
-		const {arcs, campaigns} = parseRoadmap(md);
+		const { arcs, campaigns } = parseRoadmap(md);
 		expect(arcs).toEqual([
-			{kind: "arc", name: "Four Pillars", milestone: 17, state: "active"},
-			{kind: "arc", name: "Geçit", milestone: 24, state: "queued"},
-			{kind: "arc", name: "Lazy", milestone: null, state: "queued"},
+			{ kind: "arc", name: "Four Pillars", milestone: 17, state: "active" },
+			{ kind: "arc", name: "Geçit", milestone: 24, state: "queued" },
+			{ kind: "arc", name: "Lazy", milestone: null, state: "queued" },
 		]);
 		expect(campaigns).toEqual([
-			{kind: "campaign", name: "Mentor Audit", milestone: 27, state: "active"},
+			{ kind: "campaign", name: "Mentor Audit", milestone: 27, state: "active" },
 		]);
 	});
 
@@ -329,7 +329,7 @@ describe("parseSectionRows + parseRoadmap", () => {
 
 	it("returns [] for an absent section", () => {
 		expect(parseSectionRows(md, "Nonexistent")).toEqual([]);
-		const {campaigns} = parseRoadmap(
+		const { campaigns } = parseRoadmap(
 			"## Arcs\n\n| Arc | Milestone | State |\n|-|-|-|\n| A | #1 | active |",
 		);
 		expect(campaigns).toEqual([]);

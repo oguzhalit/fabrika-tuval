@@ -14,9 +14,9 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10097
  */
 
-import {Effect} from "effect";
-import {type Api, authed, graphqlRead, type Rest, refusalText} from "./gh-api.ts";
-import {type Attempt, fail, ok, type Shell} from "./git.ts";
+import { Effect } from "effect";
+import { type Api, authed, graphqlRead, type Rest, refusalText } from "./gh-api.ts";
+import { type Attempt, fail, ok, type Shell } from "./git.ts";
 import {
 	absent,
 	type CommentRecord,
@@ -26,7 +26,7 @@ import {
 	present,
 	unknown,
 } from "./issues.ts";
-import {isRecord} from "./json.ts";
+import { isRecord } from "./json.ts";
 
 /** How many issues one GraphQL request asks for. */
 export const ISSUE_BATCH = 50;
@@ -47,9 +47,9 @@ export interface IssueNode {
 }
 
 /** One issue's answer from a batched read; `Unproven` is re-read singly by the caller. */
-export type Batched<A> = Existence<A> | {readonly _tag: "Unproven"; readonly reason: string};
+export type Batched<A> = Existence<A> | { readonly _tag: "Unproven"; readonly reason: string };
 
-export const unproven = <A>(reason: string): Batched<A> => ({_tag: "Unproven", reason});
+export const unproven = <A>(reason: string): Batched<A> => ({ _tag: "Unproven", reason });
 
 const edges = (name: string): string => `${name}(first:${EDGE_PAGE}){totalCount nodes{number}}`;
 
@@ -87,7 +87,7 @@ const commentCount = (node: Record<string, unknown>): Attempt<number> =>
 		: fail("it carries no comment count");
 
 const toNode = (node: Record<string, unknown>): Attempt<IssueNode> => {
-	const {number, state, parent} = node;
+	const { number, state, parent } = node;
 	if (typeof number !== "number" || (state !== "OPEN" && state !== "CLOSED")) {
 		return fail("it did not read as an issue");
 	}
@@ -120,8 +120,8 @@ const toNode = (node: Record<string, unknown>): Attempt<IssueNode> => {
 /** The GraphQL errors of one response, keyed by the alias they name; `null` for a pathless one. */
 const errorsByAlias = (
 	errors: ReadonlyArray<unknown>,
-): ReadonlyMap<string, {readonly type: string; readonly message: string}> | null => {
-	const out = new Map<string, {readonly type: string; readonly message: string}>();
+): ReadonlyMap<string, { readonly type: string; readonly message: string }> | null => {
+	const out = new Map<string, { readonly type: string; readonly message: string }>();
 	for (const error of errors) {
 		if (!isRecord(error) || !Array.isArray(error.path)) return null;
 		const [root, key] = error.path;
@@ -144,7 +144,7 @@ const readBatch = <A>(
 	parse: (node: Record<string, unknown>) => Attempt<A>,
 ): Api<Attempt<ReadonlyMap<number, Batched<A>>>> =>
 	Effect.map(
-		graphqlRead(token, queryFor(fields, issues), {owner, name}),
+		graphqlRead(token, queryFor(fields, issues), { owner, name }),
 		(outcome: Rest): Attempt<ReadonlyMap<number, Batched<A>>> => {
 			if (outcome._tag === "Unreachable") return fail(outcome.reason);
 			if (outcome.status < 200 || outcome.status >= 300) return fail(refusalText(outcome));
@@ -258,7 +258,7 @@ export const reconcileComments = <R>(
 	reads: CommentWaveReads<R>,
 ): Effect.Effect<ReadonlyMap<number, Attempt<CommentScan>>, never, R> =>
 	Effect.gen(function* () {
-		const {attempts, delayMs} = commentScanBounds();
+		const { attempts, delayMs } = commentScanBounds();
 		const out = new Map<number, Attempt<CommentScan>>();
 		const short = new Map<number, string>();
 		let pending = [...new Set(issues)];
@@ -278,7 +278,7 @@ export const reconcileComments = <R>(
 				if (count._tag === "Absent") out.set(issue, fail(`#${issue} is not in ${repo}`));
 				else if (count._tag === "Unknown") out.set(issue, fail(count.reason));
 				else if (comments.length >= count.value) {
-					out.set(issue, ok({comments, declared: count.value, reads: attempt}));
+					out.set(issue, ok({ comments, declared: count.value, reads: attempt }));
 				} else {
 					short.set(issue, `received ${comments.length} of ${count.value} declared comment(s)`);
 					again.push(issue);

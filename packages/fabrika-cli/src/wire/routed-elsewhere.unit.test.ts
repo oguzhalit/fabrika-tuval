@@ -8,9 +8,9 @@
  * of them answers on the other's bytes, "I judged nothing" and "I judged it and it passed" become
  * one state.
  */
-import {assert, describe, it} from "@effect/vitest";
-import {type Clause, emit, type HeadSha, read as readRouted} from "./routed-elsewhere.ts";
-import {read as readVerdict} from "./verdict-marker.ts";
+import { assert, describe, it } from "@effect/vitest";
+import { type Clause, emit, type HeadSha, read as readRouted } from "./routed-elsewhere.ts";
+import { read as readVerdict } from "./verdict-marker.ts";
 
 const ROUTE =
 	"routed-elsewhere: review-ui @ 6c6fe226 — no rendered delta; the diff is prose only\n";

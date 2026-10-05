@@ -12,14 +12,14 @@
  * number and no commit — see `head.ts` for why a SHA on the verdict is not the same thing as bytes
  * from that SHA.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {reviewFilterExclusionsOr, reviewFilterUnexcludeOr} from "../config/paths.ts";
-import {diffRange, diffRangePaths} from "../io/git.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {classConfigAtCommits} from "./class-config.ts";
-import {GOVERNED_FILTER, INCOMPLETE_SCAN, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {filesInDiff} from "./diff.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { reviewFilterExclusionsOr, reviewFilterUnexcludeOr } from "../config/paths.ts";
+import { diffRange, diffRangePaths } from "../io/git.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { classConfigAtCommits } from "./class-config.ts";
+import { GOVERNED_FILTER, INCOMPLETE_SCAN, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { filesInDiff } from "./diff.ts";
 import {
 	applyPlacement,
 	effectiveExclusions,
@@ -28,9 +28,9 @@ import {
 	governedExcluded,
 	refusalFor,
 } from "./filter-spike.ts";
-import {refusalProbes} from "./guard-trees.ts";
-import {bindHead, boundLine} from "./head.ts";
-import {badNumber, openPull, resolveTargetRepo, scannedLine} from "./target.ts";
+import { refusalProbes } from "./guard-trees.ts";
+import { bindHead, boundLine } from "./head.ts";
+import { badNumber, openPull, resolveTargetRepo, scannedLine } from "./target.ts";
 
 const VERB = "review diff";
 
@@ -61,7 +61,7 @@ export const runDiff = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
-		const {pr} = options;
+		const { pr } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -139,7 +139,7 @@ export const runDiff = (
 			const loaded = yield* classConfigAtCommits(
 				VERB,
 				"the filter refusal union is UNKNOWN without the governed roots.",
-				{head: head.sha, base: head.mergeBase},
+				{ head: head.sha, base: head.mergeBase },
 			);
 			if (loaded._tag === "Refused") return refuse(PRECONDITION_UNKNOWN, loaded.message);
 			const roots = loaded.config.governedRoots;

@@ -21,10 +21,10 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9508
  */
 
-import {readFileSync} from "node:fs";
-import {CONFIG_PATH, type ConfigSource, readDocument, trackedOnly} from "../config/document.ts";
-import {resolveKey} from "../config/key-group.ts";
-import {ciKey} from "../config/keys/ci.ts";
+import { readFileSync } from "node:fs";
+import { CONFIG_PATH, type ConfigSource, readDocument, trackedOnly } from "../config/document.ts";
+import { resolveKey } from "../config/key-group.ts";
+import { ciKey } from "../config/keys/ci.ts";
 import {
 	decide,
 	decodeResult,
@@ -54,7 +54,7 @@ const request = async (method: string, path: string, body?: unknown): Promise<Re
 	await fetch(`${api}${path}`, {
 		method,
 		headers,
-		...(body === undefined ? {} : {body: JSON.stringify(body)}),
+		...(body === undefined ? {} : { body: JSON.stringify(body) }),
 	});
 
 /** A read the decision can live without: returns `null` rather than throwing, and says why. */
@@ -101,15 +101,15 @@ const resultFromArgv = (argv: ReadonlyArray<string>): RunResult => {
  * default where the repo declared something else would look for an alarm under a name nothing files
  * under, and open a fresh issue on every red — the one outcome this whole path exists to prevent.
  */
-const alarmSettings = (): {mention: ReadonlyArray<string>; label: string} => {
+const alarmSettings = (): { mention: ReadonlyArray<string>; label: string } => {
 	let source: ConfigSource;
 	try {
-		source = {_tag: "Text", text: readFileSync(CONFIG_PATH, "utf8")};
+		source = { _tag: "Text", text: readFileSync(CONFIG_PATH, "utf8") };
 	} catch (error) {
 		source =
 			(error as NodeJS.ErrnoException).code === "ENOENT"
-				? {_tag: "Absent"}
-				: {_tag: "Unreadable", reason: `${CONFIG_PATH} could not be read — ${String(error)}`};
+				? { _tag: "Absent" }
+				: { _tag: "Unreadable", reason: `${CONFIG_PATH} could not be read — ${String(error)}` };
 	}
 	const resolved = resolveKey(trackedOnly(readDocument(source)), ciKey);
 	if (resolved._tag === "Malformed" || resolved._tag === "Unknown") {
@@ -118,22 +118,22 @@ const alarmSettings = (): {mention: ReadonlyArray<string>; label: string} => {
 	return resolved.value.mainAlarm;
 };
 
-const failedJobNames = async (): Promise<{names: ReadonlyArray<string>; read: boolean}> => {
+const failedJobNames = async (): Promise<{ names: ReadonlyArray<string>; read: boolean }> => {
 	const payload = await readJson(
 		`/repos/${repo}/actions/runs/${runId}/jobs?filter=latest&per_page=100`,
 	);
 	if (payload === null || typeof payload !== "object" || !("jobs" in payload)) {
-		return {names: [], read: false};
+		return { names: [], read: false };
 	}
-	const jobs = (payload as {jobs: unknown}).jobs;
-	if (!Array.isArray(jobs)) return {names: [], read: false};
+	const jobs = (payload as { jobs: unknown }).jobs;
+	if (!Array.isArray(jobs)) return { names: [], read: false };
 	const names = jobs
-		.filter((job): job is {name: string; conclusion: string} => {
-			const j = job as {name?: unknown; conclusion?: unknown};
+		.filter((job): job is { name: string; conclusion: string } => {
+			const j = job as { name?: unknown; conclusion?: unknown };
 			return typeof j.name === "string" && j.conclusion === "failure";
 		})
 		.map((job) => job.name);
-	return {names, read: true};
+	return { names, read: true };
 };
 
 /**
@@ -152,14 +152,14 @@ const openCandidates = async (label: string): Promise<ReadonlyArray<IssueCandida
 	}
 	return payload
 		.filter((issue) => {
-			const i = issue as {pull_request?: unknown};
+			const i = issue as { pull_request?: unknown };
 			return i.pull_request === undefined;
 		})
 		.map((issue) => {
 			const i = issue as {
 				number: number;
 				body?: string | null;
-				user?: {login?: string; type?: string};
+				user?: { login?: string; type?: string };
 			};
 			return {
 				number: i.number,
@@ -200,7 +200,7 @@ if (repo === "" || token === "" || runId === "") {
 }
 
 const settings = alarmSettings();
-const jobs = result === "failure" ? await failedJobNames() : {names: [], read: true};
+const jobs = result === "failure" ? await failedJobNames() : { names: [], read: true };
 const facts = factsFromEnv(process.env, settings.mention, jobs.names, jobs.read);
 // Only the red path carries a mention; a recovery comment wakes nobody by design, so warning there
 // would put a warning annotation on every green push.
@@ -209,7 +209,7 @@ if (result === "failure" && facts.mention.length === 0) {
 }
 
 const decision = decide(
-	{event: process.env.GITHUB_EVENT_NAME ?? "", result, label: settings.label, facts},
+	{ event: process.env.GITHUB_EVENT_NAME ?? "", result, label: settings.label, facts },
 	await openCandidates(settings.label),
 );
 console.log(`main-alarm: ${result} — ${decision.reason}`);

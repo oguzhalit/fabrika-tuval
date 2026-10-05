@@ -14,24 +14,24 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10086
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {boardsKey} from "../config/keys/boards.ts";
-import {tableKey} from "../config/keys/table.ts";
-import {readKey} from "../config/read-key.ts";
-import type {Attempt} from "../io/git.ts";
-import {type ListedIssue, listOpenIssueFacts, resolveRepo} from "../io/issues.ts";
-import {deleteItem, withProjects} from "../io/projects.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import type {PrepWrite} from "./agenda.ts";
-import {dueChecks} from "./check.ts";
-import {CONFIG_MALFORMED, NOT_SET_UP, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {type ConvergeBoard, converge} from "./converge.ts";
-import {describePlanned, dryRunRoute} from "./dry-run.ts";
-import {readHeads} from "./flags-read.ts";
-import {onCallFields, onCallIssuesOf, planOnCall, readOnCall} from "./on-call-prep.ts";
-import type {Row} from "./sync.ts";
-import {githubWave, locateTable, syncBoard, type TableBoard} from "./sync-verb.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { boardsKey } from "../config/keys/boards.ts";
+import { tableKey } from "../config/keys/table.ts";
+import { readKey } from "../config/read-key.ts";
+import type { Attempt } from "../io/git.ts";
+import { type ListedIssue, listOpenIssueFacts, resolveRepo } from "../io/issues.ts";
+import { deleteItem, withProjects } from "../io/projects.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import type { PrepWrite } from "./agenda.ts";
+import { dueChecks } from "./check.ts";
+import { CONFIG_MALFORMED, NOT_SET_UP, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { type ConvergeBoard, converge } from "./converge.ts";
+import { describePlanned, dryRunRoute } from "./dry-run.ts";
+import { readHeads } from "./flags-read.ts";
+import { onCallFields, onCallIssuesOf, planOnCall, readOnCall } from "./on-call-prep.ts";
+import type { Row } from "./sync.ts";
+import { githubWave, locateTable, syncBoard, type TableBoard } from "./sync-verb.ts";
 
 const VERB = "table route";
 
@@ -60,7 +60,7 @@ const offTable = (
 ): ReadonlyArray<PrepWrite> =>
 	routed.flatMap((issue): PrepWrite[] => {
 		const row = rows.get(issue.number);
-		return row === undefined ? [] : [{_tag: "Delete", issue: row.issue, itemId: row.itemId}];
+		return row === undefined ? [] : [{ _tag: "Delete", issue: row.issue, itemId: row.itemId }];
 	});
 
 export const runRoute = <R>(
@@ -87,7 +87,7 @@ export const runRoute = <R>(
 			);
 		}
 		const repo = resolved.value;
-		const {now} = options;
+		const { now } = options;
 		const dry = options.dryRun ? dryRunRoute(options.board, now.toISOString()) : null;
 		const board = dry?.board ?? options.board;
 		const split = yield* readOnCall(board, VERB, repo, boards.value);
@@ -100,7 +100,7 @@ export const runRoute = <R>(
 					onCall: null,
 					routed: [],
 					changes: [],
-					...(dry === null ? {} : {planned: []}),
+					...(dry === null ? {} : { planned: [] }),
 				})}\n`,
 				[
 					`${VERB}: no \`boards\` block splits the work, so there is no on-call board to route to.`,
@@ -135,7 +135,8 @@ export const runRoute = <R>(
 			split.project,
 			repo,
 			split.rows,
-			(rows) => planOnCall({fields: fields.fields, settings: split.settings, rows, issues: routed}),
+			(rows) =>
+				planOnCall({ fields: fields.fields, settings: split.settings, rows, issues: routed }),
 			"the on-call board",
 		);
 		if (placed._tag === "Refused") return refuse(placed.code, placed.reason);
@@ -152,15 +153,15 @@ export const runRoute = <R>(
 
 		const planned = dry?.planned() ?? null;
 		const changes = planned === null ? [...placed.changes, ...left.changes] : [];
-		const {project} = split;
+		const { project } = split;
 		return answer(
 			`${JSON.stringify({
 				answer: planned !== null ? "dry-run" : changes.length > 0 ? "routed" : "unchanged",
 				repo,
-				onCall: {number: project.number, title: project.title, url: project.url},
+				onCall: { number: project.number, title: project.title, url: project.url },
 				routed: routed.map((issue) => issue.number),
 				changes,
-				...(planned === null ? {} : {planned}),
+				...(planned === null ? {} : { planned }),
 			})}\n`,
 			[
 				`${VERB}: read ${settings.note}; ${boards.note}.`,

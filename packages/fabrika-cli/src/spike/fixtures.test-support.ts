@@ -4,7 +4,7 @@
  * reds in one place rather than drifting across five.
  */
 
-import type {EvidenceRecord, Manifest} from "./workspace.ts";
+import type { EvidenceRecord, Manifest } from "./workspace.ts";
 import {
 	evidencePath,
 	manifestPath,
@@ -35,7 +35,7 @@ export const LEAKY_WORKSPACE = workspacePath(LEAKY_TMP_ROOT, NONCE);
 export const LEAKY_MANIFEST = manifestPath(LEAKY_WORKSPACE);
 export const LEAKY_EVIDENCE = evidencePath(LEAKY_WORKSPACE);
 
-export const ENV = {CLAUDE_PIPELINE_REPO: REPO} as Record<string, string | undefined>;
+export const ENV = { CLAUDE_PIPELINE_REPO: REPO } as Record<string, string | undefined>;
 
 export const manifest = (overrides: Partial<Manifest> = {}): Manifest => ({
 	spike: SPIKE,
@@ -89,9 +89,9 @@ export const issuePayload = (
 		title: overrides.title ?? `spike: ${QUESTION}`,
 		body: overrides.body ?? "## Question\n",
 		state: overrides.state ?? "open",
-		labels: (overrides.labels ?? ["prototyping:spike"]).map((name) => ({name})),
+		labels: (overrides.labels ?? ["prototyping:spike"]).map((name) => ({ name })),
 		html_url: `https://example.test/#${overrides.number ?? SPIKE}`,
-		user: {login: "agent"},
+		user: { login: "agent" },
 	});
 
 export const commentsPayload = (
@@ -107,17 +107,17 @@ export const commentsPayload = (
 			body: comment.body,
 			created_at: comment.createdAt ?? "2026-08-10T00:00:00Z",
 			updated_at: comment.createdAt ?? "2026-08-10T00:00:00Z",
-			user: {login: "agent"},
+			user: { login: "agent" },
 		})),
 	);
 
 /** Every label name a `listLabels` read parses out of, as GitHub serves them. */
 export const labelsPayload = (...names: ReadonlyArray<string>): string =>
-	JSON.stringify(names.map((name) => ({name})));
+	JSON.stringify(names.map((name) => ({ name })));
 
 /** The `{number, title}` rows an open-issues-by-label read parses. */
 export const issueRowsPayload = (
-	rows: ReadonlyArray<{readonly number: number; readonly title: string}>,
+	rows: ReadonlyArray<{ readonly number: number; readonly title: string }>,
 ): string => JSON.stringify(rows);
 
 /** The command lines the fake spawner is scripted on. */

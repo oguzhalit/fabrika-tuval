@@ -64,8 +64,8 @@ export type SyncPlan =
 			readonly from: string;
 			readonly to: string;
 	  }
-	| {readonly _tag: "Current"; readonly branch: string; readonly commit: string}
-	| {readonly _tag: "Refused"; readonly reason: string};
+	| { readonly _tag: "Current"; readonly branch: string; readonly commit: string }
+	| { readonly _tag: "Refused"; readonly reason: string };
 
 /**
  * Decide from the facts, in the one order that never proposes a move it cannot prove is safe.
@@ -91,7 +91,7 @@ export const plan = (facts: WorktreeFacts): SyncPlan => {
 		};
 	}
 	if (facts.head === facts.remoteHead) {
-		return {_tag: "Current", branch: facts.branch, commit: facts.head};
+		return { _tag: "Current", branch: facts.branch, commit: facts.head };
 	}
 	const clobbered = clobberedPaths(facts);
 	if (clobbered.length > 0) {
@@ -106,7 +106,7 @@ export const plan = (facts: WorktreeFacts): SyncPlan => {
 			reason: `${facts.branch} at ${short(facts.head)} has diverged from origin/${facts.defaultBranch} at ${short(facts.remoteHead)} — only a fast-forward is taken here`,
 		};
 	}
-	return {_tag: "FastForward", branch: facts.branch, from: facts.head, to: facts.remoteHead};
+	return { _tag: "FastForward", branch: facts.branch, from: facts.head, to: facts.remoteHead };
 };
 
 /**
@@ -241,7 +241,7 @@ export const installsFrom = (
 			const commit = record.gitCommitSha;
 			const key = `${pluginId} ${commit}`;
 			const seen = counted.get(key);
-			counted.set(key, {pluginId, commit, records: (seen?.records ?? 0) + 1});
+			counted.set(key, { pluginId, commit, records: (seen?.records ?? 0) + 1 });
 		}
 	}
 	return [...counted.values()];
@@ -257,9 +257,9 @@ export const installsFrom = (
  * could not be read at all — never `bound`, since an unread record proves nothing.
  */
 export type InstallReport =
-	| {readonly _tag: "Bound"; readonly rows: ReadonlyArray<InstallBinding>}
-	| {readonly _tag: "Lagging"; readonly rows: ReadonlyArray<InstallBinding>}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Bound"; readonly rows: ReadonlyArray<InstallBinding> }
+	| { readonly _tag: "Lagging"; readonly rows: ReadonlyArray<InstallBinding> }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /** Fold the bindings against the commit the source directory is at once this verb is done with it. */
 export const reportInstalls = (
@@ -274,6 +274,6 @@ export const reportInstalls = (
 	}
 	const lagging = rows.filter((row) => row.commit !== sourceCommit);
 	return lagging.length === 0
-		? {_tag: "Bound", rows}
-		: {_tag: "Lagging", rows: [...lagging].sort((a, b) => b.records - a.records)};
+		? { _tag: "Bound", rows }
+		: { _tag: "Lagging", rows: [...lagging].sort((a, b) => b.records - a.records) };
 };

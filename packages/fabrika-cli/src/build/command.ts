@@ -9,36 +9,36 @@
  * **Every leaf is declared with `leafCommand`, never a bare `Command.make`** — the bare form silently
  * opts out of the excess-operand guard, which `../excess-operand.unit.test.ts` reds on.
  */
-import {randomUUID} from "node:crypto";
-import {tmpdir} from "node:os";
-import {Effect, type FileSystem, Option, Result} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {localTreeGuards} from "../guard/command.ts";
-import {readFile} from "../io/fs.ts";
-import {SESSION_ID_VARS} from "../io/session-id.ts";
-import {readStdin} from "../io/stdin.ts";
-import {DEFAULT_LANES_ROOT} from "../lane/store.ts";
-import {refuse} from "../verb.ts";
-import {runBranch} from "./branch-verb.ts";
-import {runCheck} from "./check-verb.ts";
-import {runAdopt, runClaim, runConfirm, runRelease} from "./claim-verb.ts";
-import {runClaimants} from "./claimants-verb.ts";
-import {type DocumentRead, runClear} from "./clear-verb.ts";
-import {NO_SERVED_ISSUE, OFF_VOCABULARY} from "./codes.ts";
-import {runCommit} from "./commit-verb.ts";
-import {runDeviations} from "./deviations-verb.ts";
-import {runEligible} from "./eligible-verb.ts";
-import {runIssue} from "./issue-verb.ts";
-import {runNote} from "./note-verb.ts";
-import {runPick} from "./pick-verb.ts";
-import {runPr, runPrBody} from "./pr-verb.ts";
-import {runPush} from "./push-verb.ts";
-import {runReap} from "./reap-verb.ts";
-import {runResumeChild} from "./resume-child-verb.ts";
-import {runRetireBranch} from "./retire-branch-verb.ts";
-import {runRetire} from "./retire-verb.ts";
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
+import { Effect, type FileSystem, Option, Result } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { localTreeGuards } from "../guard/command.ts";
+import { readFile } from "../io/fs.ts";
+import { SESSION_ID_VARS } from "../io/session-id.ts";
+import { readStdin } from "../io/stdin.ts";
+import { DEFAULT_LANES_ROOT } from "../lane/store.ts";
+import { refuse } from "../verb.ts";
+import { runBranch } from "./branch-verb.ts";
+import { runCheck } from "./check-verb.ts";
+import { runAdopt, runClaim, runConfirm, runRelease } from "./claim-verb.ts";
+import { runClaimants } from "./claimants-verb.ts";
+import { type DocumentRead, runClear } from "./clear-verb.ts";
+import { NO_SERVED_ISSUE, OFF_VOCABULARY } from "./codes.ts";
+import { runCommit } from "./commit-verb.ts";
+import { runDeviations } from "./deviations-verb.ts";
+import { runEligible } from "./eligible-verb.ts";
+import { runIssue } from "./issue-verb.ts";
+import { runNote } from "./note-verb.ts";
+import { runPick } from "./pick-verb.ts";
+import { runPr, runPrBody } from "./pr-verb.ts";
+import { runPush } from "./push-verb.ts";
+import { runReap } from "./reap-verb.ts";
+import { runResumeChild } from "./resume-child-verb.ts";
+import { runRetireBranch } from "./retire-branch-verb.ts";
+import { runRetire } from "./retire-verb.ts";
 import {
 	ADMISSION_EXIT_CODES,
 	CITATION_GRAMMAR,
@@ -47,11 +47,11 @@ import {
 	DEFAULT_CLAIM_PURPOSE,
 	READY_FOR_AGENT,
 } from "./scope-admission.ts";
-import {runScratch} from "./scratch-verb.ts";
-import {DEFAULT_OLDER_THAN_MINUTES, runStaleClaims} from "./stale-claims-verb.ts";
-import {runTakeover} from "./takeover-verb.ts";
-import {runTree} from "./tree-verb.ts";
-import {runChildVerdicts, runVerdicts} from "./verdicts-verb.ts";
+import { runScratch } from "./scratch-verb.ts";
+import { DEFAULT_OLDER_THAN_MINUTES, runStaleClaims } from "./stale-claims-verb.ts";
+import { runTakeover } from "./takeover-verb.ts";
+import { runTree } from "./tree-verb.ts";
+import { runChildVerdicts, runVerdicts } from "./verdicts-verb.ts";
 
 const repoFlag = Flag.string("repo").pipe(
 	Flag.optional,
@@ -100,7 +100,7 @@ const tree = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({requireClean, issue, repair, repo}) {
+	Effect.fn(function* ({ requireClean, issue, repair, repo }) {
 		yield* emit(
 			yield* runTree({
 				requireClean,
@@ -130,8 +130,8 @@ const tree = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika build tree --require-clean"},
-		{command: "fabrika build tree --issue 7181 --repair 7182"},
+		{ command: "fabrika build tree --require-clean" },
+		{ command: "fabrika build tree --issue 7181 --repair 7182" },
 	]),
 );
 
@@ -146,7 +146,7 @@ const pick = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({repo, limit}) {
+	Effect.fn(function* ({ repo, limit }) {
 		yield* emit(
 			yield* runPick({
 				repo: Option.getOrNull(repo),
@@ -170,14 +170,14 @@ const pick = leafCommand(
 			`  Derivation: the build skill's contract.md, "build pick"`,
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika build pick --limit 5"}]),
+	Command.withExamples([{ command: "fabrika build pick --limit 5" }]),
 );
 
 const eligible = leafCommand(
 	"eligible",
-	{number: issueArg, repo: repoFlag},
-	Effect.fn(function* ({number, repo}) {
-		yield* emit(yield* runEligible({number, repo: Option.getOrNull(repo), env: process.env}));
+	{ number: issueArg, repo: repoFlag },
+	Effect.fn(function* ({ number, repo }) {
+		yield* emit(yield* runEligible({ number, repo: Option.getOrNull(repo), env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("Whether one issue's dependency gate is open."),
@@ -190,30 +190,30 @@ const eligible = leafCommand(
 			`  Derivation: the build skill's contract.md, "build eligible"`,
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika build eligible 4312"}]),
+	Command.withExamples([{ command: "fabrika build eligible 4312" }]),
 );
 
 /** `build claim`'s own exits; where one shares a code with the admission test, this row is the one shown. */
-const CLAIM_OWN_EXITS: ReadonlyArray<{readonly code: number; readonly condition: string}> = [
-	{code: 7, condition: "issue absent or closed"},
-	{code: 8, condition: "write failed; run confirm"},
-	{code: 9, condition: "marker does not read back"},
-	{code: 10, condition: "a flag on the wrong target"},
-	{code: 11, condition: "a read failed (UNKNOWN)"},
-	{code: 14, condition: "served issue or lane task absent"},
-	{code: 15, condition: "lost to another lane"},
-	{code: 16, condition: "blocked"},
-	{code: 31, condition: "disagrees with a standing verdict"},
-	{code: 37, condition: "PR not ours, no takeover grant"},
+const CLAIM_OWN_EXITS: ReadonlyArray<{ readonly code: number; readonly condition: string }> = [
+	{ code: 7, condition: "issue absent or closed" },
+	{ code: 8, condition: "write failed; run confirm" },
+	{ code: 9, condition: "marker does not read back" },
+	{ code: 10, condition: "a flag on the wrong target" },
+	{ code: 11, condition: "a read failed (UNKNOWN)" },
+	{ code: 14, condition: "served issue or lane task absent" },
+	{ code: 15, condition: "lost to another lane" },
+	{ code: 16, condition: "blocked" },
+	{ code: 31, condition: "disagrees with a standing verdict" },
+	{ code: 37, condition: "PR not ours, no takeover grant" },
 ];
 
 /** The claim's exit lines, merged with the admission codes enumerated from the module rather than restated. */
 const claimExitLines = [
 	...CLAIM_OWN_EXITS,
-	...ADMISSION_EXIT_CODES.filter(({code}) => !CLAIM_OWN_EXITS.some((own) => own.code === code)),
+	...ADMISSION_EXIT_CODES.filter(({ code }) => !CLAIM_OWN_EXITS.some((own) => own.code === code)),
 ]
 	.sort((a, b) => a.code - b.code)
-	.map(({code, condition}) => `  ${code}: ${condition}`);
+	.map(({ code, condition }) => `  ${code}: ${condition}`);
 
 /** The epic lane whose ledger an integrate FAIL is read off — the brief's `lane`, with `--lane-root`. */
 const laneFlag = Flag.string("lane").pipe(
@@ -321,16 +321,18 @@ const claim = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika build claim 4312"},
-		{command: "fabrika build claim 4312 --purpose gate"},
+		{ command: "fabrika build claim 4312" },
+		{ command: "fabrika build claim 4312 --purpose gate" },
 	]),
 );
 
 const confirm = leafCommand(
 	"confirm",
-	{number: issueArg, token: tokenFlag, repo: repoFlag},
-	Effect.fn(function* ({number, token, repo}) {
-		yield* emit(yield* runConfirm({number, token, repo: Option.getOrNull(repo), env: process.env}));
+	{ number: issueArg, token: tokenFlag, repo: repoFlag },
+	Effect.fn(function* ({ number, token, repo }) {
+		yield* emit(
+			yield* runConfirm({ number, token, repo: Option.getOrNull(repo), env: process.env }),
+		);
 	}),
 ).pipe(
 	Command.withShortDescription("Re-prove this session still holds the claim."),
@@ -343,14 +345,14 @@ const confirm = leafCommand(
 			`  Derivation: the build skill's contract.md, "build claim"`,
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika build confirm 4312 --token build:s-9f2e:c1a4d6f8-…"}]),
+	Command.withExamples([{ command: "fabrika build confirm 4312 --token build:s-9f2e:c1a4d6f8-…" }]),
 );
 
 const claimants = leafCommand(
 	"claimants",
-	{number: issueArg, repo: repoFlag},
-	Effect.fn(function* ({number, repo}) {
-		yield* emit(yield* runClaimants({number, repo: Option.getOrNull(repo), env: process.env}));
+	{ number: issueArg, repo: repoFlag },
+	Effect.fn(function* ({ number, repo }) {
+		yield* emit(yield* runClaimants({ number, repo: Option.getOrNull(repo), env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("Which sessions hold live claims on one issue."),
@@ -363,7 +365,7 @@ const claimants = leafCommand(
 			`  Derivation: the build skill's contract.md, "build claimants"`,
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika build claimants 6669"}]),
+	Command.withExamples([{ command: "fabrika build claimants 6669" }]),
 );
 
 const claimsStale = leafCommand(
@@ -377,7 +379,7 @@ const claimsStale = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({olderThanMinutes, repo}) {
+	Effect.fn(function* ({ olderThanMinutes, repo }) {
 		yield* emit(
 			yield* runStaleClaims({
 				olderThanMinutes,
@@ -399,8 +401,8 @@ const claimsStale = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika build claims stale"},
-		{command: "fabrika build claims stale --older-than-minutes 240"},
+		{ command: "fabrika build claims stale" },
+		{ command: "fabrika build claims stale --older-than-minutes 240" },
 	]),
 );
 
@@ -414,9 +416,11 @@ const claims = Command.make("claims").pipe(
 
 const release = leafCommand(
 	"release",
-	{number: issueArg, token: tokenFlag, repo: repoFlag},
-	Effect.fn(function* ({number, token, repo}) {
-		yield* emit(yield* runRelease({number, token, repo: Option.getOrNull(repo), env: process.env}));
+	{ number: issueArg, token: tokenFlag, repo: repoFlag },
+	Effect.fn(function* ({ number, token, repo }) {
+		yield* emit(
+			yield* runRelease({ number, token, repo: Option.getOrNull(repo), env: process.env }),
+		);
 	}),
 ).pipe(
 	Command.withShortDescription("Retract this session's own claim marker."),
@@ -431,14 +435,14 @@ const release = leafCommand(
 			`  Derivation: the build skill's contract.md, "build claim"`,
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika build release 4312 --token build:s-9f2e:c1a4d6f8-…"}]),
+	Command.withExamples([{ command: "fabrika build release 4312 --token build:s-9f2e:c1a4d6f8-…" }]),
 );
 
 const retire = leafCommand(
 	"retire",
-	{number: issueArg, repo: repoFlag},
-	Effect.fn(function* ({number, repo}) {
-		yield* emit(yield* runRetire({number, repo: Option.getOrNull(repo), env: process.env}));
+	{ number: issueArg, repo: repoFlag },
+	Effect.fn(function* ({ number, repo }) {
+		yield* emit(yield* runRetire({ number, repo: Option.getOrNull(repo), env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("Take back the checkout an orphaned build worktree is holding."),
@@ -455,14 +459,14 @@ const retire = leafCommand(
 			`  Derivation: the build skill's contract.md, "build retire"`,
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika build retire 6567"}]),
+	Command.withExamples([{ command: "fabrika build retire 6567" }]),
 );
 
 const retireBranch = leafCommand(
 	"retire-branch",
-	{number: issueArg, repo: repoFlag},
-	Effect.fn(function* ({number, repo}) {
-		yield* emit(yield* runRetireBranch({number, repo: Option.getOrNull(repo), env: process.env}));
+	{ number: issueArg, repo: repoFlag },
+	Effect.fn(function* ({ number, repo }) {
+		yield* emit(yield* runRetireBranch({ number, repo: Option.getOrNull(repo), env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("Retire an epic child's superseded lane branches out of build/."),
@@ -479,7 +483,7 @@ const retireBranch = leafCommand(
 			`  Derivation: the build skill's contract.md, "build retire-branch"`,
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika build retire-branch 6296"}]),
+	Command.withExamples([{ command: "fabrika build retire-branch 6296" }]),
 );
 
 const reap = leafCommand(
@@ -498,8 +502,8 @@ const reap = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({execute, limit}) {
-		yield* emit(yield* runReap({execute, limit: Option.getOrNull(limit), env: process.env}));
+	Effect.fn(function* ({ execute, limit }) {
+		yield* emit(yield* runReap({ execute, limit: Option.getOrNull(limit), env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("Reclaim the finished agent worktrees this clone never removed."),
@@ -515,16 +519,16 @@ const reap = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika build reap"},
-		{command: "fabrika build reap --execute --limit 20"},
+		{ command: "fabrika build reap" },
+		{ command: "fabrika build reap --execute --limit 20" },
 	]),
 );
 
 const issue = leafCommand(
 	"issue",
-	{number: issueArg, repo: repoFlag},
-	Effect.fn(function* ({number, repo}) {
-		yield* emit(yield* runIssue({number, repo: Option.getOrNull(repo), env: process.env}));
+	{ number: issueArg, repo: repoFlag },
+	Effect.fn(function* ({ number, repo }) {
+		yield* emit(yield* runIssue({ number, repo: Option.getOrNull(repo), env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("The claimed issue's body and acceptance criteria."),
@@ -538,7 +542,7 @@ const issue = leafCommand(
 			`  Derivation: the build skill's contract.md, "build issue"`,
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika build issue 4312"}]),
+	Command.withExamples([{ command: "fabrika build issue 4312" }]),
 );
 
 const branch = leafCommand(
@@ -573,7 +577,7 @@ const branch = leafCommand(
 		token: tokenFlag,
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({number, slug, base, resume, resumeLane, token, repo}) {
+	Effect.fn(function* ({ number, slug, base, resume, resumeLane, token, repo }) {
 		yield* emit(
 			yield* runBranch({
 				number: Option.getOrNull(number),
@@ -603,23 +607,25 @@ const branch = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika build branch 4312 --slug editor-focus-loss --token build:s-9f2e:c1a4d6f8-…"},
+		{
+			command: "fabrika build branch 4312 --slug editor-focus-loss --token build:s-9f2e:c1a4d6f8-…",
+		},
 	]),
 );
 
 /** `resume-child`'s exits: each is the stopping step's, with the admission codes read off the module. */
 const resumeChildExitLines = [
-	{code: 7, condition: "the child or its branch is absent"},
-	{code: 10, condition: "a step refused its usage"},
-	{code: 11, condition: "a read is UNKNOWN, or the prior branch cannot be taken"},
-	{code: 13, condition: "the checkout is dirty"},
-	{code: 14, condition: "wrong lane, or no ledger task"},
-	{code: 15, condition: "the claim is another lane's"},
-	{code: 31, condition: "nothing to repair"},
-	...ADMISSION_EXIT_CODES.filter(({code}) => code >= 20 && code !== NO_SERVED_ISSUE),
+	{ code: 7, condition: "the child or its branch is absent" },
+	{ code: 10, condition: "a step refused its usage" },
+	{ code: 11, condition: "a read is UNKNOWN, or the prior branch cannot be taken" },
+	{ code: 13, condition: "the checkout is dirty" },
+	{ code: 14, condition: "wrong lane, or no ledger task" },
+	{ code: 15, condition: "the claim is another lane's" },
+	{ code: 31, condition: "nothing to repair" },
+	...ADMISSION_EXIT_CODES.filter(({ code }) => code >= 20 && code !== NO_SERVED_ISSUE),
 ]
 	.sort((a, b) => a.code - b.code)
-	.map(({code, condition}) => `  ${code}: ${condition}`);
+	.map(({ code, condition }) => `  ${code}: ${condition}`);
 
 const resumeChild = leafCommand(
 	"resume-child",
@@ -643,7 +649,7 @@ const resumeChild = leafCommand(
 		laneRoot: laneRootFlag,
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({number, token, cites, lane, laneRoot, repo}) {
+	Effect.fn(function* ({ number, token, cites, lane, laneRoot, repo }) {
 		yield* emit(
 			yield* runResumeChild({
 				issue: number,
@@ -669,7 +675,7 @@ const resumeChild = leafCommand(
 			`  Derivation: the build skill's contract.md, "build resume-child"`,
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika build resume-child 7162"}]),
+	Command.withExamples([{ command: "fabrika build resume-child 7162" }]),
 );
 
 const scratch = leafCommand(
@@ -682,7 +688,7 @@ const scratch = leafCommand(
 		token: tokenFlag,
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({number, slug, token, repo}) {
+	Effect.fn(function* ({ number, slug, token, repo }) {
 		yield* emit(
 			yield* runScratch({
 				number,
@@ -707,7 +713,7 @@ const scratch = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika build scratch 4312 --slug notes --token build:s-9f2e:c1a4d6f8-…"},
+		{ command: "fabrika build scratch 4312 --slug notes --token build:s-9f2e:c1a4d6f8-…" },
 	]),
 );
 
@@ -722,7 +728,7 @@ const commit = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({messageFile, repo}) {
+	Effect.fn(function* ({ messageFile, repo }) {
 		yield* emit(
 			yield* runCommit({
 				messageFile: Option.getOrNull(messageFile),
@@ -753,7 +759,7 @@ const commit = leafCommand(
 			`  Derivation: the build skill's contract.md, "build commit"`,
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika build commit < message.txt"}]),
+	Command.withExamples([{ command: "fabrika build commit < message.txt" }]),
 );
 
 const check = leafCommand(
@@ -772,7 +778,7 @@ const check = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({surface, repo, probe}) {
+	Effect.fn(function* ({ surface, repo, probe }) {
 		yield* emit(
 			yield* runCheck({
 				surface,
@@ -802,8 +808,8 @@ const check = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika build check --surface code"},
-		{command: "fabrika build check --surface code --probe"},
+		{ command: "fabrika build check --surface code" },
+		{ command: "fabrika build check --surface code --probe" },
 	]),
 );
 
@@ -834,7 +840,7 @@ const push = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({dropRemoteCommits, forceWithLease, partial, repo}) {
+	Effect.fn(function* ({ dropRemoteCommits, forceWithLease, partial, repo }) {
 		yield* emit(
 			yield* runPush({
 				forceWithLease,
@@ -865,9 +871,9 @@ const push = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika build push < body.md"},
-		{command: "fabrika build push --partial < body.md"},
-		{command: "fabrika build push --force-with-lease"},
+		{ command: "fabrika build push < body.md" },
+		{ command: "fabrika build push --partial < body.md" },
+		{ command: "fabrika build push --force-with-lease" },
 	]),
 );
 
@@ -883,7 +889,7 @@ const pr = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({number, partial, repo}) {
+	Effect.fn(function* ({ number, partial, repo }) {
 		yield* emit(
 			yield* runPr({
 				number,
@@ -913,7 +919,7 @@ const pr = leafCommand(
 			`  Derivation: the build skill's contract.md, "build pr"`,
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika build pr 4312 < body.md"}]),
+	Command.withExamples([{ command: "fabrika build pr 4312 < body.md" }]),
 );
 
 const prBody = leafCommand(
@@ -930,7 +936,7 @@ const prBody = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({pr, partial, repo}) {
+	Effect.fn(function* ({ pr, partial, repo }) {
 		yield* emit(
 			yield* runPrBody({
 				pr,
@@ -960,7 +966,7 @@ const prBody = leafCommand(
 			`  Derivation: the build skill's contract.md, "build pr-body"`,
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika build pr-body 4318 < body.md"}]),
+	Command.withExamples([{ command: "fabrika build pr-body 4318 < body.md" }]),
 );
 
 const note = leafCommand(
@@ -972,7 +978,7 @@ const note = leafCommand(
 		token: tokenFlag,
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({number, token, repo}) {
+	Effect.fn(function* ({ number, token, repo }) {
 		yield* emit(
 			yield* runNote({
 				number,
@@ -1001,7 +1007,7 @@ const note = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika build note 4310 --token build:s-9f2e:c1a4d6f8-… < round-2.md"},
+		{ command: "fabrika build note 4310 --token build:s-9f2e:c1a4d6f8-… < round-2.md" },
 	]),
 );
 
@@ -1020,7 +1026,7 @@ const deviations = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({issue, token, standing, repo}) {
+	Effect.fn(function* ({ issue, token, standing, repo }) {
 		yield* emit(
 			yield* runDeviations({
 				issue,
@@ -1052,8 +1058,8 @@ const deviations = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika build deviations 6566 --token build:s-9f2e:c1a4d6f8-… < deviations.md"},
-		{command: "fabrika build deviations 6566 --token build:s-9f2e:c1a4d6f8-… --standing"},
+		{ command: "fabrika build deviations 6566 --token build:s-9f2e:c1a4d6f8-… < deviations.md" },
+		{ command: "fabrika build deviations 6566 --token build:s-9f2e:c1a4d6f8-… --standing" },
 	]),
 );
 
@@ -1072,7 +1078,7 @@ const verdicts = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({pr, issue, repo}) {
+	Effect.fn(function* ({ pr, issue, repo }) {
 		const number = Option.getOrNull(pr);
 		const child = Option.getOrNull(issue);
 		if ((number === null) === (child === null)) {
@@ -1091,7 +1097,7 @@ const verdicts = leafCommand(
 						repo: Option.getOrNull(repo),
 						env: process.env,
 					})
-				: yield* runVerdicts({pr: number, repo: Option.getOrNull(repo), env: process.env}),
+				: yield* runVerdicts({ pr: number, repo: Option.getOrNull(repo), env: process.env }),
 		);
 	}),
 ).pipe(
@@ -1109,8 +1115,8 @@ const verdicts = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika build verdicts --pr 4310"},
-		{command: "fabrika build verdicts --issue 7162"},
+		{ command: "fabrika build verdicts --pr 4310" },
+		{ command: "fabrika build verdicts --issue 7162" },
 	]),
 );
 
@@ -1119,8 +1125,8 @@ const document = (path: string): Effect.Effect<DocumentRead, never, FileSystem.F
 	Effect.gen(function* () {
 		const read = yield* Effect.result(readFile(path));
 		return Result.isFailure(read)
-			? ({_tag: "Failed", reason: read.failure.reason} satisfies DocumentRead)
-			: ({_tag: "Text", text: read.success} satisfies DocumentRead);
+			? ({ _tag: "Failed", reason: read.failure.reason } satisfies DocumentRead)
+			: ({ _tag: "Text", text: read.success } satisfies DocumentRead);
 	});
 
 const clear = leafCommand(
@@ -1146,7 +1152,7 @@ const clear = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({pr, authorization, laneRoot, task, repo}) {
+	Effect.fn(function* ({ pr, authorization, laneRoot, task, repo }) {
 		yield* emit(
 			yield* runClear({
 				pr,
@@ -1178,7 +1184,7 @@ const clear = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika build clear --pr 5953 --authorization authorization.md"},
+		{ command: "fabrika build clear --pr 5953 --authorization authorization.md" },
 	]),
 );
 
@@ -1197,7 +1203,7 @@ const takeover = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({pr, authorization, repo}) {
+	Effect.fn(function* ({ pr, authorization, repo }) {
 		yield* emit(
 			yield* runTakeover({
 				pr,
@@ -1226,7 +1232,9 @@ const takeover = leafCommand(
 			`  Derivation: the build skill's contract.md, "build takeover"`,
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika build takeover 4321 --authorization authorization.md"}]),
+	Command.withExamples([
+		{ command: "fabrika build takeover 4321 --authorization authorization.md" },
+	]),
 );
 
 const adopt = leafCommand(
@@ -1245,7 +1253,7 @@ const adopt = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({number, session, reason, repo}) {
+	Effect.fn(function* ({ number, session, reason, repo }) {
 		yield* emit(
 			yield* runAdopt({
 				number,

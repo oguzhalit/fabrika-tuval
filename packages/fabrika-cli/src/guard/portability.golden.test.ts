@@ -6,9 +6,9 @@
  * is committed as a fixture and compared here, and every entry stays a file suffix — a directory
  * entry would drop every other guard in the group from the scan at once.
  */
-import {describe, expect, it} from "vitest";
-import {loadGoldenPayload} from "../golden-fixture.ts";
-import {isSelfExempt, selfExemptSuffixes} from "./portability.ts";
+import { describe, expect, it } from "vitest";
+import { loadGoldenPayload } from "../golden-fixture.ts";
+import { isSelfExempt, selfExemptSuffixes } from "./portability.ts";
 
 const FIXTURE = "./__fixtures__/portability-self-exempt.golden.json";
 

@@ -5,7 +5,7 @@
  * Keep {@link ARTIFACT_UNKNOWN} apart from {@link ABSENT}: an unread input proves no absence.
  */
 
-import {NO_IMPLEMENTATION} from "../verb.ts";
+import { NO_IMPLEMENTATION } from "../verb.ts";
 
 /** The answer is on stdout. Restated here because {@link WIRE_EXIT_TABLE} spans the whole matrix. */
 const ANSWER = 0;
@@ -52,11 +52,11 @@ export interface ExitCodeRow {
  * while each verb's `--help` owns what *triggers* it.
  */
 export const WIRE_EXIT_TABLE: ReadonlyArray<ExitCodeRow> = [
-	{code: ANSWER, meaning: "the answer is on stdout"},
-	{code: FAILED, meaning: "usage error, or the verb failed to run"},
-	{code: ABSENT, meaning: "the artifact was read and the format's block is proven absent"},
-	{code: MALFORMED, meaning: "the block is present and does not conform"},
-	{code: EMPTY_ARTIFACT, meaning: "stdin was read and held nothing"},
+	{ code: ANSWER, meaning: "the answer is on stdout" },
+	{ code: FAILED, meaning: "usage error, or the verb failed to run" },
+	{ code: ABSENT, meaning: "the artifact was read and the format's block is proven absent" },
+	{ code: MALFORMED, meaning: "the block is present and does not conform" },
+	{ code: EMPTY_ARTIFACT, meaning: "stdin was read and held nothing" },
 	{
 		code: ARTIFACT_UNKNOWN,
 		meaning: "the artifact could not be read — UNKNOWN, never absent",
@@ -65,7 +65,7 @@ export const WIRE_EXIT_TABLE: ReadonlyArray<ExitCodeRow> = [
 		code: ZERO_SCOPE,
 		meaning: "zero scope: --format names no registered format, or the registry is empty",
 	},
-	{code: UNUSABLE_FIELDS, meaning: "the fields on stdin hold nothing this format can compose"},
-	{code: NO_IMPLEMENTATION, meaning: "no implementation could be resolved"},
-	{code: NEVER_RAN, meaning: "the verb never ran (unresolved binary)"},
+	{ code: UNUSABLE_FIELDS, meaning: "the fields on stdin hold nothing this format can compose" },
+	{ code: NO_IMPLEMENTATION, meaning: "no implementation could be resolved" },
+	{ code: NEVER_RAN, meaning: "the verb never ran (unresolved binary)" },
 ];

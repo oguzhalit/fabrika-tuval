@@ -17,14 +17,14 @@
  * and never `Closes`, since reading either as a closing merge is the permissive fold that folds a
  * lane to a terminal over an open, still-buildable issue.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {getIssue, resolveRepo} from "../io/issues.ts";
-import {getPullRequest} from "../io/pulls.ts";
-import {issueRefsOf} from "../review/classes.ts";
-import type {IssueRead} from "./closing-merge.ts";
-import {nominatePulls} from "./nominate.ts";
-import {type ClosureRead, provenClosure, pullNumberIn} from "./reconcile.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { getIssue, resolveRepo } from "../io/issues.ts";
+import { getPullRequest } from "../io/pulls.ts";
+import { issueRefsOf } from "../review/classes.ts";
+import type { IssueRead } from "./closing-merge.ts";
+import { nominatePulls } from "./nominate.ts";
+import { type ClosureRead, provenClosure, pullNumberIn } from "./reconcile.ts";
 
 export type ClosureReader<R> = (
 	issue: number,
@@ -52,12 +52,15 @@ export const closureReader = (
 			if (number === null) {
 				const nominated = yield* nominatePulls(resolved, issue, "open-or-merged");
 				return nominated._tag === "Unreadable"
-					? {_tag: "Unknown" as const, reason: `cannot read ${nominated.what}: ${nominated.reason}`}
+					? {
+							_tag: "Unknown" as const,
+							reason: `cannot read ${nominated.what}: ${nominated.reason}`,
+						}
 					: provenClosure(issue, nominated.pulls);
 			}
 			const pull = yield* getPullRequest(resolved, number);
 			if (pull._tag === "Unknown") {
-				return {_tag: "Unknown" as const, reason: `cannot read PR #${number}: ${pull.reason}`};
+				return { _tag: "Unknown" as const, reason: `cannot read PR #${number}: ${pull.reason}` };
 			}
 			if (pull._tag === "Absent") {
 				return {
@@ -94,7 +97,7 @@ export const issueStateReader =
 		Effect.gen(function* () {
 			const attempt = yield* resolveRepo(repo, env);
 			if (attempt._tag === "Failure") {
-				return {_tag: "Unknown" as const, reason: `no target repo resolves: ${attempt.reason}`};
+				return { _tag: "Unknown" as const, reason: `no target repo resolves: ${attempt.reason}` };
 			}
 			return yield* getIssue(attempt.value, issue);
 		});

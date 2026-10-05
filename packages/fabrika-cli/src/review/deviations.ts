@@ -12,7 +12,7 @@
  * The wire carries it as a `Found` of its own tag; this reader names it `none-declared`.
  */
 
-import {read as readWire} from "../wire/deviations.ts";
+import { read as readWire } from "../wire/deviations.ts";
 
 export type DeviationsState = "found" | "none-declared" | "absent" | "malformed";
 
@@ -38,16 +38,16 @@ export interface DeviationsRead {
 
 export const readDeviations = (body: string): DeviationsRead => {
 	const result = readWire(body);
-	if (result._tag === "Absent") return {state: "absent", entries: [], reason: result.reason};
+	if (result._tag === "Absent") return { state: "absent", entries: [], reason: result.reason };
 	if (result._tag === "Malformed") {
-		return {state: "malformed", entries: [], reason: result.reason};
+		return { state: "malformed", entries: [], reason: result.reason };
 	}
 	if (result.value._tag === "NoneDeclared") {
-		return {state: "none-declared", entries: [], reason: null};
+		return { state: "none-declared", entries: [], reason: null };
 	}
 	return {
 		state: "found",
-		entries: result.value.entries.map(({label, said}) => ({label, said})),
+		entries: result.value.entries.map(({ label, said }) => ({ label, said })),
 		reason: null,
 	};
 };

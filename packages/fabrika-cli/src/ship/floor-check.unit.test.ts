@@ -5,8 +5,8 @@
  * pins the two things the polarity change must not cost — a `stale`/`fail` verdict still concludes
  * failure, and an UNKNOWN still concludes failure rather than waiting.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	fakeSeams,
 	type HttpReply,
@@ -14,9 +14,9 @@ import {
 	unconfigured,
 	unconfiguredOnPlatform,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN} from "./codes.ts";
-import {checkRuns, comments, ENV, files, HEAD, pull} from "./fixtures.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN } from "./codes.ts";
+import { checkRuns, comments, ENV, files, HEAD, pull } from "./fixtures.test-support.ts";
 import {
 	CHECK_RUN_NAME,
 	floorRunner,
@@ -24,7 +24,7 @@ import {
 	publishedFloorOf,
 	runFloorCheck,
 } from "./floor-check.ts";
-import {runFloor} from "./floor-verb.ts";
+import { runFloor } from "./floor-verb.ts";
 
 const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4321$/;
 const FILES = /^GET \S+\/repos\/o\/r\/pulls\/4321\/files\?/;
@@ -35,11 +35,11 @@ const HEAD_CHECKS = /^GET \S+\/repos\/o\/r\/commits\/[0-9a-f]+\/check-runs\?/;
 const CREATE = /^POST \S+\/repos\/o\/r\/check-runs$/;
 const UPDATE = /^PATCH \S+\/repos\/o\/r\/check-runs\/\d+$/;
 
-const NO_REVIEWS: Scripted = [REVIEWS, {status: 200, body: "[]"}];
-const served = (result: ExecResult): HttpReply => ({status: 200, body: result.stdout});
+const NO_REVIEWS: Scripted = [REVIEWS, { status: 200, body: "[]" }];
+const served = (result: ExecResult): HttpReply => ({ status: 200, body: result.stdout });
 const permissionServed = (permission: string): HttpReply => ({
 	status: 200,
-	body: JSON.stringify({permission}),
+	body: JSON.stringify({ permission }),
 });
 
 /** A skill diff under `.claude/`, one of the shipped governance roots. */
@@ -51,7 +51,7 @@ const FABRIKA_TREE: Scripted = [
 /** What GitHub echoes for a check-run this run just wrote. */
 const echoed = (status: string, conclusion: string | null, id = 77): HttpReply => ({
 	status: 201,
-	body: JSON.stringify({id, name: CHECK_RUN_NAME, status, conclusion}),
+	body: JSON.stringify({ id, name: CHECK_RUN_NAME, status, conclusion }),
 });
 
 /** The head carrying no check-run of the floor's name — the first run at a fresh head. */
@@ -59,11 +59,11 @@ const NO_HELD_CHECK: Scripted = [
 	HEAD_CHECKS,
 	{
 		status: 200,
-		body: checkRuns(1, [{name: "ci", status: "completed", conclusion: "success"}]).stdout,
+		body: checkRuns(1, [{ name: "ci", status: "completed", conclusion: "success" }]).stdout,
 	},
 ];
 
-const options = {pr: 4321, sha: HEAD, repo: null, json: false, cwd: "/repo", env: ENV};
+const options = { pr: 4321, sha: HEAD, repo: null, json: false, cwd: "/repo", env: ENV };
 
 const seamsFor = (script: ReadonlyArray<Scripted>) =>
 	fakeSeams([...script, NO_REVIEWS, ...unconfiguredOnPlatform()]);
@@ -72,10 +72,10 @@ const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options>
 	const seams = seamsFor(script);
 	return Effect.runPromise(
 		Effect.provide(
-			runFloorCheck({...options, ...overrides}),
+			runFloorCheck({ ...options, ...overrides }),
 			Layer.merge(seams.layer, unconfigured),
 		),
-	).then((outcome) => ({outcome, seams}));
+	).then((outcome) => ({ outcome, seams }));
 };
 
 const marker = (namespace: string, polarity: string, sha: string): string =>
@@ -83,9 +83,9 @@ const marker = (namespace: string, polarity: string, sha: string): string =>
 
 /** A governance-root PR carrying exactly one comment, with the ACL answer the case wants. */
 const withVerdict = (body: string, permission = "write"): ReadonlyArray<Scripted> => [
-	[PULL, served(pull({comments: 1}))],
+	[PULL, served(pull({ comments: 1 }))],
 	FABRIKA_TREE,
-	[COMMENTS, served(comments({id: 1, body}))],
+	[COMMENTS, served(comments({ id: 1, body }))],
 	[ACL, permissionServed(permission)],
 ];
 
@@ -100,24 +100,24 @@ const written = (seams: {
 
 describe("planFor is the conclusion map, whole", () => {
 	const sha = HEAD;
-	const bound = (state: string) => ({_tag: "Bound" as const, state, sha, scanned: 2, stderr: []});
+	const bound = (state: string) => ({ _tag: "Bound" as const, state, sha, scanned: 2, stderr: [] });
 
 	it("concludes success on the two states that owe nothing", () => {
-		expect(planFor(1, {_tag: "Unbound", sha, scanned: 2, stderr: []})).toMatchObject({
+		expect(planFor(1, { _tag: "Unbound", sha, scanned: 2, stderr: [] })).toMatchObject({
 			_tag: "Concluded",
 			conclusion: "success",
 			floor: "n/a",
 		});
-		expect(planFor(1, bound("pass"))).toMatchObject({_tag: "Concluded", conclusion: "success"});
+		expect(planFor(1, bound("pass"))).toMatchObject({ _tag: "Concluded", conclusion: "success" });
 	});
 
 	it("leaves the check PENDING on absent — the one state that is not yet, rather than wrong", () => {
-		expect(planFor(1, bound("absent"))).toMatchObject({_tag: "Pending", floor: "blocked"});
+		expect(planFor(1, bound("absent"))).toMatchObject({ _tag: "Pending", floor: "blocked" });
 	});
 
 	it("concludes failure on a verdict that is stale or FAIL", () => {
-		expect(planFor(1, bound("stale"))).toMatchObject({_tag: "Concluded", conclusion: "failure"});
-		expect(planFor(1, bound("fail"))).toMatchObject({_tag: "Concluded", conclusion: "failure"});
+		expect(planFor(1, bound("stale"))).toMatchObject({ _tag: "Concluded", conclusion: "failure" });
+		expect(planFor(1, bound("fail"))).toMatchObject({ _tag: "Concluded", conclusion: "failure" });
 	});
 
 	// A state word this map has never seen concludes failure for the same reason the rollup reds an
@@ -132,9 +132,9 @@ describe("planFor is the conclusion map, whole", () => {
 	it("concludes failure on UNKNOWN rather than waiting", () => {
 		const plan = planFor(1, {
 			_tag: "Unresolved",
-			outcome: {code: 11, stdout: "", stderr: ["ship floor: cannot read the changed-file list"]},
+			outcome: { code: 11, stdout: "", stderr: ["ship floor: cannot read the changed-file list"] },
 		});
-		expect(plan).toMatchObject({_tag: "Concluded", conclusion: "failure", floor: "unresolved"});
+		expect(plan).toMatchObject({ _tag: "Concluded", conclusion: "failure", floor: "unresolved" });
 		expect(plan.summary).toContain("cannot read the changed-file list");
 	});
 });
@@ -144,26 +144,26 @@ describe("planFor is the conclusion map, whole", () => {
 // So the round-trip is the contract: every branch of `planFor` above has to come back as itself.
 describe("publishedFloorOf is planFor's inverse", () => {
 	const sha = HEAD;
-	const bound = (state: string) => ({_tag: "Bound" as const, state, sha, scanned: 2, stderr: []});
+	const bound = (state: string) => ({ _tag: "Bound" as const, state, sha, scanned: 2, stderr: [] });
 	const readBack = (resolution: Parameters<typeof planFor>[1]) =>
 		publishedFloorOf(planFor(1, resolution).title);
 
 	it("recovers each row of the conclusion map", () => {
-		expect(readBack({_tag: "Unbound", sha, scanned: 2, stderr: []})).toEqual({_tag: "Unbound"});
-		expect(readBack(bound("pass"))).toEqual({_tag: "Satisfied"});
-		expect(readBack(bound("absent"))).toEqual({_tag: "Awaiting"});
-		expect(readBack(bound("stale"))).toEqual({_tag: "Blocked", state: "stale"});
-		expect(readBack(bound("fail"))).toEqual({_tag: "Blocked", state: "fail"});
-		expect(readBack(bound("something-new"))).toEqual({_tag: "Blocked", state: "something-new"});
+		expect(readBack({ _tag: "Unbound", sha, scanned: 2, stderr: [] })).toEqual({ _tag: "Unbound" });
+		expect(readBack(bound("pass"))).toEqual({ _tag: "Satisfied" });
+		expect(readBack(bound("absent"))).toEqual({ _tag: "Awaiting" });
+		expect(readBack(bound("stale"))).toEqual({ _tag: "Blocked", state: "stale" });
+		expect(readBack(bound("fail"))).toEqual({ _tag: "Blocked", state: "fail" });
+		expect(readBack(bound("something-new"))).toEqual({ _tag: "Blocked", state: "something-new" });
 		expect(
-			readBack({_tag: "Unresolved", outcome: {code: 11, stdout: "", stderr: ["boom"]}}),
-		).toEqual({_tag: "Unresolved"});
+			readBack({ _tag: "Unresolved", outcome: { code: 11, stdout: "", stderr: ["boom"] } }),
+		).toEqual({ _tag: "Unresolved" });
 	});
 
 	it("refuses a title no floor of this repo wrote rather than guessing a row", () => {
-		expect(publishedFloorOf(null)).toEqual({_tag: "Unreadable"});
-		expect(publishedFloorOf("")).toEqual({_tag: "Unreadable"});
-		expect(publishedFloorOf("Some other check's title")).toEqual({_tag: "Unreadable"});
+		expect(publishedFloorOf(null)).toEqual({ _tag: "Unreadable" });
+		expect(publishedFloorOf("")).toEqual({ _tag: "Unreadable" });
+		expect(publishedFloorOf("Some other check's title")).toEqual({ _tag: "Unreadable" });
 		expect(publishedFloorOf("The governance verdict at this head is ")).toEqual({
 			_tag: "Unreadable",
 		});
@@ -172,8 +172,8 @@ describe("publishedFloorOf is planFor's inverse", () => {
 
 describe("runFloorCheck publishes the answer and exits 0 on having published it", () => {
 	it("leaves the check pending when no verdict has been posted at this head", async () => {
-		const {outcome, seams} = await run([
-			[PULL, served(pull({comments: 0}))],
+		const { outcome, seams } = await run([
+			[PULL, served(pull({ comments: 0 }))],
 			FABRIKA_TREE,
 			[COMMENTS, served(comments())],
 			NO_HELD_CHECK,
@@ -190,39 +190,39 @@ describe("runFloorCheck publishes the answer and exits 0 on having published it"
 	});
 
 	it("concludes success on a head-bound PASS from an authorized author", async () => {
-		const {outcome, seams} = await run([
+		const { outcome, seams } = await run([
 			...withVerdict(marker("governance", "PASS", HEAD)),
 			NO_HELD_CHECK,
 			[CREATE, echoed("completed", "success")],
 		]);
 		expect(outcome.code).toBe(0);
-		expect(written(seams)).toMatchObject({status: "completed", conclusion: "success"});
+		expect(written(seams)).toMatchObject({ status: "completed", conclusion: "success" });
 		expect(outcome.stdout).toContain("floor\tsatisfied");
 	});
 
 	// The job relays this exit code, so an UNKNOWN that published its own red must not ALSO red the
 	// job: the red belongs on the check-run, and the job's non-zero is reserved for a failed publish.
 	it("publishes a red for an UNKNOWN floor and still exits 0", async () => {
-		const {outcome, seams} = await run([
+		const { outcome, seams } = await run([
 			[PULL, served(pull())],
-			[FILES, {status: 502, body: "{}"}],
+			[FILES, { status: 502, body: "{}" }],
 			NO_HELD_CHECK,
 			[CREATE, echoed("completed", "failure")],
 		]);
 		expect(outcome.code).toBe(0);
-		expect(written(seams)).toMatchObject({conclusion: "failure"});
+		expect(written(seams)).toMatchObject({ conclusion: "failure" });
 		expect(outcome.stdout).toContain("floor\tunresolved");
 	});
 
 	it("rewrites the check-run this head already carries instead of stacking a second", async () => {
-		const {outcome, seams} = await run([
+		const { outcome, seams } = await run([
 			...withVerdict(marker("governance", "PASS", HEAD)),
 			[
 				HEAD_CHECKS,
 				{
 					status: 200,
 					body: checkRuns(1, [
-						{name: CHECK_RUN_NAME, status: "in_progress", conclusion: null, id: 55},
+						{ name: CHECK_RUN_NAME, status: "in_progress", conclusion: null, id: 55 },
 					]).stdout,
 				},
 			],
@@ -236,8 +236,8 @@ describe("runFloorCheck publishes the answer and exits 0 on having published it"
 	// An update cannot clear a conclusion the platform has already recorded, so re-opening a completed
 	// check-run as pending would silently leave the PR showing the old conclusion.
 	it("posts a fresh check-run rather than re-opening a completed one as pending", async () => {
-		const {outcome, seams} = await run([
-			[PULL, served(pull({comments: 0}))],
+		const { outcome, seams } = await run([
+			[PULL, served(pull({ comments: 0 }))],
 			FABRIKA_TREE,
 			[COMMENTS, served(comments())],
 			[
@@ -245,7 +245,7 @@ describe("runFloorCheck publishes the answer and exits 0 on having published it"
 				{
 					status: 200,
 					body: checkRuns(1, [
-						{name: CHECK_RUN_NAME, status: "completed", conclusion: "failure", id: 55},
+						{ name: CHECK_RUN_NAME, status: "completed", conclusion: "failure", id: 55 },
 					]).stdout,
 				},
 			],
@@ -259,10 +259,10 @@ describe("runFloorCheck publishes the answer and exits 0 on having published it"
 
 describe("a floor nobody published is the one thing this mode reds the job on", () => {
 	it("refuses when the check-run could not be written", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			...withVerdict(marker("governance", "PASS", HEAD)),
 			NO_HELD_CHECK,
-			[CREATE, {status: 403, body: '{"message":"Forbidden"}'}],
+			[CREATE, { status: 403, body: '{"message":"Forbidden"}' }],
 		]);
 		expect(outcome.code).toBe(WRITE_UNKNOWN);
 		expect(outcome.stdout).toBe("");
@@ -272,8 +272,8 @@ describe("a floor nobody published is the one thing this mode reds the job on", 
 	// The echo is the read-back: a check-run the PR shows in a state this run did not decide is not a
 	// published answer, and reporting it as one would put a green on a floor nobody discharged.
 	it("refuses when GitHub echoes a state this run did not decide", async () => {
-		const {outcome} = await run([
-			[PULL, served(pull({comments: 0}))],
+		const { outcome } = await run([
+			[PULL, served(pull({ comments: 0 }))],
 			FABRIKA_TREE,
 			[COMMENTS, served(comments())],
 			NO_HELD_CHECK,
@@ -284,7 +284,7 @@ describe("a floor nobody published is the one thing this mode reds the job on", 
 	});
 
 	it("refuses a malformed --sha before writing anything at all", async () => {
-		const {outcome, seams} = await run([], {sha: "not-a-sha"});
+		const { outcome, seams } = await run([], { sha: "not-a-sha" });
 		expect(outcome.code).not.toBe(0);
 		expect(seams.requests.some((call) => CREATE.test(call))).toBe(false);
 	});
@@ -293,9 +293,9 @@ describe("a floor nobody published is the one thing this mode reds the job on", 
 	// second check-run beside a row that may already be there, breaking one-row-per-head with no
 	// signal anywhere — so the read refuses like every other reader of this seam does.
 	it("refuses when the check-runs at the head could not be enumerated", async () => {
-		const {outcome, seams} = await run([
+		const { outcome, seams } = await run([
 			...withVerdict(marker("governance", "PASS", HEAD)),
-			[HEAD_CHECKS, {status: 502, body: "{}"}],
+			[HEAD_CHECKS, { status: 502, body: "{}" }],
 		]);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stdout).toBe("");

@@ -34,17 +34,17 @@ export const readMarker = (body: string): RerunMarker | null => {
 	if (matched?.[1] === undefined || matched[2] === undefined || matched[3] === undefined) {
 		return null;
 	}
-	return {head: matched[1], run: Number.parseInt(matched[2], 10), signature: matched[3]};
+	return { head: matched[1], run: Number.parseInt(matched[2], 10), signature: matched[3] };
 };
 
 /** Whether any comment carries a marker bound to exactly this head. */
 export const markerBoundTo = (
-	bodies: ReadonlyArray<{readonly body: string; readonly id: number}>,
+	bodies: ReadonlyArray<{ readonly body: string; readonly id: number }>,
 	head: string,
-): {readonly id: number; readonly marker: RerunMarker} | null => {
+): { readonly id: number; readonly marker: RerunMarker } | null => {
 	for (const comment of bodies) {
 		const marker = readMarker(comment.body);
-		if (marker !== null && marker.head === head) return {id: comment.id, marker};
+		if (marker !== null && marker.head === head) return { id: comment.id, marker };
 	}
 	return null;
 };

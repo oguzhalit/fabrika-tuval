@@ -12,16 +12,16 @@
  * The skill re-runs this before every git mutation because the shell's cwd resets between calls, so a
  * pass here is a fact about *this* invocation and nothing later.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {currentBranch} from "../io/issues.ts";
-import {issueRefsOf} from "../review/classes.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {laneCaller, requireClaim, requireSession} from "./claim.ts";
-import {BAD_SECTIONS, OFF_VOCABULARY, WRONG_LANE} from "./codes.ts";
-import {laneNumber, parseLaneBranch} from "./lane.ts";
-import {openIssue, openPull, resolveTargetRepo} from "./target.ts";
-import {assertGround} from "./tree.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { currentBranch } from "../io/issues.ts";
+import { issueRefsOf } from "../review/classes.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { laneCaller, requireClaim, requireSession } from "./claim.ts";
+import { BAD_SECTIONS, OFF_VOCABULARY, WRONG_LANE } from "./codes.ts";
+import { laneNumber, parseLaneBranch } from "./lane.ts";
+import { openIssue, openPull, resolveTargetRepo } from "./target.ts";
+import { assertGround } from "./tree.ts";
 
 const VERB = "build tree";
 
@@ -102,8 +102,8 @@ export const runTree = (
 					answer: "proven",
 					root: ground.root,
 					branch,
-					claim: {number: issueNumber, nonce: lane.nonce},
-					servedIssue: {number: issueNumber, kind: "issue"},
+					claim: { number: issueNumber, nonce: lane.nonce },
+					servedIssue: { number: issueNumber, kind: "issue" },
 				}),
 				held.notes,
 			);
@@ -154,8 +154,8 @@ export const runTree = (
 				answer: "proven",
 				root: ground.root,
 				branch,
-				claim: {number: repair, nonce: lane.nonce},
-				servedIssue: {number: servedIssue, kind: linkage.kind},
+				claim: { number: repair, nonce: lane.nonce },
+				servedIssue: { number: servedIssue, kind: linkage.kind },
 			}),
 			held.notes,
 		);

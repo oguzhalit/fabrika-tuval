@@ -22,9 +22,9 @@ export interface LawRow {
 }
 
 export type RegistryParse =
-	| {readonly _tag: "Rows"; readonly rows: ReadonlyArray<LawRow>}
+	| { readonly _tag: "Rows"; readonly rows: ReadonlyArray<LawRow> }
 	/** The first violation, in file order — the message quotes it and refuses the whole file. */
-	| {readonly _tag: "Violation"; readonly violation: string};
+	| { readonly _tag: "Violation"; readonly violation: string };
 
 const FIELDS = [
 	"id",
@@ -70,18 +70,18 @@ export const parseRegistry = (text: string): RegistryParse => {
 	try {
 		parsed = JSON.parse(text);
 	} catch (err) {
-		return {_tag: "Violation", violation: `the file is not JSON (${(err as Error).message})`};
+		return { _tag: "Violation", violation: `the file is not JSON (${(err as Error).message})` };
 	}
-	if (!isRecord(parsed)) return {_tag: "Violation", violation: "the top level is not an object"};
+	if (!isRecord(parsed)) return { _tag: "Violation", violation: "the top level is not an object" };
 	const rows = parsed.rows;
 	if (!Array.isArray(rows))
-		return {_tag: "Violation", violation: '"rows" is missing or not an array'};
+		return { _tag: "Violation", violation: '"rows" is missing or not an array' };
 	if (rows.length === 0)
-		return {_tag: "Violation", violation: '"rows" is empty — a law file that names no law'};
+		return { _tag: "Violation", violation: '"rows" is empty — a law file that names no law' };
 	const seen = new Set<string>();
 	for (const [index, row] of rows.entries()) {
 		const violation = rowViolation(index, row, seen);
-		if (violation !== null) return {_tag: "Violation", violation};
+		if (violation !== null) return { _tag: "Violation", violation };
 	}
-	return {_tag: "Rows", rows: rows as ReadonlyArray<LawRow>};
+	return { _tag: "Rows", rows: rows as ReadonlyArray<LawRow> };
 };

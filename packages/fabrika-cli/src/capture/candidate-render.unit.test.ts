@@ -5,22 +5,22 @@
  * emitted sha256 IS the stored one (the no-re-render anchor), and the forced-flag state
  * is recorded.
  */
-import {assert, describe, it} from "@effect/vitest";
-import {Effect} from "effect";
+import { assert, describe, it } from "@effect/vitest";
+import { Effect } from "effect";
 import {
 	type CaptureLeg,
 	renderCandidateSet,
 	type StoredGolden,
 	type StoreLeg,
 } from "./candidate-render.ts";
-import {type CapturedSurface, CaptureError, type CaptureOptions} from "./capture.ts";
-import type {Shot} from "./plan.ts";
+import { type CapturedSurface, CaptureError, type CaptureOptions } from "./capture.ts";
+import type { Shot } from "./plan.ts";
 
 /** A fake capture leg: returns stub captures with per-surface deterministic bytes. */
-const fakeCapture = (): {leg: CaptureLeg; calls: {shots: readonly Shot[]}[]} => {
-	const calls: {shots: readonly Shot[]}[] = [];
+const fakeCapture = (): { leg: CaptureLeg; calls: { shots: readonly Shot[] }[] } => {
+	const calls: { shots: readonly Shot[] }[] = [];
 	const leg: CaptureLeg = (shots, outDir, _options: CaptureOptions) => {
-		calls.push({shots});
+		calls.push({ shots });
 		return Effect.succeed(
 			shots.map(
 				(s, i): CapturedSurface => ({
@@ -36,7 +36,7 @@ const fakeCapture = (): {leg: CaptureLeg; calls: {shots: readonly Shot[]}[]} => 
 			),
 		);
 	};
-	return {leg, calls};
+	return { leg, calls };
 };
 
 /** A fake store leg: content-address is a deterministic 64-hex from the first byte. */
@@ -50,16 +50,16 @@ const fakeStore = (): StoreLeg => (pngBytes) => {
 
 describe("renderCandidateSet", () => {
 	it("renders the priority surfaces over the preview in priority order and stores each", async () => {
-		const {leg, calls} = fakeCapture();
+		const { leg, calls } = fakeCapture();
 		const set = await Effect.runPromise(
 			renderCandidateSet(
 				{
 					previewUrl: "https://pr-1.workers.dev",
-					params: {termSlug: "amortisman"},
+					params: { termSlug: "amortisman" },
 					outDir: "/out",
-					forcedFlags: {"golden-screens": true},
+					forcedFlags: { "golden-screens": true },
 				},
-				{capture: leg, store: fakeStore()},
+				{ capture: leg, store: fakeStore() },
 			),
 		);
 		// shot over the preview, in priority order
@@ -82,11 +82,11 @@ describe("renderCandidateSet", () => {
 	});
 
 	it("emits the EXACT stored sha256 per candidate — the no-re-render anchor", async () => {
-		const {leg} = fakeCapture();
+		const { leg } = fakeCapture();
 		const set = await Effect.runPromise(
 			renderCandidateSet(
-				{previewUrl: "https://pr-1.workers.dev", params: {termSlug: "x"}, outDir: "/out"},
-				{capture: leg, store: fakeStore()},
+				{ previewUrl: "https://pr-1.workers.dev", params: { termSlug: "x" }, outDir: "/out" },
+				{ capture: leg, store: fakeStore() },
 			),
 		);
 		// bytes were [1],[2],[3] → stems "…001","…002","…003" → matching urls
@@ -100,43 +100,43 @@ describe("renderCandidateSet", () => {
 	});
 
 	it("records the forced-flag state + viewport as provenance", async () => {
-		const {leg} = fakeCapture();
+		const { leg } = fakeCapture();
 		const set = await Effect.runPromise(
 			renderCandidateSet(
 				{
 					previewUrl: "https://pr-1.workers.dev",
-					params: {termSlug: "x"},
+					params: { termSlug: "x" },
 					outDir: "/out",
-					forcedFlags: {"golden-screens": true},
+					forcedFlags: { "golden-screens": true },
 				},
-				{capture: leg, store: fakeStore()},
+				{ capture: leg, store: fakeStore() },
 			),
 		);
-		assert.deepStrictEqual(set.forcedFlags, {"golden-screens": true});
+		assert.deepStrictEqual(set.forcedFlags, { "golden-screens": true });
 		assert.strictEqual(set.viewport, "desktop");
 		assert.strictEqual(set.previewUrl, "https://pr-1.workers.dev");
 	});
 
 	it("short-circuits a capture failure (nothing to bless from a broken render)", async () => {
-		const failing: CaptureLeg = () => Effect.fail(new CaptureError({message: "boom"}));
+		const failing: CaptureLeg = () => Effect.fail(new CaptureError({ message: "boom" }));
 		const exit = await Effect.runPromiseExit(
 			renderCandidateSet(
-				{previewUrl: "https://pr-1.workers.dev", params: {termSlug: "x"}, outDir: "/out"},
-				{capture: failing, store: fakeStore()},
+				{ previewUrl: "https://pr-1.workers.dev", params: { termSlug: "x" }, outDir: "/out" },
+				{ capture: failing, store: fakeStore() },
 			),
 		);
 		assert.isTrue(exit._tag === "Failure");
 	});
 
 	it("wraps a plan-build failure (unfilled term slug) as a CaptureError in-channel", async () => {
-		const {leg} = fakeCapture();
+		const { leg } = fakeCapture();
 		// A defect would reject this promise; only a failure in the error channel flips to a value.
 		const error = await Effect.runPromise(
 			Effect.flip(
 				renderCandidateSet(
 					// empty termSlug ⇒ resolvePrioritySurfaces throws on the :slug route
-					{previewUrl: "https://pr-1.workers.dev", params: {termSlug: ""}, outDir: "/out"},
-					{capture: leg, store: fakeStore()},
+					{ previewUrl: "https://pr-1.workers.dev", params: { termSlug: "" }, outDir: "/out" },
+					{ capture: leg, store: fakeStore() },
 				),
 			),
 		);

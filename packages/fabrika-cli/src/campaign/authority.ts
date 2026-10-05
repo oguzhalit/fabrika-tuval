@@ -14,10 +14,10 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9852
  */
 
-import {Effect} from "effect";
-import {clearsWriteFloor} from "../build/clearances.ts";
-import type {Shell} from "../io/git.ts";
-import {permissionFor} from "../io/pulls.ts";
+import { Effect } from "effect";
+import { clearsWriteFloor } from "../build/clearances.ts";
+import type { Shell } from "../io/git.ts";
+import { permissionFor } from "../io/pulls.ts";
 
 /** A read failed, so authority is UNKNOWN and nothing is written — the caller's `13`. */
 export interface AuthorityUnknown {
@@ -27,12 +27,12 @@ export interface AuthorityUnknown {
 
 export type Acl =
 	/** Clause 2 holds. `level` is what the ACL answered, for the notice line. */
-	| {readonly _tag: "Cleared"; readonly level: string}
+	| { readonly _tag: "Cleared"; readonly level: string }
 	/**
 	 * Below the floor — the caller's `21`. `level` is `null` for `permissionFor`'s **proven** 404,
 	 * which is a different true thing from a level below the floor and prints as `no collaboration`.
 	 */
-	| {readonly _tag: "BelowFloor"; readonly level: string | null}
+	| { readonly _tag: "BelowFloor"; readonly level: string | null }
 	| AuthorityUnknown;
 
 /** Clause 2 — the live read, at the moment of the act. */
@@ -45,8 +45,8 @@ export const aclOf = (repo: string, login: string): Shell<Acl> =>
 				reason: `cannot resolve @${login}'s permission on ${repo}: ${permission.reason}`,
 			};
 		}
-		if (permission._tag === "Absent") return {_tag: "BelowFloor" as const, level: null};
+		if (permission._tag === "Absent") return { _tag: "BelowFloor" as const, level: null };
 		return clearsWriteFloor(permission.value)
-			? {_tag: "Cleared" as const, level: permission.value}
-			: {_tag: "BelowFloor" as const, level: permission.value};
+			? { _tag: "Cleared" as const, level: permission.value }
+			: { _tag: "BelowFloor" as const, level: permission.value };
 	});

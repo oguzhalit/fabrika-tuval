@@ -55,14 +55,14 @@ export interface UnparseableRecord {
 /** The record filenames in a directory listing, split from the names that are not records at all. */
 export const partitionRecordNames = (
 	names: ReadonlyArray<string>,
-): {readonly records: ReadonlyArray<string>; readonly unparseable: ReadonlyArray<string>} => {
+): { readonly records: ReadonlyArray<string>; readonly unparseable: ReadonlyArray<string> } => {
 	const records: string[] = [];
 	const unparseable: string[] = [];
 	for (const name of names) {
 		if (idFromFile(name) !== null) records.push(name);
 		else if (isRecordCandidate(name)) unparseable.push(name);
 	}
-	return {records: [...records].sort(), unparseable: [...unparseable].sort()};
+	return { records: [...records].sort(), unparseable: [...unparseable].sort() };
 };
 
 /** The raw text between a file's leading `---` fences, or `null` when there is no frontmatter. */

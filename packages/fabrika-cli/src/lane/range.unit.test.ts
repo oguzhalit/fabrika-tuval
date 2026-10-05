@@ -1,8 +1,8 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeShell, okOut} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {locateRange} from "./range.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeShell, okOut } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { locateRange } from "./range.ts";
 
 const EPIC = 5631;
 const CHILD = 6292;
@@ -43,22 +43,22 @@ const run = (script: ReadonlyArray<Scripted>) => {
 	return Effect.runPromise(
 		Effect.map(
 			Effect.provide(locateRange("fabrika lane brief", EPIC, CHILD), shell.layer),
-			(located) => ({located, calls: shell.calls}),
+			(located) => ({ located, calls: shell.calls }),
 		),
 	);
 };
 
 describe("locateRange on a shallow clone", () => {
 	it("answers the range when the clone is complete, without asking any commit for its parents", async () => {
-		const {located, calls} = await run([[SHALLOW, okOut("false\n")], ...RANGE]);
+		const { located, calls } = await run([[SHALLOW, okOut("false\n")], ...RANGE]);
 		expect(located._tag).toBe("Located");
 		if (located._tag !== "Located") return;
-		expect(located.range).toMatchObject({base: FORK, tip: CHILD_TIP, commits: 1, naming: 1});
+		expect(located.range).toMatchObject({ base: FORK, tip: CHILD_TIP, commits: 1, naming: 1 });
 		expect(calls.some((line) => line.startsWith("git log -1 --format=%P"))).toBe(false);
 	});
 
 	it("answers the range when the boundary touches neither the assembly tip nor the fork point", async () => {
-		const {located} = await run([
+		const { located } = await run([
 			[SHALLOW, okOut("true\n")],
 			[PARENTS(EPIC_TIP), okOut(`${sha("aaaaaaaa")} ${sha("bbbbbbbb")}\n`)],
 			[PARENTS(FORK), okOut(`${sha("cccccccc")}\n`)],
@@ -70,17 +70,17 @@ describe("locateRange on a shallow clone", () => {
 	});
 
 	it("refuses before reading a branch when the assembly tip is the graft boundary", async () => {
-		const {located, calls} = await run([
+		const { located, calls } = await run([
 			[SHALLOW, okOut("true\n")],
 			[PARENTS(EPIC_TIP), okOut("\n")],
 			...RANGE,
 		]);
-		expect(located).toEqual({_tag: "Truncated", what: `epic/${EPIC}'s tip`, sha: EPIC_TIP});
+		expect(located).toEqual({ _tag: "Truncated", what: `epic/${EPIC}'s tip`, sha: EPIC_TIP });
 		expect(calls.some((line) => line.startsWith("git for-each-ref"))).toBe(false);
 	});
 
 	it("refuses when the fork point is the graft boundary, naming the commit and the branch", async () => {
-		const {located, calls} = await run([
+		const { located, calls } = await run([
 			[SHALLOW, okOut("true\n")],
 			[PARENTS(EPIC_TIP), okOut(`${sha("aaaaaaaa")}\n`)],
 			[PARENTS(FORK), okOut("\n")],
@@ -95,14 +95,14 @@ describe("locateRange on a shallow clone", () => {
 	});
 
 	it("calls an unreadable shallow probe UNKNOWN rather than a complete clone", async () => {
-		const {located} = await run(RANGE);
+		const { located } = await run(RANGE);
 		expect(located._tag).toBe("Unreadable");
 		if (located._tag !== "Unreadable") return;
 		expect(located.what).toBe("whether this clone is shallow");
 	});
 
 	it("calls an unreadable parent list UNKNOWN rather than a boundary", async () => {
-		const {located} = await run([[SHALLOW, okOut("true\n")], ...RANGE]);
+		const { located } = await run([[SHALLOW, okOut("true\n")], ...RANGE]);
 		expect(located).toMatchObject({
 			_tag: "Unreadable",
 			what: `this clone's graft boundary at ${EPIC_TIP}`,

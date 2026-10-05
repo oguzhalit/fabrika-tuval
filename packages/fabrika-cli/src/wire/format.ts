@@ -216,7 +216,7 @@ export type BrandedKeys<V> = {
  */
 export type WireBrandWitnesses<V> = [BrandedKeys<V>] extends [never]
 	? never
-	: {readonly [K in BrandedKeys<V>]: true};
+	: { readonly [K in BrandedKeys<V>]: true };
 
 /**
  * Build a row's `brands` from its value type — the compile-time half of the conformance laws.
@@ -235,7 +235,7 @@ export const brandWitnesses = <V>(
 	witnessed: WireBrandWitnesses<V>,
 ): NonEmptyReadonlyArray<WireBrandWitness> => {
 	const [first, ...rest] = Object.keys(witnessed).map(
-		(field): WireBrandWitness => ({field, [WITNESSED]: true}),
+		(field): WireBrandWitness => ({ field, [WITNESSED]: true }),
 	);
 	if (first === undefined) {
 		// Unreachable through the parameter type, which is `never` for a `V` with no branded field.

@@ -14,15 +14,15 @@
  * route into a posted artifact.
  */
 
-import {Effect, Option} from "effect";
-import {Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStdin} from "../io/stdin.ts";
-import {runCapture} from "./capture-verb.ts";
-import {runClaim} from "./claim-verb.ts";
-import {runRead} from "./read-verb.ts";
-import {runTake} from "./take-verb.ts";
+import { Effect, Option } from "effect";
+import { Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStdin } from "../io/stdin.ts";
+import { runCapture } from "./capture-verb.ts";
+import { runClaim } from "./claim-verb.ts";
+import { runRead } from "./read-verb.ts";
+import { runTake } from "./take-verb.ts";
 
 const repoFlag = Flag.string("repo").pipe(
 	Flag.optional,
@@ -50,8 +50,8 @@ const nonceFlag = Flag.string("nonce").pipe(
 
 const capture = leafCommand(
 	"capture",
-	{issue: issueFlag, base: baseFlag, repo: repoFlag},
-	Effect.fn(function* ({issue, base, repo}) {
+	{ issue: issueFlag, base: baseFlag, repo: repoFlag },
+	Effect.fn(function* ({ issue, base, repo }) {
 		yield* emit(
 			yield* runCapture({
 				issue,
@@ -72,7 +72,7 @@ const capture = leafCommand(
 			'  Derivation: the handoff skill\'s contract.md, "handoff capture"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika handoff capture --issue 5021"}]),
+	Command.withExamples([{ command: "fabrika handoff capture --issue 5021" }]),
 );
 
 const take = leafCommand(
@@ -89,7 +89,7 @@ const take = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({issue, nonce, base, declareUnreachable, repo}) {
+	Effect.fn(function* ({ issue, nonce, base, declareUnreachable, repo }) {
 		yield* emit(
 			yield* runTake({
 				issue,
@@ -130,8 +130,8 @@ const take = leafCommand(
 
 const read = leafCommand(
 	"read",
-	{issue: issueFlag, base: baseFlag, repo: repoFlag},
-	Effect.fn(function* ({issue, base, repo}) {
+	{ issue: issueFlag, base: baseFlag, repo: repoFlag },
+	Effect.fn(function* ({ issue, base, repo }) {
 		yield* emit(
 			yield* runRead({
 				issue,
@@ -153,13 +153,13 @@ const read = leafCommand(
 			'  Derivation: the handoff skill\'s contract.md, "handoff read"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika handoff read --issue 5021"}]),
+	Command.withExamples([{ command: "fabrika handoff read --issue 5021" }]),
 );
 
 const claim = leafCommand(
 	"claim",
-	{issue: issueFlag, nonce: nonceFlag, repo: repoFlag},
-	Effect.fn(function* ({issue, nonce, repo}) {
+	{ issue: issueFlag, nonce: nonceFlag, repo: repoFlag },
+	Effect.fn(function* ({ issue, nonce, repo }) {
 		yield* emit(
 			yield* runClaim({
 				issue,
@@ -185,7 +185,7 @@ const claim = leafCommand(
 			'  Derivation: the handoff skill\'s contract.md, "handoff claim"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika handoff claim --issue 5021 --nonce 4b8e2f01"}]),
+	Command.withExamples([{ command: "fabrika handoff claim --issue 5021 --nonce 4b8e2f01" }]),
 );
 
 export const handoffCommand = Command.make("handoff").pipe(

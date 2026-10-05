@@ -11,12 +11,12 @@
  * established one command earlier in the same fence, by `lane assembly-pr`'s `56`, and a second
  * network read would only add an UNKNOWN to a judgement the bytes on stdin fully decide.
  */
-import {Effect} from "effect";
-import {leakRefusal, readAuthored} from "../build/authored.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {tailBodyRead} from "./assembly-body.ts";
-import {TAIL_NOT_CLOSING} from "./codes.ts";
+import { Effect } from "effect";
+import { leakRefusal, readAuthored } from "../build/authored.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { tailBodyRead } from "./assembly-body.ts";
+import { TAIL_NOT_CLOSING } from "./codes.ts";
 
 const VERB = "fabrika lane assembly-body";
 
@@ -31,7 +31,7 @@ export interface AssemblyBodyOptions {
 	readonly stdin: Effect.Effect<StdinRead>;
 }
 
-export const runAssemblyBody = ({epic, stdin}: AssemblyBodyOptions): Effect.Effect<VerbOutcome> =>
+export const runAssemblyBody = ({ epic, stdin }: AssemblyBodyOptions): Effect.Effect<VerbOutcome> =>
 	Effect.gen(function* () {
 		const authored = readAuthored(SURFACE, yield* stdin);
 		if (authored._tag === "Refused") return authored.outcome;

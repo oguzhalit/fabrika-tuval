@@ -31,17 +31,17 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9570#issuecomment-5753839456
  */
-import {Clock, Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {producerFor, resolveCi} from "../config/ci-producer.ts";
-import {type ReasonHistogram, reasonHistogram} from "../evidence.ts";
-import {FLOOR_WORKFLOW_NAME} from "../governance/floor-assert.ts";
-import {type CheckRun, commitExists, listCheckRuns} from "../io/pulls.ts";
+import { Clock, Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { producerFor, resolveCi } from "../config/ci-producer.ts";
+import { type ReasonHistogram, reasonHistogram } from "../evidence.ts";
+import { FLOOR_WORKFLOW_NAME } from "../governance/floor-assert.ts";
+import { type CheckRun, commitExists, listCheckRuns } from "../io/pulls.ts";
 // The workflow inventory is read through the `ship` group's reader for the same reason `ship checks`
 // rolls up through this group's `rollup.ts`: one read, so the two verbs cannot drift on the fact.
-import {CHECK_RUN_NAME} from "../ship/floor-check.ts";
-import {listRunsAtHead, listWorkflowPaths} from "../ship/github.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { CHECK_RUN_NAME } from "../ship/floor-check.ts";
+import { listRunsAtHead, listWorkflowPaths } from "../ship/github.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	authorityNote,
 	type BlockingSet,
@@ -52,11 +52,11 @@ import {
 	reportingNote,
 	unreadableCause,
 } from "./blocking.ts";
-import {INCOMPLETE_SCAN, NO_GATE_COVERAGE, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {gateCoverageOf} from "./gate-coverage.ts";
-import {governanceOwed, governanceStale, staleFloorIsTheOnlyRed} from "./governance-owed.ts";
-import {isFailing, type Rollup, rollupOf, statusOf} from "./rollup.ts";
-import {badNumber, openPull, resolveTargetRepo, scannedLine} from "./target.ts";
+import { INCOMPLETE_SCAN, NO_GATE_COVERAGE, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { gateCoverageOf } from "./gate-coverage.ts";
+import { governanceOwed, governanceStale, staleFloorIsTheOnlyRed } from "./governance-owed.ts";
+import { isFailing, type Rollup, rollupOf, statusOf } from "./rollup.ts";
+import { badNumber, openPull, resolveTargetRepo, scannedLine } from "./target.ts";
 
 const VERB = "review ci";
 
@@ -94,13 +94,13 @@ export interface CiOptions {
 
 /** One enumeration at the bound head: an outcome no wait can change, or a rollup to route on. */
 type Sample =
-	| {readonly _tag: "Done"; readonly outcome: VerbOutcome}
+	| { readonly _tag: "Done"; readonly outcome: VerbOutcome }
 	| {
 			readonly _tag: "Read";
 			readonly rollup: Rollup;
 			readonly runs: ReadonlyArray<CheckRun>;
 			readonly declared: number;
-			readonly gates: {readonly declared: number; readonly covered: number} | null;
+			readonly gates: { readonly declared: number; readonly covered: number } | null;
 			/** This head's only unfinished check is a floor whose run is done — nothing else can move it. */
 			readonly owedGovernance: boolean;
 			/** This head's only failing check is a floor whose verdict is stale — the reader's to clear. */
@@ -176,7 +176,7 @@ export const runCi = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -184,7 +184,7 @@ export const runCi = (
 		if (resolved._tag === "Refused") return resolved.outcome;
 		const repo = resolved.repo;
 
-		const target = yield* openPull(VERB, repo, pr, {requireOpen: false, requireFiles: false});
+		const target = yield* openPull(VERB, repo, pr, { requireOpen: false, requireFiles: false });
 		if (target._tag === "Refused") return target.outcome;
 		const live = target.pull.headSha;
 		const base = target.pull.baseRef;
@@ -238,7 +238,7 @@ export const runCi = (
 			never,
 			ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 		> = Effect.gen(function* () {
-			const done = (outcome: VerbOutcome): Sample => ({_tag: "Done", outcome});
+			const done = (outcome: VerbOutcome): Sample => ({ _tag: "Done", outcome });
 			const enumerated = yield* listCheckRuns(repo, sha);
 			if (enumerated._tag === "Failure") {
 				return done(
@@ -249,7 +249,7 @@ export const runCi = (
 					),
 				);
 			}
-			const {declared, runs} = enumerated.value;
+			const { declared, runs } = enumerated.value;
 			// Every poll re-reads the head, so the scanned line is this sample's, not the run's: it
 			// rides the sample's own notes and never accumulates one row per poll on the preamble.
 			const notes = [
@@ -313,7 +313,7 @@ export const runCi = (
 			// A red rollup is already the answer a caller must act on, so the coverage question is asked
 			// only where it changes one: `green` and `pending` are the two words that read as "nothing to
 			// do here", and both are wrong over bytes no gate inspected.
-			let gates: {readonly declared: number; readonly covered: number} | null = null;
+			let gates: { readonly declared: number; readonly covered: number } | null = null;
 			let owedGovernance = false;
 			let staleGovernance = false;
 			if (rollup === "red" && staleFloorIsTheOnlyRed(blocked)) {
@@ -386,7 +386,7 @@ export const runCi = (
 						`${VERB}: ${repo} authors no workflow of its own — every run at ${sha} is platform-provided, so there is no gate coverage to judge.`,
 					);
 				} else {
-					gates = {declared: coverage.declared, covered: coverage.covered};
+					gates = { declared: coverage.declared, covered: coverage.covered };
 					notes.push(
 						`${VERB}: ${coverage.covered} of ${coverage.declared} workflow(s) ${repo} authors inspected ${head}.`,
 					);
@@ -413,7 +413,10 @@ export const runCi = (
 			} satisfies Sample;
 		});
 
-		const render = (read: Extract<Sample, {_tag: "Read"}>, settle: Settle | null): VerbOutcome => {
+		const render = (
+			read: Extract<Sample, { _tag: "Read" }>,
+			settle: Settle | null,
+		): VerbOutcome => {
 			const checks: ReasonHistogram = reasonHistogram(read.runs, statusOf);
 			return json
 				? answer(
@@ -461,7 +464,7 @@ export const runCi = (
 			}
 			yield* Effect.sleep(`${options.cadenceSeconds} seconds`);
 
-			const moved = yield* openPull(VERB, repo, pr, {requireOpen: false, requireFiles: false});
+			const moved = yield* openPull(VERB, repo, pr, { requireOpen: false, requireFiles: false });
 			if (moved._tag === "Refused") return moved.outcome;
 			if (!prefixMatch(moved.pull.headSha, sha)) {
 				// The wait was for a tree the PR no longer is: the last read still binds what it inspected,

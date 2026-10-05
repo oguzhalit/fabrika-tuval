@@ -9,8 +9,8 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9675#issuecomment-5790600028
  */
-import {Effect, FileSystem, Path} from "effect";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, FileSystem, Path } from "effect";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	belowFloorWarning,
 	CLI_FLOOR_FILE,
@@ -18,7 +18,7 @@ import {
 	type FloorVerdict,
 	judgeCliFloor,
 } from "./cli-floor.ts";
-import {FLOOR_UNKNOWN} from "./codes.ts";
+import { FLOOR_UNKNOWN } from "./codes.ts";
 
 const VERB = "fabrika hook cli-floor";
 
@@ -38,9 +38,9 @@ export const readFloorFile = (
 	Effect.gen(function* () {
 		const fs = yield* FileSystem.FileSystem;
 		return yield* fs.readFileString(path).pipe(
-			Effect.map((text): FloorSource => ({_tag: "Text", text})),
+			Effect.map((text): FloorSource => ({ _tag: "Text", text })),
 			Effect.catch((error) =>
-				Effect.succeed<FloorSource>({_tag: "Unreadable", reason: `${path}: ${error.message}`}),
+				Effect.succeed<FloorSource>({ _tag: "Unreadable", reason: `${path}: ${error.message}` }),
 			),
 		);
 	});
@@ -96,7 +96,7 @@ export const runCliFloor = ({
 		const floorPath = path.join(root, CLI_FLOOR_FILE);
 		const floor = yield* read(floorPath);
 		return outcomeFor(
-			judgeCliFloor({installed, floor}),
+			judgeCliFloor({ installed, floor }),
 			`${VERB}: compared v${installed} with ${CLI_FLOOR_FILE} under $${PLUGIN_ROOT_ENV}`,
 		);
 	});

@@ -35,9 +35,9 @@ const tokenRe = (prefix: string): RegExp => {
 export const parseToken = (
 	token: string,
 	prefix: string = TOKEN_PREFIX,
-): {readonly session: string; readonly uuid: string} | null => {
+): { readonly session: string; readonly uuid: string } | null => {
 	const m = tokenRe(prefix).exec(token.trim());
-	return m?.[1] === undefined || m[2] === undefined ? null : {session: m[1], uuid: m[2]};
+	return m?.[1] === undefined || m[2] === undefined ? null : { session: m[1], uuid: m[2] };
 };
 
 /** The lane nonce a token confers, or `null` when the token does not parse. */
@@ -71,7 +71,7 @@ export type LaneBranch =
 			readonly slug: string;
 			readonly nonce: string;
 	  }
-	| {readonly _tag: "Resume"; readonly pr: number; readonly nonce: string};
+	| { readonly _tag: "Resume"; readonly pr: number; readonly nonce: string };
 
 const CREATE_RE = /^build\/(\d+)-([a-z0-9]+(?:-[a-z0-9]+)*)-([0-9a-f]{8})$/;
 const RESUME_RE = /^build\/pr-(\d+)-([0-9a-f]{8})$/;
@@ -80,7 +80,7 @@ const RESUME_RE = /^build\/pr-(\d+)-([0-9a-f]{8})$/;
 export const parseLaneBranch = (name: string): LaneBranch | null => {
 	const resume = RESUME_RE.exec(name);
 	if (resume?.[1] !== undefined && resume[2] !== undefined) {
-		return {_tag: "Resume", pr: Number.parseInt(resume[1], 10), nonce: resume[2]};
+		return { _tag: "Resume", pr: Number.parseInt(resume[1], 10), nonce: resume[2] };
 	}
 	const create = CREATE_RE.exec(name);
 	if (create?.[1] !== undefined && create[2] !== undefined && create[3] !== undefined) {

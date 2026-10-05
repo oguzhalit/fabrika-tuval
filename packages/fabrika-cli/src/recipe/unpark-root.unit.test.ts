@@ -6,17 +6,17 @@
  * verbs folded the primary checkout's ledger while this one proved the same lane absent at 7 — an
  * exit `operate` step 4 does not route, so a self-healing park cost a human instead.
  */
-import {Effect, Layer, Option} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs, fakeSeams} from "../fakes.test-support.ts";
-import {NOT_A_REPO, ROOT_NOT_OWNED} from "../lane/codes.ts";
-import {parkCauseRead} from "../lane/fixtures.test-support.ts";
-import {resolveRootOrRefuse} from "../lane/ground.ts";
-import {DEFAULT_LANES_ROOT} from "../lane/store.ts";
-import {ENV} from "../ship/fixtures.test-support.ts";
-import {PARK_NOVEL, TARGET_ABSENT} from "./codes.ts";
-import {LANE, laneTemplate, PARKED_BLOCKED} from "./fixtures.test-support.ts";
-import {runUnpark} from "./unpark-verb.ts";
+import { Effect, Layer, Option } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs, fakeSeams } from "../fakes.test-support.ts";
+import { NOT_A_REPO, ROOT_NOT_OWNED } from "../lane/codes.ts";
+import { parkCauseRead } from "../lane/fixtures.test-support.ts";
+import { resolveRootOrRefuse } from "../lane/ground.ts";
+import { DEFAULT_LANES_ROOT } from "../lane/store.ts";
+import { ENV } from "../ship/fixtures.test-support.ts";
+import { PARK_NOVEL, TARGET_ABSENT } from "./codes.ts";
+import { LANE, laneTemplate, PARKED_BLOCKED } from "./fixtures.test-support.ts";
+import { runUnpark } from "./unpark-verb.ts";
 
 const VERB = "fabrika recipe unpark";
 const PRIMARY = "/primary";
@@ -114,7 +114,7 @@ describe("the lanes root recipe unpark resolves", () => {
 
 	it("refuses a cwd under no repository rather than resolving a relative path", async () => {
 		const out = await unparkFrom(
-			fakeFs({directories: ["/scratch"]}),
+			fakeFs({ directories: ["/scratch"] }),
 			"/scratch/deep",
 			Option.none(),
 		);

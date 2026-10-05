@@ -8,13 +8,13 @@
  * distinction `decisions-index next` does not make when it computes `max + 1` over an empty entry
  * set and hands a mis-rooted checkout `0001`.
  */
-import {Effect} from "effect";
-import {fetchAndResolve, listDir, readFileAt, type Shell} from "../io/git.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {type CorpusMember, type CorpusReading, readCorpus} from "./corpus.ts";
-import {lastCommitTouching, pathPresentAt} from "./git.ts";
-import {type ParsedIndex, parseIndex} from "./index-table.ts";
+import { Effect } from "effect";
+import { fetchAndResolve, listDir, readFileAt, type Shell } from "../io/git.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { type CorpusMember, type CorpusReading, readCorpus } from "./corpus.ts";
+import { lastCommitTouching, pathPresentAt } from "./git.ts";
+import { type ParsedIndex, parseIndex } from "./index-table.ts";
 
 export interface CorpusOptions {
 	readonly dir: string;
@@ -52,7 +52,7 @@ const empty = (
 
 export const runCorpus = (options: CorpusOptions): Shell<VerbOutcome> =>
 	Effect.gen(function* () {
-		const {dir, base, json} = options;
+		const { dir, base, json } = options;
 
 		const resolved = yield* fetchAndResolve(base);
 		if (resolved._tag === "Failure") {
@@ -71,7 +71,7 @@ export const runCorpus = (options: CorpusOptions): Shell<VerbOutcome> =>
 		const present = yield* pathPresentAt(sha, dir);
 		if (present._tag === "Failure") return unreadable(dir, present.reason);
 		if (!present.value) {
-			const reading = readCorpus({present: false, names: [], index: null});
+			const reading = readCorpus({ present: false, names: [], index: null });
 			return empty(options, reading, sha, [
 				`pattern corpus: ${dir} is not in the tree at ${sha} — this repository has no pattern library yet.`,
 			]);
@@ -93,7 +93,7 @@ export const runCorpus = (options: CorpusOptions): Shell<VerbOutcome> =>
 			indexNote = `${indexPath} is absent at ${sha}`;
 		}
 
-		const reading = readCorpus({present: true, names: listed.value, index});
+		const reading = readCorpus({ present: true, names: listed.value, index });
 		if (reading.outcome === "none") {
 			return empty(options, reading, sha, [
 				`pattern corpus: ${dir} at ${sha} holds no pattern doc — the library exists and is empty.`,
@@ -116,7 +116,7 @@ export const runCorpus = (options: CorpusOptions): Shell<VerbOutcome> =>
 					`pattern corpus: cannot read the history of ${path}: no commit touches it at or before ${sha} — UNKNOWN, never a missing commit.`,
 				);
 			}
-			entries.push({...member, lastSha: last.value.sha, lastDate: last.value.date});
+			entries.push({ ...member, lastSha: last.value.sha, lastDate: last.value.date });
 		}
 
 		const scope = [
@@ -143,7 +143,7 @@ export const runCorpus = (options: CorpusOptions): Shell<VerbOutcome> =>
 						lastSha: e.lastSha,
 						lastDate: e.lastDate,
 					})),
-					danglingRows: reading.dangling.map((d) => ({target: d.target, section: d.section})),
+					danglingRows: reading.dangling.map((d) => ({ target: d.target, section: d.section })),
 					baseRef: base,
 					baseSha: sha,
 				}),

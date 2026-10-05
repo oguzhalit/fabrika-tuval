@@ -22,10 +22,10 @@
  * why the shipped default is empty, not as what any one repo runs.
  */
 
-import {isRecord} from "../../io/json.ts";
-import {trimmedStrings} from "../entries.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
-import type {Argv} from "./workflow-validators.ts";
+import { isRecord } from "../../io/json.ts";
+import { trimmedStrings } from "../entries.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
+import type { Argv } from "./workflow-validators.ts";
 
 export const CODE_VALIDATORS = "codeValidators";
 
@@ -38,9 +38,9 @@ const MALFORMED = `\`${CODE_VALIDATORS}\` holds an entry that is not {"command":
 
 const decode = (raw: unknown): Decoded<ReadonlyArray<CodeValidator>> => {
 	if (!Array.isArray(raw)) {
-		return {_tag: "Malformed", reason: `\`${CODE_VALIDATORS}\` is not an array`};
+		return { _tag: "Malformed", reason: `\`${CODE_VALIDATORS}\` is not an array` };
 	}
-	const malformed: Decoded<ReadonlyArray<CodeValidator>> = {_tag: "Malformed", reason: MALFORMED};
+	const malformed: Decoded<ReadonlyArray<CodeValidator>> = { _tag: "Malformed", reason: MALFORMED };
 	const validators: CodeValidator[] = [];
 	for (const entry of raw) {
 		if (!isRecord(entry)) return malformed;
@@ -48,9 +48,9 @@ const decode = (raw: unknown): Decoded<ReadonlyArray<CodeValidator>> => {
 		if (command === null) return malformed;
 		const [binary, ...args] = command;
 		if (binary === undefined) return malformed;
-		validators.push({argv: [binary, ...args]});
+		validators.push({ argv: [binary, ...args] });
 	}
-	return {_tag: "Value", value: validators};
+	return { _tag: "Value", value: validators };
 };
 
 /** A repo declaring nothing has no code validator — the refusal, not a guessed command line. */
@@ -61,7 +61,7 @@ export const codeValidatorsKey: KeyGroup<ReadonlyArray<CodeValidator>> = {
 	shippedDefault: SHIPPED_CODE_VALIDATORS,
 	decode,
 	// `argv` is the spawn shape; the file's key is `command`, and a readout prints what the repo wrote.
-	render: (validators) => validators.map((one) => ({command: [...one.argv]})),
+	render: (validators) => validators.map((one) => ({ command: [...one.argv] })),
 	jsonSchema: {
 		type: "array",
 		description:
@@ -72,7 +72,7 @@ export const codeValidatorsKey: KeyGroup<ReadonlyArray<CodeValidator>> = {
 				command: {
 					type: "array",
 					description: 'The argv to spawn — e.g. ["pnpm", "typecheck"].',
-					items: {type: "string"},
+					items: { type: "string" },
 					minItems: 1,
 				},
 			},

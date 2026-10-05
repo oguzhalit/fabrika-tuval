@@ -95,7 +95,7 @@ export const groupByType = (
 	}
 	return CATEGORY_ORDER.flatMap((category) => {
 		const bucket = buckets.get(category);
-		return bucket && bucket.length > 0 ? [{category, entries: bucket}] : [];
+		return bucket && bucket.length > 0 ? [{ category, entries: bucket }] : [];
 	});
 };
 
@@ -145,6 +145,6 @@ export const deriveChangelog = (
 		readonly entries: ReadonlyArray<ChangelogEntry>;
 	}>,
 ): string => {
-	const sections = releases.map(({meta, entries}) => renderSection(meta, entries));
+	const sections = releases.map(({ meta, entries }) => renderSection(meta, entries));
 	return `${KAC_HEADER}\n\n${sections.join("\n\n")}\n`;
 };

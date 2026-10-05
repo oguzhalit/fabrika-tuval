@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	addsDeclaration,
 	declaredKeyOf,
@@ -97,7 +97,7 @@ describe("detect", () => {
 	});
 
 	it("reports a dark ship with no key when only the diff signal fires", () => {
-		expect(detect(ADDING_DIFF, "no flag line here", REGISTRY)).toEqual({dark: true, key: null});
+		expect(detect(ADDING_DIFF, "no flag line here", REGISTRY)).toEqual({ dark: true, key: null });
 	});
 
 	it("never reads an inherited Containment stamp — that is the #1257 phantom", () => {

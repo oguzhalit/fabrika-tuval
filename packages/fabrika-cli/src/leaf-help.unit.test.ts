@@ -1,6 +1,6 @@
-import {existsSync, readdirSync, readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
 import {
 	type DescribedNode,
 	describeFinding,
@@ -13,7 +13,7 @@ import {
 	leafHelpRatchet,
 	leafHelpWalk,
 } from "./leaf-help.ts";
-import {registeredGroups} from "./registry.ts";
+import { registeredGroups } from "./registry.ts";
 
 /** The rule's own worked example for `build eligible`, which the convention states passes. */
 const COMPLIANT = [
@@ -35,7 +35,7 @@ describe("leafHelpDefects", () => {
 	});
 
 	it("reds on a description over the whole budget", () => {
-		const text = ["Does a thing.", ...Array.from({length: 8}, () => `  ${"x".repeat(80)}`)].join(
+		const text = ["Does a thing.", ...Array.from({ length: 8 }, () => `  ${"x".repeat(80)}`)].join(
 			"\n",
 		);
 		expect(text.length).toBeGreaterThan(LEAF_HELP_BUDGET);
@@ -80,42 +80,42 @@ describe("leafHelpDefects", () => {
 });
 
 const BAD = "Does a thing. Exits 3 when absent.";
-const leaf = (verb: string, description: string): LeafHelp => ({group: "g", verb, description});
+const leaf = (verb: string, description: string): LeafHelp => ({ group: "g", verb, description });
 const baselines = (rows: LeafHelpBaseline) => new Map([["g", rows]]);
 
 describe("leafHelpRatchet", () => {
 	it("passes a compliant verb with no baseline row and a baselined verb held at its length", () => {
 		expect(
-			leafHelpRatchet([leaf("ok", COMPLIANT), leaf("old", BAD)], baselines({old: BAD.length})),
+			leafHelpRatchet([leaf("ok", COMPLIANT), leaf("old", BAD)], baselines({ old: BAD.length })),
 		).toEqual([]);
 	});
 
 	it("reds a verb that breaks the rule and is not in its group's baseline", () => {
 		expect(leafHelpRatchet([leaf("new", BAD)], baselines({}))).toEqual([
-			{kind: "unbaselined", group: "g", verb: "new", defects: leafHelpDefects(BAD)},
+			{ kind: "unbaselined", group: "g", verb: "new", defects: leafHelpDefects(BAD) },
 		]);
 	});
 
 	it("reds a baseline verb whose description grew past its recorded length", () => {
-		expect(leafHelpRatchet([leaf("old", BAD)], baselines({old: BAD.length - 1}))).toEqual([
-			{kind: "grew", group: "g", verb: "old", length: BAD.length, recorded: BAD.length - 1},
+		expect(leafHelpRatchet([leaf("old", BAD)], baselines({ old: BAD.length - 1 }))).toEqual([
+			{ kind: "grew", group: "g", verb: "old", length: BAD.length, recorded: BAD.length - 1 },
 		]);
 	});
 
 	it("reds a baseline row whose verb now passes the rule", () => {
-		expect(leafHelpRatchet([leaf("fixed", COMPLIANT)], baselines({fixed: 900}))).toEqual([
-			{kind: "stale", group: "g", verb: "fixed"},
+		expect(leafHelpRatchet([leaf("fixed", COMPLIANT)], baselines({ fixed: 900 }))).toEqual([
+			{ kind: "stale", group: "g", verb: "fixed" },
 		]);
 	});
 
 	it("reds a baseline row naming no registered verb", () => {
-		expect(leafHelpRatchet([leaf("ok", COMPLIANT)], baselines({gone: 900}))).toEqual([
-			{kind: "unknown-verb", group: "g", verb: "gone"},
+		expect(leafHelpRatchet([leaf("ok", COMPLIANT)], baselines({ gone: 900 }))).toEqual([
+			{ kind: "unknown-verb", group: "g", verb: "gone" },
 		]);
 	});
 
 	it("fails closed when the walk found zero leaves", () => {
-		expect(leafHelpRatchet([], baselines({}))).toEqual([{kind: "no-leaves"}]);
+		expect(leafHelpRatchet([], baselines({}))).toEqual([{ kind: "no-leaves" }]);
 	});
 });
 
@@ -124,11 +124,11 @@ describe("leafHelpWalk", () => {
 		const node = (name: string, ...children: Array<DescribedNode>): DescribedNode => ({
 			name,
 			description: `${name}.`,
-			subcommands: children.length === 0 ? [] : [{commands: children}],
+			subcommands: children.length === 0 ? [] : [{ commands: children }],
 		});
 		expect(
 			leafHelpWalk([node("build", node("claim"), node("claims", node("stale")))]).map(
-				({group, verb}) => `${group}/${verb}`,
+				({ group, verb }) => `${group}/${verb}`,
 			),
 		).toEqual(["build/claim", "build/claims stale"]);
 	});
@@ -144,7 +144,7 @@ describe("every registered leaf verb holds the leaf help ratchet", () => {
 	const groups: ReadonlyArray<DescribedNode> = registeredGroups;
 	const groupNames = new Set(groups.map((group) => group.name));
 
-	const baselineDirs = readdirSync(SRC_DIR, {withFileTypes: true})
+	const baselineDirs = readdirSync(SRC_DIR, { withFileTypes: true })
 		.filter(
 			(entry) =>
 				entry.isDirectory() && existsSync(`${SRC_DIR}${entry.name}/${LEAF_HELP_BASELINE_FILE}`),

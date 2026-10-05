@@ -8,13 +8,13 @@
  * with write access disable the verb by filing one. See `map read --help` for refusal details.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {digestOfBody} from "./body.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {counts, frontierToken, readFrontier} from "./frontier.ts";
-import {requireMap, targetRepo} from "./guards.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { digestOfBody } from "./body.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { counts, frontierToken, readFrontier } from "./frontier.ts";
+import { requireMap, targetRepo } from "./guards.ts";
 
 export interface ReadOptions {
 	readonly map: number;
@@ -34,7 +34,7 @@ export const runRead = (
 
 		const found = yield* requireMap(VERB, repo, options.map);
 		if (found._tag === "Refused") return found.outcome;
-		const {body} = found.value;
+		const { body } = found.value;
 
 		const frontier = yield* readFrontier(repo, options.map, body);
 		if (frontier._tag !== "Frontier") {
@@ -45,7 +45,7 @@ export const runRead = (
 					: `${VERB}: cannot read #${options.map}'s children: ${frontier.reason} — the frontier is UNKNOWN, never empty.`,
 			);
 		}
-		const {tickets, disregarded, scanned} = frontier.value;
+		const { tickets, disregarded, scanned } = frontier.value;
 
 		const scope = `${VERB}: ${repo}, ${scanned.children} child(ren), ${scanned.edgeReads} edge read(s), ${scanned.comments} comment(s) scanned.`;
 		return answer(

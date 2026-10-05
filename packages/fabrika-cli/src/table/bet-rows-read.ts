@@ -8,15 +8,15 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9913
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {blockedBy, subIssues} from "../io/edges.ts";
-import type {Shell} from "../io/git.ts";
-import {absent, type Existence, getIssue, present, unknown} from "../io/issues.ts";
-import {readItems} from "../io/projects.ts";
-import {type BetRow, betCellsOf, betRowsOf} from "./bet-rows.ts";
-import {readTableWith, type TableRead} from "./bets-read.ts";
-import {graphOf, type IssueNode} from "./group.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { blockedBy, subIssues } from "../io/edges.ts";
+import type { Shell } from "../io/git.ts";
+import { absent, type Existence, getIssue, present, unknown } from "../io/issues.ts";
+import { readItems } from "../io/projects.ts";
+import { type BetRow, betCellsOf, betRowsOf } from "./bet-rows.ts";
+import { readTableWith, type TableRead } from "./bets-read.ts";
+import { graphOf, type IssueNode } from "./group.ts";
 
 /** How many issues one read may pull into its graph before it stops rather than walk on. */
 export const BET_GRAPH_CAP = 500;
@@ -82,15 +82,15 @@ export const readBetRows = (
 				}
 				const node = yield* readNode(repo, issue);
 				if (node._tag === "Unknown") {
-					return {_tag: "Unknown", reason: `cannot read #${issue}: ${node.reason}`};
+					return { _tag: "Unknown", reason: `cannot read #${issue}: ${node.reason}` };
 				}
 				graph.set(issue, node._tag === "Present" ? node.value : vanished(issue));
 			}
 			const rows = betRowsOf(cells, graphOf(graph.values()));
-			if (rows._tag === "Derived") return {_tag: "Read", source: items.source, value: rows.rows};
+			if (rows._tag === "Derived") return { _tag: "Read", source: items.source, value: rows.rows };
 			wanted = rows.missing.filter((issue) => !graph.has(issue));
 			if (wanted.length === 0) {
-				return {_tag: "Unknown", reason: "the bet rows' groups did not settle on a full graph"};
+				return { _tag: "Unknown", reason: "the bet rows' groups did not settle on a full graph" };
 			}
 		}
 	});

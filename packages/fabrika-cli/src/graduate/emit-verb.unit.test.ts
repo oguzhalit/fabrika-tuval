@@ -1,6 +1,6 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
 import {
 	AUTHORIZATION,
 	answerComment,
@@ -9,9 +9,9 @@ import {
 	roundDigestOf,
 	rulingComment,
 } from "../grill/fixtures.test-support.ts";
-import {SHIPPED_BOARD} from "../status/board.test-support.ts";
+import { SHIPPED_BOARD } from "../status/board.test-support.ts";
 import * as graduateEmitted from "../wire/graduate-emitted.ts";
-import {markerTime} from "../wire/grill-marker.ts";
+import { markerTime } from "../wire/grill-marker.ts";
 import {
 	ALREADY_GRADUATED,
 	BAD_SECTIONS,
@@ -21,8 +21,8 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {type DocumentRead, runCompose} from "./compose-verb.ts";
-import {INTAKE_LABEL, runEmit} from "./emit-verb.ts";
+import { type DocumentRead, runCompose } from "./compose-verb.ts";
+import { INTAKE_LABEL, runEmit } from "./emit-verb.ts";
 import {
 	AUTHORED,
 	CLEARED_DECISIONS,
@@ -33,8 +33,8 @@ import {
 	SESSION,
 	specFor,
 } from "./fixtures.test-support.ts";
-import {renderFooter, withFooter} from "./spec.ts";
-import {digestOfDecisions, trailOf} from "./trail.ts";
+import { renderFooter, withFooter } from "./spec.ts";
+import { digestOfDecisions, trailOf } from "./trail.ts";
 
 const ISSUE = /^GET .*\/repos\/o\/r\/issues\/9412$/;
 const COMMENTS = /^GET .*\/repos\/o\/r\/issues\/9412\/comments\?/;
@@ -45,10 +45,10 @@ const CREATED_ISSUE = /^GET .*\/repos\/o\/r\/issues\/9520$/;
 const COMMENT = /^POST .*\/repos\/o\/r\/issues\/9412\/comments$/;
 
 /** A served 200 — every read below asks for JSON and gets a whole single page. */
-const served = (body: string): HttpReply => ({status: 200, body});
+const served = (body: string): HttpReply => ({ status: 200, body });
 
 /** A served 201 — what a create answers. */
-const created = (body: string): HttpReply => ({status: 201, body});
+const created = (body: string): HttpReply => ({ status: 201, body });
 
 const NOW = new Date("2026-08-09T18:36:48.000Z");
 const AT = markerTime("2026-08-09T18:36:48Z");
@@ -58,13 +58,13 @@ const SPEC = specFor(CLEARED_DECISIONS);
 const SPEC_DIGEST = digestOfDecisions(CLEARED_DECISIONS);
 const LANDED = withFooter(
 	SPEC,
-	renderFooter({source: SESSION, specDigest: SPEC_DIGEST, timestamp: AT}),
+	renderFooter({ source: SESSION, specDigest: SPEC_DIGEST, timestamp: AT }),
 );
 const TITLE = "Cap moderation weight per topic";
 
 const emit = (
 	script: ReadonlyArray<Scripted>,
-	spec: DocumentRead = {_tag: "Text", text: SPEC},
+	spec: DocumentRead = { _tag: "Text", text: SPEC },
 	title = TITLE,
 ) => {
 	const seams = fakeSeams(script);
@@ -76,13 +76,13 @@ const emit = (
 				spec: Effect.succeed(spec),
 				title,
 				repo: null,
-				env: {CLAUDE_PIPELINE_REPO: REPO},
+				env: { CLAUDE_PIPELINE_REPO: REPO },
 				board: SHIPPED_BOARD,
 				now: () => NOW,
 			}),
 			seams.layer,
 		),
-	).then((outcome) => ({outcome, seams}));
+	).then((outcome) => ({ outcome, seams }));
 };
 
 /** The JSON body of the first request matching `pattern`; `""` when none was issued. */
@@ -90,21 +90,21 @@ const bodyOf = (seams: ReturnType<typeof fakeSeams>, pattern: RegExp): string =>
 	seams.bodies[seams.requests.findIndex((line) => pattern.test(line))] ?? "";
 
 const labelSet = (...names: ReadonlyArray<string>): HttpReply =>
-	served(JSON.stringify(names.map((name) => ({name}))));
+	served(JSON.stringify(names.map((name) => ({ name }))));
 
 const healthy = (): ReadonlyArray<Scripted> => [
-	[ISSUE, served(issueJson({number: SESSION, labels: ["grilling:session"]}))],
+	[ISSUE, served(issueJson({ number: SESSION, labels: ["grilling:session"] }))],
 	[COMMENTS, served(commentsPayload([...CLEARED_SESSION]))],
-	[PERMISSION, served(JSON.stringify({permission: "write"}))],
+	[PERMISSION, served(JSON.stringify({ permission: "write" }))],
 	[LABELS, labelSet(INTAKE_LABEL, "type:feature", "p1")],
-	[CREATE, created(JSON.stringify({number: 9520, html_url: "https://example.test/issues/9520"}))],
+	[CREATE, created(JSON.stringify({ number: 9520, html_url: "https://example.test/issues/9520" }))],
 	[
 		CREATED_ISSUE,
-		served(issueJson({number: 9520, title: TITLE, body: LANDED, labels: [INTAKE_LABEL]})),
+		served(issueJson({ number: 9520, title: TITLE, body: LANDED, labels: [INTAKE_LABEL] })),
 	],
 	[
 		COMMENT,
-		created(JSON.stringify({id: 5234567892, html_url: "https://example.test/c/5234567892"})),
+		created(JSON.stringify({ id: 5234567892, html_url: "https://example.test/c/5234567892" })),
 	],
 ];
 
@@ -123,10 +123,10 @@ describe("the whole transaction", () => {
 		);
 		const bound = roundDigestOf(1, roundBody);
 		const comments = commentsPayload([
-			{id: 1, author: "acme-founder", body: roundComment(1, roundBody)},
-			{id: 2, author: "acme-founder", body: answerComment("R1.1", bound)},
-			{id: 3, author: "acme-founder", body: AUTHORIZATION},
-			{id: 4, author: "acme-founder", body: rulingComment("R1.2", bound)},
+			{ id: 1, author: "acme-founder", body: roundComment(1, roundBody) },
+			{ id: 2, author: "acme-founder", body: answerComment("R1.1", bound) },
+			{ id: 3, author: "acme-founder", body: AUTHORIZATION },
+			{ id: 4, author: "acme-founder", body: rulingComment("R1.2", bound) },
 		]);
 		const composed = await Effect.runPromise(
 			runCompose({
@@ -134,28 +134,34 @@ describe("the whole transaction", () => {
 				trail: Effect.succeed({
 					_tag: "Text",
 					text: JSON.stringify(
-						trailOf({source: SESSION, kind: "grilling", decisions, unresolved: [], outOfScope: []}),
+						trailOf({
+							source: SESSION,
+							kind: "grilling",
+							decisions,
+							unresolved: [],
+							outOfScope: [],
+						}),
 					),
 				}),
 				decisions: [],
-				stdin: Effect.succeed({_tag: "Text", text: AUTHORED}),
+				stdin: Effect.succeed({ _tag: "Text", text: AUTHORED }),
 			}),
 		);
 		expect(composed.code).toBe(0);
 		const digest = digestOfDecisions(decisions);
 		const landed = withFooter(
 			composed.stdout,
-			renderFooter({source: SESSION, specDigest: digest, timestamp: AT}),
+			renderFooter({ source: SESSION, specDigest: digest, timestamp: AT }),
 		);
 		const script: ReadonlyArray<Scripted> = [
 			...healthy().filter(([pattern]) => pattern !== COMMENTS && pattern !== CREATED_ISSUE),
 			[COMMENTS, served(comments)],
 			[
 				CREATED_ISSUE,
-				served(issueJson({number: 9520, title: TITLE, body: landed, labels: [INTAKE_LABEL]})),
+				served(issueJson({ number: 9520, title: TITLE, body: landed, labels: [INTAKE_LABEL] })),
 			],
 		];
-		const {outcome, seams} = await emit(script, {_tag: "Text", text: composed.stdout});
+		const { outcome, seams } = await emit(script, { _tag: "Text", text: composed.stdout });
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout).specDigest).toBe(digest);
 		expect(JSON.parse(bodyOf(seams, CREATE)).body).toBe(landed);
@@ -169,7 +175,7 @@ describe("the whole transaction", () => {
 	});
 
 	it("files one issue at status:needs-triage, reads it back, then posts the marker", async () => {
-		const {outcome, seams} = await emit(healthy());
+		const { outcome, seams } = await emit(healthy());
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout)).toEqual({
 			source: SESSION,
@@ -186,12 +192,12 @@ describe("the whole transaction", () => {
 	});
 
 	it("applies exactly one label and no classification of its own", async () => {
-		const {seams} = await emit(healthy());
+		const { seams } = await emit(healthy());
 		expect(JSON.parse(bodyOf(seams, CREATE)).labels).toEqual([INTAKE_LABEL]);
 	});
 
 	it("posts a marker binding the spec digest and every covered ref", async () => {
-		const {seams} = await emit(healthy());
+		const { seams } = await emit(healthy());
 		const posted = JSON.parse(bodyOf(seams, COMMENT)).body as string;
 		expect(posted).toContain(`graduate-emitted: #${SESSION} → #9520 @ ${SPEC_DIGEST}`);
 		expect(posted).toContain("covers R1.1;R1.2");
@@ -201,7 +207,7 @@ describe("the whole transaction", () => {
 	});
 
 	it("appends the footer BEFORE the leak scan, so its own bytes are scanned too", async () => {
-		const {seams} = await emit(healthy());
+		const { seams } = await emit(healthy());
 		const create = bodyOf(seams, CREATE);
 		expect(create).toContain(`spec ${SPEC_DIGEST}`);
 		expect(create).toContain("Filed by an agent");
@@ -210,11 +216,11 @@ describe("the whole transaction", () => {
 
 describe("the digest is re-derived, never trusted from --spec", () => {
 	it("refuses a ref the spec carries that is no longer on the trail", async () => {
-		const {outcome} = await emit(healthy(), {
+		const { outcome } = await emit(healthy(), {
 			_tag: "Text",
 			text: specFor([
 				...CLEARED_DECISIONS,
-				{ref: "R9.9", provenance: "ruled", text: "something nobody ruled"},
+				{ ref: "R9.9", provenance: "ruled", text: "something nobody ruled" },
 			]),
 		});
 		expect(outcome.code).toBe(DECISIONS_STALE);
@@ -224,9 +230,9 @@ describe("the digest is re-derived, never trusted from --spec", () => {
 
 	it("refuses a ref whose provenance in the spec is stronger than the trail's", async () => {
 		const forged = specFor(
-			CLEARED_DECISIONS.map((row) => ({...row, provenance: "ruled" as const})),
+			CLEARED_DECISIONS.map((row) => ({ ...row, provenance: "ruled" as const })),
 		);
-		const {outcome} = await emit(healthy(), {_tag: "Text", text: forged});
+		const { outcome } = await emit(healthy(), { _tag: "Text", text: forged });
 		expect(outcome.code).toBe(DECISIONS_STALE);
 		expect(outcome.stderr.join("\n")).toContain("provenance");
 	});
@@ -236,17 +242,17 @@ describe("the digest is re-derived, never trusted from --spec", () => {
 		const digest = digestOfDecisions(subset);
 		const landed = withFooter(
 			specFor(subset),
-			renderFooter({source: SESSION, specDigest: digest, timestamp: AT}),
+			renderFooter({ source: SESSION, specDigest: digest, timestamp: AT }),
 		);
-		const {outcome} = await emit(
+		const { outcome } = await emit(
 			[
 				...healthy().filter(([pattern]) => pattern !== CREATED_ISSUE),
 				[
 					CREATED_ISSUE,
-					served(issueJson({number: 9520, title: TITLE, body: landed, labels: [INTAKE_LABEL]})),
+					served(issueJson({ number: 9520, title: TITLE, body: landed, labels: [INTAKE_LABEL] })),
 				],
 			],
-			{_tag: "Text", text: specFor(subset)},
+			{ _tag: "Text", text: specFor(subset) },
 		);
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout).specDigest).toBe(digest);
@@ -261,16 +267,16 @@ describe("the digest is re-derived, never trusted from --spec", () => {
 			covers: ["R1.1", "R1.2"],
 			at: AT,
 		});
-		const {outcome} = await emit([
-			[ISSUE, served(issueJson({number: SESSION, labels: ["grilling:session"]}))],
+		const { outcome } = await emit([
+			[ISSUE, served(issueJson({ number: SESSION, labels: ["grilling:session"] }))],
 			[once(COMMENTS), served(commentsPayload([...CLEARED_SESSION]))],
 			[
 				COMMENTS,
 				served(
-					commentsPayload([...CLEARED_SESSION, {id: 7, author: "acme-founder", body: marker}]),
+					commentsPayload([...CLEARED_SESSION, { id: 7, author: "acme-founder", body: marker }]),
 				),
 			],
-			[PERMISSION, served(JSON.stringify({permission: "write"}))],
+			[PERMISSION, served(JSON.stringify({ permission: "write" }))],
 		]);
 		expect(outcome.code).toBe(ALREADY_GRADUATED);
 		expect(outcome.stderr.join("\n")).toContain("#9520");
@@ -280,13 +286,13 @@ describe("the digest is re-derived, never trusted from --spec", () => {
 
 describe("the refusals that write nothing", () => {
 	it("refuses a spec missing a section", async () => {
-		const {outcome, seams} = await emit(healthy(), {_tag: "Text", text: "## Problem\nx\n"});
+		const { outcome, seams } = await emit(healthy(), { _tag: "Text", text: "## Problem\nx\n" });
 		expect(outcome.code).toBe(BAD_SECTIONS);
 		expect(seams.log).toEqual([]);
 	});
 
 	it("refuses a hand-edited decisions line rather than skipping it", async () => {
-		const {outcome} = await emit(healthy(), {
+		const { outcome } = await emit(healthy(), {
 			_tag: "Text",
 			text: SPEC.replace("— **ruled** · R1.2", "(he agreed)"),
 		});
@@ -295,7 +301,7 @@ describe("the refusals that write nothing", () => {
 	});
 
 	it("refuses a repo with no status:needs-triage label", async () => {
-		const {outcome} = await emit([
+		const { outcome } = await emit([
 			...healthy().filter(([pattern]) => pattern !== LABELS),
 			[LABELS, labelSet("type:feature", "p1")],
 		]);
@@ -305,7 +311,11 @@ describe("the refusals that write nothing", () => {
 	});
 
 	it("refuses a --title that classifies the work — that is triage's seat", async () => {
-		const {outcome} = await emit(healthy(), {_tag: "Text", text: SPEC}, "feature: cap the weight");
+		const { outcome } = await emit(
+			healthy(),
+			{ _tag: "Text", text: SPEC },
+			"feature: cap the weight",
+		);
 		expect(outcome.code).toBe(CLASSIFIED);
 		expect(outcome.stderr.join("\n")).toContain("type and priority are triage's");
 	});
@@ -313,29 +323,31 @@ describe("the refusals that write nothing", () => {
 
 describe("a write whose outcome is unproven", () => {
 	it("seats a failed create on 8, naming the repo to check", async () => {
-		const {outcome} = await emit([
+		const { outcome } = await emit([
 			...healthy().filter(([pattern]) => pattern !== CREATE),
-			[CREATE, {status: 502, body: "{}"}],
+			[CREATE, { status: 502, body: "{}" }],
 		]);
 		expect(outcome.code).toBe(WRITE_UNKNOWN);
 		expect(outcome.stdout).toBe("");
 	});
 
 	it("seats a failed marker write on 8, naming the ORPHANED spec a re-run would duplicate", async () => {
-		const {outcome} = await emit([
+		const { outcome } = await emit([
 			...healthy().filter(([pattern]) => pattern !== COMMENT),
-			[COMMENT, {status: 502, body: "{}"}],
+			[COMMENT, { status: 502, body: "{}" }],
 		]);
 		expect(outcome.code).toBe(WRITE_UNKNOWN);
 		expect(outcome.stderr.join("\n")).toContain("the spec EXISTS but #9412 does not record it");
 	});
 
 	it("seats a read-back that does not match on 9, before any marker is written", async () => {
-		const {outcome, seams} = await emit([
+		const { outcome, seams } = await emit([
 			...healthy().filter(([pattern]) => pattern !== CREATED_ISSUE),
 			[
 				CREATED_ISSUE,
-				served(issueJson({number: 9520, title: TITLE, body: LANDED, labels: [INTAKE_LABEL, "p1"]})),
+				served(
+					issueJson({ number: 9520, title: TITLE, body: LANDED, labels: [INTAKE_LABEL, "p1"] }),
+				),
 			],
 		]);
 		expect(outcome.code).toBe(READBACK_MISMATCH);

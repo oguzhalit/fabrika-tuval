@@ -13,18 +13,18 @@
  * refusal** (`10`), not a malformed-flag usage error (`1`), so the check belongs to the verb.
  */
 
-import {Effect, Option} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStdin} from "../io/stdin.ts";
-import {runApproval} from "./approval-verb.ts";
-import {runApprove} from "./approve-verb.ts";
-import {runCheck} from "./check-verb.ts";
-import {runFlip} from "./flip-verb.ts";
-import {runRead} from "./read-verb.ts";
-import {runRestage} from "./restage-verb.ts";
-import {runVerdict} from "./verdict-verb.ts";
+import { Effect, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStdin } from "../io/stdin.ts";
+import { runApproval } from "./approval-verb.ts";
+import { runApprove } from "./approve-verb.ts";
+import { runCheck } from "./check-verb.ts";
+import { runFlip } from "./flip-verb.ts";
+import { runRead } from "./read-verb.ts";
+import { runRestage } from "./restage-verb.ts";
+import { runVerdict } from "./verdict-verb.ts";
 
 const repoFlag = Flag.string("repo").pipe(
 	Flag.optional,
@@ -51,10 +51,15 @@ const digestFlag = Flag.string("digest").pipe(
 
 const read = leafCommand(
 	"read",
-	{number: epicArg, repo: repoFlag},
-	Effect.fn(function* ({number, repo}) {
+	{ number: epicArg, repo: repoFlag },
+	Effect.fn(function* ({ number, repo }) {
 		yield* emit(
-			yield* runRead({number, repo: Option.getOrNull(repo), cwd: process.cwd(), env: process.env}),
+			yield* runRead({
+				number,
+				repo: Option.getOrNull(repo),
+				cwd: process.cwd(),
+				env: process.env,
+			}),
 		);
 	}),
 ).pipe(
@@ -69,15 +74,20 @@ const read = leafCommand(
 			'  Derivation: the check-epic-plan skill\'s contract.md, "plan read"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika plan read 9420"}]),
+	Command.withExamples([{ command: "fabrika plan read 9420" }]),
 );
 
 const check = leafCommand(
 	"check",
-	{number: epicArg, repo: repoFlag},
-	Effect.fn(function* ({number, repo}) {
+	{ number: epicArg, repo: repoFlag },
+	Effect.fn(function* ({ number, repo }) {
 		yield* emit(
-			yield* runCheck({number, repo: Option.getOrNull(repo), cwd: process.cwd(), env: process.env}),
+			yield* runCheck({
+				number,
+				repo: Option.getOrNull(repo),
+				cwd: process.cwd(),
+				env: process.env,
+			}),
 		);
 	}),
 ).pipe(
@@ -93,13 +103,13 @@ const check = leafCommand(
 			'  Derivation: the check-epic-plan skill\'s contract.md, "plan check"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika plan check 9420"}]),
+	Command.withExamples([{ command: "fabrika plan check 9420" }]),
 );
 
 const flip = leafCommand(
 	"flip",
-	{number: epicArg, digest: digestFlag, token: tokenFlag, repo: repoFlag},
-	Effect.fn(function* ({number, digest, token, repo}) {
+	{ number: epicArg, digest: digestFlag, token: tokenFlag, repo: repoFlag },
+	Effect.fn(function* ({ number, digest, token, repo }) {
 		yield* emit(
 			yield* runFlip({
 				number,
@@ -131,7 +141,7 @@ const flip = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika plan flip 9420 --digest 4d90e1bb27ac --token build:s-9f2e:c1a4d6f8-…"},
+		{ command: "fabrika plan flip 9420 --digest 4d90e1bb27ac --token build:s-9f2e:c1a4d6f8-…" },
 	]),
 );
 
@@ -149,7 +159,7 @@ const verdict = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({number, digest, token, polarity, repo}) {
+	Effect.fn(function* ({ number, digest, token, polarity, repo }) {
 		yield* emit(
 			yield* runVerdict({
 				number,
@@ -193,8 +203,8 @@ const verdict = leafCommand(
 
 const approve = leafCommand(
 	"approve",
-	{number: epicArg, repo: repoFlag},
-	Effect.fn(function* ({number, repo}) {
+	{ number: epicArg, repo: repoFlag },
+	Effect.fn(function* ({ number, repo }) {
 		yield* emit(
 			yield* runApprove({
 				number,
@@ -220,13 +230,13 @@ const approve = leafCommand(
 			'  Derivation: the check-epic-plan skill\'s contract.md, "Verb inventory"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika plan approve 9420"}]),
+	Command.withExamples([{ command: "fabrika plan approve 9420" }]),
 );
 
 const approval = leafCommand(
 	"approval",
-	{number: epicArg, repo: repoFlag},
-	Effect.fn(function* ({number, repo}) {
+	{ number: epicArg, repo: repoFlag },
+	Effect.fn(function* ({ number, repo }) {
 		yield* emit(
 			yield* runApproval({
 				number,
@@ -248,14 +258,16 @@ const approval = leafCommand(
 			'  Derivation: the check-epic-plan skill\'s contract.md, "Verb inventory"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika plan approval 9420"}]),
+	Command.withExamples([{ command: "fabrika plan approval 9420" }]),
 );
 
 const restage = leafCommand(
 	"restage",
-	{number: epicArg, token: tokenFlag, repo: repoFlag},
-	Effect.fn(function* ({number, token, repo}) {
-		yield* emit(yield* runRestage({number, token, repo: Option.getOrNull(repo), env: process.env}));
+	{ number: epicArg, token: tokenFlag, repo: repoFlag },
+	Effect.fn(function* ({ number, token, repo }) {
+		yield* emit(
+			yield* runRestage({ number, token, repo: Option.getOrNull(repo), env: process.env }),
+		);
 	}),
 ).pipe(
 	Command.withShortDescription(
@@ -276,7 +288,7 @@ const restage = leafCommand(
 			'  Derivation: the check-epic-plan skill\'s contract.md, "plan restage"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika plan restage 9420 --token build:s-9f2e:c1a4d6f8-…"}]),
+	Command.withExamples([{ command: "fabrika plan restage 9420 --token build:s-9f2e:c1a4d6f8-…" }]),
 );
 
 export const planCommand = Command.make("plan").pipe(

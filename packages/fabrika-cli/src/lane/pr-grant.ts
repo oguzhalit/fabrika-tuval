@@ -25,8 +25,8 @@
  * first seat.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	capClearAuthorsNotices,
 	clearancesOn,
@@ -35,15 +35,15 @@ import {
 	grantedFrom,
 	permissionsFor,
 } from "../build/clearances.ts";
-import {roundsOn} from "../build/rounds.ts";
-import {openPull, resolveTargetRepo} from "../build/target.ts";
-import {effectiveCap} from "../cap-clearance.ts";
-import {createComment, getComment, listComments} from "../io/issues.ts";
-import {viewerLogin} from "../io/pulls.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
+import { roundsOn } from "../build/rounds.ts";
+import { openPull, resolveTargetRepo } from "../build/target.ts";
+import { effectiveCap } from "../cap-clearance.ts";
+import { createComment, getComment, listComments } from "../io/issues.ts";
+import { viewerLogin } from "../io/pulls.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
 import * as capClearance from "../wire/cap-clearance.ts";
-import {stampOf} from "../wire/grill-marker.ts";
+import { stampOf } from "../wire/grill-marker.ts";
 import {
 	APPEND_UNKNOWN,
 	BARE_AT_PATH,
@@ -53,8 +53,8 @@ import {
 	MARKER_READBACK,
 	PR_AMBIGUOUS,
 } from "./codes.ts";
-import {nominatePulls, nominationScope} from "./nominate.ts";
-import {tracePulls} from "./prove.ts";
+import { nominatePulls, nominationScope } from "./nominate.ts";
+import { tracePulls } from "./prove.ts";
 
 /** What a task's PR-side grant resolved to, or why there is nothing there to grant. */
 export type PrGrant =
@@ -69,11 +69,11 @@ export type PrGrant =
 			readonly notices: ReadonlyArray<string>;
 	  }
 	/** The round was already granted on this PR — a re-run reconciles and doubles nothing. */
-	| {readonly _tag: "Held"; readonly pr: number; readonly round: number; readonly cap: number}
+	| { readonly _tag: "Held"; readonly pr: number; readonly round: number; readonly cap: number }
 	/** The PR's own budget is not spent, so there is no round there to clear. */
-	| {readonly _tag: "Unspent"; readonly pr: number; readonly rounds: number; readonly cap: number}
+	| { readonly _tag: "Unspent"; readonly pr: number; readonly rounds: number; readonly cap: number }
 	/** No pull request carries this task — an epic child, a chore lane, a lane before its first PR. */
-	| {readonly _tag: "NoPull"; readonly why: string}
+	| { readonly _tag: "NoPull"; readonly why: string }
 	| {
 			readonly _tag: "Refused";
 			readonly code: number;
@@ -133,8 +133,8 @@ export const grantPrRound = (
 	request: PrGrantRequest,
 ): Effect.Effect<PrGrant, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {verb, issue} = request;
-		if (issue === null) return {_tag: "NoPull" as const, why: request.noIssueWhy};
+		const { verb, issue } = request;
+		if (issue === null) return { _tag: "NoPull" as const, why: request.noIssueWhy };
 
 		if (isBareAtReference(request.rationale)) {
 			return refused(
@@ -218,10 +218,10 @@ export const grantPrRound = (
 		const cap = effectiveCap(granted);
 		const held = recorded.rows.find((row) => row.honoured && row.round === rounds);
 		if (held !== undefined) {
-			return {_tag: "Held" as const, pr, round: held.round, cap};
+			return { _tag: "Held" as const, pr, round: held.round, cap };
 		}
 		if (rounds < cap) {
-			return {_tag: "Unspent" as const, pr, rounds, cap};
+			return { _tag: "Unspent" as const, pr, rounds, cap };
 		}
 
 		const viewer = yield* viewerLogin;
@@ -289,7 +289,7 @@ export const grantPrRound = (
 				`${verb}: the authorization write on #${pr} failed, so whether it posted is UNKNOWN and no marker was written — read #${pr} before re-running. The log is unappended.`,
 			);
 		}
-		const markerBody = capClearance.emit({round, at: stamped});
+		const markerBody = capClearance.emit({ round, at: stamped });
 		const marker = yield* createComment(repo, pr, markerBody);
 		if (marker._tag === "Failure") {
 			return refused(
@@ -352,11 +352,11 @@ export const prGrantAnswer = (
 } | null => {
 	switch (grant._tag) {
 		case "Granted":
-			return {number: grant.pr, answer: "cleared", round: grant.round, cap: grant.cap};
+			return { number: grant.pr, answer: "cleared", round: grant.round, cap: grant.cap };
 		case "Held":
-			return {number: grant.pr, answer: "held", round: grant.round, cap: grant.cap};
+			return { number: grant.pr, answer: "held", round: grant.round, cap: grant.cap };
 		case "Unspent":
-			return {number: grant.pr, answer: "unspent", round: grant.rounds, cap: grant.cap};
+			return { number: grant.pr, answer: "unspent", round: grant.rounds, cap: grant.cap };
 		default:
 			return null;
 	}

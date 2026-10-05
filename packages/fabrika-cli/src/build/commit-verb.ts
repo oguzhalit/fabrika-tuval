@@ -19,13 +19,13 @@
  * - **The message is read back off the created commit** (`9`). Everything upstream is a claim about
  *   what was *sent*; only `git log` says what git *recorded*, and the two differed in the incident.
  */
-import {Effect, FileSystem} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {StdinRead} from "../io/stdin.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {leakRefusal, readAuthored} from "./authored.ts";
-import {requireSession} from "./claim.ts";
+import { Effect, FileSystem } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { StdinRead } from "../io/stdin.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { leakRefusal, readAuthored } from "./authored.ts";
+import { requireSession } from "./claim.ts";
 import {
 	BAD_SECTIONS,
 	COMMIT_NOT_CREATED,
@@ -43,12 +43,12 @@ import {
 	redact,
 	subjectOf,
 } from "./commit-message.ts";
-import {commitFromFile, commitFromStdin, commitMessage, headSha, stagedPaths} from "./git.ts";
-import {laneNumber} from "./lane.ts";
-import {requireLane} from "./lane-guard.ts";
-import {closingTargets, proseOf} from "./pr-body.ts";
-import {laneScratchDir} from "./scratch-verb.ts";
-import {openPull, resolveTargetRepo} from "./target.ts";
+import { commitFromFile, commitFromStdin, commitMessage, headSha, stagedPaths } from "./git.ts";
+import { laneNumber } from "./lane.ts";
+import { requireLane } from "./lane-guard.ts";
+import { closingTargets, proseOf } from "./pr-body.ts";
+import { laneScratchDir } from "./scratch-verb.ts";
+import { openPull, resolveTargetRepo } from "./target.ts";
 
 const VERB = "build commit";
 
@@ -69,8 +69,8 @@ export interface CommitOptions {
 }
 
 type Message =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Message"; readonly text: string};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Message"; readonly text: string };
 
 export const runCommit = (
 	options: CommitOptions,
@@ -222,8 +222,8 @@ const readMessage = (
 		if (path === null) {
 			const authored = readAuthored(SURFACE, yield* options.stdin);
 			return authored._tag === "Refused"
-				? {_tag: "Refused" as const, outcome: authored.outcome}
-				: {_tag: "Message" as const, text: authored.text};
+				? { _tag: "Refused" as const, outcome: authored.outcome }
+				: { _tag: "Message" as const, text: authored.text };
 		}
 		if (!isLaneScratchLeaf(path, laneScratchDir(options.tmpRoot, session, number, nonce))) {
 			return {
@@ -239,9 +239,9 @@ const readMessage = (
 		// A read that FAILED and a file that is EMPTY are different answers, so they never fold: the
 		// first is UNKNOWN (`11`), the second is a proven defect in what the caller wrote (`4`).
 		const attempt = yield* fs.readFileString(path).pipe(
-			Effect.map((text) => ({_tag: "Read" as const, text})),
+			Effect.map((text) => ({ _tag: "Read" as const, text })),
 			Effect.catchTag("PlatformError", (cause) =>
-				Effect.succeed({_tag: "Unreadable" as const, reason: cause.message}),
+				Effect.succeed({ _tag: "Unreadable" as const, reason: cause.message }),
 			),
 		);
 		if (attempt._tag === "Unreadable") {
@@ -264,5 +264,5 @@ const readMessage = (
 						notes,
 					),
 				}
-			: {_tag: "Message" as const, text};
+			: { _tag: "Message" as const, text };
 	});

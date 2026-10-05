@@ -16,7 +16,7 @@
  * unreadable doc, a missing marker pair, a doc with no format sections, and an empty registry all
  * refuse, because each would otherwise let the reconciliation report agreement over nothing.
  */
-import type {WireFormat} from "./format.ts";
+import type { WireFormat } from "./format.ts";
 
 /** The doc this module owns, repo-relative — the one place its location is stated. */
 export const DOC_PATH = "claude-plugins/fabrika/docs/wire-formats.md";
@@ -52,7 +52,7 @@ export interface IndexDocFinding {
 }
 
 export type IndexDocReport =
-	| {readonly _tag: "ZeroScope"; readonly reason: string}
+	| { readonly _tag: "ZeroScope"; readonly reason: string }
 	| {
 			readonly _tag: "Scanned";
 			readonly registered: number;
@@ -61,8 +61,8 @@ export type IndexDocReport =
 	  };
 
 export type IndexDocRewrite =
-	| {readonly _tag: "Rewritten"; readonly markdown: string}
-	| {readonly _tag: "ZeroScope"; readonly reason: string};
+	| { readonly _tag: "Rewritten"; readonly markdown: string }
+	| { readonly _tag: "ZeroScope"; readonly reason: string };
 
 const cell = (names: ReadonlyArray<string>): string =>
 	names.length === 0 ? "—" : names.map((name) => `\`${name}\``).join(", ");
@@ -75,7 +75,7 @@ export const renderProjection = (formats: ReadonlyArray<WireFormat>): string =>
 		"| Format | Owner module | Producers | Consumers |",
 		"| --- | --- | --- | --- |",
 		...formats.map(
-			({key, module, producers, consumers}) =>
+			({ key, module, producers, consumers }) =>
 				`| \`${key}\` | [\`${module}\`](${TO_ROOT}${module}) | ${cell(producers)} | ${cell(consumers)} |`,
 		),
 	].join("\n");
@@ -87,7 +87,7 @@ type Region =
 			readonly before: string;
 			readonly after: string;
 	  }
-	| {readonly _tag: "Missing"; readonly reason: string};
+	| { readonly _tag: "Missing"; readonly reason: string };
 
 const locateRegion = (markdown: string): Region => {
 	const begin = markdown.indexOf(BEGIN_MARKER);
@@ -123,11 +123,11 @@ export const conformIndexDoc = (
 		};
 	}
 	if (markdown.trim() === "") {
-		return {_tag: "ZeroScope", reason: `${DOC_PATH} is empty — nothing was read to reconcile`};
+		return { _tag: "ZeroScope", reason: `${DOC_PATH} is empty — nothing was read to reconcile` };
 	}
 
 	const region = locateRegion(markdown);
-	if (region._tag === "Missing") return {_tag: "ZeroScope", reason: region.reason};
+	if (region._tag === "Missing") return { _tag: "ZeroScope", reason: region.reason };
 
 	const documented = documentedKeys(markdown);
 	if (documented.length === 0) {
@@ -164,7 +164,7 @@ export const conformIndexDoc = (
 		});
 	}
 
-	return {_tag: "Scanned", registered: formats.length, documented: documented.length, findings};
+	return { _tag: "Scanned", registered: formats.length, documented: documented.length, findings };
 };
 
 /**
@@ -186,7 +186,7 @@ export const rewriteIndexDoc = (
 		};
 	}
 	const region = locateRegion(markdown);
-	if (region._tag === "Missing") return {_tag: "ZeroScope", reason: region.reason};
+	if (region._tag === "Missing") return { _tag: "ZeroScope", reason: region.reason };
 
 	return {
 		_tag: "Rewritten",
@@ -196,4 +196,4 @@ export const rewriteIndexDoc = (
 
 /** One line per finding, so a red names what to fix without opening the doc. */
 export const describeIndexFindings = (findings: ReadonlyArray<IndexDocFinding>): string =>
-	findings.map(({subject, law, detail}) => `${subject}: ${law} — ${detail}`).join("\n");
+	findings.map(({ subject, law, detail }) => `${subject}: ${law} — ${detail}`).join("\n");

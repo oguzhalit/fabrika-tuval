@@ -9,13 +9,13 @@
  * `unresolved-threads-guard.yml`'s accounting question (is every open thread named in the verdict);
  * that one is enforced and stays there.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {listReviewThreads} from "./github.ts";
-import {badNumber, resolvePull, resolveTargetRepo, scannedLine} from "./target.ts";
-import {classOfThread, excerptOf, openingAuthorOf, siteOf} from "./threads.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { INCOMPLETE_SCAN, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { listReviewThreads } from "./github.ts";
+import { badNumber, resolvePull, resolveTargetRepo, scannedLine } from "./target.ts";
+import { classOfThread, excerptOf, openingAuthorOf, siteOf } from "./threads.ts";
 
 const VERB = "ship threads";
 
@@ -30,7 +30,7 @@ export const runThreads = (
 	options: ThreadsOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -41,12 +41,12 @@ export const runThreads = (
 		const unreadable = (reason: string): string =>
 			`${VERB}: cannot read #${pr}'s review threads: ${reason} — UNKNOWN, never zero.`;
 
-		const target = yield* resolvePull(VERB, repo, pr, {unknownMessage: unreadable});
+		const target = yield* resolvePull(VERB, repo, pr, { unknownMessage: unreadable });
 		if (target._tag === "Refused") return target.outcome;
 
 		const listed = yield* listReviewThreads(repo, pr);
 		if (listed._tag === "Failure") return refuse(PRECONDITION_UNKNOWN, unreadable(listed.reason));
-		const {declared, threads} = listed.value;
+		const { declared, threads } = listed.value;
 		const diagnostics = [scannedLine(VERB, threads.length, "thread", `${declared} declared`)];
 		if (threads.length < declared) {
 			return refuse(

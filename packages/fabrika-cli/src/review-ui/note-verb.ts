@@ -10,17 +10,17 @@
  * The note carries **no head**. A blocker note is a dated fact about the PR, not a verdict over a
  * tree — so it is append-only too: a dated fact is never edited in place.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {createComment, getComment} from "../io/issues.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {readAdvisory} from "../review/advisory.ts";
-import {type AuthoredSurface, leakRefusal, readAuthored} from "../review/authored.ts";
-import {openPull, resolveTargetRepo} from "../review/target.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {read as readMarker} from "../wire/verdict-marker.ts";
-import {OFF_VOCABULARY, PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN} from "./codes.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { createComment, getComment } from "../io/issues.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { readAdvisory } from "../review/advisory.ts";
+import { type AuthoredSurface, leakRefusal, readAuthored } from "../review/authored.ts";
+import { openPull, resolveTargetRepo } from "../review/target.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { read as readMarker } from "../wire/verdict-marker.ts";
+import { OFF_VOCABULARY, PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN } from "./codes.ts";
 
 const VERB = "review-ui note";
 
@@ -53,7 +53,7 @@ export const runNote = (
 	options: NoteOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr} = options;
+		const { pr } = options;
 		if (!Number.isInteger(pr) || pr <= 0) {
 			return refuse(FAILED, `${VERB}: ${pr} is not a pull-request number.`);
 		}

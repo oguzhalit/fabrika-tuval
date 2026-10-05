@@ -2,22 +2,22 @@
  * `plan` over one standing single-select field: the options the table lacks are added, a blank
  * description is filled, and a description a person wrote is kept — none of it is drift.
  */
-import {describe, expect, it} from "vitest";
-import type {ProjectField, ProjectSnapshot, SelectOption} from "../io/projects.ts";
-import {markedSection} from "./readme-section.ts";
-import {describeStep, plan, type Step} from "./reconcile.ts";
-import {ORIGINS, type TableShape} from "./shape.ts";
+import { describe, expect, it } from "vitest";
+import type { ProjectField, ProjectSnapshot, SelectOption } from "../io/projects.ts";
+import { markedSection } from "./readme-section.ts";
+import { describeStep, plan, type Step } from "./reconcile.ts";
+import { ORIGINS, type TableShape } from "./shape.ts";
 
 const originSpec = {
 	_tag: "SingleSelect",
 	name: "Origin",
-	options: ORIGINS.map((origin) => ({...origin, color: "GRAY" as const})),
+	options: ORIGINS.map((origin) => ({ ...origin, color: "GRAY" as const })),
 } as const;
 
 const SHAPE: TableShape = {
 	title: "widgets table",
 	shortDescription: "",
-	readme: {name: "table", body: "# How to use this table"},
+	readme: { name: "table", body: "# How to use this table" },
 	fields: [originSpec],
 	views: [],
 	legacy: [],
@@ -37,13 +37,13 @@ const option = (name: string, description = described(name)): SelectOption => ({
 const projectWith = (options: ReadonlyArray<SelectOption>): ProjectSnapshot => ({
 	id: "PVT_20",
 	number: 20,
-	owner: {kind: "Organization", login: "acme"},
+	owner: { kind: "Organization", login: "acme" },
 	url: "https://github.com/orgs/acme/projects/20",
 	title: "widgets table",
 	createdAt: "2026-01-01T00:00:00.000Z",
 	shortDescription: "",
 	readme: markedSection(SHAPE.readme),
-	fields: [{_tag: "SingleSelect", id: "F_origin", databaseId: 1, name: "Origin", options}],
+	fields: [{ _tag: "SingleSelect", id: "F_origin", databaseId: 1, name: "Origin", options }],
 	views: [],
 });
 
@@ -55,9 +55,12 @@ const applied = (project: ProjectSnapshot, step: Step): ProjectSnapshot => {
 		id: step.fieldId,
 		databaseId: 1,
 		name: step.field,
-		options: [...step.kept, ...step.added.map((added) => ({...added, id: `minted_${added.name}`}))],
+		options: [
+			...step.kept,
+			...step.added.map((added) => ({ ...added, id: `minted_${added.name}` })),
+		],
 	};
-	return {...project, fields: [field]};
+	return { ...project, fields: [field] };
 };
 
 const optionSteps = (project: ProjectSnapshot) =>
@@ -80,7 +83,7 @@ describe("plan over a standing single-select field", () => {
 				fieldId: "F_origin",
 				field: "Origin",
 				kept: project.fields[0]?._tag === "SingleSelect" ? project.fields[0].options : [],
-				added: [{name: "hand-start", color: "GRAY", description: described("hand-start")}],
+				added: [{ name: "hand-start", color: "GRAY", description: described("hand-start") }],
 				filled: [],
 			},
 		]);

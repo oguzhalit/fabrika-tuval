@@ -1,5 +1,5 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	configAtCommit,
 	errOut,
@@ -10,7 +10,7 @@ import {
 	type Scripted,
 	unconfigured,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
+import type { ExecResult } from "../io/exec.ts";
 import {
 	GOVERNED_FILTER,
 	INCOMPLETE_SCAN,
@@ -19,8 +19,8 @@ import {
 	STALE_HEAD,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {runDiff} from "./diff-verb.ts";
-import type {FilterPlacement} from "./filter-spike.ts";
+import { runDiff } from "./diff-verb.ts";
+import type { FilterPlacement } from "./filter-spike.ts";
 import {
 	binding,
 	DIFF,
@@ -36,7 +36,7 @@ const PULL = /GET .*\/repos\/o\/r\/pulls\/4321$/;
 const NOT_FOUND = '{"message":"Not Found"}';
 
 /** A canned payload as the platform serves it — the fixtures speak `ExecResult`, the seam HTTP. */
-const served = (result: ExecResult, status = 200): HttpReply => ({status, body: result.stdout});
+const served = (result: ExecResult, status = 200): HttpReply => ({ status, body: result.stdout });
 
 /**
  * How many times the run asked GitHub for `pulls/4321`.
@@ -70,7 +70,7 @@ const options = {
 	filterPlacement: null as FilterPlacement | null,
 	exclude: null as string | null,
 	cwd: "/repo",
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 };
 
 const shell = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) => {
@@ -80,7 +80,7 @@ const shell = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof option
 		// The config arms of the exclusion set are part of the verb's reads now, so every run stands
 		// on the unconfigured checkout unless a case layers a declared `.fabrika.jsonc` over it.
 		out: Effect.runPromise(
-			Effect.provide(runDiff({...options, ...overrides}), Layer.merge(fake.layer, unconfigured)),
+			Effect.provide(runDiff({ ...options, ...overrides }), Layer.merge(fake.layer, unconfigured)),
 		),
 	};
 };
@@ -155,13 +155,13 @@ describe("runDiff", () => {
 	});
 
 	it("makes the same zero-file refusal `review scope` does, so neither serves a review over nothing", async () => {
-		const out = await run([[PULL, served(pull({changedFiles: 0}))]]);
+		const out = await run([[PULL, served(pull({ changedFiles: 0 }))]]);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-1)).toContain("refusing to serve an empty diff as a reviewable one.");
 	});
 
 	it("refuses an absent PR on 7 and an unreadable diff on 11", async () => {
-		expect((await run([[PULL, {status: 404, body: NOT_FOUND}]])).code).toBe(ZERO_SCOPE);
+		expect((await run([[PULL, { status: 404, body: NOT_FOUND }]])).code).toBe(ZERO_SCOPE);
 		const unreadable = await run([
 			[PULL, served(pull())],
 			...binding(),
@@ -182,20 +182,20 @@ describe("runDiff", () => {
  */
 describe("runDiff proves completeness against git's own count", () => {
 	it("serves a rename git paired into one entry, though GitHub declares it as two files", async () => {
-		const out = await run(green(RENAME_DIFF, {changedFiles: 2}, ["src/new.ts"]));
+		const out = await run(green(RENAME_DIFF, { changedFiles: 2 }, ["src/new.ts"]));
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(RENAME_DIFF);
 	});
 
 	it("reports the git-vs-GitHub disagreement on stderr instead of refusing on it", async () => {
-		const out = await run(green(RENAME_DIFF, {changedFiles: 2}, ["src/new.ts"]));
+		const out = await run(green(RENAME_DIFF, { changedFiles: 2 }, ["src/new.ts"]));
 		expect(out.stderr.at(-1)).toBe(
 			"review diff: git and GitHub disagree on #4321's file count (1 vs 2) — different merge base and different rename detection; reported, never refused on.",
 		);
 	});
 
 	it("takes both counts from the same range, and never from the PR's declared count", async () => {
-		const {fake, out} = shell(green());
+		const { fake, out } = shell(green());
 		await out;
 		expect(fake.calls).toContain(
 			`git diff --no-ext-diff --no-color --find-renames --src-prefix=a/ --dst-prefix=b/ --name-only -z 0f1e2d3c4b5a69788796a5b4c3d2e1f009182736...${HEAD}`,
@@ -212,7 +212,7 @@ describe("runDiff proves completeness against git's own count", () => {
  */
 describe("runDiff binds its bytes to a commit", () => {
 	it("reads the object database and never the PR-number diff endpoint", async () => {
-		const {fake, out} = shell(green());
+		const { fake, out } = shell(green());
 		const result = await out;
 		expect(result.stdout).toBe(DIFF);
 		expect(fake.calls).toContain(
@@ -225,7 +225,7 @@ describe("runDiff binds its bytes to a commit", () => {
 	it("serves the scoped commit's bytes through a rewind, which the post-time re-resolve passes clean", async () => {
 		// A push landed and was rewound back onto HEAD: the live head still equals --sha, so `review
 		// post`'s STALE_HEAD never fires — only a read taken AT the commit survives this.
-		const {fake, out} = shell(green(), {sha: HEAD});
+		const { fake, out } = shell(green(), { sha: HEAD });
 		const result = await out;
 		expect(result.code).toBe(0);
 		expect(result.stdout).toBe(DIFF);
@@ -234,7 +234,7 @@ describe("runDiff binds its bytes to a commit", () => {
 	});
 
 	it("refuses on 12 when --sha is not the PR's head, instead of reading whatever is live", async () => {
-		const {fake, out} = shell(green(), {sha: OLD_HEAD});
+		const { fake, out } = shell(green(), { sha: OLD_HEAD });
 		const result = await out;
 		expect(result.code).toBe(STALE_HEAD);
 		expect(result.stdout).toBe("");
@@ -245,7 +245,7 @@ describe("runDiff binds its bytes to a commit", () => {
 	});
 
 	it("refuses a --sha that is not a head SHA on 10", async () => {
-		const out = await run(green(), {sha: "HEAD~1"});
+		const out = await run(green(), { sha: "HEAD~1" });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toContain("is not a head SHA");
 	});
@@ -320,22 +320,22 @@ diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
 @@ -1,1 +1,2 @@
 +  effect:
 `;
-	const placement = {filterPlacement: "after" as const, exclude: "README.md"};
+	const placement = { filterPlacement: "after" as const, exclude: "README.md" };
 	const configured = (config: Record<string, unknown>) =>
 		Layer.merge(
 			fakeSeams(green()).layer,
-			fakeFs({files: {"/repo/.fabrika.jsonc": JSON.stringify(config)}}).layer,
+			fakeFs({ files: { "/repo/.fabrika.jsonc": JSON.stringify(config) } }).layer,
 		);
 
 	it("serves byte-identical bytes and the same diagnostic when the keys are absent, empty, or the file declares none", async () => {
 		const plain = await run(green(), placement);
 		const braces = await Effect.runPromise(
-			Effect.provide(runDiff({...options, ...placement}), configured({})),
+			Effect.provide(runDiff({ ...options, ...placement }), configured({})),
 		);
 		const empty = await Effect.runPromise(
 			Effect.provide(
-				runDiff({...options, ...placement}),
-				configured({reviewFilterExclusions: [], reviewFilterUnexclude: []}),
+				runDiff({ ...options, ...placement }),
+				configured({ reviewFilterExclusions: [], reviewFilterUnexclude: [] }),
 			),
 		);
 		expect(braces.stdout).toBe(plain.stdout);
@@ -353,12 +353,12 @@ diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
 	it("extends the exclusion set with the declared globs", async () => {
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runDiff({...options, ...placement}),
+				runDiff({ ...options, ...placement }),
 				Layer.merge(
 					fakeSeams(green()).layer,
 					fakeFs({
 						files: {
-							"/repo/.fabrika.jsonc": JSON.stringify({reviewFilterExclusions: ["**/cart.ts"]}),
+							"/repo/.fabrika.jsonc": JSON.stringify({ reviewFilterExclusions: ["**/cart.ts"] }),
 						},
 					}).layer,
 				),
@@ -373,12 +373,12 @@ diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
 	it("names a removed default in the header and the diagnostic, and serves its bytes", async () => {
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runDiff({...options, filterPlacement: "after", cwd: "/repo"}),
+				runDiff({ ...options, filterPlacement: "after", cwd: "/repo" }),
 				Layer.merge(
 					fakeSeams(green(LOCK_DIFF, {}, ["src/cart.ts", "pnpm-lock.yaml"])).layer,
 					fakeFs({
 						files: {
-							"/repo/.fabrika.jsonc": JSON.stringify({reviewFilterUnexclude: ["pnpm-lock.yaml"]}),
+							"/repo/.fabrika.jsonc": JSON.stringify({ reviewFilterUnexclude: ["pnpm-lock.yaml"] }),
 						},
 					}).layer,
 				),
@@ -394,8 +394,8 @@ diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
 	it("refuses an undecodable exclusion key on 11", async () => {
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runDiff({...options, ...placement}),
-				configured({reviewFilterExclusions: "src/**"}),
+				runDiff({ ...options, ...placement }),
+				configured({ reviewFilterExclusions: "src/**" }),
 			),
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -408,8 +408,8 @@ diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
 	it("refuses a removal naming a non-default on 11 — only a default's exact pattern may be removed", async () => {
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runDiff({...options, ...placement}),
-				configured({reviewFilterUnexclude: ["dist/**"]}),
+				runDiff({ ...options, ...placement }),
+				configured({ reviewFilterUnexclude: ["dist/**"] }),
 			),
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -448,9 +448,9 @@ diff --git a/src/cart.ts b/src/cart.ts
 	) =>
 		Effect.runPromise(
 			Effect.provide(
-				runDiff({...options, ...overrides}),
+				runDiff({ ...options, ...overrides }),
 				Layer.merge(
-					fakeSeams([...configAtCommit(JSON.stringify({governedRoots: roots})), ...script]).layer,
+					fakeSeams([...configAtCommit(JSON.stringify({ governedRoots: roots })), ...script]).layer,
 					unconfigured,
 				),
 			),
@@ -484,17 +484,17 @@ diff --git a/src/cart.ts b/src/cart.ts
 
 describe("diff reads filter configuration only when filtering", () => {
 	it.each([
-		{reviewFilterExclusions: "src/**"},
-		{reviewFilterUnexclude: ["not-a-default"]},
-		{governedRoots: []},
+		{ reviewFilterExclusions: "src/**" },
+		{ reviewFilterUnexclude: ["not-a-default"] },
+		{ governedRoots: [] },
 	])("ignores unused malformed configuration %j", async (config) => {
 		const read = (filterPlacement: FilterPlacement | null) =>
 			Effect.runPromise(
 				Effect.provide(
-					runDiff({...options, filterPlacement}),
+					runDiff({ ...options, filterPlacement }),
 					Layer.merge(
 						fakeSeams(green()).layer,
-						fakeFs({files: {"/repo/.fabrika.jsonc": JSON.stringify(config)}}).layer,
+						fakeFs({ files: { "/repo/.fabrika.jsonc": JSON.stringify(config) } }).layer,
 					),
 				),
 			);
@@ -509,11 +509,13 @@ describe("diff reads filter configuration only when filtering", () => {
 		const read = (filterPlacement: FilterPlacement | null) =>
 			Effect.runPromise(
 				Effect.provide(
-					runDiff({...options, filterPlacement}),
+					runDiff({ ...options, filterPlacement }),
 					Layer.merge(
 						fakeSeams(green()).layer,
-						fakeFs({files: {"/repo/.fabrika.jsonc": "{}"}, unreadable: ["/repo/.fabrika.jsonc"]})
-							.layer,
+						fakeFs({
+							files: { "/repo/.fabrika.jsonc": "{}" },
+							unreadable: ["/repo/.fabrika.jsonc"],
+						}).layer,
 					),
 				),
 			);

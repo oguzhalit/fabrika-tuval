@@ -8,10 +8,10 @@
  */
 
 import * as grillAnswer from "../wire/grill-answer.ts";
-import {questionId, roundDigest, stampOf} from "../wire/grill-marker.ts";
+import { questionId, roundDigest, stampOf } from "../wire/grill-marker.ts";
 import * as grillRuling from "../wire/grill-ruling.ts";
 import * as grillSupersede from "../wire/grill-supersede.ts";
-import {addressBlocks, composeRoundComment, digestRound, parseQuestionBlocks} from "./round.ts";
+import { addressBlocks, composeRoundComment, digestRound, parseQuestionBlocks } from "./round.ts";
 
 export const AT = stampOf(new Date("2026-08-09T18:36:48.000Z")) ?? never("the fixture stamp");
 
@@ -57,10 +57,10 @@ const id = (raw: string) => questionId(raw) ?? never(`the fixture question id "$
 const digest = (raw: string) => roundDigest(raw) ?? never(`the fixture digest "${raw}"`);
 
 export const rulingComment = (question: string, bound: string): string =>
-	grillRuling.emit({question: id(question), digest: digest(bound), at: AT});
+	grillRuling.emit({ question: id(question), digest: digest(bound), at: AT });
 
 export const answerComment = (question: string, bound: string): string =>
-	grillAnswer.emit({question: id(question), digest: digest(bound), at: AT});
+	grillAnswer.emit({ question: id(question), digest: digest(bound), at: AT });
 
 export const supersedeComment = (
 	entries: ReadonlyArray<{
@@ -94,7 +94,7 @@ export const commentsPayload = (comments: ReadonlyArray<FakeComment>): string =>
 	JSON.stringify(
 		comments.map((comment) => ({
 			id: comment.id,
-			user: {login: comment.author},
+			user: { login: comment.author },
 			created_at: "2026-08-09T18:00:00Z",
 			updated_at: "2026-08-09T18:00:00Z",
 			body: comment.body,
@@ -115,6 +115,6 @@ export const sessionPayload = (
 		title: options.title ?? "sozluk moderation model",
 		body: options.body ?? "",
 		state: "open",
-		labels: (options.labels ?? ["grilling:session"]).map((name) => ({name})),
+		labels: (options.labels ?? ["grilling:session"]).map((name) => ({ name })),
 		html_url: `https://example.test/issues/${session}`,
 	});

@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import type {CommentRecord} from "../io/issues.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import type { CommentRecord } from "../io/issues.ts";
 import {
 	answerComment,
 	roundComment,
@@ -33,9 +33,9 @@ const BOUND = roundDigestOf(1);
 const PERMISSION = /^GET .*\/repos\/o\/r\/collaborators\/[a-z-]+\/permission$/;
 const ISSUE = /^GET .*\/repos\/o\/r\/issues\/9412$/;
 
-const served = (payload: unknown): HttpReply => ({status: 200, body: JSON.stringify(payload)});
-const NOT_FOUND: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
-const GATEWAY: HttpReply = {status: 502, body: '{"message":"Bad gateway"}'};
+const served = (payload: unknown): HttpReply => ({ status: 200, body: JSON.stringify(payload) });
+const NOT_FOUND: HttpReply = { status: 404, body: '{"message":"Not Found"}' };
+const GATEWAY: HttpReply = { status: 502, body: '{"message":"Bad gateway"}' };
 
 describe("normalizeTopic", () => {
 	it.each([
@@ -56,20 +56,20 @@ describe("resolveSession splits absent from unreadable", () => {
 		Effect.runPromise(Effect.provide(resolveSession("o/r", 9412), fakeSeams(script).layer));
 
 	it("resolves a labelled issue", async () => {
-		expect(await resolve([[ISSUE, {status: 200, body: sessionPayload(9412)}]])).toMatchObject({
+		expect(await resolve([[ISSUE, { status: 200, body: sessionPayload(9412) }]])).toMatchObject({
 			_tag: "Session",
 		});
 	});
 
 	it("treats an issue without the session label as absent, not as a session", async () => {
 		expect(
-			await resolve([[ISSUE, {status: 200, body: sessionPayload(9412, {labels: ["bug"]})}]]),
-		).toEqual({_tag: "Absent"});
+			await resolve([[ISSUE, { status: 200, body: sessionPayload(9412, { labels: ["bug"] }) }]]),
+		).toEqual({ _tag: "Absent" });
 	});
 
 	it("keeps a 404 and a 502 apart", async () => {
-		expect(await resolve([[ISSUE, NOT_FOUND]])).toEqual({_tag: "Absent"});
-		expect(await resolve([[ISSUE, GATEWAY]])).toMatchObject({_tag: "Unknown"});
+		expect(await resolve([[ISSUE, NOT_FOUND]])).toEqual({ _tag: "Absent" });
+		expect(await resolve([[ISSUE, GATEWAY]])).toMatchObject({ _tag: "Unknown" });
 	});
 
 	it("names the label the whole group keys on", () => {
@@ -93,7 +93,7 @@ describe("scanning rounds", () => {
 			comment(1, "acme-founder", "grill-round: 1\n\n### Background\nprose\n"),
 		]);
 		expect(scan.rounds).toEqual([]);
-		expect(scan.broken[0]).toMatchObject({round: 1, comment: 1});
+		expect(scan.broken[0]).toMatchObject({ round: 1, comment: 1 });
 	});
 
 	it("counts a broken round toward the next round number — a re-post must not collide", () => {
@@ -109,7 +109,7 @@ describe("scanning rounds", () => {
 });
 
 describe("scanMarkers resolves authority before it counts anything", () => {
-	const granted = (permission: string): HttpReply => served({permission});
+	const granted = (permission: string): HttpReply => served({ permission });
 
 	const scan = (comments: ReadonlyArray<CommentRecord>, permission = granted("write")) =>
 		Effect.runPromise(
@@ -131,12 +131,12 @@ describe("scanMarkers resolves authority before it counts anything", () => {
 		);
 		if (result._tag !== "Scanned") throw new Error("expected a scan");
 		expect(result.scan.rulings).toEqual([]);
-		expect(result.scan.disregarded[0]).toMatchObject({reason: "unauthorized"});
+		expect(result.scan.disregarded[0]).toMatchObject({ reason: "unauthorized" });
 	});
 
 	it("returns UNKNOWN, naming the marker, when a permission read fails", async () => {
 		const result = await scan([comment(3, "acme-founder", rulingComment("R1.2", BOUND))], GATEWAY);
-		expect(result).toMatchObject({_tag: "Unknown", login: "acme-founder", subject: "R1.2"});
+		expect(result).toMatchObject({ _tag: "Unknown", login: "acme-founder", subject: "R1.2" });
 	});
 
 	it("resolves each distinct author once", async () => {
@@ -155,18 +155,18 @@ describe("scanMarkers resolves authority before it counts anything", () => {
 
 	it("gates the supersede marker at the ACL too — clear is what a downstream skill keys on", async () => {
 		const result = await scan(
-			[comment(4, "stranger", supersedeComment([{question: "R1.2", digest: BOUND, round: 2}]))],
+			[comment(4, "stranger", supersedeComment([{ question: "R1.2", digest: BOUND, round: 2 }]))],
 			granted("read"),
 		);
 		if (result._tag !== "Scanned") throw new Error("expected a scan");
 		expect(retirements(result.scan).size).toBe(0);
-		expect(result.scan.disregarded[0]).toMatchObject({reason: "unauthorized"});
+		expect(result.scan.disregarded[0]).toMatchObject({ reason: "unauthorized" });
 	});
 
 	it("keeps the earliest retiring round when a question is retired twice", async () => {
 		const result = await scan([
-			comment(4, "acme-founder", supersedeComment([{question: "R1.2", digest: BOUND, round: 3}])),
-			comment(5, "acme-founder", supersedeComment([{question: "R1.2", digest: BOUND, round: 2}])),
+			comment(4, "acme-founder", supersedeComment([{ question: "R1.2", digest: BOUND, round: 3 }])),
+			comment(5, "acme-founder", supersedeComment([{ question: "R1.2", digest: BOUND, round: 2 }])),
 		]);
 		if (result._tag !== "Scanned") throw new Error("expected a scan");
 		expect(retirements(result.scan).get("R1.2" as never)).toBe(2);

@@ -7,22 +7,22 @@
  * The spawner is still provided, and it is an assertion in its own right: a recovery round
  * spawns `git worktree prune`, so a scripted-empty `calls` array is the proof no round ran.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs, fakeShell} from "../fakes.test-support.ts";
-import type {ChildOutcome} from "../io/exec.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {UNPLANNABLE_WORKTREE} from "./codes.ts";
-import {RECOVERY_ATTEMPTS} from "./worktree-create.ts";
-import {runWorktreeCreate} from "./worktree-create-verb.ts";
-import {describeOutcome, GIT_TIMEOUT_SECONDS, withConcurrencyRecovery} from "./worktree-owner.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs, fakeShell } from "../fakes.test-support.ts";
+import type { ChildOutcome } from "../io/exec.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { UNPLANNABLE_WORKTREE } from "./codes.ts";
+import { RECOVERY_ATTEMPTS } from "./worktree-create.ts";
+import { runWorktreeCreate } from "./worktree-create-verb.ts";
+import { describeOutcome, GIT_TIMEOUT_SECONDS, withConcurrencyRecovery } from "./worktree-owner.ts";
 
 const PLACEHOLDER_HEAD = "fatal: bad object worktrees/agent-7f2/HEAD\n";
 const INCOMPLETE_ADMIN_DIR = "fatal: failed to read .git/worktrees/agent-7f2/commondir\n";
 
 const ran = (
 	stderr: string,
-	over: Partial<Extract<ChildOutcome, {_tag: "Ran"}>>,
+	over: Partial<Extract<ChildOutcome, { _tag: "Ran" }>>,
 ): ChildOutcome => ({
 	_tag: "Ran",
 	exitCode: 1,
@@ -33,9 +33,9 @@ const ran = (
 	...over,
 });
 
-const timedOut = (stderr: string): ChildOutcome => ran(stderr, {exitCode: null, timedOut: true});
+const timedOut = (stderr: string): ChildOutcome => ran(stderr, { exitCode: null, timedOut: true });
 
-const succeeded: ChildOutcome = ran("", {exitCode: 0});
+const succeeded: ChildOutcome = ran("", { exitCode: 0 });
 
 /** Replay one outcome per attempt, counting the attempts and holding the last after they run out. */
 const scripted = (outcomes: ReadonlyArray<ChildOutcome>) => {
@@ -58,7 +58,7 @@ const recover = (outcomes: ReadonlyArray<ChildOutcome>) => {
 	const shell = fakeShell([]);
 	return Effect.runPromise(
 		Effect.provide(withConcurrencyRecovery(script.command, "/repo", {}), shell.layer),
-	).then((attempted) => ({attempted, attempts: script.attempts, spawned: shell.calls}));
+	).then((attempted) => ({ attempted, attempts: script.attempts, spawned: shell.calls }));
 };
 
 describe("a timed-out git command", () => {
@@ -66,7 +66,7 @@ describe("a timed-out git command", () => {
 		["PlaceholderHead", PLACEHOLDER_HEAD],
 		["IncompleteAdminDir", INCOMPLETE_ADMIN_DIR],
 	])("is refused on its first attempt though its stderr matches %s", async (_arm, stderr) => {
-		const {attempted, attempts, spawned} = await recover([timedOut(stderr)]);
+		const { attempted, attempts, spawned } = await recover([timedOut(stderr)]);
 		expect(attempts).toBe(1);
 		expect(attempted.attempts).toBe(1);
 		expect(attempted.exhausted).toBeNull();
@@ -85,7 +85,7 @@ describe("a fast-failing git command", () => {
 		["PlaceholderHead", PLACEHOLDER_HEAD],
 		["IncompleteAdminDir", INCOMPLETE_ADMIN_DIR],
 	])("is still pruned and re-attempted through a %s window", async (_arm, stderr) => {
-		const {attempted, attempts, spawned} = await recover([ran(stderr, {}), succeeded]);
+		const { attempted, attempts, spawned } = await recover([ran(stderr, {}), succeeded]);
 		expect(attempts).toBe(2);
 		expect(attempted.attempts).toBe(2);
 		expect(attempted.exhausted).toBeNull();
@@ -93,13 +93,13 @@ describe("a fast-failing git command", () => {
 	});
 
 	it("still exhausts the bounded recovery when the window never closes", async () => {
-		const {attempted, attempts} = await recover([ran(PLACEHOLDER_HEAD, {})]);
+		const { attempted, attempts } = await recover([ran(PLACEHOLDER_HEAD, {})]);
 		expect(attempts).toBe(RECOVERY_ATTEMPTS);
 		expect(attempted.exhausted).toBe("PlaceholderHead");
 	}, 20_000);
 
 	it("refuses an unrecognised diagnostic on its first attempt", async () => {
-		const {attempts, spawned} = await recover([ran("fatal: could not read Username\n", {})]);
+		const { attempts, spawned } = await recover([ran("fatal: could not read Username\n", {})]);
 		expect(attempts).toBe(1);
 		expect(spawned).toEqual([]);
 	});
@@ -119,19 +119,19 @@ describe("a payload the verb cannot plan from", () => {
 
 	/** An absent `cwd` never reaches the plan: the envelope reader refuses it as malformed first. */
 	it.each([
-		["a blank cwd", {cwd: "  ", name: "agent-1"}, "the payload carries no `cwd`"],
-		["a relative cwd", {cwd: "repo", name: "agent-1"}, "`cwd` is not an absolute path: repo"],
-		["an absent name", {cwd: "/repo"}, "the payload carries no `name`"],
+		["a blank cwd", { cwd: "  ", name: "agent-1" }, "the payload carries no `cwd`"],
+		["a relative cwd", { cwd: "repo", name: "agent-1" }, "`cwd` is not an absolute path: repo"],
+		["an absent name", { cwd: "/repo" }, "the payload carries no `name`"],
 		[
 			"a slug that could escape",
-			{cwd: "/repo", name: "../x"},
+			{ cwd: "/repo", name: "../x" },
 			"`name` is not a plain worktree slug and could escape the worktree root: ../x",
 		],
 	])("refuses %s at 15 before any subprocess runs", async (_label, payload, reason) => {
 		const shell = fakeShell([]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runWorktreeCreate({stdin: envelope(payload), dryRun: false, env: {}}),
+				runWorktreeCreate({ stdin: envelope(payload), dryRun: false, env: {} }),
 				Layer.merge(shell.layer, fakeFs({}).layer),
 			),
 		);

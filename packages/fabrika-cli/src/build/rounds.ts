@@ -20,9 +20,9 @@
  * proven FAIL, and the repair loop does not act on one either.
  */
 
-import type {CommentRecord} from "../io/issues.ts";
-import {type HeadSha, headSha, sameHead} from "../wire/marker-line.ts";
-import {read as readMarker} from "../wire/verdict-marker.ts";
+import type { CommentRecord } from "../io/issues.ts";
+import { type HeadSha, headSha, sameHead } from "../wire/marker-line.ts";
+import { read as readMarker } from "../wire/verdict-marker.ts";
 
 /** The gap at which a head-less FAIL still belongs to the round before it. Inclusive. */
 export const ROUND_GAP_MS = 120_000;
@@ -81,7 +81,7 @@ export const roundsOn = (comments: ReadonlyArray<CommentRecord>): number =>
 		comments.flatMap((comment) => {
 			const parsed = readMarker(comment.body);
 			return parsed._tag === "Found" && parsed.value.polarity === "FAIL"
-				? [{sha: parsed.value.sha, createdAt: comment.createdAt}]
+				? [{ sha: parsed.value.sha, createdAt: comment.createdAt }]
 				: [];
 		}),
 	);

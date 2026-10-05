@@ -11,8 +11,8 @@
  * platform — so each side is handed the same config at the same two commits here, and neither reads
  * the tree the test stands up.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	configAtCommit,
 	configOnPlatform,
@@ -22,7 +22,7 @@ import {
 	type Scripted,
 	unconfigured,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
+import type { ExecResult } from "../io/exec.ts";
 import {
 	branchRules,
 	CODEOWNERS,
@@ -32,9 +32,9 @@ import {
 	files as shipFiles,
 	pull as shipPull,
 } from "../ship/fixtures.test-support.ts";
-import {runScope as runShipScope} from "../ship/scope-verb.ts";
-import {BASE, binding, PATHS_AT, paths, pull as reviewPull} from "./fixtures.test-support.ts";
-import {runScope as runReviewScope} from "./scope-verb.ts";
+import { runScope as runShipScope } from "../ship/scope-verb.ts";
+import { BASE, binding, PATHS_AT, paths, pull as reviewPull } from "./fixtures.test-support.ts";
+import { runScope as runReviewScope } from "./scope-verb.ts";
 
 /** One mixed diff: a worker source file, a doc, and a rendered surface beside its own test. */
 const CHANGED = [
@@ -44,7 +44,7 @@ const CHANGED = [
 	"apps/site/src/components/layout/Topbar.test.tsx",
 ] as const;
 
-const served = (result: ExecResult): HttpReply => ({status: 200, body: result.stdout});
+const served = (result: ExecResult): HttpReply => ({ status: 200, body: result.stdout });
 
 const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4321$/;
 const SHIP_FILES = /^GET \S+\/repos\/o\/r\/pulls\/4321\/files\?/;
@@ -61,10 +61,10 @@ const namespaceRows = (stdout: string): ReadonlyArray<string> =>
 /** The `.fabrika.jsonc` both commits carry. */
 type Config = string;
 
-const configOf = (uiSurfaces: ReadonlyArray<unknown>): Config => JSON.stringify({uiSurfaces});
+const configOf = (uiSurfaces: ReadonlyArray<unknown>): Config => JSON.stringify({ uiSurfaces });
 
 const twoApps: Config = configOf([
-	{name: "web", prefix: "apps/site/src/", mount: "/", command: "pnpm dev --port {{port}}"},
+	{ name: "web", prefix: "apps/site/src/", mount: "/", command: "pnpm dev --port {{port}}" },
 	{
 		name: "desk-chat",
 		prefix: "apps/desk/src/",
@@ -85,12 +85,12 @@ const reviewScopeOver =
 					repo: null,
 					json: false,
 					cwd: "/repo",
-					env: {CLAUDE_PIPELINE_REPO: "o/r"},
+					env: { CLAUDE_PIPELINE_REPO: "o/r" },
 				}),
 				Layer.merge(
 					fakeSeams([
 						...configAtCommit(config),
-						[PULL, served(reviewPull({changedFiles: changed.length}))],
+						[PULL, served(reviewPull({ changedFiles: changed.length }))],
 						...binding(),
 						[PATHS_AT(), paths(...changed)],
 					]).layer,
@@ -115,13 +115,13 @@ const shipScopeOver =
 					repo: null,
 					json: false,
 					env: ENV,
-					caller: {_tag: "shipper", cwd: "/repo"},
+					caller: { _tag: "shipper", cwd: "/repo" },
 				}),
 				Layer.merge(
 					fakeSeams([
-						[PULL, served(shipPull({changedFiles: changed.length}))],
+						[PULL, served(shipPull({ changedFiles: changed.length }))],
 						[SHIP_FILES, served(shipFiles(...changed))],
-						[OWNERS, {status: 200, body: CODEOWNERS}],
+						[OWNERS, { status: 200, body: CODEOWNERS }],
 						[RULES, served(branchRules("pull_request"))],
 						[REPO, repositoryServed()],
 						mergeBaseOnPlatform(BASE),

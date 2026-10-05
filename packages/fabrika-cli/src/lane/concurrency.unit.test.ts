@@ -3,15 +3,15 @@
  *
  * The claim reader is injected, so every row states which lanes a driver is holding with no board.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import {describe, expect, it} from "vitest";
-import type {Read} from "../config/read-key.ts";
-import {fakeFs} from "../fakes.test-support.ts";
-import type {VerbOutcome} from "../verb.ts";
-import type {ClaimHold, ClaimHoldReader} from "./claim-hold.ts";
-import {CONCURRENCY_CAPPED, LANE_UNREADABLE} from "./codes.ts";
-import {choreTemplateText, coderTemplateText} from "./fixtures.test-support.ts";
-import {runOpen} from "./open-verb.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { describe, expect, it } from "vitest";
+import type { Read } from "../config/read-key.ts";
+import { fakeFs } from "../fakes.test-support.ts";
+import type { VerbOutcome } from "../verb.ts";
+import type { ClaimHold, ClaimHoldReader } from "./claim-hold.ts";
+import { CONCURRENCY_CAPPED, LANE_UNREADABLE } from "./codes.ts";
+import { choreTemplateText, coderTemplateText } from "./fixtures.test-support.ts";
+import { runOpen } from "./open-verb.ts";
 import {
 	DEFAULT_ARCHIVED_LANES_ROOT,
 	DEFAULT_CHORES_ROOT,
@@ -30,14 +30,14 @@ const capped = (value: number | null): Read<number | null> => ({
 /** The events that walk the coder template all the way to `complete` — a lane whose seat is free. */
 const SHIPPED_LOG = ["ISSUE.WIP", "ISSUE.DONE", "ISSUE.PASS", "ISSUE.DONE"]
 	.map((event, index) =>
-		JSON.stringify({task: "issue", event, at: `2026-09-0${index + 1}T00:00:00Z`}),
+		JSON.stringify({ task: "issue", event, at: `2026-09-0${index + 1}T00:00:00Z` }),
 	)
 	.join("\n");
 
 /** A lane directory holding a freshly booted machine — folds to `active`. */
 const lane = (root: string, id: string, log?: string) => ({
 	[`${root}/${id}/workflow.json`]: coderTemplateText(),
-	...(log === undefined ? {} : {[`${root}/${id}/events.jsonl`]: log}),
+	...(log === undefined ? {} : { [`${root}/${id}/events.jsonl`]: log }),
 });
 
 /** The lanes a driver holds, by key; every other lane reads unclaimed. */
@@ -46,14 +46,14 @@ const claims = (...held: ReadonlyArray<string>): ClaimHoldReader<never> => {
 	return (lane) =>
 		Effect.succeed(
 			(holders.has(lane)
-				? {_tag: "Claimed", token: `lane:session:${lane}`}
-				: {_tag: "Unclaimed"}) as ClaimHold,
+				? { _tag: "Claimed", token: `lane:session:${lane}` }
+				: { _tag: "Unclaimed" }) as ClaimHold,
 		);
 };
 
 /** The board would not answer for this lane's claim — UNKNOWN, so the seat stays held. */
 const unreadableClaims: ClaimHoldReader<never> = () =>
-	Effect.succeed({_tag: "Unknown", reason: "the API answered 502"});
+	Effect.succeed({ _tag: "Unknown", reason: "the API answered 502" });
 
 const options = (
 	cap: Read<number | null>,
@@ -80,8 +80,8 @@ const run = (
 describe("a repo with no cap declared boots whatever it likes", () => {
 	it("boots over two standing lanes when the cap is null", async () => {
 		const fs = fakeFs({
-			files: {[TEMPLATE]: coderTemplateText(), ...lane(ROOT, "1"), ...lane(ROOT, "2")},
-			dirs: {[ROOT]: ["1", "2"]},
+			files: { [TEMPLATE]: coderTemplateText(), ...lane(ROOT, "1"), ...lane(ROOT, "2") },
+			dirs: { [ROOT]: ["1", "2"] },
 			directories: [ROOT],
 		});
 		const out = await run(fs, runOpen(options(capped(null))));
@@ -91,7 +91,7 @@ describe("a repo with no cap declared boots whatever it likes", () => {
 	});
 
 	it("boots against an unreadable lanes root, because nothing needs counting", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 		expect((await run(fs, runOpen(options(capped(null))))).code).toBe(0);
 	});
 });
@@ -99,8 +99,8 @@ describe("a repo with no cap declared boots whatever it likes", () => {
 describe("a declared cap refuses the boot that would exceed it", () => {
 	it("refuses at the cap, naming the cap, the count and every lane holding a seat", async () => {
 		const fs = fakeFs({
-			files: {[TEMPLATE]: coderTemplateText(), ...lane(ROOT, "7000"), ...lane(ROOT, "7001")},
-			dirs: {[ROOT]: ["7001", "7000"]},
+			files: { [TEMPLATE]: coderTemplateText(), ...lane(ROOT, "7000"), ...lane(ROOT, "7001") },
+			dirs: { [ROOT]: ["7001", "7000"] },
 			directories: [ROOT],
 		});
 		const out = await run(fs, runOpen(options(capped(2))));
@@ -114,8 +114,8 @@ describe("a declared cap refuses the boot that would exceed it", () => {
 
 	it("boots below the cap", async () => {
 		const fs = fakeFs({
-			files: {[TEMPLATE]: coderTemplateText(), ...lane(ROOT, "7000")},
-			dirs: {[ROOT]: ["7000"]},
+			files: { [TEMPLATE]: coderTemplateText(), ...lane(ROOT, "7000") },
+			dirs: { [ROOT]: ["7000"] },
 			directories: [ROOT],
 		});
 		const out = await run(fs, runOpen(options(capped(2))));
@@ -126,8 +126,8 @@ describe("a declared cap refuses the boot that would exceed it", () => {
 
 	it("names no override flag — raising the config value is the only way past", async () => {
 		const fs = fakeFs({
-			files: {[TEMPLATE]: coderTemplateText(), ...lane(ROOT, "7000")},
-			dirs: {[ROOT]: ["7000"]},
+			files: { [TEMPLATE]: coderTemplateText(), ...lane(ROOT, "7000") },
+			dirs: { [ROOT]: ["7000"] },
 			directories: [ROOT],
 		});
 		const out = await run(fs, runOpen(options(capped(1))));
@@ -146,7 +146,7 @@ describe("what frees a seat, and what never held one", () => {
 				...lane(ROOT, "7000"),
 				...lane(ROOT, "7001", SHIPPED_LOG),
 			},
-			dirs: {[ROOT]: ["7000", "7001"]},
+			dirs: { [ROOT]: ["7000", "7001"] },
 			directories: [ROOT],
 		});
 		const out = await run(fs, runOpen(options(capped(2))));
@@ -161,7 +161,7 @@ describe("what frees a seat, and what never held one", () => {
 				...lane(ROOT, "7000"),
 				...lane(DEFAULT_ARCHIVED_LANES_ROOT, "7001"),
 			},
-			dirs: {[ROOT]: ["7000"], [DEFAULT_ARCHIVED_LANES_ROOT]: ["7001"]},
+			dirs: { [ROOT]: ["7000"], [DEFAULT_ARCHIVED_LANES_ROOT]: ["7001"] },
 			directories: [ROOT, DEFAULT_ARCHIVED_LANES_ROOT],
 		});
 		const out = await run(fs, runOpen(options(capped(2))));
@@ -177,7 +177,7 @@ describe("what frees a seat, and what never held one", () => {
 				...lane(ROOT, "7001"),
 				[`${DEFAULT_CHORES_ROOT}/park-sweep/workflow.json`]: choreTemplateText(),
 			},
-			dirs: {[ROOT]: ["7000", "7001"], [DEFAULT_CHORES_ROOT]: ["park-sweep"]},
+			dirs: { [ROOT]: ["7000", "7001"], [DEFAULT_CHORES_ROOT]: ["park-sweep"] },
 			directories: [ROOT, DEFAULT_CHORES_ROOT],
 		});
 		const out = await run(
@@ -207,8 +207,8 @@ describe("what frees a seat, and what never held one", () => {
 	// read `lane reconcile` makes of a scratch directory.
 	it("does not count a directory that holds no machine", async () => {
 		const fs = fakeFs({
-			files: {[TEMPLATE]: coderTemplateText(), ...lane(ROOT, "7000")},
-			dirs: {[ROOT]: ["7000", "scratch"]},
+			files: { [TEMPLATE]: coderTemplateText(), ...lane(ROOT, "7000") },
+			dirs: { [ROOT]: ["7000", "scratch"] },
 			directories: [ROOT],
 		});
 		expect((await run(fs, runOpen(options(capped(2))))).code).toBe(0);
@@ -221,7 +221,7 @@ describe("what frees a seat, and what never held one", () => {
 				...lane(ROOT, "7000"),
 				[`${ROOT}/7001/workflow.json`]: "{not json",
 			},
-			dirs: {[ROOT]: ["7000", "7001"]},
+			dirs: { [ROOT]: ["7000", "7001"] },
 			directories: [ROOT],
 		});
 		const out = await run(fs, runOpen(options(capped(2))));
@@ -233,8 +233,8 @@ describe("what frees a seat, and what never held one", () => {
 
 describe("only a lane somebody is driving holds a seat", () => {
 	const two = {
-		files: {[TEMPLATE]: coderTemplateText(), ...lane(ROOT, "7000"), ...lane(ROOT, "7001")},
-		dirs: {[ROOT]: ["7000", "7001"]},
+		files: { [TEMPLATE]: coderTemplateText(), ...lane(ROOT, "7000"), ...lane(ROOT, "7001") },
+		dirs: { [ROOT]: ["7000", "7001"] },
 		directories: [ROOT],
 	};
 
@@ -270,7 +270,7 @@ describe("only a lane somebody is driving holds a seat", () => {
 				...lane(ROOT, "7001"),
 				...lane(ROOT, "7002"),
 			},
-			dirs: {[ROOT]: ["7000", "7001", "7002"]},
+			dirs: { [ROOT]: ["7000", "7001", "7002"] },
 			directories: [ROOT],
 		});
 		const out = await run(fs, runOpen(options(capped(1), claims("7000"))));
@@ -296,10 +296,12 @@ describe("only a lane somebody is driving holds a seat", () => {
 
 describe("a cap that could not be read is UNKNOWN, never absent", () => {
 	it("refuses when the config key did not resolve", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 		const out = await run(
 			fs,
-			runOpen(options({_tag: "Refused", reason: "`laneConcurrencyCap` is not a positive integer"})),
+			runOpen(
+				options({ _tag: "Refused", reason: "`laneConcurrencyCap` is not a positive integer" }),
+			),
 		);
 
 		expect(out.code).toBe(LANE_UNREADABLE);
@@ -307,7 +309,7 @@ describe("a cap that could not be read is UNKNOWN, never absent", () => {
 	});
 
 	it("refuses when the lanes root exists and cannot be listed", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}, directories: [ROOT]});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() }, directories: [ROOT] });
 		const out = await run(fs, runOpen(options(capped(2))));
 
 		expect(out.code).toBe(LANE_UNREADABLE);

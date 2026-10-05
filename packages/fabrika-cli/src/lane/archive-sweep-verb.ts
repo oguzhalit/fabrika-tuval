@@ -21,13 +21,13 @@
  * A row has three outcomes, not two, because "skipped" asserts the directory is where it was: a lane
  * whose rename landed and whose destination will not read back is `moved-unverified` instead.
  */
-import {Effect, type FileSystem, Path, Result} from "effect";
-import {exists} from "../io/fs.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {type ArchiveOutcome, archiveLane, type ClosedReader} from "./archive-move.ts";
-import {APPEND_UNKNOWN, LANE_UNREADABLE, MARKER_READBACK} from "./codes.ts";
-import {resolveRawIssue} from "./key.ts";
-import {listLanes} from "./store.ts";
+import { Effect, type FileSystem, Path, Result } from "effect";
+import { exists } from "../io/fs.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { type ArchiveOutcome, archiveLane, type ClosedReader } from "./archive-move.ts";
+import { APPEND_UNKNOWN, LANE_UNREADABLE, MARKER_READBACK } from "./codes.ts";
+import { resolveRawIssue } from "./key.ts";
+import { listLanes } from "./store.ts";
 
 const VERB = "fabrika lane archive --sweep";
 
@@ -187,7 +187,7 @@ export const runArchiveSweep = <R = never>(
 		}
 		if (!probe.success) {
 			return answer(
-				JSON.stringify({answer: "swept", root: options.root, present: false, lanes: []}, null, 2),
+				JSON.stringify({ answer: "swept", root: options.root, present: false, lanes: [] }, null, 2),
 				[`${VERB}: ${options.root} is not there, so it holds no lanes. Nothing was moved.`],
 			);
 		}
@@ -206,7 +206,7 @@ export const runArchiveSweep = <R = never>(
 			const present = yield* Effect.result(exists(path.join(options.root, name, "workflow.json")));
 			if (Result.isSuccess(present) && !present.success) continue;
 			const outcome = yield* archiveLane({
-				ref: {root: options.root, lane: name},
+				ref: { root: options.root, lane: name },
 				archivedRoot: options.archivedRoot,
 				templatePaths: options.templatePaths,
 				issue: resolveRawIssue(name),

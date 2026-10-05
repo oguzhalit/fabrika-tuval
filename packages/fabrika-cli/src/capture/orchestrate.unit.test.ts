@@ -5,9 +5,9 @@
  * (endpoint down) still yields a record with `localPath` — losing the image
  * exactly when the undocumented endpoint fails is what this reshape fixes.
  */
-import {assert, describe, it} from "@effect/vitest";
-import type {CapturedSurface} from "./capture.ts";
-import {mergeRecord} from "./orchestrate.ts";
+import { assert, describe, it } from "@effect/vitest";
+import type { CapturedSurface } from "./capture.ts";
+import { mergeRecord } from "./orchestrate.ts";
 
 const captured: CapturedSurface = {
 	surface: "/catalog:empty",
@@ -22,7 +22,7 @@ const captured: CapturedSurface = {
 describe("mergeRecord — localPath is always preserved", () => {
 	it("carries the hosted URL through on a successful upload", () => {
 		const url = "https://github.com/user-attachments/assets/abc";
-		const rec = mergeRecord(captured, {hostedUrl: url, uploadError: null});
+		const rec = mergeRecord(captured, { hostedUrl: url, uploadError: null });
 		assert.deepStrictEqual(rec, {
 			surface: "/catalog:empty",
 			route: "/catalog",
@@ -38,17 +38,20 @@ describe("mergeRecord — localPath is always preserved", () => {
 		const crashed: CapturedSurface = {
 			...captured,
 			pageErrors: [
-				{kind: "pageerror", text: "TypeError: Cannot read properties of null (reading 'commands')"},
+				{
+					kind: "pageerror",
+					text: "TypeError: Cannot read properties of null (reading 'commands')",
+				},
 			],
 		};
-		const rec = mergeRecord(crashed, {hostedUrl: null, uploadError: null});
+		const rec = mergeRecord(crashed, { hostedUrl: null, uploadError: null });
 		assert.deepStrictEqual(rec.pageErrors, [
-			{kind: "pageerror", text: "TypeError: Cannot read properties of null (reading 'commands')"},
+			{ kind: "pageerror", text: "TypeError: Cannot read properties of null (reading 'commands')" },
 		]);
 	});
 
 	it("KEEPS localPath when the upload fell back (hostedUrl null, uploadError set)", () => {
-		const rec = mergeRecord(captured, {hostedUrl: null, uploadError: "HTTP 500: boom"});
+		const rec = mergeRecord(captured, { hostedUrl: null, uploadError: "HTTP 500: boom" });
 		// The correctness fix: the judged artifact survives an upload failure.
 		assert.strictEqual(rec.localPath, "/tmp/out/catalog-empty@desktop.png");
 		assert.strictEqual(rec.hostedUrl, null);

@@ -18,9 +18,9 @@
  * a rule for "three fine, one unknown", and every such rule either hides the unknown or drowns the
  * three.
  */
-import type {Attempt} from "../io/git.ts";
-import {originHeadAgreement, SET_HEAD_FIX, type Trunk} from "../io/trunk.ts";
-import {ANSWER, answer, refuse, type VerbOutcome} from "../verb.ts";
+import type { Attempt } from "../io/git.ts";
+import { originHeadAgreement, SET_HEAD_FIX, type Trunk } from "../io/trunk.ts";
+import { ANSWER, answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	absentLabels,
 	type BoardRead,
@@ -30,13 +30,13 @@ import {
 	bucketDetail,
 	LABEL_TAXONOMY_COMMAND,
 } from "./board-verb.ts";
-import {OFF_VOCABULARY} from "./codes.ts";
-import {type AsOf, asOfToken, detail, noAsOf, row} from "./fields.ts";
-import {menuState} from "./menu-verb.ts";
-import {type ReadoutRead, readingOf} from "./readout-verb.ts";
-import type {RosterRead} from "./roster.ts";
-import {type SettingRow, settingsState} from "./settings-verb.ts";
-import {SETTINGS_PATH, type WiringRead} from "./wiring-verb.ts";
+import { OFF_VOCABULARY } from "./codes.ts";
+import { type AsOf, asOfToken, detail, noAsOf, row } from "./fields.ts";
+import { menuState } from "./menu-verb.ts";
+import { type ReadoutRead, readingOf } from "./readout-verb.ts";
+import type { RosterRead } from "./roster.ts";
+import { type SettingRow, settingsState } from "./settings-verb.ts";
+import { SETTINGS_PATH, type WiringRead } from "./wiring-verb.ts";
 
 const VERB = "status open";
 
@@ -208,7 +208,7 @@ export const readoutField = (read: ReadoutRead): Field => {
 
 /** What the `trunk` field reads: the resolved trunk, and this clone's `origin/HEAD` beside it. */
 export type TrunkRead =
-	| {readonly _tag: "Failed"; readonly repo: string; readonly reason: string}
+	| { readonly _tag: "Failed"; readonly repo: string; readonly reason: string }
 	| {
 			readonly _tag: "Resolved";
 			readonly repo: string;
@@ -235,7 +235,7 @@ export const trunkField = (read: TrunkRead, asOf: AsOf): Field => {
 			asOf: noAsOf,
 		};
 	}
-	const {trunk, originHead} = read;
+	const { trunk, originHead } = read;
 	if (originHead._tag === "Failure") {
 		return {
 			name: "trunk",
@@ -257,7 +257,7 @@ export const trunkField = (read: TrunkRead, asOf: AsOf): Field => {
 						"drifted",
 						`this clone's origin/HEAD names ${agreement.originHead} — run \`${SET_HEAD_FIX}\``,
 					];
-	return {name: "trunk", state, detail: detail(`${trunk.ref}; ${said}`), source: read.repo, asOf};
+	return { name: "trunk", state, detail: detail(`${trunk.ref}; ${said}`), source: read.repo, asOf };
 };
 
 /** What `lanes` reads out of `fabrika lane stale`'s documented answer object. */
@@ -375,7 +375,7 @@ export interface OpenInput {
 	readonly scope: string;
 }
 
-export const runOpen = ({fields, json, scope}: OpenInput): VerbOutcome => {
+export const runOpen = ({ fields, json, scope }: OpenInput): VerbOutcome => {
 	const unknown = fields.filter((field) => field.state === UNKNOWN).length;
 	const notice = `${VERB}: ${scope}; ${fields.length} field(s) rendered, ${unknown} unknown.`;
 	if (json) {

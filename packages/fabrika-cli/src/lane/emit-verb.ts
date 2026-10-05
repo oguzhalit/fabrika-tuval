@@ -28,18 +28,18 @@
  * The epic lane's origin is written as its first fact ([`facts.ts`](facts.ts)) right after the
  * machine is placed, exactly as `lane open` writes a single-issue lane's.
  */
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {badNumber, openIssue, resolveTargetRepo} from "../build/target.ts";
-import {CONFIG_PATH} from "../config/document.ts";
-import {MACHINERY_LAPS, type MachineryLapsSurface} from "../config/keys/machinery-laps.ts";
-import type {Read} from "../config/read-key.ts";
-import {listSubIssues, type SubIssueLink} from "../plan/github.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {DEFAULT_ORIGIN, ORIGINS, origin} from "../wire/lane-record.ts";
-import type {ClaimHoldReader} from "./claim-hold.ts";
-import {offSetClasses, renderClasses} from "./class-seed.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { badNumber, openIssue, resolveTargetRepo } from "../build/target.ts";
+import { CONFIG_PATH } from "../config/document.ts";
+import { MACHINERY_LAPS, type MachineryLapsSurface } from "../config/keys/machinery-laps.ts";
+import type { Read } from "../config/read-key.ts";
+import { listSubIssues, type SubIssueLink } from "../plan/github.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { DEFAULT_ORIGIN, ORIGINS, origin } from "../wire/lane-record.ts";
+import type { ClaimHoldReader } from "./claim-hold.ts";
+import { offSetClasses, renderClasses } from "./class-seed.ts";
 import {
 	APPEND_UNKNOWN,
 	CLASS_UNRECOGNISED,
@@ -51,11 +51,11 @@ import {
 	TOPOLOGY_CYCLE,
 	TOPOLOGY_FOREIGN,
 } from "./codes.ts";
-import {capRefusal} from "./concurrency.ts";
-import {type EmitResult, emitMachine} from "./emit.ts";
-import {recordOrigin} from "./facts.ts";
-import {placementRefusal} from "./refusals.ts";
-import {type LaneRef, placeMachine} from "./store.ts";
+import { capRefusal } from "./concurrency.ts";
+import { type EmitResult, emitMachine } from "./emit.ts";
+import { recordOrigin } from "./facts.ts";
+import { placementRefusal } from "./refusals.ts";
+import { type LaneRef, placeMachine } from "./store.ts";
 
 const VERB = "fabrika lane emit";
 
@@ -115,7 +115,10 @@ const offSetChildren = (children: ReadonlyArray<SubIssueLink>): ReadonlyArray<st
 const FOREIGN_REMEDIES =
 	"re-run with --children to emit from the board's live child list, or repair the body with `fabrika ledger retopology <epic>`";
 
-const emitRefusal = (epic: number, result: Exclude<EmitResult, {_tag: "Emitted"}>): VerbOutcome => {
+const emitRefusal = (
+	epic: number,
+	result: Exclude<EmitResult, { _tag: "Emitted" }>,
+): VerbOutcome => {
 	switch (result._tag) {
 		case "NoTopology":
 			return refuse(
@@ -210,7 +213,7 @@ export const runEmit = <R = never>(
 			dropForeign: options.children,
 		});
 		if (emitted._tag !== "Emitted") return emitRefusal(options.epic, emitted);
-		const ref: LaneRef = {root: options.root, lane: String(options.epic)};
+		const ref: LaneRef = { root: options.root, lane: String(options.epic) };
 		const capped = yield* capRefusal(VERB, options.cap, options.root, options.claimed);
 		if (capped !== null) return capped;
 		const placed = yield* placeMachine(ref, emitted.text);
@@ -236,7 +239,7 @@ export const runEmit = <R = never>(
 				workflow: placed.workflow,
 				phases: emitted.phases,
 				children: emitted.children,
-				dropped: {count: emitted.dropped.length, rows: emitted.dropped},
+				dropped: { count: emitted.dropped.length, rows: emitted.dropped },
 				bytes: new TextEncoder().encode(emitted.text).length,
 			}),
 			[

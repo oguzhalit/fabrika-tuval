@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import {readGoldenFixture} from "../golden-fixture.ts";
-import {classifyEnvelope} from "./envelope.ts";
+import { describe, expect, it } from "vitest";
+import { readGoldenFixture } from "../golden-fixture.ts";
+import { classifyEnvelope } from "./envelope.ts";
 
 describe("classifyEnvelope keeps the three failures apart", () => {
 	it("reads a well-formed envelope and reports every key the harness sent", () => {
@@ -15,7 +15,7 @@ describe("classifyEnvelope keeps the three failures apart", () => {
 		);
 		expect(read).toMatchObject({
 			_tag: "Envelope",
-			envelope: {event: "SessionStart", session: "s", cwd: "/c"},
+			envelope: { event: "SessionStart", session: "s", cwd: "/c" },
 		});
 
 		const captured = classifyEnvelope(
@@ -25,11 +25,12 @@ describe("classifyEnvelope keeps the three failures apart", () => {
 		expect(captured._tag === "Envelope" && captured.envelope.fields).toHaveLength(10);
 	});
 
-	it.each([
-		["whitespace only", "  \n "],
-	])("reads %s as Empty, never as malformed", (_label, text) => {
-		expect(classifyEnvelope(text)._tag).toBe("Empty");
-	});
+	it.each([["whitespace only", "  \n "]])(
+		"reads %s as Empty, never as malformed",
+		(_label, text) => {
+			expect(classifyEnvelope(text)._tag).toBe("Empty");
+		},
+	);
 
 	it.each([
 		["unparseable bytes", "not json at all"],

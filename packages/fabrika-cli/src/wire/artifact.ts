@@ -6,15 +6,15 @@
  * group the negative answer is the expected one — a body with no acceptance criteria is ordinary —
  * and an expected negative is the least-questioned place for an unseen input to hide.
  */
-import type {StdinRead} from "../io/stdin.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {ARTIFACT_UNKNOWN, EMPTY_ARTIFACT} from "./codes.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { ARTIFACT_UNKNOWN, EMPTY_ARTIFACT } from "./codes.ts";
 
 export type Artifact =
 	/** Bytes that can be judged. Never blank — a blank artifact refuses instead. */
-	| {readonly _tag: "Bytes"; readonly text: string}
+	| { readonly _tag: "Bytes"; readonly text: string }
 	/** Nothing to judge, seated on a proven refusal rather than on a negative answer. */
-	| {readonly _tag: "Refusal"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Refusal"; readonly outcome: VerbOutcome };
 
 /**
  * Classify what arrived on fd 0.
@@ -43,7 +43,7 @@ export const classifyArtifact = (verb: string, read: StdinRead): Artifact => {
 			),
 		};
 	}
-	return {_tag: "Bytes", text: read.text};
+	return { _tag: "Bytes", text: read.text };
 };
 
 /** `<verb>: judged <n> lines (<b> bytes) against format <key>.` — printed on answers and refusals alike. */

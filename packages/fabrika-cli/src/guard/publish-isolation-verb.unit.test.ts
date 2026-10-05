@@ -3,11 +3,11 @@
  * filesystem — the `gate.unit.test.ts` cases from the v1 CLI, re-seated on the three guard exit
  * codes (a single non-zero there, `7`/`11`/`12` here).
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFsOptions, fakeFs} from "../fakes.test-support.ts";
-import {PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE} from "./codes.ts";
-import {runPublishIsolationGuard} from "./publish-isolation-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFsOptions, fakeFs } from "../fakes.test-support.ts";
+import { PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE } from "./codes.ts";
+import { runPublishIsolationGuard } from "./publish-isolation-verb.ts";
 
 const ROOT = "/repo";
 const WORKFLOW = `${ROOT}/.github/workflows/publish.yml`;
@@ -53,14 +53,14 @@ const repo = (spec: Repo): FakeFsOptions => {
 	}
 	return {
 		files,
-		dirs: {[`${ROOT}/packages`]: names},
+		dirs: { [`${ROOT}/packages`]: names },
 		directories: [`${ROOT}/packages`, ...names.map((n) => `${ROOT}/packages/${n}`)],
 	};
 };
 
 const run = (options: FakeFsOptions, env: Record<string, string | undefined> = {}) =>
 	Effect.runPromise(
-		Effect.provide(runPublishIsolationGuard({root: ROOT, cwd: ROOT, env}), fakeFs(options).layer),
+		Effect.provide(runPublishIsolationGuard({ root: ROOT, cwd: ROOT, env }), fakeFs(options).layer),
 	);
 
 describe("runPublishIsolationGuard", () => {
@@ -70,8 +70,8 @@ describe("runPublishIsolationGuard", () => {
 				packages: {
 					"fabrika-cli": {
 						name: "@kampus/fabrika-cli",
-						dependencies: {effect: "catalog:"},
-						devDependencies: {vitest: "catalog:"},
+						dependencies: { effect: "catalog:" },
+						devDependencies: { vitest: "catalog:" },
 					},
 				},
 			}),
@@ -86,10 +86,10 @@ describe("runPublishIsolationGuard", () => {
 		const outcome = await run(
 			repo({
 				packages: {
-					"fabrika-cli": {name: "@kampus/fabrika-cli", dependencies: {effect: "catalog:"}},
+					"fabrika-cli": { name: "@kampus/fabrika-cli", dependencies: { effect: "catalog:" } },
 					"internal-lib": {
 						name: "@kampus/internal-lib",
-						dependencies: {"@kampus/internal-only": "workspace:*"},
+						dependencies: { "@kampus/internal-only": "workspace:*" },
 					},
 				},
 			}),
@@ -103,7 +103,7 @@ describe("runPublishIsolationGuard", () => {
 				packages: {
 					"fabrika-cli": {
 						name: "@kampus/fabrika-cli",
-						dependencies: {effect: "catalog:", "@kampus/epic-ledger": "workspace:*"},
+						dependencies: { effect: "catalog:", "@kampus/epic-ledger": "workspace:*" },
 					},
 				},
 			}),
@@ -119,7 +119,7 @@ describe("runPublishIsolationGuard", () => {
 				packages: {
 					"fabrika-cli": {
 						name: "@kampus/fabrika-cli",
-						dependencies: {"@kampus/leak-guard": "^1.0.0"},
+						dependencies: { "@kampus/leak-guard": "^1.0.0" },
 					},
 				},
 			}),
@@ -134,11 +134,11 @@ describe("runPublishIsolationGuard", () => {
 				packages: {
 					"fabrika-cli": {
 						name: "@kampus/fabrika-cli",
-						dependencies: {"@kampus/epic-ledger": "workspace:*"},
+						dependencies: { "@kampus/epic-ledger": "workspace:*" },
 					},
 				},
 			}),
-			{GITHUB_ACTIONS: "true"},
+			{ GITHUB_ACTIONS: "true" },
 		);
 		expect(
 			outcome.stderr.some((line) =>
@@ -154,7 +154,10 @@ describe("runPublishIsolationGuard", () => {
 			repo({
 				prefixes: ["fabrika-cli"],
 				packages: {
-					"something-else": {name: "@kampus/something-else", dependencies: {effect: "catalog:"}},
+					"something-else": {
+						name: "@kampus/something-else",
+						dependencies: { effect: "catalog:" },
+					},
 				},
 			}),
 		);
@@ -168,12 +171,12 @@ describe("runPublishIsolationGuard", () => {
 			repo({
 				prefixes: [["demo-sdk", "packages/sdk-core"], "demo-ui"],
 				packages: {
-					"sdk-core": {name: "@kampus/demo-sdk"},
+					"sdk-core": { name: "@kampus/demo-sdk" },
 					"demo-ui": {
 						name: "@kampus/demo-ui",
-						dependencies: {"@other/demo-sdk": "workspace:*"},
+						dependencies: { "@other/demo-sdk": "workspace:*" },
 					},
-					x: {name: "@other/demo-sdk"},
+					x: { name: "@other/demo-sdk" },
 				},
 			}),
 		);
@@ -187,8 +190,8 @@ describe("runPublishIsolationGuard", () => {
 			repo({
 				prefixes: [["demo-sdk", "packages/sdk-core"]],
 				packages: {
-					"sdk-core": {name: "@kampus/demo-sdk"},
-					"demo-fork": {name: "@kampus/demo-sdk", version: "9.9.9"},
+					"sdk-core": { name: "@kampus/demo-sdk" },
+					"demo-fork": { name: "@kampus/demo-sdk", version: "9.9.9" },
 				},
 			}),
 		);
@@ -198,7 +201,9 @@ describe("runPublishIsolationGuard", () => {
 
 	it("fails closed when an arm sets no PKG_DIR", async () => {
 		const options = repo({
-			packages: {"fabrika-cli": {name: "@kampus/fabrika-cli", dependencies: {effect: "catalog:"}}},
+			packages: {
+				"fabrika-cli": { name: "@kampus/fabrika-cli", dependencies: { effect: "catalog:" } },
+			},
 		});
 		const outcome = await run({
 			...options,
@@ -216,7 +221,7 @@ describe("runPublishIsolationGuard", () => {
 			repo({
 				prefixes: [],
 				packages: {
-					"fabrika-cli": {name: "@kampus/fabrika-cli", dependencies: {effect: "catalog:"}},
+					"fabrika-cli": { name: "@kampus/fabrika-cli", dependencies: { effect: "catalog:" } },
 				},
 			}),
 		);
@@ -225,9 +230,9 @@ describe("runPublishIsolationGuard", () => {
 	});
 
 	it("fails closed when publish.yml is absent", async () => {
-		const options = repo({packages: {"fabrika-cli": {name: "@kampus/fabrika-cli"}}});
-		const files = {...options.files, [WORKFLOW]: null};
-		const outcome = await run({...options, files});
+		const options = repo({ packages: { "fabrika-cli": { name: "@kampus/fabrika-cli" } } });
+		const files = { ...options.files, [WORKFLOW]: null };
+		const outcome = await run({ ...options, files });
 		expect(outcome.code).toBe(ZERO_SCOPE);
 		expect(outcome.stderr.join("\n")).toContain("does not exist");
 	});
@@ -237,8 +242,8 @@ describe("runPublishIsolationGuard", () => {
 			repo({
 				prefixes: ["fabrika-cli", "demo-cli"],
 				packages: {
-					"fabrika-cli": {name: "@kampus/fabrika-cli", dependencies: {effect: "catalog:"}},
-					"demo-cli": {name: "@kampus/demo-cli", dependencies: {effect: "catalog:"}},
+					"fabrika-cli": { name: "@kampus/fabrika-cli", dependencies: { effect: "catalog:" } },
+					"demo-cli": { name: "@kampus/demo-cli", dependencies: { effect: "catalog:" } },
 				},
 			}),
 		);
@@ -251,10 +256,10 @@ describe("runPublishIsolationGuard", () => {
 			repo({
 				prefixes: ["fabrika-cli", "demo-cli"],
 				packages: {
-					"fabrika-cli": {name: "@kampus/fabrika-cli", dependencies: {effect: "catalog:"}},
+					"fabrika-cli": { name: "@kampus/fabrika-cli", dependencies: { effect: "catalog:" } },
 					"demo-cli": {
 						name: "@kampus/demo-cli",
-						dependencies: {"@kampus/internal-lib": "workspace:*"},
+						dependencies: { "@kampus/internal-lib": "workspace:*" },
 					},
 				},
 			}),
@@ -263,7 +268,7 @@ describe("runPublishIsolationGuard", () => {
 	});
 
 	it("answers UNKNOWN when a workspace manifest does not parse", async () => {
-		const outcome = await run(repo({packages: {"fabrika-cli": "{not json"}}));
+		const outcome = await run(repo({ packages: { "fabrika-cli": "{not json" } }));
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stdout).toBe("");
 		expect(outcome.stderr.join("\n")).toContain("do not parse as JSON");
@@ -271,7 +276,9 @@ describe("runPublishIsolationGuard", () => {
 
 	it("answers UNKNOWN when a workspace manifest cannot be read", async () => {
 		const options = repo({
-			packages: {"fabrika-cli": {name: "@kampus/fabrika-cli", dependencies: {effect: "catalog:"}}},
+			packages: {
+				"fabrika-cli": { name: "@kampus/fabrika-cli", dependencies: { effect: "catalog:" } },
+			},
 		});
 		const outcome = await run({
 			...options,
@@ -284,8 +291,8 @@ describe("runPublishIsolationGuard", () => {
 	it("answers UNKNOWN when no repo root sits above the cwd", async () => {
 		const outcome = await Effect.runPromise(
 			Effect.provide(
-				runPublishIsolationGuard({root: null, cwd: "/nowhere", env: {}}),
-				fakeFs({files: {}}).layer,
+				runPublishIsolationGuard({ root: null, cwd: "/nowhere", env: {} }),
+				fakeFs({ files: {} }).layer,
 			),
 		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);

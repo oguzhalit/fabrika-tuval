@@ -1,6 +1,6 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, linkNext, type Scripted} from "../fakes.test-support.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, linkNext, type Scripted } from "../fakes.test-support.ts";
 import {
 	httpError,
 	PROTECTION,
@@ -145,7 +145,7 @@ describe("readBlockingSet over the three read outcomes", () => {
 
 	it("refuses an unexhausted ruleset walk rather than reading a short page as the whole set", async () => {
 		const answered = await read([
-			[RULES, {...rules("ci-required"), headers: linkNext("https://api.github.com/next")}],
+			[RULES, { ...rules("ci-required"), headers: linkNext("https://api.github.com/next") }],
 		]);
 		expect(answered._tag).toBe("Incomplete");
 	});
@@ -192,14 +192,14 @@ describe("the lines a verb prints about its authority", () => {
 
 	it("names every non-required red, and says nothing when there is none", () => {
 		const set = blockingSet(["ci-required"]);
-		const red = (name: string) => ({name, status: "completed", conclusion: "failure"});
+		const red = (name: string) => ({ name, status: "completed", conclusion: "failure" });
 		expect(
 			reportedLine("ship checks", set, [
 				red("deploy (web)"),
 				red("Analyze (python)"),
 				red("ci-required"),
-				{name: "e2e", status: "queued", conclusion: null},
-				{name: "lint", status: "completed", conclusion: "success"},
+				{ name: "e2e", status: "queued", conclusion: null },
+				{ name: "lint", status: "completed", conclusion: "success" },
 			]),
 		).toEqual([
 			"ship checks: failing outside the required set: Analyze (python), deploy (web) — reported, never blocking.",
@@ -234,33 +234,33 @@ describe("the reports a declared set is still owed at a head", () => {
 	});
 
 	it("is reported once every declared context has a run", () => {
-		expect(reportingAt(FOUR, [...THREE_POSTED, "ci-required"])).toEqual({_tag: "Reported"});
+		expect(reportingAt(FOUR, [...THREE_POSTED, "ci-required"])).toEqual({ _tag: "Reported" });
 	});
 
 	it("is silent when no run blocks at all, whichever definition answered", () => {
-		expect(reportingAt(FOUR, ["Analyze (python)"])).toEqual({_tag: "Silent"});
-		expect(reportingAt(blockingSet([]), ["deploy (web)"])).toEqual({_tag: "Silent"});
+		expect(reportingAt(FOUR, ["Analyze (python)"])).toEqual({ _tag: "Silent" });
+		expect(reportingAt(blockingSet([]), ["deploy (web)"])).toEqual({ _tag: "Silent" });
 	});
 
 	it("owes nothing under the denylist once any run blocks — that branch declares no context", () => {
-		expect(reportingAt(blockingSet([]), ["unit tests"])).toEqual({_tag: "Reported"});
+		expect(reportingAt(blockingSet([]), ["unit tests"])).toEqual({ _tag: "Reported" });
 	});
 
 	it("caps green at pending while a report is owed, and never softens a red", () => {
 		const owed = reportingAt(FOUR, THREE_POSTED);
 		expect(owedRollup("green", owed)).toBe("pending");
 		expect(owedRollup("red", owed)).toBe("red");
-		expect(owedRollup("green", {_tag: "Silent"})).toBe("pending");
-		expect(owedRollup("green", {_tag: "Reported"})).toBe("green");
+		expect(owedRollup("green", { _tag: "Silent" })).toBe("pending");
+		expect(owedRollup("green", { _tag: "Reported" })).toBe("green");
 	});
 
 	it("names the owed contexts on the note, and keeps the silent head's own note", () => {
 		expect(reportingNote("review ci", "main", FOUR, reportingAt(FOUR, THREE_POSTED))).toEqual([
 			"review ci: no run at this head for ci-required, which main declares required — pending, never green: a declared context that has not reported is not satisfied.",
 		]);
-		expect(reportingNote("review ci", "main", FOUR, {_tag: "Silent"})).toEqual([
+		expect(reportingNote("review ci", "main", FOUR, { _tag: "Silent" })).toEqual([
 			noBlockingRunNote("review ci", "main", FOUR),
 		]);
-		expect(reportingNote("review ci", "main", FOUR, {_tag: "Reported"})).toEqual([]);
+		expect(reportingNote("review ci", "main", FOUR, { _tag: "Reported" })).toEqual([]);
 	});
 });

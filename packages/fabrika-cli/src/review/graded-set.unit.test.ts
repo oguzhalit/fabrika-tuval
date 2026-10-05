@@ -1,9 +1,9 @@
-import {describe, expect, it} from "vitest";
-import type {StandingRuling} from "../decision/ruling.ts";
-import {read as readCriteria} from "../wire/acceptance-criteria.ts";
-import {criterionIndex, markedIssue, rulingUrl, scopeDigest} from "../wire/decision-ruling.ts";
-import {markerTime} from "../wire/grill-marker.ts";
-import {gradedSet, type RulingText, renderGradedSet} from "./graded-set.ts";
+import { describe, expect, it } from "vitest";
+import type { StandingRuling } from "../decision/ruling.ts";
+import { read as readCriteria } from "../wire/acceptance-criteria.ts";
+import { criterionIndex, markedIssue, rulingUrl, scopeDigest } from "../wire/decision-ruling.ts";
+import { markerTime } from "../wire/grill-marker.ts";
+import { gradedSet, type RulingText, renderGradedSet } from "./graded-set.ts";
 
 /** The placeholder repository the fixtures speak, held in a constant rather than written inline. */
 const REPO = "o/r";

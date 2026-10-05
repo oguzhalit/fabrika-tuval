@@ -95,8 +95,8 @@ export interface PlacedRow {
 }
 
 export type PlacedTable =
-	| {readonly _tag: "Rows"; readonly rows: ReadonlyArray<PlacedRow>}
-	| {readonly _tag: "Malformed"; readonly reason: string};
+	| { readonly _tag: "Rows"; readonly rows: ReadonlyArray<PlacedRow> }
+	| { readonly _tag: "Malformed"; readonly reason: string };
 
 /**
  * Every readable row with its line index, by zipping the scan against the parse.
@@ -111,7 +111,7 @@ export const placedRows = (text: string): PlacedTable => {
 	const scanned = scanCampaigns(text).rows;
 	return {
 		_tag: "Rows",
-		rows: parsed.rows.map((row, index) => ({row, line: scanned[index]?.index ?? -1})),
+		rows: parsed.rows.map((row, index) => ({ row, line: scanned[index]?.index ?? -1 })),
 	};
 };
 

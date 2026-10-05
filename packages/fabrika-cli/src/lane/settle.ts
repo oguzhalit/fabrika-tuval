@@ -18,8 +18,8 @@
  * unreadable. `--landed-by <pr>` names that merge; the board still has to say it merged, and the
  * line records that a caller asserted the link rather than a body proving it.
  */
-import {CANCELLED_EVENT, LANDED_EVENT} from "./machine.ts";
-import type {PullFact} from "./prove.ts";
+import { CANCELLED_EVENT, LANDED_EVENT } from "./machine.ts";
+import type { PullFact } from "./prove.ts";
 
 /**
  * The closures a cancellation may stand on — GitHub's own `state_reason` spellings.
@@ -64,9 +64,9 @@ export const ASSERTED_BY_CALLER = "caller";
  * read never entitles a terminal.
  */
 export type AssertedPull =
-	| {readonly _tag: "Merged"; readonly number: number; readonly sha: string | null}
-	| {readonly _tag: "Unmerged"; readonly number: number; readonly state: string}
-	| {readonly _tag: "Absent"; readonly number: number};
+	| { readonly _tag: "Merged"; readonly number: number; readonly sha: string | null }
+	| { readonly _tag: "Unmerged"; readonly number: number; readonly state: string }
+	| { readonly _tag: "Absent"; readonly number: number };
 
 /**
  * The merged pull requests whose body names this issue, through a closing keyword or `Part of`.
@@ -86,7 +86,7 @@ export const mergedLinking = (
 /** What one board read of the driving issue, plus its candidate pull requests, entitles. */
 export type Entitlement =
 	/** The board proved a not-planned or duplicate close; nothing shipped, so there is no evidence. */
-	| {readonly _tag: "Cancellable"; readonly event: string; readonly outcome: CancellationOutcome}
+	| { readonly _tag: "Cancellable"; readonly event: string; readonly outcome: CancellationOutcome }
 	/**
 	 * The board proved a completed close AND at least one merged pull request naming the issue.
 	 * `landed` is those pull requests' numbers — never empty, since an empty one is the `Unknown` arm.
@@ -105,13 +105,13 @@ export type Entitlement =
 			readonly assertedBy?: typeof ASSERTED_BY_CALLER;
 	  }
 	/** `--landed-by` named a pull request the board does not hold: there is no merge to stand on. */
-	| {readonly _tag: "AssertedAbsent"; readonly pr: number}
+	| { readonly _tag: "AssertedAbsent"; readonly pr: number }
 	/** `--landed-by` named a pull request that has not merged: the landing it asserts has not happened. */
-	| {readonly _tag: "AssertedUnmerged"; readonly pr: number; readonly state: string}
+	| { readonly _tag: "AssertedUnmerged"; readonly pr: number; readonly state: string }
 	/** The issue is open: there is live work here, and no closure to stand on. */
-	| {readonly _tag: "Live"}
+	| { readonly _tag: "Live" }
 	/** The board could not be read, or answered a closure nothing can classify. */
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * What the board's answer about one issue entitles.
@@ -141,7 +141,7 @@ export const entitlement = (
 	pulls: ReadonlyArray<PullFact> | null,
 	asserted: AssertedPull | null = null,
 ): Entitlement => {
-	if (state === "open") return {_tag: "Live"};
+	if (state === "open") return { _tag: "Live" };
 	if (reason === null) {
 		return {
 			_tag: "Unknown",
@@ -150,7 +150,7 @@ export const entitlement = (
 		};
 	}
 	if (isCancellationOutcome(reason)) {
-		return {_tag: "Cancellable", event: CANCELLED_EVENT, outcome: reason};
+		return { _tag: "Cancellable", event: CANCELLED_EVENT, outcome: reason };
 	}
 	if (reason !== LANDED_OUTCOME) {
 		return {
@@ -180,10 +180,10 @@ export const entitlement = (
 		};
 	}
 	if (asserted._tag === "Absent") {
-		return {_tag: "AssertedAbsent", pr: asserted.number};
+		return { _tag: "AssertedAbsent", pr: asserted.number };
 	}
 	if (asserted._tag === "Unmerged") {
-		return {_tag: "AssertedUnmerged", pr: asserted.number, state: asserted.state};
+		return { _tag: "AssertedUnmerged", pr: asserted.number, state: asserted.state };
 	}
 	return {
 		_tag: "Landed",

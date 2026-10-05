@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	type CitationScope,
 	citationsOf,
@@ -6,7 +6,7 @@ import {
 	type RegisterRows,
 	renderFinding,
 } from "./findings.ts";
-import {parseRegister, type Row} from "./register.ts";
+import { parseRegister, type Row } from "./register.ts";
 
 const rowsOf = (text: string): ReadonlyArray<Row> => {
 	const parsed = parseRegister(text);
@@ -14,11 +14,11 @@ const rowsOf = (text: string): ReadonlyArray<Row> => {
 	return parsed.value.rows;
 };
 
-const terms = (text: string): RegisterRows => ({register: "terms", rows: rowsOf(text)});
+const terms = (text: string): RegisterRows => ({ register: "terms", rows: rowsOf(text) });
 
 const noCitations = {
-	citations: {_tag: "Resolved", dir: ".decisions", states: new Map()},
-} satisfies {citations: CitationScope};
+	citations: { _tag: "Resolved", dir: ".decisions", states: new Map() },
+} satisfies { citations: CitationScope };
 
 describe("citationsOf", () => {
 	it("reads four-digit ids out of cells 2 and 3, never the term", () => {
@@ -90,7 +90,7 @@ describe("findDefects", () => {
 | seam | A boundary. | |
 `;
 		const findings = findDefects({
-			registers: [terms(table), {register: "language", rows: rowsOf(table)}],
+			registers: [terms(table), { register: "language", rows: rowsOf(table) }],
 			...noCitations,
 		});
 		expect(findings.map((finding) => finding.kind)).toEqual(["cross-register"]);
@@ -110,7 +110,7 @@ describe("findDefects", () => {
 			],
 			...noCitations,
 		});
-		expect(findings[0]).toMatchObject({kind: "out-of-order", detail: 'sorts before "sozluk"'});
+		expect(findings[0]).toMatchObject({ kind: "out-of-order", detail: 'sorts before "sozluk"' });
 	});
 
 	it("separates a citation with no record from one whose record is not live", () => {
@@ -127,8 +127,8 @@ describe("findDefects", () => {
 				_tag: "Resolved",
 				dir: ".decisions",
 				states: new Map([
-					["0044", {_tag: "Superseded" as const, status: "superseded by [0144](0144-x.md)"}],
-					["9999", {_tag: "Dead" as const}],
+					["0044", { _tag: "Superseded" as const, status: "superseded by [0144](0144-x.md)" }],
+					["9999", { _tag: "Dead" as const }],
 				]),
 			},
 		});
@@ -148,7 +148,7 @@ describe("findDefects", () => {
 | depo | Cites 0044. | |
 `),
 			],
-			citations: {_tag: "Unverified", detail: "cannot read .decisions: ENOENT"},
+			citations: { _tag: "Unverified", detail: "cannot read .decisions: ENOENT" },
 		});
 		expect(findings).toEqual([
 			{
@@ -172,7 +172,7 @@ describe("findDefects", () => {
 | depo | The internal asset store. | |
 `),
 			],
-			citations: {_tag: "Empty"},
+			citations: { _tag: "Empty" },
 		});
 		expect(findings).toEqual([]);
 	});

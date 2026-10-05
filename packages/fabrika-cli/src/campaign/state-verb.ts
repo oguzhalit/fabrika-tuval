@@ -12,12 +12,12 @@
  * not repeated here: a second answer to a merge-gating question is worse than no answer at all.
  */
 
-import {Effect} from "effect";
-import {CAMPAIGN_STATES, type CampaignState} from "../build/scope-admission.ts";
-import {writeFile} from "../io/fs.ts";
-import {resolveRepo} from "../io/issues.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {CITATION_GRAMMAR, readCitation} from "./citation.ts";
+import { Effect } from "effect";
+import { CAMPAIGN_STATES, type CampaignState } from "../build/scope-admission.ts";
+import { writeFile } from "../io/fs.ts";
+import { resolveRepo } from "../io/issues.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { CITATION_GRAMMAR, readCitation } from "./citation.ts";
 import {
 	ALREADY_IN_STATE,
 	AMBIGUOUS_SELECTOR,
@@ -27,8 +27,8 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {type CampaignEffect, locateRoadmap, readRoadmap, runTrace} from "./guards.ts";
-import {placedRows, rewriteState, rowLine, selects} from "./table.ts";
+import { type CampaignEffect, locateRoadmap, readRoadmap, runTrace } from "./guards.ts";
+import { placedRows, rewriteState, rowLine, selects } from "./table.ts";
 
 export interface StateOptions {
 	readonly selector: string;
@@ -73,7 +73,7 @@ export const runState = (options: StateOptions): CampaignEffect<VerbOutcome> =>
 
 		const located = yield* locateRoadmap(VERB, options.cwd, options.file);
 		if (located._tag === "Refused") return located.outcome;
-		const {display, path} = located.located;
+		const { display, path } = located.located;
 
 		const read = yield* readRoadmap(VERB, located.located, "nothing was written");
 		if (read._tag === "Refused") return read.outcome;
@@ -153,7 +153,7 @@ export const runState = (options: StateOptions): CampaignEffect<VerbOutcome> =>
 		const notice = `${VERB}: cited ${citation.url} by @${trace.login} (control plane: ${trace.owners}; ${trace.level} on ${repo}); "${landed.name}" #${landed.milestone} ${from} → ${to} in ${display}.`;
 		return answer(
 			options.json
-				? `${JSON.stringify({row: landed, from, file: display})}\n`
+				? `${JSON.stringify({ row: landed, from, file: display })}\n`
 				: `${rowLine(landed)}\n`,
 			[...trace.notices, notice],
 		);

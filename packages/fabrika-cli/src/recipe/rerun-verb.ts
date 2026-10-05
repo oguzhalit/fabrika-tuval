@@ -12,12 +12,12 @@
  * ([`github.ts`](./github.ts)). A run whose re-read shows no new attempt is a mismatch, not a
  * success with a caveat.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {listComments} from "../io/issues.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {bindToHead, read as readMarker} from "../wire/verdict-marker.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { listComments } from "../io/issues.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { bindToHead, read as readMarker } from "../wire/verdict-marker.ts";
 import {
 	NOTHING_TO_RERUN,
 	PRECONDITION_UNKNOWN,
@@ -28,8 +28,8 @@ import {
 	VERDICT_STALE,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {getRun, listRunsAtHead, rerunAccepted, rerunRun, type WorkflowRun} from "./github.ts";
-import {badNumber, openPull, resolveTargetRepo, scannedLine} from "./target.ts";
+import { getRun, listRunsAtHead, rerunAccepted, rerunRun, type WorkflowRun } from "./github.ts";
+import { badNumber, openPull, resolveTargetRepo, scannedLine } from "./target.ts";
 
 const VERB = "fabrika recipe rerun";
 
@@ -50,7 +50,7 @@ export const runRerun = (
 	ChildProcessSpawner.ChildProcessSpawner | HttpClient.HttpClient
 > =>
 	Effect.gen(function* () {
-		const {pr} = options;
+		const { pr } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -79,7 +79,7 @@ export const runRerun = (
 
 		// Latest wins by write stamp, not by creation: a FAIL upserted into an older comment after a
 		// PASS is the current verdict, and `created_at` would order it behind.
-		let latest: {readonly polarity: string; readonly sha: string; readonly at: string} | null =
+		let latest: { readonly polarity: string; readonly sha: string; readonly at: string } | null =
 			null;
 		for (const comment of listed.value) {
 			const parsed = readMarker(comment.body);
@@ -141,7 +141,7 @@ export const runRerun = (
 			);
 		}
 
-		const rerun: Array<{id: number; name: string; attempt: number}> = [];
+		const rerun: Array<{ id: number; name: string; attempt: number }> = [];
 		for (const run of failed) {
 			const proven = yield* rerunOne(repo, run, options.env);
 			if (proven._tag === "Refused") {
@@ -150,18 +150,18 @@ export const runRerun = (
 					stderr: [...diagnostics, ...proven.outcome.stderr],
 				};
 			}
-			rerun.push({id: run.id, name: run.name, attempt: proven.attempt});
+			rerun.push({ id: run.id, name: run.name, attempt: proven.attempt });
 		}
 
-		return answer(JSON.stringify({pr, head, verdict: "PASS", rerun}), [
+		return answer(JSON.stringify({ pr, head, verdict: "PASS", rerun }), [
 			...diagnostics,
 			`${VERB}: rerequested ${rerun.length} run(s), each proven by its own re-read.`,
 		]);
 	});
 
 type RerunProof =
-	| {readonly _tag: "Accepted"; readonly attempt: number}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Accepted"; readonly attempt: number }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 const rerunOne = (
 	repo: string,
@@ -194,7 +194,7 @@ const rerunOne = (
 			};
 		}
 		return rerunAccepted(run, after.value)
-			? {_tag: "Accepted" as const, attempt: after.value.runAttempt}
+			? { _tag: "Accepted" as const, attempt: after.value.runAttempt }
 			: {
 					_tag: "Refused" as const,
 					outcome: refuse(

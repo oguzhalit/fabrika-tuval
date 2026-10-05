@@ -13,19 +13,19 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9949
  */
-import {Effect} from "effect";
-import type {Shell} from "../io/git.ts";
-import {listCheckRuns} from "../io/pulls.ts";
-import {owedRollup, readBlockingSet, reportingAt, unreadableCause} from "../review/blocking.ts";
-import {isFailing, rollupOf} from "../review/rollup.ts";
+import { Effect } from "effect";
+import type { Shell } from "../io/git.ts";
+import { listCheckRuns } from "../io/pulls.ts";
+import { owedRollup, readBlockingSet, reportingAt, unreadableCause } from "../review/blocking.ts";
+import { isFailing, rollupOf } from "../review/rollup.ts";
 
 export type RequiredChecks =
-	| {readonly state: "green"}
+	| { readonly state: "green" }
 	/** Each failing blocking context by name — a red with nobody named to fix is no finding. */
-	| {readonly state: "red"; readonly failing: readonly [string, ...string[]]}
+	| { readonly state: "red"; readonly failing: readonly [string, ...string[]] }
 	/** Blocking runs still in flight, and declared contexts that have posted nothing at this head. */
-	| {readonly state: "pending"; readonly awaiting: ReadonlyArray<string>}
-	| {readonly state: "unknown"; readonly reason: string};
+	| { readonly state: "pending"; readonly awaiting: ReadonlyArray<string> }
+	| { readonly state: "unknown"; readonly reason: string };
 
 const sortedUnique = (names: ReadonlyArray<string>): ReadonlyArray<string> =>
 	[...new Set(names)].sort();
@@ -40,7 +40,7 @@ export const requiredChecksAt = (
 	Effect.gen(function* () {
 		const authority = yield* readBlockingSet(repo, base);
 		if (authority._tag !== "Set") {
-			return {state: "unknown", reason: unreadableCause(verb, base, authority)} as const;
+			return { state: "unknown", reason: unreadableCause(verb, base, authority) } as const;
 		}
 		const set = authority.set;
 
@@ -51,7 +51,7 @@ export const requiredChecksAt = (
 				reason: `${verb}: cannot enumerate check runs at ${head}: ${enumerated.reason} — the required checks are UNKNOWN, never green.`,
 			} as const;
 		}
-		const {declared, runs} = enumerated.value;
+		const { declared, runs } = enumerated.value;
 		if (runs.length < declared) {
 			return {
 				state: "unknown",
@@ -65,11 +65,11 @@ export const requiredChecksAt = (
 			runs.map((run) => run.name),
 		);
 		const rollup = owedRollup(rollupOf(blocked), reporting);
-		if (rollup === "green") return {state: "green"} as const;
+		if (rollup === "green") return { state: "green" } as const;
 		if (rollup === "red") {
 			const [first, ...rest] = sortedUnique(blocked.filter(isFailing).map((run) => run.name));
 			// `rollupOf` answers red only over a failing run, so the list cannot be empty here.
-			if (first !== undefined) return {state: "red", failing: [first, ...rest]} as const;
+			if (first !== undefined) return { state: "red", failing: [first, ...rest] } as const;
 		}
 		const running = blocked.filter((run) => run.status !== "completed").map((run) => run.name);
 		const owed =
@@ -78,7 +78,7 @@ export const requiredChecksAt = (
 				: reporting._tag === "Silent"
 					? set.contexts
 					: [];
-		return {state: "pending", awaiting: sortedUnique([...running, ...owed])} as const;
+		return { state: "pending", awaiting: sortedUnique([...running, ...owed]) } as const;
 	});
 
 /** The machine line the fold's required-check state gets, one per value. */

@@ -7,14 +7,14 @@
  * that one value as "the base", so a verb printing the branch tip and a verb printing the branch
  * point were indistinguishable from any test.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeShell, okOut} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import type {PullRecord} from "../io/pulls.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {BASE, BASE_TIP, HEAD, OLD_HEAD} from "./fixtures.test-support.ts";
-import {bindHead, boundLine} from "./head.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeShell, okOut } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import type { PullRecord } from "../io/pulls.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { BASE, BASE_TIP, HEAD, OLD_HEAD } from "./fixtures.test-support.ts";
+import { bindHead, boundLine } from "./head.ts";
 
 const PULL: PullRecord = {
 	number: 4321,
@@ -70,7 +70,7 @@ describe("bindHead under a moved base branch", () => {
 	});
 
 	it("asks git for the merge base of the tip and the head, never assuming the tip is one", async () => {
-		const {fake, bound} = bind();
+		const { fake, bound } = bind();
 		await bound;
 		expect(fake.calls).toContain(`git merge-base ${BASE_TIP} ${HEAD}`);
 	});

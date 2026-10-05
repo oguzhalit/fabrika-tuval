@@ -12,19 +12,19 @@
  *
  * The demotion itself runs through the reconcile in `./facets.ts`, shared with `triage apply`.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {createComment, getIssue, listLabels, resolveRepo} from "../io/issues.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {missingLabelRemedy} from "../status/label-remedy.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {type AuthoredSurface, leakRefusal, readAuthored} from "./authored.ts";
-import {PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {guardConfig} from "./config-guard.ts";
-import {applyChanges} from "./facet-writes.ts";
-import {parkedFacets, planReconcile, renderShape, shapeViolations} from "./facets.ts";
-import {scannedLine} from "./scope.ts";
-import {guardTarget} from "./target-guard.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { createComment, getIssue, listLabels, resolveRepo } from "../io/issues.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { missingLabelRemedy } from "../status/label-remedy.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { type AuthoredSurface, leakRefusal, readAuthored } from "./authored.ts";
+import { PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { guardConfig } from "./config-guard.ts";
+import { applyChanges } from "./facet-writes.ts";
+import { parkedFacets, planReconcile, renderShape, shapeViolations } from "./facets.ts";
+import { scannedLine } from "./scope.ts";
+import { guardTarget } from "./target-guard.ts";
 
 const SURFACE: AuthoredSurface = {
 	verb: "triage park",
@@ -58,7 +58,7 @@ export const runPark = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
-		const {issue, json} = options;
+		const { issue, json } = options;
 
 		if (!Number.isInteger(issue) || issue <= 0) {
 			return refuse(FAILED, `triage park: ${issue} is not an issue number.`);
@@ -108,7 +108,7 @@ export const runPark = (
 		if (!vocabulary.value.includes(needsInfo)) {
 			return refuse(
 				ZERO_SCOPE,
-				`triage park: label ${needsInfo} does not exist in ${repo} — refusing to write, because the API would create it. ${missingLabelRemedy(needsInfo, {_tag: "Resolved", resolved})}`,
+				`triage park: label ${needsInfo} does not exist in ${repo} — refusing to write, because the API would create it. ${missingLabelRemedy(needsInfo, { _tag: "Resolved", resolved })}`,
 				diagnostics,
 			);
 		}
@@ -124,7 +124,7 @@ export const runPark = (
 
 		const facets = parkedFacets(resolved);
 		const plan = planReconcile(
-			{labels: target.value.labels, milestone: target.value.milestone},
+			{ labels: target.value.labels, milestone: target.value.milestone },
 			facets,
 			null,
 		);
@@ -148,7 +148,7 @@ export const runPark = (
 				diagnostics,
 			);
 		}
-		const observed = {labels: back.value.labels, milestone: back.value.milestone};
+		const observed = { labels: back.value.labels, milestone: back.value.milestone };
 		if (shapeViolations(observed, facets, null).length > 0) {
 			return refuse(
 				READBACK_MISMATCH,

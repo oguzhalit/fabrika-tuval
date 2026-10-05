@@ -20,9 +20,9 @@
  * chances to answer one question differently.
  */
 
-import {isRecord} from "../../io/json.ts";
-import {trimmedStrings} from "../entries.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import { isRecord } from "../../io/json.ts";
+import { trimmedStrings } from "../entries.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const CONTAINMENT_VOCABULARY = "containmentVocabulary";
 
@@ -50,14 +50,14 @@ export const SHIPPED_CONTAINMENT_VOCABULARY: ContainmentVocabulary = {
 const MALFORMED = `\`${CONTAINMENT_VOCABULARY}\` is not {"types": [type labels], "values": [keywords]} — e.g. {"types": ["type:feature"], "values": ["flag", "exempt"]}`;
 
 const decode = (raw: unknown): Decoded<ContainmentVocabulary> => {
-	if (!isRecord(raw)) return {_tag: "Malformed", reason: MALFORMED};
+	if (!isRecord(raw)) return { _tag: "Malformed", reason: MALFORMED };
 	// Each half falls to its own shipped value when absent, so a repo re-spelling the values keeps
 	// the default type set without restating it.
 	const types =
 		raw.types === undefined ? SHIPPED_CONTAINMENT_VOCABULARY.types : trimmedStrings(raw.types);
 	const declared =
 		raw.values === undefined ? SHIPPED_CONTAINMENT_VOCABULARY.values : trimmedStrings(raw.values);
-	if (types === null || declared === null) return {_tag: "Malformed", reason: MALFORMED};
+	if (types === null || declared === null) return { _tag: "Malformed", reason: MALFORMED };
 	const values = declared.map((value) => value.toLowerCase());
 	if (values.includes(DECLINED)) {
 		return {
@@ -65,7 +65,7 @@ const decode = (raw: unknown): Decoded<ContainmentVocabulary> => {
 			reason: `\`${CONTAINMENT_VOCABULARY}\` declares "${DECLINED}" as a legal value — it is the reserved declination, so a child declaring it would satisfy the marker by refusing it.`,
 		};
 	}
-	return {_tag: "Value", value: {types, values}};
+	return { _tag: "Value", value: { types, values } };
 };
 
 export const containmentVocabularyKey: KeyGroup<ContainmentVocabulary> = {
@@ -80,12 +80,12 @@ export const containmentVocabularyKey: KeyGroup<ContainmentVocabulary> = {
 			types: {
 				type: "array",
 				description: "The `type:` labels a child must carry to be asked for a marker.",
-				items: {type: "string", minLength: 1},
+				items: { type: "string", minLength: 1 },
 			},
 			values: {
 				type: "array",
 				description: `The keywords that satisfy the marker. Never "${DECLINED}", the reserved declination.`,
-				items: {type: "string", minLength: 1},
+				items: { type: "string", minLength: 1 },
 			},
 		},
 		additionalProperties: false,
@@ -138,5 +138,5 @@ export const containmentGap = (
 	const asked = vocabulary.types.find((type) => labels.includes(type));
 	if (asked === undefined) return null;
 	if (containment !== null && vocabulary.values.includes(containment)) return null;
-	return {type: asked, got: containment ?? "unset"};
+	return { type: asked, got: containment ?? "unset" };
 };

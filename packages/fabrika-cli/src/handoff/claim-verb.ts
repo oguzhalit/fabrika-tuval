@@ -9,12 +9,12 @@
  * duplicating it here would be a second answer to one question.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {createComment, getComment} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {packNonce} from "../wire/handoff-pack.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { createComment, getComment } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { packNonce } from "../wire/handoff-pack.ts";
 import {
 	NO_PACK,
 	PACK_CLAIMED,
@@ -23,9 +23,9 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {requireIssue, targetRepo} from "./guards.ts";
-import {composeClaimMarker, stampOf} from "./markers.ts";
-import {resolvePack} from "./packs.ts";
+import { requireIssue, targetRepo } from "./guards.ts";
+import { composeClaimMarker, stampOf } from "./markers.ts";
+import { resolvePack } from "./packs.ts";
 
 export interface ClaimOptions {
 	readonly issue: number;

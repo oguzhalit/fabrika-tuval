@@ -1,6 +1,6 @@
-import {Effect, FileSystem, Path, Result, Schema} from "effect";
-import {appendFile} from "../io/fs.ts";
-import {type LedgerRow, readSpendLedger} from "./ledger.ts";
+import { Effect, FileSystem, Path, Result, Schema } from "effect";
+import { appendFile } from "../io/fs.ts";
+import { type LedgerRow, readSpendLedger } from "./ledger.ts";
 import {
 	decodeUsageRecord,
 	parseUsageRecord,
@@ -38,7 +38,7 @@ export const readUsageLedger = (text: string) => {
 		} else {
 			const historical = readSpendLedger(line);
 			legacy.push(...historical.rows);
-			const version = Result.try({try: (): unknown => JSON.parse(line)?.v, catch: () => null});
+			const version = Result.try({ try: (): unknown => JSON.parse(line)?.v, catch: () => null });
 			if (historical.rows.length > 0) continue;
 			if (
 				Result.isSuccess(version) &&
@@ -50,7 +50,7 @@ export const readUsageLedger = (text: string) => {
 			else malformed++;
 		}
 	}
-	return {records, legacy, diagnostics: {malformed, newerVersion, duplicates, conflicts}};
+	return { records, legacy, diagnostics: { malformed, newerVersion, duplicates, conflicts } };
 };
 
 class RecordingFailed extends Schema.TaggedError<RecordingFailed>()("spend/RecordingFailed", {
@@ -75,11 +75,11 @@ export const recordUsage = Effect.fn("spend.recordUsage")(
 	function* (requestedPath: string, input: UsageRecord) {
 		const decoded = decodeUsageRecord(input);
 		if (Result.isFailure(decoded))
-			return yield* new RecordingFailed({reason: "Invalid usage record; nothing appended."});
+			return yield* new RecordingFailed({ reason: "Invalid usage record; nothing appended." });
 		const record = decoded.success;
 		const fs = yield* FileSystem.FileSystem;
 		const paths = yield* Path.Path;
-		yield* fs.makeDirectory(paths.dirname(requestedPath), {recursive: true});
+		yield* fs.makeDirectory(paths.dirname(requestedPath), { recursive: true });
 		const path = (yield* fs.exists(requestedPath))
 			? yield* fs.realPath(requestedPath)
 			: paths.join(yield* fs.realPath(paths.dirname(requestedPath)), paths.basename(requestedPath));
@@ -88,7 +88,7 @@ export const recordUsage = Effect.fn("spend.recordUsage")(
 		const result = yield* Effect.scoped(
 			Effect.gen(function* () {
 				yield* Effect.acquireRelease(acquire(lock), () =>
-					fs.remove(lock, {recursive: true}).pipe(
+					fs.remove(lock, { recursive: true }).pipe(
 						Effect.catch(() =>
 							Effect.sync(() => {
 								released = false;
@@ -111,7 +111,7 @@ export const recordUsage = Effect.fn("spend.recordUsage")(
 					});
 				const duplicate = old.some((row) => sameRecord(row, record) || refinesIssue(row, record));
 				if (!duplicate) yield* appendFile(path, `${JSON.stringify(record)}\n`);
-				const file = yield* fs.open(path, {flag: "a"});
+				const file = yield* fs.open(path, { flag: "a" });
 				yield* file.sync;
 				const landed = readUsageLedger(yield* fs.readFileString(path)).records.some(
 					(row) =>
@@ -122,7 +122,7 @@ export const recordUsage = Effect.fn("spend.recordUsage")(
 					return yield* new RecordingFailed({
 						reason: "Appended usage could not be read back; retry this record.",
 					});
-				return {status: duplicate ? ("duplicate" as const) : ("recorded" as const)};
+				return { status: duplicate ? ("duplicate" as const) : ("recorded" as const) };
 			}),
 		);
 		if (!released)

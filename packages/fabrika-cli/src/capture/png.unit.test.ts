@@ -1,5 +1,5 @@
-import {assert, describe, it} from "@effect/vitest";
-import {decodePngHeader, validateCaptureBytes} from "./png.ts";
+import { assert, describe, it } from "@effect/vitest";
+import { decodePngHeader, validateCaptureBytes } from "./png.ts";
 
 /** A PNG signature + IHDR chunk at the declared dimensions — the only bytes the header reader needs. */
 const png = (width: number, height: number): Uint8Array => {
@@ -14,7 +14,7 @@ const png = (width: number, height: number): Uint8Array => {
 
 describe("decodePngHeader", () => {
 	it("reads the declared dimensions out of the IHDR chunk", () => {
-		assert.deepStrictEqual(decodePngHeader(png(1280, 2140)), {width: 1280, height: 2140});
+		assert.deepStrictEqual(decodePngHeader(png(1280, 2140)), { width: 1280, height: 2140 });
 	});
 
 	it("returns null for bytes that are not a PNG header", () => {

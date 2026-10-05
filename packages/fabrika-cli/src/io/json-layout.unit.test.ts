@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import {FRESH_JSON_LAYOUT, readJsonLayout, renderJson} from "./json-layout.ts";
+import { describe, expect, it } from "vitest";
+import { FRESH_JSON_LAYOUT, readJsonLayout, renderJson } from "./json-layout.ts";
 
-const VALUE = {name: "site", scripts: {build: "tsc"}};
+const VALUE = { name: "site", scripts: { build: "tsc" } };
 
 describe("a JSON file's layout survives a re-render", () => {
 	it.each([
@@ -26,10 +26,12 @@ describe("a JSON file's layout survives a re-render", () => {
 
 	it("gives a file with no indented line the fresh layout's indent", () => {
 		expect(readJsonLayout("{}\n")).toEqual(FRESH_JSON_LAYOUT);
-		expect(readJsonLayout('{"a":1}')).toEqual({...FRESH_JSON_LAYOUT, finalNewline: false});
+		expect(readJsonLayout('{"a":1}')).toEqual({ ...FRESH_JSON_LAYOUT, finalNewline: false });
 	});
 
 	it("writes a file from nothing tab-indented with a final newline", () => {
-		expect(renderJson({a: {b: 1}}, FRESH_JSON_LAYOUT)).toBe('{\n\t"a": {\n\t\t"b": 1\n\t}\n}\n');
+		expect(renderJson({ a: { b: 1 } }, FRESH_JSON_LAYOUT)).toBe(
+			'{\n\t"a": {\n\t\t"b": 1\n\t}\n}\n',
+		);
 	});
 });
