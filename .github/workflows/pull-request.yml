@@ -678,8 +678,8 @@ jobs:
             return 0
           }
 
-          # Remove PR container
-          exec_guest_cmd "Remove container" "sh -c 'docker rm -f pr-${{ env.PR_NUMBER }}-draw-* 2>/dev/null || true'"
+          # Remove PR container (find and remove all containers matching pattern)
+          exec_guest_cmd "Remove container" "sh -c 'docker ps -aq --filter \"name=^pr-${{ env.PR_NUMBER }}-draw\" | xargs -r docker rm -f'"
 
       - name: 🌐 Remove DNS Record
         env:
