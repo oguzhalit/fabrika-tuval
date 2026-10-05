@@ -195,16 +195,50 @@ jobs:
             return 1
           }
 
-          # Get running containers to find available port
-          CONTAINERS=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+          # Find available port and generate unique container name
+          CONTAINER_SUFFIX=$(date +%s%N | tail -c 6)
+          CONTAINER_NAME="pr-${{ env.PR_NUMBER }}-draw-$CONTAINER_SUFFIX"
+
+          # Find first available port (3000-3999) using netstat
+          PREVIEW_PORT=""
+          NETSTAT_OUTPUT=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
             -H "Authorization: $PVE_TOKEN" \
             --data-urlencode "command=sh" \
             --data-urlencode "command=-c" \
-            --data-urlencode "command=docker ps --format '{{.Ports}}'" 2>/dev/null | jq -r '.data.pid' || echo "")
+            --data-urlencode "command=netstat -tln | grep LISTEN | awk '{print \$4}' | cut -d: -f2 | sort -n" 2>/dev/null)
 
-          # Fallback to PR-based port if we can't get container list
-          PREVIEW_PORT=$((3000 + ${{ env.PR_NUMBER }}))
-          echo "📌 Using port: $PREVIEW_PORT"
+          PID=$(echo "$NETSTAT_OUTPUT" | jq -r '.data.pid // empty')
+          if [ -n "$PID" ]; then
+            for i in {1..10}; do
+              sleep 1
+              STATUS=$(curl -s -k -X GET "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec-status?pid=$PID" \
+                -H "Authorization: $PVE_TOKEN")
+              EXITED=$(echo "$STATUS" | jq -r '.data.exited // 0')
+              if [ "$EXITED" -eq 1 ]; then
+                USED_PORTS=$(echo "$STATUS" | jq -r '.data["out-data"] // ""')
+                break
+              fi
+            done
+          fi
+
+          # Find first available port
+          for port in {3000..3999}; do
+            if ! echo "$USED_PORTS" | grep -q "^$port$"; then
+              PREVIEW_PORT=$port
+              break
+            fi
+          done
+
+          if [ -z "$PREVIEW_PORT" ]; then
+            PREVIEW_PORT=$((3000 + ${{ env.PR_NUMBER }}))
+          fi
+
+          echo "📌 Container: $CONTAINER_NAME"
+          echo "📌 Port: $PREVIEW_PORT"
+
+          # Save deployment info for next steps
+          echo "CONTAINER_NAME=$CONTAINER_NAME" >> $GITHUB_ENV
+          echo "PREVIEW_PORT=$PREVIEW_PORT" >> $GITHUB_ENV
 
           # Step 1: Docker login
           exec_guest_cmd "🔐 Docker login" "sh -c 'echo $GITHUB_TOKEN | docker login -u $GITHUB_ACTOR --password-stdin $REGISTRY'"
@@ -212,11 +246,11 @@ jobs:
           # Step 2: Pull image
           exec_guest_cmd "📥 Pull image" "sh -c 'docker pull $REGISTRY_IMAGE'"
 
-          # Step 3: Run new container on unique port
-          exec_guest_cmd "🐳 Run container on port $PREVIEW_PORT" "sh -c 'docker run -d --name pr-${{ env.PR_NUMBER }}-draw -p $PREVIEW_PORT:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
+          # Step 3: Run container with unique name on available port
+          exec_guest_cmd "🐳 Run $CONTAINER_NAME:$PREVIEW_PORT" "sh -c 'docker run -d --name $CONTAINER_NAME -p $PREVIEW_PORT:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
 
           # Step 4: Verify
-          exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=pr-${{ env.PR_NUMBER }}-draw'"
+          exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=$CONTAINER_NAME'"
 
           echo ""
           echo "✅ Container deployed successfully"
@@ -239,6 +273,9 @@ jobs:
           echo "✅ DNS record created"
 
       - name: 💬 Comment Preview URL
+        env:
+          CONTAINER_SUFFIX: ${{ env.CONTAINER_SUFFIX }}
+          PREVIEW_PORT: ${{ env.PREVIEW_PORT }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -247,7 +284,7 @@ jobs:
               issue_number: ${{ env.PR_NUMBER }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `✅ **Preview Ready!**\n\n🌐 **URL:** [https://pr-${{ env.PR_NUMBER }}-draw.${{ secrets.CLOUDFLARE_DOMAIN }}](https://pr-${{ env.PR_NUMBER }}-draw.${{ secrets.CLOUDFLARE_DOMAIN }})`
+              body: `✅ **Preview Ready!**\n\n🌐 **URL:** [https://pr-${{ env.PR_NUMBER }}-draw.${{ secrets.CLOUDFLARE_DOMAIN }}](https://pr-${{ env.PR_NUMBER }}-draw.${{ secrets.CLOUDFLARE_DOMAIN }})\n\n📝 **Details:**\n- Container: \`pr-${{ env.PR_NUMBER }}-draw-${{ env.CONTAINER_SUFFIX }}\`\n- Port: \`${{ env.PREVIEW_PORT }}\``
             })
 
   # ========== PRODUCTION DEPLOY STAGE ==========
