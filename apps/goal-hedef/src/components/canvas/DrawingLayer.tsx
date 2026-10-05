@@ -2759,11 +2759,10 @@ export const DrawingLayer: React.FC = () => {
 					setSelectedStrokeIds([]);
 				}
 			} else if (e.key === "Escape") {
+				// Just deselect strokes, don't exit drawing mode
 				if (selectedStrokeId || selectedStrokeIds.length > 0) {
 					setSelectedStrokeId(null);
 					setSelectedStrokeIds([]);
-				} else {
-					toggleDrawingMode();
 				}
 			}
 		};
@@ -2991,7 +2990,7 @@ export const DrawingLayer: React.FC = () => {
 				style={{
 					cursor: getCanvasCursor(),
 				}}
-				className={`absolute inset-0 z-20 ${!isDrawingMode ? "pointer-events-none" : ""}`}
+				className={`absolute inset-0 z-[100] ${!isDrawingMode ? "pointer-events-none" : ""}`}
 			/>
 
 			{/* Neo-Brutalist Özel Silgi İmleci Göstergesi */}
