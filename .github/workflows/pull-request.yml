@@ -140,19 +140,14 @@ jobs:
             # Extract actual command from "sh -c 'command'" pattern
             if [[ $cmd =~ ^sh\ -c\ \'(.*)\'$ ]]; then
               local actual_cmd="${BASH_REMATCH[1]}"
-              echo "  [DEBUG] Matched sh -c pattern"
-              echo "  [DEBUG] actual_cmd: $actual_cmd"
               RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
                 -H "Authorization: $PVE_TOKEN" \
                 --data-urlencode "command=sh" \
                 --data-urlencode "command=-c" \
                 --data-urlencode "command=$actual_cmd")
             else
-              # Fallback for simple commands
-              echo "  [DEBUG] Simple command (no sh -c)"
-              RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
-                -H "Authorization: $PVE_TOKEN" \
-                --data-urlencode "command=$cmd")
+              echo "❌ Command must be wrapped with sh -c 'command'"
+              return 1
             fi
 
             echo "  [DEBUG] curl response: $RESP"
@@ -204,19 +199,19 @@ jobs:
           exec_guest_cmd "🔐 Docker login" "sh -c 'echo $GITHUB_TOKEN | docker login -u $GITHUB_ACTOR --password-stdin $REGISTRY'"
 
           # Step 2: Pull image
-          exec_guest_cmd "📥 Pull image" "docker pull $REGISTRY_IMAGE"
+          exec_guest_cmd "📥 Pull image" "sh -c 'docker pull $REGISTRY_IMAGE'"
 
           # Step 3: Stop existing
-          exec_guest_cmd "🛑 Stop existing container" "docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true"
+          exec_guest_cmd "🛑 Stop existing container" "sh -c 'docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
 
           # Step 4: Remove existing
-          exec_guest_cmd "🗑️ Remove existing container" "docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true"
+          exec_guest_cmd "🗑️ Remove existing container" "sh -c 'docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
 
           # Step 5: Run new container
-          exec_guest_cmd "🐳 Run new container" "docker run -d --name pr-${{ env.PR_NUMBER }}-draw -p 3000:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE"
+          exec_guest_cmd "🐳 Run new container" "sh -c 'docker run -d --name pr-${{ env.PR_NUMBER }}-draw -p 3000:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
 
           # Step 6: Verify
-          exec_guest_cmd "✅ Verify container" "docker ps -a --filter name=pr-${{ env.PR_NUMBER }}-draw"
+          exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=pr-${{ env.PR_NUMBER }}-draw'"
 
           echo ""
           echo "✅ Container deployed successfully"
@@ -313,19 +308,14 @@ jobs:
             # Extract actual command from "sh -c 'command'" pattern
             if [[ $cmd =~ ^sh\ -c\ \'(.*)\'$ ]]; then
               local actual_cmd="${BASH_REMATCH[1]}"
-              echo "  [DEBUG] Matched sh -c pattern"
-              echo "  [DEBUG] actual_cmd: $actual_cmd"
               RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
                 -H "Authorization: $PVE_TOKEN" \
                 --data-urlencode "command=sh" \
                 --data-urlencode "command=-c" \
                 --data-urlencode "command=$actual_cmd")
             else
-              # Fallback for simple commands
-              echo "  [DEBUG] Simple command (no sh -c)"
-              RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
-                -H "Authorization: $PVE_TOKEN" \
-                --data-urlencode "command=$cmd")
+              echo "❌ Command must be wrapped with sh -c 'command'"
+              return 1
             fi
 
             echo "  [DEBUG] curl response: $RESP"
@@ -377,19 +367,19 @@ jobs:
           exec_guest_cmd "🔐 Docker login" "sh -c 'echo $GITHUB_TOKEN | docker login -u $GITHUB_ACTOR --password-stdin $REGISTRY'"
 
           # Step 2: Pull image
-          exec_guest_cmd "📥 Pull image" "docker pull $REGISTRY_IMAGE"
+          exec_guest_cmd "📥 Pull image" "sh -c 'docker pull $REGISTRY_IMAGE'"
 
           # Step 3: Stop existing
-          exec_guest_cmd "🛑 Stop existing container" "docker stop draw 2>/dev/null || true"
+          exec_guest_cmd "🛑 Stop existing container" "sh -c 'docker stop draw 2>/dev/null || true'"
 
           # Step 4: Remove existing
-          exec_guest_cmd "🗑️ Remove existing container" "docker rm draw 2>/dev/null || true"
+          exec_guest_cmd "🗑️ Remove existing container" "sh -c 'docker rm draw 2>/dev/null || true'"
 
           # Step 5: Run new container
-          exec_guest_cmd "🐳 Run new container" "docker run -d --name draw -p 80:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE"
+          exec_guest_cmd "🐳 Run new container" "sh -c 'docker run -d --name draw -p 80:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
 
           # Step 6: Verify
-          exec_guest_cmd "✅ Verify container" "docker ps -a --filter name=draw"
+          exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=draw'"
 
           echo ""
           echo "✅ Production deployed successfully"
@@ -473,8 +463,8 @@ jobs:
             return 0
           }
 
-          exec_guest_cmd "Stop container" "docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true"
-          exec_guest_cmd "Remove container" "docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true"
+          exec_guest_cmd "Stop container" "sh -c 'docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
+          exec_guest_cmd "Remove container" "sh -c 'docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
 
       - name: 🌐 Remove DNS Record
         env:
