@@ -15,9 +15,9 @@ import {
 	Zap,
 } from "lucide-react";
 import React, { memo } from "react";
+import { clampCanvasPosition } from "../../constants/canvas";
 import { useGoalStore } from "../../store/useGoalStore";
 import { GoalCategory, GoalPriority, GoalStatus } from "../../types/goal";
-import { clampCanvasPosition } from "../../constants/canvas";
 
 const CATEGORY_CONFIG: Record<GoalCategory, { label: string; bg: string; text: string }> = {
 	career: { label: "KARİYER // İŞ", bg: "bg-[#00C2CB]", text: "text-black" },

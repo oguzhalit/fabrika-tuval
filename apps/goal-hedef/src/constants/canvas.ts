@@ -27,10 +27,7 @@ export const TOOLBAR_CONFIG = {
 /**
  * Clamp a position value within canvas bounds
  */
-export function clampCanvasPosition(
-	value: number,
-	isHorizontal: boolean,
-): number {
+export function clampCanvasPosition(value: number, isHorizontal: boolean): number {
 	const min = isHorizontal ? CANVAS_BOUNDS.MIN_X : CANVAS_BOUNDS.MIN_Y;
 	const max = isHorizontal ? CANVAS_BOUNDS.MAX_X : CANVAS_BOUNDS.MAX_Y;
 	return Math.max(min, Math.min(max, value));

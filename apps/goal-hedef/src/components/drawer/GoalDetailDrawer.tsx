@@ -17,10 +17,10 @@ import {
 	X,
 } from "lucide-react";
 import React, { useState } from "react";
+import { clampCanvasPosition, DRAWER_CONFIG } from "../../constants/canvas";
 import { useGoalStore } from "../../store/useGoalStore";
 import { GoalCategory, GoalPriority, GoalStatus } from "../../types/goal";
 import { triggerSmallCelebration } from "../../utils/confetti";
-import { DRAWER_CONFIG, clampCanvasPosition } from "../../constants/canvas";
 import { RichTextEditor } from "./RichTextEditor";
 
 const KEEP_COLORS = [
@@ -903,7 +903,9 @@ export const GoalDetailDrawer: React.FC = () => {
 										const rect = button.getBoundingClientRect();
 
 										// Read drawer width from the drawer element
-										const drawerElement = document.querySelector('.fixed.inset-y-0.right-0.w-\\[580px\\]');
+										const drawerElement = document.querySelector(
+											".fixed.inset-y-0.right-0.w-\\[580px\\]",
+										);
 										const drawerWidth = drawerElement
 											? drawerElement.clientWidth
 											: DRAWER_CONFIG.WIDTH;
@@ -912,11 +914,11 @@ export const GoalDetailDrawer: React.FC = () => {
 										// Position to the left of the drawer, at button height
 										const xPos = clampCanvasPosition(
 											rect.left - drawerWidth / 2 + DRAWER_CONFIG.DROPDOWN_OFFSET_X,
-											true
+											true,
 										);
 										const yPos = clampCanvasPosition(
 											rect.top + DRAWER_CONFIG.DROPDOWN_OFFSET_Y,
-											false
+											false,
 										);
 
 										addMilestone("YENİ AŞAMA", selectedGoalId, { x: xPos, y: yPos });

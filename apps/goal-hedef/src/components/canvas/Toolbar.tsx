@@ -12,10 +12,10 @@ import {
 	Upload,
 } from "lucide-react";
 import React, { useRef } from "react";
+import { clampCanvasPosition, TOOLBAR_CONFIG } from "../../constants/canvas";
 import { useGoalStore } from "../../store/useGoalStore";
 import { ActiveOSView } from "../../types/goal";
 import { triggerGoalCelebration } from "../../utils/confetti";
-import { TOOLBAR_CONFIG, clampCanvasPosition } from "../../constants/canvas";
 import { CanvasTabBar } from "./CanvasTabBar";
 
 interface ToolbarProps {
@@ -251,10 +251,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 							// Position stage above the toolbar button
 							// Button is at bottom-center, so place stage above it
 							const xPos = clampCanvasPosition(rect.left, true);
-							const yPos = clampCanvasPosition(
-								rect.top + TOOLBAR_CONFIG.POSITION_OFFSET_Y,
-								false
-							);
+							const yPos = clampCanvasPosition(rect.top + TOOLBAR_CONFIG.POSITION_OFFSET_Y, false);
 
 							addMilestone("YENİ AŞAMA", undefined, { x: xPos, y: yPos });
 						}}
