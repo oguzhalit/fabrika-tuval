@@ -49,7 +49,7 @@ overrides:
   react: 19.2.7
   react-dom: 19.2.7
 
-pnpmfileChecksum: sha256-ENBbpnCM6iEJZwql5y+XIdMMnEPnYSp47O6FmPjp4UI=
+pnpmfileChecksum: sha256-YeSUukBwmGi5K26f4EpvZ67Uc4/elTSBEtEFe3TGml0=
 
 patchedDependencies:
   effect@4.0.0-rc.112:
