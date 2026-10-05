@@ -6,10 +6,12 @@ import {
 	DefaultEdgeOptions,
 	MiniMap,
 	ReactFlow,
+	useReactFlow,
 } from "@xyflow/react";
-import React, { useMemo } from "react";
+import React, { useMemo, useRef } from "react";
 import "@xyflow/react/dist/style.css";
 
+import { clampCanvasPosition } from "../../constants/canvas";
 import { useGoalStore } from "../../store/useGoalStore";
 import { BookNode } from "../nodes/BookNode";
 import { DevCodeNode } from "../nodes/DevCodeNode";
@@ -19,6 +21,7 @@ import { HabitNode } from "../nodes/HabitNode";
 import { MeetingNode } from "../nodes/MeetingNode";
 import { MilestoneNode } from "../nodes/MilestoneNode";
 import { StickyNoteNode } from "../nodes/StickyNoteNode";
+import { DraggableItemsPanel } from "./DraggableItemsPanel";
 import { DrawingLayer } from "./DrawingLayer";
 import { Toolbar } from "./Toolbar";
 
@@ -34,6 +37,13 @@ export const GoalCanvas: React.FC<GoalCanvasProps> = ({ onToggleGoalBox, isGoalB
 	const onEdgesChange = useGoalStore((s) => s.onEdgesChange);
 	const onConnect = useGoalStore((s) => s.onConnect);
 	const selectGoal = useGoalStore((s) => s.selectGoal);
+	const addGoal = useGoalStore((s) => s.addGoal);
+	const addStickyNote = useGoalStore((s) => s.addStickyNote);
+	const addMilestone = useGoalStore((s) => s.addMilestone);
+
+	const { screenToFlowPosition } = useReactFlow();
+	const canvasRef = useRef<HTMLDivElement>(null);
+	const draggedItemTypeRef = useRef<"goal" | "note" | "milestone" | null>(null);
 
 	const nodeTypes = useMemo(
 		() => ({
@@ -57,8 +67,54 @@ export const GoalCanvas: React.FC<GoalCanvasProps> = ({ onToggleGoalBox, isGoalB
 		},
 	};
 
+	const handleDragStart = (
+		e: React.DragEvent<HTMLDivElement>,
+		itemType: "goal" | "note" | "milestone",
+	) => {
+		draggedItemTypeRef.current = itemType;
+		e.dataTransfer.effectAllowed = "move";
+	};
+
+	const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+		e.preventDefault();
+		e.dataTransfer.dropEffect = "move";
+	};
+
+	const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+		e.preventDefault();
+
+		const itemType = draggedItemTypeRef.current;
+		if (!itemType) return;
+
+		// Get drop position and convert to canvas coordinates
+		const flowPosition = screenToFlowPosition({
+			x: e.clientX,
+			y: e.clientY,
+		});
+
+		// Clamp position within canvas bounds
+		const xPos = clampCanvasPosition(flowPosition.x, true);
+		const yPos = clampCanvasPosition(flowPosition.y, false);
+
+		// Create the appropriate item based on type
+		if (itemType === "goal") {
+			addGoal({ title: "YENİ HEDEF" }, { x: xPos, y: yPos });
+		} else if (itemType === "note") {
+			addStickyNote(undefined, undefined, { x: xPos, y: yPos });
+		} else if (itemType === "milestone") {
+			addMilestone("YENİ AŞAMA", undefined, { x: xPos, y: yPos });
+		}
+
+		draggedItemTypeRef.current = null;
+	};
+
 	return (
-		<div className="w-full h-screen bg-[#F5F0E6] relative overflow-hidden">
+		<div
+			ref={canvasRef}
+			className="w-full h-screen bg-[#F5F0E6] relative overflow-hidden"
+			onDragOver={handleDragOver}
+			onDrop={handleDrop}
+		>
 			<ReactFlow
 				nodes={nodes}
 				edges={edges}
@@ -74,6 +130,9 @@ export const GoalCanvas: React.FC<GoalCanvasProps> = ({ onToggleGoalBox, isGoalB
 				minZoom={0.2}
 				maxZoom={2}
 			>
+				{/* Draggable Items Panel - Right Sidebar */}
+				<DraggableItemsPanel onDragStart={handleDragStart} />
+
 				{/* Toolbar with ReactFlow context access */}
 				<Toolbar onToggleGoalBox={onToggleGoalBox} isGoalBoxOpen={isGoalBoxOpen} />
 
