@@ -1,4 +1,4 @@
-import { Handle, NodeProps, NodeResizer, Position } from "@xyflow/react";
+import { Handle, NodeProps, NodeResizer, Position, useReactFlow } from "@xyflow/react";
 import {
 	Calendar,
 	CheckCircle2,
@@ -15,6 +15,7 @@ import {
 	Zap,
 } from "lucide-react";
 import React, { memo } from "react";
+import { clampCanvasPosition } from "../../constants/canvas";
 import { useGoalStore } from "../../store/useGoalStore";
 import { GoalCategory, GoalPriority, GoalStatus } from "../../types/goal";
 
@@ -75,6 +76,7 @@ export const GoalNode = memo(({ id, data, selected }: NodeProps<any>) => {
 	const togglePinGoal = useGoalStore((s) => s.togglePinGoal);
 	const deleteGoal = useGoalStore((s) => s.deleteGoal);
 	const openConfirmDialog = useGoalStore((s) => s.openConfirmDialog);
+	const { screenToFlowPosition } = useReactFlow();
 
 	const categoryConfig = CATEGORY_CONFIG[data.category as GoalCategory] || CATEGORY_CONFIG.career;
 	const statusConfig = STATUS_CONFIG[data.status as GoalStatus] || STATUS_CONFIG.not_started;
@@ -88,7 +90,17 @@ export const GoalNode = memo(({ id, data, selected }: NodeProps<any>) => {
 
 	const handleAddChild = (e: React.MouseEvent) => {
 		e.stopPropagation();
-		addMilestone("Yeni Kilometre Taşı", id);
+		// Convert screen coordinates to flow (canvas) coordinates, accounting for zoom
+		const flowPosition = screenToFlowPosition({
+			x: e.clientX,
+			y: e.clientY,
+		});
+
+		// Clamp position within canvas bounds to prevent off-screen placement
+		const xPos = clampCanvasPosition(flowPosition.x, true);
+		const yPos = clampCanvasPosition(flowPosition.y, false);
+
+		addMilestone("Yeni Kilometre Taşı", id, { x: xPos, y: yPos });
 	};
 
 	const handlePin = (e: React.MouseEvent) => {
