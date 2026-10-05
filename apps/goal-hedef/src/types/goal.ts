@@ -111,6 +111,7 @@ export interface GoalData extends Record<string, unknown> {
 	// Sticky Not alanları
 	stickyText?: string;
 	stickyColor?: string;
+	stickyLabel?: string;
 }
 
 export interface InboxItem {
