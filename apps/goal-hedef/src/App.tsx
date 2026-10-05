@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { GoalCanvas } from "./components/canvas/GoalCanvas";
+import { NavigationBar } from "./components/canvas/NavigationBar";
 import { ConfirmModal } from "./components/common/ConfirmModal";
 import { EntityDetailRouter } from "./components/drawer/EntityDetailRouter";
 import { GoalBoxDrawer } from "./components/inbox/GoalBoxDrawer";
@@ -35,6 +36,9 @@ export function App() {
 
 	return (
 		<main className="relative w-screen h-screen h-[100dvh] overflow-hidden bg-[#F5F0E6]">
+			{/* Always Visible Navigation Bar */}
+			<NavigationBar onToggleGoalBox={handleToggleGoalBox} isGoalBoxOpen={isGoalBoxOpen} />
+
 			{/* Ana Çalışma Alanı (Hedef Tuvali / Yol Haritası / Alışkanlıklar) */}
 			{renderActiveView()}
 

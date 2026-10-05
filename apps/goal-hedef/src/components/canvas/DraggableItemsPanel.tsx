@@ -37,7 +37,7 @@ export const DraggableItemsPanel: React.FC<DraggableItemsPanelProps> = ({ onDrag
 	];
 
 	return (
-		<div className="absolute right-2 sm:right-3 top-20 sm:top-24 z-30 flex flex-col gap-2 pointer-events-auto">
+		<div className="absolute right-2 sm:right-3 top-20 sm:top-24 z-[102] flex flex-col gap-2 pointer-events-auto">
 			<div className="flex flex-col gap-1 p-2 sm:p-3 bg-white border-2 sm:border-3 border-black rounded-xl sm:rounded-2xl shadow-[3px_3px_0px_0px_#000] select-none">
 				{items.map((item) => (
 					<div
