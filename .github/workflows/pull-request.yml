@@ -266,22 +266,38 @@ jobs:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           CF_DOMAIN: ${{ secrets.CLOUDFLARE_DOMAIN }}
-          TUNNEL_CNAME: ${{ secrets.CLOUDFLARE_TUNNEL_CNAME }}
-          HOMELAB_IP: ${{ secrets.HOMELAB_IP }}
           PVE_TOKEN: PVEAPIToken=${{ secrets.PROXMOX_USER }}@pve!${{ secrets.PROXMOX_TOKEN_NAME }}=${{ secrets.PROXMOX_TOKEN_SECRET }}
           PVE_URL: https://${{ secrets.PROXMOX_HOST }}:${{ secrets.PROXMOX_PORT }}
           NODE: prox
           VMID: ${{ env.GUEST_VMID }}
+          PREVIEW_PORT: ${{ env.PREVIEW_PORT }}
         run: |
           set -e
           SUBDOMAIN="pr-${{ env.PR_NUMBER }}-draw"
 
-          # 1. Add ingress rule to Cloudflare Tunnel config (uses HOMELAB_IP not localhost)
+          # 1. Fetch Homelab IP dynamically from Proxmox
+          echo "📍 Fetching Homelab IP from Proxmox..."
+          HOMELAB_IP=$(curl -s -k -X GET "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/network-get-interfaces" \
+            -H "Authorization: $PVE_TOKEN" | \
+            jq -r '.data.result[] | select(.name == "ens18") | .["ip-addresses"][] | select(.["ip-address-type"] == "ipv4") | .["ip-address"]' | head -1)
+
+          if [ -z "$HOMELAB_IP" ]; then
+            HOMELAB_IP="10.10.10.107"
+            echo "⚠️ Using fallback IP: $HOMELAB_IP"
+          else
+            echo "✅ Detected IP: $HOMELAB_IP"
+          fi
+
+          # 2. Set Tunnel CNAME
+          TUNNEL_CNAME="999c4880-cf1a-4dc5-bd51-04a96563aae9.cfargotunnel.com"
+          echo "🔗 Using Tunnel CNAME: $TUNNEL_CNAME"
+
+          # 3. Add ingress rule to Cloudflare Tunnel config
           UPDATE_TUNNEL=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
             -H "Authorization: $PVE_TOKEN" \
             --data-urlencode "command=sh" \
             --data-urlencode "command=-c" \
-            --data-urlencode "command=sed -i '/^ingress:/a\  - hostname: $SUBDOMAIN\n    service: http://$HOMELAB_IP:$PREVIEW_PORT' /root/.cloudflared/config.yml && systemctl restart cloudflared")
+            --data-urlencode "command=sed -i '/^ingress:/a\  - hostname: $SUBDOMAIN.$CF_DOMAIN\n    service: http://$HOMELAB_IP:$PREVIEW_PORT' /root/.cloudflared/config.yml && systemctl restart cloudflared")
 
           PID=$(echo "$UPDATE_TUNNEL" | jq -r '.data.pid // empty')
           if [ -n "$PID" ]; then
@@ -297,11 +313,12 @@ jobs:
             done
           fi
 
-          # 2. Create DNS CNAME record pointing to Tunnel CNAME (NOT home.oguzsak.com!)
+          # 4. Create DNS CNAME record pointing to Tunnel CNAME
+          echo "📝 Creating DNS CNAME record..."
           curl -s -X POST -H "Authorization: Bearer $CF_API_TOKEN" \
             -H "Content-Type: application/json" \
             https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records \
-            -d "{\"type\": \"CNAME\", \"name\": \"$SUBDOMAIN\", \"content\": \"$TUNNEL_CNAME\", \"ttl\": 1, \"proxied\": false}" | jq '.'
+            -d "{\"type\": \"CNAME\", \"name\": \"$SUBDOMAIN\", \"content\": \"$TUNNEL_CNAME\", \"ttl\": 1, \"proxied\": true}" | jq '.'
 
           echo "✅ DNS CNAME record created: $SUBDOMAIN → $TUNNEL_CNAME"
 
@@ -444,17 +461,144 @@ jobs:
           # Step 2: Pull image
           exec_guest_cmd "📥 Pull image" "sh -c 'docker pull $REGISTRY_IMAGE'"
 
+          # Find available port for production (5000-5999 range)
+          PROD_PORT=""
+          for port in {5000..5999}; do
+            PORT_TEST=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+              -H "Authorization: $PVE_TOKEN" \
+              --data-urlencode "command=sh" \
+              --data-urlencode "command=-c" \
+              --data-urlencode "command=(timeout 1 bash -c '</dev/tcp/localhost/$port') 2>/dev/null && echo USED || echo FREE" 2>/dev/null)
+
+            PID=$(echo "$PORT_TEST" | jq -r '.data.pid // empty')
+            if [ -z "$PID" ]; then
+              PROD_PORT=$port
+              break
+            fi
+
+            for i in {1..6}; do
+              sleep 0.5
+              STATUS=$(curl -s -k -X GET "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec-status?pid=$PID" \
+                -H "Authorization: $PVE_TOKEN")
+              EXITED=$(echo "$STATUS" | jq -r '.data.exited // 0')
+              if [ "$EXITED" -eq 1 ]; then
+                RESULT=$(echo "$STATUS" | jq -r '.data["out-data"] // "UNKNOWN"' | tr -d ' \n')
+                if [ "$RESULT" = "FREE" ]; then
+                  PROD_PORT=$port
+                  break 2
+                fi
+                break
+              fi
+            done
+          done
+
+          if [ -z "$PROD_PORT" ]; then
+            PROD_PORT=5000
+          fi
+
+          echo "📌 Production Port: $PROD_PORT"
+          echo "PROD_PORT=$PROD_PORT" >> $GITHUB_ENV
+
           # Step 3: Remove old production container (force)
           exec_guest_cmd "🛑 Stop & remove old container" "sh -c 'docker rm -f draw 2>/dev/null || true'"
 
-          # Step 4: Run production container
-          exec_guest_cmd "🐳 Run production container" "sh -c 'docker run -d --name draw -p 80:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
+          # Step 4: Run production container on dynamic port
+          exec_guest_cmd "🐳 Run production container" "sh -c 'docker run -d --name draw -p $PROD_PORT:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
 
           # Step 5: Verify
           exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=draw'"
 
           echo ""
-          echo "✅ Production deployed successfully"
+          echo "✅ Production deployed on port $PROD_PORT"
+
+      - name: 🌐 Setup Cloudflare DNS for Production
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          TUNNEL_CNAME: 999c4880-cf1a-4dc5-bd51-04a96563aae9.cfargotunnel.com
+          PVE_TOKEN: PVEAPIToken=${{ secrets.PROXMOX_USER }}@pve!${{ secrets.PROXMOX_TOKEN_NAME }}=${{ secrets.PROXMOX_TOKEN_SECRET }}
+          PVE_URL: https://${{ secrets.PROXMOX_HOST }}:${{ secrets.PROXMOX_PORT }}
+          DOMAIN: oguzsak.com
+          HOSTNAME: draw
+          NODE: prox
+          VMID: ${{ env.GUEST_VMID }}
+        run: |
+          set -e
+          FULL_HOSTNAME="${HOSTNAME}.${DOMAIN}"
+
+          echo "🔗 Configuring Cloudflare DNS for production: $FULL_HOSTNAME"
+
+          # Get homelab VM IP from Proxmox
+          echo "📍 Fetching homelab VM IP from Proxmox..."
+          VM_CONFIG=$(curl -s -k -X GET \
+            "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/status/current" \
+            -H "Authorization: $PVE_TOKEN")
+
+          HOMELAB_IP=$(echo "$VM_CONFIG" | jq -r '.data.ha // empty')
+          if [ -z "$HOMELAB_IP" ]; then
+            # Try alternative method: get from guest agent
+            HOMELAB_IP=$(curl -s -k -X GET \
+              "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/get-osinfo" \
+              -H "Authorization: $PVE_TOKEN" 2>/dev/null | jq -r '.data.ip-addresses[0].ip-address // empty')
+          fi
+
+          if [ -z "$HOMELAB_IP" ]; then
+            echo "⚠️ Could not get IP from Proxmox, using fallback"
+            HOMELAB_IP="10.10.10.107"
+          fi
+
+          echo "✅ Homelab IP: $HOMELAB_IP"
+
+          # Check if DNS record exists
+          EXISTING_RECORD_ID=$(curl -s -X GET \
+            "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?name=${FULL_HOSTNAME}" \
+            -H "Authorization: Bearer ${CF_TOKEN}" \
+            -H "Content-Type: application/json" | jq -r '.result[0].id // empty')
+
+          if [ -z "$EXISTING_RECORD_ID" ]; then
+            echo "Creating DNS CNAME record for $FULL_HOSTNAME -> $TUNNEL_CNAME"
+            curl -s -X POST \
+              "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records" \
+              -H "Authorization: Bearer ${CF_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"type\": \"CNAME\",
+                \"name\": \"${HOSTNAME}\",
+                \"content\": \"${TUNNEL_CNAME}\",
+                \"proxied\": true,
+                \"comment\": \"Production deployment via Cloudflare Tunnel\"
+              }" | jq '.'
+          else
+            echo "✅ DNS CNAME record already exists (ID: $EXISTING_RECORD_ID)"
+          fi
+
+          # Add ingress rule to Cloudflare Tunnel configuration
+          echo "🔌 Adding Cloudflare Tunnel ingress rule for $FULL_HOSTNAME -> http://$HOMELAB_IP:${{ env.PROD_PORT }}"
+
+          # Get current tunnel config
+          TUNNEL_CONFIG=$(curl -s -X GET \
+            "https://api.cloudflare.com/client/v4/accounts/$(echo $CF_TOKEN | cut -d'_' -f2 | cut -d'-' -f1)/cfd_tunnel/${TUNNEL_ID}/public_hostname" \
+            -H "Authorization: Bearer ${CF_TOKEN}" \
+            -H "Content-Type: application/json" 2>/dev/null || echo '{"success":true,"result":[]}')
+
+          # Check if ingress rule already exists for this hostname
+          RULE_EXISTS=$(echo "$TUNNEL_CONFIG" | jq "any(.result[]; .hostname == \"${FULL_HOSTNAME}\")" 2>/dev/null || echo "false")
+
+          if [ "$RULE_EXISTS" != "true" ]; then
+            echo "Creating new ingress rule"
+            curl -s -X POST \
+              "https://api.cloudflare.com/client/v4/accounts/$(curl -s -X GET 'https://api.cloudflare.com/client/v4/accounts' -H "Authorization: Bearer ${CF_TOKEN}" | jq -r '.result[0].id')/cfd_tunnel/${TUNNEL_ID}/public_hostname" \
+              -H "Authorization: Bearer ${CF_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"hostname\": \"${FULL_HOSTNAME}\",
+                \"service\": \"http://${HOMELAB_IP}:${{ env.PROD_PORT }}\"
+              }" | jq '.'
+          else
+            echo "✅ Ingress rule already exists for $FULL_HOSTNAME"
+          fi
+
+          echo "✅ Production Cloudflare configuration complete!"
 
       - name: 💬 Comment Production URL
         if: github.event_name == 'pull_request'
