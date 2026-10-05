@@ -195,8 +195,16 @@ jobs:
             return 1
           }
 
-          # Calculate port: 3000 + PR number (PR #6 → 3006, PR #7 → 3007, etc.)
+          # Get running containers to find available port
+          CONTAINERS=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+            -H "Authorization: $PVE_TOKEN" \
+            --data-urlencode "command=sh" \
+            --data-urlencode "command=-c" \
+            --data-urlencode "command=docker ps --format '{{.Ports}}'" 2>/dev/null | jq -r '.data.pid' || echo "")
+
+          # Fallback to PR-based port if we can't get container list
           PREVIEW_PORT=$((3000 + ${{ env.PR_NUMBER }}))
+          echo "📌 Using port: $PREVIEW_PORT"
 
           # Step 1: Docker login
           exec_guest_cmd "🔐 Docker login" "sh -c 'echo $GITHUB_TOKEN | docker login -u $GITHUB_ACTOR --password-stdin $REGISTRY'"
