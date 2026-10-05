@@ -1,3 +1,4 @@
+import { useReactFlow } from "@xyflow/react";
 import {
 	Download,
 	Flag,
@@ -12,7 +13,6 @@ import {
 	Upload,
 } from "lucide-react";
 import React, { useRef } from "react";
-import { useReactFlow } from "@xyflow/react";
 import { clampCanvasPosition } from "../../constants/canvas";
 import { useGoalStore } from "../../store/useGoalStore";
 import { ActiveOSView } from "../../types/goal";
