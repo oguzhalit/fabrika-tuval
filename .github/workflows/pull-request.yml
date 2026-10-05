@@ -444,10 +444,13 @@ jobs:
           # Step 2: Pull image
           exec_guest_cmd "📥 Pull image" "sh -c 'docker pull $REGISTRY_IMAGE'"
 
-          # Step 3: Run production container
+          # Step 3: Remove old production container (force)
+          exec_guest_cmd "🛑 Stop & remove old container" "sh -c 'docker rm -f draw 2>/dev/null || true'"
+
+          # Step 4: Run production container
           exec_guest_cmd "🐳 Run production container" "sh -c 'docker run -d --name draw -p 80:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
 
-          # Step 4: Verify
+          # Step 5: Verify
           exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=draw'"
 
           echo ""
