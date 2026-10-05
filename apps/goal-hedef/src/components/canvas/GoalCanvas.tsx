@@ -19,9 +19,18 @@ import { HabitNode } from "../nodes/HabitNode";
 import { MeetingNode } from "../nodes/MeetingNode";
 import { MilestoneNode } from "../nodes/MilestoneNode";
 import { StickyNoteNode } from "../nodes/StickyNoteNode";
+import { Toolbar } from "./Toolbar";
 import { DrawingLayer } from "./DrawingLayer";
 
-export const GoalCanvas: React.FC = () => {
+interface GoalCanvasProps {
+	onToggleGoalBox: () => void;
+	isGoalBoxOpen: boolean;
+}
+
+export const GoalCanvas: React.FC<GoalCanvasProps> = ({
+	onToggleGoalBox,
+	isGoalBoxOpen,
+}) => {
 	const nodes = useGoalStore((s) => s.nodes);
 	const edges = useGoalStore((s) => s.edges);
 	const onNodesChange = useGoalStore((s) => s.onNodesChange);
@@ -68,6 +77,9 @@ export const GoalCanvas: React.FC = () => {
 				minZoom={0.2}
 				maxZoom={2}
 			>
+				{/* Toolbar with ReactFlow context access */}
+				<Toolbar onToggleGoalBox={onToggleGoalBox} isGoalBoxOpen={isGoalBoxOpen} />
+
 				{/* React Flow Viewport'una Doğrudan Bağlı Çizim Katmanı */}
 				<DrawingLayer />
 

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { GoalCanvas } from "./components/canvas/GoalCanvas";
-import { Toolbar } from "./components/canvas/Toolbar";
 import { ConfirmModal } from "./components/common/ConfirmModal";
 import { EntityDetailRouter } from "./components/drawer/EntityDetailRouter";
 import { GoalBoxDrawer } from "./components/inbox/GoalBoxDrawer";
@@ -24,21 +23,28 @@ export function App() {
 	const renderActiveView = () => {
 		switch (activeView) {
 			case "canvas":
-				return <GoalCanvas />;
+				return (
+					<GoalCanvas
+						onToggleGoalBox={handleToggleGoalBox}
+						isGoalBoxOpen={isGoalBoxOpen}
+					/>
+				);
 			case "roadmap":
 				return <RoadmapView />;
 			case "habits":
 				return <HabitView />;
 			default:
-				return <GoalCanvas />;
+				return (
+					<GoalCanvas
+						onToggleGoalBox={handleToggleGoalBox}
+						isGoalBoxOpen={isGoalBoxOpen}
+					/>
+				);
 		}
 	};
 
 	return (
 		<main className="relative w-screen h-screen h-[100dvh] overflow-hidden bg-[#F5F0E6]">
-			{/* Üst Logo, Skor, Notepad++ Tuval Sekmeleri ve Görünüm Seçim Çubuğu */}
-			<Toolbar onToggleGoalBox={handleToggleGoalBox} isGoalBoxOpen={isGoalBoxOpen} />
-
 			{/* Ana Çalışma Alanı (Hedef Tuvali / Yol Haritası / Alışkanlıklar) */}
 			{renderActiveView()}
 
