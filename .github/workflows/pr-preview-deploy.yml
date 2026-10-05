@@ -116,7 +116,7 @@ jobs:
 
           # Setup Proxmox API
           PROXMOX_API="https://${PROXMOX_HOST}:${PROXMOX_PORT}/api2/json"
-          API_TOKEN="PVEAPIToken=${PROXMOX_USER}!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_SECRET}"
+          API_TOKEN="PVEAPIToken=${PROXMOX_USER}@pve!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_SECRET}"
 
           echo "📍 Connecting to Proxmox at ${PROXMOX_API}..."
 
@@ -283,7 +283,7 @@ jobs:
           set -e
 
           PROXMOX_API="https://${PROXMOX_HOST}:${PROXMOX_PORT}/api2/json"
-          API_TOKEN="PVEAPIToken=${PROXMOX_USER}!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_SECRET}"
+          API_TOKEN="PVEAPIToken=${PROXMOX_USER}@pve!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_SECRET}"
 
           echo "🌍 Deploying to production (draw.oguzsak.com)..."
 
@@ -352,7 +352,7 @@ jobs:
           set -e
 
           PROXMOX_API="https://${PROXMOX_HOST}:${PROXMOX_PORT}/api2/json"
-          API_TOKEN="PVEAPIToken=${PROXMOX_USER}!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_SECRET}"
+          API_TOKEN="PVEAPIToken=${PROXMOX_USER}@pve!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_SECRET}"
 
           echo "🗑️ Cleaning up container pr-${{ env.PR_NUMBER }}-draw..."
 
