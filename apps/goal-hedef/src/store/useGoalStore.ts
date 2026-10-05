@@ -199,6 +199,7 @@ const INITIAL_NODES: Node<GoalData>[] = [
 			progress: 0,
 			stickyText: 'LET\'S GO!\n"Büyük hedefler, küçük günlük adımların toplamıdır."',
 			stickyColor: "#FFE600",
+			stickyLabel: "HIZLI NOT // STICKER",
 		},
 	},
 	{
@@ -213,6 +214,7 @@ const INITIAL_NODES: Node<GoalData>[] = [
 			progress: 0,
 			stickyText: "STAY POSITIVE\nTablet kalemiyle tuvale serbestçe çizim yapabilirsin!",
 			stickyColor: "#FF3399",
+			stickyLabel: "HIZLI NOT // STICKER",
 		},
 	},
 ];
@@ -497,6 +499,7 @@ export const useGoalStore = create<GoalStore>((set, get) => ({
 				progress: 0,
 				stickyText: text || "Fikir veya hatırlatıcı...",
 				stickyColor: color || "#FFE600",
+				stickyLabel: "HIZLI NOT // STICKER",
 			},
 		};
 

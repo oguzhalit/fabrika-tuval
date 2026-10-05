@@ -1,6 +1,6 @@
 import { Handle, NodeProps, NodeResizer, Position } from "@xyflow/react";
 import { Sparkles, Trash2 } from "lucide-react";
-import { memo } from "react";
+import { memo, useState } from "react";
 import { useGoalStore } from "../../store/useGoalStore";
 
 export const StickyNoteNode = memo(({ id, data, selected }: NodeProps<any>) => {
@@ -8,6 +8,10 @@ export const StickyNoteNode = memo(({ id, data, selected }: NodeProps<any>) => {
 	const deleteGoal = useGoalStore((s) => s.deleteGoal);
 	const selectGoal = useGoalStore((s) => s.selectGoal);
 	const openConfirmDialog = useGoalStore((s) => s.openConfirmDialog);
+	const [isEditingLabel, setIsEditingLabel] = useState(false);
+	const [editingLabelText, setEditingLabelText] = useState(
+		data.stickyLabel || "HIZLI NOT // STICKER",
+	);
 
 	const colors = [
 		{ bg: "#FFE600", label: "Sarı" },
@@ -28,6 +32,31 @@ export const StickyNoteNode = memo(({ id, data, selected }: NodeProps<any>) => {
 			cancelLabel: "VAZGEÇ",
 			onConfirm: () => deleteGoal(id),
 		});
+	};
+
+	const handleLabelClick = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		setIsEditingLabel(true);
+	};
+
+	const handleSaveLabel = () => {
+		if (editingLabelText.trim()) {
+			updateGoal(id, { stickyLabel: editingLabelText.trim() });
+		}
+		setIsEditingLabel(false);
+	};
+
+	const handleCancelEdit = () => {
+		setEditingLabelText(data.stickyLabel || "HIZLI NOT // STICKER");
+		setIsEditingLabel(false);
+	};
+
+	const handleKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === "Enter") {
+			handleSaveLabel();
+		} else if (e.key === "Escape") {
+			handleCancelEdit();
+		}
 	};
 
 	return (
@@ -76,10 +105,28 @@ export const StickyNoteNode = memo(({ id, data, selected }: NodeProps<any>) => {
 
 			{/* Retro Neo-Brutalist Sticker Başlığı */}
 			<div className="flex items-center justify-between pb-2 border-b-2 border-black flex-shrink-0">
-				<div className="inline-flex items-center gap-1 bg-white border-2 border-black px-2 py-0.5 text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_#000]">
-					<Sparkles className="w-3 h-3 text-black stroke-[3]" />
-					<span>HIZLI NOT // STICKER</span>
-				</div>
+				{isEditingLabel ? (
+					<div className="inline-flex items-center gap-1 bg-white border-2 border-black px-2 py-0.5 text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_#000]">
+						<input
+							type="text"
+							value={editingLabelText}
+							onChange={(e) => setEditingLabelText(e.target.value)}
+							onKeyDown={handleKeyDown}
+							onBlur={handleSaveLabel}
+							autoFocus
+							className="bg-transparent border-none outline-none font-black uppercase text-[10px] w-32"
+						/>
+					</div>
+				) : (
+					<div
+						onClick={handleLabelClick}
+						className="inline-flex items-center gap-1 bg-white border-2 border-black px-2 py-0.5 text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_#000] cursor-pointer hover:shadow-[3px_3px_0px_0px_#000] transition-shadow"
+						title="Label'ı düzenlemek için tıklayın"
+					>
+						<Sparkles className="w-3 h-3 text-black stroke-[3]" />
+						<span>{data.stickyLabel || "HIZLI NOT // STICKER"}</span>
+					</div>
+				)}
 
 				<div className="flex items-center gap-1">
 					{colors.map((c, i) => (
