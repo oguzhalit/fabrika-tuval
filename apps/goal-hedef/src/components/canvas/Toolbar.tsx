@@ -12,7 +12,8 @@ import {
 	Upload,
 } from "lucide-react";
 import React, { useRef } from "react";
-import { clampCanvasPosition, TOOLBAR_CONFIG } from "../../constants/canvas";
+import { useReactFlow } from "@xyflow/react";
+import { clampCanvasPosition } from "../../constants/canvas";
 import { useGoalStore } from "../../store/useGoalStore";
 import { ActiveOSView } from "../../types/goal";
 import { triggerGoalCelebration } from "../../utils/confetti";
@@ -34,6 +35,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 	const toggleDrawingMode = useGoalStore((s) => s.toggleDrawingMode);
 	const nodes = useGoalStore((s) => s.nodes);
 	const edges = useGoalStore((s) => s.edges);
+	const { screenToFlowPosition } = useReactFlow();
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -195,7 +197,19 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 				>
 					{/* Yol haritasında sadece Hedef Ekle butonu */}
 					<button
-						onClick={() => addGoal({ title: "YENİ HEDEF" })}
+						onClick={(e) => {
+							// Convert screen coordinates to flow (canvas) coordinates, accounting for zoom/pan
+							const flowPosition = screenToFlowPosition({
+								x: e.clientX,
+								y: e.clientY,
+							});
+
+							// Clamp position within canvas bounds
+							const xPos = clampCanvasPosition(flowPosition.x, true);
+							const yPos = clampCanvasPosition(flowPosition.y, false);
+
+							addGoal({ title: "YENİ HEDEF" }, { x: xPos, y: yPos });
+						}}
 						className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-[#FFE600] hover:bg-[#ffd900] text-black font-black text-xs sm:text-sm border-2 sm:border-3 border-black rounded-lg sm:rounded-2xl shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] uppercase transition-all whitespace-nowrap active:translate-x-[1px] active:translate-y-[1px]"
 						title="Yeni Hedef Ekle"
 					>
@@ -212,7 +226,19 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 				>
 					{/* + Hedef Kartı */}
 					<button
-						onClick={() => addGoal({ title: "YENİ HEDEF" })}
+						onClick={(e) => {
+							// Convert screen coordinates to flow (canvas) coordinates, accounting for zoom/pan
+							const flowPosition = screenToFlowPosition({
+								x: e.clientX,
+								y: e.clientY,
+							});
+
+							// Clamp position within canvas bounds
+							const xPos = clampCanvasPosition(flowPosition.x, true);
+							const yPos = clampCanvasPosition(flowPosition.y, false);
+
+							addGoal({ title: "YENİ HEDEF" }, { x: xPos, y: yPos });
+						}}
 						className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-1 sm:py-2 bg-[#FFE600] hover:bg-[#ffd900] text-black font-black text-[10px] sm:text-xs border-2 sm:border-3 border-black rounded-lg sm:rounded-2xl shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] uppercase transition-all whitespace-nowrap shrink-0 active:translate-x-[1px] active:translate-y-[1px]"
 						title="Tuvale Yeni Hedef Kartı Ekle"
 					>
@@ -234,14 +260,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 					{/* + Sticky Not (Post-it) */}
 					<button
 						onClick={(e) => {
-							// Get button position in toolbar (at bottom center)
-							const button = e.currentTarget as HTMLElement;
-							const rect = button.getBoundingClientRect();
+							// Convert screen coordinates to flow (canvas) coordinates, accounting for zoom/pan
+							const flowPosition = screenToFlowPosition({
+								x: e.clientX,
+								y: e.clientY,
+							});
 
-							// Position sticky note above the toolbar button
-							// Button is at bottom-center, so place note above it
-							const xPos = clampCanvasPosition(rect.left, true);
-							const yPos = clampCanvasPosition(rect.top + TOOLBAR_CONFIG.POSITION_OFFSET_Y, false);
+							// Clamp position within canvas bounds
+							const xPos = clampCanvasPosition(flowPosition.x, true);
+							const yPos = clampCanvasPosition(flowPosition.y, false);
 
 							addStickyNote(undefined, undefined, { x: xPos, y: yPos });
 						}}
@@ -255,14 +282,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 					{/* + Kilometre Taşı */}
 					<button
 						onClick={(e) => {
-							// Get button position in toolbar (at bottom center)
-							const button = e.currentTarget as HTMLElement;
-							const rect = button.getBoundingClientRect();
+							// Convert screen coordinates to flow (canvas) coordinates, accounting for zoom/pan
+							const flowPosition = screenToFlowPosition({
+								x: e.clientX,
+								y: e.clientY,
+							});
 
-							// Position stage above the toolbar button
-							// Button is at bottom-center, so place stage above it
-							const xPos = clampCanvasPosition(rect.left, true);
-							const yPos = clampCanvasPosition(rect.top + TOOLBAR_CONFIG.POSITION_OFFSET_Y, false);
+							// Clamp position within canvas bounds
+							const xPos = clampCanvasPosition(flowPosition.x, true);
+							const yPos = clampCanvasPosition(flowPosition.y, false);
 
 							addMilestone("YENİ AŞAMA", undefined, { x: xPos, y: yPos });
 						}}
