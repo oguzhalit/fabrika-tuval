@@ -137,9 +137,20 @@ jobs:
             echo "⏳ $desc"
 
             # 1. Start command and get PID
-            RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
-              -H "Authorization: $PVE_TOKEN" \
-              --data-urlencode "command=$cmd")
+            # Extract actual command from "sh -c 'command'" pattern
+            if [[ $cmd =~ ^sh\ -c\ \'(.*)\'$ ]]; then
+              local actual_cmd="${BASH_REMATCH[1]}"
+              RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+                -H "Authorization: $PVE_TOKEN" \
+                --data-urlencode "command=sh" \
+                --data-urlencode "command=-c" \
+                --data-urlencode "command=$actual_cmd")
+            else
+              # Fallback for simple commands
+              RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+                -H "Authorization: $PVE_TOKEN" \
+                --data-urlencode "command=$cmd")
+            fi
 
             PID=$(echo "$RESP" | jq -r '.data.pid // empty')
             if [ -z "$PID" ]; then
@@ -295,9 +306,20 @@ jobs:
             echo "⏳ $desc"
 
             # 1. Start command and get PID
-            RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
-              -H "Authorization: $PVE_TOKEN" \
-              --data-urlencode "command=$cmd")
+            # Extract actual command from "sh -c 'command'" pattern
+            if [[ $cmd =~ ^sh\ -c\ \'(.*)\'$ ]]; then
+              local actual_cmd="${BASH_REMATCH[1]}"
+              RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+                -H "Authorization: $PVE_TOKEN" \
+                --data-urlencode "command=sh" \
+                --data-urlencode "command=-c" \
+                --data-urlencode "command=$actual_cmd")
+            else
+              # Fallback for simple commands
+              RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+                -H "Authorization: $PVE_TOKEN" \
+                --data-urlencode "command=$cmd")
+            fi
 
             PID=$(echo "$RESP" | jq -r '.data.pid // empty')
             if [ -z "$PID" ]; then
@@ -403,9 +425,20 @@ jobs:
             echo "⏳ $desc..."
 
             # 1. Start command and get PID
-            RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
-              -H "Authorization: $PVE_TOKEN" \
-              --data-urlencode "command=$cmd" 2>/dev/null)
+            # Extract actual command from "sh -c 'command'" pattern
+            if [[ $cmd =~ ^sh\ -c\ \'(.*)\'$ ]]; then
+              local actual_cmd="${BASH_REMATCH[1]}"
+              RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+                -H "Authorization: $PVE_TOKEN" \
+                --data-urlencode "command=sh" \
+                --data-urlencode "command=-c" \
+                --data-urlencode "command=$actual_cmd" 2>/dev/null)
+            else
+              # Fallback for simple commands
+              RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+                -H "Authorization: $PVE_TOKEN" \
+                --data-urlencode "command=$cmd" 2>/dev/null)
+            fi
 
             PID=$(echo "$RESP" | jq -r '.data.pid // empty')
             if [ -z "$PID" ]; then
