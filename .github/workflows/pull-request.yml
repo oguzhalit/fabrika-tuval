@@ -142,18 +142,63 @@ jobs:
 
           echo "✅ Found VM on node: $NODE"
 
-          COMMANDS_B64=$(echo -n "echo '${{ secrets.GITHUB_TOKEN }}' | docker login -u ${{ github.actor }} --password-stdin ${{ env.REGISTRY }} && \
-            docker pull ${{ env.REGISTRY_IMAGE }} && \
-            docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true && \
-            docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true && \
-            docker run -d \
-              --name pr-${{ env.PR_NUMBER }}-draw \
-              -p 3000:${{ env.CONTAINER_PORT }} \
-              ${{ env.REGISTRY_IMAGE }}" | base64 -w 0)
+          # Helper function to execute command via guest agent and wait for result
+          exec_guest_cmd() {
+            local desc=$1
+            local cmd=$2
+            echo "⏳ $desc..."
 
-          curl -s -k -X POST -H "Authorization: $API_TOKEN" -H "Content-Type: application/json" \
-            "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
-            -d "{\"command\": \"sh -c 'echo $COMMANDS_B64 | base64 -d | bash'\"}" | jq '.'
+            # Start command
+            EXEC=$(curl -s -k -X POST -H "Authorization: $API_TOKEN" -H "Content-Type: application/json" \
+              "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
+              -d "{\"command\": \"$cmd\"}")
+
+            PID=$(echo "$EXEC" | jq -r '.data.pid // empty')
+            if [ -z "$PID" ]; then
+              echo "❌ Failed to start command: $EXEC"
+              return 1
+            fi
+
+            # Wait for completion (max 30s)
+            for i in {1..30}; do
+              sleep 1
+              STATUS=$(curl -s -k -H "Authorization: $API_TOKEN" \
+                "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec-status?pid=${PID}")
+
+              EXITED=$(echo "$STATUS" | jq -r '.data.exited // empty')
+              if [ "$EXITED" = "true" ]; then
+                OUT=$(echo "$STATUS" | jq -r '.data."out-data" // ""' | base64 -d 2>/dev/null || echo "")
+                ERR=$(echo "$STATUS" | jq -r '.data."err-data" // ""' | base64 -d 2>/dev/null || echo "")
+                EXIT_CODE=$(echo "$STATUS" | jq -r '.data."exit-code" // 0')
+
+                if [ -n "$OUT" ]; then echo "Output: $OUT"; fi
+                if [ -n "$ERR" ]; then echo "Error: $ERR"; fi
+                echo "✅ Exit code: $EXIT_CODE"
+                return $EXIT_CODE
+              fi
+            done
+
+            echo "⚠️ Timeout waiting for command"
+            return 1
+          }
+
+          # Step 1: Docker login
+          exec_guest_cmd "🔐 Docker login" "sh -c 'echo \${{ secrets.GITHUB_TOKEN }} | docker login -u ${{ github.actor }} --password-stdin ${{ env.REGISTRY }}'"
+
+          # Step 2: Pull image
+          exec_guest_cmd "📥 Pull image" "sh -c 'docker pull ${{ env.REGISTRY_IMAGE }}'"
+
+          # Step 3: Stop existing
+          exec_guest_cmd "🛑 Stop existing container" "sh -c 'docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
+
+          # Step 4: Remove existing
+          exec_guest_cmd "🗑️ Remove existing container" "sh -c 'docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
+
+          # Step 5: Run new container
+          exec_guest_cmd "🐳 Run new container" "sh -c 'docker run -d --name pr-${{ env.PR_NUMBER }}-draw -p 3000:${{ env.CONTAINER_PORT }} ${{ env.REGISTRY_IMAGE }}'"
+
+          # Step 6: Verify
+          exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=pr-${{ env.PR_NUMBER }}-draw'"
 
           echo "✅ Container deployed"
 
@@ -231,27 +276,77 @@ jobs:
           PROXMOX_TOKEN_NAME: ${{ secrets.PROXMOX_TOKEN_NAME }}
           PROXMOX_TOKEN_SECRET: ${{ secrets.PROXMOX_TOKEN_SECRET }}
           REGISTRY_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:latest
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          REGISTRY: ${{ env.REGISTRY }}
         run: |
           set -e
           PROXMOX_API="https://${PROXMOX_HOST}:${PROXMOX_PORT}/api2/json"
           API_TOKEN="PVEAPIToken=${PROXMOX_USER}@pve!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_SECRET}"
 
-          echo "🌍 Deploying to production..."
+          echo "🌍 Finding production VM..."
           NODE=$(curl -s -k -H "Authorization: $API_TOKEN" "${PROXMOX_API}/cluster/resources?type=vm" | \
             jq -r ".data[] | select(.vmid | tonumber == ${{ env.GUEST_VMID }}) | .node" | head -1)
+          [ -z "$NODE" ] && echo "❌ VM not found" && exit 1
+          echo "✅ Found VM on node: $NODE"
 
-          COMMANDS_B64=$(echo -n "echo '${{ secrets.GITHUB_TOKEN }}' | docker login -u ${{ github.actor }} --password-stdin ${{ env.REGISTRY }} && \
-            docker pull ${{ env.REGISTRY_IMAGE }} && \
-            docker stop draw 2>/dev/null || true && \
-            docker rm draw 2>/dev/null || true && \
-            docker run -d \
-              --name draw \
-              -p 80:${{ env.CONTAINER_PORT }} \
-              ${{ env.REGISTRY_IMAGE }}" | base64 -w 0)
+          # Helper function to execute command via guest agent and wait for result
+          exec_guest_cmd() {
+            local desc=$1
+            local cmd=$2
+            echo "⏳ $desc..."
 
-          curl -s -k -X POST -H "Authorization: $API_TOKEN" -H "Content-Type: application/json" \
-            "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
-            -d "{\"command\": \"sh -c 'echo $COMMANDS_B64 | base64 -d | bash'\"}" | jq '.'
+            # Start command
+            EXEC=$(curl -s -k -X POST -H "Authorization: $API_TOKEN" -H "Content-Type: application/json" \
+              "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
+              -d "{\"command\": \"$cmd\"}")
+
+            PID=$(echo "$EXEC" | jq -r '.data.pid // empty')
+            if [ -z "$PID" ]; then
+              echo "❌ Failed to start command: $EXEC"
+              return 1
+            fi
+
+            # Wait for completion (max 60s for production)
+            for i in {1..60}; do
+              sleep 1
+              STATUS=$(curl -s -k -H "Authorization: $API_TOKEN" \
+                "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec-status?pid=${PID}")
+
+              EXITED=$(echo "$STATUS" | jq -r '.data.exited // empty')
+              if [ "$EXITED" = "true" ]; then
+                OUT=$(echo "$STATUS" | jq -r '.data."out-data" // ""' | base64 -d 2>/dev/null || echo "")
+                ERR=$(echo "$STATUS" | jq -r '.data."err-data" // ""' | base64 -d 2>/dev/null || echo "")
+                EXIT_CODE=$(echo "$STATUS" | jq -r '.data."exit-code" // 0')
+
+                if [ -n "$OUT" ]; then echo "Output: $OUT"; fi
+                if [ -n "$ERR" ]; then echo "Error: $ERR"; fi
+                echo "✅ Exit code: $EXIT_CODE"
+                return $EXIT_CODE
+              fi
+            done
+
+            echo "⚠️ Timeout waiting for command"
+            return 1
+          }
+
+          # Step 1: Docker login
+          exec_guest_cmd "🔐 Docker login" "sh -c 'echo ${GITHUB_TOKEN} | docker login -u ${GITHUB_ACTOR} --password-stdin ${REGISTRY}'"
+
+          # Step 2: Pull image
+          exec_guest_cmd "📥 Pull image" "sh -c 'docker pull ${REGISTRY_IMAGE}'"
+
+          # Step 3: Stop existing
+          exec_guest_cmd "🛑 Stop existing container" "sh -c 'docker stop draw 2>/dev/null || true'"
+
+          # Step 4: Remove existing
+          exec_guest_cmd "🗑️ Remove existing container" "sh -c 'docker rm draw 2>/dev/null || true'"
+
+          # Step 5: Run new container
+          exec_guest_cmd "🐳 Run new container" "sh -c 'docker run -d --name draw -p 80:${{ env.CONTAINER_PORT }} ${REGISTRY_IMAGE}'"
+
+          # Step 6: Verify
+          exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=draw'"
 
           echo "✅ Production deployed"
 
