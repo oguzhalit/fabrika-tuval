@@ -195,19 +195,19 @@ jobs:
             return 1
           }
 
+          # Calculate port: 3000 + PR number (PR #6 → 3006, PR #7 → 3007, etc.)
+          PREVIEW_PORT=$((3000 + ${{ env.PR_NUMBER }}))
+
           # Step 1: Docker login
           exec_guest_cmd "🔐 Docker login" "sh -c 'echo $GITHUB_TOKEN | docker login -u $GITHUB_ACTOR --password-stdin $REGISTRY'"
 
           # Step 2: Pull image
           exec_guest_cmd "📥 Pull image" "sh -c 'docker pull $REGISTRY_IMAGE'"
 
-          # Step 3: Stop & Remove existing (force)
-          exec_guest_cmd "🛑 Stop & Remove existing container" "sh -c 'docker rm -f pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
+          # Step 3: Run new container on unique port
+          exec_guest_cmd "🐳 Run container on port $PREVIEW_PORT" "sh -c 'docker run -d --name pr-${{ env.PR_NUMBER }}-draw -p $PREVIEW_PORT:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
 
-          # Step 4: Run new container
-          exec_guest_cmd "🐳 Run new container" "sh -c 'docker run -d --name pr-${{ env.PR_NUMBER }}-draw -p 3000:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
-
-          # Step 5: Verify
+          # Step 4: Verify
           exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=pr-${{ env.PR_NUMBER }}-draw'"
 
           echo ""
@@ -366,13 +366,10 @@ jobs:
           # Step 2: Pull image
           exec_guest_cmd "📥 Pull image" "sh -c 'docker pull $REGISTRY_IMAGE'"
 
-          # Step 3: Stop & Remove existing (force)
-          exec_guest_cmd "🛑 Stop & Remove existing container" "sh -c 'docker rm -f draw 2>/dev/null || true'"
+          # Step 3: Run production container
+          exec_guest_cmd "🐳 Run production container" "sh -c 'docker run -d --name draw -p 80:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
 
-          # Step 4: Run new container
-          exec_guest_cmd "🐳 Run new container" "sh -c 'docker run -d --name draw -p 80:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
-
-          # Step 5: Verify
+          # Step 4: Verify
           exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=draw'"
 
           echo ""
@@ -426,10 +423,8 @@ jobs:
                 --data-urlencode "command=-c" \
                 --data-urlencode "command=$actual_cmd" 2>/dev/null)
             else
-              # Fallback for simple commands
-              RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
-                -H "Authorization: $PVE_TOKEN" \
-                --data-urlencode "command=$cmd" 2>/dev/null)
+              echo "❌ Command must be wrapped with sh -c 'command'"
+              return 1
             fi
 
             PID=$(echo "$RESP" | jq -r '.data.pid // empty')
@@ -456,8 +451,6 @@ jobs:
             echo "⚠️ Cleanup timeout"
             return 0
           }
-
-          exec_guest_cmd "Remove container (force)" "sh -c 'docker rm -f pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
 
       - name: 🌐 Remove DNS Record
         env:
