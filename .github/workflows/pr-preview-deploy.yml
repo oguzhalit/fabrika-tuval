@@ -1,20 +1,22 @@
 name: 🚀 PR Preview Deploy (Proxmox QEMU Guest Agent + Cloudflare)
 
 on:
+  pull_request_review:
+    types: [submitted]
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [closed]
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: goal-hedef-preview
-  IMAGE_TAG: pr-${{ github.event.number }}
-  PR_NUMBER: ${{ github.event.number }}
+  IMAGE_TAG: pr-${{ github.event.pull_request.number || github.event.number }}
+  PR_NUMBER: ${{ github.event.pull_request.number || github.event.number }}
   CONTAINER_PORT: 80
   GUEST_VMID: "100"
 
 jobs:
   deploy-preview:
-    if: github.event.action != 'closed'
+    if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -15,8 +15,30 @@ permissions:
   contents: read
 
 jobs:
-  check:
-    name: Lint, format, and type check
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint with biome
+        run: pnpm lint
+
+  test:
+    name: Type Check
+    needs: [lint]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,13 +58,9 @@ jobs:
       - name: Type check
         run: pnpm typecheck
 
-      # TODO: Fix linting and formatting issues (biome formatter requires fixes in .fabrika.schema.json)
-      # - name: Lint
-      #   run: pnpm lint
-
   build:
     name: Build packages
-    needs: [check]
+    needs: [test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
