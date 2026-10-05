@@ -1,11 +1,8 @@
 name: 🚀 PR Preview Deploy (Proxmox QEMU Guest Agent + Cloudflare)
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
   pull_request:
-    types: [closed]
+    types: [opened, synchronize, closed]
   pull_request_review:
     types: [submitted]
 
@@ -17,14 +14,11 @@ env:
 
 jobs:
   deploy-preview:
-    if: |
-      github.event_name == 'workflow_run' &&
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.pull_requests[0].number != null
-    name: 🚀 Deploy Preview (pr-${{ github.event.workflow_run.pull_requests[0].number }}-draw)
+    if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize')
+    name: 🚀 Deploy Preview (pr-${{ github.event.number }}-draw)
     env:
-      PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
-      IMAGE_TAG: pr-${{ github.event.workflow_run.pull_requests[0].number }}
+      PR_NUMBER: ${{ github.event.number }}
+      IMAGE_TAG: pr-${{ github.event.number }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -32,10 +26,59 @@ jobs:
       packages: write
 
     steps:
+      - name: ⏳ Wait for CI to pass
+        uses: actions/github-script@v7
+        timeout-minutes: 15
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const PR_SHA = context.payload.pull_request.head.sha;
+            console.log(`Waiting for CI on commit: ${PR_SHA}`);
+
+            for (let i = 0; i < 180; i++) {
+              const checks = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: PR_SHA
+              });
+
+              const ciChecks = checks.data.check_runs.filter(run =>
+                ['Lint & Format', 'Type Check', 'Build packages', 'CI status check'].includes(run.name)
+              );
+
+              if (ciChecks.length === 0) {
+                console.log('Waiting for CI checks to appear...');
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                continue;
+              }
+
+              const completed = ciChecks.filter(r => r.status === 'completed').length;
+              const total = ciChecks.length;
+
+              console.log(`[${i+1}/180] CI Status: ${completed}/${total} complete`);
+
+              const allCompleted = ciChecks.every(run => run.status === 'completed');
+              const allPassed = ciChecks.every(run => run.conclusion === 'success');
+
+              if (allCompleted && allPassed) {
+                console.log('✅ All CI checks passed! Proceeding with deployment...');
+                return;
+              }
+
+              if (allCompleted && !allPassed) {
+                const failed = ciChecks.filter(r => r.conclusion !== 'success');
+                throw new Error(`❌ CI failed: ${failed.map(r => r.name).join(', ')}`);
+              }
+
+              await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+
+            throw new Error('⏱️ Timeout waiting for CI (15 minutes)');
+
       - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_commit.id }}
+          ref: ${{ github.event.pull_request.head.sha }}
 
       # 1️⃣ Build Docker Image
       - name: 🐳 Build Docker image
@@ -257,7 +300,7 @@ jobs:
             exit 1
           fi
 
-          NODE=$(echo "$RESPONSE_BODY" | jq -r ".data[] | select(.vmid | tonumber == ${{ env.GUEST_VMID }}) | .node" | head -1)
+          NODE=$(echo "$RESPONSE_BODY" | jq -r ".data[] | select(.vmid | tonumber == 100) | .node" | head -1)
 
           # Deploy production container
           COMMANDS_B64=$(echo -n "echo '${{ secrets.GITHUB_TOKEN }}' | docker login -u ${{ github.actor }} --password-stdin ${{ env.REGISTRY }} && \
@@ -272,7 +315,7 @@ jobs:
           curl -s -k -X POST \
             -H "Authorization: $API_TOKEN" \
             -H "Content-Type: application/json" \
-            "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
+            "${PROXMOX_API}/nodes/${NODE}/qemu/100/agent/exec" \
             -d "{\"command\": \"sh -c 'echo $COMMANDS_B64 | base64 -d | bash'\"}" | jq '.'
 
           echo "✅ Production deployment complete!"
@@ -295,7 +338,7 @@ jobs:
     permissions:
       pull-requests: write
     env:
-      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_NUMBER: ${{ github.event.number }}
 
     steps:
       - name: 🗑️ Stop Docker container (Proxmox Guest Agent)
@@ -318,7 +361,7 @@ jobs:
             -H "Authorization: $API_TOKEN" \
             "${PROXMOX_API}/cluster/resources?type=vm")
 
-          NODE=$(echo "$NODE_RESPONSE" | jq -r ".data[] | select(.vmid | tonumber == ${{ env.GUEST_VMID }}) | .node" | head -1)
+          NODE=$(echo "$NODE_RESPONSE" | jq -r ".data[] | select(.vmid | tonumber == 100) | .node" | head -1)
 
           if [ -z "$NODE" ]; then
             echo "⚠️  Could not find guest node, skipping cleanup"
@@ -332,7 +375,7 @@ jobs:
           curl -s -k -X POST \
             -H "Authorization: $API_TOKEN" \
             -H "Content-Type: application/json" \
-            "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
+            "${PROXMOX_API}/nodes/${NODE}/qemu/100/agent/exec" \
             -d "{\"command\": \"sh -c 'echo $CLEANUP_B64 | base64 -d | bash'\"}" \
             | jq '.' || echo "Cleanup command submitted"
 
@@ -370,7 +413,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             github.rest.issues.createComment({
-              issue_number: ${{ env.PR_NUMBER }},
+              issue_number: ${{ github.event.number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `🧹 **Preview Cleaned**\n\nDocker container stopped and removed.\nCloudflare DNS record deleted.`
