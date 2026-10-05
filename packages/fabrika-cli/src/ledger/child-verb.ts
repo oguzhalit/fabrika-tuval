@@ -26,25 +26,25 @@
  * once the ruling is recorded on the child.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {readAuthored} from "../build/authored.ts";
-import {scannedLine} from "../build/target.ts";
-import {CONFIG_PATH} from "../config/document.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { readAuthored } from "../build/authored.ts";
+import { scannedLine } from "../build/target.ts";
+import { CONFIG_PATH } from "../config/document.ts";
 import {
 	CONTAINMENT_VOCABULARY,
 	containmentVocabularyKey,
 } from "../config/keys/containment-vocabulary.ts";
-import {resolve} from "../config/load.ts";
-import {loadRepoConfig} from "../config/working-root.ts";
-import {listLabels, listOpenMilestones} from "../io/issues.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {listSubIssues} from "../plan/github.ts";
-import {missingLabelRemedy} from "../status/label-remedy.ts";
-import {BOARD_SUBJECT, readBoard, refusalReason} from "../status/repo-board.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {composeChildBody} from "./child-body.ts";
+import { resolve } from "../config/load.ts";
+import { loadRepoConfig } from "../config/working-root.ts";
+import { listLabels, listOpenMilestones } from "../io/issues.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { listSubIssues } from "../plan/github.ts";
+import { missingLabelRemedy } from "../status/label-remedy.ts";
+import { BOARD_SUBJECT, readBoard, refusalReason } from "../status/repo-board.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { composeChildBody } from "./child-body.ts";
 import {
 	BAD_SECTIONS,
 	LINK_UNPROVEN,
@@ -54,10 +54,10 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {createChildIssue, linkSubIssue, readChildBack} from "./github.ts";
-import {type LedgerMessages, type OpenOptions, openGround} from "./preconditions.ts";
-import type {ChildRecord} from "./run.ts";
-import {appendChild, loadManifest, loadRun, maskedLeakRefusal, rewriteChild} from "./run-io.ts";
+import { createChildIssue, linkSubIssue, readChildBack } from "./github.ts";
+import { type LedgerMessages, type OpenOptions, openGround } from "./preconditions.ts";
+import type { ChildRecord } from "./run.ts";
+import { appendChild, loadManifest, loadRun, maskedLeakRefusal, rewriteChild } from "./run-io.ts";
 
 const VERB = "ledger child";
 
@@ -160,7 +160,7 @@ export const runChild = (
 		if (board._tag === "Refused") {
 			return refuse(PRECONDITION_UNKNOWN, MESSAGES.unreadable(BOARD_SUBJECT, refusalReason(board)));
 		}
-		const {statuses, standingLanes} = board.resolved.board;
+		const { statuses, standingLanes } = board.resolved.board;
 
 		// A home is a milestone or a standing lane, and the lanes are the one set every reader takes
 		// from the repo's declaration.
@@ -183,7 +183,7 @@ export const runChild = (
 
 		const ground = yield* openGround(MESSAGES, options);
 		if (ground._tag === "Refused") return ground.outcome;
-		const {repo, epic, dir, notes} = ground;
+		const { repo, epic, dir, notes } = ground;
 
 		const run = yield* loadRun(MESSAGES, dir, notes);
 		if (run._tag === "Refused") return run.outcome;
@@ -206,7 +206,7 @@ export const runChild = (
 		if (composed._tag === "Bad") return refuse(BAD_SECTIONS, `${VERB}: ${composed.reason}`, notes);
 
 		const leaked = maskedLeakRefusal(VERB, "child body", composed.body);
-		if (leaked !== null) return {...leaked, stderr: [...notes, ...leaked.stderr]};
+		if (leaked !== null) return { ...leaked, stderr: [...notes, ...leaked.stderr] };
 
 		const labels = [
 			options.type,
@@ -339,7 +339,7 @@ export const runChild = (
 
 		const manifest = yield* loadManifest(MESSAGES, dir, diagnostics);
 		if (manifest._tag === "Refused") return manifest.outcome;
-		const rewritten = yield* rewriteChild(dir, manifest.value, {...record, linked: true});
+		const rewritten = yield* rewriteChild(dir, manifest.value, { ...record, linked: true });
 		if (rewritten !== null) {
 			return refuse(
 				MANIFEST_UNWRITTEN,

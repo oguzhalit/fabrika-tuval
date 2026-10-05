@@ -54,12 +54,12 @@
  * `ship disarm <pr> --site post-enqueue` now, so it is its own settlement and its own row.
  */
 
-import type {Reconciled} from "../ship/reconcile-verb.ts";
-import {isBuildState, shellState} from "../wire/lane-brief.ts";
-import type {LaneStatus, LogEntry} from "./fold.ts";
-import type {LaneRole} from "./prove.ts";
-import {REVIEW_STATE, REVIEW_UI_STATE, SHIP_QUEUED_STATE} from "./prove.ts";
-import {pullNumberIn} from "./reconcile.ts";
+import type { Reconciled } from "../ship/reconcile-verb.ts";
+import { isBuildState, shellState } from "../wire/lane-brief.ts";
+import type { LaneStatus, LogEntry } from "./fold.ts";
+import type { LaneRole } from "./prove.ts";
+import { REVIEW_STATE, REVIEW_UI_STATE, SHIP_QUEUED_STATE } from "./prove.ts";
+import { pullNumberIn } from "./reconcile.ts";
 
 /**
  * The event each leaf owes its ledger, keyed by the leaf a killed shell would have left the task in.
@@ -96,7 +96,7 @@ export const activeTaskLeaves = (status: LaneStatus): ReadonlyArray<TaskLeaf> =>
 	const leaves: TaskLeaf[] = [];
 	for (const phase of Object.values(status.stateValue)) {
 		if (typeof phase === "string") continue;
-		for (const [task, leaf] of Object.entries(phase)) leaves.push({task, leaf});
+		for (const [task, leaf] of Object.entries(phase)) leaves.push({ task, leaf });
 	}
 	return leaves;
 };
@@ -109,12 +109,12 @@ export const activeTaskLeaves = (status: LaneStatus): ReadonlyArray<TaskLeaf> =>
  */
 export const owedBy = (
 	status: LaneStatus,
-): ReadonlyArray<{readonly task: string; readonly leaf: string; readonly event: string}> => {
+): ReadonlyArray<{ readonly task: string; readonly leaf: string; readonly event: string }> => {
 	if (status.status === "done") return [];
-	const owed: Array<{task: string; leaf: string; event: string}> = [];
-	for (const {task, leaf} of activeTaskLeaves(status)) {
+	const owed: Array<{ task: string; leaf: string; event: string }> = [];
+	for (const { task, leaf } of activeTaskLeaves(status)) {
 		const event = owedEvent(leaf);
-		if (event !== null) owed.push({task, leaf, event});
+		if (event !== null) owed.push({ task, leaf, event });
 	}
 	return owed;
 };
@@ -149,7 +149,7 @@ export const DEAD_SPAWN_CAUSE = "spawn-dead";
  */
 export const buildingBy = (status: LaneStatus): ReadonlyArray<TaskLeaf> => {
 	if (status.status === "done") return [];
-	return activeTaskLeaves(status).filter(({leaf}) => {
+	return activeTaskLeaves(status).filter(({ leaf }) => {
 		const state = shellState(leaf);
 		return state !== null && isBuildState(state);
 	});
@@ -174,17 +174,17 @@ export const buildingBy = (status: LaneStatus): ReadonlyArray<TaskLeaf> => {
  */
 export type Publication =
 	/** The board carries it: an open pull request whose body links the issue. */
-	| {readonly _tag: "OpenPull"}
+	| { readonly _tag: "OpenPull" }
 	/** This clone carries it: commits on the child's own lane branch, and never a pull request. */
-	| {readonly _tag: "LaneBranch"};
+	| { readonly _tag: "LaneBranch" };
 
 export const publicationOf = (role: LaneRole): Publication =>
-	role._tag === "Child" ? {_tag: "LaneBranch"} : {_tag: "OpenPull"};
+	role._tag === "Child" ? { _tag: "LaneBranch" } : { _tag: "OpenPull" };
 
 /** Every task of a non-terminal lane waiting in the merge-queue dwell. */
 export const queuedBy = (status: LaneStatus): ReadonlyArray<TaskLeaf> => {
 	if (status.status === "done") return [];
-	return activeTaskLeaves(status).filter(({leaf}) => leaf === SHIP_QUEUED_STATE);
+	return activeTaskLeaves(status).filter(({ leaf }) => leaf === SHIP_QUEUED_STATE);
 };
 
 /** The pull request a task's ledger names, as its URL and its number. */
@@ -204,7 +204,7 @@ export const queuedPullOf = (entries: ReadonlyArray<LogEntry>, task: string): Qu
 	for (const entry of [...entries].reverse()) {
 		if (entry.task !== task || entry.pr === undefined) continue;
 		const number = pullNumberIn(entry.pr);
-		if (number !== null) return {url: entry.pr, number};
+		if (number !== null) return { url: entry.pr, number };
 	}
 	return null;
 };
@@ -212,15 +212,15 @@ export const queuedPullOf = (entries: ReadonlyArray<LogEntry>, task: string): Qu
 /** What the sweep does with one `ship reconcile --polls 1` answer. */
 export type Settlement =
 	/** The queue finished with the PR, so this `lane report` token records its answer. */
-	| {readonly _tag: "Record"; readonly token: "LANDED" | "EJECTED"}
+	| { readonly _tag: "Record"; readonly token: "LANDED" | "EJECTED" }
 	/** The PR is still queued: the row names it, nothing lands, and a later pass re-reads it. */
-	| {readonly _tag: "Hold"; readonly why: string}
+	| { readonly _tag: "Hold"; readonly why: string }
 	/**
 	 * The `--auto` arm never took effect and still stands, so a disarm is owed now, before any record.
 	 * The sweep runs no disarm and records nothing: clearing merge intent is the driver's act, and the
 	 * record that follows turns on what that disarm answers.
 	 */
-	| {readonly _tag: "DisarmOwed"; readonly why: string};
+	| { readonly _tag: "DisarmOwed"; readonly why: string };
 
 /**
  * The queue arm's relay table, keyed on every answer `ship reconcile` can give.
@@ -232,8 +232,8 @@ export type Settlement =
  * standing enqueues ungated later.
  */
 export const QUEUE_SETTLEMENTS: Readonly<Record<Reconciled, Settlement>> = {
-	landed: {_tag: "Record", token: "LANDED"},
-	ejected: {_tag: "Record", token: "EJECTED"},
+	landed: { _tag: "Record", token: "LANDED" },
+	ejected: { _tag: "Record", token: "EJECTED" },
 	unresolved: {
 		_tag: "Hold",
 		why: "the PR is still in the queue, and a sweep records no wait, so the lane's wait budget is untouched",

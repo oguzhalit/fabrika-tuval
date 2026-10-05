@@ -1,9 +1,9 @@
-import {describe, expect, it} from "vitest";
-import {SHIPPED_GOVERNED_ROOTS as GOVERNANCE_ROOTS} from "../review/classes.ts";
-import {changeOf, deriveScope, recordsIn} from "./roots.ts";
+import { describe, expect, it } from "vitest";
+import { SHIPPED_GOVERNED_ROOTS as GOVERNANCE_ROOTS } from "../review/classes.ts";
+import { changeOf, deriveScope, recordsIn } from "./roots.ts";
 
 const changed = (...rows: ReadonlyArray<readonly [string, string]>) =>
-	rows.map(([status, path]) => ({status, path}));
+	rows.map(([status, path]) => ({ status, path }));
 
 describe("changeOf", () => {
 	it("maps git's letters onto the three-word vocabulary", () => {
@@ -25,7 +25,7 @@ describe("recordsIn", () => {
 				changed(["A", ".decisions/0240-only-landed-adrs-may-be-cited.md"], ["M", "src/a.ts"]),
 			),
 		).toEqual([
-			{id: "0240", change: "added", path: ".decisions/0240-only-landed-adrs-may-be-cited.md"},
+			{ id: "0240", change: "added", path: ".decisions/0240-only-landed-adrs-may-be-cited.md" },
 		]);
 	});
 
@@ -50,7 +50,7 @@ describe("deriveScope", () => {
 			GOVERNANCE_ROOTS,
 		);
 		expect(result.required).toBe(true);
-		expect(result.roots).toEqual({".decisions/": 1, ".claude/": 1});
+		expect(result.roots).toEqual({ ".decisions/": 1, ".claude/": 1 });
 		expect(result.scanned).toBe(3);
 	});
 

@@ -13,7 +13,7 @@
  * `../adr/records.ts` — this guard adds the rules, not a second parser.
  */
 
-import {idFromFile, idSortKey, parseFrontmatter} from "../adr/records.ts";
+import { idFromFile, idSortKey, parseFrontmatter } from "../adr/records.ts";
 
 /** A record filename plus its full text. */
 export interface DecisionFile {
@@ -27,7 +27,7 @@ const REQUIRED_FIELDS = ["id", "title", "status", "date"] as const;
 /** One record's break of the lock. Each names the file, so a report needs nothing else. */
 export type NumberDefect =
 	/** A required frontmatter field is absent or empty. */
-	| {readonly _tag: "MissingField"; readonly file: string; readonly field: string}
+	| { readonly _tag: "MissingField"; readonly file: string; readonly field: string }
 	/** The filename number and the frontmatter `id` name different ADRs. */
 	| {
 			readonly _tag: "NumberMismatch";
@@ -36,7 +36,7 @@ export type NumberDefect =
 			readonly id: string;
 	  }
 	/** Two or more records claim one id. */
-	| {readonly _tag: "DuplicateId"; readonly id: string; readonly files: ReadonlyArray<string>};
+	| { readonly _tag: "DuplicateId"; readonly id: string; readonly files: ReadonlyArray<string> };
 
 /**
  * Every defect across the records, in report order: per-file defects first (by filename), then the
@@ -48,15 +48,15 @@ export type NumberDefect =
 export const findDefects = (files: ReadonlyArray<DecisionFile>): ReadonlyArray<NumberDefect> => {
 	const perFile: Array<NumberDefect> = [];
 	const byId = new Map<string, Array<string>>();
-	for (const {file, text} of [...files].sort((a, b) => a.file.localeCompare(b.file))) {
+	for (const { file, text } of [...files].sort((a, b) => a.file.localeCompare(b.file))) {
 		const fm = parseFrontmatter(text);
 		const missing = REQUIRED_FIELDS.filter((field) => (fm[field] ?? "") === "");
-		for (const field of missing) perFile.push({_tag: "MissingField", file, field});
+		for (const field of missing) perFile.push({ _tag: "MissingField", file, field });
 		const id = fm.id ?? "";
 		if (id === "") continue;
 		const filePrefix = idFromFile(file);
 		if (filePrefix !== null && filePrefix !== id) {
-			perFile.push({_tag: "NumberMismatch", file, filePrefix, id});
+			perFile.push({ _tag: "NumberMismatch", file, filePrefix, id });
 			continue;
 		}
 		if (missing.length > 0) continue;
@@ -69,7 +69,7 @@ export const findDefects = (files: ReadonlyArray<DecisionFile>): ReadonlyArray<N
 			const [bn] = idSortKey(b);
 			return an - bn;
 		})
-		.map(([id, dupeFiles]) => ({_tag: "DuplicateId", id, files: dupeFiles}) as const);
+		.map(([id, dupeFiles]) => ({ _tag: "DuplicateId", id, files: dupeFiles }) as const);
 	return [...perFile, ...duplicates];
 };
 

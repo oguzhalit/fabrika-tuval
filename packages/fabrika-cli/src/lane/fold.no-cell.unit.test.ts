@@ -9,10 +9,10 @@
  * assertions hold the full result, so a tea bump that moves the pure path onto the runtime's
  * semantics reds here instead of silently changing what a lane folds to.
  */
-import {describe, expect, it} from "vitest";
-import {twoPhaseWorkflow} from "./fixtures.test-support.ts";
-import {applyEvent, foldLog, type LogEntry, walkOf} from "./fold.ts";
-import {type CompiledLane, compile} from "./machine.ts";
+import { describe, expect, it } from "vitest";
+import { twoPhaseWorkflow } from "./fixtures.test-support.ts";
+import { applyEvent, foldLog, type LogEntry, walkOf } from "./fold.ts";
+import { type CompiledLane, compile } from "./machine.ts";
 
 const AT = "2026-08-16T00:00:00.000Z";
 

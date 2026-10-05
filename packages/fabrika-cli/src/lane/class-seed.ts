@@ -17,9 +17,9 @@
  * there another way.
  */
 
-import {classLabel} from "../config/board.ts";
-import {isRecord, parseJson} from "../io/json.ts";
-import {CLASSES} from "../triage/facets.ts";
+import { classLabel } from "../config/board.ts";
+import { isRecord, parseJson } from "../io/json.ts";
+import { CLASSES } from "../triage/facets.ts";
 
 /**
  * The classes an issue's labels declare, in {@link CLASSES} order.
@@ -46,11 +46,11 @@ export const offSetClasses = (classes: ReadonlyArray<string>): ReadonlyArray<str
 	classes.filter((name) => !CLASSES.includes(name));
 
 export type Seed =
-	| {readonly _tag: "Seeded"; readonly text: string; readonly classes: ReadonlyArray<string>}
+	| { readonly _tag: "Seeded"; readonly text: string; readonly classes: ReadonlyArray<string> }
 	/** The document was copied through untouched — no class stands, so the bytes are the template's. */
-	| {readonly _tag: "Unchanged"; readonly text: string}
-	| {readonly _tag: "OffSet"; readonly names: ReadonlyArray<string>}
-	| {readonly _tag: "Unseedable"; readonly reason: string};
+	| { readonly _tag: "Unchanged"; readonly text: string }
+	| { readonly _tag: "OffSet"; readonly names: ReadonlyArray<string> }
+	| { readonly _tag: "Unseedable"; readonly reason: string };
 
 /**
  * Seed every task's `context.<task>.classes` in one machine document's bytes.
@@ -65,28 +65,28 @@ export type Seed =
  */
 export const seedClasses = (text: string, classes: ReadonlyArray<string>): Seed => {
 	const offSet = offSetClasses(classes);
-	if (offSet.length > 0) return {_tag: "OffSet", names: offSet};
-	if (classes.length === 0) return {_tag: "Unchanged", text};
+	if (offSet.length > 0) return { _tag: "OffSet", names: offSet };
+	if (classes.length === 0) return { _tag: "Unchanged", text };
 
 	const document = parseJson(text);
-	if (!isRecord(document)) return {_tag: "Unseedable", reason: "the document is not JSON"};
+	if (!isRecord(document)) return { _tag: "Unseedable", reason: "the document is not JSON" };
 	const machine = document.machine;
 	if (!isRecord(machine) || !isRecord(machine.context)) {
-		return {_tag: "Unseedable", reason: "the document carries no `machine.context` object"};
+		return { _tag: "Unseedable", reason: "the document carries no `machine.context` object" };
 	}
 	const tasks = Object.keys(machine.context);
 	if (tasks.length === 0) {
-		return {_tag: "Unseedable", reason: "the document's `machine.context` declares no task"};
+		return { _tag: "Unseedable", reason: "the document's `machine.context` declares no task" };
 	}
 	const context = Object.fromEntries(
 		tasks.map((task) => {
 			const entry = machine.context as Record<string, unknown>;
 			const seat = entry[task];
-			return [task, {...(isRecord(seat) ? seat : {}), classes: [...classes]}];
+			return [task, { ...(isRecord(seat) ? seat : {}), classes: [...classes] }];
 		}),
 	);
-	const seeded = {...document, machine: {...machine, context}};
-	return {_tag: "Seeded", text: `${JSON.stringify(seeded, null, "\t")}\n`, classes};
+	const seeded = { ...document, machine: { ...machine, context } };
+	return { _tag: "Seeded", text: `${JSON.stringify(seeded, null, "\t")}\n`, classes };
 };
 
 /** The class names, as the `class:<name>` labels a refusal quotes back. */

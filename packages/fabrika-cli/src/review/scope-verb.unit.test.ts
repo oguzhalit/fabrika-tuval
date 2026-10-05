@@ -1,5 +1,5 @@
-import {Effect, type FileSystem, Layer, type Path} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, type FileSystem, Layer, type Path } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	configAtCommit,
 	errOut,
@@ -12,8 +12,8 @@ import {
 	uiConfiguredAtCommits,
 	unconfigured,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {DECISIONS_ROOT} from "./classes.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { DECISIONS_ROOT } from "./classes.ts";
 import {
 	GOVERNED_FILTER,
 	INCOMPLETE_SCAN,
@@ -22,7 +22,7 @@ import {
 	STALE_HEAD,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import type {FilterPlacement} from "./filter-spike.ts";
+import type { FilterPlacement } from "./filter-spike.ts";
 import {
 	BASE,
 	BASE_TIP,
@@ -34,7 +34,7 @@ import {
 	paths,
 	pull,
 } from "./fixtures.test-support.ts";
-import {runScope, subsystemRowsOf} from "./scope-verb.ts";
+import { runScope, subsystemRowsOf } from "./scope-verb.ts";
 
 const PULL = /GET .*\/repos\/o\/r\/pulls\/4321$/;
 /** The unbound endpoint this verb no longer reads — scripted so a regression has a list to serve. */
@@ -42,7 +42,7 @@ const FILES = /GET .*\/repos\/o\/r\/pulls\/4321\/files\?/;
 const NOT_FOUND = '{"message":"Not Found"}';
 
 /** A canned payload as the platform serves it — the fixtures speak `ExecResult`, the seam HTTP. */
-const served = (result: ExecResult, status = 200): HttpReply => ({status, body: result.stdout});
+const served = (result: ExecResult, status = 200): HttpReply => ({ status, body: result.stdout });
 
 const options = {
 	pr: 4321,
@@ -53,7 +53,7 @@ const options = {
 	filterPlacement: null as FilterPlacement | null,
 	exclude: null as string | null,
 	cwd: "/repo",
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 };
 
 const shell = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) => {
@@ -61,7 +61,7 @@ const shell = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof option
 	return {
 		fake,
 		out: Effect.runPromise(
-			Effect.provide(runScope({...options, ...overrides}), Layer.merge(fake.layer, unconfigured)),
+			Effect.provide(runScope({ ...options, ...overrides }), Layer.merge(fake.layer, unconfigured)),
 		),
 	};
 };
@@ -93,7 +93,7 @@ const happy = (shape: Parameters<typeof pull>[0] = {}): ReadonlyArray<Scripted> 
 
 /** The same script over an explicit changed-path list — the ui-class tests' whole ground. */
 const over = (...changed: ReadonlyArray<string>): ReadonlyArray<Scripted> => [
-	[PULL, served(pull({changedFiles: changed.length}))],
+	[PULL, served(pull({ changedFiles: changed.length }))],
 	...binding(),
 	[PATHS_AT(), paths(...changed)],
 	[FILES, served(files(...changed))],
@@ -121,7 +121,10 @@ describe("runScope", () => {
 	// The whole point: the fence a repo declares is the fence this verb derives over. The
 	// same diff answers `not-required` above under the shipped roots.
 	it("derives the namespace over a FOREIGN repo's declared roots", async () => {
-		const out = await run([...declaredAt({governedRoots: ["src/", ".fabrika.jsonc"]}), ...happy()]);
+		const out = await run([
+			...declaredAt({ governedRoots: ["src/", ".fabrika.jsonc"] }),
+			...happy(),
+		]);
 		expect(out.stdout).toContain("governance\trequired");
 		expect(out.stderr).toContain(
 			`review scope: governance derived over 2 root(s) — at the head ${HEAD}, \`governedRoots\` as declared in .fabrika.jsonc; at the base ${BASE}, \`governedRoots\` as declared in .fabrika.jsonc.`,
@@ -189,12 +192,12 @@ describe("runScope", () => {
 			script: ReadonlyArray<Scripted>,
 		) =>
 			Effect.runPromise(
-				Effect.provide(runScope({...options}), Layer.merge(fakeSeams(script).layer, tree)),
+				Effect.provide(runScope({ ...options }), Layer.merge(fakeSeams(script).layer, tree)),
 			);
 
 		it("raises the ui class off the head's uiSurfaces row when the working tree declares none", async () => {
 			const out = await withTree(unconfigured, [
-				...configAtCommit(JSON.stringify({uiSurfaces: [SITE_SURFACE]}), HEAD),
+				...configAtCommit(JSON.stringify({ uiSurfaces: [SITE_SURFACE] }), HEAD),
 				...over(SITE, "README.md"),
 			]);
 			expect(out.code).toBe(0);
@@ -205,7 +208,7 @@ describe("runScope", () => {
 		it("raises the ui class off the base's uiSurfaces row when the head removes it", async () => {
 			const out = await withTree(unconfigured, [
 				...configAtCommit("{}", HEAD),
-				...configAtCommit(JSON.stringify({uiSurfaces: [SITE_SURFACE]}), BASE),
+				...configAtCommit(JSON.stringify({ uiSurfaces: [SITE_SURFACE] }), BASE),
 				...over(SITE, "README.md"),
 			]);
 			expect(out.code).toBe(0);
@@ -220,7 +223,7 @@ describe("runScope", () => {
 
 		it("reads a config absent at one commit as that commit's shipped defaults", async () => {
 			const out = await withTree(unconfigured, [
-				...configAtCommit(JSON.stringify({governedRoots: ["src/", ".fabrika.jsonc"]}), HEAD),
+				...configAtCommit(JSON.stringify({ governedRoots: ["src/", ".fabrika.jsonc"] }), HEAD),
 				...happy(),
 			]);
 			expect(out.code).toBe(0);
@@ -230,11 +233,11 @@ describe("runScope", () => {
 	});
 
 	it("emits the record with --json, including the derived namespace set", async () => {
-		const out = await run(happy(), {json: true});
+		const out = await run(happy(), { json: true });
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			outcome: "scoped",
 			head: HEAD,
-			issue: {kind: "fixes", number: 4287},
+			issue: { kind: "fixes", number: 4287 },
 			scanned: 2,
 			governance: "not-required",
 			namespaces: ["review-code", "review-doc"],
@@ -270,7 +273,7 @@ describe("runScope", () => {
 	});
 
 	it("prints `-` for a PR with neither marker, never a fabricated issue", async () => {
-		const out = await run(happy({body: "relates to #4287"}));
+		const out = await run(happy({ body: "relates to #4287" }));
 		expect(out.stdout.split("\n")[0]).toBe(`scoped\t${HEAD}\t-`);
 	});
 });
@@ -284,18 +287,18 @@ describe("runScope", () => {
  */
 describe("runScope reads the partial-split marker its own builder emits", () => {
 	it("reports the issue a `Part of #N` body names, and marks it non-closing", async () => {
-		const out = await run(happy({body: "does things\n\nPart of #5434\nPart of #5437\n"}));
+		const out = await run(happy({ body: "does things\n\nPart of #5434\nPart of #5437\n" }));
 		expect(out.code).toBe(0);
 		expect(out.stdout.split("\n")[0]).toBe(`scoped\t${HEAD}\tpart-of:5434`);
 	});
 
 	it("carries the kind into --json, so the caller can tell a close from a split", async () => {
-		const out = await run(happy({body: "Part of #5434"}), {json: true});
-		expect(JSON.parse(out.stdout)).toMatchObject({issue: {kind: "part-of", number: 5434}});
+		const out = await run(happy({ body: "Part of #5434" }), { json: true });
+		expect(JSON.parse(out.stdout)).toMatchObject({ issue: { kind: "part-of", number: 5434 } });
 	});
 
 	it("still prefers the closing keyword when a body carries both markers", async () => {
-		const out = await run(happy({body: "Fixes #4287\n\nPart of #4000"}));
+		const out = await run(happy({ body: "Fixes #4287\n\nPart of #4000" }));
 		expect(out.stdout.split("\n")[0]).toBe(`scoped\t${HEAD}\tfixes:4287`);
 	});
 });
@@ -313,26 +316,26 @@ describe("runScope refusals and diagnostics", () => {
 	});
 
 	it("refuses a PR proven absent on 7", async () => {
-		const out = await run([[PULL, {status: 404, body: NOT_FOUND}]]);
+		const out = await run([[PULL, { status: 404, body: NOT_FOUND }]]);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toBe("review scope: PR #4321 not found in o/r.");
 	});
 
 	it("refuses a closed PR on 7 — nothing to review", async () => {
-		const out = await run([[PULL, served(pull({state: "closed"}))]]);
+		const out = await run([[PULL, served(pull({ state: "closed" }))]]);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-1)).toBe("review scope: PR #4321 is closed — nothing to review.");
 	});
 
 	it("refuses a zero-file PR on 7 rather than classifying an empty review (#4060)", async () => {
-		const out = await run([[PULL, served(pull({changedFiles: 0}))]]);
+		const out = await run([[PULL, served(pull({ changedFiles: 0 }))]]);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-1)).toContain("has zero changed files");
 	});
 
 	it("separates an UNREADABLE PR from an absent one — 11, never 7", async () => {
-		const out = await run([[PULL, {status: 502, body: "{}"}]]);
+		const out = await run([[PULL, { status: 502, body: "{}" }]]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.code).not.toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-1)).toContain("the scope is UNKNOWN");
@@ -351,7 +354,7 @@ describe("runScope refusals and diagnostics", () => {
 
 	it("refuses an empty file list on 13, distinct from 11 and 7", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 9}))],
+			[PULL, served(pull({ changedFiles: 9 }))],
 			...binding(),
 			[PATHS_AT(), paths()],
 		]);
@@ -365,10 +368,10 @@ describe("runScope refusals and diagnostics", () => {
 	});
 
 	it("refuses a non-PR number, and an unresolvable repo, on 1", async () => {
-		expect((await run(happy(), {pr: 0})).code).toBe(1);
+		expect((await run(happy(), { pr: 0 })).code).toBe(1);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runScope({...options, env: {}}),
+				runScope({ ...options, env: {} }),
 				Layer.merge(fakeSeams([]).layer, unconfigured),
 			),
 		);
@@ -386,7 +389,7 @@ describe("runScope refusals and diagnostics", () => {
 describe("runScope never refuses on GitHub's declared count", () => {
 	/** git pairs the rename into one `--name-only` path; GitHub counts the delete and the add. */
 	const renamed: ReadonlyArray<Scripted> = [
-		[PULL, served(pull({changedFiles: 2}))],
+		[PULL, served(pull({ changedFiles: 2 }))],
 		...binding(),
 		[PATHS_AT(), paths("src/new.ts")],
 	];
@@ -412,7 +415,7 @@ describe("runScope never refuses on GitHub's declared count", () => {
 
 	it("scopes a list LONGER than GitHub declares, which the old inequality also let through", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 1}))],
+			[PULL, served(pull({ changedFiles: 1 }))],
 			...binding(),
 			[PATHS_AT(), paths("src/cart.ts", "README.md")],
 		]);
@@ -430,7 +433,7 @@ describe("runScope never refuses on GitHub's declared count", () => {
  */
 describe("runScope binds its file list to the commit it prints", () => {
 	it("partitions the bound commit's files, never the PR-number endpoint's", async () => {
-		const {fake, out} = shell(happy());
+		const { fake, out } = shell(happy());
 		const result = await out;
 		expect(result.stdout).toContain("class\tcode\t1");
 		expect(result.stdout).not.toContain("class\tdoc\t2");
@@ -441,13 +444,13 @@ describe("runScope binds its file list to the commit it prints", () => {
 	});
 
 	it("prints the head it actually read the files out of", async () => {
-		const {out} = shell(happy(), {sha: HEAD});
+		const { out } = shell(happy(), { sha: HEAD });
 		const result = await out;
 		expect(result.stdout.split("\n")[0]).toBe(`scoped\t${HEAD}\tfixes:4287`);
 	});
 
 	it("refuses on 12 when --sha is not the PR's head", async () => {
-		const {fake, out} = shell(happy(), {sha: OLD_HEAD});
+		const { fake, out } = shell(happy(), { sha: OLD_HEAD });
 		const result = await out;
 		expect(result.code).toBe(STALE_HEAD);
 		expect(result.stdout).toBe("");
@@ -456,7 +459,7 @@ describe("runScope binds its file list to the commit it prints", () => {
 	});
 
 	it("refuses a --sha that is not a head SHA on 10", async () => {
-		const out = await run(happy(), {sha: "origin/main"});
+		const out = await run(happy(), { sha: "origin/main" });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toContain("is not a head SHA");
 	});
@@ -485,7 +488,7 @@ describe("runScope subsystem rows", () => {
 	const CART = "Totals are cents, never floats.";
 	/** The happy script, with `rows` declared at both of the PR's commits. */
 	const configured = (rows: ReadonlyArray<unknown>) => [
-		...declaredAt({reviewSubsystems: rows}),
+		...declaredAt({ reviewSubsystems: rows }),
 		...happy(),
 	];
 
@@ -500,13 +503,13 @@ describe("runScope subsystem rows", () => {
 	});
 
 	it("carries no subsystems key in the JSON when the list is empty", async () => {
-		const out = await run(configured([]), {json: true});
+		const out = await run(configured([]), { json: true });
 		expect("subsystems" in JSON.parse(out.stdout)).toBe(false);
 	});
 
 	it("prints one subsystem row and its note per matching subsystem, between the class and namespace rows", async () => {
 		const out = await run(
-			configured([{pattern: "src/cart.ts", subsystem: "cart", constraint: CART}]),
+			configured([{ pattern: "src/cart.ts", subsystem: "cart", constraint: CART }]),
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(
@@ -533,8 +536,8 @@ describe("runScope subsystem rows", () => {
 	it("sorts the rows by subsystem name, not by declaration order", async () => {
 		const out = await run(
 			configured([
-				{pattern: "src/**", subsystem: "zeta", constraint: "z"},
-				{pattern: "README.md", subsystem: "alpha", constraint: "a"},
+				{ pattern: "src/**", subsystem: "zeta", constraint: "z" },
+				{ pattern: "README.md", subsystem: "alpha", constraint: "a" },
 			]),
 		);
 		const lines = out.stdout.split("\n");
@@ -549,8 +552,8 @@ describe("runScope subsystem rows", () => {
 	it("counts a path matching several patterns under each subsystem", async () => {
 		const out = await run(
 			configured([
-				{pattern: "src/**", subsystem: "source", constraint: "s"},
-				{pattern: "**/cart.ts", subsystem: "cart", constraint: CART},
+				{ pattern: "src/**", subsystem: "source", constraint: "s" },
+				{ pattern: "**/cart.ts", subsystem: "cart", constraint: CART },
 			]),
 		);
 		expect(out.stdout).toContain("subsystem\tcart\t1");
@@ -560,8 +563,8 @@ describe("runScope subsystem rows", () => {
 	it("prints no row for a subsystem whose pattern matched nothing", async () => {
 		const out = await run(
 			configured([
-				{pattern: "docs/**", subsystem: "absent", constraint: "never matched"},
-				{pattern: "README.md", subsystem: "docs", constraint: "d"},
+				{ pattern: "docs/**", subsystem: "absent", constraint: "never matched" },
+				{ pattern: "README.md", subsystem: "docs", constraint: "d" },
 			]),
 		);
 		expect(out.stdout).not.toContain("subsystem\tabsent");
@@ -569,10 +572,13 @@ describe("runScope subsystem rows", () => {
 	});
 
 	it("retains subsystem constraints when their matched content is excluded", async () => {
-		const out = await run(configured([{pattern: "src/**", subsystem: "cart", constraint: CART}]), {
-			filterPlacement: "after",
-			exclude: "src/cart.ts",
-		});
+		const out = await run(
+			configured([{ pattern: "src/**", subsystem: "cart", constraint: CART }]),
+			{
+				filterPlacement: "after",
+				exclude: "src/cart.ts",
+			},
+		);
 		expect(out.stdout).toContain("subsystem\tcart\t1");
 		expect(out.stdout).toContain("subsystem-path\tcart\tsrc/cart.ts");
 		expect(out.stdout).toContain("namespace\treview-code");
@@ -580,16 +586,16 @@ describe("runScope subsystem rows", () => {
 
 	it("mirrors the rows in the JSON, named, counted, and carrying the constraint", async () => {
 		const out = await run(
-			configured([{pattern: "README.md", subsystem: "docs", constraint: "d"}]),
-			{json: true},
+			configured([{ pattern: "README.md", subsystem: "docs", constraint: "d" }]),
+			{ json: true },
 		);
 		expect(JSON.parse(out.stdout).subsystems).toEqual([
-			{name: "docs", files: 1, paths: ["README.md"], constraint: "d"},
+			{ name: "docs", files: 1, paths: ["README.md"], constraint: "d" },
 		]);
 	});
 
 	it("refuses an undecodable list on 11 rather than partitioning over a value nobody read", async () => {
-		const out = await run(configured([{pattern: "src/**", subsystem: "cart"}]));
+		const out = await run(configured([{ pattern: "src/**", subsystem: "cart" }]));
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain("is missing, empty, or not a string");
@@ -606,25 +612,25 @@ describe("runScope subsystem rows", () => {
  */
 describe("runScope's exclusion set reads .fabrika.jsonc", () => {
 	const CHANGED = ["src/cart.ts", "pnpm-lock.yaml", "README.md"];
-	const placement = {filterPlacement: "after" as const, exclude: "src/cart.ts"};
+	const placement = { filterPlacement: "after" as const, exclude: "src/cart.ts" };
 	const overChanged = over(...CHANGED);
 	const configured = (config: Record<string, unknown>) =>
-		fakeFs({files: {"/repo/.fabrika.jsonc": JSON.stringify(config)}});
+		fakeFs({ files: { "/repo/.fabrika.jsonc": JSON.stringify(config) } });
 
 	it("leaves stdout and stderr byte-identical when the keys are absent, the file empty, or both lists empty", async () => {
 		const plain = await run(overChanged, placement);
 		const braces = await Effect.runPromise(
 			Effect.provide(
-				runScope({...options, ...placement}),
+				runScope({ ...options, ...placement }),
 				Layer.merge(fakeSeams(overChanged).layer, configured({}).layer),
 			),
 		);
 		const empty = await Effect.runPromise(
 			Effect.provide(
-				runScope({...options, ...placement}),
+				runScope({ ...options, ...placement }),
 				Layer.merge(
 					fakeSeams(overChanged).layer,
-					configured({reviewFilterExclusions: [], reviewFilterUnexclude: []}).layer,
+					configured({ reviewFilterExclusions: [], reviewFilterUnexclude: [] }).layer,
 				),
 			),
 		);
@@ -644,10 +650,10 @@ describe("runScope's exclusion set reads .fabrika.jsonc", () => {
 	it("extends the exclusion set with the declared globs", async () => {
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runScope({...options, ...placement}),
+				runScope({ ...options, ...placement }),
 				Layer.merge(
 					fakeSeams(overChanged).layer,
-					configured({reviewFilterExclusions: ["README.md"]}).layer,
+					configured({ reviewFilterExclusions: ["README.md"] }).layer,
 				),
 			),
 		);
@@ -660,10 +666,10 @@ describe("runScope's exclusion set reads .fabrika.jsonc", () => {
 	it("removes a default and enumerates it: served by the filter, named un-excluded, mirrored in the JSON", async () => {
 		const text = await Effect.runPromise(
 			Effect.provide(
-				runScope({...options, ...placement}),
+				runScope({ ...options, ...placement }),
 				Layer.merge(
 					fakeSeams(overChanged).layer,
-					configured({reviewFilterUnexclude: ["pnpm-lock.yaml"]}).layer,
+					configured({ reviewFilterUnexclude: ["pnpm-lock.yaml"] }).layer,
 				),
 			),
 		);
@@ -679,20 +685,20 @@ describe("runScope's exclusion set reads .fabrika.jsonc", () => {
 		);
 		const json = await Effect.runPromise(
 			Effect.provide(
-				runScope({...options, ...placement, json: true}),
+				runScope({ ...options, ...placement, json: true }),
 				Layer.merge(
 					fakeSeams(overChanged).layer,
-					configured({reviewFilterUnexclude: ["pnpm-lock.yaml"]}).layer,
+					configured({ reviewFilterUnexclude: ["pnpm-lock.yaml"] }).layer,
 				),
 			),
 		);
-		expect(JSON.parse(json.stdout).unexcluded).toEqual({count: 1, paths: ["pnpm-lock.yaml"]});
+		expect(JSON.parse(json.stdout).unexcluded).toEqual({ count: 1, paths: ["pnpm-lock.yaml"] });
 	});
 
 	it("does not enumerate a default an equal addition re-added — the re-addition is the later declaration", async () => {
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runScope({...options, ...placement}),
+				runScope({ ...options, ...placement }),
 				Layer.merge(
 					fakeSeams(overChanged).layer,
 					configured({
@@ -707,7 +713,7 @@ describe("runScope's exclusion set reads .fabrika.jsonc", () => {
 		expect(out.stdout).not.toContain("un-excluded");
 		const json = await Effect.runPromise(
 			Effect.provide(
-				runScope({...options, ...placement, json: true}),
+				runScope({ ...options, ...placement, json: true }),
 				Layer.merge(
 					fakeSeams(overChanged).layer,
 					configured({
@@ -723,10 +729,10 @@ describe("runScope's exclusion set reads .fabrika.jsonc", () => {
 	it("refuses an undecodable exclusion key on 11, before any read the filter would turn on", async () => {
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runScope({...options, ...placement}),
+				runScope({ ...options, ...placement }),
 				Layer.merge(
 					fakeSeams(overChanged).layer,
-					configured({reviewFilterExclusions: "src/**"}).layer,
+					configured({ reviewFilterExclusions: "src/**" }).layer,
 				),
 			),
 		);
@@ -740,10 +746,10 @@ describe("runScope's exclusion set reads .fabrika.jsonc", () => {
 	it("refuses a removal naming a non-default on 11 — only a default's exact pattern may be removed", async () => {
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runScope({...options, ...placement}),
+				runScope({ ...options, ...placement }),
 				Layer.merge(
 					fakeSeams(overChanged).layer,
-					configured({reviewFilterUnexclude: ["dist/**"]}).layer,
+					configured({ reviewFilterUnexclude: ["dist/**"] }).layer,
 				),
 			),
 		);
@@ -762,8 +768,8 @@ describe("runScope's exclusion set reads .fabrika.jsonc", () => {
  * longer holds everything.
  */
 describe("runScope refuses a filter that excludes governed content", () => {
-	const roots = declaredAt({governedRoots: ["governed/", ".fabrika.jsonc"]});
-	const filtered = {filterPlacement: "after" as const, exclude: "**/*.ts"};
+	const roots = declaredAt({ governedRoots: ["governed/", ".fabrika.jsonc"] });
+	const filtered = { filterPlacement: "after" as const, exclude: "**/*.ts" };
 
 	it("refuses on 21 when the split actually excluded a governed-rooted path", async () => {
 		const out = await run(
@@ -786,12 +792,12 @@ describe("runScope refuses a filter that excludes governed content", () => {
 
 describe("retained requirements with filtering", () => {
 	it("retains code review when every content path is excluded", async () => {
-		const out = await run(over("pnpm-lock.yaml"), {filterPlacement: "after", json: true});
+		const out = await run(over("pnpm-lock.yaml"), { filterPlacement: "after", json: true });
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			scanned: 1,
 			namespaces: ["review-code"],
-			excluded: {count: 1, paths: ["pnpm-lock.yaml"]},
+			excluded: { count: 1, paths: ["pnpm-lock.yaml"] },
 		});
 	});
 	it("retains text, UI and governance requirements on a mixed diff", async () => {
@@ -804,7 +810,7 @@ describe("retained requirements with filtering", () => {
 		const read = (filterPlacement: FilterPlacement | null) =>
 			Effect.runPromise(
 				Effect.provide(
-					runScope({...options, json: true, filterPlacement, exclude: "apps/site/src/View.tsx"}),
+					runScope({ ...options, json: true, filterPlacement, exclude: "apps/site/src/View.tsx" }),
 					Layer.merge(
 						fakeSeams([...uiConfiguredAtCommits, ...over(...changed)]).layer,
 						unconfigured,
@@ -828,45 +834,45 @@ describe("retained requirements with filtering", () => {
 			subsystemRowsOf(
 				["z.ts", "a.ts", "?.ts", "x.ts"],
 				[
-					{pattern: "*.ts", subsystem: "all", constraint: "check"},
-					{pattern: "?.ts", subsystem: "literal", constraint: "literal"},
+					{ pattern: "*.ts", subsystem: "all", constraint: "check" },
+					{ pattern: "?.ts", subsystem: "literal", constraint: "literal" },
 				],
 			),
 		).toEqual([
-			{name: "all", files: 4, paths: ["?.ts", "a.ts", "x.ts", "z.ts"], constraint: "check"},
-			{name: "literal", files: 1, paths: ["?.ts"], constraint: "literal"},
+			{ name: "all", files: 4, paths: ["?.ts", "a.ts", "x.ts", "z.ts"], constraint: "check" },
+			{ name: "literal", files: 1, paths: ["?.ts"], constraint: "literal" },
 		]);
 	});
 });
 
 describe("unfiltered scope ignores unused filter configuration", () => {
-	it.each([
-		{reviewFilterExclusions: "src/**"},
-		{reviewFilterUnexclude: ["not-a-default"]},
-	])("preserves unfiltered output but refuses enabled filtering for %j", async (config) => {
-		const read = (filterPlacement: FilterPlacement | null) =>
-			Effect.runPromise(
+	it.each([{ reviewFilterExclusions: "src/**" }, { reviewFilterUnexclude: ["not-a-default"] }])(
+		"preserves unfiltered output but refuses enabled filtering for %j",
+		async (config) => {
+			const read = (filterPlacement: FilterPlacement | null) =>
+				Effect.runPromise(
+					Effect.provide(
+						runScope({ ...options, filterPlacement }),
+						Layer.merge(
+							fakeSeams(happy()).layer,
+							fakeFs({ files: { "/repo/.fabrika.jsonc": JSON.stringify(config) } }).layer,
+						),
+					),
+				);
+			const baseline = await Effect.runPromise(
 				Effect.provide(
-					runScope({...options, filterPlacement}),
+					runScope(options),
 					Layer.merge(
 						fakeSeams(happy()).layer,
-						fakeFs({files: {"/repo/.fabrika.jsonc": JSON.stringify(config)}}).layer,
+						fakeFs({ files: { "/repo/.fabrika.jsonc": "{}" } }).layer,
 					),
 				),
 			);
-		const baseline = await Effect.runPromise(
-			Effect.provide(
-				runScope(options),
-				Layer.merge(
-					fakeSeams(happy()).layer,
-					fakeFs({files: {"/repo/.fabrika.jsonc": "{}"}}).layer,
-				),
-			),
-		);
-		const unfiltered = await read(null);
-		const filtered = await read("after");
-		expect(unfiltered).toEqual(baseline);
-		expect(filtered.code).toBe(PRECONDITION_UNKNOWN);
-		expect(filtered.stdout).toBe("");
-	});
+			const unfiltered = await read(null);
+			const filtered = await read("after");
+			expect(unfiltered).toEqual(baseline);
+			expect(filtered.code).toBe(PRECONDITION_UNKNOWN);
+			expect(filtered.stdout).toBe("");
+		},
+	);
 });

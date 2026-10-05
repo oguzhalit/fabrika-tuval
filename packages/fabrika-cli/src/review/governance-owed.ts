@@ -10,11 +10,11 @@
  * — and both need the workflow run beside the check-run to be sure the row came from this repo's own
  * floor job rather than somewhere this read cannot vouch for.
  */
-import {FLOOR_WORKFLOW_NAME} from "../governance/floor-assert.ts";
-import type {CheckRun} from "../io/pulls.ts";
-import {CHECK_RUN_NAME, publishedFloorOf} from "../ship/floor-check.ts";
-import type {WorkflowRun} from "../ship/github.ts";
-import {isFailing} from "./rollup.ts";
+import { FLOOR_WORKFLOW_NAME } from "../governance/floor-assert.ts";
+import type { CheckRun } from "../io/pulls.ts";
+import { CHECK_RUN_NAME, publishedFloorOf } from "../ship/floor-check.ts";
+import type { WorkflowRun } from "../ship/github.ts";
+import { isFailing } from "./rollup.ts";
 
 const floorRunsAt = (workflowRuns: ReadonlyArray<WorkflowRun>): ReadonlyArray<WorkflowRun> =>
 	workflowRuns.filter((run) => run.name === FLOOR_WORKFLOW_NAME);

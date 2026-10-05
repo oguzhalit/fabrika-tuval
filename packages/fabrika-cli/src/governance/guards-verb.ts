@@ -20,14 +20,14 @@
  * three-dot diff would: reading it at the base *branch tip* compares this PR's anchors against
  * main's newest bytes and invents a move nobody made.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {capAndCount} from "../evidence.ts";
-import {diffRange, diffRangeStatuses, readFileAt} from "../io/git.ts";
-import {readLocalFileSet} from "../review/local-file-set.ts";
-import {badNumber, openPull, resolveTargetRepo} from "../review/target.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import type {AnchorHit} from "./anchors.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { capAndCount } from "../evidence.ts";
+import { diffRange, diffRangeStatuses, readFileAt } from "../io/git.ts";
+import { readLocalFileSet } from "../review/local-file-set.ts";
+import { badNumber, openPull, resolveTargetRepo } from "../review/target.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import type { AnchorHit } from "./anchors.ts";
 import {
 	anchorsIn,
 	filesInDiff,
@@ -36,8 +36,8 @@ import {
 	scanAnchorBlocks,
 	scanAnchors,
 } from "./anchors.ts";
-import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {bindGovernanceHead, boundLine} from "./head.ts";
+import { INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { bindGovernanceHead, boundLine } from "./head.ts";
 
 const VERB = "governance guards";
 
@@ -62,7 +62,7 @@ export const runGuards = (
 	options: GuardsOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -98,7 +98,7 @@ export const runGuards = (
 		const listed = yield* readLocalFileSet(
 			VERB,
 			`#${pr}`,
-			{base: head.mergeBase, tip: head.sha},
+			{ base: head.mergeBase, tip: head.sha },
 			target.pull.changedFiles,
 			diffRangeStatuses,
 		);
@@ -140,7 +140,7 @@ export const runGuards = (
 		// anchored invariants EXIST in the files this diff touches, which is a denominator only over the
 		// set that was read. On its own it is no floor, since an empty set renders `no-anchors-in-reach`
 		// at exit 0, and the zero-scope refusal above is what keeps a scan of nothing from printing clean.
-		const inTree: Array<{readonly path: string; readonly anchors: number}> = [];
+		const inTree: Array<{ readonly path: string; readonly anchors: number }> = [];
 		const blockHits: AnchorHit[] = [];
 		let compared = 0;
 		for (const entry of changed) {
@@ -153,7 +153,7 @@ export const runGuards = (
 					diagnostics,
 				);
 			}
-			inTree.push({path: entry.path, anchors: anchorsIn(bytes.value)});
+			inTree.push({ path: entry.path, anchors: anchorsIn(bytes.value) });
 			// Only a path that names the same file at both commits can be block-compared. An addition has
 			// no base side, and a rename's base path is the source `--name-status` drops, so both fall
 			// back to the diff walk rather than being read at a path the base commit does not carry.
@@ -180,7 +180,7 @@ export const runGuards = (
 		const outcome =
 			hits.length > 0 ? "hits" : inReach === 0 ? "no-anchors-in-reach" : "no-anchor-change";
 		const collapsed = capAndCount(
-			guardFiles.map((file) => ({path: file.path, anchors: file.anchors})),
+			guardFiles.map((file) => ({ path: file.path, anchors: file.anchors })),
 			GUARD_FILE_CAP,
 		);
 		diagnostics.push(

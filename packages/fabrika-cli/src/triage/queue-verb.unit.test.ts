@@ -1,10 +1,10 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import {SHIPPED_BOARD} from "../status/board.test-support.ts";
-import {ANSWER, FAILED} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {ageDays, runQueue, toRows} from "./queue-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import { SHIPPED_BOARD } from "../status/board.test-support.ts";
+import { ANSWER, FAILED } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { ageDays, runQueue, toRows } from "./queue-verb.ts";
 
 const LABELS = /GET .*\/repos\/o\/r\/labels\?/;
 const QUEUE = /GET .*\/repos\/o\/r\/issues\?state=open&labels=/;
@@ -17,22 +17,25 @@ const options = {
 	limit: 100,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 	board: SHIPPED_BOARD,
 	now: () => NOW,
 };
 
 /** No bare issue unless a test scripts one first: the fake answers the first pattern that matches. */
-const noUnlabeled: Scripted = [UNLABELED, {status: 200, body: "[]"}];
+const noUnlabeled: Scripted = [UNLABELED, { status: 200, body: "[]" }];
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
-		Effect.provide(runQueue({...options, ...overrides}), fakeSeams([...script, noUnlabeled]).layer),
+		Effect.provide(
+			runQueue({ ...options, ...overrides }),
+			fakeSeams([...script, noUnlabeled]).layer,
+		),
 	);
 
 const labels = (...names: ReadonlyArray<string>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(names.map((name) => ({name}))),
+	body: JSON.stringify(names.map((name) => ({ name }))),
 });
 
 const labelsOk = [LABELS, labels("status:needs-triage", "type:bug", "p0")] as const;
@@ -46,7 +49,7 @@ const row = (
 	number: n,
 	created_at: createdAt,
 	title,
-	labels: labels.map((name) => ({name})),
+	labels: labels.map((name) => ({ name })),
 });
 
 const queued = (...rows: ReadonlyArray<unknown>): HttpReply => ({
@@ -54,7 +57,7 @@ const queued = (...rows: ReadonlyArray<unknown>): HttpReply => ({
 	body: JSON.stringify(rows),
 });
 
-const BAD_GATEWAY: HttpReply = {status: 502, body: "{}"};
+const BAD_GATEWAY: HttpReply = { status: 502, body: "{}" };
 
 describe("ageDays", () => {
 	it("floors to whole days", () => {
@@ -69,9 +72,9 @@ describe("ageDays", () => {
 
 describe("toRows", () => {
 	const issues = [
-		{number: 3, createdAt: "2026-07-30T00:00:00Z", title: "newest"},
-		{number: 1, createdAt: "2026-07-01T00:00:00Z", title: "oldest"},
-		{number: 2, createdAt: "2026-07-15T00:00:00Z", title: "middle"},
+		{ number: 3, createdAt: "2026-07-30T00:00:00Z", title: "newest" },
+		{ number: 1, createdAt: "2026-07-01T00:00:00Z", title: "oldest" },
+		{ number: 2, createdAt: "2026-07-15T00:00:00Z", title: "middle" },
 	];
 
 	it("orders OLDEST first — the claimable end of the queue", () => {
@@ -80,8 +83,8 @@ describe("toRows", () => {
 
 	it("breaks a tie on the issue number, so the order is total and stable", () => {
 		const tied = [
-			{number: 9, createdAt: "2026-07-01T00:00:00Z", title: "b"},
-			{number: 4, createdAt: "2026-07-01T00:00:00Z", title: "a"},
+			{ number: 9, createdAt: "2026-07-01T00:00:00Z", title: "b" },
+			{ number: 4, createdAt: "2026-07-01T00:00:00Z", title: "a" },
 		];
 		expect(toRows(tied, NOW, 100).map((r) => r.number)).toEqual([4, 9]);
 	});
@@ -122,8 +125,8 @@ describe("runQueue", () => {
 	});
 
 	it("says on stderr when --limit truncated the list", async () => {
-		const rows = Array.from({length: 4}, (_, i) => row(i + 1, "2026-08-01T00:00:00Z", "t"));
-		const out = await run([labelsOk, [QUEUE, queued(...rows)]], {limit: 2});
+		const rows = Array.from({ length: 4 }, (_, i) => row(i + 1, "2026-08-01T00:00:00Z", "t"));
+		const out = await run([labelsOk, [QUEUE, queued(...rows)]], { limit: 2 });
 		expect(out.stdout.trimEnd().split("\n")).toHaveLength(3);
 		expect(out.stderr.join("\n")).toContain("TRUNCATED");
 	});
@@ -178,14 +181,14 @@ describe("runQueue", () => {
 		});
 		expect(JSON.parse(out.stdout)).toEqual({
 			outcome: "queued",
-			issues: [{number: 4312, ageDays: 2, title: "t"}],
+			issues: [{ number: 4312, ageDays: 2, title: "t" }],
 			scanned: 1,
 			truncated: false,
 		});
 	});
 
 	it("carries the `empty` outcome word into the --json payload too", async () => {
-		const out = await run([labelsOk, [QUEUE, queued()]], {json: true});
+		const out = await run([labelsOk, [QUEUE, queued()]], { json: true });
 		expect(JSON.parse(out.stdout).outcome).toBe("empty");
 	});
 
@@ -208,7 +211,7 @@ describe("runQueue", () => {
 	});
 
 	it("never lists a pull request that carries no labels", async () => {
-		const pull = {...row(12, "2026-07-20T00:00:00Z", "a PR", []), pull_request: {url: "x"}};
+		const pull = { ...row(12, "2026-07-20T00:00:00Z", "a PR", []), pull_request: { url: "x" } };
 		const out = await run([labelsOk, [QUEUE, queued()], [UNLABELED, queued(pull)]]);
 		expect(out.stdout).toBe("empty\n");
 	});
@@ -229,20 +232,20 @@ describe("runQueue", () => {
 		const out = await run([
 			labelsOk,
 			[QUEUE, queued()],
-			[UNLABELED, queued({number: 5, created_at: "2026-08-01T00:00:00Z", title: "t"})],
+			[UNLABELED, queued({ number: 5, created_at: "2026-08-01T00:00:00Z", title: "t" })],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 	});
 
 	it("refuses a --limit below 1 as a usage error", async () => {
-		const out = await run([labelsOk], {limit: 0});
+		const out = await run([labelsOk], { limit: 0 });
 		expect(out.code).toBe(FAILED);
 		expect(out.stdout).toBe("");
 	});
 
 	it("refuses when no target repo resolves", async () => {
-		const out = await run([[/git remote get-url/, errOut("no origin")]], {env: {}});
+		const out = await run([[/git remote get-url/, errOut("no origin")]], { env: {} });
 		expect(out.code).toBe(FAILED);
 		expect(out.stderr.at(-1)).toContain("CLAUDE_PIPELINE_REPO");
 	});

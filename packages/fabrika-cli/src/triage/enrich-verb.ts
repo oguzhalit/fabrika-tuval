@@ -28,18 +28,18 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9200
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {blockedBy} from "../io/edges.ts";
-import {getIssue, patchIssueBody, resolveRepo} from "../io/issues.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {renderLeaks, scanBody} from "../report/leaks.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {read as readCriteria} from "../wire/acceptance-criteria.ts";
-import {READY_FOR_AGENT} from "./audience.ts";
-import {leakRefusal, readAuthored} from "./authored.ts";
-import {pullRequestReferences} from "./blocked-by.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { blockedBy } from "../io/edges.ts";
+import { getIssue, patchIssueBody, resolveRepo } from "../io/issues.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { renderLeaks, scanBody } from "../report/leaks.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { read as readCriteria } from "../wire/acceptance-criteria.ts";
+import { READY_FOR_AGENT } from "./audience.ts";
+import { leakRefusal, readAuthored } from "./authored.ts";
+import { pullRequestReferences } from "./blocked-by.ts";
 import {
 	CRITERIA_REQUIRED,
 	EMPTY_STDIN,
@@ -51,11 +51,11 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {authoredRegion, composeBody, detect, type EnrichMode, wrapOriginal} from "./enrich.ts";
-import {legacyPreserved} from "./enrich-legacy.ts";
-import {statedOrderings, unwiredReferences} from "./ordering.ts";
-import {PLAIN_SUMMARY_HEADING, type PlainSummaryRead, readPlainSummary} from "./plain-summary.ts";
-import {guardTarget} from "./target-guard.ts";
+import { authoredRegion, composeBody, detect, type EnrichMode, wrapOriginal } from "./enrich.ts";
+import { legacyPreserved } from "./enrich-legacy.ts";
+import { statedOrderings, unwiredReferences } from "./ordering.ts";
+import { PLAIN_SUMMARY_HEADING, type PlainSummaryRead, readPlainSummary } from "./plain-summary.ts";
+import { guardTarget } from "./target-guard.ts";
 
 export interface EnrichOptions {
 	readonly issue: number;
@@ -74,7 +74,7 @@ const SUMMARY_ASK =
 
 const summaryRefusal = (
 	noun: string,
-	read: Exclude<PlainSummaryRead, {readonly _tag: "Found"}>,
+	read: Exclude<PlainSummaryRead, { readonly _tag: "Found" }>,
 ): VerbOutcome => {
 	switch (read._tag) {
 		case "Missing":
@@ -104,7 +104,7 @@ export const runEnrich = (
 	options: EnrichOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {issue, json} = options;
+		const { issue, json } = options;
 		const mode: EnrichMode = options.epic ? "wrap" : "rewrite";
 		const surface = {
 			verb: "triage enrich",
@@ -199,7 +199,7 @@ export const runEnrich = (
 			}
 		}
 
-		const composed = composeBody({mode, issue, authored: text, preserved});
+		const composed = composeBody({ mode, issue, authored: text, preserved });
 
 		// The read runs over the bytes about to be posted, not over stdin — an enclosing
 		// template can demote a heading that arrived conforming. It is scoped to the region above the
@@ -333,6 +333,9 @@ export const runEnrich = (
 		}
 
 		return json
-			? answer(JSON.stringify({outcome: "enriched", number: issue, redactions, mode}), diagnostics)
+			? answer(
+					JSON.stringify({ outcome: "enriched", number: issue, redactions, mode }),
+					diagnostics,
+				)
 			: answer(`enriched\t${issue}\t${redactions}`, diagnostics);
 	});

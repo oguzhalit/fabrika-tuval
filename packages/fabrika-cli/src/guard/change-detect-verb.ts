@@ -7,12 +7,12 @@
  * See `guard change-detect-guard check --help` for results and exit codes.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {exists, type ReadFailed, readFile} from "../io/fs.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {atFile} from "./annotate.ts";
-import {CI_CHANGES_SOURCE, judge, renderReport} from "./change-detect.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { exists, type ReadFailed, readFile } from "../io/fs.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { atFile } from "./annotate.ts";
+import { CI_CHANGES_SOURCE, judge, renderReport } from "./change-detect.ts";
 import {
 	annotationsOrNone,
 	clean,

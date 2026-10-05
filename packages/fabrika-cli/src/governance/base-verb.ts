@@ -20,18 +20,18 @@
  * `merge-base(base, tip)`, the same commit the range's own three-dot diff is taken from; see
  * `../review/range-flags.ts`, which owns that grounding.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type CommitRange, listTreePaths, readFileAt} from "../io/git.ts";
-import {getPullRequest} from "../io/pulls.ts";
-import {rangeMergeBase, readRangeFlags} from "../review/range-flags.ts";
-import {badNumber, openPull, resolveTargetRepo} from "../review/target.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import type {HeadSha} from "../wire/marker-line.ts";
-import {renderRange} from "../wire/range-verdict-marker.ts";
-import {OFF_VOCABULARY, PRECONDITION_UNKNOWN, STALE_HEAD, ZERO_SCOPE} from "./codes.ts";
-import {bindGovernanceHead} from "./head.ts";
-import {insideRoot, resolveSkillRoots} from "./skill-root.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type CommitRange, listTreePaths, readFileAt } from "../io/git.ts";
+import { getPullRequest } from "../io/pulls.ts";
+import { rangeMergeBase, readRangeFlags } from "../review/range-flags.ts";
+import { badNumber, openPull, resolveTargetRepo } from "../review/target.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import type { HeadSha } from "../wire/marker-line.ts";
+import { renderRange } from "../wire/range-verdict-marker.ts";
+import { OFF_VOCABULARY, PRECONDITION_UNKNOWN, STALE_HEAD, ZERO_SCOPE } from "./codes.ts";
+import { bindGovernanceHead } from "./head.ts";
+import { insideRoot, resolveSkillRoots } from "./skill-root.ts";
 
 const VERB = "governance base";
 
@@ -59,8 +59,8 @@ interface Resolution {
 }
 
 type Resolved =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Resolved"; readonly resolution: Resolution};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Resolved"; readonly resolution: Resolution };
 
 const byteLength = (text: string): number => new TextEncoder().encode(text).length;
 
@@ -76,7 +76,7 @@ const pullBase = (
 ): Effect.Effect<Resolved, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
-		if (resolved._tag === "Refused") return {_tag: "Refused" as const, outcome: resolved.outcome};
+		if (resolved._tag === "Refused") return { _tag: "Refused" as const, outcome: resolved.outcome };
 		const repo = resolved.repo;
 
 		const target = yield* openPull(VERB, repo, pr, {
@@ -86,7 +86,7 @@ const pullBase = (
 			unknownMessage: (reason) =>
 				`${VERB}: cannot read PR #${pr} in ${repo}: ${reason} — ${UNKNOWN_TAIL}`,
 		});
-		if (target._tag === "Refused") return {_tag: "Refused" as const, outcome: target.outcome};
+		if (target._tag === "Refused") return { _tag: "Refused" as const, outcome: target.outcome };
 
 		// This verb takes no `--sha`, so the binding runs against the live head and the staleness check
 		// below is what pairs the two.
@@ -98,7 +98,7 @@ const pullBase = (
 			target.pull,
 			null,
 		);
-		if (bound._tag === "Refused") return {_tag: "Refused" as const, outcome: bound.outcome};
+		if (bound._tag === "Refused") return { _tag: "Refused" as const, outcome: bound.outcome };
 		const head = bound.head;
 
 		const after = yield* getPullRequest(repo, pr);
@@ -122,7 +122,7 @@ const pullBase = (
 		}
 		// The binding already resolved this, and resolving it twice is how two answers to one question
 		// come to disagree.
-		return {_tag: "Resolved" as const, resolution: {base: head.mergeBase, subject: `#${pr}`}};
+		return { _tag: "Resolved" as const, resolution: { base: head.mergeBase, subject: `#${pr}` } };
 	});
 
 /**
@@ -146,16 +146,16 @@ const rangeBase = (
 						`${VERB}: cannot resolve the merge base of ${subject}: ${base.reason} — ${UNKNOWN_TAIL}`,
 					),
 				}
-			: {_tag: "Resolved" as const, resolution: {base: base.value, subject}};
+			: { _tag: "Resolved" as const, resolution: { base: base.value, subject } };
 	});
 
 export const runBase = (
 	options: BaseOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr} = options;
+		const { pr } = options;
 
-		const flags = readRangeFlags(VERB, {base: options.base, tip: options.tip, sha: null});
+		const flags = readRangeFlags(VERB, { base: options.base, tip: options.tip, sha: null });
 		if (flags._tag === "Refused") return flags.outcome;
 
 		let resolved: Resolved;
@@ -179,7 +179,7 @@ export const runBase = (
 			resolved = yield* pullBase(options, pr);
 		}
 		if (resolved._tag === "Refused") return resolved.outcome;
-		const {base, subject} = resolved.resolution;
+		const { base, subject } = resolved.resolution;
 
 		const tree = yield* listTreePaths(base);
 		if (tree._tag === "Failure") {

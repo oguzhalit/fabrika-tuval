@@ -13,7 +13,7 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9821
  */
 
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const APPETITE_SIZES = "appetiteSizes";
 
@@ -23,7 +23,7 @@ export type Size = (typeof SIZES)[number];
 
 export type AppetiteSizes = Readonly<Record<Size, number>>;
 
-export const SHIPPED_APPETITE_SIZES: AppetiteSizes = {S: 15, M: 35, L: 40};
+export const SHIPPED_APPETITE_SIZES: AppetiteSizes = { S: 15, M: 35, L: 40 };
 
 const malformed = (why: string): Decoded<AppetiteSizes> => ({
 	_tag: "Malformed",
@@ -51,7 +51,7 @@ const decode = (raw: unknown): Decoded<AppetiteSizes> => {
 		return malformed("does not rise from S to L");
 	}
 	const [S, M, L] = amounts as [number, number, number];
-	return {_tag: "Value", value: {S, M, L}};
+	return { _tag: "Value", value: { S, M, L } };
 };
 
 /** `S = $15, M = $35, L = $40` — how a report names the sizes a pitch may declare. */
@@ -72,7 +72,7 @@ export const appetiteSizesKey: KeyGroup<AppetiteSizes> = {
 		type: "object",
 		description:
 			"What each pitch size (`**Appetite:** S`, `M` or `L`) is worth in dollars per epic child. The size is the spending limit a pitch approval binds. Name all three, each positive and rising from S to L. Shipped default: S = 15, M = 35, L = 40.",
-		properties: {S: amountSchema("S"), M: amountSchema("M"), L: amountSchema("L")},
+		properties: { S: amountSchema("S"), M: amountSchema("M"), L: amountSchema("L") },
 		required: [...SIZES],
 		additionalProperties: false,
 	},

@@ -23,12 +23,12 @@
  * writer cannot validate against bytes another is about to move under it. Lock-budget exhaustion
  * refuses {@link CONCURRENT_WRITE} — retry this same event — never an ordinary machine-refusal code.
  */
-import {Effect, FileSystem, Path, Result} from "effect";
-import type {ParkCauseSurface} from "../config/keys/park-cause.ts";
-import type {Read} from "../config/read-key.ts";
-import {appendText} from "../io/fs.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {lockedRefusal, withLedgerLock} from "./append-lock.ts";
+import { Effect, FileSystem, Path, Result } from "effect";
+import type { ParkCauseSurface } from "../config/keys/park-cause.ts";
+import type { Read } from "../config/read-key.ts";
+import { appendText } from "../io/fs.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { lockedRefusal, withLedgerLock } from "./append-lock.ts";
 import {
 	APPEND_UNKNOWN,
 	CAUSE_UNRECOGNISED,
@@ -41,12 +41,12 @@ import {
 	RESUME_UNBUDGETED,
 	TASK_UNKNOWN,
 } from "./codes.ts";
-import {applyEvent, foldLog, type LogEntry, resolveTask} from "./fold.ts";
-import {isOperatorEvent} from "./machine.ts";
-import {parkCauseRefusal} from "./park-cause-rule.ts";
-import {gateOnProof} from "./proof-gate.ts";
-import type {ProofOutcome, ProveOptions} from "./prove-verb.ts";
-import {loadRefusal, replayRefusal} from "./refusals.ts";
+import { applyEvent, foldLog, type LogEntry, resolveTask } from "./fold.ts";
+import { isOperatorEvent } from "./machine.ts";
+import { parkCauseRefusal } from "./park-cause-rule.ts";
+import { gateOnProof } from "./proof-gate.ts";
+import type { ProofOutcome, ProveOptions } from "./prove-verb.ts";
+import { loadRefusal, replayRefusal } from "./refusals.ts";
 import {
 	type CauseResolution,
 	causeForEvent,
@@ -57,7 +57,7 @@ import {
 	type RationaleResolution,
 	rationaleForEvent,
 } from "./report.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane transition";
 
@@ -159,7 +159,7 @@ export const runTransition = <R>(
 		if (rule._tag === "Refused") return rule.outcome;
 		const caused: CauseResolution = isOperatorEvent(event)
 			? causeForEvent(options.cause, event, rule.requireCause)
-			: {_tag: "Uncaused"};
+			: { _tag: "Uncaused" };
 		if (caused._tag === "Rejected") {
 			return refuse(CAUSE_UNRECOGNISED, `${VERB}: refused (log unappended): ${caused.reason}.`);
 		}
@@ -176,13 +176,13 @@ export const runTransition = <R>(
 		}
 		const granted: GrantResolution = isOperatorEvent(event)
 			? grantForEvent(options.waitGrant, event)
-			: {_tag: "Granted", grant: null};
+			: { _tag: "Granted", grant: null };
 		if (granted._tag === "Rejected") {
 			return refuse(GRANT_REFUSED, `${VERB}: refused (log unappended): ${granted.reason}.`);
 		}
 		const reasoned: RationaleResolution = isOperatorEvent(event)
 			? rationaleForEvent(options.rationale, event)
-			: {_tag: "Reasoned", rationale: null};
+			: { _tag: "Reasoned", rationale: null };
 		if (reasoned._tag === "Rejected") {
 			return refuse(RATIONALE_REFUSED, `${VERB}: refused (log unappended): ${reasoned.reason}.`);
 		}
@@ -234,7 +234,7 @@ export const runTransition = <R>(
 		const proved = gated.proof;
 
 		return yield* withLedgerLock(
-			{fs, path, dir: path.join(options.root, options.lane), verb: VERB},
+			{ fs, path, dir: path.join(options.root, options.lane), verb: VERB },
 			Effect.gen(function* () {
 				const fresh = yield* loadLane(options);
 				if (fresh._tag !== "Loaded") return loadRefusal(VERB, fresh);
@@ -267,11 +267,11 @@ export const runTransition = <R>(
 
 				const entry: LogEntry = {
 					...reapplied.entry,
-					...(caused._tag === "Caused" ? {cause: caused.cause} : {}),
+					...(caused._tag === "Caused" ? { cause: caused.cause } : {}),
 					...named.evidence,
-					...(reasoned.rationale === null ? {} : {rationale: reasoned.rationale}),
-					...(proved.deferred.length === 0 ? {} : {deferred: proved.deferred}),
-					...(proved.landed.length === 0 ? {} : {landed: proved.landed}),
+					...(reasoned.rationale === null ? {} : { rationale: reasoned.rationale }),
+					...(proved.deferred.length === 0 ? {} : { deferred: proved.deferred }),
+					...(proved.landed.length === 0 ? {} : { landed: proved.landed }),
 				};
 				const wrote = yield* Effect.result(appendText(fresh.logPath, `${JSON.stringify(entry)}\n`));
 				if (Result.isFailure(wrote)) {
@@ -287,15 +287,15 @@ export const runTransition = <R>(
 							event: entry.event,
 							current: reapplied.current.stateValue,
 							taskAffected: freshTask.taskId,
-							...(classed.classes === null ? {} : {classes: classed.classes}),
-							...(caused._tag === "Caused" ? {cause: caused.cause} : {}),
+							...(classed.classes === null ? {} : { classes: classed.classes }),
+							...(caused._tag === "Caused" ? { cause: caused.cause } : {}),
 							...named.evidence,
-							...(granted.grant === null ? {} : {waitGrant: granted.grant}),
-							...(reasoned.rationale === null ? {} : {rationale: reasoned.rationale}),
-							...(proved.deferred.length === 0 ? {} : {deferred: proved.deferred}),
-							...(proved.partial === null ? {} : {partial: proved.partial}),
-							...(proved.diagnosis ? {diagnosis: true} : {}),
-							...(proved.landed.length === 0 ? {} : {landed: proved.landed}),
+							...(granted.grant === null ? {} : { waitGrant: granted.grant }),
+							...(reasoned.rationale === null ? {} : { rationale: reasoned.rationale }),
+							...(proved.deferred.length === 0 ? {} : { deferred: proved.deferred }),
+							...(proved.partial === null ? {} : { partial: proved.partial }),
+							...(proved.diagnosis ? { diagnosis: true } : {}),
+							...(proved.landed.length === 0 ? {} : { landed: proved.landed }),
 						},
 						null,
 						2,
@@ -304,7 +304,7 @@ export const runTransition = <R>(
 				);
 			}),
 			{
-				onAbsent: (dir) => loadRefusal(VERB, {_tag: "Absent", dir}),
+				onAbsent: (dir) => loadRefusal(VERB, { _tag: "Absent", dir }),
 				onLocked: (lockDir) => refuse(CONCURRENT_WRITE, lockedRefusal(VERB, lockDir)),
 			},
 		);

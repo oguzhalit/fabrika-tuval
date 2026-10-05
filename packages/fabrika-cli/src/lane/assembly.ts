@@ -14,9 +14,9 @@
  * symlinked prefixes (`/var` vs `/private/var` on macOS), and a guard that refuses the legal path is
  * worse than none.
  */
-import {Effect} from "effect";
-import {execCapture} from "../io/exec.ts";
-import {type Attempt, fail, ok, type Shell} from "../io/git.ts";
+import { Effect } from "effect";
+import { execCapture } from "../io/exec.ts";
+import { type Attempt, fail, ok, type Shell } from "../io/git.ts";
 
 /** Where assembly worktrees live, relative to the repository's main working tree. */
 export const ASSEMBLY_WORKTREES_DIR = ".claude/worktrees";
@@ -71,7 +71,7 @@ export interface WorkingTrees {
 
 export const splitTrees = (entries: ReadonlyArray<WorktreeEntry>): WorkingTrees | null => {
 	const [main, ...linked] = entries;
-	return main === undefined ? null : {main, linked};
+	return main === undefined ? null : { main, linked };
 };
 
 /** Every working tree of this repository. */
@@ -109,17 +109,17 @@ export const standingInLinkedWorktree: Shell<Attempt<boolean>> = Effect.gen(func
 /** What the run's assembly branch is standing in, read off the working-tree list. */
 export type AssemblySeat =
 	/** A linked worktree holds `epic/<n>` — the seat the run is meant to assemble in. */
-	| {readonly _tag: "Isolated"; readonly path: string; readonly expected: string}
+	| { readonly _tag: "Isolated"; readonly path: string; readonly expected: string }
 	/** The main working tree itself is on `epic/<n>` — the conscription this verb exists to refuse. */
-	| {readonly _tag: "Conscripted"; readonly path: string; readonly expected: string}
+	| { readonly _tag: "Conscripted"; readonly path: string; readonly expected: string }
 	/**
 	 * Git holds a record for the branch at a directory that is gone. No tree to work in, and the
 	 * registration blocks a fresh `git worktree add` until it is cleared — so `path` is what to
 	 * clear, never what to answer.
 	 */
-	| {readonly _tag: "Stale"; readonly path: string; readonly expected: string}
+	| { readonly _tag: "Stale"; readonly path: string; readonly expected: string }
 	/** No working tree holds the branch; `expected` is where one belongs. */
-	| {readonly _tag: "Absent"; readonly expected: string};
+	| { readonly _tag: "Absent"; readonly expected: string };
 
 /**
  * Where `epic/<n>` is checked out, judged against the one rule that matters: not the main working
@@ -130,11 +130,11 @@ export type AssemblySeat =
 export const assemblySeat = (trees: WorkingTrees, epic: number, branch: string): AssemblySeat => {
 	const expected = assemblyWorktreePath(trees.main.path, epic);
 	if (trees.main.branch === branch) {
-		return {_tag: "Conscripted", path: trees.main.path, expected};
+		return { _tag: "Conscripted", path: trees.main.path, expected };
 	}
 	const held = trees.linked.find((entry) => entry.branch === branch);
-	if (held === undefined) return {_tag: "Absent", expected};
+	if (held === undefined) return { _tag: "Absent", expected };
 	return held.prunable
-		? {_tag: "Stale", path: held.path, expected}
-		: {_tag: "Isolated", path: held.path, expected};
+		? { _tag: "Stale", path: held.path, expected }
+		: { _tag: "Isolated", path: held.path, expected };
 };

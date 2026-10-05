@@ -46,17 +46,17 @@ export const CHORE_NAME_LIMIT = 64;
  * {@link resolveRawIssue} instead, which parses it like any other key.
  */
 declare const CANONICAL: unique symbol;
-export type CanonicalLeaf = string & {readonly [CANONICAL]: true};
+export type CanonicalLeaf = string & { readonly [CANONICAL]: true };
 
 export type LaneKey =
-	| {readonly _tag: "Issue"; readonly lane: CanonicalLeaf}
-	| {readonly _tag: "Chore"; readonly name: string};
+	| { readonly _tag: "Issue"; readonly lane: CanonicalLeaf }
+	| { readonly _tag: "Chore"; readonly name: string };
 
 export type KeyResult =
-	| {readonly _tag: "Key"; readonly key: LaneKey}
-	| {readonly _tag: "Malformed"; readonly raw: string; readonly reason: string};
+	| { readonly _tag: "Key"; readonly key: LaneKey }
+	| { readonly _tag: "Malformed"; readonly raw: string; readonly reason: string };
 
-const malformed = (raw: string, reason: string): KeyResult => ({_tag: "Malformed", raw, reason});
+const malformed = (raw: string, reason: string): KeyResult => ({ _tag: "Malformed", raw, reason });
 
 /**
  * What an issue key may spell: one directory leaf, opening on an alphanumeric.
@@ -91,7 +91,7 @@ export const parseKey = (raw: string): KeyResult => {
 	if (!raw.startsWith(CHORE_PREFIX)) {
 		if (raw === "") return malformed(raw, "a lane key is empty");
 		return ISSUE_LEAF.test(raw)
-			? {_tag: "Key", key: {_tag: "Issue", lane: canonicalLeaf(raw)}}
+			? { _tag: "Key", key: { _tag: "Issue", lane: canonicalLeaf(raw) } }
 			: malformed(
 					raw,
 					`an issue key is one directory leaf (${ISSUE_LEAF.source}) — a separator, a traversal or a leading dot is refused before any path is joined`,
@@ -102,7 +102,7 @@ export const parseKey = (raw: string): KeyResult => {
 		return malformed(raw, `a chore name is at most ${CHORE_NAME_LIMIT} characters`);
 	}
 	return CHORE_NAME.test(name)
-		? {_tag: "Key", key: {_tag: "Chore", name}}
+		? { _tag: "Key", key: { _tag: "Chore", name } }
 		: malformed(
 				raw,
 				`a chore name is lowercase kebab (${CHORE_NAME.source}) — it is a directory name, so a separator, a traversal or an empty name is refused`,
@@ -157,9 +157,9 @@ const ISSUE_SEGMENT = /^([1-9][0-9]*)(?:\.[^/]+)?$/;
  * sends its reader looking for a `chore:` prefix that is not there.
  */
 export type KeyIssue =
-	| {readonly _tag: "Issue"; readonly number: number}
-	| {readonly _tag: "Chore"}
-	| {readonly _tag: "Unnumbered"};
+	| { readonly _tag: "Issue"; readonly number: number }
+	| { readonly _tag: "Chore" }
+	| { readonly _tag: "Unnumbered" };
 
 /**
  * The one place the key-to-issue parse lives. Reading a whole directory name as a number yields
@@ -167,11 +167,11 @@ export type KeyIssue =
  * then asks about as `#NaN` and refuses UNKNOWN — stranding the seat with no verb able to free it.
  */
 export const resolveKeyIssue = (key: LaneKey): KeyIssue => {
-	if (key._tag === "Chore") return {_tag: "Chore"};
+	if (key._tag === "Chore") return { _tag: "Chore" };
 	const matched = ISSUE_SEGMENT.exec(key.lane);
 	return matched?.[1] === undefined
-		? {_tag: "Unnumbered"}
-		: {_tag: "Issue", number: Number(matched[1])};
+		? { _tag: "Unnumbered" }
+		: { _tag: "Issue", number: Number(matched[1]) };
 };
 
 /** The issue a key drives, or `null`, for a caller the two no-issue arms read the same to. */
@@ -190,7 +190,7 @@ export const keyIssue = (key: LaneKey): number | null => {
  */
 export const resolveRawIssue = (raw: string): KeyIssue => {
 	const parsed = parseKey(raw);
-	return parsed._tag === "Key" ? resolveKeyIssue(parsed.key) : {_tag: "Unnumbered"};
+	return parsed._tag === "Key" ? resolveKeyIssue(parsed.key) : { _tag: "Unnumbered" };
 };
 
 /** The same resolution from a raw key, for a caller the two no-issue arms read the same to. */

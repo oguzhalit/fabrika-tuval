@@ -4,8 +4,8 @@
  * `{ "surfaces": { "<surface-id>": { sha256, blessedDate, intent } } }` JSON blob;
  * a re-bless is a one-line edit to it (the migrations-guard hash-file shape).
  */
-import {readFileSync} from "node:fs";
-import type {GoldenEntry, GoldenPointer} from "./golden-pointer.ts";
+import { readFileSync } from "node:fs";
+import type { GoldenEntry, GoldenPointer } from "./golden-pointer.ts";
 
 interface RawPointerFile {
 	readonly surfaces?: Readonly<Record<string, Partial<GoldenEntry>>>;
@@ -56,5 +56,5 @@ export const serializeGoldenPointer = (pointer: GoldenPointer): string => {
 	for (const surfaceId of Object.keys(pointer).sort()) {
 		sorted[surfaceId] = pointer[surfaceId] as GoldenEntry;
 	}
-	return `${JSON.stringify({surfaces: sorted}, null, "\t")}\n`;
+	return `${JSON.stringify({ surfaces: sorted }, null, "\t")}\n`;
 };

@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {emitFromFields, HEADING, KINDS, read, readToLines} from "./governance-digest.ts";
+import { describe, expect, it } from "vitest";
+import { emitFromFields, HEADING, KINDS, read, readToLines } from "./governance-digest.ts";
 
 const artifact = (...rows: ReadonlyArray<string>): string =>
 	`${HEADING}\n\n\`\`\`governance-digest\n${rows.join("\n")}\n\`\`\`\n`;
@@ -13,8 +13,8 @@ describe("read", () => {
 		expect(result).toMatchObject({
 			_tag: "Found",
 			value: [
-				{id: "0398", kind: "tension"},
-				{id: "0396", kind: "routine"},
+				{ id: "0398", kind: "tension" },
+				{ id: "0396", kind: "routine" },
 			],
 		});
 	});
@@ -27,8 +27,8 @@ describe("read", () => {
 	});
 
 	it("is Malformed on a fence under no heading, and a heading over no fence", () => {
-		expect(read(`\`\`\`governance-digest\n${ROW}\n\`\`\`\n`)).toMatchObject({_tag: "Malformed"});
-		expect(read(`${HEADING}\n\nnothing here\n`)).toMatchObject({_tag: "Malformed"});
+		expect(read(`\`\`\`governance-digest\n${ROW}\n\`\`\`\n`)).toMatchObject({ _tag: "Malformed" });
+		expect(read(`${HEADING}\n\nnothing here\n`)).toMatchObject({ _tag: "Malformed" });
 	});
 
 	it("is Malformed on a fence with no row at all — an empty digest is not a digest", () => {
@@ -39,13 +39,16 @@ describe("read", () => {
 
 	it("names which line drifted, so a broken artifact points at itself", () => {
 		const result = read(artifact(ROW, "row\t0396\tsomething\tnote"));
-		expect(result).toMatchObject({_tag: "Malformed", evidence: expect.stringContaining("line 5")});
+		expect(result).toMatchObject({
+			_tag: "Malformed",
+			evidence: expect.stringContaining("line 5"),
+		});
 	});
 });
 
 describe("emit", () => {
 	it("refuses to compose from no rows rather than emitting an empty block", () => {
-		expect(emitFromFields("\n  \n")).toMatchObject({_tag: "Unusable"});
+		expect(emitFromFields("\n  \n")).toMatchObject({ _tag: "Unusable" });
 	});
 
 	it("refuses an off-vocabulary kind at compose time, naming the line", () => {
@@ -59,6 +62,6 @@ describe("emit", () => {
 		const back = readToLines(artifact(ROW));
 		expect(back._tag).toBe("Found");
 		if (back._tag !== "Found") return;
-		expect(emitFromFields(back.value.join("\n"))).toMatchObject({_tag: "Composed"});
+		expect(emitFromFields(back.value.join("\n"))).toMatchObject({ _tag: "Composed" });
 	});
 });

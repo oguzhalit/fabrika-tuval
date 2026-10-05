@@ -23,9 +23,9 @@ interface FoundHeading {
 }
 
 export type DocSection =
-	| {readonly _tag: "Found"; readonly body: string; readonly heading: FoundHeading}
-	| {readonly _tag: "Absent"; readonly reason: string}
-	| {readonly _tag: "Duplicated"; readonly reason: string; readonly evidence: string};
+	| { readonly _tag: "Found"; readonly body: string; readonly heading: FoundHeading }
+	| { readonly _tag: "Absent"; readonly reason: string }
+	| { readonly _tag: "Duplicated"; readonly reason: string; readonly evidence: string };
 
 const closes = (open: string, marker: string): boolean =>
 	marker[0] === open[0] && marker.length >= open.length;
@@ -45,8 +45,8 @@ const names = (headingText: string, wanted: string): boolean => {
 /** Every ATX heading outside a fenced code block, with its depth and 1-based line. */
 export const scanHeadings = (
 	lines: ReadonlyArray<string>,
-): ReadonlyArray<FoundHeading & {readonly text: string}> => {
-	const headings: Array<FoundHeading & {readonly text: string}> = [];
+): ReadonlyArray<FoundHeading & { readonly text: string }> => {
+	const headings: Array<FoundHeading & { readonly text: string }> = [];
 	let openFence: string | null = null;
 	for (const [index, line] of lines.entries()) {
 		const fence = FENCE.exec(line);
@@ -59,7 +59,7 @@ export const scanHeadings = (
 		if (openFence !== null) continue;
 		const heading = ATX_HEADING.exec(line);
 		if (heading === null) continue;
-		headings.push({level: (heading[1] ?? "").length, text: heading[2] ?? "", line: index + 1});
+		headings.push({ level: (heading[1] ?? "").length, text: heading[2] ?? "", line: index + 1 });
 	}
 	return headings;
 };
@@ -120,6 +120,6 @@ export const extractSection = (markdown: string, heading: string): DocSection =>
 	return {
 		_tag: "Found",
 		body: sectionBody(lines, first),
-		heading: {level: first.level, line: first.line},
+		heading: { level: first.level, line: first.line },
 	};
 };

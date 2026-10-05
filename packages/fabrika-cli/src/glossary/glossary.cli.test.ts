@@ -7,10 +7,10 @@
  * scope line on stderr. Registration is in `command.unit.test.ts`; everything else about these verbs
  * is covered in-process by the `*-verb.unit.test.ts` files and by `contract-examples.test.ts`.
  */
-import {spawnSync} from "node:child_process";
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
 
 const BIN = fileURLToPath(new URL("../bin.ts", import.meta.url));
 const REGISTERS = "packages/fabrika-cli/test-fixtures/glossary/registers";
@@ -31,13 +31,13 @@ interface Run {
 const fabrika = (args: ReadonlyArray<string>, stdin = ""): Run => {
 	const run = spawnSync(process.execPath, [BIN, ...args], {
 		encoding: "utf8",
-		env: {...process.env, FABRIKA_SKIP_INFER: "1"},
+		env: { ...process.env, FABRIKA_SKIP_INFER: "1" },
 		input: stdin,
 	});
-	return {code: run.status ?? -1, stdout: run.stdout ?? "", stderr: run.stderr ?? ""};
+	return { code: run.status ?? -1, stdout: run.stdout ?? "", stderr: run.stderr ?? "" };
 };
 
-describe("fabrika glossary, end to end", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
+describe("fabrika glossary, end to end", { timeout: SUBPROCESS_TEST_TIMEOUT_MS }, () => {
 	it("puts the answer on stdout and the scope line on stderr", () => {
 		const run = fabrika(["glossary", "lookup", "tag", "--register", "terms", "--dir", REGISTERS]);
 		expect(run.code).toBe(0);

@@ -10,18 +10,18 @@
  * opts out of the excess-operand guard, which `../excess-operand.unit.test.ts` reds on.
  */
 
-import {Effect, type FileSystem, Option, Result} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {emit as emitOutcome} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readFile} from "../io/fs.ts";
-import {readStdin} from "../io/stdin.ts";
-import {readBoard} from "../status/label-remedy.ts";
-import type {DocumentRead} from "./compose-verb.ts";
-import {runCompose} from "./compose-verb.ts";
-import {runEmit} from "./emit-verb.ts";
-import {runRead} from "./read-verb.ts";
-import {runTrail} from "./trail-verb.ts";
+import { Effect, type FileSystem, Option, Result } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { emit as emitOutcome } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readFile } from "../io/fs.ts";
+import { readStdin } from "../io/stdin.ts";
+import { readBoard } from "../status/label-remedy.ts";
+import type { DocumentRead } from "./compose-verb.ts";
+import { runCompose } from "./compose-verb.ts";
+import { runEmit } from "./emit-verb.ts";
+import { runRead } from "./read-verb.ts";
+import { runTrail } from "./trail-verb.ts";
 
 /**
  * Read a document the verb was pointed at, as a value.
@@ -34,8 +34,8 @@ const document = (path: string): Effect.Effect<DocumentRead, never, FileSystem.F
 	Effect.gen(function* () {
 		const read = yield* Effect.result(readFile(path));
 		return Result.isFailure(read)
-			? ({_tag: "Failed", reason: read.failure.reason} satisfies DocumentRead)
-			: ({_tag: "Text", text: read.success} satisfies DocumentRead);
+			? ({ _tag: "Failed", reason: read.failure.reason } satisfies DocumentRead)
+			: ({ _tag: "Text", text: read.success } satisfies DocumentRead);
 	});
 
 const repoFlag = Flag.string("repo").pipe(
@@ -51,9 +51,9 @@ const sourceArg = Argument.integer("source").pipe(
 
 const trail = leafCommand(
 	"trail",
-	{source: sourceArg, repo: repoFlag},
-	Effect.fn(function* ({source, repo}) {
-		yield* emitOutcome(yield* runTrail({source, repo: Option.getOrNull(repo), env: process.env}));
+	{ source: sourceArg, repo: repoFlag },
+	Effect.fn(function* ({ source, repo }) {
+		yield* emitOutcome(yield* runTrail({ source, repo: Option.getOrNull(repo), env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("Resolve a source into one provenance-tagged decision trail."),
@@ -68,7 +68,7 @@ const trail = leafCommand(
 			'  Derivation: the graduate skill\'s contract.md, "graduate trail"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika graduate trail 9412"}]),
+	Command.withExamples([{ command: "fabrika graduate trail 9412" }]),
 );
 
 const compose = leafCommand(
@@ -84,7 +84,7 @@ const compose = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({trail: trailPath, decisions}) {
+	Effect.fn(function* ({ trail: trailPath, decisions }) {
 		yield* emitOutcome(
 			yield* runCompose({
 				trailPath,
@@ -111,7 +111,7 @@ const compose = leafCommand(
 			'  Derivation: the graduate skill\'s contract.md, "graduate compose"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika graduate compose --trail trail.json < spec.md"}]),
+	Command.withExamples([{ command: "fabrika graduate compose --trail trail.json < spec.md" }]),
 );
 
 const emit = leafCommand(
@@ -128,7 +128,7 @@ const emit = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({source, spec, title, repo}) {
+	Effect.fn(function* ({ source, spec, title, repo }) {
 		yield* emitOutcome(
 			yield* runEmit({
 				source,
@@ -174,9 +174,9 @@ const emit = leafCommand(
 
 const read = leafCommand(
 	"read",
-	{source: sourceArg, repo: repoFlag},
-	Effect.fn(function* ({source, repo}) {
-		yield* emitOutcome(yield* runRead({source, repo: Option.getOrNull(repo), env: process.env}));
+	{ source: sourceArg, repo: repoFlag },
+	Effect.fn(function* ({ source, repo }) {
+		yield* emitOutcome(yield* runRead({ source, repo: Option.getOrNull(repo), env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("Has this source already graduated, and into what."),
@@ -190,7 +190,7 @@ const read = leafCommand(
 			'  Derivation: the graduate skill\'s contract.md, "graduate read"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika graduate read 9412"}]),
+	Command.withExamples([{ command: "fabrika graduate read 9412" }]),
 );
 
 export const graduateCommand = Command.make("graduate").pipe(

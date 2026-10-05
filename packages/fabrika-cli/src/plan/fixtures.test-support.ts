@@ -8,15 +8,15 @@
  * `UNVERIFIABLE_ASSIGNEE` rests on and no fixture that always includes it could exercise the split.
  */
 
-import type {FileSystem, Path} from "effect";
-import {Effect, Layer} from "effect";
+import type { FileSystem, Path } from "effect";
+import { Effect, Layer } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {CONFIG_PATH} from "../config/document.ts";
-import type {FakeHttp, FakeShell, HttpReply} from "../fakes.test-support.ts";
-import {fakeFs, fakeHttp, fakeShell} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {runRead} from "./read-verb.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { CONFIG_PATH } from "../config/document.ts";
+import type { FakeHttp, FakeShell, HttpReply } from "../fakes.test-support.ts";
+import { fakeFs, fakeHttp, fakeShell } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { runRead } from "./read-verb.ts";
 
 export const EPIC = 4300;
 /** The two children the default epic body plans, named so no `#`-prefixed literal has to be typed. */
@@ -30,7 +30,7 @@ const OWNER = "o/r";
 export const issueUrl = (number: number): string => `https://github.com/${OWNER}/issues/${number}`;
 
 /** An epic body with one phase line, two contiguous stories, and no fenced decoys. */
-export const epicBody = (overrides: {dependencies?: string; stories?: string} = {}): string =>
+export const epicBody = (overrides: { dependencies?: string; stories?: string } = {}): string =>
 	[
 		"An epic.",
 		"",
@@ -52,7 +52,7 @@ export const epic = (overrides: Record<string, unknown> = {}): HttpReply => ({
 		title: "The plan gate",
 		body: epicBody(),
 		state: "open",
-		labels: [{name: "type:epic"}],
+		labels: [{ name: "type:epic" }],
 		html_url: issueUrl(EPIC),
 		milestone: null,
 		state_reason: null,
@@ -74,7 +74,7 @@ export const subIssues = (...numbers: ReadonlyArray<number>): HttpReply => ({
 
 /** A child body that clears the floor: criteria, a story claim, and a containment marker. */
 export const childBody = (
-	overrides: {stories?: string | null; containment?: string | null; criteria?: string} = {},
+	overrides: { stories?: string | null; containment?: string | null; criteria?: string } = {},
 ): string =>
 	[
 		"### Acceptance criteria",
@@ -99,18 +99,18 @@ export const child = (options: {
 		title: `child ${options.number}`,
 		body: options.body ?? childBody(),
 		state: options.state ?? "open",
-		labels: (options.labels ?? ["type:feature", "p1", "status:planned"]).map((name) => ({name})),
+		labels: (options.labels ?? ["type:feature", "p1", "status:planned"]).map((name) => ({ name })),
 		// `null` drops the key entirely — the unobserved slot, not an observed-empty one.
 		...(options.assignees === null
 			? {}
-			: {assignees: (options.assignees ?? []).map((login) => ({login}))}),
+			: { assignees: (options.assignees ?? []).map((login) => ({ login })) }),
 		html_url: issueUrl(options.number),
 	}),
 });
 
 export const labelSet = (...names: ReadonlyArray<string>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(names.map((name) => ({name}))),
+	body: JSON.stringify(names.map((name) => ({ name }))),
 });
 
 /** The directory a plan verb under test is standing in. Its config is the one the load reads. */
@@ -126,13 +126,13 @@ export const CWD = "/repo";
  * UNKNOWN.
  */
 export const planContext = (
-	shell: {readonly layer: Layer.Layer<ChildProcessSpawner.ChildProcessSpawner>},
-	config?: string | {readonly unreadable: true},
+	shell: { readonly layer: Layer.Layer<ChildProcessSpawner.ChildProcessSpawner> },
+	config?: string | { readonly unreadable: true },
 ): Layer.Layer<ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path> => {
 	const path = `${CWD}/${CONFIG_PATH}`;
-	const files = config === undefined ? {} : {[path]: typeof config === "string" ? config : ""};
+	const files = config === undefined ? {} : { [path]: typeof config === "string" ? config : "" };
 	const unreadable = config === undefined || typeof config === "string" ? [] : [path];
-	return Layer.merge(shell.layer, fakeFs({files, unreadable}).layer);
+	return Layer.merge(shell.layer, fakeFs({ files, unreadable }).layer);
 };
 
 /** The GitHub reads this group makes, matched on the `METHOD url` the REST client issues, not `gh`. */
@@ -149,7 +149,7 @@ export const BLOCKED_BY = (number: number): RegExp =>
 export const blockers = (...numbers: ReadonlyArray<number>): HttpReply => ({
 	status: 200,
 	body: JSON.stringify(
-		numbers.map((number) => ({number, state: "open", title: `blocker ${number}`})),
+		numbers.map((number) => ({ number, state: "open", title: `blocker ${number}` })),
 	),
 });
 /**
@@ -161,7 +161,7 @@ export const CYCLE_DOC = new RegExp(
 );
 
 /** The cycle doc, served — `present` is any 2xx, and the body is not read. */
-export const cycleDoc: HttpReply = {status: 200, body: "{}"};
+export const cycleDoc: HttpReply = { status: 200, body: "{}" };
 
 /** One scripted answer at either seam; which seam it belongs to is read off its own shape. */
 export type Scripted = readonly [RegExp, ExecResult] | readonly [RegExp, HttpReply];
@@ -189,7 +189,7 @@ export interface PlanSeams {
  */
 export const planSeams = (
 	script: ReadonlyArray<Scripted>,
-	config?: string | {readonly unreadable: true},
+	config?: string | { readonly unreadable: true },
 ): PlanSeams => {
 	const shell = fakeShell(
 		script.filter((entry): entry is readonly [RegExp, ExecResult] => !isServed(entry)),
@@ -197,11 +197,11 @@ export const planSeams = (
 	// Appended, never prepended: the first match wins, so a case about `DROPPED_EPIC_BLOCKER` scripts
 	// its own epic edge list and every other case reads an unblocked epic without saying so.
 	const http = fakeHttp([...script.filter(isServed), [BLOCKED_BY(EPIC), blockers()]]);
-	return {layer: Layer.merge(planContext(shell, config), http.layer), shell, http};
+	return { layer: Layer.merge(planContext(shell, config), http.layer), shell, http };
 };
 
 /** The environment a plan verb test hands its verb — the repo, plus the client's credential. */
-export const ENV = {CLAUDE_PIPELINE_REPO: "o/r", GITHUB_TOKEN: "ghp_scripted"} as Record<
+export const ENV = { CLAUDE_PIPELINE_REPO: "o/r", GITHUB_TOKEN: "ghp_scripted" } as Record<
 	string,
 	string | undefined
 >;
@@ -213,14 +213,14 @@ export const APPROVER = "noor";
  * same three `plan approve`'s write resolves the actor through.
  */
 export const ROSTER: ReadonlyArray<Scripted> = [
-	[new RegExp(`^GET ${API}\\/repos\\/o\\/r$`), {status: 200, body: '{"default_branch":"main"}'}],
+	[new RegExp(`^GET ${API}\\/repos\\/o\\/r$`), { status: 200, body: '{"default_branch":"main"}' }],
 	[
 		new RegExp(`^GET ${API}\\/repos\\/o\\/r\\/contents\\/\\.github\\/CODEOWNERS\\?ref=main$`),
-		{status: 200, body: "/packages/fabrika-cli/ @o/control-plane\n"},
+		{ status: 200, body: "/packages/fabrika-cli/ @o/control-plane\n" },
 	],
 	[
 		new RegExp(`^GET ${API}\\/orgs\\/o\\/teams\\/control-plane\\/members`),
-		{status: 200, body: JSON.stringify([{login: APPROVER}])},
+		{ status: 200, body: JSON.stringify([{ login: APPROVER }]) },
 	],
 ];
 
@@ -233,8 +233,8 @@ export const ROSTER: ReadonlyArray<Scripted> = [
  */
 export const approvalRow = (
 	digest: string,
-	overrides: {id?: number; author?: string; epic?: number} = {},
-): {id: number; body: string; author: string} => ({
+	overrides: { id?: number; author?: string; epic?: number } = {},
+): { id: number; body: string; author: string } => ({
 	id: overrides.id ?? 90,
 	body: `plan-approved: #${overrides.epic ?? EPIC} @ ${digest} · 2026-08-16T07:16:03Z\n`,
 	author: overrides.author ?? APPROVER,
@@ -251,7 +251,7 @@ export const digestOver = async (
 	script: ReadonlyArray<Scripted>,
 	options: {
 		readonly env?: Readonly<Record<string, string | undefined>>;
-		readonly config?: string | {readonly unreadable: true} | undefined;
+		readonly config?: string | { readonly unreadable: true } | undefined;
 	} = {},
 ): Promise<string> => {
 	const out = await Effect.runPromise(

@@ -6,7 +6,7 @@
  * as the one fact it pins.
  */
 
-import {Layer} from "effect";
+import { Layer } from "effect";
 import {
 	type FakeFsOptions,
 	fakeFs,
@@ -24,7 +24,7 @@ export const FILE = "ROADMAP.md";
 export const ROADMAP_PATH = `${ROOT}/${FILE}`;
 export const CONFIG_FILE = `${ROOT}/.fabrika.jsonc`;
 
-export const env = {CLAUDE_PIPELINE_REPO: REPO, GITHUB_TOKEN: "ghp_scripted"} as Record<
+export const env = { CLAUDE_PIPELINE_REPO: REPO, GITHUB_TOKEN: "ghp_scripted" } as Record<
 	string,
 	string | undefined
 >;
@@ -50,7 +50,7 @@ nothing here.
 
 /** A `.fabrika.jsonc` still declaring the retired `campaignAuthors` — the deprecation case. */
 export const config = (...authors: ReadonlyArray<string>): string =>
-	JSON.stringify({campaignAuthors: authors}, null, 2);
+	JSON.stringify({ campaignAuthors: authors }, null, 2);
 
 const API = "https:\\/\\/api\\.github\\.com";
 export const GET_COMMENT = new RegExp(
@@ -64,13 +64,13 @@ export const TRUNK = new RegExp(`^GET ${API}\\/repos\\/${REPO}$`);
 export const CODEOWNERS = /contents\/\.github\/CODEOWNERS\?ref=main$/;
 export const TEAM_MEMBERS = new RegExp(`^GET ${API}\\/orgs\\/acme\\/teams\\/founders\\/members`);
 
-const served = (body: unknown): HttpReply => ({status: 200, body: JSON.stringify(body)});
+const served = (body: unknown): HttpReply => ({ status: 200, body: JSON.stringify(body) });
 
 /** The cited comment, with whatever first line the case wants. */
 export const comment = (body: string, author: string = AUTHOR): HttpReply =>
 	served({
 		id: COMMENT,
-		user: {login: author},
+		user: { login: author },
 		created_at: "2026-08-20T04:11:09Z",
 		updated_at: "2026-08-20T04:11:09Z",
 		body,
@@ -79,7 +79,7 @@ export const comment = (body: string, author: string = AUTHOR): HttpReply =>
 export const marker = (milestone: number, state: string): string =>
 	`campaign-approve: #${milestone} ${state} · 2026-08-20T04:11:09Z`;
 
-export const permission = (level: string): HttpReply => served({permission: level});
+export const permission = (level: string): HttpReply => served({ permission: level });
 
 /** `.github/CODEOWNERS` on the default branch, naming these owners on one row. */
 export const codeowners = (...owners: ReadonlyArray<string>): HttpReply => ({
@@ -92,7 +92,7 @@ export const codeowners = (...owners: ReadonlyArray<string>): HttpReply => ({
  * every case's own script, so a case scripting its own CODEOWNERS wins on first match.
  */
 export const ROSTER: ReadonlyArray<Scripted> = [
-	[TRUNK, served({default_branch: "main"})],
+	[TRUNK, served({ default_branch: "main" })],
 	[CODEOWNERS, codeowners(`@${AUTHOR}`)],
 ];
 
@@ -121,5 +121,5 @@ export const seams = (script: ReadonlyArray<Scripted>, fs: FakeFsOptions) => {
 
 /** The default tree: the two-row roadmap and a config declaring nothing about authority. */
 export const tree = (roadmap: string = TWO_ROWS, fabrika = "{}"): FakeFsOptions => ({
-	files: {[ROADMAP_PATH]: roadmap, [CONFIG_FILE]: fabrika},
+	files: { [ROADMAP_PATH]: roadmap, [CONFIG_FILE]: fabrika },
 });

@@ -8,16 +8,16 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9882
  */
-import {Effect, FileSystem, Path, Result} from "effect";
-import {appendText} from "../io/fs.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {lockedRefusal, withLedgerLock} from "./append-lock.ts";
-import {APPEND_UNKNOWN, CONCURRENT_WRITE, INTEGRATE_EVIDENCE, TASK_UNKNOWN} from "./codes.ts";
-import {foldLog, resolveTask} from "./fold.ts";
-import {type Attachment, judgeAttachment} from "./integrate-attach.ts";
-import {type IntegrateFailure, readIntegrateEvidence} from "./integrate-failure.ts";
-import {loadRefusal, replayRefusal} from "./refusals.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { Effect, FileSystem, Path, Result } from "effect";
+import { appendText } from "../io/fs.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { lockedRefusal, withLedgerLock } from "./append-lock.ts";
+import { APPEND_UNKNOWN, CONCURRENT_WRITE, INTEGRATE_EVIDENCE, TASK_UNKNOWN } from "./codes.ts";
+import { foldLog, resolveTask } from "./fold.ts";
+import { type Attachment, judgeAttachment } from "./integrate-attach.ts";
+import { type IntegrateFailure, readIntegrateEvidence } from "./integrate-failure.ts";
+import { loadRefusal, replayRefusal } from "./refusals.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane attach-integrate";
 
@@ -37,10 +37,10 @@ const judge = (
 	failure: IntegrateFailure,
 	now: string,
 ): Effect.Effect<
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
 	| {
 			readonly _tag: "Judged";
-			readonly attachment: Extract<Attachment, {_tag: "Attachable"}>;
+			readonly attachment: Extract<Attachment, { _tag: "Attachable" }>;
 			readonly logPath: string;
 			readonly task: string;
 	  },
@@ -49,14 +49,14 @@ const judge = (
 > =>
 	Effect.gen(function* () {
 		const loaded = yield* loadLane(options);
-		if (loaded._tag !== "Loaded") return {_tag: "Refused", outcome: loadRefusal(VERB, loaded)};
+		if (loaded._tag !== "Loaded") return { _tag: "Refused", outcome: loadRefusal(VERB, loaded) };
 		const task = resolveTask(loaded.lane, options.task);
 		if (task._tag === "Unresolved") {
-			return {_tag: "Refused", outcome: refuse(TASK_UNKNOWN, `${VERB}: ${task.reason}`)};
+			return { _tag: "Refused", outcome: refuse(TASK_UNKNOWN, `${VERB}: ${task.reason}`) };
 		}
 		const fold = foldLog(loaded.lane, loaded.entries);
 		if (fold._tag !== "Folded") {
-			return {_tag: "Refused", outcome: replayRefusal(VERB, loaded.logPath, fold)};
+			return { _tag: "Refused", outcome: replayRefusal(VERB, loaded.logPath, fold) };
 		}
 		const attachment = judgeAttachment(
 			loaded.lane,
@@ -67,7 +67,7 @@ const judge = (
 			now,
 		);
 		if (attachment._tag === "Unreplayable") {
-			return {_tag: "Refused", outcome: replayRefusal(VERB, loaded.logPath, attachment)};
+			return { _tag: "Refused", outcome: replayRefusal(VERB, loaded.logPath, attachment) };
 		}
 		if (attachment._tag === "Refused") {
 			return {
@@ -104,11 +104,11 @@ export const runAttachIntegrate = (
 		const fs = yield* FileSystem.FileSystem;
 		const path = yield* Path.Path;
 		return yield* withLedgerLock(
-			{fs, path, dir: path.join(options.root, options.lane), verb: VERB},
+			{ fs, path, dir: path.join(options.root, options.lane), verb: VERB },
 			Effect.gen(function* () {
 				const fresh = yield* judge(options, evidence.failure, now);
 				if (fresh._tag === "Refused") return fresh.outcome;
-				const {entry} = fresh.attachment;
+				const { entry } = fresh.attachment;
 				const wrote = yield* Effect.result(appendText(fresh.logPath, `${JSON.stringify(entry)}\n`));
 				if (Result.isFailure(wrote)) {
 					return refuse(
@@ -134,7 +134,7 @@ export const runAttachIntegrate = (
 				);
 			}),
 			{
-				onAbsent: (dir) => loadRefusal(VERB, {_tag: "Absent", dir}),
+				onAbsent: (dir) => loadRefusal(VERB, { _tag: "Absent", dir }),
 				onLocked: (lockDir) => refuse(CONCURRENT_WRITE, lockedRefusal(VERB, lockDir)),
 			},
 		);

@@ -7,10 +7,10 @@
  * the digest re-check makes that disagreement invisible until a read refuses.
  */
 
-import type {Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {emit, instant, packNonce, groundDigest as toGroundDigest} from "../wire/handoff-pack.ts";
-import {digestOf, type GroundState, renderGround} from "./ground.ts";
+import type { Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { emit, instant, packNonce, groundDigest as toGroundDigest } from "../wire/handoff-pack.ts";
+import { digestOf, type GroundState, renderGround } from "./ground.ts";
 
 export const REPO = "o/r";
 export const ISSUE = 5021;
@@ -34,12 +34,12 @@ const withoutDigest = {
 		reachable: "pushed" as const,
 		aheadBy: 0,
 		behindBy: 0,
-		base: {branch: BASE, head: BASE_HEAD},
-		tree: {state: "clean" as const, trackedModified: 0, untracked: 0},
+		base: { branch: BASE, head: BASE_HEAD },
+		tree: { state: "clean" as const, trackedModified: 0, untracked: 0 },
 	},
 	board: {
-		issue: {state: "open", labels: ["p2", "type:chore"]},
-		pull: {number: PULL, state: "open", head: HEAD, checks: "failing" as const},
+		issue: { state: "open", labels: ["p2", "type:chore"] },
+		pull: { number: PULL, state: "open", head: HEAD, checks: "failing" as const },
 	},
 };
 
@@ -100,16 +100,16 @@ export const ASSERTED = [
 ].join("\n");
 
 export const issueJson = (
-	over: {readonly state?: string; readonly labels?: ReadonlyArray<string>} = {},
+	over: { readonly state?: string; readonly labels?: ReadonlyArray<string> } = {},
 ): string =>
 	JSON.stringify({
 		number: ISSUE,
 		title: `issue ${ISSUE}`,
 		body: "",
 		state: over.state ?? "open",
-		labels: (over.labels ?? ["p2", "type:chore"]).map((name) => ({name})),
+		labels: (over.labels ?? ["p2", "type:chore"]).map((name) => ({ name })),
 		html_url: `https://github.com/${REPO}/issues/${ISSUE}`,
-		user: {login: "usirin"},
+		user: { login: "usirin" },
 		milestone: null,
 		state_reason: null,
 	});
@@ -125,21 +125,21 @@ export const commentsJson = (
 		comments.map((comment) => ({
 			id: comment.id,
 			body: comment.body,
-			user: {login: comment.author ?? "usirin"},
+			user: { login: comment.author ?? "usirin" },
 			created_at: "2026-08-09T18:00:00Z",
 			updated_at: "2026-08-09T18:00:00Z",
 		})),
 	);
 
 export const pullsJson = (
-	over: {readonly headSha?: string; readonly state?: string} = {},
+	over: { readonly headSha?: string; readonly state?: string } = {},
 ): string =>
 	JSON.stringify([
 		{
 			number: PULL,
 			state: over.state ?? "open",
 			merged_at: null,
-			head: {sha: over.headSha ?? HEAD},
+			head: { sha: over.headSha ?? HEAD },
 			created_at: "2026-08-08T10:00:00Z",
 		},
 	]);
@@ -147,10 +147,10 @@ export const pullsJson = (
 export const checkRunsJson = (conclusion: string): string =>
 	JSON.stringify({
 		total_count: 1,
-		check_runs: [{name: "ci", status: "completed", conclusion}],
+		check_runs: [{ name: "ci", status: "completed", conclusion }],
 	});
 
-const okOut = (stdout: string): ExecResult => ({ok: true, stdout, reason: ""});
+const okOut = (stdout: string): ExecResult => ({ ok: true, stdout, reason: "" });
 
 /** `GET https://api.github.com/repos/o/r`, and nothing under it — the default-branch read. */
 export const REPO_READ = new RegExp(`GET .*/repos/${REPO}$`);
@@ -166,7 +166,7 @@ export const ISSUE_READ = new RegExp(`GET .*/repos/${REPO}/issues/${ISSUE}$`);
  * matches — the spawned command line for a git row, `METHOD <url>` for a board row.
  */
 export const groundScript = (
-	over: {readonly branch?: string; readonly conclusion?: string} = {},
+	over: { readonly branch?: string; readonly conclusion?: string } = {},
 ): ReadonlyArray<Scripted> => [
 	[/rev-parse --abbrev-ref --symbolic-full-name/, okOut(`origin/${over.branch ?? BRANCH}`)],
 	[/rev-parse --abbrev-ref HEAD$/, okOut(over.branch ?? BRANCH)],
@@ -176,9 +176,9 @@ export const groundScript = (
 	[/rev-list --left-right --count/, okOut("0\t0")],
 	[/status --porcelain/, okOut("")],
 	[/rev-parse --is-inside-work-tree/, okOut("true")],
-	[/check-runs/, {status: 200, body: checkRunsJson(over.conclusion ?? "failure")}],
-	[/pulls\?state=all/, {status: 200, body: pullsJson()}],
-	[REPO_READ, {status: 200, body: JSON.stringify({default_branch: BASE})}],
-	[/collaborators\/.*\/permission/, {status: 200, body: JSON.stringify({permission: "write"})}],
-	[ISSUE_READ, {status: 200, body: issueJson()}],
+	[/check-runs/, { status: 200, body: checkRunsJson(over.conclusion ?? "failure") }],
+	[/pulls\?state=all/, { status: 200, body: pullsJson() }],
+	[REPO_READ, { status: 200, body: JSON.stringify({ default_branch: BASE }) }],
+	[/collaborators\/.*\/permission/, { status: 200, body: JSON.stringify({ permission: "write" }) }],
+	[ISSUE_READ, { status: 200, body: issueJson() }],
 ];

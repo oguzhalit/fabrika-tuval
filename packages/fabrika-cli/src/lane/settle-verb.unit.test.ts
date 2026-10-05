@@ -4,11 +4,11 @@
  * merged PR its own flow never recorded. Both got hand-deleted or left owed; both settle here — and
  * every read that must NOT reach a terminal.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {Claimant} from "../build/claim.ts";
-import {fakeFs} from "../fakes.test-support.ts";
-import type {ClaimHoldReader} from "./claim-hold.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { Claimant } from "../build/claim.ts";
+import { fakeFs } from "../fakes.test-support.ts";
+import type { ClaimHoldReader } from "./claim-hold.ts";
 import {
 	CLAIM_NOT_MINE,
 	CONCURRENT_WRITE,
@@ -20,9 +20,9 @@ import {
 	PROOF_IN_FLIGHT,
 	TASK_UNKNOWN,
 } from "./codes.ts";
-import {seatsIn} from "./concurrency.ts";
-import {choreTemplateText, coderTemplateText} from "./fixtures.test-support.ts";
-import type {NominatedPull} from "./nominate.ts";
+import { seatsIn } from "./concurrency.ts";
+import { choreTemplateText, coderTemplateText } from "./fixtures.test-support.ts";
+import type { NominatedPull } from "./nominate.ts";
 import {
 	type AssertedReader,
 	type ClaimsReader,
@@ -31,9 +31,9 @@ import {
 	runSettle,
 	type ShaReader,
 } from "./settle-verb.ts";
-import {runStale} from "./stale-verb.ts";
-import {runStatus} from "./status-verb.ts";
-import {DEFAULT_CHORES_ROOT} from "./store.ts";
+import { runStale } from "./stale-verb.ts";
+import { runStatus } from "./status-verb.ts";
+import { DEFAULT_CHORES_ROOT } from "./store.ts";
 
 const ROOT = ".fabrika/lanes";
 const LANE = "5983";
@@ -45,7 +45,7 @@ const ISSUE = 5983;
 const SHA = "b0ab5804263e3ca232aa950e906b997e0e6b1963";
 
 const line = (event: string): string =>
-	`${JSON.stringify({task: "issue", event: `ISSUE.${event}`, at: "2026-08-29T00:00:00.000Z"})}\n`;
+	`${JSON.stringify({ task: "issue", event: `ISSUE.${event}`, at: "2026-08-29T00:00:00.000Z" })}\n`;
 
 /** Lane 5983's own shape: driven into `build`, then parked. */
 const PARKED = `${line("WIP")}${line("BLOCKED")}`;
@@ -56,10 +56,10 @@ const AT_REVIEW = `${line("WIP")}${line("DONE")}`;
 const closes =
 	(state: "open" | "closed", reason: string | null): ClosureReader<never> =>
 	() =>
-		Effect.succeed({_tag: "Read", state, reason});
+		Effect.succeed({ _tag: "Read", state, reason });
 
 const unreadableBoard: ClosureReader<never> = () =>
-	Effect.succeed({_tag: "Unknown", reason: "the API answered 503"});
+	Effect.succeed({ _tag: "Unknown", reason: "the API answered 503" });
 
 const pull = (over: Partial<NominatedPull> = {}): NominatedPull => ({
 	number: 6874,
@@ -75,12 +75,12 @@ const pull = (over: Partial<NominatedPull> = {}): NominatedPull => ({
 const nominates =
 	(pulls: ReadonlyArray<NominatedPull>): PullsReader<never> =>
 	() =>
-		Effect.succeed({_tag: "Nominated", pulls});
+		Effect.succeed({ _tag: "Nominated", pulls });
 
 const noPulls: PullsReader<never> = nominates([]);
 
 const unreadablePulls: PullsReader<never> = () =>
-	Effect.succeed({_tag: "Unreadable", what: "the pull requests closing #5983", reason: "503"});
+	Effect.succeed({ _tag: "Unreadable", what: "the pull requests closing #5983", reason: "503" });
 
 const readsSha: ShaReader<never> = () => Effect.succeed(SHA);
 const noSha: ShaReader<never> = () => Effect.succeed(null);
@@ -90,20 +90,20 @@ const ASSERTED_SHA = "4d0f6bd6c1a0a3e6c1e8b8ee4dcb2f9e0b5f2a11";
 const mergedPull =
 	(number: number, sha: string | null = ASSERTED_SHA): AssertedReader<never> =>
 	() =>
-		Effect.succeed({_tag: "Merged", number, sha});
+		Effect.succeed({ _tag: "Merged", number, sha });
 
 const unmergedPull =
 	(number: number, state = "open"): AssertedReader<never> =>
 	() =>
-		Effect.succeed({_tag: "Unmerged", number, state});
+		Effect.succeed({ _tag: "Unmerged", number, state });
 
 const absentPull =
 	(number: number): AssertedReader<never> =>
 	() =>
-		Effect.succeed({_tag: "Absent", number});
+		Effect.succeed({ _tag: "Absent", number });
 
 const unreadablePull: AssertedReader<never> = () =>
-	Effect.succeed({_tag: "Unknown", reason: "the API answered 503"});
+	Effect.succeed({ _tag: "Unknown", reason: "the API answered 503" });
 
 /** The reader a lane that names no `--landed-by` must never reach. */
 const forbiddenPull: AssertedReader<never> = () => {
@@ -120,20 +120,20 @@ const claimant = (token: string): Claimant => ({
 });
 
 const unclaimed: ClaimsReader<never> = () =>
-	Effect.succeed({_tag: "Read", claimants: [], adopts: [], holder: null});
+	Effect.succeed({ _tag: "Read", claimants: [], adopts: [], holder: null });
 
 const claimedBy =
 	(token: string): ClaimsReader<never> =>
 	() =>
-		Effect.succeed({_tag: "Read", claimants: [], adopts: [], holder: claimant(token)});
+		Effect.succeed({ _tag: "Read", claimants: [], adopts: [], holder: claimant(token) });
 
 const unreadableClaims: ClaimsReader<never> = () =>
-	Effect.succeed({_tag: "Unknown", reason: "the comment page did not load"});
+	Effect.succeed({ _tag: "Unknown", reason: "the comment page did not load" });
 
 const laneFs = (log = PARKED) =>
 	fakeFs({
-		files: {[WORKFLOW]: coderTemplateText(), [LOG]: log},
-		dirs: {[ROOT]: [LANE]},
+		files: { [WORKFLOW]: coderTemplateText(), [LOG]: log },
+		dirs: { [ROOT]: [LANE] },
 		directories: [ROOT],
 	});
 
@@ -154,7 +154,7 @@ const settle = (fs: ReturnType<typeof fakeFs>, over: SettleOverrides = {}) =>
 			runSettle({
 				root: ROOT,
 				lane: LANE,
-				issue: {_tag: "Issue", number: ISSUE},
+				issue: { _tag: "Issue", number: ISSUE },
 				task: over.task ?? null,
 				token: over.token ?? null,
 				landedBy: over.landedBy ?? null,
@@ -182,7 +182,7 @@ describe("lane settle — the cancellation arm", () => {
 			answer: "settled",
 			lane: LANE,
 			issue: ISSUE,
-			previous: {pipeline: {issue: "blocked"}},
+			previous: { pipeline: { issue: "blocked" } },
 			event: "ISSUE.CANCELLED",
 			current: "board:cancelled",
 			taskAffected: "issue",
@@ -202,7 +202,7 @@ describe("lane settle — the cancellation arm", () => {
 			throw new Error("a cancellation must not read pull requests");
 		};
 
-		expect((await settle(fs, {pulls: forbidden})).code).toBe(0);
+		expect((await settle(fs, { pulls: forbidden })).code).toBe(0);
 	});
 });
 
@@ -218,7 +218,7 @@ describe("lane settle — the landing arm", () => {
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			answer: "settled",
-			previous: {pipeline: {issue: "review"}},
+			previous: { pipeline: { issue: "review" } },
 			event: "ISSUE.LANDED",
 			current: "board:landed",
 			outcome: "completed",
@@ -250,11 +250,11 @@ describe("lane settle — the landing arm", () => {
 
 	it("frees the seat a hand-shipped lane was holding", async () => {
 		const fs = laneFs(AT_REVIEW);
-		const held: ClaimHoldReader<never> = () => Effect.succeed({_tag: "Claimed", token: "t"});
+		const held: ClaimHoldReader<never> = () => Effect.succeed({ _tag: "Claimed", token: "t" });
 		const before = await Effect.runPromise(Effect.provide(seatsIn(ROOT, held), fs.layer));
-		expect(before).toEqual({_tag: "Counted", seats: [{lane: LANE, held: "claimed"}], idle: []});
+		expect(before).toEqual({ _tag: "Counted", seats: [{ lane: LANE, held: "claimed" }], idle: [] });
 
-		await settle(fs, {closure: closes("closed", "completed"), pulls: nominates([pull()])});
+		await settle(fs, { closure: closes("closed", "completed"), pulls: nominates([pull()]) });
 
 		expect(await Effect.runPromise(Effect.provide(seatsIn(ROOT, held), fs.layer))).toEqual({
 			_tag: "Counted",
@@ -265,19 +265,19 @@ describe("lane settle — the landing arm", () => {
 
 	it("is read as terminal by `lane status` after the append", async () => {
 		const fs = laneFs(AT_REVIEW);
-		await settle(fs, {closure: closes("closed", "completed"), pulls: nominates([pull()])});
+		await settle(fs, { closure: closes("closed", "completed"), pulls: nominates([pull()]) });
 
 		const out = await Effect.runPromise(
-			Effect.provide(runStatus({root: ROOT, lane: LANE}), fs.layer),
+			Effect.provide(runStatus({ root: ROOT, lane: LANE }), fs.layer),
 		);
 
-		expect(JSON.parse(out.stdout)).toMatchObject({stateValue: "board:landed", status: "done"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ stateValue: "board:landed", status: "done" });
 	});
 
 	it("refuses a completed close naming no merged linking PR — genuinely unread, not a landing", async () => {
 		const fs = laneFs(AT_REVIEW);
 
-		const out = await settle(fs, {closure: closes("closed", "completed"), pulls: noPulls});
+		const out = await settle(fs, { closure: closes("closed", "completed"), pulls: noPulls });
 
 		expect(out.code).toBe(LANE_UNREADABLE);
 		expect(fs.written.has(LOG)).toBe(false);
@@ -302,7 +302,7 @@ describe("lane settle — the asserted landing `--landed-by` supplies", () => {
 
 		const out = await settle(fs, {
 			closure: closes("closed", "completed"),
-			pulls: nominates([pull({linkedIssues: [9001]})]),
+			pulls: nominates([pull({ linkedIssues: [9001] })]),
 			landedBy: 6894,
 			asserted: mergedPull(6894),
 		});
@@ -338,7 +338,7 @@ describe("lane settle — the asserted landing `--landed-by` supplies", () => {
 		});
 
 		expect(out.code).toBe(0);
-		expect(appendedLine(fs, AT_REVIEW)).toMatchObject({assertedBy: "caller"});
+		expect(appendedLine(fs, AT_REVIEW)).toMatchObject({ assertedBy: "caller" });
 		expect(appendedLine(fs, AT_REVIEW)).not.toHaveProperty("sha");
 	});
 
@@ -352,7 +352,7 @@ describe("lane settle — the asserted landing `--landed-by` supplies", () => {
 			asserted: mergedPull(6894),
 		});
 
-		expect(JSON.parse(out.stdout)).toMatchObject({landed: [6874], sha: SHA});
+		expect(JSON.parse(out.stdout)).toMatchObject({ landed: [6874], sha: SHA });
 		expect(appendedLine(fs, AT_REVIEW)).not.toHaveProperty("assertedBy");
 	});
 
@@ -401,10 +401,10 @@ describe("lane settle — the asserted landing `--landed-by` supplies", () => {
 	it("reads no named pull request on a cancellation — the closure alone entitles it", async () => {
 		const fs = laneFs();
 
-		const out = await settle(fs, {landedBy: 6894, asserted: forbiddenPull});
+		const out = await settle(fs, { landedBy: 6894, asserted: forbiddenPull });
 
 		expect(out.code).toBe(0);
-		expect(appendedLine(fs, PARKED)).toMatchObject({event: "ISSUE.CANCELLED"});
+		expect(appendedLine(fs, PARKED)).toMatchObject({ event: "ISSUE.CANCELLED" });
 	});
 });
 
@@ -425,7 +425,7 @@ describe("lane settle — what never reaches a terminal", () => {
 			),
 		);
 
-		expect(JSON.parse(out.stdout)).toMatchObject({lanes: [{key: LANE, verdict: "terminal"}]});
+		expect(JSON.parse(out.stdout)).toMatchObject({ lanes: [{ key: LANE, verdict: "terminal" }] });
 	});
 
 	it("preserves the whole prior history — the append is the only write to the ledger", async () => {
@@ -441,7 +441,7 @@ describe("lane settle — what never reaches a terminal", () => {
 	it("refuses an open issue with the log unappended — that closure has said nothing yet", async () => {
 		const fs = laneFs();
 
-		const out = await settle(fs, {closure: closes("open", null)});
+		const out = await settle(fs, { closure: closes("open", null) });
 
 		expect(out.code).toBe(ISSUE_LIVE);
 		expect(fs.written.has(LOG)).toBe(false);
@@ -450,7 +450,7 @@ describe("lane settle — what never reaches a terminal", () => {
 	it("appends nothing on an unreadable board — UNKNOWN is never a closure", async () => {
 		const fs = laneFs();
 
-		const out = await settle(fs, {closure: unreadableBoard});
+		const out = await settle(fs, { closure: unreadableBoard });
 
 		expect(out.code).toBe(LANE_UNREADABLE);
 		expect(fs.written.has(LOG)).toBe(false);
@@ -459,7 +459,7 @@ describe("lane settle — what never reaches a terminal", () => {
 	it("appends nothing on a close carrying no reason", async () => {
 		const fs = laneFs();
 
-		const out = await settle(fs, {closure: closes("closed", null)});
+		const out = await settle(fs, { closure: closes("closed", null) });
 
 		expect(out.code).toBe(LANE_UNREADABLE);
 		expect(fs.written.has(LOG)).toBe(false);
@@ -468,7 +468,7 @@ describe("lane settle — what never reaches a terminal", () => {
 	it("refuses a lane another session is driving, naming the token that holds it", async () => {
 		const fs = laneFs();
 
-		const out = await settle(fs, {claims: claimedBy("lane:abc")});
+		const out = await settle(fs, { claims: claimedBy("lane:abc") });
 
 		expect(out.code).toBe(CLAIM_NOT_MINE);
 		expect(out.stderr.join(" ")).toContain("lane:abc");
@@ -478,13 +478,13 @@ describe("lane settle — what never reaches a terminal", () => {
 	it("lets the driver holding the claim settle its own lane", async () => {
 		const fs = laneFs();
 
-		expect((await settle(fs, {claims: claimedBy("lane:abc"), token: "lane:abc"})).code).toBe(0);
+		expect((await settle(fs, { claims: claimedBy("lane:abc"), token: "lane:abc" })).code).toBe(0);
 	});
 
 	it("reads an unreadable claim thread as UNKNOWN, never as unclaimed", async () => {
 		const fs = laneFs();
 
-		const out = await settle(fs, {claims: unreadableClaims});
+		const out = await settle(fs, { claims: unreadableClaims });
 
 		expect(out.code).toBe(LANE_UNREADABLE);
 		expect(fs.written.has(LOG)).toBe(false);
@@ -496,7 +496,7 @@ describe("lane settle — what never reaches a terminal", () => {
 			throw new Error("the board must not be read for a lane already terminal");
 		};
 
-		const out = await settle(fs, {closure: forbidden});
+		const out = await settle(fs, { closure: forbidden });
 
 		expect(out.code).toBe(EVENT_REFUSED);
 		expect(fs.written.has(LOG)).toBe(false);
@@ -504,7 +504,7 @@ describe("lane settle — what never reaches a terminal", () => {
 
 	it("refuses a chore lane: it drives no issue, so no closure can ever entitle it", async () => {
 		const fs = fakeFs({
-			files: {[`${DEFAULT_CHORES_ROOT}/park-sweep/workflow.json`]: choreTemplateText()},
+			files: { [`${DEFAULT_CHORES_ROOT}/park-sweep/workflow.json`]: choreTemplateText() },
 		});
 
 		const out = await Effect.runPromise(
@@ -512,7 +512,7 @@ describe("lane settle — what never reaches a terminal", () => {
 				runSettle({
 					root: DEFAULT_CHORES_ROOT,
 					lane: "park-sweep",
-					issue: {_tag: "Chore"},
+					issue: { _tag: "Chore" },
 					task: null,
 					token: null,
 					landedBy: null,
@@ -540,7 +540,7 @@ describe("lane settle — what never reaches a terminal", () => {
 				runSettle({
 					root: ROOT,
 					lane: LANE,
-					issue: {_tag: "Unnumbered"},
+					issue: { _tag: "Unnumbered" },
 					task: null,
 					token: null,
 					landedBy: null,
@@ -563,7 +563,7 @@ describe("lane settle — what never reaches a terminal", () => {
 	it("refuses a task that is not in the machine", async () => {
 		const fs = laneFs();
 
-		expect((await settle(fs, {task: "nope"})).code).toBe(TASK_UNKNOWN);
+		expect((await settle(fs, { task: "nope" })).code).toBe(TASK_UNKNOWN);
 	});
 
 	it("reads the board before it takes the write lock, so a holder never waits on the network", async () => {
@@ -574,21 +574,21 @@ describe("lane settle — what never reaches a terminal", () => {
 		// still happened, so it cannot have been sequenced behind the acquire.
 		process.env.FABRIKA_LANE_LOCK_BUDGET_MS = "120";
 		const fs = fakeFs({
-			files: {[WORKFLOW]: coderTemplateText(), [LOG]: PARKED},
-			dirs: {[ROOT]: [LANE]},
+			files: { [WORKFLOW]: coderTemplateText(), [LOG]: PARKED },
+			dirs: { [ROOT]: [LANE] },
 			directories: [ROOT],
 			mkdirExisting: [LOCK],
-			mtimes: {[LOCK]: new Date()},
+			mtimes: { [LOCK]: new Date() },
 		});
 		let reads = 0;
 		const counted: ClosureReader<never> = () =>
 			Effect.sync(() => {
 				reads += 1;
-				return {_tag: "Read" as const, state: "closed" as const, reason: "not_planned"};
+				return { _tag: "Read" as const, state: "closed" as const, reason: "not_planned" };
 			});
 
 		try {
-			const out = await settle(fs, {closure: counted});
+			const out = await settle(fs, { closure: counted });
 
 			expect(out.code).toBe(CONCURRENT_WRITE);
 			expect(reads).toBe(1);

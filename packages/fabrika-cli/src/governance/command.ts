@@ -15,22 +15,22 @@
  * than emit the parser's generic message.
  */
 
-import {Effect, type FileSystem, Option, type Path} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {corpusOverride, decisionsDirOr} from "../config/paths.ts";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStdin} from "../io/stdin.ts";
-import {TRUNK_DEFAULT_HELP} from "../io/trunk.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {runBase} from "./base-verb.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {runDigest} from "./digest-verb.ts";
-import {runGuards} from "./guards-verb.ts";
-import {runPost} from "./post-verb.ts";
-import {runReadout} from "./readout-verb.ts";
-import {runScope} from "./scope-verb.ts";
-import {runSweep} from "./sweep-verb.ts";
+import { Effect, type FileSystem, Option, type Path } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { corpusOverride, decisionsDirOr } from "../config/paths.ts";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStdin } from "../io/stdin.ts";
+import { TRUNK_DEFAULT_HELP } from "../io/trunk.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { runBase } from "./base-verb.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { runDigest } from "./digest-verb.ts";
+import { runGuards } from "./guards-verb.ts";
+import { runPost } from "./post-verb.ts";
+import { runReadout } from "./readout-verb.ts";
+import { runScope } from "./scope-verb.ts";
+import { runSweep } from "./sweep-verb.ts";
 
 const repoFlag = Flag.string("repo").pipe(
 	Flag.optional,
@@ -70,8 +70,8 @@ const corpusFor = (
 	verb: string,
 	declared: Option.Option<string>,
 ): Effect.Effect<
-	| {readonly _tag: "Dir"; readonly dir: string}
-	| {readonly _tag: "Stop"; readonly outcome: VerbOutcome},
+	| { readonly _tag: "Dir"; readonly dir: string }
+	| { readonly _tag: "Stop"; readonly outcome: VerbOutcome },
 	never,
 	FileSystem.FileSystem | Path.Path
 > =>
@@ -84,11 +84,11 @@ const corpusFor = (
 		);
 		switch (read._tag) {
 			case "Dir":
-				return {_tag: "Dir" as const, dir: read.dir};
+				return { _tag: "Dir" as const, dir: read.dir };
 			case "Declined":
-				return {_tag: "Stop" as const, outcome: refuse(ZERO_SCOPE, read.message)};
+				return { _tag: "Stop" as const, outcome: refuse(ZERO_SCOPE, read.message) };
 			case "Refused":
-				return {_tag: "Stop" as const, outcome: refuse(PRECONDITION_UNKNOWN, read.message)};
+				return { _tag: "Stop" as const, outcome: refuse(PRECONDITION_UNKNOWN, read.message) };
 		}
 	});
 
@@ -125,7 +125,7 @@ const scope = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({pr, sha, base, tip, repo, json}) {
+	Effect.fn(function* ({ pr, sha, base, tip, repo, json }) {
 		yield* emit(
 			yield* runScope({
 				pr: Option.getOrNull(pr),
@@ -152,8 +152,8 @@ const scope = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika governance scope 4321"},
-		{command: "fabrika governance scope --base 9f2c1ab --tip 03135b9"},
+		{ command: "fabrika governance scope 4321" },
+		{ command: "fabrika governance scope --base 9f2c1ab --tip 03135b9" },
 	]),
 );
 
@@ -185,7 +185,7 @@ const sweep = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({pr, record, landed, sha, dir, limit, repo, json}) {
+	Effect.fn(function* ({ pr, record, landed, sha, dir, limit, repo, json }) {
 		const corpus = yield* corpusFor("governance sweep", dir);
 		if (corpus._tag === "Stop") return yield* emit(corpus.outcome);
 		yield* emit(
@@ -215,15 +215,15 @@ const sweep = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika governance sweep 4321 --record 0240"},
-		{command: "fabrika governance sweep --landed 0240"},
+		{ command: "fabrika governance sweep 4321 --record 0240" },
+		{ command: "fabrika governance sweep --landed 0240" },
 	]),
 );
 
 const guards = leafCommand(
 	"guards",
-	{pr: prArgument, sha: shaFlag, repo: repoFlag, json: jsonFlag},
-	Effect.fn(function* ({pr, sha, repo, json}) {
+	{ pr: prArgument, sha: shaFlag, repo: repoFlag, json: jsonFlag },
+	Effect.fn(function* ({ pr, sha, repo, json }) {
 		yield* emit(
 			yield* runGuards({
 				pr,
@@ -247,7 +247,7 @@ const guards = leafCommand(
 			'  Derivation: the governance skill\'s contract.md, "governance guards"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika governance guards 4321"}]),
+	Command.withExamples([{ command: "fabrika governance guards 4321" }]),
 );
 
 const base = leafCommand(
@@ -264,7 +264,7 @@ const base = leafCommand(
 		tip: rangeTipFlag,
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({pr, path, base: rangeBase, tip, repo}) {
+	Effect.fn(function* ({ pr, path, base: rangeBase, tip, repo }) {
 		yield* emit(
 			yield* runBase({
 				pr: Option.getOrNull(pr),
@@ -289,8 +289,8 @@ const base = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika governance base 4321"},
-		{command: "fabrika governance base --base 9f2c1ab --tip 03135b9"},
+		{ command: "fabrika governance base 4321" },
+		{ command: "fabrika governance base --base 9f2c1ab --tip 03135b9" },
 	]),
 );
 
@@ -333,7 +333,7 @@ const post = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({pr, polarity, sha, clause, base, tip, supersede, repo, json}) {
+	Effect.fn(function* ({ pr, polarity, sha, clause, base, tip, supersede, repo, json }) {
 		yield* emit(
 			yield* runPost({
 				pr,
@@ -403,7 +403,7 @@ const digest = leafCommand(
 		),
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({since, until, dir, base: ref, json}) {
+	Effect.fn(function* ({ since, until, dir, base: ref, json }) {
 		const corpus = yield* corpusFor("governance digest", dir);
 		if (corpus._tag === "Stop") return yield* emit(corpus.outcome);
 		yield* emit(
@@ -430,7 +430,7 @@ const digest = leafCommand(
 			'  Derivation: the governance skill\'s contract.md, "governance digest"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika governance digest --since 2026-08-02"}]),
+	Command.withExamples([{ command: "fabrika governance digest --since 2026-08-02" }]),
 );
 
 const readout = leafCommand(
@@ -445,7 +445,7 @@ const readout = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({issue, repo, json}) {
+	Effect.fn(function* ({ issue, repo, json }) {
 		yield* emit(
 			yield* runReadout({
 				issue: Option.getOrNull(issue),

@@ -22,7 +22,7 @@
  * Zero scope is a refusal, not a pass: a suite that iterated an empty registry would run
  * no assertions and report green, which is the vacuous pass the law exists to forbid.
  */
-import type {WireFormat, WireReadLines} from "./format.ts";
+import type { WireFormat, WireReadLines } from "./format.ts";
 
 /** One broken law, named against the row that broke it. */
 export interface ConformanceFinding {
@@ -32,7 +32,7 @@ export interface ConformanceFinding {
 }
 
 export type ConformanceReport =
-	| {readonly _tag: "ZeroScope"; readonly scanned: 0; readonly reason: string}
+	| { readonly _tag: "ZeroScope"; readonly scanned: 0; readonly reason: string }
 	| {
 			readonly _tag: "Scanned";
 			readonly scanned: number;
@@ -58,10 +58,10 @@ const answerOf = (read: WireReadLines): string =>
 export const conformFormat = (format: WireFormat): ReadonlyArray<ConformanceFinding> => {
 	const findings: ConformanceFinding[] = [];
 	const fail = (law: string, detail: string): void => {
-		findings.push({format: format.key, law, detail});
+		findings.push({ format: format.key, law, detail });
 	};
 
-	const {roundTrip, found, absent, malformed} = format.fixtures;
+	const { roundTrip, found, absent, malformed } = format.fixtures;
 	const composed = format.emit(roundTrip.fields);
 	if (composed._tag !== "Composed") {
 		fail(LAWS.emits, `emit answered Unusable: ${composed.reason}`);
@@ -133,9 +133,9 @@ export const conformRegistry = (formats: ReadonlyArray<WireFormat>): Conformance
 		detail: `"${key}" is registered more than once — which row --format resolves to is undecidable`,
 	}));
 
-	return {_tag: "Scanned", scanned: formats.length, findings: [...findings, ...keyFindings]};
+	return { _tag: "Scanned", scanned: formats.length, findings: [...findings, ...keyFindings] };
 };
 
 /** One line per finding, for an assertion message a reader can act on without opening the row. */
 export const describeFindings = (findings: ReadonlyArray<ConformanceFinding>): string =>
-	findings.map(({format, law, detail}) => `${format}: ${law} — ${detail}`).join("\n");
+	findings.map(({ format, law, detail }) => `${format}: ${law} — ${detail}`).join("\n");

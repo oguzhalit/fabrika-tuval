@@ -1,9 +1,9 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, type FakeFs, fakeFs, fakeShell, okOut} from "../fakes.test-support.ts";
-import {OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {runDrift} from "./drift-verb.ts";
-import {DIR, LANGUAGE_NO_ROWS, REPO, TERMS, TERMS_PATH} from "./fixtures.test-support.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, type FakeFs, fakeFs, fakeShell, okOut } from "../fakes.test-support.ts";
+import { OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { runDrift } from "./drift-verb.ts";
+import { DIR, LANGUAGE_NO_ROWS, REPO, TERMS, TERMS_PATH } from "./fixtures.test-support.ts";
 
 const FIELD = "\u001f";
 const RECORD = "\u001e";
@@ -11,7 +11,7 @@ const RECORD = "\u001e";
 const commit = (sha: string, subject: string, body = "") =>
 	`${sha}${FIELD}${subject}${FIELD}${body}${RECORD}`;
 
-const options = {register: "terms", dir: DIR, paths: "", limit: 40, json: false, cwd: REPO};
+const options = { register: "terms", dir: DIR, paths: "", limit: 40, json: false, cwd: REPO };
 
 const shell = (
 	log: string,
@@ -31,11 +31,11 @@ const run = (
 	overrides: Partial<typeof options> = {},
 ) =>
 	Effect.runPromise(
-		Effect.provide(runDrift({...options, ...overrides}), Layer.merge(fs.layer, sh.layer)),
+		Effect.provide(runDrift({ ...options, ...overrides }), Layer.merge(fs.layer, sh.layer)),
 	);
 
 const populated = () =>
-	fakeFs({dirs: {"/repo/.glossary": ["TERMS.md"]}, files: {[TERMS_PATH]: TERMS}});
+	fakeFs({ dirs: { "/repo/.glossary": ["TERMS.md"] }, files: { [TERMS_PATH]: TERMS } });
 
 describe("runDrift", () => {
 	it("answers drift with one tab-separated line per candidate", async () => {
@@ -61,7 +61,7 @@ describe("runDrift", () => {
 	});
 
 	it("answers bootstrap for a --dir that was read and holds no register", async () => {
-		const out = await run(fakeFs({dirs: {"/repo/.glossary": []}, files: {}}), shell(""));
+		const out = await run(fakeFs({ dirs: { "/repo/.glossary": [] }, files: {} }), shell(""));
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("bootstrap\n");
 		expect(out.stderr.at(-1)).toContain("which is bootstrap, not empty drift");
@@ -69,8 +69,8 @@ describe("runDrift", () => {
 
 	it("answers bootstrap for a register that parses to zero rows", async () => {
 		const io = fakeFs({
-			dirs: {"/repo/.glossary": ["TERMS.md"]},
-			files: {[TERMS_PATH]: LANGUAGE_NO_ROWS},
+			dirs: { "/repo/.glossary": ["TERMS.md"] },
+			files: { [TERMS_PATH]: LANGUAGE_NO_ROWS },
 		});
 		const out = await run(io, shell(""));
 		expect(out.stdout).toBe("bootstrap\n");
@@ -86,7 +86,7 @@ describe("runDrift", () => {
 				[/git ls-files/, okOut("")],
 				[/git log -n 1/, okOut("abc1234 1700000000\n")],
 			]),
-			{paths: "no/such/dir"},
+			{ paths: "no/such/dir" },
 		);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stdout).toBe("");
@@ -96,7 +96,7 @@ describe("runDrift", () => {
 	});
 
 	it("refuses an unreadable --dir — the declared set is UNKNOWN, never `0 declared`", async () => {
-		const out = await run(fakeFs({dirs: {}, files: {}, unprobeable: [TERMS_PATH]}), shell(""));
+		const out = await run(fakeFs({ dirs: {}, files: {}, unprobeable: [TERMS_PATH] }), shell(""));
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain('never "0 declared"');
@@ -132,12 +132,12 @@ describe("runDrift", () => {
 	});
 
 	it("refuses an off-enum --register", async () => {
-		const out = await run(populated(), shell(""), {register: "sozluk"});
+		const out = await run(populated(), shell(""), { register: "sozluk" });
 		expect(out.code).toBe(OFF_VOCABULARY);
 	});
 
 	it("carries the counts the outcome is only readable against, in --json", async () => {
-		const out = await run(populated(), shell(""), {json: true});
+		const out = await run(populated(), shell(""), { json: true });
 		expect(JSON.parse(out.stdout)).toEqual({
 			outcome: "clean",
 			candidates: [],
@@ -153,7 +153,7 @@ describe("runDrift", () => {
 		const out = await run(
 			populated(),
 			shell(commit("aaa", "add capture ledger rotation policy today")),
-			{limit: 2},
+			{ limit: 2 },
 		);
 		expect(out.stdout.split("\n").filter((line) => line !== "")).toHaveLength(3);
 	});

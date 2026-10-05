@@ -5,8 +5,8 @@
  * Every literal below is a *shape*, not anyone's path — this file names the forbidden forms because
  * its subject is the rule, which is why it sits in `DOC_SELF_EXEMPT`.
  */
-import {describe, expect, it} from "vitest";
-import {DOC_SELF_EXEMPT, findLeaks, isSelfExempt, surfaceOf} from "./leak.ts";
+import { describe, expect, it } from "vitest";
+import { DOC_SELF_EXEMPT, findLeaks, isSelfExempt, surfaceOf } from "./leak.ts";
 
 const flags = (file: string, text: string): boolean => findLeaks(file, text).length > 0;
 

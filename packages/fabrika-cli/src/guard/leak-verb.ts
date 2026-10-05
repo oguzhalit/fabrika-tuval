@@ -12,11 +12,11 @@
  * and a skipped file is indistinguishable from a clean one: a gate that skips quietly passes.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import {exists, type ReadFailed, readFile} from "../io/fs.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {type Annotation, atFile} from "./annotate.ts";
-import {findLeaks, isSelfExempt, type ScannedFile, scopeLine, surfaceOf} from "./leak.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { exists, type ReadFailed, readFile } from "../io/fs.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { type Annotation, atFile } from "./annotate.ts";
+import { findLeaks, isSelfExempt, type ScannedFile, scopeLine, surfaceOf } from "./leak.ts";
 import {
 	annotationsOrNone,
 	clean,
@@ -52,9 +52,9 @@ const scanOne = (
 	Effect.gen(function* () {
 		const path = yield* Path.Path;
 		const target = path.resolve(root, file);
-		const shape = {file, surface: surfaceOf(file), exempt: isSelfExempt(file)};
-		if (!(yield* exists(target))) return {...shape, leaks: []};
-		return {...shape, leaks: findLeaks(file, yield* readFile(target))};
+		const shape = { file, surface: surfaceOf(file), exempt: isSelfExempt(file) };
+		if (!(yield* exists(target))) return { ...shape, leaks: [] };
+		return { ...shape, leaks: findLeaks(file, yield* readFile(target)) };
 	});
 
 const leakReport = (
@@ -63,7 +63,7 @@ const leakReport = (
 ): string =>
 	[
 		`${VERB}: machine-local path(s) in shared artifact surface(s) — ${scopeLine(scanned)}:`,
-		...flagged.flatMap(({file, leaks}) =>
+		...flagged.flatMap(({ file, leaks }) =>
 			leaks.map((leak) => `  ${file}: ${leak.matched} — ${leak.reason}`),
 		),
 		"",
@@ -73,7 +73,7 @@ const leakReport = (
 	].join("\n");
 
 const annotate = (flagged: ReadonlyArray<ScannedFile>): ReadonlyArray<Annotation> =>
-	flagged.flatMap(({file, leaks}) =>
+	flagged.flatMap(({ file, leaks }) =>
 		leaks.map((leak) =>
 			atFile(
 				"error",

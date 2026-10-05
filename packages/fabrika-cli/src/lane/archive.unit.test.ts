@@ -1,12 +1,12 @@
 /** The archive judgement, and the verb whose replay gate and claim retraction decide a move. */
-import {Effect, type FileSystem, type Path} from "effect";
-import {describe, expect, it} from "vitest";
-import type {Claimant} from "../build/claim.ts";
-import {fakeFs} from "../fakes.test-support.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {judgeArchive, judgeRetriage} from "./archive.ts";
-import {type ClaimRetractor, type ClaimsReader, runArchive} from "./archive-verb.ts";
-import type {ClaimHoldReader} from "./claim-hold.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { describe, expect, it } from "vitest";
+import type { Claimant } from "../build/claim.ts";
+import { fakeFs } from "../fakes.test-support.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { judgeArchive, judgeRetriage } from "./archive.ts";
+import { type ClaimRetractor, type ClaimsReader, runArchive } from "./archive-verb.ts";
+import type { ClaimHoldReader } from "./claim-hold.ts";
 import {
 	APPEND_UNKNOWN,
 	CLAIM_NOT_MINE,
@@ -18,15 +18,15 @@ import {
 	MIGRATION_UNSAFE,
 	NOT_DIAGNOSED,
 } from "./codes.ts";
-import {seatsIn} from "./concurrency.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
-import type {LogEntry} from "./fold.ts";
-import {runHistory} from "./history-verb.ts";
-import {type CompiledLane, compileText} from "./machine.ts";
-import {runMigrate} from "./migrate-verb.ts";
-import {runOpen} from "./open-verb.ts";
-import {runReconcile} from "./reconcile-verb.ts";
-import {DEFAULT_ARCHIVED_LANES_ROOT, DEFAULT_LANES_ROOT} from "./store.ts";
+import { seatsIn } from "./concurrency.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
+import type { LogEntry } from "./fold.ts";
+import { runHistory } from "./history-verb.ts";
+import { type CompiledLane, compileText } from "./machine.ts";
+import { runMigrate } from "./migrate-verb.ts";
+import { runOpen } from "./open-verb.ts";
+import { runReconcile } from "./reconcile-verb.ts";
+import { DEFAULT_ARCHIVED_LANES_ROOT, DEFAULT_LANES_ROOT } from "./store.ts";
 
 const ROOT = DEFAULT_LANES_ROOT;
 const ARCHIVED = DEFAULT_ARCHIVED_LANES_ROOT;
@@ -42,7 +42,11 @@ const compiled = (text: string): CompiledLane => {
 };
 
 const log = (...events: ReadonlyArray<string>): ReadonlyArray<LogEntry> =>
-	events.map((event) => ({task: "issue", event: `ISSUE.${event}`, at: "2026-08-19T00:00:00.000Z"}));
+	events.map((event) => ({
+		task: "issue",
+		event: `ISSUE.${event}`,
+		at: "2026-08-19T00:00:00.000Z",
+	}));
 
 const logText = (...events: ReadonlyArray<string>): string =>
 	`${log(...events)
@@ -122,7 +126,7 @@ describe("judgeArchive", () => {
 				compiled(lane),
 				log("WIP", "DONE"),
 			),
-		).toMatchObject({_tag: "Unjudgeable"});
+		).toMatchObject({ _tag: "Unjudgeable" });
 	});
 
 	it("is UNKNOWN when the grafted candidate does not compile", () => {
@@ -137,7 +141,7 @@ describe("judgeArchive", () => {
 				compiled(lane),
 				log("WIP", "DONE"),
 			),
-		).toMatchObject({_tag: "Unjudgeable"});
+		).toMatchObject({ _tag: "Unjudgeable" });
 	});
 });
 
@@ -147,7 +151,7 @@ const TOKEN = "lane:session-a:nonce-a";
 const claimant = (
 	commentId: number,
 	token: string,
-	overrides: Partial<{authorized: boolean; session: string}> = {},
+	overrides: Partial<{ authorized: boolean; session: string }> = {},
 ): Claimant => ({
 	commentId,
 	author: "usirin",
@@ -173,15 +177,15 @@ const unclaimed: ClaimsReader<never> = holds();
 const recorder = (failOn: number | null = null) => {
 	const deleted: number[] = [];
 	const retract: ClaimRetractor<never> = (_issue, commentId) => {
-		if (commentId === failOn) return Effect.succeed({_tag: "Failed" as const, reason: "403"});
+		if (commentId === failOn) return Effect.succeed({ _tag: "Failed" as const, reason: "403" });
 		deleted.push(commentId);
-		return Effect.succeed({_tag: "Retracted" as const});
+		return Effect.succeed({ _tag: "Retracted" as const });
 	};
-	return {deleted, retract};
+	return { deleted, retract };
 };
 
 const OPTIONS = {
-	ref: {root: ROOT, lane: "6037"},
+	ref: { root: ROOT, lane: "6037" },
 	route: "unreplayable" as const,
 	archivedRoot: ARCHIVED,
 	templatePaths: [TEMPLATE],
@@ -203,7 +207,7 @@ const brokenLane = (
 			[`${DIR}/events.jsonl`]: logText("PASS"),
 			...extra,
 		},
-		dirs: {[ROOT]: ["6037"], [ARCHIVED]: []},
+		dirs: { [ROOT]: ["6037"], [ARCHIVED]: [] },
 		directories: [ROOT, ARCHIVED, DIR, ...directories],
 	});
 
@@ -235,7 +239,7 @@ describe("lane archive", () => {
 	it("leaves the archived record readable through `lane history` at the archived root", async () => {
 		const fs = brokenLane();
 		await run(fs, runArchive(OPTIONS));
-		const out = await run(fs, runHistory({root: ARCHIVED, lane: "6037"}));
+		const out = await run(fs, runHistory({ root: ARCHIVED, lane: "6037" }));
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toEqual([...log("PASS")]);
@@ -250,22 +254,22 @@ describe("lane archive", () => {
 				[`${DIR}/workflow.json`]: widenedLaneText(),
 				[`${DIR}/events.jsonl`]: logText("PASS"),
 			},
-			dirs: {[ROOT]: ["6037"], [ARCHIVED]: []},
+			dirs: { [ROOT]: ["6037"], [ARCHIVED]: [] },
 			directories: [ROOT, ARCHIVED, DIR],
 		});
 		const migrate = () =>
 			runMigrate({
-				roots: [{root: ROOT, templatePaths: [TEMPLATE]}],
+				roots: [{ root: ROOT, templatePaths: [TEMPLATE] }],
 				check: true,
 				lane: null,
 				expectations: null,
 			});
 		const reconcile = () =>
 			runReconcile({
-				roots: [{root: ROOT, templatePaths: [TEMPLATE]}],
+				roots: [{ root: ROOT, templatePaths: [TEMPLATE] }],
 				check: true,
 				now: "2026-09-04T00:00:00.000Z",
-				closures: () => Effect.succeed({_tag: "Unknown", reason: "never asked"} as const),
+				closures: () => Effect.succeed({ _tag: "Unknown", reason: "never asked" } as const),
 			});
 
 		const migrateBefore = await run(fs, migrate());
@@ -286,11 +290,11 @@ describe("lane archive", () => {
 		// The tail of lane 8810: a granted round walked, spent again, and a DONE appended into the
 		// park that FAIL left. Its epic was open, which is what left the lane with no route at all.
 		const bricked = [
-			{task: "issue", event: "ISSUE.FAIL", at: "2026-09-10T06:15:00.000Z"},
-			{task: "issue", event: "ISSUE.CLEARED", at: "2026-09-10T06:20:51.000Z", round: 3},
-			{task: "issue", event: "ISSUE.UNBLOCKED", at: "2026-09-10T06:20:57.198Z"},
-			{task: "issue", event: "ISSUE.FAIL", at: "2026-09-10T06:28:50.863Z"},
-			{task: "issue", event: "ISSUE.DONE", at: "2026-09-10T06:35:12.051Z"},
+			{ task: "issue", event: "ISSUE.FAIL", at: "2026-09-10T06:15:00.000Z" },
+			{ task: "issue", event: "ISSUE.CLEARED", at: "2026-09-10T06:20:51.000Z", round: 3 },
+			{ task: "issue", event: "ISSUE.UNBLOCKED", at: "2026-09-10T06:20:57.198Z" },
+			{ task: "issue", event: "ISSUE.FAIL", at: "2026-09-10T06:28:50.863Z" },
+			{ task: "issue", event: "ISSUE.DONE", at: "2026-09-10T06:35:12.051Z" },
 		];
 		const text = `${bricked.map((entry) => JSON.stringify(entry)).join("\n")}\n`;
 		const fs = fakeFs({
@@ -299,27 +303,27 @@ describe("lane archive", () => {
 				[`${DIR}/workflow.json`]: coderTemplateText(),
 				[`${DIR}/events.jsonl`]: text,
 			},
-			dirs: {[ROOT]: ["6037"], [ARCHIVED]: []},
+			dirs: { [ROOT]: ["6037"], [ARCHIVED]: [] },
 			directories: [ROOT, ARCHIVED, DIR],
 		});
 		const out = await run(fs, runArchive(OPTIONS));
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "archived", to: MOVED});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "archived", to: MOVED });
 		expect(fs.written.get(`${MOVED}/events.jsonl`)).toBe(text);
 	});
 
 	it("frees the lane's laneConcurrencyCap seat, which a bricked ledger held as unaccountable", async () => {
 		const fs = brokenLane();
 		const held: ClaimHoldReader<never> = () =>
-			Effect.succeed({_tag: "Claimed" as const, token: TOKEN});
+			Effect.succeed({ _tag: "Claimed" as const, token: TOKEN });
 
 		const before = await Effect.runPromise(Effect.provide(seatsIn(ROOT, held), fs.layer));
-		await run(fs, runArchive({...OPTIONS, claims: holds(claimant(11, TOKEN)), token: TOKEN}));
+		await run(fs, runArchive({ ...OPTIONS, claims: holds(claimant(11, TOKEN)), token: TOKEN }));
 		const after = await Effect.runPromise(Effect.provide(seatsIn(ROOT, held), fs.layer));
 
-		expect(before).toMatchObject({seats: [{lane: "6037", held: "unaccountable"}]});
-		expect(after).toMatchObject({seats: []});
+		expect(before).toMatchObject({ seats: [{ lane: "6037", held: "unaccountable" }] });
+		expect(after).toMatchObject({ seats: [] });
 	});
 
 	it("refuses a log that replays, before the claim thread is ever asked", async () => {
@@ -330,7 +334,7 @@ describe("lane archive", () => {
 				[`${DIR}/workflow.json`]: coderTemplateText(),
 				[`${DIR}/events.jsonl`]: logText("WIP", "DONE"),
 			},
-			dirs: {[ROOT]: ["6037"], [ARCHIVED]: []},
+			dirs: { [ROOT]: ["6037"], [ARCHIVED]: [] },
 			directories: [ROOT, ARCHIVED, DIR],
 		});
 		const out = await run(
@@ -339,7 +343,7 @@ describe("lane archive", () => {
 				...OPTIONS,
 				claims: () => {
 					asked += 1;
-					return Effect.succeed({_tag: "Read", claimants: [], adopts: [], holder: null} as const);
+					return Effect.succeed({ _tag: "Read", claimants: [], adopts: [], holder: null } as const);
 				},
 			}),
 		);
@@ -356,7 +360,7 @@ describe("lane archive", () => {
 				[`${DIR}/workflow.json`]: emittedLaneText(),
 				[`${DIR}/events.jsonl`]: logText("WIP", "DONE"),
 			},
-			dirs: {[ROOT]: ["6037"], [ARCHIVED]: []},
+			dirs: { [ROOT]: ["6037"], [ARCHIVED]: [] },
 			directories: [ROOT, ARCHIVED, DIR],
 		});
 		const out = await run(fs, runArchive(OPTIONS));
@@ -374,7 +378,7 @@ describe("lane archive", () => {
 			fs,
 			runArchive({
 				...OPTIONS,
-				claims: () => Effect.succeed({_tag: "Unknown", reason: "rate limited"} as const),
+				claims: () => Effect.succeed({ _tag: "Unknown", reason: "rate limited" } as const),
 			}),
 		);
 
@@ -392,19 +396,19 @@ describe("lane archive", () => {
 				issue: null,
 				claims: () => {
 					asked += 1;
-					return Effect.succeed({_tag: "Read", claimants: [], adopts: [], holder: null} as const);
+					return Effect.succeed({ _tag: "Read", claimants: [], adopts: [], holder: null } as const);
 				},
 			}),
 		);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({issue: null, retracted: []});
+		expect(JSON.parse(out.stdout)).toMatchObject({ issue: null, retracted: [] });
 		expect(asked).toBe(0);
 	});
 
 	it("retracts every marker carrying the holder's token, and the adopt that authorized it", async () => {
 		const fs = brokenLane();
-		const {deleted, retract} = recorder();
+		const { deleted, retract } = recorder();
 		const claims: ClaimsReader<never> = () =>
 			Effect.succeed({
 				_tag: "Read" as const,
@@ -435,7 +439,7 @@ describe("lane archive", () => {
 				],
 				holder: claimant(11, TOKEN),
 			});
-		const out = await run(fs, runArchive({...OPTIONS, claims, retract, token: TOKEN}));
+		const out = await run(fs, runArchive({ ...OPTIONS, claims, retract, token: TOKEN }));
 
 		expect(out.code).toBe(0);
 		// A sibling driver's marker (13) and another session's adopt (15) are untouched.
@@ -445,10 +449,10 @@ describe("lane archive", () => {
 
 	it("refuses a live claim this caller did not name, leaving the directory and the marker", async () => {
 		const fs = brokenLane();
-		const {deleted, retract} = recorder();
+		const { deleted, retract } = recorder();
 		const out = await run(
 			fs,
-			runArchive({...OPTIONS, claims: holds(claimant(11, TOKEN)), retract, token: null}),
+			runArchive({ ...OPTIONS, claims: holds(claimant(11, TOKEN)), retract, token: null }),
 		);
 
 		expect(out.code).toBe(CLAIM_NOT_MINE);
@@ -460,9 +464,9 @@ describe("lane archive", () => {
 
 	it("refuses a retraction that failed, and never moves over the UNKNOWN it leaves", async () => {
 		const fs = brokenLane();
-		const {deleted, retract} = recorder(12);
+		const { deleted, retract } = recorder(12);
 		const claims = holds(claimant(11, TOKEN), claimant(12, TOKEN));
-		const out = await run(fs, runArchive({...OPTIONS, claims, retract, token: TOKEN}));
+		const out = await run(fs, runArchive({ ...OPTIONS, claims, retract, token: TOKEN }));
 
 		expect(out.code).toBe(APPEND_UNKNOWN);
 		expect(deleted).toEqual([11]);
@@ -476,14 +480,14 @@ describe("lane archive", () => {
 				[`${DIR}/workflow.json`]: coderTemplateText(),
 				[`${DIR}/events.jsonl`]: logText("PASS"),
 			},
-			dirs: {[ROOT]: ["6037"], [ARCHIVED]: []},
+			dirs: { [ROOT]: ["6037"], [ARCHIVED]: [] },
 			directories: [ROOT, ARCHIVED, DIR],
 			unrenamable: [DIR],
 		});
-		const {deleted, retract} = recorder();
+		const { deleted, retract } = recorder();
 		const out = await run(
 			fs,
-			runArchive({...OPTIONS, claims: holds(claimant(11, TOKEN)), retract, token: TOKEN}),
+			runArchive({ ...OPTIONS, claims: holds(claimant(11, TOKEN)), retract, token: TOKEN }),
 		);
 
 		expect(out.code).toBe(APPEND_UNKNOWN);
@@ -492,8 +496,8 @@ describe("lane archive", () => {
 
 	it("refuses a lane that is not there", async () => {
 		const fs = fakeFs({
-			files: {[TEMPLATE]: coderTemplateText()},
-			dirs: {[ROOT]: []},
+			files: { [TEMPLATE]: coderTemplateText() },
+			dirs: { [ROOT]: [] },
 			directories: [ROOT, ARCHIVED],
 		});
 		const out = await run(fs, runArchive(OPTIONS));
@@ -502,7 +506,7 @@ describe("lane archive", () => {
 	});
 
 	it("refuses rather than moving onto an archived lane already at the destination", async () => {
-		const fs = brokenLane({[`${MOVED}/workflow.json`]: coderTemplateText()}, [MOVED]);
+		const fs = brokenLane({ [`${MOVED}/workflow.json`]: coderTemplateText() }, [MOVED]);
 		const out = await run(fs, runArchive(OPTIONS));
 
 		expect(out.code).toBe(LANE_EXISTS);
@@ -516,7 +520,7 @@ describe("lane archive", () => {
 				[`${DIR}/workflow.json`]: coderTemplateText(),
 				[`${DIR}/events.jsonl`]: logText("PASS"),
 			},
-			dirs: {[ROOT]: ["6037"], [ARCHIVED]: []},
+			dirs: { [ROOT]: ["6037"], [ARCHIVED]: [] },
 			directories: [ROOT, ARCHIVED, DIR],
 			unrenamable: [DIR],
 		});
@@ -533,7 +537,7 @@ describe("lane archive", () => {
 				[`${DIR}/workflow.json`]: coderTemplateText(),
 				[`${DIR}/events.jsonl`]: logText("PASS"),
 			},
-			dirs: {[ROOT]: ["6037"], [ARCHIVED]: []},
+			dirs: { [ROOT]: ["6037"], [ARCHIVED]: [] },
 			directories: [ROOT, ARCHIVED, DIR],
 			unprobeable: [`${MOVED}/workflow.json`],
 		});
@@ -543,8 +547,11 @@ describe("lane archive", () => {
 	});
 
 	it("judges a relocated root's lane by its own machine id, with both templates offered", async () => {
-		const fs = brokenLane({[CHORE_TEMPLATE]: coderTemplateText()});
-		const out = await run(fs, runArchive({...OPTIONS, templatePaths: [CHORE_TEMPLATE, TEMPLATE]}));
+		const fs = brokenLane({ [CHORE_TEMPLATE]: coderTemplateText() });
+		const out = await run(
+			fs,
+			runArchive({ ...OPTIONS, templatePaths: [CHORE_TEMPLATE, TEMPLATE] }),
+		);
 
 		expect(out.code).toBe(0);
 	});
@@ -552,7 +559,7 @@ describe("lane archive", () => {
 
 /** A builder's no-PR finish: the lane entered build and its `DONE` was proven off a diagnosis comment. */
 const DIAGNOSED_LOG: ReadonlyArray<LogEntry> = [
-	{task: "issue", event: "ISSUE.WIP", at: "2026-09-29T17:00:00.000Z"},
+	{ task: "issue", event: "ISSUE.WIP", at: "2026-09-29T17:00:00.000Z" },
 	{
 		task: "issue",
 		event: "ISSUE.DONE",
@@ -565,7 +572,7 @@ const DIAGNOSED_LOG: ReadonlyArray<LogEntry> = [
 const jsonl = (entries: ReadonlyArray<LogEntry>): string =>
 	`${entries.map((entry) => JSON.stringify(entry)).join("\n")}\n`;
 
-const RETRIAGED = {...OPTIONS, route: "retriaged" as const, templatePaths: []};
+const RETRIAGED = { ...OPTIONS, route: "retriaged" as const, templatePaths: [] };
 
 /** A lane on disk under the lanes root holding `entries`, with room for whatever `extra` pre-seeds. */
 const laneOnDisk = (
@@ -580,7 +587,7 @@ const laneOnDisk = (
 			[`${DIR}/events.jsonl`]: jsonl(entries),
 			...extra,
 		},
-		dirs: {[ROOT]: ["6037"], [ARCHIVED]: []},
+		dirs: { [ROOT]: ["6037"], [ARCHIVED]: [] },
 		directories: [ROOT, ARCHIVED, DIR, ...directories],
 	});
 
@@ -633,15 +640,15 @@ describe("lane archive --retriaged", () => {
 				expectation: () =>
 					Effect.succeed({
 						_tag: "Read" as const,
-						expectation: {_tag: "Single" as const},
+						expectation: { _tag: "Single" as const },
 						classes: [],
 					}),
-				priorLane: () => Effect.succeed({_tag: "Fresh" as const}),
+				priorLane: () => Effect.succeed({ _tag: "Fresh" as const }),
 				fromBoard: false,
 				boardSeat: null,
 				record: null,
-				cap: {_tag: "Value", value: null, note: "test"} as const,
-				claimed: () => Effect.succeed({_tag: "Unclaimed"} as const),
+				cap: { _tag: "Value", value: null, note: "test" } as const,
+				claimed: () => Effect.succeed({ _tag: "Unclaimed" } as const),
 			});
 
 		const before = await run(fs, open());
@@ -650,17 +657,17 @@ describe("lane archive --retriaged", () => {
 
 		expect(before.code).toBe(LANE_EXISTS);
 		expect(after.code).toBe(0);
-		expect(JSON.parse(after.stdout)).toMatchObject({answer: "opened", lane: "6037"});
+		expect(JSON.parse(after.stdout)).toMatchObject({ answer: "opened", lane: "6037" });
 		expect(fs.written.get(`${DIR}/workflow.json`)).toBe(coderTemplateText());
 		expect(fs.written.get(`${MOVED}/events.jsonl`)).toBe(jsonl(DIAGNOSED_LOG));
 	});
 
 	it("refuses a lane folded to any other final, touching nothing", async () => {
 		const fs = laneOnDisk(log("WIP", "DONE", "PASS", "DONE"));
-		const {deleted, retract} = recorder();
+		const { deleted, retract } = recorder();
 		const out = await run(
 			fs,
-			runArchive({...RETRIAGED, claims: holds(claimant(11, TOKEN)), retract, token: TOKEN}),
+			runArchive({ ...RETRIAGED, claims: holds(claimant(11, TOKEN)), retract, token: TOKEN }),
 		);
 
 		expect(out.code).toBe(NOT_DIAGNOSED);
@@ -680,7 +687,7 @@ describe("lane archive --retriaged", () => {
 	it("refuses a diagnosed lane whose log names a pull request", async () => {
 		const [wip, done] = DIAGNOSED_LOG;
 		if (wip === undefined || done === undefined) throw new Error("fixture");
-		const fs = laneOnDisk([wip, {...done, pr: "pull-request-1"}]);
+		const fs = laneOnDisk([wip, { ...done, pr: "pull-request-1" }]);
 		const out = await run(fs, runArchive(RETRIAGED));
 
 		expect(out.code).toBe(NOT_DIAGNOSED);
@@ -692,10 +699,10 @@ describe("lane archive --retriaged", () => {
 		const [, diagnosis] = DIAGNOSED_LOG;
 		if (diagnosis === undefined) throw new Error("fixture");
 		const fs = laneOnDisk([...log("WIP", "DONE", "FAIL"), diagnosis]);
-		const {deleted, retract} = recorder();
+		const { deleted, retract } = recorder();
 		const out = await run(
 			fs,
-			runArchive({...RETRIAGED, claims: holds(claimant(11, TOKEN)), retract, token: TOKEN}),
+			runArchive({ ...RETRIAGED, claims: holds(claimant(11, TOKEN)), retract, token: TOKEN }),
 		);
 
 		expect(out.code).toBe(NOT_DIAGNOSED);
@@ -718,13 +725,13 @@ describe("lane archive --retriaged", () => {
 		const second = `${ARCHIVED}/6037.archived-2`;
 		const fs = laneOnDisk(
 			DIAGNOSED_LOG,
-			{[`${MOVED}/workflow.json`]: coderTemplateText(), [first]: "earlier\n"},
+			{ [`${MOVED}/workflow.json`]: coderTemplateText(), [first]: "earlier\n" },
 			[MOVED],
 		);
 		const out = await run(fs, runArchive(RETRIAGED));
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({to: second});
+		expect(JSON.parse(out.stdout)).toMatchObject({ to: second });
 		expect(fs.written.get(`${second}/events.jsonl`)).toBe(jsonl(DIAGNOSED_LOG));
 		// The earlier archive is never written over.
 		expect(fs.written.has(first)).toBe(false);
@@ -732,7 +739,7 @@ describe("lane archive --retriaged", () => {
 	});
 
 	it("keeps the unreplayable route's refusal of an occupied key", async () => {
-		const fs = brokenLane({[`${MOVED}/workflow.json`]: coderTemplateText()}, [MOVED]);
+		const fs = brokenLane({ [`${MOVED}/workflow.json`]: coderTemplateText() }, [MOVED]);
 		const out = await run(fs, runArchive(OPTIONS));
 
 		expect(out.code).toBe(LANE_EXISTS);
@@ -741,10 +748,10 @@ describe("lane archive --retriaged", () => {
 
 	it("retracts the live lane claim under the caller's token before moving", async () => {
 		const fs = laneOnDisk(DIAGNOSED_LOG);
-		const {deleted, retract} = recorder();
+		const { deleted, retract } = recorder();
 		const out = await run(
 			fs,
-			runArchive({...RETRIAGED, claims: holds(claimant(11, TOKEN)), retract, token: TOKEN}),
+			runArchive({ ...RETRIAGED, claims: holds(claimant(11, TOKEN)), retract, token: TOKEN }),
 		);
 
 		expect(out.code).toBe(0);
@@ -754,10 +761,10 @@ describe("lane archive --retriaged", () => {
 
 	it("refuses a live lane claim this caller did not name, leaving lane and marker", async () => {
 		const fs = laneOnDisk(DIAGNOSED_LOG);
-		const {deleted, retract} = recorder();
+		const { deleted, retract } = recorder();
 		const out = await run(
 			fs,
-			runArchive({...RETRIAGED, claims: holds(claimant(11, TOKEN)), retract, token: null}),
+			runArchive({ ...RETRIAGED, claims: holds(claimant(11, TOKEN)), retract, token: null }),
 		);
 
 		expect(out.code).toBe(CLAIM_NOT_MINE);

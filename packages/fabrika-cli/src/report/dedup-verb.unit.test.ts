@@ -1,10 +1,10 @@
-import {NodeCrypto} from "@effect/platform-node";
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeFs, fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import {NO_TARGET, QUEUE_UNREADABLE, SEARCH_UNREADABLE} from "./codes.ts";
-import {runDedup} from "./dedup-verb.ts";
-import {IndexSnapshot} from "./index-cache.ts";
+import { NodeCrypto } from "@effect/platform-node";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeFs, fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import { NO_TARGET, QUEUE_UNREADABLE, SEARCH_UNREADABLE } from "./codes.ts";
+import { runDedup } from "./dedup-verb.ts";
+import { IndexSnapshot } from "./index-cache.ts";
 
 const LABELS = /repos\/o\/r\/labels/;
 const QUEUE = /repos\/o\/r\/issues\?state=open&labels=/;
@@ -13,13 +13,13 @@ const SEARCH = /repos\/o\/r\/issues\?state=open&sort=/;
 /** A label-set page: the endpoint answers `[{name}]`, not one name per line. */
 const labelSet = (...names: ReadonlyArray<string>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(names.map((name) => ({name}))),
+	body: JSON.stringify(names.map((name) => ({ name }))),
 });
 
 const issueRows = (...rows: ReadonlyArray<readonly [number, string]>): HttpReply => ({
 	status: 200,
 	body: JSON.stringify(
-		rows.map(([number, title]) => ({number, title, body: "", state: "open", closed_at: null})),
+		rows.map(([number, title]) => ({ number, title, body: "", state: "open", closed_at: null })),
 	),
 });
 
@@ -33,13 +33,13 @@ const options = {
 	repo: null,
 	json: false,
 	exclude: null as number | null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 };
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
 		Effect.provide(
-			runDedup({...options, ...overrides}),
+			runDedup({ ...options, ...overrides }),
 			Layer.mergeAll(fakeSeams(script).layer, fakeFs({}).layer, NodeCrypto.layer),
 		),
 	);
@@ -67,7 +67,7 @@ describe("runDedup", () => {
 		const title = "Abort reason lost when the retry helper re-wraps the request";
 		const out = await run(
 			[labelsOk, [QUEUE, issueRows([4312, title])], [SEARCH, searchHits([4312, title])]],
-			{exclude: 4312},
+			{ exclude: 4312 },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("none\n");
@@ -87,7 +87,7 @@ describe("runDedup", () => {
 	});
 
 	it("exits 0 on indeterminate below the two-token floor", async () => {
-		const out = await run([labelsOk], {query: "the thing"});
+		const out = await run([labelsOk], { query: "the thing" });
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("indeterminate\n");
 		expect(out.stderr.join("\n")).toContain("below the floor of 2");
@@ -112,7 +112,7 @@ describe("runDedup", () => {
 	});
 
 	it("refuses an UNREADABLE label set as UNKNOWN — never as `the label is missing`", async () => {
-		const out = await run([[LABELS, {status: 502, body: "{}"}]]);
+		const out = await run([[LABELS, { status: 502, body: "{}" }]]);
 		expect(out.code).toBe(QUEUE_UNREADABLE);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain("UNKNOWN");
@@ -121,7 +121,7 @@ describe("runDedup", () => {
 	it("refuses an unreadable queue — UNKNOWN, never `none`", async () => {
 		const out = await run([
 			labelsOk,
-			[QUEUE, {status: 404, body: '{"message":"Not Found"}'}],
+			[QUEUE, { status: 404, body: '{"message":"Not Found"}' }],
 			[SEARCH, searchHits()],
 		]);
 		expect(out.code).toBe(QUEUE_UNREADABLE);
@@ -133,7 +133,7 @@ describe("runDedup", () => {
 		const out = await run([
 			labelsOk,
 			[QUEUE, issueRows()],
-			[SEARCH, {status: 429, body: '{"message":"rate limited"}'}],
+			[SEARCH, { status: 429, body: '{"message":"rate limited"}' }],
 		]);
 		expect(out.code).toBe(SEARCH_UNREADABLE);
 		expect(out.stdout).toBe("");
@@ -142,8 +142,8 @@ describe("runDedup", () => {
 	it("reports the QUEUE's code when both fail, and names both failures", async () => {
 		const out = await run([
 			labelsOk,
-			[QUEUE, {status: 503, body: "{}"}],
-			[SEARCH, {status: 429, body: "{}"}],
+			[QUEUE, { status: 503, body: "{}" }],
+			[SEARCH, { status: 429, body: "{}" }],
 		]);
 		expect(out.code).toBe(QUEUE_UNREADABLE);
 		expect(out.stderr.at(-1)).toContain("HTTP 503");
@@ -153,7 +153,7 @@ describe("runDedup", () => {
 	it("refuses a 200 whose body is not a list of issues", async () => {
 		const out = await run([
 			labelsOk,
-			[QUEUE, {status: 200, body: JSON.stringify([{title: "no number"}])}],
+			[QUEUE, { status: 200, body: JSON.stringify([{ title: "no number" }]) }],
 			[SEARCH, searchHits()],
 		]);
 		expect(out.code).toBe(QUEUE_UNREADABLE);
@@ -163,7 +163,7 @@ describe("runDedup", () => {
 	it("puts the --json payload on STDOUT, with both source counts", async () => {
 		const out = await run(
 			[labelsOk, [QUEUE, issueRows([4312, "retry helper abort reason"])], [SEARCH, searchHits()]],
-			{json: true},
+			{ json: true },
 		);
 		const payload = JSON.parse(out.stdout);
 		expect(payload.outcome).toBe("candidates");
@@ -195,7 +195,7 @@ describe("runDedup", () => {
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runDedup({...options, query: LONG_QUERY, json: true}),
+				runDedup({ ...options, query: LONG_QUERY, json: true }),
 				Layer.mergeAll(seams.layer, fakeFs({}).layer, NodeCrypto.layer),
 			),
 		);
@@ -216,17 +216,17 @@ describe("runDedup", () => {
 			labelsOk,
 			[QUEUE, issueRows()],
 			[SEARCH, issueRows()],
-			[/state=closed/, {status: 200, body: JSON.stringify([closed])}],
+			[/state=closed/, { status: 200, body: JSON.stringify([closed]) }],
 		] as const;
-		const json = await run(script, {closedDays: 14, json: true});
+		const json = await run(script, { closedDays: 14, json: true });
 		expect(json.code).toBe(0);
 		expect(JSON.parse(json.stdout)).toMatchObject({
-			candidates: [{number: 42, state: "closed"}],
-			cache: {source: "fetched", ageMs: 0},
+			candidates: [{ number: 42, state: "closed" }],
+			cache: { source: "fetched", ageMs: 0 },
 			indexCount: 1,
 		});
 		expect(JSON.parse(json.stdout).closedSince).toMatch(/^\d{4}-/);
-		const line = await run(script, {closedDays: 14});
+		const line = await run(script, { closedDays: 14 });
 		expect(line.stdout).toContain("\tclosed\tretry helper");
 	});
 
@@ -236,22 +236,22 @@ describe("runDedup", () => {
 				labelsOk,
 				[QUEUE, issueRows()],
 				[SEARCH, issueRows()],
-				[/state=closed/, {status: 503, body: "{}"}],
+				[/state=closed/, { status: 503, body: "{}" }],
 			],
-			{closedDays: 14},
+			{ closedDays: 14 },
 		);
 		expect(out.code).toBe(SEARCH_UNREADABLE);
 		expect(out.stdout).toBe("");
 	});
 
 	it.each([-1, 36501])("refuses invalid closed window %s", async (closedDays) => {
-		const out = await run([], {closedDays});
+		const out = await run([], { closedDays });
 		expect(out.code).toBe(1);
 		expect(out.stdout).toBe("");
 	});
 
 	it("says on stderr when the cap truncated the list", async () => {
-		const rows = Array.from({length: 4}, (_, i) => [i + 1, "retry helper abort reason"] as const);
+		const rows = Array.from({ length: 4 }, (_, i) => [i + 1, "retry helper abort reason"] as const);
 		const out = await run([labelsOk, [QUEUE, issueRows(...rows)], [SEARCH, searchHits()]], {
 			limit: 2,
 		});
@@ -260,13 +260,13 @@ describe("runDedup", () => {
 	});
 
 	it("refuses an empty --query as a usage error", async () => {
-		const out = await run([labelsOk], {query: "   "});
+		const out = await run([labelsOk], { query: "   " });
 		expect(out.code).toBe(1);
 		expect(out.stdout).toBe("");
 	});
 
 	it("refuses when no target repo resolves", async () => {
-		const out = await run([[/git remote get-url/, errOut("no origin")]], {env: {}});
+		const out = await run([[/git remote get-url/, errOut("no origin")]], { env: {} });
 		expect(out.code).toBe(1);
 		expect(out.stderr.at(-1)).toContain("CLAUDE_PIPELINE_REPO");
 	});
@@ -280,18 +280,18 @@ it("reads the live queue even on a cache hit and overlays a new report", async (
 		fetchedAt: Date.now(),
 		issues: [],
 	});
-	const fs = fakeFs({files: {"/cache/fabrika/dedup/o%2Fr-0.json": JSON.stringify(cached)}});
+	const fs = fakeFs({ files: { "/cache/fabrika/dedup/o%2Fr-0.json": JSON.stringify(cached) } });
 	const seams = fakeSeams([labelsOk, [QUEUE, issueRows([999, "retry helper"])]]);
 	const out = await Effect.runPromise(
 		Effect.provide(
-			runDedup({...options, json: true, env: {...options.env, XDG_CACHE_HOME: "/cache"}}),
+			runDedup({ ...options, json: true, env: { ...options.env, XDG_CACHE_HOME: "/cache" } }),
 			Layer.mergeAll(fs.layer, seams.layer, NodeCrypto.layer),
 		),
 	);
 	expect(out.code).toBe(0);
 	expect(JSON.parse(out.stdout)).toMatchObject({
-		candidates: [{number: 999, source: "queue"}],
-		cache: {source: "cache"},
+		candidates: [{ number: 999, source: "queue" }],
+		cache: { source: "cache" },
 	});
 	expect(seams.requests).toHaveLength(2);
 });

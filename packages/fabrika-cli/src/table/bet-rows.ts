@@ -8,10 +8,10 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9913
  */
 
-import type {ProjectItem} from "../io/projects.ts";
-import {BET_STAGE} from "./bets.ts";
-import {type GroupKind, groupOf, type IssueGraph, issuesOf, kindOf} from "./group.ts";
-import {FIELD} from "./shape.ts";
+import type { ProjectItem } from "../io/projects.ts";
+import { BET_STAGE } from "./bets.ts";
+import { type GroupKind, groupOf, type IssueGraph, issuesOf, kindOf } from "./group.ts";
+import { FIELD } from "./shape.ts";
 
 /** One `bet` cell off the table, before its group is derived. */
 export interface BetCell {
@@ -58,9 +58,9 @@ export const betCellsOf = (
 	});
 
 export type BetRows =
-	| {readonly _tag: "Derived"; readonly rows: ReadonlyArray<BetRow>}
+	| { readonly _tag: "Derived"; readonly rows: ReadonlyArray<BetRow> }
 	/** The graph lacks these nodes, so some row's group is not decidable yet. */
-	| {readonly _tag: "Incomplete"; readonly missing: ReadonlyArray<number>};
+	| { readonly _tag: "Incomplete"; readonly missing: ReadonlyArray<number> };
 
 /** Each cell's group, through the one membership module, so no reader disagrees with sync. */
 export const betRowsOf = (cells: ReadonlyArray<BetCell>, graph: IssueGraph): BetRows => {
@@ -73,9 +73,9 @@ export const betRowsOf = (cells: ReadonlyArray<BetCell>, graph: IssueGraph): Bet
 			for (const issue of membership.missing) missing.add(issue);
 			continue;
 		}
-		rows.push({...cell, kind: kindOf(membership.group), covers: issuesOf(membership.group)});
+		rows.push({ ...cell, kind: kindOf(membership.group), covers: issuesOf(membership.group) });
 	}
 	return missing.size > 0
-		? {_tag: "Incomplete", missing: [...missing].sort((a, b) => a - b)}
-		: {_tag: "Derived", rows};
+		? { _tag: "Incomplete", missing: [...missing].sort((a, b) => a - b) }
+		: { _tag: "Derived", rows };
 };

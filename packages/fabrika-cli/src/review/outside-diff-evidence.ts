@@ -23,15 +23,15 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9200
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {getIssue} from "../io/issues.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { getIssue } from "../io/issues.ts";
 import type {
 	AcceptanceCriterion,
 	CriterionText,
 	EvidenceSource,
 } from "../wire/acceptance-criteria.ts";
-import {read as readCriteria} from "../wire/acceptance-criteria.ts";
+import { read as readCriteria } from "../wire/acceptance-criteria.ts";
 
 /** One criterion the contract marked, and the source it named. */
 export interface MarkedCriterion {
@@ -44,7 +44,7 @@ export const marked = (
 	criteria: ReadonlyArray<AcceptanceCriterion>,
 ): ReadonlyArray<MarkedCriterion> =>
 	criteria.flatMap((criterion) =>
-		criterion.evidence === null ? [] : [{text: criterion.text, evidence: criterion.evidence}],
+		criterion.evidence === null ? [] : [{ text: criterion.text, evidence: criterion.evidence }],
 	);
 
 /**
@@ -54,7 +54,7 @@ export const marked = (
  * verdict rested on rather than only that it rested on some.
  */
 export type EvidenceGrade =
-	| {readonly _tag: "Pass"; readonly named: ReadonlyArray<MarkedCriterion>}
+	| { readonly _tag: "Pass"; readonly named: ReadonlyArray<MarkedCriterion> }
 	| {
 			readonly _tag: "Fail";
 			readonly missing: ReadonlyArray<MarkedCriterion>;
@@ -85,7 +85,7 @@ export const gradeEvidence = (
 	const rows = marked(criteria);
 	const named = rows.filter((row) => namesEvidence(verdictBody, row.evidence));
 	const missing = rows.filter((row) => !namesEvidence(verdictBody, row.evidence));
-	return missing.length === 0 ? {_tag: "Pass", named} : {_tag: "Fail", missing, named};
+	return missing.length === 0 ? { _tag: "Pass", named } : { _tag: "Fail", missing, named };
 };
 
 /** One `  - "<criterion>" — evidence: <source>` line per row, for a refusal that has to quote them. */
@@ -95,7 +95,7 @@ export const quoteRows = (rows: ReadonlyArray<MarkedCriterion>): string =>
 /** What the issues this verdict is about say about evidence the body still owes. */
 export type OwedRead =
 	/** Proven: every marked criterion on every issue read is named in the body. */
-	| {readonly _tag: "None"}
+	| { readonly _tag: "None" }
 	/** `issue`'s contract marks criteria this body cites no evidence for. */
 	| {
 			readonly _tag: "Unnamed";
@@ -103,7 +103,7 @@ export type OwedRead =
 			readonly missing: ReadonlyArray<MarkedCriterion>;
 	  }
 	/** A read that could not be completed — never collapsed into {@link None}. */
-	| {readonly _tag: "Unreadable"; readonly issue: number; readonly reason: string};
+	| { readonly _tag: "Unreadable"; readonly issue: number; readonly reason: string };
 
 /**
  * Read every issue in `issues` for a marked criterion this body names no evidence for, stopping at
@@ -127,7 +127,7 @@ export const evidenceOwed = (
 		for (const issue of issues) {
 			const found = yield* getIssue(repo, issue);
 			if (found._tag === "Unknown") {
-				return {_tag: "Unreadable" as const, issue, reason: found.reason};
+				return { _tag: "Unreadable" as const, issue, reason: found.reason };
 			}
 			// A 404 is a fact about the repository: an issue that is not there carries no contract.
 			if (found._tag === "Absent") continue;
@@ -142,8 +142,8 @@ export const evidenceOwed = (
 			if (block._tag === "Absent") continue;
 			const grade = gradeEvidence(block.value, verdictBody);
 			if (grade._tag === "Fail") {
-				return {_tag: "Unnamed" as const, issue, missing: grade.missing};
+				return { _tag: "Unnamed" as const, issue, missing: grade.missing };
 			}
 		}
-		return {_tag: "None" as const};
+		return { _tag: "None" as const };
 	});

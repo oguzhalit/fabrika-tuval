@@ -12,13 +12,18 @@
  * cause, the lane classes, the wait grant, and {@link floorQueueWait}, the elapsed-time floor a
  * queue re-fold clears before it may spend a wait.
  */
-import {CONFIG_PATH} from "../config/document.ts";
-import {PARK_CAUSE, type ParkCauseSurface} from "../config/keys/park-cause.ts";
-import {SHIP_CLASS_NAMES} from "../review/classes.ts";
-import {WAIT_FLOOR_SECONDS} from "../wait-budget.ts";
-import {INTEGRATE_STATE} from "./integrate-failure.ts";
-import {type CompiledLane, MACHINERY_EVENT, type OperatorEvent, type TaskState} from "./machine.ts";
-import {BUILD_STATES, REVIEW_STATE, REVIEW_UI_STATE, SHIP_STATES} from "./prove.ts";
+import { CONFIG_PATH } from "../config/document.ts";
+import { PARK_CAUSE, type ParkCauseSurface } from "../config/keys/park-cause.ts";
+import { SHIP_CLASS_NAMES } from "../review/classes.ts";
+import { WAIT_FLOOR_SECONDS } from "../wait-budget.ts";
+import { INTEGRATE_STATE } from "./integrate-failure.ts";
+import {
+	type CompiledLane,
+	MACHINERY_EVENT,
+	type OperatorEvent,
+	type TaskState,
+} from "./machine.ts";
+import { BUILD_STATES, REVIEW_STATE, REVIEW_UI_STATE, SHIP_STATES } from "./prove.ts";
 
 /**
  * Every recognised terminal token, grouped by the shell skill that owns its vocabulary — the
@@ -122,8 +127,8 @@ export type VocabularyGroup = keyof typeof SHELL_VOCABULARIES;
 
 /** Where a group's reporter runs: a closed list of leaf states, or wherever the task stands. */
 export type Serves =
-	| {readonly _tag: "States"; readonly states: ReadonlyArray<string>}
-	| {readonly _tag: "Anywhere"};
+	| { readonly _tag: "States"; readonly states: ReadonlyArray<string> }
+	| { readonly _tag: "Anywhere" };
 
 /**
  * The leaf states each vocabulary group serves — the half of a report the token alone cannot say.
@@ -139,12 +144,12 @@ export type Serves =
  * @ruling https://github.com/kamp-us/phoenix/issues/10120
  */
 export const GROUP_SERVES: Readonly<Record<VocabularyGroup, Serves>> = {
-	builder: {_tag: "States", states: BUILD_STATES},
-	reviewer: {_tag: "States", states: [REVIEW_STATE]},
-	"ui-reviewer": {_tag: "States", states: [REVIEW_UI_STATE]},
-	machinery: {_tag: "Anywhere"},
-	shipper: {_tag: "States", states: SHIP_STATES},
-	integrator: {_tag: "States", states: [INTEGRATE_STATE]},
+	builder: { _tag: "States", states: BUILD_STATES },
+	reviewer: { _tag: "States", states: [REVIEW_STATE] },
+	"ui-reviewer": { _tag: "States", states: [REVIEW_UI_STATE] },
+	machinery: { _tag: "Anywhere" },
+	shipper: { _tag: "States", states: SHIP_STATES },
+	integrator: { _tag: "States", states: [INTEGRATE_STATE] },
 };
 
 const servesLeaf = (serves: Serves, leaf: string): boolean =>
@@ -154,8 +159,8 @@ const describeServes = (serves: Serves): string =>
 	serves._tag === "Anywhere" ? "any state" : serves.states.map((s) => `"${s}"`).join(" / ");
 
 export type Service =
-	| {readonly _tag: "Served"; readonly by: ReadonlyArray<VocabularyGroup>}
-	| {readonly _tag: "Unserved"; readonly reason: string};
+	| { readonly _tag: "Served"; readonly by: ReadonlyArray<VocabularyGroup> }
+	| { readonly _tag: "Unserved"; readonly reason: string };
 
 /**
  * Whether any group owning this token serves the task's leaf. A token several groups share (`PASS`,
@@ -168,7 +173,7 @@ export const serviceAt = (token: string, leaf: string): Service => {
 		(group) => Object.hasOwn(SHELL_VOCABULARIES[group], canonical),
 	);
 	const by = owners.filter((group) => servesLeaf(GROUP_SERVES[group], leaf));
-	if (by.length > 0) return {_tag: "Served", by};
+	if (by.length > 0) return { _tag: "Served", by };
 	const named = owners
 		.map((group) => `${group} (serves ${describeServes(GROUP_SERVES[group])})`)
 		.join(", ");
@@ -179,8 +184,8 @@ export const serviceAt = (token: string, leaf: string): Service => {
 };
 
 export type Flattening =
-	| {readonly _tag: "Flat"; readonly tokens: Readonly<Record<string, OperatorEvent>>}
-	| {readonly _tag: "Collision"; readonly collisions: ReadonlyArray<string>};
+	| { readonly _tag: "Flat"; readonly tokens: Readonly<Record<string, OperatorEvent>> }
+	| { readonly _tag: "Collision"; readonly collisions: ReadonlyArray<string> };
 
 /**
  * Flatten the per-shell vocabularies into the one map `lane report` looks a bare token up in, and
@@ -210,8 +215,8 @@ export const flattenVocabularies = (
 		}
 	}
 	return collisions.length === 0
-		? {_tag: "Flat", tokens}
-		: {_tag: "Collision", collisions: collisions.sort()};
+		? { _tag: "Flat", tokens }
+		: { _tag: "Collision", collisions: collisions.sort() };
 };
 
 const flattened = flattenVocabularies(SHELL_VOCABULARIES);
@@ -227,8 +232,8 @@ const TOKEN_EVENTS: Readonly<Record<string, OperatorEvent>> = flattened.tokens;
 export const KNOWN_TOKENS: ReadonlyArray<string> = Object.keys(TOKEN_EVENTS).sort();
 
 export type TokenResolution =
-	| {readonly _tag: "Mapped"; readonly token: string; readonly event: OperatorEvent}
-	| {readonly _tag: "Unrecognised"; readonly reason: string};
+	| { readonly _tag: "Mapped"; readonly token: string; readonly event: OperatorEvent }
+	| { readonly _tag: "Unrecognised"; readonly reason: string };
 
 /**
  * Resolve one shell terminal token to its operator event. Case-insensitive, because the shipper's
@@ -243,7 +248,7 @@ export const eventForToken = (raw: string): TokenResolution => {
 				_tag: "Unrecognised",
 				reason: `"${raw}" is no shell's terminal token (known: ${KNOWN_TOKENS.join(", ")})`,
 			}
-		: {_tag: "Mapped", token, event};
+		: { _tag: "Mapped", token, event };
 };
 
 /**
@@ -967,8 +972,8 @@ export const causeTakesAxisIssue = (cause: string | null): boolean =>
 	cause !== null && AXIS_ISSUE_CAUSES.has(cause as ParkCause);
 
 export type AxisIssueResolution =
-	| {readonly _tag: "Named"; readonly axisIssue: number | null}
-	| {readonly _tag: "Rejected"; readonly reason: string};
+	| { readonly _tag: "Named"; readonly axisIssue: number | null }
+	| { readonly _tag: "Rejected"; readonly reason: string };
 
 /** One issue-pointer flag: the causes that take it, and what its issue is, for a refusal to quote. */
 interface IssuePointer {
@@ -979,8 +984,8 @@ interface IssuePointer {
 }
 
 type IssuePointerResolution =
-	| {readonly _tag: "Named"; readonly issue: number | null}
-	| {readonly _tag: "Rejected"; readonly reason: string};
+	| { readonly _tag: "Named"; readonly issue: number | null }
+	| { readonly _tag: "Rejected"; readonly reason: string };
 
 /**
  * Resolve one issue-pointer flag against the cause the same line records.
@@ -997,8 +1002,8 @@ const issuePointerFor = (
 	const takes = cause !== null && pointer.causes.has(cause);
 	if (raw === null) {
 		return takes
-			? {_tag: "Rejected", reason: `"${cause}" waits on ${pointer.waitsOn}`}
-			: {_tag: "Named", issue: null};
+			? { _tag: "Rejected", reason: `"${cause}" waits on ${pointer.waitsOn}` }
+			: { _tag: "Named", issue: null };
 	}
 	if (!takes) {
 		return {
@@ -1007,8 +1012,8 @@ const issuePointerFor = (
 		};
 	}
 	return Number.isInteger(raw) && raw > 0
-		? {_tag: "Named", issue: raw}
-		: {_tag: "Rejected", reason: `${pointer.flag} ${raw} is no issue number`};
+		? { _tag: "Named", issue: raw }
+		: { _tag: "Rejected", reason: `${pointer.flag} ${raw} is no issue number` };
 };
 
 /** Resolve one `--axis-issue` against the cause the same line records ({@link issuePointerFor}). */
@@ -1026,7 +1031,7 @@ export const axisIssueForCause = (
 		raw,
 		cause,
 	);
-	return resolved._tag === "Named" ? {_tag: "Named", axisIssue: resolved.issue} : resolved;
+	return resolved._tag === "Named" ? { _tag: "Named", axisIssue: resolved.issue } : resolved;
 };
 
 /**
@@ -1082,12 +1087,12 @@ export const NO_PARK_EVIDENCE: ParkEvidenceFlags = {
 };
 
 export type ParkEvidenceResolution =
-	| {readonly _tag: "Named"; readonly evidence: ParkEvidence}
-	| {readonly _tag: "Rejected"; readonly reason: string};
+	| { readonly _tag: "Named"; readonly evidence: ParkEvidence }
+	| { readonly _tag: "Rejected"; readonly reason: string };
 
 type FounderActResolution =
-	| {readonly _tag: "Named"; readonly founderAct: string | null}
-	| {readonly _tag: "Rejected"; readonly reason: string};
+	| { readonly _tag: "Named"; readonly founderAct: string | null }
+	| { readonly _tag: "Rejected"; readonly reason: string };
 
 /**
  * Resolve one `--founder-act` against the cause the same line records.
@@ -1106,8 +1111,8 @@ const founderActForCause = (raw: string | null, cause: ParkCause | null): Founde
 			};
 		}
 		return step === null
-			? {_tag: "Named", founderAct: null}
-			: {_tag: "Rejected", reason: "--founder-act says nothing — drop it"};
+			? { _tag: "Named", founderAct: null }
+			: { _tag: "Rejected", reason: "--founder-act says nothing — drop it" };
 	}
 	if (!takes) {
 		return {
@@ -1115,7 +1120,7 @@ const founderActForCause = (raw: string | null, cause: ParkCause | null): Founde
 			reason: `--founder-act records the step a ${[...FOUNDER_ACT_CAUSES].join("/")} park waits on, and this line records ${cause === null ? "no cause" : `"${cause}"`} — drop --founder-act`,
 		};
 	}
-	return {_tag: "Named", founderAct: step};
+	return { _tag: "Named", founderAct: step };
 };
 
 /**
@@ -1147,9 +1152,9 @@ export const parkEvidenceForCause = (
 	return {
 		_tag: "Named",
 		evidence: {
-			...(axis.axisIssue === null ? {} : {axisIssue: axis.axisIssue}),
-			...(ruling.issue === null ? {} : {rulingIssue: ruling.issue}),
-			...(act.founderAct === null ? {} : {founderAct: act.founderAct}),
+			...(axis.axisIssue === null ? {} : { axisIssue: axis.axisIssue }),
+			...(ruling.issue === null ? {} : { rulingIssue: ruling.issue }),
+			...(act.founderAct === null ? {} : { founderAct: act.founderAct }),
 		},
 	};
 };
@@ -1199,8 +1204,8 @@ export const remedyForCause = (cause: string | null): string | null =>
 		: null;
 
 export type ClassResolution =
-	| {readonly _tag: "Classed"; readonly classes: ReadonlyArray<string> | null}
-	| {readonly _tag: "Rejected"; readonly reason: string};
+	| { readonly _tag: "Classed"; readonly classes: ReadonlyArray<string> | null }
+	| { readonly _tag: "Rejected"; readonly reason: string };
 
 /**
  * Resolve the `--class` values against the closed set `ship scope` / `review scope` derive from.
@@ -1211,7 +1216,7 @@ export type ClassResolution =
  * cause's is, so `--class UI` is the `ui` class rather than a refusal.
  */
 export const classesForEvent = (raw: ReadonlyArray<string>): ClassResolution => {
-	if (raw.length === 0) return {_tag: "Classed", classes: null};
+	if (raw.length === 0) return { _tag: "Classed", classes: null };
 	const classes: string[] = [];
 	for (const value of raw) {
 		const token = value.trim().toLowerCase();
@@ -1223,15 +1228,15 @@ export const classesForEvent = (raw: ReadonlyArray<string>): ClassResolution => 
 		}
 		if (!classes.includes(token)) classes.push(token);
 	}
-	return {_tag: "Classed", classes};
+	return { _tag: "Classed", classes };
 };
 
 export type CauseResolution =
-	| {readonly _tag: "Uncaused"}
-	| {readonly _tag: "Caused"; readonly cause: ParkCause}
+	| { readonly _tag: "Uncaused" }
+	| { readonly _tag: "Caused"; readonly cause: ParkCause }
 	/** A `BLOCKED` carrying no cause, under a repo whose `parkCause.uncaused` resolves `refuse`. */
-	| {readonly _tag: "Required"; readonly reason: string}
-	| {readonly _tag: "Rejected"; readonly reason: string};
+	| { readonly _tag: "Required"; readonly reason: string }
+	| { readonly _tag: "Rejected"; readonly reason: string };
 
 const isParkCause = (token: string): token is ParkCause => Object.hasOwn(PARK_CAUSES, token);
 
@@ -1270,7 +1275,7 @@ export const causeForEvent = (
 					_tag: "Required",
 					reason: `a park must name why it parked — pass --cause with one of: ${PARK_CAUSE_TOKENS.join(", ")}. This repo's \`${PARK_CAUSE}.uncaused\` resolves \`refuse\`, the shipped value; a repo that keeps bare parks declares \`"${PARK_CAUSE}": {"uncaused": "record"}\` in ${CONFIG_PATH}`,
 				}
-			: {_tag: "Uncaused"};
+			: { _tag: "Uncaused" };
 	}
 	if (event !== "BLOCKED" && event !== MACHINERY_EVENT) {
 		return {
@@ -1286,7 +1291,7 @@ export const causeForEvent = (
 		};
 	}
 	return isParkCause(token)
-		? {_tag: "Caused", cause: token}
+		? { _tag: "Caused", cause: token }
 		: {
 				_tag: "Rejected",
 				reason: `"${raw}" is no park cause this repo's recipes key on (known: ${PARK_CAUSE_TOKENS.join(", ")})`,
@@ -1294,8 +1299,8 @@ export const causeForEvent = (
 };
 
 export type GrantResolution =
-	| {readonly _tag: "Granted"; readonly grant: number | null}
-	| {readonly _tag: "Rejected"; readonly reason: string};
+	| { readonly _tag: "Granted"; readonly grant: number | null }
+	| { readonly _tag: "Rejected"; readonly reason: string };
 
 /**
  * Resolve one `--grant-wait` against the event it rides on. Absent grants nothing and is the
@@ -1308,7 +1313,7 @@ export type GrantResolution =
  * silent no-op the wait axis exists to make loud.
  */
 export const grantForEvent = (raw: number | null, event: OperatorEvent): GrantResolution => {
-	if (raw === null) return {_tag: "Granted", grant: null};
+	if (raw === null) return { _tag: "Granted", grant: null };
 	if (event !== "UNBLOCKED") {
 		return {
 			_tag: "Rejected",
@@ -1316,13 +1321,13 @@ export const grantForEvent = (raw: number | null, event: OperatorEvent): GrantRe
 		};
 	}
 	return Number.isInteger(raw) && raw > 0
-		? {_tag: "Granted", grant: raw}
-		: {_tag: "Rejected", reason: `--grant-wait ${raw} is no whole grant of at least one wait`};
+		? { _tag: "Granted", grant: raw }
+		: { _tag: "Rejected", reason: `--grant-wait ${raw} is no whole grant of at least one wait` };
 };
 
 export type RationaleResolution =
-	| {readonly _tag: "Reasoned"; readonly rationale: string | null}
-	| {readonly _tag: "Rejected"; readonly reason: string};
+	| { readonly _tag: "Reasoned"; readonly rationale: string | null }
+	| { readonly _tag: "Rejected"; readonly reason: string };
 
 /**
  * Resolve one `--rationale` against the event it rides on — the mirror of {@link causeForEvent},
@@ -1338,7 +1343,7 @@ export const rationaleForEvent = (
 	raw: string | null,
 	event: OperatorEvent,
 ): RationaleResolution => {
-	if (raw === null) return {_tag: "Reasoned", rationale: null};
+	if (raw === null) return { _tag: "Reasoned", rationale: null };
 	if (event !== "UNBLOCKED") {
 		return {
 			_tag: "Rejected",
@@ -1351,12 +1356,12 @@ export const rationaleForEvent = (
 				_tag: "Rejected",
 				reason: "--rationale is blank, and a clearance that says nothing is one nobody can review",
 			}
-		: {_tag: "Reasoned", rationale: trimmed};
+		: { _tag: "Reasoned", rationale: trimmed };
 };
 
 export type FloorResolution =
-	| {readonly _tag: "Cleared"}
-	| {readonly _tag: "TooSoon"; readonly reason: string};
+	| { readonly _tag: "Cleared" }
+	| { readonly _tag: "TooSoon"; readonly reason: string };
 
 /**
  * Decide whether a queue re-fold has run out the wait axis's elapsed-time floor, or arrives too soon
@@ -1386,11 +1391,11 @@ export const floorQueueWait = (input: {
 	// Both are proven present by the `resolveTask` every caller runs first; the guard is the type's.
 	const task = input.lane.tasks[input.taskId];
 	const state = input.states[input.taskId];
-	if (task === undefined || state === undefined) return {_tag: "Cleared"};
-	if (input.event !== "WIP" || !task.waitParks.has(state.type)) return {_tag: "Cleared"};
+	if (task === undefined || state === undefined) return { _tag: "Cleared" };
+	if (input.event !== "WIP" || !task.waitParks.has(state.type)) return { _tag: "Cleared" };
 	// A wait-guarded state is only ever reached by a recorded event, so an absent line means a lane
 	// booted straight into one: no elapsed time to measure, and no earlier pass to have been quick.
-	if (input.lastAt === undefined) return {_tag: "Cleared"};
+	if (input.lastAt === undefined) return { _tag: "Cleared" };
 	const since = Date.parse(input.lastAt);
 	const now = Date.parse(input.now);
 	const where = `task "${input.taskId}" is in "${state.type}"`;
@@ -1401,7 +1406,7 @@ export const floorQueueWait = (input: {
 		};
 	}
 	const elapsed = (now - since) / 1000;
-	if (elapsed >= WAIT_FLOOR_SECONDS) return {_tag: "Cleared"};
+	if (elapsed >= WAIT_FLOOR_SECONDS) return { _tag: "Cleared" };
 	const remaining = Math.ceil(WAIT_FLOOR_SECONDS - elapsed);
 	return {
 		_tag: "TooSoon",

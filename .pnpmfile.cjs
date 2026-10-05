@@ -9,8 +9,8 @@ const FABRIKA_CLI = "@kampus/fabrika-cli";
 
 function readPackage(pkg) {
 	if (pkg.name !== ROOT_PACKAGE_NAME) return pkg;
-	pkg.devDependencies = {...pkg.devDependencies, [FABRIKA_CLI]: "workspace:*"};
+	pkg.devDependencies = { ...pkg.devDependencies, [FABRIKA_CLI]: "workspace:*" };
 	return pkg;
 }
 
-module.exports = {hooks: {readPackage}};
+module.exports = { hooks: { readPackage } };

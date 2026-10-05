@@ -21,15 +21,15 @@
  * `io/issues.ts`'s readers, decoded from the same endpoint, one fetch per child.
  */
 
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {existenceOf, pagedWithLinkProof, resolveToken, restRead} from "../io/gh-api.ts";
-import {type Attempt, fail, ok} from "../io/git.ts";
-import {type Existence, unknown} from "../io/issues.ts";
-import {isRecord} from "../io/json.ts";
-import {classesFromLabels} from "../lane/class-seed.ts";
-import type {CycleDoc} from "./model.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { existenceOf, pagedWithLinkProof, resolveToken, restRead } from "../io/gh-api.ts";
+import { type Attempt, fail, ok } from "../io/git.ts";
+import { type Existence, unknown } from "../io/issues.ts";
+import { isRecord } from "../io/json.ts";
+import { classesFromLabels } from "../lane/class-seed.ts";
+import type { CycleDoc } from "./model.ts";
 
 /** An authenticated GitHub read: the transport, plus the spawner the `gh auth token` leg needs. */
 type Authed<A> = Effect.Effect<
@@ -49,7 +49,7 @@ type Env = Readonly<Record<string, string | undefined>>;
  * (`../config/keys/paths.ts`), resolved by the verb and handed to {@link probeCycleDoc}. This
  * constant is that key's shipped default, re-exported from the one place it is written.
  */
-export {SHIPPED_CYCLE_DOC as CYCLE_DOC_PATH} from "../config/keys/paths.ts";
+export { SHIPPED_CYCLE_DOC as CYCLE_DOC_PATH } from "../config/keys/paths.ts";
 
 /**
  * One native sub-issue link: the child's number, the open/closed facts the payload carries, and the

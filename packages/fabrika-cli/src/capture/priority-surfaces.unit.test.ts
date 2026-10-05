@@ -3,7 +3,7 @@
  * surfaces in order, route params are substituted, and an ill-formed set (unfilled
  * param, bad order, duplicate) fails closed.
  */
-import {assert, describe, it} from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import {
 	PRIORITY_SURFACES,
 	resolvePrioritySurfaces,
@@ -32,7 +32,7 @@ describe("PRIORITY_SURFACES — the priority set", () => {
 describe("substituteRouteParams", () => {
 	it("substitutes a :param path segment", () => {
 		assert.strictEqual(
-			substituteRouteParams("/sozluk/:slug", {slug: "amortisman"}),
+			substituteRouteParams("/sozluk/:slug", { slug: "amortisman" }),
 			"/sozluk/amortisman",
 		);
 	});
@@ -42,7 +42,7 @@ describe("substituteRouteParams", () => {
 	});
 
 	it("url-encodes the substituted value", () => {
-		assert.strictEqual(substituteRouteParams("/sozluk/:slug", {slug: "a b"}), "/sozluk/a%20b");
+		assert.strictEqual(substituteRouteParams("/sozluk/:slug", { slug: "a b" }), "/sozluk/a%20b");
 	});
 
 	it("fails closed on an unfilled param — never renders a live :param route", () => {
@@ -52,7 +52,7 @@ describe("substituteRouteParams", () => {
 
 describe("resolvePrioritySurfaces", () => {
 	it("resolves the priority set to concrete surfaces in order, term slug filled", () => {
-		const resolved = resolvePrioritySurfaces({termSlug: "amortisman"});
+		const resolved = resolvePrioritySurfaces({ termSlug: "amortisman" });
 		assert.deepStrictEqual(
 			resolved.map((r) => [r.order, r.surface.surface]),
 			[
@@ -64,14 +64,14 @@ describe("resolvePrioritySurfaces", () => {
 	});
 
 	it("carries order/title/intent onto each resolved surface", () => {
-		const [first] = resolvePrioritySurfaces({termSlug: "x"});
+		const [first] = resolvePrioritySurfaces({ termSlug: "x" });
 		assert.strictEqual(first?.key, "global-shell-subnav");
 		assert.strictEqual(first?.title, "Global shell + product subnav");
 		assert.isAbove((first?.intent ?? "").length, 0);
 	});
 
 	it("assembles a :state suffix onto the surface-id", () => {
-		const resolved = resolvePrioritySurfaces({termSlug: "x"}, [
+		const resolved = resolvePrioritySurfaces({ termSlug: "x" }, [
 			{
 				order: 1,
 				key: "sozluk-term",
@@ -87,9 +87,9 @@ describe("resolvePrioritySurfaces", () => {
 	});
 
 	it("sorts by order before validating (input order-independent)", () => {
-		const resolved = resolvePrioritySurfaces({termSlug: "x"}, [
-			{order: 2, key: "pano-feed", title: "B", route: "/b", intent: "b"},
-			{order: 1, key: "global-shell-subnav", title: "A", route: "/a", intent: "a"},
+		const resolved = resolvePrioritySurfaces({ termSlug: "x" }, [
+			{ order: 2, key: "pano-feed", title: "B", route: "/b", intent: "b" },
+			{ order: 1, key: "global-shell-subnav", title: "A", route: "/a", intent: "a" },
 		]);
 		assert.deepStrictEqual(
 			resolved.map((r) => r.order),
@@ -100,9 +100,9 @@ describe("resolvePrioritySurfaces", () => {
 	it("fails closed on a non-contiguous order", () => {
 		assert.throws(
 			() =>
-				resolvePrioritySurfaces({termSlug: "x"}, [
-					{order: 1, key: "global-shell-subnav", title: "A", route: "/a", intent: "a"},
-					{order: 3, key: "pano-feed", title: "C", route: "/c", intent: "c"},
+				resolvePrioritySurfaces({ termSlug: "x" }, [
+					{ order: 1, key: "global-shell-subnav", title: "A", route: "/a", intent: "a" },
+					{ order: 3, key: "pano-feed", title: "C", route: "/c", intent: "c" },
 				]),
 			/contiguous/,
 		);
@@ -111,15 +111,15 @@ describe("resolvePrioritySurfaces", () => {
 	it("fails closed on a duplicate surface-id", () => {
 		assert.throws(
 			() =>
-				resolvePrioritySurfaces({termSlug: "x"}, [
-					{order: 1, key: "global-shell-subnav", title: "A", route: "/dup", intent: "a"},
-					{order: 2, key: "pano-feed", title: "B", route: "/dup", intent: "b"},
+				resolvePrioritySurfaces({ termSlug: "x" }, [
+					{ order: 1, key: "global-shell-subnav", title: "A", route: "/dup", intent: "a" },
+					{ order: 2, key: "pano-feed", title: "B", route: "/dup", intent: "b" },
 				]),
 			/duplicate surface-id/,
 		);
 	});
 
 	it("fails closed on an empty priority set", () => {
-		assert.throws(() => resolvePrioritySurfaces({termSlug: "x"}, []), /empty priority set/);
+		assert.throws(() => resolvePrioritySurfaces({ termSlug: "x" }, []), /empty priority set/);
 	});
 });

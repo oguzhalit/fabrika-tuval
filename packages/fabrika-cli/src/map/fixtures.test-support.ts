@@ -6,7 +6,7 @@
  * the digest guard makes that disagreement invisible until a write refuses.
  */
 
-import {digestOfBody, type MapBody, parseBody} from "./body.ts";
+import { digestOfBody, type MapBody, parseBody } from "./body.ts";
 
 export const REPO = "o/r";
 export const MAP = 9140;
@@ -56,21 +56,21 @@ export const issueJson = (input: {
 		title: input.title ?? `issue ${input.number}`,
 		body: input.body ?? "",
 		state: input.state ?? "open",
-		labels: (input.labels ?? []).map((name) => ({name})),
+		labels: (input.labels ?? []).map((name) => ({ name })),
 		html_url: `https://forge.example/${REPO}/issues/${input.number}`,
-		user: {login: "usirin"},
+		user: { login: "usirin" },
 		milestone: null,
 		state_reason: null,
 	});
 
 export const commentsJson = (
-	comments: ReadonlyArray<{readonly id: number; readonly body: string; readonly author?: string}>,
+	comments: ReadonlyArray<{ readonly id: number; readonly body: string; readonly author?: string }>,
 ): string =>
 	JSON.stringify(
 		comments.map((comment) => ({
 			id: comment.id,
 			body: comment.body,
-			user: {login: comment.author ?? "usirin"},
+			user: { login: comment.author ?? "usirin" },
 			created_at: "2026-08-10T00:00:00Z",
 			updated_at: "2026-08-10T00:00:00Z",
 		})),

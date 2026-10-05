@@ -23,7 +23,7 @@
  * first page, so a frontier that "looks clear" at 30 edges would be reported clear with nothing
  * marking it wrong — the fail-open direction.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import {
 	authed,
 	authedExistence,
@@ -32,9 +32,9 @@ import {
 	refusalText,
 	restCall,
 } from "./gh-api.ts";
-import {type Attempt, fail, ok, type Shell} from "./git.ts";
-import {type Existence, present, unknown} from "./issues.ts";
-import {isRecord} from "./json.ts";
+import { type Attempt, fail, ok, type Shell } from "./git.ts";
+import { type Existence, present, unknown } from "./issues.ts";
+import { isRecord } from "./json.ts";
 
 /** The issue numbers in a paged list response, or the reason the entries are not that. */
 const issueNumbers = (entries: ReadonlyArray<unknown>): Attempt<ReadonlyArray<number>> => {
@@ -92,12 +92,12 @@ export interface EdgeTarget {
 /** The target as an edge write sees it: the id to POST, and whether it is a pull request. */
 export const edgeTarget = (repo: string, issue: number): Shell<Existence<EdgeTarget>> =>
 	authedExistence((token) =>
-		restCall(token, {method: "GET", path: `repos/${repo}/issues/${issue}`}).pipe(
+		restCall(token, { method: "GET", path: `repos/${repo}/issues/${issue}` }).pipe(
 			Effect.map((outcome) =>
 				existenceOf(outcome, (body) => {
 					const id = isRecord(body) ? body.id : undefined;
 					return typeof id === "number"
-						? ok({id, pullRequest: isRecord(body) && body.pull_request !== undefined})
+						? ok({ id, pullRequest: isRecord(body) && body.pull_request !== undefined })
 						: fail("GitHub answered 200 but named no internal id");
 				}),
 			),
@@ -114,7 +114,7 @@ export const internalId = (repo: string, issue: number): Shell<Existence<number>
 
 const edgeWrite = (path: string, body: Readonly<Record<string, number>>): Shell<Attempt<void>> =>
 	authed((token) =>
-		restCall(token, {method: "POST", path, body}).pipe(
+		restCall(token, { method: "POST", path, body }).pipe(
 			Effect.map((outcome) => {
 				if (outcome._tag === "Unreachable") return fail(outcome.reason);
 				return outcome.status >= 200 && outcome.status < 300
@@ -126,7 +126,7 @@ const edgeWrite = (path: string, body: Readonly<Record<string, number>>): Shell<
 
 /** Link `childId` under `parent` as a sub-issue. The body carries the integer the API requires. */
 export const addSubIssue = (repo: string, parent: number, childId: number): Shell<Attempt<void>> =>
-	edgeWrite(`repos/${repo}/issues/${parent}/sub_issues`, {sub_issue_id: childId});
+	edgeWrite(`repos/${repo}/issues/${parent}/sub_issues`, { sub_issue_id: childId });
 
 /** Record that `issue` waits on the issue whose internal id is `blockerId`. */
 export const addBlockedBy = (
@@ -134,4 +134,4 @@ export const addBlockedBy = (
 	issue: number,
 	blockerId: number,
 ): Shell<Attempt<void>> =>
-	edgeWrite(`repos/${repo}/issues/${issue}/dependencies/blocked_by`, {issue_id: blockerId});
+	edgeWrite(`repos/${repo}/issues/${issue}/dependencies/blocked_by`, { issue_id: blockerId });

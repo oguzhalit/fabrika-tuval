@@ -15,7 +15,7 @@
  * rule and another does not.
  */
 
-import type {CampaignState} from "../build/scope-admission.ts";
+import type { CampaignState } from "../build/scope-admission.ts";
 
 const MARKER =
 	/^\s*\*{0,2}\s*campaign-approve:\s*#(?<milestone>\d+)\s+(?<state>active|paused|done)\s*·\s*(?<ts>\S+?)\s*\*{0,2}\s*$/i;
@@ -58,10 +58,10 @@ export interface Marker {
 
 export type MarkerRead =
 	/** The first line reaches for no marker at all — the caller's `14`. */
-	| {readonly _tag: "Absent"}
+	| { readonly _tag: "Absent" }
 	/** A marker was reached for and does not hold up — the caller's `15`. */
-	| {readonly _tag: "Malformed"; readonly reason: string}
-	| {readonly _tag: "Marker"; readonly marker: Marker};
+	| { readonly _tag: "Malformed"; readonly reason: string }
+	| { readonly _tag: "Marker"; readonly marker: Marker };
 
 const REACHES = /^\s*\*{0,2}\s*campaign-approve:/i;
 
@@ -77,10 +77,10 @@ export const readMarker = (body: string): MarkerRead => {
 	const match = MARKER.exec(first);
 	if (match?.groups === undefined) {
 		return REACHES.test(first)
-			? {_tag: "Malformed", reason: `"${first.trim()}" is not \`${MARKER_GRAMMAR}\``}
-			: {_tag: "Absent"};
+			? { _tag: "Malformed", reason: `"${first.trim()}" is not \`${MARKER_GRAMMAR}\`` }
+			: { _tag: "Absent" };
 	}
-	const {milestone, state, ts} = match.groups;
+	const { milestone, state, ts } = match.groups;
 	if (ts === undefined || !isInstant(ts)) {
 		return {
 			_tag: "Malformed",

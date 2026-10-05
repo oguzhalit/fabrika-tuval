@@ -4,8 +4,8 @@
  * folds. The fail-closed direction gets its own cases: a namespace the range did not derive and a
  * range touching no governance root both refuse, so growing the range mode narrowed neither guard.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	fakeSeams,
 	type HttpReply,
@@ -14,17 +14,17 @@ import {
 	unconfigured,
 	unconfiguredAtCommits,
 } from "../fakes.test-support.ts";
-import {NOT_HARNESS_TOUCHING} from "../governance/codes.ts";
+import { NOT_HARNESS_TOUCHING } from "../governance/codes.ts";
 import {
 	type PostOptions as GovernancePostOptions,
 	runPost as runGovernancePost,
 } from "../governance/post-verb.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {read as readRangeMarker} from "../wire/range-verdict-marker.ts";
-import {APPENDED_THIS_ROUND, OFF_VOCABULARY, SUPERSEDES_VERDICT, ZERO_SCOPE} from "./codes.ts";
-import {BASE, CONTENT, comments, HEAD, RAW, RAW_AT} from "./fixtures.test-support.ts";
-import {type PostOptions as ReviewPostOptions, runPost as runReviewPost} from "./post-verb.ts";
-import {FENCE, compose as supersedeWith} from "./supersede.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { read as readRangeMarker } from "../wire/range-verdict-marker.ts";
+import { APPENDED_THIS_ROUND, OFF_VOCABULARY, SUPERSEDES_VERDICT, ZERO_SCOPE } from "./codes.ts";
+import { BASE, CONTENT, comments, HEAD, RAW, RAW_AT } from "./fixtures.test-support.ts";
+import { type PostOptions as ReviewPostOptions, runPost as runReviewPost } from "./post-verb.ts";
+import { FENCE, compose as supersedeWith } from "./supersede.ts";
 
 const ISSUE = /GET .*\/repos\/o\/r\/issues\/5830$/;
 const USER = /GET .*api\.github\.com\/user$/;
@@ -45,7 +45,7 @@ const GOV_RAW = `:100644 100644 ${"a".repeat(40)} ${"b".repeat(40)} M\0.claude/s
 const GOV_CONTENT = "af45bfbe0a71";
 const GOV_MARKER = `governance: PASS range:${RANGE} content:${GOV_CONTENT} — no contradiction, no weakening`;
 
-const issue = (shape: {state?: string; pull?: boolean; body?: string} = {}): HttpReply => ({
+const issue = (shape: { state?: string; pull?: boolean; body?: string } = {}): HttpReply => ({
 	status: 200,
 	body: JSON.stringify({
 		number: 5830,
@@ -54,13 +54,13 @@ const issue = (shape: {state?: string; pull?: boolean; body?: string} = {}): Htt
 		state: shape.state ?? "open",
 		labels: [],
 		html_url: "https://example.test/issues/5830",
-		user: {login: "usirin"},
-		...(shape.pull ? {pull_request: {url: "https://example.test/pulls/5830"}} : {}),
+		user: { login: "usirin" },
+		...(shape.pull ? { pull_request: { url: "https://example.test/pulls/5830" } } : {}),
 	}),
 });
 
-const created: HttpReply = {status: 201, body: JSON.stringify({id: 6100000001, html_url: URL})};
-const commentBody = (body: string): HttpReply => ({status: 200, body: JSON.stringify({body})});
+const created: HttpReply = { status: 201, body: JSON.stringify({ id: 6100000001, html_url: URL }) };
+const commentBody = (body: string): HttpReply => ({ status: 200, body: JSON.stringify({ body }) });
 
 /** The body one write carried, as text — the successor to reading it off a `-f body=` argv. */
 const written = (
@@ -85,8 +85,8 @@ const reviewOptions: ReviewPostOptions = {
 	tip: HEAD,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
-	stdin: Effect.succeed<StdinRead>({_tag: "Text", text: BODY}),
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
+	stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: BODY }),
 	now: Effect.succeed(ON),
 	supersede: false,
 	round: 1,
@@ -102,8 +102,8 @@ const governanceOptions: GovernancePostOptions = {
 	repo: null,
 	json: false,
 	cwd: "/repo",
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
-	stdin: Effect.succeed<StdinRead>({_tag: "Text", text: BODY}),
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
+	stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: BODY }),
 	now: Effect.succeed(ON),
 	supersede: false,
 };
@@ -111,8 +111,8 @@ const governanceOptions: GovernancePostOptions = {
 const reviewHappy = (): ReadonlyArray<Scripted> => [
 	[ISSUE, issue()],
 	[RAW_AT(BASE, HEAD), okOut(RAW)],
-	[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-	[COMMENTS, {status: 200, body: comments().stdout}],
+	[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+	[COMMENTS, { status: 200, body: comments().stdout }],
 	[CREATE, created],
 	[READBACK, commentBody(`${MARKER}\n\n${BODY}`)],
 ];
@@ -120,8 +120,8 @@ const reviewHappy = (): ReadonlyArray<Scripted> => [
 const governanceHappy = (): ReadonlyArray<Scripted> => [
 	[ISSUE, issue()],
 	[RAW_AT(BASE, HEAD), okOut(GOV_RAW)],
-	[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-	[COMMENTS, {status: 200, body: comments().stdout}],
+	[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+	[COMMENTS, { status: 200, body: comments().stdout }],
 	[CREATE, created],
 	[READBACK, commentBody(`${GOV_MARKER}\n\n${BODY}`)],
 	...unconfiguredAtCommits,
@@ -144,9 +144,9 @@ const reposting = (
 	return [
 		[ISSUE, issue()],
 		[RAW_AT(BASE, HEAD), okOut(raw)],
-		[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-		[COMMENTS, {status: 200, body: comments({id: 42, body: prior}).stdout}],
-		[PATCH, {status: 200, body: JSON.stringify({html_url: URL})}],
+		[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+		[COMMENTS, { status: 200, body: comments({ id: 42, body: prior }).stdout }],
+		[PATCH, { status: 200, body: JSON.stringify({ html_url: URL }) }],
 		[READBACK, commentBody(supersedeWith(prior, fresh, new Date(ON)))],
 		...unconfiguredAtCommits,
 	];
@@ -158,7 +158,7 @@ const runReview = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runReviewPost({...reviewOptions, ...overrides}),
+			runReviewPost({ ...reviewOptions, ...overrides }),
 			Layer.merge(fakeSeams(script).layer, unconfigured),
 		),
 	);
@@ -169,7 +169,7 @@ const runGovernance = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runGovernancePost({...governanceOptions, ...overrides}),
+			runGovernancePost({ ...governanceOptions, ...overrides }),
 			Layer.merge(fakeSeams([...script, ...unconfiguredAtCommits]).layer, unconfigured),
 		),
 	);
@@ -188,7 +188,7 @@ describe("review post --base/--tip refuses a PASS on the round that appended a c
 
 	it("refuses on 18 over a range-tagged append from this very round", async () => {
 		const out = await runReview([
-			[ISSUE, issue({body: routed(`<!-- ac:review range:${RANGE} round:1 -->`)})],
+			[ISSUE, issue({ body: routed(`<!-- ac:review range:${RANGE} round:1 -->`) })],
 			...reviewHappy().slice(1),
 		]);
 		expect(out.code).toBe(APPENDED_THIS_ROUND);
@@ -201,7 +201,7 @@ describe("review post --base/--tip refuses a PASS on the round that appended a c
 	it("matches an abbreviated range against the full one", async () => {
 		const abbreviated = `${BASE.slice(0, 7)}..${HEAD.slice(0, 7)}`;
 		const out = await runReview([
-			[ISSUE, issue({body: routed(`<!-- ac:review range:${abbreviated} round:1 -->`)})],
+			[ISSUE, issue({ body: routed(`<!-- ac:review range:${abbreviated} round:1 -->`) })],
 			...reviewHappy().slice(1),
 		]);
 		expect(out.code).toBe(APPENDED_THIS_ROUND);
@@ -210,15 +210,15 @@ describe("review post --base/--tip refuses a PASS on the round that appended a c
 	it("passes a later round, and a row routed from another range", async () => {
 		const later = await runReview(
 			[
-				[ISSUE, issue({body: routed(`<!-- ac:review range:${RANGE} round:1 -->`)})],
+				[ISSUE, issue({ body: routed(`<!-- ac:review range:${RANGE} round:1 -->`) })],
 				...reviewHappy().slice(1),
 			],
-			{round: 2},
+			{ round: 2 },
 		);
 		expect(later.code).toBe(0);
 
 		const elsewhere = await runReview([
-			[ISSUE, issue({body: routed(`<!-- ac:review range:${HEAD}..${BASE} round:1 -->`)})],
+			[ISSUE, issue({ body: routed(`<!-- ac:review range:${HEAD}..${BASE} round:1 -->`) })],
 			...reviewHappy().slice(1),
 		]);
 		expect(elsewhere.code).toBe(0);
@@ -244,7 +244,7 @@ describe("review post --base/--tip", () => {
 		if (parsed._tag === "Found") {
 			expect(parsed.value.namespace).toBe("review-doc");
 			expect(parsed.value.polarity).toBe("PASS");
-			expect(parsed.value.range).toEqual({base: BASE, tip: HEAD});
+			expect(parsed.value.range).toEqual({ base: BASE, tip: HEAD });
 			expect(parsed.value.content).toBe(CONTENT);
 		}
 	});
@@ -278,7 +278,7 @@ describe("review post --base/--tip", () => {
 		const shell = fakeSeams(reposting(standing, "the round that blocked\n"));
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runReviewPost({...reviewOptions, supersede: true}),
+				runReviewPost({ ...reviewOptions, supersede: true }),
 				Layer.merge(shell.layer, unconfigured),
 			),
 		);
@@ -296,20 +296,20 @@ describe("review post --base/--tip", () => {
 				[ISSUE, issue()],
 				[RAW_AT(BASE, HEAD), okOut(RAW)],
 			],
-			{namespace: "review-skill"},
+			{ namespace: "review-skill" },
 		);
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.join("\n")).toContain("is not derived by");
 	});
 
 	it("refuses --sha beside a range: content is the only binding", async () => {
-		const out = await runReview([], {sha: HEAD});
+		const out = await runReview([], { sha: HEAD });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.join("\n")).toContain("--sha does not combine with --base/--tip");
 	});
 
 	it("refuses a lone --base and a lone --tip: a range has two ends", async () => {
-		for (const overrides of [{tip: null}, {base: null}]) {
+		for (const overrides of [{ tip: null }, { base: null }]) {
 			const out = await runReview([], overrides);
 			expect(out.code).toBe(OFF_VOCABULARY);
 			expect(out.stderr.join("\n")).toContain("--base and --tip come together");
@@ -317,22 +317,22 @@ describe("review post --base/--tip", () => {
 	});
 
 	it("refuses the advisory carrier on a range: an advisory is head-scoped by design", async () => {
-		const out = await runReview([], {carrier: "advisory"});
+		const out = await runReview([], { carrier: "advisory" });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.join("\n")).toContain("no advisory carrier");
 	});
 
 	it("still requires --sha when no range is given", async () => {
-		const out = await runReview([], {base: null, tip: null});
+		const out = await runReview([], { base: null, tip: null });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.join("\n")).toContain("--sha is required");
 	});
 
 	it("refuses a closed issue and a pull request as the range target", async () => {
-		const closed = await runReview([[ISSUE, issue({state: "closed"})]]);
+		const closed = await runReview([[ISSUE, issue({ state: "closed" })]]);
 		expect(closed.code).toBe(ZERO_SCOPE);
 		expect(closed.stderr.join("\n")).toContain("gates nothing");
-		const pull = await runReview([[ISSUE, issue({pull: true})]]);
+		const pull = await runReview([[ISSUE, issue({ pull: true })]]);
 		expect(pull.code).toBe(ZERO_SCOPE);
 		expect(pull.stderr.join("\n")).toContain("is a pull request");
 	});
@@ -357,7 +357,7 @@ describe("governance post --base/--tip", () => {
 		expect(parsed._tag).toBe("Found");
 		if (parsed._tag === "Found") {
 			expect(parsed.value.namespace).toBe("governance");
-			expect(parsed.value.range).toEqual({base: BASE, tip: HEAD});
+			expect(parsed.value.range).toEqual({ base: BASE, tip: HEAD });
 			expect(parsed.value.content).toBe(GOV_CONTENT);
 		}
 	});
@@ -372,9 +372,9 @@ describe("governance post --base/--tip", () => {
 	});
 
 	it("refuses --sha beside a range and a lone range end, same as the review seam", async () => {
-		const withSha = await runGovernance([], {sha: HEAD});
+		const withSha = await runGovernance([], { sha: HEAD });
 		expect(withSha.code).toBe(OFF_VOCABULARY);
-		const lone = await runGovernance([], {tip: null});
+		const lone = await runGovernance([], { tip: null });
 		expect(lone.code).toBe(OFF_VOCABULARY);
 	});
 
@@ -410,7 +410,7 @@ describe("governance post --base/--tip", () => {
 		const shell = fakeSeams(reposting(standing, "the sweep that blocked\n", fresh, GOV_RAW));
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runGovernancePost({...governanceOptions, supersede: true}),
+				runGovernancePost({ ...governanceOptions, supersede: true }),
 				Layer.merge(shell.layer, unconfigured),
 			),
 		);

@@ -17,13 +17,13 @@
  * so without a retiring path it would hold the frontier forever and `graduate` could never run.
  */
 
-import {Effect, type FileSystem} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {readFile} from "../io/fs.ts";
-import {closeCompleted, createComment, getIssue, patchIssueBody} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {appendOnly} from "../review/append.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, type FileSystem } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { readFile } from "../io/fs.ts";
+import { closeCompleted, createComment, getIssue, patchIssueBody } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { appendOnly } from "../review/append.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	digestOf,
 	foldEntryText,
@@ -33,7 +33,7 @@ import {
 	renderOutOfScope,
 	spliceSection,
 } from "./body.ts";
-import {ALREADY_DESCOPED, BAD_SECTIONS, READBACK_MISMATCH, WRITE_UNKNOWN} from "./codes.ts";
+import { ALREADY_DESCOPED, BAD_SECTIONS, READBACK_MISMATCH, WRITE_UNKNOWN } from "./codes.ts";
 import {
 	digestFresh,
 	leakFree,
@@ -42,8 +42,8 @@ import {
 	requireTicket,
 	targetRepo,
 } from "./guards.ts";
-import {composeRetiredMarker} from "./markers.ts";
-import {namesSameThing} from "./open.ts";
+import { composeRetiredMarker } from "./markers.ts";
+import { namesSameThing } from "./open.ts";
 
 export interface DescopeOptions {
 	readonly map: number;
@@ -82,9 +82,9 @@ export const runDescope = (
 		}
 
 		const read = yield* readFile(options.reason).pipe(
-			Effect.map((value) => ({ok: true as const, value})),
+			Effect.map((value) => ({ ok: true as const, value })),
 			Effect.catchTag("fabrika-cli/ReadFailed", (cause) =>
-				Effect.succeed({ok: false as const, value: cause.reason}),
+				Effect.succeed({ ok: false as const, value: cause.reason }),
 			),
 		);
 		if (!read.ok) {
@@ -219,7 +219,7 @@ export const runDescope = (
 			const marker = yield* createComment(
 				repo,
 				retiring,
-				composeRetiredMarker({map: options.map, ticket: retiring, direction}),
+				composeRetiredMarker({ map: options.map, ticket: retiring, direction }),
 			);
 			if (marker._tag === "Failure") {
 				return refuse(

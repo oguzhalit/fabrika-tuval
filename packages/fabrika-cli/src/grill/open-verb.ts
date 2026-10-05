@@ -27,8 +27,8 @@
  * {@link BINDING_MALFORMED} naming the session a human has to fix.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	addLabels,
 	createUnlabelledIssue,
@@ -38,10 +38,10 @@ import {
 	openIssuesWithLabelDetailed,
 	resolveRepo,
 } from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {cameFromSection, read as readCameFrom, ticketOf} from "../wire/came-from.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { cameFromSection, read as readCameFrom, ticketOf } from "../wire/came-from.ts";
 import {
 	BARE_AT_PATH,
 	BINDING_MALFORMED,
@@ -52,7 +52,7 @@ import {
 	SESSION_AMBIGUOUS,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {normalizeTopic, SESSION_LABEL} from "./session.ts";
+import { normalizeTopic, SESSION_LABEL } from "./session.ts";
 
 /**
  * What a session is opened on. Three cases, because "neither a topic nor a ticket" is not one of
@@ -61,17 +61,17 @@ import {normalizeTopic, SESSION_LABEL} from "./session.ts";
  */
 export type OpenSubject =
 	/** `--topic` alone: the title is typed, and the resume keys on it. */
-	| {readonly _tag: "Topic"; readonly topic: string}
+	| { readonly _tag: "Topic"; readonly topic: string }
 	/** `--ticket` alone: the title comes from the ticket, and the resume keys on the ticket. */
-	| {readonly _tag: "Ticket"; readonly ticket: number}
+	| { readonly _tag: "Ticket"; readonly ticket: number }
 	/** Both: the title is typed, the resume still keys on the ticket. */
-	| {readonly _tag: "Bound"; readonly topic: string; readonly ticket: number};
+	| { readonly _tag: "Bound"; readonly topic: string; readonly ticket: number };
 
 /** The subject the two flags name, or `null` when they name none — the one refused combination. */
 export const openSubject = (topic: string | null, ticket: number | null): OpenSubject | null => {
-	if (topic !== null && ticket !== null) return {_tag: "Bound", topic, ticket};
-	if (topic !== null) return {_tag: "Topic", topic};
-	return ticket === null ? null : {_tag: "Ticket", ticket};
+	if (topic !== null && ticket !== null) return { _tag: "Bound", topic, ticket };
+	if (topic !== null) return { _tag: "Topic", topic };
+	return ticket === null ? null : { _tag: "Ticket", ticket };
 };
 
 /** The ticket a subject binds to, or `null` for the topic-only case. */
@@ -86,19 +86,19 @@ export interface OpenOptions {
 
 /** The open sessions bound to `ticket`, or the first session whose own binding does not parse. */
 type BindingMatch =
-	| {readonly _tag: "Matches"; readonly rows: ReadonlyArray<IssueDetail>}
-	| {readonly _tag: "Unreadable"; readonly row: IssueDetail; readonly detail: string};
+	| { readonly _tag: "Matches"; readonly rows: ReadonlyArray<IssueDetail> }
+	| { readonly _tag: "Unreadable"; readonly row: IssueDetail; readonly detail: string };
 
 const matchOnTicket = (rows: ReadonlyArray<IssueDetail>, ticket: number): BindingMatch => {
 	const matched: IssueDetail[] = [];
 	for (const row of rows) {
 		const binding = readCameFrom(row.body);
 		if (binding._tag === "Malformed") {
-			return {_tag: "Unreadable", row, detail: `${binding.reason} (${binding.evidence})`};
+			return { _tag: "Unreadable", row, detail: `${binding.reason} (${binding.evidence})` };
 		}
 		if (binding._tag === "Found" && ticketOf(binding.value.binding) === ticket) matched.push(row);
 	}
-	return {_tag: "Matches", rows: matched};
+	return { _tag: "Matches", rows: matched };
 };
 
 const SESSION_BODY =

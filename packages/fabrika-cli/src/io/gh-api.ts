@@ -26,16 +26,16 @@
  * `HttpClient` up through every verb annotation.
  */
 
-import {Duration, Effect, Option} from "effect";
+import { Duration, Effect, Option } from "effect";
 import * as Cause from "effect/Cause";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import * as HttpClient from "effect/unstable/http/HttpClient";
 import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest";
 import type * as HttpClientResponse from "effect/unstable/http/HttpClientResponse";
-import {execRecord} from "./exec.ts";
-import {type Attempt, type Failure, fail, type Ok, ok, type Shell} from "./git.ts";
-import {absent, type Existence, present, unknown} from "./issues.ts";
-import {isRecord, parseJson} from "./json.ts";
+import { execRecord } from "./exec.ts";
+import { type Attempt, type Failure, fail, type Ok, ok, type Shell } from "./git.ts";
+import { absent, type Existence, present, unknown } from "./issues.ts";
+import { isRecord, parseJson } from "./json.ts";
 
 /** Anything on the HTTP path: the client is its one requirement, and failures are data. */
 export type Api<A> = Effect.Effect<A, never, HttpClient.HttpClient>;
@@ -170,7 +170,7 @@ export type Rest =
 			readonly body: unknown;
 			readonly text: string;
 	  }
-	| {readonly _tag: "Unreachable"; readonly reason: string};
+	| { readonly _tag: "Unreachable"; readonly reason: string };
 
 const endpoint = (path: string): string =>
 	path.startsWith("http") ? path : `${API_ROOT}/${path.replace(/^\//, "")}`;
@@ -192,7 +192,7 @@ export type Served<A> =
 			readonly headers: Readonly<Record<string, string>>;
 			readonly value: A;
 	  }
-	| {readonly _tag: "Unreachable"; readonly reason: string};
+	| { readonly _tag: "Unreachable"; readonly reason: string };
 
 const served = <A>(
 	request: HttpClientRequest.HttpClientRequest,
@@ -281,7 +281,7 @@ export const restCall = (token: string, call: RestCall): Api<Rest> => {
 
 /** {@link restCall}'s read arm, kept as its own name because most call sites are reads. */
 export const restRead = (token: string, method: "GET" | "POST", path: string): Api<Rest> =>
-	restCall(token, {method, path});
+	restCall(token, { method, path });
 
 /**
  * Run `use` under the ambient credential and the ambient transport, or hand back the refusal that
@@ -321,7 +321,7 @@ export const restWrite = (
 	method: "POST" | "PATCH" | "PUT" | "DELETE",
 	path: string,
 	body?: Readonly<Record<string, unknown>>,
-): Api<Rest> => restCall(token, {method, path, body});
+): Api<Rest> => restCall(token, { method, path, body });
 
 /**
  * How many characters of GitHub's own `message` a refusal carries.
@@ -338,7 +338,7 @@ const MESSAGE_CAP = 200;
  * The structured field a caller classifies a refusal by — {@link refusalText} is for printing, and
  * its bound cuts the very text a classification would match.
  */
-export const githubMessage = (outcome: Rest & {_tag: "Response"}): string | null =>
+export const githubMessage = (outcome: Rest & { _tag: "Response" }): string | null =>
 	isRecord(outcome.body) && typeof outcome.body.message === "string" ? outcome.body.message : null;
 
 /**
@@ -353,7 +353,7 @@ export const githubMessage = (outcome: Rest & {_tag: "Response"}): string | null
  * The append is best-effort by construction — a body that is `null`, is not a record, or carries no
  * string `message` falls back to the bare status rather than becoming a second failure.
  */
-export const refusalText = (outcome: Rest & {_tag: "Response"}): string => {
+export const refusalText = (outcome: Rest & { _tag: "Response" }): string => {
 	const status = `GitHub answered HTTP ${outcome.status}`;
 	const raw = githubMessage(outcome);
 	if (raw === null) return status;
@@ -431,8 +431,8 @@ const paged = (path: string, page: number): string =>
  * arrived. A `message` exists only where a status does.
  */
 export type ServedStatus =
-	| {readonly status: null}
-	| {readonly status: number; readonly message: string | null};
+	| { readonly status: null }
+	| { readonly status: number; readonly message: string | null };
 
 /**
  * The start of GitHub's `message` on a 403 served because the repository's plan lacks the feature —
@@ -462,14 +462,14 @@ export const isPlanGated = (answer: ServedStatus): boolean =>
 export type PagedAttempt<A> = Ok<A> | (Failure & ServedStatus);
 
 /** A read that produced no status at all — GitHub was never reached, or answered a shape nobody asked for. */
-const statusless = (reason: string): Failure & {readonly status: null} => ({
+const statusless = (reason: string): Failure & { readonly status: null } => ({
 	...fail(reason),
 	status: null,
 });
 
 const refusalFor = (
-	outcome: Rest & {_tag: "Response"},
-): Failure & {readonly status: number; readonly message: string | null} => ({
+	outcome: Rest & { _tag: "Response" },
+): Failure & { readonly status: number; readonly message: string | null } => ({
 	...fail(refusalText(outcome)),
 	status: outcome.status,
 	message: githubMessage(outcome),
@@ -504,9 +504,9 @@ export const pagedWithLinkProof = (
 			if (!Array.isArray(outcome.body))
 				return statusless("GitHub answered 200 but its body is not a list");
 			entries.push(...outcome.body);
-			if (!declaresNextPage(outcome.headers)) return ok({entries, exhausted: true});
+			if (!declaresNextPage(outcome.headers)) return ok({ entries, exhausted: true });
 		}
-		return ok({entries, exhausted: false});
+		return ok({ entries, exhausted: false });
 	});
 
 /**
@@ -533,10 +533,10 @@ export const pagedExistence = (token: string, path: string): Api<Existence<Paged
 			}
 			entries.push(...outcome.body);
 			if (!declaresNextPage(outcome.headers)) {
-				return present<PagedProof>({entries, exhausted: true});
+				return present<PagedProof>({ entries, exhausted: true });
 			}
 		}
-		return present<PagedProof>({entries, exhausted: false});
+		return present<PagedProof>({ entries, exhausted: false });
 	});
 
 /**
@@ -569,14 +569,14 @@ export const pagedEnvelope = (
 				declared = body.total_count;
 			}
 			entries.push(...body[key]);
-			if (!declaresNextPage(outcome.headers)) return ok({declared, entries, exhausted: true});
+			if (!declaresNextPage(outcome.headers)) return ok({ declared, entries, exhausted: true });
 		}
 		// Unreachable at runtime — page one refuses without a numeric `total_count`, so a loop that
 		// ran at all set `declared`. Kept as a type-narrowing device: TypeScript does not narrow
 		// across the loop, and dropping the branch reds `EnvelopeRead.declared: number`.
 		return declared === null
 			? statusless("GitHub answered 200 and printed no envelope at all")
-			: ok({declared, entries, exhausted: false});
+			: ok({ declared, entries, exhausted: false });
 	});
 
 /**
@@ -599,6 +599,6 @@ export const graphqlRead = (
 	send(
 		HttpClientRequest.post(GRAPHQL_URL).pipe(
 			HttpClientRequest.setHeaders(headersFor(token)),
-			HttpClientRequest.bodyJsonUnsafe({query, variables}),
+			HttpClientRequest.bodyJsonUnsafe({ query, variables }),
 		),
 	);

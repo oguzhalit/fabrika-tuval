@@ -20,15 +20,15 @@
  * for the same reason a human-typed one is.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {resolveTrunk, trunkUnresolved} from "../io/trunk.ts";
-import {readBoundary} from "./boundary.ts";
-import {controlPlaneOwnersOf, splitTeam} from "./codeowners.ts";
-import {listTeamMembers} from "./github.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { resolveTrunk, trunkUnresolved } from "../io/trunk.ts";
+import { readBoundary } from "./boundary.ts";
+import { controlPlaneOwnersOf, splitTeam } from "./codeowners.ts";
+import { listTeamMembers } from "./github.ts";
 
 export type RosterRead =
-	| {readonly _tag: "Unknown"; readonly reason: string}
+	| { readonly _tag: "Unknown"; readonly reason: string }
 	| {
 			readonly _tag: "Roster";
 			/** The logins that may approve. Empty is proven — nobody may, and that is an answer. */
@@ -51,11 +51,11 @@ export const controlPlaneRoster = (
 	Effect.gen(function* () {
 		const trunk = yield* resolveTrunk(process.env, repo);
 		if (trunk._tag === "Failure") {
-			return {_tag: "Unknown" as const, reason: trunkUnresolved(trunk.reason)};
+			return { _tag: "Unknown" as const, reason: trunkUnresolved(trunk.reason) };
 		}
 		const boundary = yield* readBoundary(repo, trunk.value.branch);
 		if (boundary._tag === "Unreadable") {
-			return {_tag: "Unknown" as const, reason: `the §CP boundary: ${boundary.reason}`};
+			return { _tag: "Unknown" as const, reason: `the §CP boundary: ${boundary.reason}` };
 		}
 		const owners = controlPlaneOwnersOf(boundary.rows);
 		const logins = new Set<string>();
@@ -67,9 +67,9 @@ export const controlPlaneRoster = (
 			}
 			const members = yield* listTeamMembers(split.org, split.team);
 			if (members._tag === "Unknown") {
-				return {_tag: "Unknown" as const, reason: `the ${owner} roster: ${members.reason}`};
+				return { _tag: "Unknown" as const, reason: `the ${owner} roster: ${members.reason}` };
 			}
 			if (members._tag === "Present") for (const login of members.value) logins.add(login);
 		}
-		return {_tag: "Roster" as const, logins, owners, ref: trunk.value.branch};
+		return { _tag: "Roster" as const, logins, owners, ref: trunk.value.branch };
 	});

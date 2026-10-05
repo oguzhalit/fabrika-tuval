@@ -7,14 +7,14 @@
  * strictest rather than inheriting somebody else's carve-outs.
  */
 
-import {trimmedStrings} from "../entries.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import { trimmedStrings } from "../entries.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const DOC_LEAK_EXEMPT = "docLeakExempt";
 
 const decode = (raw: unknown): Decoded<ReadonlyArray<string>> => {
 	if (!Array.isArray(raw)) {
-		return {_tag: "Malformed", reason: `\`${DOC_LEAK_EXEMPT}\` is not an array`};
+		return { _tag: "Malformed", reason: `\`${DOC_LEAK_EXEMPT}\` is not an array` };
 	}
 	const paths = trimmedStrings(raw);
 	return paths === null
@@ -22,7 +22,7 @@ const decode = (raw: unknown): Decoded<ReadonlyArray<string>> => {
 				_tag: "Malformed",
 				reason: `\`${DOC_LEAK_EXEMPT}\` holds an entry that is not a non-empty string — expected a repo-relative path`,
 			}
-		: {_tag: "Value", value: paths};
+		: { _tag: "Value", value: paths };
 };
 
 export const docLeakExemptKey: KeyGroup<ReadonlyArray<string>> = {
@@ -33,6 +33,6 @@ export const docLeakExemptKey: KeyGroup<ReadonlyArray<string>> = {
 		type: "array",
 		description:
 			"Docs whose subject IS path hygiene — `build check --surface prose` skips its leak scan on them. Repo-relative path suffixes. Empty (or absent) means nothing is exempt.",
-		items: {type: "string", minLength: 1},
+		items: { type: "string", minLength: 1 },
 	},
 };

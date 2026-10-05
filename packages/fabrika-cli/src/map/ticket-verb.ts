@@ -17,13 +17,13 @@
  * write.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {addBlockedBy, addSubIssue, internalId} from "../io/edges.ts";
-import {createComment, createUnlabelledIssue, getIssue, patchIssueBody} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {digestOf, isKind, KINDS, parseBody, renderFrontierRow, spliceSection} from "./body.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { addBlockedBy, addSubIssue, internalId } from "../io/edges.ts";
+import { createComment, createUnlabelledIssue, getIssue, patchIssueBody } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { digestOf, isKind, KINDS, parseBody, renderFrontierRow, spliceSection } from "./body.ts";
 import {
 	ALREADY_DESCOPED,
 	EDGE_UNRESOLVABLE,
@@ -33,11 +33,11 @@ import {
 	TICKET_UNKNOWN,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {isTerminal, readFrontier, type Ticket} from "./frontier.ts";
-import {digestFresh, leakFree, requireMap, targetRepo} from "./guards.ts";
-import {composeTicketMarker, isNonce} from "./markers.ts";
-import {namesSameThing} from "./open.ts";
-import {cycleFrom, ticketBody, ticketTitle, waitsOnGraph} from "./ticket.ts";
+import { isTerminal, readFrontier, type Ticket } from "./frontier.ts";
+import { digestFresh, leakFree, requireMap, targetRepo } from "./guards.ts";
+import { composeTicketMarker, isNonce } from "./markers.ts";
+import { namesSameThing } from "./open.ts";
+import { cycleFrom, ticketBody, ticketTitle, waitsOnGraph } from "./ticket.ts";
 
 export interface TicketOptions {
 	readonly map: number;
@@ -175,7 +175,7 @@ export const runTicket = (
 		const marker = yield* createComment(
 			repo,
 			child,
-			composeTicketMarker({map: options.map, kind, nonce}),
+			composeTicketMarker({ map: options.map, kind, nonce }),
 		);
 		if (marker._tag === "Failure") {
 			return refuse(
@@ -232,7 +232,7 @@ export const runTicket = (
 
 		const rows = [
 			...reread.value.body.frontier.map(renderFrontierRow),
-			renderFrontierRow({ticket: child, kind, question, forkedTo: null}),
+			renderFrontierRow({ ticket: child, kind, question, forkedTo: null }),
 		].join("\n");
 		const next = spliceSection(reread.value.body, "Frontier", rows);
 		const written = yield* patchIssueBody(repo, options.map, next);

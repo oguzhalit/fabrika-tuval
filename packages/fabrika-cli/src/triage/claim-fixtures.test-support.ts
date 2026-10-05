@@ -8,12 +8,12 @@
  * side of any run rather than as an injected `now` no verb accepts: {@link LIVE} cannot age out and
  * {@link EXPIRED} cannot come back.
  */
-import {type FileSystem, Layer, type Path} from "effect";
+import { type FileSystem, Layer, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {CONFIG_PATH} from "../config/document.ts";
-import {fakeFs, fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import {markerBody} from "./claim.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { CONFIG_PATH } from "../config/document.ts";
+import { fakeFs, fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import { markerBody } from "./claim.ts";
 
 /** `listComments`' request line, whichever issue it names. */
 export const COMMENTS = /GET .*\/issues\/\d+\/comments\?/;
@@ -41,16 +41,16 @@ export const claimPage = (
 	body: JSON.stringify(
 		held.map((row, index) => ({
 			id: 900 + index,
-			user: {login: "agent"},
+			user: { login: "agent" },
 			created_at: row.createdAt,
 			updated_at: row.createdAt,
-			body: markerBody({session: row.session, nonce: row.lane ?? `fixture${index}`}),
+			body: markerBody({ session: row.session, nonce: row.lane ?? `fixture${index}` }),
 		})),
 	),
 });
 
 /** The default every existing test gets: the issue carries no claim marker at all. */
-export const UNCLAIMED: Scripted = [COMMENTS, {status: 200, body: "[]"}];
+export const UNCLAIMED: Scripted = [COMMENTS, { status: 200, body: "[]" }];
 
 /** The issue read whose `comments` field is the denominator `listCommentsReconciled` divides by. */
 export const ISSUE_READ = /GET .*\/issues\/\d+$/;
@@ -71,7 +71,7 @@ export const declaring = (count?: number): HttpReply => ({
 		state: "open",
 		labels: [],
 		html_url: "https://example.test/issues/4312",
-		...(count === undefined ? {} : {comments: count}),
+		...(count === undefined ? {} : { comments: count }),
 	}),
 });
 
@@ -102,7 +102,7 @@ export const CWD = "/repo";
  * config surface exists to keep apart — absent is a repo that declared nothing, denied is a repo
  * whose declaration nobody has read.
  */
-export type ConfigFixture = string | {readonly unreadable: true};
+export type ConfigFixture = string | { readonly unreadable: true };
 
 /**
  * The whole context a writing triage verb needs: the scripted shell, plus a filesystem carrying
@@ -121,7 +121,7 @@ export const triageContext = (
 	| Path.Path
 > => {
 	const path = `${CWD}/${CONFIG_PATH}`;
-	const files = config === undefined ? {} : {[path]: typeof config === "string" ? config : ""};
+	const files = config === undefined ? {} : { [path]: typeof config === "string" ? config : "" };
 	const unreadable = config === undefined || typeof config === "string" ? [] : [path];
-	return Layer.merge(shell.layer, fakeFs({files, unreadable}).layer);
+	return Layer.merge(shell.layer, fakeFs({ files, unreadable }).layer);
 };

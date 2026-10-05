@@ -22,13 +22,13 @@
  * decision stands: a head that is never checked out is a head whose instructions are never loaded.
  * A fetch writes objects, not a working tree, so the two properties are not in tension.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {fetchAndResolve, fetchRef, mergeBase, remoteFor, resolveCommit} from "../io/git.ts";
-import type {PullRecord} from "../io/pulls.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {headSha} from "../wire/verdict-marker.ts";
-import {OFF_VOCABULARY, PRECONDITION_UNKNOWN, STALE_HEAD} from "./codes.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { fetchAndResolve, fetchRef, mergeBase, remoteFor, resolveCommit } from "../io/git.ts";
+import type { PullRecord } from "../io/pulls.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { headSha } from "../wire/verdict-marker.ts";
+import { OFF_VOCABULARY, PRECONDITION_UNKNOWN, STALE_HEAD } from "./codes.ts";
 
 /**
  * The commits every bound read is taken between, each a full object name git itself resolved.
@@ -48,8 +48,8 @@ export interface BoundHead {
 }
 
 export type Binding =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Bound"; readonly head: BoundHead};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Bound"; readonly head: BoundHead };
 
 const unknown = (verb: string, what: string): Binding => ({
 	_tag: "Refused",
@@ -141,7 +141,7 @@ export const bindHead = (
 		}
 		return {
 			_tag: "Bound" as const,
-			head: {sha: resolved.value, baseTip: tip.value, mergeBase: forked.value},
+			head: { sha: resolved.value, baseTip: tip.value, mergeBase: forked.value },
 		};
 	});
 

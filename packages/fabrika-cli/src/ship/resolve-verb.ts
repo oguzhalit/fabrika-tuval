@@ -13,11 +13,11 @@
  * There is deliberately **no `--sha` and no `12` seat**: a thread is not head-bound, and step 1
  * re-reads its live state at write time, so there is no stale carried observation for `12` to guard.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {readAuthored, type StdinSource} from "./authored.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { readAuthored, type StdinSource } from "./authored.ts";
 import {
 	PRECONDITION_UNKNOWN,
 	PROVEN_NOT_IN_STATE,
@@ -25,9 +25,9 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {listReviewThreads, replyToThread, resolveThread} from "./github.ts";
-import {badNumber, resolvePull, resolveTargetRepo} from "./target.ts";
-import {classOfThread, firstHumanOf} from "./threads.ts";
+import { listReviewThreads, replyToThread, resolveThread } from "./github.ts";
+import { badNumber, resolvePull, resolveTargetRepo } from "./target.ts";
+import { classOfThread, firstHumanOf } from "./threads.ts";
 
 const VERB = "ship resolve";
 
@@ -44,7 +44,7 @@ export const runResolve = (
 	options: ResolveOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr, json, thread: threadId} = options;
+		const { pr, json, thread: threadId } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -129,6 +129,6 @@ export const runResolve = (
 		}
 
 		return json
-			? answer(JSON.stringify({outcome: "resolved", thread: threadId, commentUrl: replied.value}))
+			? answer(JSON.stringify({ outcome: "resolved", thread: threadId, commentUrl: replied.value }))
 			: answer(`resolved\t${threadId}\t${replied.value}`);
 	});

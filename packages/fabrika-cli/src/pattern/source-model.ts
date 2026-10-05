@@ -36,7 +36,7 @@ export const parseSourceManifest = (path: string, text: string): SourceManifest 
 			value.name !== "" &&
 			typeof value.version === "string" &&
 			value.version !== ""
-			? {path, name: value.name, version: value.version, private: value.private === true}
+			? { path, name: value.name, version: value.version, private: value.private === true }
 			: null;
 	} catch {
 		return null;

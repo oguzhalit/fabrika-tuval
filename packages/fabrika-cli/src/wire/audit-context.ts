@@ -1,7 +1,7 @@
 /** The initial audit research record. Recommendations are data; rulings live in comments. */
-import {createHash} from "node:crypto";
-import {Result, Schema} from "effect";
-import type {WireEmit, WireRead, WireReadLines} from "./format.ts";
+import { createHash } from "node:crypto";
+import { Result, Schema } from "effect";
+import type { WireEmit, WireRead, WireReadLines } from "./format.ts";
 
 const Text = Schema.String.check(Schema.isPattern(/\S/));
 const Texts = Schema.Array(Text);
@@ -34,14 +34,14 @@ export const AuditContext = Schema.Struct({
 	date: Schema.String.check(Schema.isPattern(/^\d{4}-\d{2}-\d{2}$/)),
 	predecessor: Schema.NullOr(Schema.Int.check(Schema.isGreaterThan(0))),
 	findings: Schema.NonEmptyArray(Finding),
-	disproven: Schema.Array(Schema.Struct({suspicion: Text, disposition: Text})),
+	disproven: Schema.Array(Schema.Struct({ suspicion: Text, disposition: Text })),
 	accounting: Schema.Struct({
 		openedFiles: Schema.NonEmptyArray(Text),
 		searches: Texts,
 		coverage: Texts,
 		limits: Texts,
 	}),
-	firstQuestion: Schema.Struct({findingId: Text, question: Text, recommendation: Text}),
+	firstQuestion: Schema.Struct({ findingId: Text, question: Text, recommendation: Text }),
 });
 export type AuditContext = typeof AuditContext.Type;
 
@@ -54,7 +54,7 @@ const decode = Schema.decodeUnknownResult(Schema.fromJsonString(AuditContext), {
 export const parse = (text: string): WireRead<AuditContext> => {
 	const parsed = decode(text);
 	if (Result.isFailure(parsed)) {
-		return {_tag: "Malformed", reason: String(parsed.failure), evidence: text};
+		return { _tag: "Malformed", reason: String(parsed.failure), evidence: text };
 	}
 	const context = parsed.success;
 	const ids = new Set(context.findings.map((finding) => finding.id));
@@ -66,9 +66,9 @@ export const parse = (text: string): WireRead<AuditContext> => {
 		};
 	}
 	if (context.folder.startsWith("/") || context.folder.split("/").includes("..")) {
-		return {_tag: "Malformed", reason: "folder must be repository-relative", evidence: text};
+		return { _tag: "Malformed", reason: "folder must be repository-relative", evidence: text };
 	}
-	return {_tag: "Found", value: context};
+	return { _tag: "Found", value: context };
 };
 
 const canonical = (value: unknown): unknown => {
@@ -93,7 +93,7 @@ export const emit = (context: AuditContext): string =>
 
 export const read = (body: string): WireRead<AuditContext> => {
 	const headings = body.split("\n").filter((line) => /^\s*#{1,6}\s+audit\s*context/i.test(line));
-	if (headings.length === 0) return {_tag: "Absent", reason: "no audit context heading"};
+	if (headings.length === 0) return { _tag: "Absent", reason: "no audit context heading" };
 	if (headings.length !== 1 || headings[0] !== HEADING) {
 		return {
 			_tag: "Malformed",
@@ -104,18 +104,24 @@ export const read = (body: string): WireRead<AuditContext> => {
 	const section = body.slice(body.indexOf(HEADING) + HEADING.length);
 	const match = /^\n\n```json\n([\s\S]*?)\n```(?:\n|$)/.exec(section);
 	if (match === null)
-		return {_tag: "Malformed", reason: "audit context must hold one JSON block", evidence: section};
+		return {
+			_tag: "Malformed",
+			reason: "audit context must hold one JSON block",
+			evidence: section,
+		};
 	return parse(match[1] ?? "");
 };
 
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parse(fields);
 	return parsed._tag === "Found"
-		? {_tag: "Composed", bytes: emit(parsed.value)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.value) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 export const readToLines = (body: string): WireReadLines => {
 	const parsed = read(body);
-	return parsed._tag === "Found" ? {_tag: "Found", value: [JSON.stringify(parsed.value)]} : parsed;
+	return parsed._tag === "Found"
+		? { _tag: "Found", value: [JSON.stringify(parsed.value)] }
+		: parsed;
 };

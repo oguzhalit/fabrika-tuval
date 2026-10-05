@@ -18,8 +18,8 @@
  * decline key there would be a second way to say what the tree already says.
  */
 
-import type {JsonSchema} from "../json-schema.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import type { JsonSchema } from "../json-schema.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const DECISIONS_DIR = "decisionsDir";
 export const ROADMAP_FILE_KEY = "roadmapFile";
@@ -33,10 +33,10 @@ export const CYCLE_DOC_KEY = "cycleDoc";
  * into the default the repo just refused.
  */
 export type PathValue =
-	| {readonly _tag: "Path"; readonly path: string}
-	| {readonly _tag: "Declined"};
+	| { readonly _tag: "Path"; readonly path: string }
+	| { readonly _tag: "Declined" };
 
-export const atPath = (path: string): PathValue => ({_tag: "Path", path});
+export const atPath = (path: string): PathValue => ({ _tag: "Path", path });
 
 /** The shipped values — what a repo declaring nothing still gets. */
 export const SHIPPED_DECISIONS_DIR = ".decisions";
@@ -46,7 +46,7 @@ export const SHIPPED_CYCLE_DOC = "product-development-cycle.md";
 /** A repo-relative path: a non-empty string, trimmed, and never absolute or parent-relative. */
 const decodePath = (key: string, raw: unknown): Decoded<string> => {
 	if (typeof raw !== "string" || raw.trim() === "") {
-		return {_tag: "Malformed", reason: `\`${key}\` is not a non-empty string`};
+		return { _tag: "Malformed", reason: `\`${key}\` is not a non-empty string` };
 	}
 	const path = raw.trim();
 	if (path.startsWith("/") || path.startsWith("..")) {
@@ -55,7 +55,7 @@ const decodePath = (key: string, raw: unknown): Decoded<string> => {
 			reason: `\`${key}\` is "${path}" — expected a path relative to the repository root`,
 		};
 	}
-	return {_tag: "Value", value: path};
+	return { _tag: "Value", value: path };
 };
 
 /** A repo-relative path in JSON Schema: a non-empty string, never absolute or parent-relative. */
@@ -84,14 +84,14 @@ export const decisionsDirKey: KeyGroup<PathValue> = {
 	key: DECISIONS_DIR,
 	shippedDefault: atPath(SHIPPED_DECISIONS_DIR),
 	decode: (raw) => {
-		if (raw === null) return {_tag: "Value", value: {_tag: "Declined"}};
+		if (raw === null) return { _tag: "Value", value: { _tag: "Declined" } };
 		const decoded = decodePath(DECISIONS_DIR, raw);
 		return decoded._tag === "Malformed"
 			? {
 					_tag: "Malformed",
 					reason: `${decoded.reason} — write null to declare that this repo keeps no decision corpus`,
 				}
-			: {_tag: "Value", value: atPath(decoded.value)};
+			: { _tag: "Value", value: atPath(decoded.value) };
 	},
 	// A readout prints what the file says, and what the file says for a declined key is `null`.
 	render: (value) => (value._tag === "Declined" ? null : value.path),

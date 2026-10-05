@@ -1,5 +1,5 @@
 /** The board seat — what admits a re-boot, and what the placed document declares afterwards. */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	adoptionRecord,
 	seatFromProof,
@@ -7,12 +7,12 @@ import {
 	spendBudget,
 	strandedRecord,
 } from "./board-seat.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
-import {compileText} from "./machine.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
+import { compileText } from "./machine.ts";
 
 describe("solePull", () => {
 	it("takes the one pull request the board hangs off the issue", () => {
-		expect(solePull([9430])).toEqual({_tag: "One", pr: 9430});
+		expect(solePull([9430])).toEqual({ _tag: "One", pr: 9430 });
 	});
 
 	it("refuses several, because which one the prior lane drove is not derivable", () => {
@@ -29,7 +29,10 @@ describe("solePull", () => {
 
 describe("seatFromProof", () => {
 	it("seats a proven head, carrying the fold's own note", () => {
-		const seat = seatFromProof(9430, "77aa05b", {_tag: "Proven", note: "every namespace answered"});
+		const seat = seatFromProof(9430, "77aa05b", {
+			_tag: "Proven",
+			note: "every namespace answered",
+		});
 
 		expect(seat).toEqual({
 			_tag: "Seatable",
@@ -40,16 +43,19 @@ describe("seatFromProof", () => {
 	});
 
 	it("refuses a standing FAIL as a budget question, not a verdict question", () => {
-		const seat = seatFromProof(9430, "77aa05b", {_tag: "Contradicted", what: "#9430 holds a FAIL"});
+		const seat = seatFromProof(9430, "77aa05b", {
+			_tag: "Contradicted",
+			what: "#9430 holds a FAIL",
+		});
 
 		expect(seat._tag).toBe("Unproven");
 		expect(seat._tag === "Unproven" && seat.why).toContain("how many the prior lane already spent");
 	});
 
 	it("refuses an unfinished review with the fold's own words", () => {
-		const seat = seatFromProof(9430, "77aa05b", {_tag: "InFlight", what: "#9430 has no verdict"});
+		const seat = seatFromProof(9430, "77aa05b", { _tag: "InFlight", what: "#9430 has no verdict" });
 
-		expect(seat).toEqual({_tag: "Unproven", why: "#9430 has no verdict"});
+		expect(seat).toEqual({ _tag: "Unproven", why: "#9430 has no verdict" });
 	});
 });
 
@@ -66,18 +72,18 @@ describe("spendBudget", () => {
 	it("leaves every other seeded field of the context alone", () => {
 		const seeded = JSON.stringify({
 			id: "coder",
-			machine: {context: {issue: {retries: 0, maxRetries: 3, classes: ["ui"], maxLaps: 16}}},
+			machine: { context: { issue: { retries: 0, maxRetries: 3, classes: ["ui"], maxLaps: 16 } } },
 		});
 		const spent = spendBudget(seeded);
 		if (spent._tag !== "Spent") throw new Error(`refused: ${spent.reason}`);
 
 		expect(JSON.parse(spent.text)).toMatchObject({
-			machine: {context: {issue: {classes: ["ui"], maxLaps: 16, maxRetries: 0}}},
+			machine: { context: { issue: { classes: ["ui"], maxLaps: 16, maxRetries: 0 } } },
 		});
 	});
 
 	it("refuses a document with no task to declare it on", () => {
-		expect(spendBudget(JSON.stringify({machine: {context: {}}}))._tag).toBe("Unseedable");
+		expect(spendBudget(JSON.stringify({ machine: { context: {} } }))._tag).toBe("Unseedable");
 	});
 });
 

@@ -4,8 +4,8 @@
  * They live in one module because every verb in the group reads the same PR shape, and a per-test
  * literal is how two tests come to disagree about what the platform returns.
  */
-import {okOut, unconfiguredAtCommits} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
+import { okOut, unconfiguredAtCommits } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
 
 export const HEAD = "03135b91aa04f7e2c9d8b1640a5c22e9f01b7d3c";
 export const OLD_HEAD = "0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f708192";
@@ -36,8 +36,8 @@ export const pull = (shape: PullShape = {}): ExecResult =>
 		JSON.stringify({
 			number: 4321,
 			state: shape.state ?? "open",
-			head: {sha: shape.head ?? HEAD},
-			base: {ref: shape.baseRef ?? "main"},
+			head: { sha: shape.head ?? HEAD },
+			base: { ref: shape.baseRef ?? "main" },
 			body: shape.body ?? `does a thing\n\nFixes #${LINKED_ISSUE}\n\n## Deviations\n\nNone.\n`,
 			changed_files: shape.changedFiles ?? 2,
 			comments: shape.comments ?? 0,
@@ -117,7 +117,7 @@ export const binding = (
 ];
 
 export const files = (...names: ReadonlyArray<string>): ExecResult =>
-	okOut(JSON.stringify(names.map((filename) => ({filename}))));
+	okOut(JSON.stringify(names.map((filename) => ({ filename }))));
 
 /**
  * The check-run envelope at a commit. `title` rides an `output` object, where the platform puts it —
@@ -135,8 +135,8 @@ export const checkRuns = (
 	okOut(
 		JSON.stringify({
 			total_count: declared,
-			check_runs: runs.map(({title, ...run}) =>
-				title === undefined ? run : {...run, output: {title, summary: ""}},
+			check_runs: runs.map(({ title, ...run }) =>
+				title === undefined ? run : { ...run, output: { title, summary: "" } },
 			),
 		}),
 	);
@@ -146,7 +146,7 @@ export const inventory = (...paths: ReadonlyArray<string>): ExecResult =>
 	okOut(
 		JSON.stringify({
 			total_count: paths.length,
-			workflows: paths.map((path, index) => ({id: index + 1, state: "active", path})),
+			workflows: paths.map((path, index) => ({ id: index + 1, state: "active", path })),
 		}),
 	);
 
@@ -172,7 +172,7 @@ export const runsAtHead = (...entries: ReadonlyArray<string | RunAtHeadRow>): Ex
 		JSON.stringify({
 			total_count: entries.length,
 			workflow_runs: entries.map((entry, index) => {
-				const row: RunAtHeadRow = typeof entry === "string" ? {path: entry} : entry;
+				const row: RunAtHeadRow = typeof entry === "string" ? { path: entry } : entry;
 				const status = row.status ?? "completed";
 				// A run defaults to the one provenance that establishes coverage — a `pull_request`
 				// event at {@link HEAD} — so a case for the absence of it has to say so, and `null`
@@ -188,21 +188,21 @@ export const runsAtHead = (...entries: ReadonlyArray<string | RunAtHeadRow>): Ex
 					status,
 					conclusion: status === "completed" ? "success" : null,
 					completed_at: status === "completed" ? "2026-08-08T00:00:00Z" : null,
-					...(event === null ? {} : {event}),
-					...(headSha === null ? {} : {head_sha: headSha}),
+					...(event === null ? {} : { event }),
+					...(headSha === null ? {} : { head_sha: headSha }),
 				};
 			}),
 		}),
 	);
 
 export const comments = (
-	...rows: ReadonlyArray<{id: number; body: string; author?: string; createdAt?: string}>
+	...rows: ReadonlyArray<{ id: number; body: string; author?: string; createdAt?: string }>
 ): ExecResult =>
 	okOut(
 		JSON.stringify(
 			rows.map((row) => ({
 				id: row.id,
-				user: {login: row.author ?? "kampus-bot"},
+				user: { login: row.author ?? "kampus-bot" },
 				created_at: row.createdAt ?? "2026-08-08T00:00:00Z",
 				body: row.body,
 			})),

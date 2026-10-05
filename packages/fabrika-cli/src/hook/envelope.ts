@@ -33,13 +33,13 @@ export interface Envelope {
 }
 
 export type EnvelopeRead =
-	| {readonly _tag: "Envelope"; readonly envelope: Envelope}
+	| { readonly _tag: "Envelope"; readonly envelope: Envelope }
 	/** fd 0 was read in full and held no bytes. */
-	| {readonly _tag: "Empty"}
+	| { readonly _tag: "Empty" }
 	/** Bytes arrived and are provably not an envelope. */
-	| {readonly _tag: "Malformed"; readonly reason: string; readonly evidence: string}
+	| { readonly _tag: "Malformed"; readonly reason: string; readonly evidence: string }
 	/** fd 0 could not be read at all. Nothing is proven about the envelope. */
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /** The first 120 bytes of what arrived, for a refusal that names the offending input. */
 const evidenceOf = (text: string): string => {
@@ -52,7 +52,7 @@ const stringField = (record: Record<string, unknown>, key: string): string | und
 
 /** Classify the bytes on a hook's stdin. Total: every input lands on exactly one variant. */
 export const classifyEnvelope = (text: string): EnvelopeRead => {
-	if (text.trim() === "") return {_tag: "Empty"};
+	if (text.trim() === "") return { _tag: "Empty" };
 
 	let parsed: unknown;
 	try {

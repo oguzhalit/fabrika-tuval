@@ -1,9 +1,9 @@
-import {Effect, Layer} from "effect";
-import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
-import {fakeHttp, fakeShell, type HttpReply, linkNext} from "../fakes.test-support.ts";
-import {forgetAmbientToken, NO_TOKEN, PAGE_CAP} from "../io/gh-api.ts";
-import type {Attempt, Shell} from "../io/git.ts";
-import {httpError, planGated} from "./fixtures.test-support.ts";
+import { Effect, Layer } from "effect";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fakeHttp, fakeShell, type HttpReply, linkNext } from "../fakes.test-support.ts";
+import { forgetAmbientToken, NO_TOKEN, PAGE_CAP } from "../io/gh-api.ts";
+import type { Attempt, Shell } from "../io/git.ts";
+import { httpError, planGated } from "./fixtures.test-support.ts";
 import {
 	armAutoMerge,
 	disableAutoMerge,
@@ -39,12 +39,12 @@ const reason = <A>(read: Attempt<A>): string => {
 const json = (value: unknown, headers?: Record<string, string>): HttpReply => ({
 	status: 200,
 	body: JSON.stringify(value),
-	...(headers === undefined ? {} : {headers}),
+	...(headers === undefined ? {} : { headers }),
 });
 
 const review = (state: string) => ({
 	state,
-	user: {login: "cansirin"},
+	user: { login: "cansirin" },
 	commit_id: "abc",
 	submitted_at: "2026-01-01T00:00:00Z",
 });
@@ -99,7 +99,7 @@ describe("the envelope proof", () => {
 				json(
 					{
 						total_count: 3,
-						check_runs: [{name: "ci", status: "completed", id: 1, check_suite: {id: 91}}],
+						check_runs: [{ name: "ci", status: "completed", id: 1, check_suite: { id: 91 } }],
 					},
 					linkNext("https://api.github.com/x?page=2"),
 				),
@@ -108,7 +108,7 @@ describe("the envelope proof", () => {
 				/&page=2$/,
 				json({
 					total_count: 3,
-					check_runs: [{name: "lint", status: "completed", id: 2, check_suite: {id: 91}}],
+					check_runs: [{ name: "lint", status: "completed", id: 2, check_suite: { id: 91 } }],
 				}),
 			],
 		]);
@@ -125,7 +125,7 @@ describe("the envelope proof", () => {
 		const http = fakeHttp([
 			[
 				/check-runs/,
-				json({total_count: 1, check_runs: [{name: "ci", status: "completed", id: 1}]}),
+				json({ total_count: 1, check_runs: [{ name: "ci", status: "completed", id: 1 }] }),
 			],
 		]);
 		const read = await run(listShipCheckRuns("o/r", "abc"), http);
@@ -167,7 +167,7 @@ describe("the envelope proof", () => {
 
 	it("refuses a workflow run naming no workflow — two runs of nothing are not the same workflow", async () => {
 		const http = fakeHttp([
-			[/actions\/runs\?head_sha=/, json({total_count: 1, workflow_runs: [{id: 11}]})],
+			[/actions\/runs\?head_sha=/, json({ total_count: 1, workflow_runs: [{ id: 11 }] })],
 		]);
 		const read = await run(listRunsAtHead("o/r", "abc"), http);
 		expect(reason(read)).toContain("not a workflow run");
@@ -177,7 +177,7 @@ describe("the envelope proof", () => {
 		const http = fakeHttp([
 			[
 				/actions\/runs\?head_sha=/,
-				json({total_count: 1, workflow_runs: [{id: 11, workflow_id: 7, head_sha: "abc"}]}),
+				json({ total_count: 1, workflow_runs: [{ id: 11, workflow_id: 7, head_sha: "abc" }] }),
 			],
 		]);
 		const read = await run(listRunsAtHead("o/r", "abc"), http);
@@ -185,7 +185,7 @@ describe("the envelope proof", () => {
 	});
 
 	it("refuses an envelope that declares no total_count rather than inventing one", async () => {
-		const http = fakeHttp([[/check-runs/, json({check_runs: []})]]);
+		const http = fakeHttp([[/check-runs/, json({ check_runs: [] })]]);
 		const read = await run(listShipCheckRuns("o/r", "abc"), http);
 		expect(reason(read)).toContain("total_count");
 	});
@@ -194,53 +194,59 @@ describe("the envelope proof", () => {
 		const http = fakeHttp([
 			[
 				/actions\/workflows\?/,
-				json({total_count: 9, workflows: [{state: "active", path: ".github/workflows/ci.yml"}]}),
+				json({
+					total_count: 9,
+					workflows: [{ state: "active", path: ".github/workflows/ci.yml" }],
+				}),
 			],
 		]);
 		const read = await run(listWorkflowPaths("o/r"), http);
-		expect(read).toEqual({_tag: "Ok", value: [".github/workflows/ci.yml"]});
+		expect(read).toEqual({ _tag: "Ok", value: [".github/workflows/ci.yml"] });
 	});
 });
 
 describe("absence stays a proven answer, never a failed read", () => {
 	it("reads a 404 CODEOWNERS as Absent and a 500 as Unknown", async () => {
-		const missing = fakeHttp([[/contents/, {status: 404, body: '{"message":"Not Found"}'}]]);
+		const missing = fakeHttp([[/contents/, { status: 404, body: '{"message":"Not Found"}' }]]);
 		expect((await run(readFileAtRef("o/r", ".github/CODEOWNERS", "main"), missing))._tag).toBe(
 			"Absent",
 		);
-		const broken = fakeHttp([[/contents/, {status: 500, body: "{}"}]]);
+		const broken = fakeHttp([[/contents/, { status: 500, body: "{}" }]]);
 		expect((await run(readFileAtRef("o/r", ".github/CODEOWNERS", "main"), broken))._tag).toBe(
 			"Unknown",
 		);
 	});
 
 	it("serves the raw bytes through the raw media type, not a JSON envelope", async () => {
-		const http = fakeHttp([[/contents/, {status: 200, body: "* @acme/core\n"}]]);
+		const http = fakeHttp([[/contents/, { status: 200, body: "* @acme/core\n" }]]);
 		const read = await run(readFileAtRef("o/r", ".github/CODEOWNERS", "main"), http);
-		expect(read).toEqual({_tag: "Present", value: "* @acme/core\n"});
+		expect(read).toEqual({ _tag: "Present", value: "* @acme/core\n" });
 	});
 
 	it("reads a 404 team as Absent — the team does not exist in this org", async () => {
-		const http = fakeHttp([[/teams/, {status: 404, body: '{"message":"Not Found"}'}]]);
+		const http = fakeHttp([[/teams/, { status: 404, body: '{"message":"Not Found"}' }]]);
 		expect((await run(listTeamMembers("acme", "core"), http))._tag).toBe("Absent");
 	});
 
 	it("pages a present team and hands back every login", async () => {
 		const http = fakeHttp([
-			[/members\?per_page=100&page=1$/, json([{login: "a"}], linkNext("https://x/?page=2"))],
-			[/&page=2$/, json([{login: "b"}])],
+			[/members\?per_page=100&page=1$/, json([{ login: "a" }], linkNext("https://x/?page=2"))],
+			[/&page=2$/, json([{ login: "b" }])],
 		]);
 		const read = await run(listTeamMembers("acme", "core"), http);
-		expect(read).toEqual({_tag: "Present", value: ["a", "b"]});
+		expect(read).toEqual({ _tag: "Present", value: ["a", "b"] });
 	});
 });
 
 describe("the review-thread block", () => {
 	const threadPage = (
 		nodes: ReadonlyArray<unknown>,
-		pageInfo: {hasNextPage: boolean; endCursor: string},
+		pageInfo: { hasNextPage: boolean; endCursor: string },
 		totalCount = 2,
-	) => json({data: {repository: {pullRequest: {reviewThreads: {totalCount, pageInfo, nodes}}}}});
+	) =>
+		json({
+			data: { repository: { pullRequest: { reviewThreads: { totalCount, pageInfo, nodes } } } },
+		});
 
 	const thread = (id: string, comments: number) => ({
 		id,
@@ -249,13 +255,13 @@ describe("the review-thread block", () => {
 		line: 3,
 		comments: {
 			totalCount: comments,
-			nodes: [{body: "hi", author: {login: "bot", __typename: "Bot"}}],
+			nodes: [{ body: "hi", author: { login: "bot", __typename: "Bot" } }],
 		},
 	});
 
 	it("pages threads by cursor and keeps both counts", async () => {
 		const http = fakeHttp([
-			[/graphql/, threadPage([thread("t1", 4)], {hasNextPage: true, endCursor: "c1"})],
+			[/graphql/, threadPage([thread("t1", 4)], { hasNextPage: true, endCursor: "c1" })],
 		]);
 		// The scripted reply always declares a next page, so the read stops at its own 50-page bound.
 		const read = value(await run(listReviewThreads("o/r", 4321), http));
@@ -267,14 +273,14 @@ describe("the review-thread block", () => {
 
 	it("refuses a page that declared another and named no cursor", async () => {
 		const http = fakeHttp([
-			[/graphql/, threadPage([thread("t1", 1)], {hasNextPage: true, endCursor: ""})],
+			[/graphql/, threadPage([thread("t1", 1)], { hasNextPage: true, endCursor: "" })],
 		]);
 		expect(reason(await run(listReviewThreads("o/r", 4321), http))).toContain("named no cursor");
 	});
 
 	it("refuses the endpoint's own errors array rather than reading past it", async () => {
 		const http = fakeHttp([
-			[/graphql/, json({errors: [{message: "Could not resolve to a node"}]})],
+			[/graphql/, json({ errors: [{ message: "Could not resolve to a node" }] })],
 		]);
 		expect(reason(await run(listReviewThreads("o/r", 4321), http))).toContain(
 			"Could not resolve to a node",
@@ -285,15 +291,15 @@ describe("the review-thread block", () => {
 describe("the auto-merge mutations", () => {
 	const armed = json({
 		data: {
-			repository: {pullRequest: {id: "PR_node"}},
-			enablePullRequestAutoMerge: {clientMutationId: null},
-			disablePullRequestAutoMerge: {clientMutationId: null},
+			repository: { pullRequest: { id: "PR_node" } },
+			enablePullRequestAutoMerge: { clientMutationId: null },
+			disablePullRequestAutoMerge: { clientMutationId: null },
 		},
 	});
 
 	it("arms through enablePullRequestAutoMerge and passes NO merge method", async () => {
 		const http = fakeHttp([[/graphql/, armed]]);
-		expect(await run(armAutoMerge("o/r", 4321), http)).toEqual({_tag: "Ok", value: undefined});
+		expect(await run(armAutoMerge("o/r", 4321), http)).toEqual({ _tag: "Ok", value: undefined });
 		expect(http.bodies[0]).toContain("pullRequest(number:$number){id}");
 		expect(http.bodies[1]).toContain("enablePullRequestAutoMerge");
 		expect(http.bodies.join("")).not.toContain("mergeMethod");
@@ -301,19 +307,22 @@ describe("the auto-merge mutations", () => {
 
 	it("clears through disablePullRequestAutoMerge", async () => {
 		const http = fakeHttp([[/graphql/, armed]]);
-		expect(await run(disableAutoMerge("o/r", 4321), http)).toEqual({_tag: "Ok", value: undefined});
+		expect(await run(disableAutoMerge("o/r", 4321), http)).toEqual({
+			_tag: "Ok",
+			value: undefined,
+		});
 		expect(http.bodies[1]).toContain("disablePullRequestAutoMerge");
 	});
 
 	it("refuses when the PR has no node id rather than arming nothing at exit 0", async () => {
-		const http = fakeHttp([[/graphql/, json({data: {repository: {pullRequest: null}}})]]);
+		const http = fakeHttp([[/graphql/, json({ data: { repository: { pullRequest: null } } })]]);
 		expect(reason(await run(armAutoMerge("o/r", 4321), http))).toContain("no node id");
 	});
 });
 
 describe("setPullState", () => {
 	it("PATCHes the state and reads the status back", async () => {
-		const http = fakeHttp([[/PATCH/, json({state: "closed"})]]);
+		const http = fakeHttp([[/PATCH/, json({ state: "closed" })]]);
 		expect(await run(setPullState("o/r", 4321, "closed"), http)).toEqual({
 			_tag: "Ok",
 			value: undefined,
@@ -323,7 +332,7 @@ describe("setPullState", () => {
 	});
 
 	it("is a failure on a non-2xx — the caller re-reads, and must not read a refusal as done", async () => {
-		const http = fakeHttp([[/PATCH/, {status: 422, body: "{}"}]]);
+		const http = fakeHttp([[/PATCH/, { status: 422, body: "{}" }]]);
 		expect(reason(await run(setPullState("o/r", 4321, "open"), http))).toContain("422");
 	});
 });
@@ -333,7 +342,7 @@ describe("isQueueGoverned", () => {
 
 	it("answers not governed on the plan-gated 403 — a plan with no rulesets has no queue", async () => {
 		const http = fakeHttp([[RULES, planGated]]);
-		expect(await run(isQueueGoverned("o/r", "main"), http)).toEqual({_tag: "Ok", value: false});
+		expect(await run(isQueueGoverned("o/r", "main"), http)).toEqual({ _tag: "Ok", value: false });
 	});
 
 	it("stays a failure on a permission 403 — an unread rule list is never `no queue`", async () => {
@@ -348,7 +357,7 @@ describe("the credential", () => {
 		vi.stubEnv("GH_TOKEN", "");
 		const http = fakeHttp([]);
 		const read = await run(listReviews("o/r", 4321), http);
-		expect(read).toEqual({_tag: "Failure", reason: NO_TOKEN});
+		expect(read).toEqual({ _tag: "Failure", reason: NO_TOKEN });
 		expect(http.calls).toEqual([]);
 	});
 

@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import {bodyDefect} from "../build/pr-body.ts";
-import {readDeviations} from "./deviations.ts";
+import { describe, expect, it } from "vitest";
+import { bodyDefect } from "../build/pr-body.ts";
+import { readDeviations } from "./deviations.ts";
 
 const ENTRY =
 	"- **Scope narrowing** — **Said:** the AC asks for four gates. **Did:** three plus a bounce. **Why:** the fourth emits a trivial verdict. **Disposition:** stated in the PR body.";
@@ -29,7 +29,7 @@ describe("readDeviations", () => {
 	it("reads an entry's class label and its Said", () => {
 		expect(readDeviations(`## Deviations\n\n${ENTRY}\n`)).toEqual({
 			state: "found",
-			entries: [{label: "1", said: "the AC asks for four gates."}],
+			entries: [{ label: "1", said: "the AC asks for four gates." }],
 			reason: null,
 		});
 	});
@@ -48,7 +48,7 @@ describe("readDeviations", () => {
 		const body = `## Deviations\n\n- **Declined guidance**\n  **Said:** take the reviewer's shape.\n  **Did:** kept mine.\n  **Why:** it reads the label.\n  **Disposition:** stated here.\n`;
 		const result = readDeviations(body);
 		expect(result.entries).toHaveLength(1);
-		expect(result.entries[0]).toEqual({label: "4", said: "take the reviewer's shape."});
+		expect(result.entries[0]).toEqual({ label: "4", said: "take the reviewer's shape." });
 	});
 
 	it("carries a Said that wraps in full, collapsed to one line", () => {

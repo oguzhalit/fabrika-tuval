@@ -36,14 +36,14 @@
  * runs on both subjects — a PR here, a child's range on the ranged arm — because a child's reviewer
  * routes findings the same way.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {diffRangePaths} from "../io/git.ts";
-import {createComment, getComment, listComments} from "../io/issues.ts";
-import {patchComment, viewerLogin} from "../io/pulls.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { diffRangePaths } from "../io/git.ts";
+import { createComment, getComment, listComments } from "../io/issues.ts";
+import { patchComment, viewerLogin } from "../io/pulls.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	contentDigest,
 	emit as emitMarker,
@@ -54,11 +54,11 @@ import {
 	sameHead,
 	clause as toClause,
 } from "../wire/verdict-marker.ts";
-import {emitAdvisory, readAdvisory, reviewedHeadLine} from "./advisory.ts";
-import {type CriterionProvenance, provenanceSubject} from "./append.ts";
-import {type AppendedRead, appendedThisRound} from "./appended-this-round.ts";
-import {type AuthoredSurface, leakRefusal, readAuthored} from "./authored.ts";
-import {issueRefsOf, namespacesOf, partition} from "./classes.ts";
+import { emitAdvisory, readAdvisory, reviewedHeadLine } from "./advisory.ts";
+import { type CriterionProvenance, provenanceSubject } from "./append.ts";
+import { type AppendedRead, appendedThisRound } from "./appended-this-round.ts";
+import { type AuthoredSurface, leakRefusal, readAuthored } from "./authored.ts";
+import { issueRefsOf, namespacesOf, partition } from "./classes.ts";
 import {
 	APPENDED_THIS_ROUND,
 	OFF_VOCABULARY,
@@ -69,13 +69,13 @@ import {
 	UNNAMED_EVIDENCE,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {contentDigestAt} from "./content-binding.ts";
-import {bindHead, boundLine} from "./head.ts";
-import {evidenceOwed, type OwedRead, quoteRows} from "./outside-diff-evidence.ts";
-import {runRangePost} from "./range-post.ts";
-import {compose as supersedeWith} from "./supersede.ts";
-import {badNumber, openPull, resolveTargetRepo, scannedLine} from "./target.ts";
-import {latestByWriteRecency, stampIso, withWrittenAt} from "./write-recency.ts";
+import { contentDigestAt } from "./content-binding.ts";
+import { bindHead, boundLine } from "./head.ts";
+import { evidenceOwed, type OwedRead, quoteRows } from "./outside-diff-evidence.ts";
+import { runRangePost } from "./range-post.ts";
+import { compose as supersedeWith } from "./supersede.ts";
+import { badNumber, openPull, resolveTargetRepo, scannedLine } from "./target.ts";
+import { latestByWriteRecency, stampIso, withWrittenAt } from "./write-recency.ts";
 
 const VERB = "review post";
 
@@ -312,7 +312,7 @@ export const runPost = (
 	options: PostOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -405,7 +405,7 @@ export const runPost = (
 			// `--base`/`--tip` too, so a `pr:#`-only read here would leave exactly one subject able to
 			// pair an append with a PASS — and a child's PASS folds the range into the epic's tail.
 			if (polarity === "PASS" && options.round !== null) {
-				const routed: CriterionProvenance = {_tag: "Ranged", range: {base, tip}};
+				const routed: CriterionProvenance = { _tag: "Ranged", range: { base, tip } };
 				const appended = yield* appendedThisRound(repo, [pr], routed, options.round);
 				const refusal = appendedRefusal(appended, routed, options.round, []);
 				if (refusal !== null) return refusal;
@@ -437,7 +437,7 @@ export const runPost = (
 					issue: pr,
 					namespace,
 					polarity: polarity as Polarity,
-					range: {base, tip},
+					range: { base, tip },
 					clause,
 					body: authored.text,
 					repo,
@@ -508,7 +508,7 @@ export const runPost = (
 		// `--partial` PR's reviewer appends to the issue it is part of, and a closing-only read would
 		// let that row die exactly the way this refusal exists to stop.
 		if (polarity === "PASS" && options.round !== null) {
-			const routed: CriterionProvenance = {_tag: "Pull", pr};
+			const routed: CriterionProvenance = { _tag: "Pull", pr };
 			const linked = issueRefsOf(target.pull.body).referenced;
 			const appended = yield* appendedThisRound(repo, linked, routed, options.round);
 			const refusal = appendedRefusal(appended, routed, options.round, diagnostics);
@@ -583,16 +583,16 @@ export const runPost = (
 		const envelope =
 			mine === undefined ? composed : supersedeWith(mine.body, composed, new Date(wroteAt));
 
-		let landed: {readonly id: number; readonly url: string} | null = null;
+		let landed: { readonly id: number; readonly url: string } | null = null;
 		let failure: string | null = null;
 		if (mine === undefined) {
 			const created = yield* createComment(repo, pr, envelope);
 			if (created._tag === "Failure") failure = created.reason;
-			else landed = {id: created.value.id, url: created.value.url};
+			else landed = { id: created.value.id, url: created.value.url };
 		} else {
 			const edited = yield* patchComment(repo, mine.id, envelope);
 			if (edited._tag === "Failure") failure = edited.reason;
-			else landed = {id: mine.id, url: edited.value};
+			else landed = { id: mine.id, url: edited.value };
 		}
 		if (landed === null) {
 			return refuse(
@@ -610,7 +610,7 @@ export const runPost = (
 				? back.reason
 				: mismatchOf(
 						back.value,
-						{namespace, polarity, sha: inspected, content: content.value, clause},
+						{ namespace, polarity, sha: inspected, content: content.value, clause },
 						carrier,
 						envelope,
 					);

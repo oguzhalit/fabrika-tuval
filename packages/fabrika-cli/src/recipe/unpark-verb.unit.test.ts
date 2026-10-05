@@ -1,8 +1,8 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import type {ParkCauseSurface} from "../config/keys/park-cause.ts";
-import type {Read} from "../config/read-key.ts";
-import {bodyDigest} from "../decision/digest.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import type { ParkCauseSurface } from "../config/keys/park-cause.ts";
+import type { Read } from "../config/read-key.ts";
+import { bodyDigest } from "../decision/digest.ts";
 import {
 	acl,
 	BODY,
@@ -26,15 +26,15 @@ import {
 	type Scripted,
 	unconfiguredOnPlatform,
 } from "../fakes.test-support.ts";
-import {readGoldenFixture} from "../golden-fixture.ts";
-import {JOB_LOG, JOBS, jobs} from "../heal-ci/fixtures.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {emitMachine} from "../lane/emit.ts";
-import {parkCauseRead} from "../lane/fixtures.test-support.ts";
-import {foldLog, type LogEntry, parseLog} from "../lane/fold.ts";
-import {compileText} from "../lane/machine.ts";
-import {RETRY_BUDGET} from "../retry-budget.ts";
-import {evidenced, evidenceOpens} from "../review-ui/evidence.test-support.ts";
+import { readGoldenFixture } from "../golden-fixture.ts";
+import { JOB_LOG, JOBS, jobs } from "../heal-ci/fixtures.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { emitMachine } from "../lane/emit.ts";
+import { parkCauseRead } from "../lane/fixtures.test-support.ts";
+import { foldLog, type LogEntry, parseLog } from "../lane/fold.ts";
+import { compileText } from "../lane/machine.ts";
+import { RETRY_BUDGET } from "../retry-budget.ts";
+import { evidenced, evidenceOpens } from "../review-ui/evidence.test-support.ts";
 import {
 	CODEOWNERS,
 	checkRuns,
@@ -49,10 +49,15 @@ import {
 	UNDECLARED,
 	workflows,
 } from "../ship/fixtures.test-support.ts";
-import {ADDED} from "../ship/queue.ts";
-import {WAIT_BUDGET} from "../wait-budget.ts";
-import {emit as emitRuling, markedIssue, rulingUrl, scopeDigest} from "../wire/decision-ruling.ts";
-import {markerTime} from "../wire/grill-marker.ts";
+import { ADDED } from "../ship/queue.ts";
+import { WAIT_BUDGET } from "../wait-budget.ts";
+import {
+	emit as emitRuling,
+	markedIssue,
+	rulingUrl,
+	scopeDigest,
+} from "../wire/decision-ruling.ts";
+import { markerTime } from "../wire/grill-marker.ts";
 import {
 	NOT_PARKED,
 	PARK_HOLDS,
@@ -98,7 +103,7 @@ import {
 	WORKFLOW,
 	worktreeList,
 } from "./fixtures.test-support.ts";
-import {runUnpark} from "./unpark-verb.ts";
+import { runUnpark } from "./unpark-verb.ts";
 
 const CLOSERS = /^POST .*\/graphql$/;
 const SEARCH = /^GET .*\/search\/issues\?/;
@@ -146,24 +151,24 @@ const openIssue = {
 };
 
 /** The shared payload fixtures speak `gh`'s `ExecResult`; the seam now serves the same bytes. */
-const reply = (result: ExecResult, status = 200): HttpReply => ({status, body: result.stdout});
+const reply = (result: ExecResult, status = 200): HttpReply => ({ status, body: result.stdout });
 
 /** The §CP path set, so the boundary classifies `control-plane` and the discharge table runs. */
 const CP_FILES = reply(files(".github/workflows/ci.yml", "README.md"));
 
 const members = (...logins: ReadonlyArray<string>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(logins.map((login) => ({login}))),
+	body: JSON.stringify(logins.map((login) => ({ login }))),
 });
 
 /** A terminal review page — no `Link: … rel="next"`, so the read proves itself exhausted. */
 const reviewPage = (
-	...rows: ReadonlyArray<{login: string; state: string; commit: string}>
+	...rows: ReadonlyArray<{ login: string; state: string; commit: string }>
 ): HttpReply => ({
 	status: 200,
 	body: JSON.stringify(
 		rows.map((row) => ({
-			user: {login: row.login},
+			user: { login: row.login },
 			state: row.state,
 			commit_id: row.commit,
 			submitted_at: "2026-08-08T00:00:00Z",
@@ -174,20 +179,20 @@ const reviewPage = (
 /** A discharged §CP park's target half: the closing PR, its shape, its changed files. */
 const DISCHARGED: ReadonlyArray<Scripted> = [
 	[CLOSERS, reply(closingPulls(4321))],
-	[PULL, reply(pull({author: "owner"}))],
+	[PULL, reply(pull({ author: "owner" }))],
 	[FILES, CP_FILES],
 ];
 
 /** The clearance half: the boundary, no base drift, the roster, an approving owner at the live head. */
 const DISCHARGED_HTTP: ReadonlyArray<Scripted> = [
-	[OWNERS, {status: 200, body: CODEOWNERS}],
-	[COMPARE, {status: 200, body: '{"behind_by":0}'}],
+	[OWNERS, { status: 200, body: CODEOWNERS }],
+	[COMPARE, { status: 200, body: '{"behind_by":0}' }],
 	[ROSTER, members("owner", "reviewer")],
-	[REVIEWS, reviewPage({login: "reviewer", state: "APPROVED", commit: HEAD})],
+	[REVIEWS, reviewPage({ login: "reviewer", state: "APPROVED", commit: HEAD })],
 ];
 
 const lane = (log: string, extra: Parameters<typeof fakeFs>[0] = {}) =>
-	fakeFs({files: {[WORKFLOW]: laneTemplate(), [LOG]: log}, ...extra});
+	fakeFs({ files: { [WORKFLOW]: laneTemplate(), [LOG]: log }, ...extra });
 
 /** A second candidate the search index alone nominates, its body linking the same lane issue. */
 const otherPull = (number: number): HttpReply => ({
@@ -195,12 +200,12 @@ const otherPull = (number: number): HttpReply => ({
 	body: JSON.stringify({
 		number,
 		state: "open",
-		head: {sha: HEAD},
-		base: {ref: "main"},
+		head: { sha: HEAD },
+		base: { ref: "main" },
 		body: `Part of #${LANE}\n`,
 		changed_files: 1,
 		comments: 0,
-		user: {login: "owner"},
+		user: { login: "owner" },
 		html_url: `https://github.com/o/r/pull/${number}`,
 	}),
 });
@@ -271,12 +276,12 @@ describe("recipe unpark — the known recipe clears", () => {
 		const out = await run(fs, [
 			[CLOSERS, reply(closingPulls())],
 			[SEARCH, reply(nominatedPulls(4321))],
-			[PULL, reply(pull({author: "owner", body: `Part of #${LANE}\n`}))],
+			[PULL, reply(pull({ author: "owner", body: `Part of #${LANE}\n` }))],
 			[FILES, CP_FILES],
 		]);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({park: "human:cp-approval", current: "ship"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ park: "human:cp-approval", current: "ship" });
 	});
 
 	it("names the discharge mechanism it relayed rather than restating the §CP rule", async () => {
@@ -293,12 +298,12 @@ describe("recipe unpark — the known recipe clears", () => {
 			fs,
 			[
 				[CLOSERS, reply(closingPulls(4321))],
-				[PULL, reply(pull({author: "owner", mergeable: false, mergeableState: "dirty"}))],
+				[PULL, reply(pull({ author: "owner", mergeable: false, mergeableState: "dirty" }))],
 				[FILES, CP_FILES],
 			],
 			[
-				[OWNERS, {status: 200, body: CODEOWNERS}],
-				[COMPARE, {status: 200, body: '{"behind_by":120}'}],
+				[OWNERS, { status: 200, body: CODEOWNERS }],
+				[COMPARE, { status: 200, body: '{"behind_by":120}' }],
 				[ROSTER, members("owner", "reviewer")],
 				[REVIEWS, reviewPage()],
 			],
@@ -317,7 +322,7 @@ const marker = (namespace: string, polarity: string, sha: string): string =>
 /** The permission endpoint's own shape: a record, never a bare word. */
 const permission = (level: string): HttpReply => ({
 	status: 200,
-	body: JSON.stringify({permission: level}),
+	body: JSON.stringify({ permission: level }),
 });
 
 /**
@@ -328,17 +333,17 @@ const permission = (level: string): HttpReply => ({
  */
 const RED_TARGET: ReadonlyArray<Scripted> = [
 	[CLOSERS, reply(closingPulls(4321))],
-	[PULL, reply(pull({comments: 2}))],
+	[PULL, reply(pull({ comments: 2 }))],
 	[FILES, reply(files("apps/site/src/App.tsx", "README.md"))],
-	[OWNERS, {status: 200, body: CODEOWNERS}],
+	[OWNERS, { status: 200, body: CODEOWNERS }],
 ];
 
 /** One gating check at the head, with the run and the workflow that gives it gate coverage. */
 const ciAt = (status: string, conclusion: string | null): ReadonlyArray<Scripted> => [
-	[COMMIT, {status: 200, body: JSON.stringify({sha: HEAD})}],
-	[CHECK_RUNS, reply(checkRuns(1, [{name: "ci", status, conclusion}]))],
-	[WORKFLOWS, reply(workflows({path: ".github/workflows/ci.yml"}))],
-	[RUNS_AT_HEAD, reply(runsTotal(1, [{id: 1, path: ".github/workflows/ci.yml"}]))],
+	[COMMIT, { status: 200, body: JSON.stringify({ sha: HEAD }) }],
+	[CHECK_RUNS, reply(checkRuns(1, [{ name: "ci", status, conclusion }]))],
+	[WORKFLOWS, reply(workflows({ path: ".github/workflows/ci.yml" }))],
+	[RUNS_AT_HEAD, reply(runsTotal(1, [{ id: 1, path: ".github/workflows/ci.yml" }]))],
 ];
 
 const GREEN_CI = ciAt("completed", "success");
@@ -346,8 +351,8 @@ const RED_CI = ciAt("completed", "failure");
 
 /** The failing `ci` context's job and its log, as `heal-ci logs` reads them at the head. */
 const redLog = (text: string): ReadonlyArray<Scripted> => [
-	[JOBS, jobs(1, [{id: 441, name: "ci"}])],
-	[JOB_LOG, {status: 200, body: text}],
+	[JOBS, jobs(1, [{ id: 441, name: "ci" }])],
+	[JOB_LOG, { status: 200, body: text }],
 ];
 
 /** A log line `heal-ci classify` seats on its `assertion-failure` logic row. */
@@ -358,7 +363,7 @@ const armlessTemplate = (): string => {
 	const strip = (node: unknown): void => {
 		if (typeof node !== "object" || node === null) return;
 		const record = node as Record<string, unknown>;
-		const park = record["human:cp-approval"] as {on?: Record<string, unknown>} | undefined;
+		const park = record["human:cp-approval"] as { on?: Record<string, unknown> } | undefined;
 		if (park?.on !== undefined) delete park.on["ISSUE.FAIL"];
 		for (const child of Object.values(record)) strip(child);
 	};
@@ -391,12 +396,12 @@ const EPIC_PARKED_ON_CI_RED = [
 			event: `ISSUE_${child}.${event}`,
 		})),
 	),
-	{task: EPIC_TASK, event: `EPIC_${LANE}.PASS`},
-	{task: EPIC_TASK, event: `EPIC_${LANE}.BLOCKED`, cause: "head-ci-red"},
+	{ task: EPIC_TASK, event: `EPIC_${LANE}.PASS` },
+	{ task: EPIC_TASK, event: `EPIC_${LANE}.BLOCKED`, cause: "head-ci-red" },
 ]
 	.map(
 		(entry, index) =>
-			`${JSON.stringify({...entry, at: new Date(Date.UTC(2026, 7, 16, 0, index)).toISOString()})}\n`,
+			`${JSON.stringify({ ...entry, at: new Date(Date.UTC(2026, 7, 16, 0, index)).toISOString() })}\n`,
 	)
 	.join("");
 
@@ -406,9 +411,9 @@ const PARKED_ON_CI_RED_SPENT =
 		"WIP",
 		"DONE",
 		"PASS",
-		...Array.from({length: RETRY_BUDGET}, () => ["FAIL", "DONE", "PASS"]).flat(),
+		...Array.from({ length: RETRY_BUDGET }, () => ["FAIL", "DONE", "PASS"]).flat(),
 	) +
-	`${JSON.stringify({task: "issue", event: "ISSUE.BLOCKED", at: "2026-08-16T01:00:00.000Z", cause: "head-ci-red"})}\n`;
+	`${JSON.stringify({ task: "issue", event: "ISSUE.BLOCKED", at: "2026-08-16T01:00:00.000Z", cause: "head-ci-red" })}\n`;
 
 /** Both derived namespaces holding an authorized PASS at `sha`. */
 const boundAt = (sha: string): ReadonlyArray<Scripted> => [
@@ -416,8 +421,8 @@ const boundAt = (sha: string): ReadonlyArray<Scripted> => [
 		PR_COMMENTS,
 		reply(
 			comments(
-				{id: 1, body: marker("review-code", "PASS", sha)},
-				{id: 2, body: marker("review-doc", "PASS", sha)},
+				{ id: 1, body: marker("review-code", "PASS", sha) },
+				{ id: 2, body: marker("review-doc", "PASS", sha) },
 			),
 		),
 	],
@@ -481,9 +486,9 @@ describe("recipe unpark — a red-CI park clears once the head reads green again
 			fs,
 			[
 				[CLOSERS, reply(closingPulls(4321))],
-				[PULL, reply(pull({comments: 2, draft: true}))],
+				[PULL, reply(pull({ comments: 2, draft: true }))],
 				[FILES, reply(files("apps/site/src/App.tsx", "README.md"))],
-				[OWNERS, {status: 200, body: CODEOWNERS}],
+				[OWNERS, { status: 200, body: CODEOWNERS }],
 				...GREEN_CI,
 			],
 			[...boundAt(HEAD)],
@@ -501,10 +506,10 @@ describe("recipe unpark — a red-CI park clears once the head reads green again
 			fs,
 			[
 				...RED_TARGET,
-				[COMMIT, {status: 200, body: JSON.stringify({sha: HEAD})}],
+				[COMMIT, { status: 200, body: JSON.stringify({ sha: HEAD }) }],
 				[CHECK_RUNS, httpError(502)],
-				[WORKFLOWS, reply(workflows({path: ".github/workflows/ci.yml"}))],
-				[RUNS_AT_HEAD, reply(runsTotal(1, [{id: 1, path: ".github/workflows/ci.yml"}]))],
+				[WORKFLOWS, reply(workflows({ path: ".github/workflows/ci.yml" }))],
+				[RUNS_AT_HEAD, reply(runsTotal(1, [{ id: 1, path: ".github/workflows/ci.yml" }]))],
 			],
 			[...boundAt(HEAD)],
 		);
@@ -558,13 +563,13 @@ describe("recipe unpark — a red-CI park clears once the head reads green again
 
 		// A single-task lane's spent-budget fallthrough is an error final, so the fold trips the lane.
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({event: "FAIL", current: "tripped"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ event: "FAIL", current: "tripped" });
 		expect(fs.written.get(LOG)).toMatch(/ISSUE\.FAIL/);
 		expect(out.stderr.join("\n")).toMatch(/the repair budget was spent/);
 	});
 
 	it("is PARK_HOLDS on a logic red when the lane's machine gives the park no FAIL arm", async () => {
-		const fs = fakeFs({files: {[WORKFLOW]: armlessTemplate(), [LOG]: PARKED_ON_CI_RED}});
+		const fs = fakeFs({ files: { [WORKFLOW]: armlessTemplate(), [LOG]: PARKED_ON_CI_RED } });
 
 		const out = await run(fs, [...RED_TARGET, ...RED_CI, ...redLog(ASSERTION)], OURS);
 
@@ -574,7 +579,7 @@ describe("recipe unpark — a red-CI park clears once the head reads green again
 	});
 
 	it("records FAIL out of a freshly emitted epic tail's park into the tail's `build` on a logic red", async () => {
-		const fs = fakeFs({files: {[WORKFLOW]: emittedEpic(), [LOG]: EPIC_PARKED_ON_CI_RED}});
+		const fs = fakeFs({ files: { [WORKFLOW]: emittedEpic(), [LOG]: EPIC_PARKED_ON_CI_RED } });
 
 		const out = await run(fs, [...RED_TARGET, ...RED_CI, ...redLog(ASSERTION)], OURS, EPIC_TASK);
 
@@ -597,9 +602,9 @@ describe("recipe unpark — a red-CI park clears once the head reads green again
 			fs,
 			[
 				[CLOSERS, reply(closingPulls(4321))],
-				[PULL, reply(pull({comments: 2, author: "ada"}))],
+				[PULL, reply(pull({ comments: 2, author: "ada" }))],
 				[FILES, reply(files("apps/site/src/App.tsx", "README.md"))],
-				[OWNERS, {status: 200, body: CODEOWNERS}],
+				[OWNERS, { status: 200, body: CODEOWNERS }],
 				...RED_CI,
 				...redLog(ASSERTION),
 			],
@@ -691,9 +696,9 @@ describe("recipe unpark — a reviewer's red-CI park clears on an open green hea
 			fs,
 			[
 				[CLOSERS, reply(closingPulls(4321))],
-				[PULL, reply(pull({comments: 2, draft: true}))],
+				[PULL, reply(pull({ comments: 2, draft: true }))],
 				[FILES, reply(files("apps/site/src/App.tsx", "README.md"))],
-				[OWNERS, {status: 200, body: CODEOWNERS}],
+				[OWNERS, { status: 200, body: CODEOWNERS }],
 				...GREEN_CI,
 			],
 			[],
@@ -705,7 +710,7 @@ describe("recipe unpark — a reviewer's red-CI park clears on an open green hea
 	});
 });
 
-const laneWithUi = (log: string) => fakeFs({files: {[WORKFLOW]: laneTemplate(), [LOG]: log}});
+const laneWithUi = (log: string) => fakeFs({ files: { [WORKFLOW]: laneTemplate(), [LOG]: log } });
 
 /**
  * The routed-UI park's target half: a diff under the declared prefix, so `review-ui` derives.
@@ -717,14 +722,14 @@ const ROUTED_TARGET: ReadonlyArray<Scripted> = [
 	...configOnPlatform(
 		JSON.stringify({
 			uiSurfaces: [
-				{name: "web", prefix: "apps/site/src/", mount: "/", command: "pnpm dev --port {{port}}"},
+				{ name: "web", prefix: "apps/site/src/", mount: "/", command: "pnpm dev --port {{port}}" },
 			],
 		}),
 	),
 	[CLOSERS, reply(closingPulls(4321))],
-	[PULL, reply(pull({comments: 2}))],
+	[PULL, reply(pull({ comments: 2 }))],
 	[FILES, reply(files("apps/site/src/routes/page.tsx", "README.md"))],
-	[OWNERS, {status: 200, body: CODEOWNERS}],
+	[OWNERS, { status: 200, body: CODEOWNERS }],
 ];
 
 /** `review-code` and `review-doc` judged at `sha`, `review-ui` routed there. */
@@ -733,8 +738,8 @@ const routedAt = (sha: string, uiSha: string = sha): ReadonlyArray<Scripted> => 
 		PR_COMMENTS,
 		reply(
 			comments(
-				{id: 1, body: marker("review-code", "PASS", sha)},
-				{id: 2, body: marker("review-doc", "PASS", sha)},
+				{ id: 1, body: marker("review-code", "PASS", sha) },
+				{ id: 2, body: marker("review-doc", "PASS", sha) },
 				{
 					id: 3,
 					body: `routed-elsewhere: review-ui @ ${uiSha} — nothing under apps/site/src renders differently`,
@@ -778,7 +783,7 @@ describe("recipe unpark — a routed-UI park clears once the review it routed to
 				PR_COMMENTS,
 				reply(
 					comments(
-						{id: 1, body: marker("review-code", "PASS", HEAD)},
+						{ id: 1, body: marker("review-code", "PASS", HEAD) },
 						{
 							id: 3,
 							body: `routed-elsewhere: review-ui @ ${HEAD} — nothing under apps/site/src renders differently`,
@@ -814,9 +819,9 @@ describe("recipe unpark — a routed-UI park clears once the review it routed to
 				PR_COMMENTS,
 				reply(
 					comments(
-						{id: 1, body: marker("review-code", "PASS", HEAD)},
-						{id: 2, body: marker("review-doc", "PASS", HEAD)},
-						{id: 3, body: evidenced(marker("review-ui", "PASS", HEAD))},
+						{ id: 1, body: marker("review-code", "PASS", HEAD) },
+						{ id: 2, body: marker("review-doc", "PASS", HEAD) },
+						{ id: 3, body: evidenced(marker("review-ui", "PASS", HEAD)) },
 					),
 				),
 			],
@@ -837,7 +842,7 @@ describe("recipe unpark — a BLOCKED park clears on its cause", () => {
 
 		const out = await run(fs, [
 			[BRANCHES, branchList(LANE_BRANCH, "main")],
-			[TREES, worktreeList({path: "/repo", branch: "main"})],
+			[TREES, worktreeList({ path: "/repo", branch: "main" })],
 		]);
 
 		expect(out.code).toBe(0);
@@ -857,7 +862,7 @@ describe("recipe unpark — a BLOCKED park clears on its cause", () => {
 			fs,
 			[
 				[BRANCHES, branchList(LANE_BRANCH)],
-				[TREES, worktreeList({path: "/trees/agent-a9bd", branch: LANE_BRANCH})],
+				[TREES, worktreeList({ path: "/trees/agent-a9bd", branch: LANE_BRANCH })],
 				[PRUNE, okOut("")],
 				[SELF, okOut(["/repo/.git", "/repo"].join("\n"))],
 				[STATUS, okOut("")],
@@ -866,8 +871,8 @@ describe("recipe unpark — a BLOCKED park clears on its cause", () => {
 				[REVLIST, okOut("2\n")],
 			],
 			[
-				[LANE_ISSUE, {status: 200, body: JSON.stringify(openIssue)}],
-				[LANE_COMMENTS, {status: 200, body: "[]"}],
+				[LANE_ISSUE, { status: 200, body: JSON.stringify(openIssue) }],
+				[LANE_COMMENTS, { status: 200, body: "[]" }],
 			],
 		);
 
@@ -885,17 +890,17 @@ describe("recipe unpark — a BLOCKED park clears on its cause", () => {
 			fs,
 			[
 				[BRANCHES, branchList(LANE_BRANCH)],
-				[once(TREES), worktreeList({path: "/trees/agent-a9bd", branch: LANE_BRANCH})],
+				[once(TREES), worktreeList({ path: "/trees/agent-a9bd", branch: LANE_BRANCH })],
 				[PRUNE, okOut("")],
-				[once(TREES), worktreeList({path: "/trees/agent-a9bd", branch: LANE_BRANCH})],
+				[once(TREES), worktreeList({ path: "/trees/agent-a9bd", branch: LANE_BRANCH })],
 				[SELF, okOut(["/repo/.git", "/repo"].join("\n"))],
 				[STATUS, okOut("")],
 				[REMOVE, okOut("")],
 				[TREES, worktreeList()],
 			],
 			[
-				[LANE_ISSUE, {status: 200, body: JSON.stringify({...openIssue, state: "closed"})}],
-				[LANE_COMMENTS, {status: 200, body: "[]"}],
+				[LANE_ISSUE, { status: 200, body: JSON.stringify({ ...openIssue, state: "closed" }) }],
+				[LANE_COMMENTS, { status: 200, body: "[]" }],
 			],
 		);
 
@@ -912,9 +917,9 @@ describe("recipe unpark — a BLOCKED park clears on its cause", () => {
 			fs,
 			[
 				[BRANCHES, branchList(LANE_BRANCH)],
-				[once(TREES), worktreeList({path: "/trees/agent-a9bd", branch: LANE_BRANCH})],
+				[once(TREES), worktreeList({ path: "/trees/agent-a9bd", branch: LANE_BRANCH })],
 				[PRUNE, okOut("")],
-				[once(TREES), worktreeList({path: "/trees/agent-a9bd", branch: LANE_BRANCH})],
+				[once(TREES), worktreeList({ path: "/trees/agent-a9bd", branch: LANE_BRANCH })],
 				[SELF, okOut(["/repo/.git", "/repo"].join("\n"))],
 				[STATUS, okOut("")],
 				[REVLIST, okOut("0\n")],
@@ -922,8 +927,8 @@ describe("recipe unpark — a BLOCKED park clears on its cause", () => {
 				[TREES, worktreeList()],
 			],
 			[
-				[LANE_ISSUE, {status: 200, body: JSON.stringify(openIssue)}],
-				[LANE_COMMENTS, {status: 200, body: "[]"}],
+				[LANE_ISSUE, { status: 200, body: JSON.stringify(openIssue) }],
+				[LANE_COMMENTS, { status: 200, body: "[]" }],
 			],
 		);
 
@@ -936,7 +941,7 @@ describe("recipe unpark — a BLOCKED park clears on its cause", () => {
 
 		const out = await run(fs, [
 			[BRANCHES, branchList("main")],
-			[TREES, worktreeList({path: "/repo", branch: "main"})],
+			[TREES, worktreeList({ path: "/repo", branch: "main" })],
 		]);
 
 		expect(out.code).toBe(TARGET_ABSENT);
@@ -972,7 +977,7 @@ describe("recipe unpark — a spawn-dead park clears once the dead shell's resid
 		body: JSON.stringify([
 			{
 				id: 1,
-				user: {login: author},
+				user: { login: author },
 				created_at: "2026-08-29T00:00:00Z",
 				body: `build-claim: ${token} · 2026-08-29T00:00:00.000Z`,
 			},
@@ -987,8 +992,8 @@ describe("recipe unpark — a spawn-dead park clears once the dead shell's resid
 			fs,
 			[[BRANCHES, branchList("main")]],
 			[
-				[LANE_ISSUE, {status: 200, body: JSON.stringify(openIssue)}],
-				[LANE_COMMENTS, {status: 200, body: "[]"}],
+				[LANE_ISSUE, { status: 200, body: JSON.stringify(openIssue) }],
+				[LANE_COMMENTS, { status: 200, body: "[]" }],
 			],
 		);
 
@@ -1009,11 +1014,11 @@ describe("recipe unpark — a spawn-dead park clears once the dead shell's resid
 			fs,
 			[
 				[BRANCHES, branchList(LANE_BRANCH, "main")],
-				[TREES, worktreeList({path: "/repo", branch: "main"})],
+				[TREES, worktreeList({ path: "/repo", branch: "main" })],
 			],
 			[
-				[LANE_ISSUE, {status: 200, body: JSON.stringify(openIssue)}],
-				[LANE_COMMENTS, {status: 200, body: "[]"}],
+				[LANE_ISSUE, { status: 200, body: JSON.stringify(openIssue) }],
+				[LANE_COMMENTS, { status: 200, body: "[]" }],
 			],
 		);
 
@@ -1034,15 +1039,15 @@ describe("recipe unpark — a spawn-dead park clears once the dead shell's resid
 			fs,
 			[
 				[BRANCHES, branchList(LANE_BRANCH, "main")],
-				[TREES, worktreeList({path: "/trees/agent-a9bd", branch: LANE_BRANCH})],
+				[TREES, worktreeList({ path: "/trees/agent-a9bd", branch: LANE_BRANCH })],
 				[PRUNE, okOut("")],
 				[SELF, okOut(["/repo/.git", "/repo"].join("\n"))],
 				[STATUS, okOut(" M half-written.ts")],
 				[REVLIST, okOut("0\n")],
 			],
 			[
-				[LANE_ISSUE, {status: 200, body: JSON.stringify(openIssue)}],
-				[LANE_COMMENTS, {status: 200, body: "[]"}],
+				[LANE_ISSUE, { status: 200, body: JSON.stringify(openIssue) }],
+				[LANE_COMMENTS, { status: 200, body: "[]" }],
 			],
 		);
 
@@ -1062,17 +1067,17 @@ describe("recipe unpark — a spawn-dead park clears once the dead shell's resid
 			fs,
 			[
 				[BRANCHES, branchList(LANE_BRANCH)],
-				[once(TREES), worktreeList({path: "/trees/agent-a9bd", branch: LANE_BRANCH})],
+				[once(TREES), worktreeList({ path: "/trees/agent-a9bd", branch: LANE_BRANCH })],
 				[PRUNE, okOut("")],
-				[once(TREES), worktreeList({path: "/trees/agent-a9bd", branch: LANE_BRANCH})],
+				[once(TREES), worktreeList({ path: "/trees/agent-a9bd", branch: LANE_BRANCH })],
 				[SELF, okOut(["/repo/.git", "/repo"].join("\n"))],
 				[STATUS, okOut("")],
 				[REMOVE, okOut("")],
 				[TREES, worktreeList()],
 			],
 			[
-				[LANE_ISSUE, {status: 200, body: JSON.stringify({...openIssue, state: "closed"})}],
-				[LANE_COMMENTS, {status: 200, body: "[]"}],
+				[LANE_ISSUE, { status: 200, body: JSON.stringify({ ...openIssue, state: "closed" }) }],
+				[LANE_COMMENTS, { status: 200, body: "[]" }],
 			],
 		);
 
@@ -1092,12 +1097,12 @@ describe("recipe unpark — a spawn-dead park clears once the dead shell's resid
 			fs,
 			[],
 			[
-				[LANE_ISSUE, {status: 200, body: JSON.stringify(openIssue)}],
+				[LANE_ISSUE, { status: 200, body: JSON.stringify(openIssue) }],
 				[
 					LANE_COMMENTS,
 					claimComment("owner", "build:dead-session:9f2cab41-1111-4222-8333-444455556666"),
 				],
-				[PERMISSION, {status: 200, body: '{"permission":"write"}'}],
+				[PERMISSION, { status: 200, body: '{"permission":"write"}' }],
 			],
 		);
 
@@ -1118,11 +1123,11 @@ describe("recipe unpark — a spawn-dead park clears once the dead shell's resid
 			fs,
 			[[BRANCHES, branchList("main")]],
 			[
-				[LANE_ISSUE, {status: 200, body: JSON.stringify(openIssue)}],
+				[LANE_ISSUE, { status: 200, body: JSON.stringify(openIssue) }],
 				[once(LANE_COMMENTS), claimComment("owner", token)],
-				[PERMISSION, {status: 200, body: '{"permission":"write"}'}],
-				[/^DELETE \S+\/repos\/o\/r\/issues\/comments\/1$/, {status: 204, body: ""}],
-				[LANE_COMMENTS, {status: 200, body: "[]"}],
+				[PERMISSION, { status: 200, body: '{"permission":"write"}' }],
+				[/^DELETE \S+\/repos\/o\/r\/issues\/comments\/1$/, { status: 204, body: "" }],
+				[LANE_COMMENTS, { status: 200, body: "[]" }],
 			],
 			null,
 			parkCauseRead(),
@@ -1149,9 +1154,9 @@ describe("recipe unpark — a spawn-dead park clears once the dead shell's resid
 			fs,
 			[],
 			[
-				[LANE_ISSUE, {status: 200, body: JSON.stringify(openIssue)}],
-				[PERMISSION, {status: 200, body: '{"permission":"write"}'}],
-				[/^DELETE \S+\/repos\/o\/r\/issues\/comments\/1$/, {status: 204, body: ""}],
+				[LANE_ISSUE, { status: 200, body: JSON.stringify(openIssue) }],
+				[PERMISSION, { status: 200, body: '{"permission":"write"}' }],
+				[/^DELETE \S+\/repos\/o\/r\/issues\/comments\/1$/, { status: 204, body: "" }],
 				[LANE_COMMENTS, claimComment("owner", token)],
 			],
 			null,
@@ -1171,7 +1176,7 @@ describe("recipe unpark — a spawn-dead park clears once the dead shell's resid
 			fs,
 			[],
 			[
-				[LANE_ISSUE, {status: 200, body: JSON.stringify(openIssue)}],
+				[LANE_ISSUE, { status: 200, body: JSON.stringify(openIssue) }],
 				[LANE_COMMENTS, httpError(500)],
 			],
 		);
@@ -1187,7 +1192,7 @@ const claimMarker = (token: string): HttpReply => ({
 	body: JSON.stringify([
 		{
 			id: 1,
-			user: {login: "owner"},
+			user: { login: "owner" },
 			created_at: "2026-08-29T00:00:00Z",
 			body: `build-claim: ${token} · 2026-08-29T00:00:00.000Z`,
 		},
@@ -1207,7 +1212,7 @@ const DELETE = /^DELETE /;
 /** The repair lane's shape: one open PR closing the lane issue, so its thread is a claim subject. */
 const REPAIR_PR: ReadonlyArray<Scripted> = [
 	[CLOSERS, reply(closingPulls(REPAIR))],
-	[PULL, reply(pull({body: `Fixes #${LANE}\n`}))],
+	[PULL, reply(pull({ body: `Fixes #${LANE}\n` }))],
 ];
 
 /** A lane no PR links yet — the fresh build's shape, where the issue is the only claim subject. */
@@ -1221,7 +1226,7 @@ const runClaimRead = async (
 ) => {
 	const seams = fakeSeams([
 		...script,
-		[DELETE, {status: 204, body: ""}],
+		[DELETE, { status: 204, body: "" }],
 		NO_NOMINATIONS,
 		...UNDECLARED,
 	]);
@@ -1241,17 +1246,17 @@ const runClaimRead = async (
 			Layer.merge(fs.layer, seams.layer),
 		),
 	);
-	return {out, requests: seams.requests};
+	return { out, requests: seams.requests };
 };
 
 describe("recipe unpark — a tree-hijacked park reads claims and trees, and never ends a claim", () => {
 	it("clears once no claim stands and no tree holds the lane branch", async () => {
 		const fs = lane(parkedBlockedOn("tree-hijacked"));
 
-		const {out} = await runClaimRead(fs, [
+		const { out } = await runClaimRead(fs, [
 			...NO_PR,
 			[BRANCHES, branchList("main")],
-			[LANE_COMMENTS, {status: 200, body: "[]"}],
+			[LANE_COMMENTS, { status: 200, body: "[]" }],
 		]);
 
 		expect(out.code).toBe(0);
@@ -1267,10 +1272,10 @@ describe("recipe unpark — a tree-hijacked park reads claims and trees, and nev
 	it("is PARK_HOLDS on a claim a day past the budget, and retracts nothing", async () => {
 		const fs = lane(parkedBlockedOn("tree-hijacked"));
 
-		const {out, requests} = await runClaimRead(fs, [
+		const { out, requests } = await runClaimRead(fs, [
 			...NO_PR,
 			[LANE_COMMENTS, claimMarker(STRANDED)],
-			[PERMISSION, {status: 200, body: '{"permission":"write"}'}],
+			[PERMISSION, { status: 200, body: '{"permission":"write"}' }],
 		]);
 
 		expect(out.code).toBe(PARK_HOLDS);
@@ -1282,11 +1287,11 @@ describe("recipe unpark — a tree-hijacked park reads claims and trees, and nev
 	it("holds on a repair claim standing on the lane's PR while the issue reads unclaimed", async () => {
 		const fs = lane(parkedBlockedOn("tree-hijacked"));
 
-		const {out, requests} = await runClaimRead(fs, [
+		const { out, requests } = await runClaimRead(fs, [
 			...REPAIR_PR,
-			[LANE_COMMENTS, {status: 200, body: "[]"}],
+			[LANE_COMMENTS, { status: 200, body: "[]" }],
 			[PR_COMMENTS, claimMarker(STRANDED)],
-			[PERMISSION, {status: 200, body: '{"permission":"write"}'}],
+			[PERMISSION, { status: 200, body: '{"permission":"write"}' }],
 		]);
 
 		expect(out.code).toBe(PARK_HOLDS);
@@ -1302,7 +1307,10 @@ describe("recipe unpark — a claim-stranded park clears only when every claim s
 	it("clears when the issue reads unclaimed and no PR links it", async () => {
 		const fs = lane(PARKED_ON_CLAIM);
 
-		const {out} = await runClaimRead(fs, [...NO_PR, [LANE_COMMENTS, {status: 200, body: "[]"}]]);
+		const { out } = await runClaimRead(fs, [
+			...NO_PR,
+			[LANE_COMMENTS, { status: 200, body: "[]" }],
+		]);
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
@@ -1317,10 +1325,10 @@ describe("recipe unpark — a claim-stranded park clears only when every claim s
 	it("clears on a repair lane only once the PR's thread reads unclaimed too", async () => {
 		const fs = lane(PARKED_ON_CLAIM);
 
-		const {out} = await runClaimRead(fs, [
+		const { out } = await runClaimRead(fs, [
 			...REPAIR_PR,
-			[LANE_COMMENTS, {status: 200, body: "[]"}],
-			[PR_COMMENTS, {status: 200, body: "[]"}],
+			[LANE_COMMENTS, { status: 200, body: "[]" }],
+			[PR_COMMENTS, { status: 200, body: "[]" }],
 		]);
 
 		expect(out.code).toBe(0);
@@ -1332,11 +1340,11 @@ describe("recipe unpark — a claim-stranded park clears only when every claim s
 	it("holds at 13 on a claim standing on the lane's PR while the issue reads unclaimed", async () => {
 		const fs = lane(PARKED_ON_CLAIM);
 
-		const {out, requests} = await runClaimRead(fs, [
+		const { out, requests } = await runClaimRead(fs, [
 			...REPAIR_PR,
-			[LANE_COMMENTS, {status: 200, body: "[]"}],
+			[LANE_COMMENTS, { status: 200, body: "[]" }],
 			[PR_COMMENTS, claimMarker(STRANDED)],
-			[PERMISSION, {status: 200, body: '{"permission":"write"}'}],
+			[PERMISSION, { status: 200, body: '{"permission":"write"}' }],
 		]);
 
 		expect(out.code).toBe(PARK_HOLDS);
@@ -1351,10 +1359,10 @@ describe("recipe unpark — a claim-stranded park clears only when every claim s
 	it("is PARK_HOLDS while a claim marker stands on the issue, and retracts nothing even past the budget", async () => {
 		const fs = lane(PARKED_ON_CLAIM);
 
-		const {out, requests} = await runClaimRead(fs, [
+		const { out, requests } = await runClaimRead(fs, [
 			...NO_PR,
 			[LANE_COMMENTS, claimMarker(STRANDED)],
-			[PERMISSION, {status: 200, body: '{"permission":"write"}'}],
+			[PERMISSION, { status: 200, body: '{"permission":"write"}' }],
 		]);
 
 		expect(out.code).toBe(PARK_HOLDS);
@@ -1368,7 +1376,7 @@ describe("recipe unpark — a claim-stranded park clears only when every claim s
 	it("is UNKNOWN when the claimant read fails — never a cleared park", async () => {
 		const fs = lane(PARKED_ON_CLAIM);
 
-		const {out} = await runClaimRead(fs, [...NO_PR, [LANE_COMMENTS, httpError(500)]]);
+		const { out } = await runClaimRead(fs, [...NO_PR, [LANE_COMMENTS, httpError(500)]]);
 
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(fs.written.size).toBe(0);
@@ -1377,9 +1385,9 @@ describe("recipe unpark — a claim-stranded park clears only when every claim s
 	it("is UNKNOWN when the PRs linking the issue cannot be read — never a cleared park", async () => {
 		const fs = lane(PARKED_ON_CLAIM);
 
-		const {out} = await runClaimRead(fs, [
+		const { out } = await runClaimRead(fs, [
 			[CLOSERS, httpError(500)],
-			[LANE_COMMENTS, {status: 200, body: "[]"}],
+			[LANE_COMMENTS, { status: 200, body: "[]" }],
 		]);
 
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -1393,7 +1401,7 @@ describe("recipe unpark — a queue stall clears when the queue moved, and grant
 	const TIMELINE = /^GET \S+\/repos\/o\/r\/issues\/4321\/timeline\?/;
 	const QUEUE_GOVERNED: Scripted = [
 		RULES,
-		{status: 200, body: JSON.stringify([{type: "merge_queue"}])},
+		{ status: 200, body: JSON.stringify([{ type: "merge_queue" }]) },
 	];
 
 	/** The log the run left behind, parsed through the fold's own reader rather than by hand. */
@@ -1418,8 +1426,8 @@ describe("recipe unpark — a queue stall clears when the queue moved, and grant
 		const out = await run(
 			fs,
 			[
-				[CLOSERS, reply(closingPullsIn({number: 4321, state: "MERGED"}))],
-				[PULL, reply(pull({merged: true, state: "closed"}))],
+				[CLOSERS, reply(closingPullsIn({ number: 4321, state: "MERGED" }))],
+				[PULL, reply(pull({ merged: true, state: "closed" }))],
 			],
 			[QUEUE_GOVERNED],
 		);
@@ -1436,7 +1444,7 @@ describe("recipe unpark — a queue stall clears when the queue moved, and grant
 		const before = parsed(PARKED_AT_QUEUE_STALL);
 		const entries = parsed(fs.written.get(LOG));
 		expect(entries).toHaveLength(before.length + 1);
-		expect(entries.at(-1)).toMatchObject({event: "ISSUE.UNBLOCKED", waitGrant: 1});
+		expect(entries.at(-1)).toMatchObject({ event: "ISSUE.UNBLOCKED", waitGrant: 1 });
 		expect(entries.filter((entry) => entry.event.endsWith("CLEARED"))).toEqual([]);
 
 		// The grant rides the log line, so the re-fold is a pure replay and reads the same twice.
@@ -1460,12 +1468,12 @@ describe("recipe unpark — a queue stall clears when the queue moved, and grant
 			],
 			[
 				QUEUE_GOVERNED,
-				[SUBJECTS, {status: 200, body: "[]"}],
+				[SUBJECTS, { status: 200, body: "[]" }],
 				[
 					TIMELINE,
 					{
 						status: 200,
-						body: JSON.stringify([{event: ADDED, created_at: "2026-08-29T10:00:00Z"}]),
+						body: JSON.stringify([{ event: ADDED, created_at: "2026-08-29T10:00:00Z" }]),
 					},
 				],
 			],
@@ -1486,7 +1494,7 @@ describe("recipe unpark — a campaign-paused park clears on the row it parked o
 				status: 200,
 				body: JSON.stringify({
 					...openIssue,
-					milestone: milestone === null ? null : {number: milestone},
+					milestone: milestone === null ? null : { number: milestone },
 				}),
 			},
 		],
@@ -1494,7 +1502,7 @@ describe("recipe unpark — a campaign-paused park clears on the row it parked o
 
 	/** The trunk read: fetch the base, resolve it, show `ROADMAP.md` as of that commit. */
 	const trunkRoadmap = (text: string): ReadonlyArray<Scripted> => [
-		[/^GET \S+\/repos\/o\/r$/, {status: 200, body: JSON.stringify({default_branch: "main"})}],
+		[/^GET \S+\/repos\/o\/r$/, { status: 200, body: JSON.stringify({ default_branch: "main" }) }],
 		[REMOTES, okOut("origin")],
 		[FETCH, okOut("")],
 		[RESOLVE, okOut(TRUNK_SHA)],
@@ -1502,7 +1510,7 @@ describe("recipe unpark — a campaign-paused park clears on the row it parked o
 	];
 
 	const campaign = (state: string): ReadonlyArray<Scripted> =>
-		trunkRoadmap(campaignsTable({name: "Epic lanes", milestone: LANE_MILESTONE, state}));
+		trunkRoadmap(campaignsTable({ name: "Epic lanes", milestone: LANE_MILESTONE, state }));
 
 	it("clears once the lane's campaign reads active again", async () => {
 		const fs = lane(PARKED_ON_CAMPAIGN);
@@ -1546,7 +1554,10 @@ describe("recipe unpark — a campaign-paused park clears on the row it parked o
 		const out = await run(
 			fs,
 			[
-				[/^GET \S+\/repos\/o\/r$/, {status: 200, body: JSON.stringify({default_branch: "main"})}],
+				[
+					/^GET \S+\/repos\/o\/r$/,
+					{ status: 200, body: JSON.stringify({ default_branch: "main" }) },
+				],
 				[REMOTES, okOut("origin")],
 				[FETCH, okOut("")],
 				[RESOLVE, okOut(TRUNK_SHA)],
@@ -1593,7 +1604,7 @@ describe("recipe unpark — a campaign-paused park clears on the row it parked o
 
 		const out = await run(
 			fs,
-			trunkRoadmap(campaignsTable({name: "Some other campaign", milestone: 51, state: "active"})),
+			trunkRoadmap(campaignsTable({ name: "Some other campaign", milestone: 51, state: "active" })),
 			homed(LANE_MILESTONE),
 		);
 
@@ -1611,7 +1622,7 @@ describe("recipe unpark — a render-axis park clears once its axis issue closes
 			AXIS,
 			{
 				status: 200,
-				body: JSON.stringify({...openIssue, number: AXIS_ISSUE, state}),
+				body: JSON.stringify({ ...openIssue, number: AXIS_ISSUE, state }),
 			},
 		],
 	];
@@ -1766,18 +1777,21 @@ describe("recipe unpark — a park on the founder's own step never clears on a r
 			parkCauseRead("record", "clear"),
 			"he ran it",
 		],
-	])("is PARK_NOVEL naming the cause and the step under %s", async (_name, parkCause, rationale) => {
-		const fs = lane(PARKED_ON_FOUNDER_ACT);
+	])(
+		"is PARK_NOVEL naming the cause and the step under %s",
+		async (_name, parkCause, rationale) => {
+			const fs = lane(PARKED_ON_FOUNDER_ACT);
 
-		const out = await run(fs, [], [], null, parkCause, rationale);
+			const out = await run(fs, [], [], null, parkCause, rationale);
 
-		expect(out.code).toBe(PARK_NOVEL);
-		const said = out.stderr.join("\n");
-		expect(said).toContain('"founder-act-owed"');
-		expect(said).toContain(FOUNDER_ACT);
-		expect(said).not.toContain("a bare BLOCKED park");
-		expect(fs.written.size).toBe(0);
-	});
+			expect(out.code).toBe(PARK_NOVEL);
+			const said = out.stderr.join("\n");
+			expect(said).toContain('"founder-act-owed"');
+			expect(said).toContain(FOUNDER_ACT);
+			expect(said).not.toContain("a bare BLOCKED park");
+			expect(fs.written.size).toBe(0);
+		},
+	);
 });
 
 describe("recipe unpark — the refusals write nothing", () => {
@@ -1802,8 +1816,8 @@ describe("recipe unpark — the refusals write nothing", () => {
 				[FILES, reply(files("src/app/App.tsx", "README.md"))],
 			],
 			[
-				[OWNERS, {status: 200, body: CODEOWNERS}],
-				[COMPARE, {status: 200, body: '{"behind_by":0}'}],
+				[OWNERS, { status: 200, body: CODEOWNERS }],
+				[COMPARE, { status: 200, body: '{"behind_by":0}' }],
 			],
 		);
 
@@ -1817,7 +1831,7 @@ describe("recipe unpark — the refusals write nothing", () => {
 		const out = await run(fs, [
 			[CLOSERS, reply(closingPulls(4321))],
 			[SEARCH, reply(nominatedPulls(4322))],
-			[PULL, reply(pull({author: "owner"}))],
+			[PULL, reply(pull({ author: "owner" }))],
 			[SECOND_PULL, otherPull(4322)],
 		]);
 
@@ -1833,12 +1847,12 @@ describe("recipe unpark — the refusals write nothing", () => {
 			fs,
 			[
 				[CLOSERS, reply(closingPulls(4321))],
-				[PULL, reply(pull({author: "owner"}))],
+				[PULL, reply(pull({ author: "owner" }))],
 				[FILES, CP_FILES],
 			],
 			[
-				[OWNERS, {status: 200, body: CODEOWNERS}],
-				[COMPARE, {status: 200, body: '{"behind_by":0}'}],
+				[OWNERS, { status: 200, body: CODEOWNERS }],
+				[COMPARE, { status: 200, body: '{"behind_by":0}' }],
 				[ROSTER, members("owner", "reviewer")],
 				[REVIEWS, reviewPage()],
 			],
@@ -1877,7 +1891,7 @@ describe("recipe unpark — the refusals write nothing", () => {
 	});
 
 	it("relays a lane refusal onto this group's seat, not the lane's own number", async () => {
-		const fs = fakeFs({files: {}});
+		const fs = fakeFs({ files: {} });
 
 		const out = await run(fs, DISCHARGED);
 
@@ -1918,7 +1932,7 @@ describe("recipe unpark — the refusals write nothing", () => {
 
 describe("recipe unpark — the read-back is the proof", () => {
 	it("is WRITE_UNKNOWN when the append itself does not land — never reported as cleared", async () => {
-		const fs = lane(PARKED_AT_CP, {unwritable: [LOG]});
+		const fs = lane(PARKED_AT_CP, { unwritable: [LOG] });
 
 		const out = await run(fs, DISCHARGED);
 
@@ -2010,7 +2024,7 @@ describe("recipe unpark — a driver-routed park clears on the driver's own rati
 			fs,
 			[
 				[BRANCHES, branchList(LANE_BRANCH, "main")],
-				[TREES, worktreeList({path: "/repo", branch: "main"})],
+				[TREES, worktreeList({ path: "/repo", branch: "main" })],
 			],
 			DISCHARGED_HTTP,
 			null,
@@ -2018,7 +2032,7 @@ describe("recipe unpark — a driver-routed park clears on the driver's own rati
 		);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({clearance: "branch-free", current: "build"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ clearance: "branch-free", current: "build" });
 	});
 
 	// The spent-budget route is the repo's to declare. Under the shipped `driver` it stays the
@@ -2055,7 +2069,14 @@ describe("recipe unpark — a driver-routed park clears on the driver's own rati
 	it("is PRECONDITION_UNKNOWN on a parkCause nobody could read — never the shipped arm", async () => {
 		const fs = lane(PARKED_ON_HEAD_BEHIND);
 
-		const out = await run(fs, [], DISCHARGED_HTTP, null, {_tag: "Refused", reason: "EACCES"}, WHY);
+		const out = await run(
+			fs,
+			[],
+			DISCHARGED_HTTP,
+			null,
+			{ _tag: "Refused", reason: "EACCES" },
+			WHY,
+		);
 
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(fs.written.size).toBe(0);

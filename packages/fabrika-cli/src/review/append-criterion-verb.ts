@@ -28,14 +28,14 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9058#issuecomment-5625309255
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {createComment, getIssue, patchIssueBody} from "../io/issues.ts";
-import {permissionFor, viewerLogin} from "../io/pulls.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {CAP_ROUND} from "../retry-budget.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {read as readCriteria} from "../wire/acceptance-criteria.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { createComment, getIssue, patchIssueBody } from "../io/issues.ts";
+import { permissionFor, viewerLogin } from "../io/pulls.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { CAP_ROUND } from "../retry-budget.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { read as readCriteria } from "../wire/acceptance-criteria.ts";
 import {
 	appendOnly,
 	type CriterionProvenance,
@@ -45,7 +45,7 @@ import {
 	insertAfterLastCriterion,
 	provenanceSubject,
 } from "./append.ts";
-import {type AuthoredSurface, leakRefusal, readAuthored} from "./authored.ts";
+import { type AuthoredSurface, leakRefusal, readAuthored } from "./authored.ts";
 import {
 	ACL_DENIED,
 	APPEND_ONLY,
@@ -55,8 +55,8 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {readRangeFlags} from "./range-flags.ts";
-import {badNumber, resolveTargetRepo} from "./target.ts";
+import { readRangeFlags } from "./range-flags.ts";
+import { badNumber, resolveTargetRepo } from "./target.ts";
 
 const VERB = "review append-criterion";
 
@@ -84,8 +84,8 @@ export interface AppendCriterionOptions {
 }
 
 type SubjectRead =
-	| {readonly _tag: "Subject"; readonly provenance: CriterionProvenance}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Subject"; readonly provenance: CriterionProvenance }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * Which subject these flags name, or the refusal that says why they name none.
@@ -95,11 +95,11 @@ type SubjectRead =
  * beside the range it actually read would get the plausible-but-wrong tag written silently.
  */
 const readSubject = (options: AppendCriterionOptions): SubjectRead => {
-	const ranged = readRangeFlags(VERB, {base: options.base, tip: options.tip, sha: null});
+	const ranged = readRangeFlags(VERB, { base: options.base, tip: options.tip, sha: null });
 	if (ranged._tag === "Refused") return ranged;
 	if (ranged._tag === "Ranged") {
 		return options.pr === null
-			? {_tag: "Subject", provenance: {_tag: "Ranged", range: ranged.range}}
+			? { _tag: "Subject", provenance: { _tag: "Ranged", range: ranged.range } }
 			: {
 					_tag: "Refused",
 					outcome: refuse(
@@ -119,8 +119,8 @@ const readSubject = (options: AppendCriterionOptions): SubjectRead => {
 	}
 	const bad = badNumber(VERB, "a pull-request number", options.pr);
 	return bad !== null
-		? {_tag: "Refused", outcome: bad}
-		: {_tag: "Subject", provenance: {_tag: "Pull", pr: options.pr}};
+		? { _tag: "Refused", outcome: bad }
+		: { _tag: "Subject", provenance: { _tag: "Pull", pr: options.pr } };
 };
 
 const unreadable = (what: string, reason: string): VerbOutcome =>
@@ -136,7 +136,7 @@ export const runAppendCriterion = (
 	options: AppendCriterionOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {issue, round, json} = options;
+		const { issue, round, json } = options;
 		const badIssue = badNumber(VERB, "an issue number", issue);
 		if (badIssue !== null) return badIssue;
 		const subject = readSubject(options);

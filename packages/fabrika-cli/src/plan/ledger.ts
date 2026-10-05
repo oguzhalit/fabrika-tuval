@@ -22,7 +22,7 @@
  * disagree about where a ledger's last section ends if each spelled that rule itself.
  */
 
-import {isThematicBreak} from "../build/dependencies.ts";
+import { isThematicBreak } from "../build/dependencies.ts";
 
 const FENCE = /^ {0,3}(```|~~~)/;
 const ATX_HEADING = /^ {0,3}(#{1,6})[ \t]+(.*?)[ \t]*#*[ \t]*$/;
@@ -46,7 +46,7 @@ export const unfencedLines = (body: string): ReadonlyArray<LedgerLine> => {
 				fence = opener;
 				continue;
 			}
-			out.push({text, line: index + 1});
+			out.push({ text, line: index + 1 });
 			continue;
 		}
 		if (opener?.startsWith(fence) === true) fence = null;
@@ -64,10 +64,10 @@ interface Heading {
 
 const headingsIn = (lines: ReadonlyArray<LedgerLine>): ReadonlyArray<Heading> => {
 	const headings: Heading[] = [];
-	for (const [index, {text}] of lines.entries()) {
+	for (const [index, { text }] of lines.entries()) {
 		const matched = ATX_HEADING.exec(text);
 		if (matched?.[1] === undefined || matched[2] === undefined) continue;
-		headings.push({level: matched[1].length, key: normalizeHeading(matched[2]), index});
+		headings.push({ level: matched[1].length, key: normalizeHeading(matched[2]), index });
 	}
 	return headings;
 };
@@ -116,20 +116,20 @@ export const CONTAINMENT_FIELD = "Containment";
  * The contiguity rule applies only to a non-empty list.
  */
 export type EpicStories =
-	| {readonly _tag: "Stories"; readonly ids: ReadonlyArray<number>}
-	| {readonly _tag: "MisNumbered"; readonly ids: ReadonlyArray<number>};
+	| { readonly _tag: "Stories"; readonly ids: ReadonlyArray<number> }
+	| { readonly _tag: "MisNumbered"; readonly ids: ReadonlyArray<number> };
 
 export const readEpicStories = (body: string): EpicStories => {
 	const section = sectionBody(body, USER_STORIES_HEADING);
-	if (section === null) return {_tag: "Stories", ids: []};
+	if (section === null) return { _tag: "Stories", ids: [] };
 	const ids: number[] = [];
-	for (const {text} of section) {
+	for (const { text } of section) {
 		const matched = ORDERED_ITEM.exec(text);
 		if (matched?.[1] !== undefined) ids.push(Number.parseInt(matched[1], 10));
 	}
-	if (ids.length === 0) return {_tag: "Stories", ids: []};
+	if (ids.length === 0) return { _tag: "Stories", ids: [] };
 	const contiguous = ids.every((id, i) => id === i + 1);
-	return contiguous ? {_tag: "Stories", ids} : {_tag: "MisNumbered", ids};
+	return contiguous ? { _tag: "Stories", ids } : { _tag: "MisNumbered", ids };
 };
 
 /** The `**<field>:**` lines outside a fence, in order — the caller refuses on a second one. */
@@ -141,7 +141,7 @@ export const fieldLines = (body: string, field: string): ReadonlyArray<string> =
 		"i",
 	);
 	const values: string[] = [];
-	for (const {text} of unfencedLines(body)) {
+	for (const { text } of unfencedLines(body)) {
 		const matched = pattern.exec(text);
 		if (matched?.[1] !== undefined) values.push(matched[1].trim());
 	}
@@ -160,15 +160,15 @@ const STORIES_VALUE = /^(none|\d+(\s*,\s*\d+)*)$/i;
  * numbered 9021)` silently claimed a story 9021 nobody wrote.
  */
 export type ChildStories =
-	| {readonly _tag: "Ids"; readonly ids: ReadonlyArray<number>}
-	| {readonly _tag: "Absent"}
-	| {readonly _tag: "NonConforming"; readonly value: string};
+	| { readonly _tag: "Ids"; readonly ids: ReadonlyArray<number> }
+	| { readonly _tag: "Absent" }
+	| { readonly _tag: "NonConforming"; readonly value: string };
 
 export const readChildStories = (value: string | undefined): ChildStories => {
-	if (value === undefined) return {_tag: "Absent"};
+	if (value === undefined) return { _tag: "Absent" };
 	const text = value.trim();
-	if (!STORIES_VALUE.test(text)) return {_tag: "NonConforming", value: text};
-	if (text.toLowerCase() === "none") return {_tag: "Ids", ids: []};
+	if (!STORIES_VALUE.test(text)) return { _tag: "NonConforming", value: text };
+	if (text.toLowerCase() === "none") return { _tag: "Ids", ids: [] };
 	return {
 		_tag: "Ids",
 		ids: text.split(",").map((part) => Number.parseInt(part.trim(), 10)),

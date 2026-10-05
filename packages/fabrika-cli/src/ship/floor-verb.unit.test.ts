@@ -5,8 +5,8 @@
  * FAIL at head, PASS on another head, PASS from an author without write+, a marker in a neighbouring
  * namespace — and asserts each one still reds.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	fakeSeams,
 	type HttpReply,
@@ -14,16 +14,16 @@ import {
 	unconfigured,
 	unconfiguredOnPlatform,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {PULL_FILES_CAP} from "../io/pulls.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { PULL_FILES_CAP } from "../io/pulls.ts";
 import {
 	GOVERNANCE_FLOOR_UNMET,
 	INCOMPLETE_SCAN,
 	PRECONDITION_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {comments, ENV, files, HEAD, OTHER_HEAD, pull} from "./fixtures.test-support.ts";
-import {runFloor} from "./floor-verb.ts";
+import { comments, ENV, files, HEAD, OTHER_HEAD, pull } from "./fixtures.test-support.ts";
+import { runFloor } from "./floor-verb.ts";
 
 const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4321$/;
 const FILES = /^GET \S+\/repos\/o\/r\/pulls\/4321\/files\?/;
@@ -32,15 +32,15 @@ const REVIEWS = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/pulls\/4321\/revi
 const ACL = /^GET \S+\/repos\/o\/r\/collaborators\/[^/]+\/permission$/;
 
 /** No native review on the PR — the floor is a marker question, so every test reads the same page. */
-const NO_REVIEWS: readonly [RegExp, HttpReply] = [REVIEWS, {status: 200, body: "[]"}];
+const NO_REVIEWS: readonly [RegExp, HttpReply] = [REVIEWS, { status: 200, body: "[]" }];
 
 /** A canned `ExecResult` fixture as the body of a 200 — the same payload, off the served seam. */
-const served = (result: ExecResult): HttpReply => ({status: 200, body: result.stdout});
+const served = (result: ExecResult): HttpReply => ({ status: 200, body: result.stdout });
 
 /** The permission endpoint's own shape — a `{permission}` record, not a bare word. */
 const permissionServed = (permission: string): HttpReply => ({
 	status: 200,
-	body: JSON.stringify({permission}),
+	body: JSON.stringify({ permission }),
 });
 
 /** A skill diff under `.claude/`, one of the shipped governance roots. */
@@ -49,12 +49,12 @@ const FABRIKA_TREE = [
 	served(files(".claude/skills/ship/SKILL.md", "apps/site/src/b.ts")),
 ] as const;
 
-const options = {pr: 4321, sha: HEAD, repo: null, json: false, cwd: "/repo", env: ENV};
+const options = { pr: 4321, sha: HEAD, repo: null, json: false, cwd: "/repo", env: ENV };
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
 		Effect.provide(
-			runFloor({...options, ...overrides}),
+			runFloor({ ...options, ...overrides }),
 			Layer.merge(
 				fakeSeams([...script, NO_REVIEWS, ...unconfiguredOnPlatform()]).layer,
 				unconfigured,
@@ -68,9 +68,9 @@ const marker = (namespace: string, polarity: string, sha: string): string =>
 /** A governance-root PR carrying exactly one comment, with the ACL answer the test wants. */
 const withVerdict = (body: string, permission = "write") =>
 	[
-		[PULL, served(pull({comments: 1}))],
+		[PULL, served(pull({ comments: 1 }))],
 		FABRIKA_TREE,
-		[COMMENTS, served(comments({id: 1, body}))],
+		[COMMENTS, served(comments({ id: 1, body }))],
 		[ACL, permissionServed(permission)],
 	] as const;
 
@@ -93,7 +93,7 @@ describe("runFloor", () => {
 
 	it("reds when the verdict is ABSENT — no verdict at this head at all", async () => {
 		const out = await run([
-			[PULL, served(pull({comments: 0}))],
+			[PULL, served(pull({ comments: 0 }))],
 			FABRIKA_TREE,
 			[COMMENTS, served(comments())],
 		]);
@@ -128,10 +128,10 @@ describe("runFloor", () => {
 
 	it("fails closed when the ACL cannot be read — UNKNOWN is never a discharge", async () => {
 		const out = await run([
-			[PULL, served(pull({comments: 1}))],
+			[PULL, served(pull({ comments: 1 }))],
 			FABRIKA_TREE,
-			[COMMENTS, served(comments({id: 1, body: marker("governance", "PASS", HEAD)}))],
-			[ACL, {status: 403, body: '{"message":"Forbidden"}'}],
+			[COMMENTS, served(comments({ id: 1, body: marker("governance", "PASS", HEAD) }))],
+			[ACL, { status: 403, body: '{"message":"Forbidden"}' }],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -140,7 +140,7 @@ describe("runFloor", () => {
 	it("fails closed when the changed-file list cannot be read", async () => {
 		const out = await run([
 			[PULL, served(pull())],
-			[FILES, {status: 502, body: "{}"}],
+			[FILES, { status: 502, body: "{}" }],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.join("\n")).toContain('never "n/a"');
@@ -150,7 +150,7 @@ describe("runFloor", () => {
 	// short of it proved nothing about completeness. It used to refuse at 13 and red the floor check.
 	it("reports a short file list in `scanned` and answers the floor anyway (#9322)", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 9}))],
+			[PULL, served(pull({ changedFiles: 9 }))],
 			[FILES, served(files("apps/site/src/a.ts"))],
 		]);
 		expect(out.code).toBe(0);
@@ -164,7 +164,7 @@ describe("runFloor", () => {
 	// declared count: a zero can never render as a satisfied floor.
 	it("refuses an empty file list even where the record declares files (#9322)", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 9}))],
+			[PULL, served(pull({ changedFiles: 9 }))],
 			[FILES, served(files())],
 		]);
 		expect(out.code).toBe(ZERO_SCOPE);
@@ -178,10 +178,12 @@ describe("runFloor", () => {
 	// list that never carried the governance root.
 	it("refuses a file list at the 3000-file ceiling on 13 (#9322)", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: PULL_FILES_CAP}))],
+			[PULL, served(pull({ changedFiles: PULL_FILES_CAP }))],
 			[
 				FILES,
-				served(files(...Array.from({length: PULL_FILES_CAP}, (_, i) => `apps/site/src/f${i}.ts`))),
+				served(
+					files(...Array.from({ length: PULL_FILES_CAP }, (_, i) => `apps/site/src/f${i}.ts`)),
+				),
 			],
 		]);
 		expect(out.code).toBe(INCOMPLETE_SCAN);
@@ -191,7 +193,7 @@ describe("runFloor", () => {
 	});
 
 	it("emits the same two outcomes as JSON", async () => {
-		const out = await run([...withVerdict(marker("governance", "PASS", HEAD))], {json: true});
+		const out = await run([...withVerdict(marker("governance", "PASS", HEAD))], { json: true });
 		expect(JSON.parse(out.stdout)).toEqual({
 			outcome: "satisfied",
 			sha: HEAD,

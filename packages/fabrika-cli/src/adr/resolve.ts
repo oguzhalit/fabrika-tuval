@@ -2,7 +2,7 @@
  * `adr resolve` state resolution. See `adr resolve --help` for the reported states.
  * The caller must prove both the base and open-PR sets readable before resolving an id.
  */
-import {isLive} from "./records.ts";
+import { isLive } from "./records.ts";
 
 /** A record present on the fetched base ref. */
 export interface MergedRecord {
@@ -42,16 +42,16 @@ export interface DuplicateId {
  */
 export const indexMerged = (
 	records: ReadonlyArray<MergedRecord>,
-): {readonly index: ReadonlyMap<string, MergedRecord>} | {readonly duplicate: DuplicateId} => {
+): { readonly index: ReadonlyMap<string, MergedRecord> } | { readonly duplicate: DuplicateId } => {
 	const index = new Map<string, MergedRecord>();
 	for (const record of records) {
 		const seen = index.get(record.id);
 		if (seen !== undefined) {
-			return {duplicate: {id: record.id, files: [seen.file, record.file]}};
+			return { duplicate: { id: record.id, files: [seen.file, record.file] } };
 		}
 		index.set(record.id, record);
 	}
-	return {index};
+	return { index };
 };
 
 /**
@@ -87,9 +87,9 @@ export const resolveId = (
 	}
 	const open = inFlight.get(id);
 	if (open !== undefined) {
-		return {id, state: "in-flight", file: open.file, detail: `PR #${open.pr}`};
+		return { id, state: "in-flight", file: open.file, detail: `PR #${open.pr}` };
 	}
-	return {id, state: "absent", file: "-", detail: "-"};
+	return { id, state: "absent", file: "-", detail: "-" };
 };
 
 export const renderResolution = (r: Resolution): string => `${r.state}\t${r.file}\t${r.detail}`;

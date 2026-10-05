@@ -29,12 +29,12 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10309#issuecomment-5974136525
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type CommentRecord, listComments} from "../io/issues.ts";
-import {controlPlaneRoster} from "../ship/roster.ts";
-import {read as readRuling} from "../wire/decision-ruling.ts";
-import {carriesMachineMarker} from "../wire/machine-marker.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type CommentRecord, listComments } from "../io/issues.ts";
+import { controlPlaneRoster } from "../ship/roster.ts";
+import { read as readRuling } from "../wire/decision-ruling.ts";
+import { carriesMachineMarker } from "../wire/machine-marker.ts";
 import {
 	newestRulingAt,
 	type RulingScan,
@@ -57,8 +57,8 @@ export interface ResolvedRoster {
  * an owner commented.
  */
 export type UnmarkedRead =
-	| {readonly _tag: "Unknown"; readonly reason: string}
-	| {readonly _tag: "Counted"; readonly comments: ReadonlyArray<UnmarkedComment>};
+	| { readonly _tag: "Unknown"; readonly reason: string }
+	| { readonly _tag: "Counted"; readonly comments: ReadonlyArray<UnmarkedComment> };
 
 export interface ScannedRulings {
 	readonly _tag: "Scanned";
@@ -76,7 +76,7 @@ export interface ScannedRulings {
 }
 
 export type StandingRulingsRead =
-	| {readonly _tag: "Unknown"; readonly reason: string}
+	| { readonly _tag: "Unknown"; readonly reason: string }
 	| ScannedRulings;
 
 /** Whether any comment carries a marker this format reads — one of the roster read's two triggers. */
@@ -109,7 +109,7 @@ export const standingRulings = (
 			unmarked,
 		});
 		if (!conforming && comments.every((comment) => carriesMachineMarker(comment.body))) {
-			return unruled({_tag: "Counted", comments: []});
+			return unruled({ _tag: "Counted", comments: [] });
 		}
 
 		const roster = yield* controlPlaneRoster(repo);
@@ -119,7 +119,7 @@ export const standingRulings = (
 						_tag: "Unknown" as const,
 						reason: `cannot read ${roster.reason} — who may rule is unread, so whether a ruling stands is UNKNOWN`,
 					}
-				: unruled({_tag: "Unknown", reason: `cannot read ${roster.reason}`});
+				: unruled({ _tag: "Unknown", reason: `cannot read ${roster.reason}` });
 		}
 		const scan = scanRulings(comments, issue, roster.logins);
 		return {
@@ -148,7 +148,7 @@ export const describeUnmarked = (
 	issue: number,
 	read: ScannedRulings,
 ): ReadonlyArray<string> => {
-	const {unmarked} = read;
+	const { unmarked } = read;
 	if (unmarked._tag === "Unknown") {
 		return [
 			`${verb}: ${unmarked.reason} — whether a control-plane account commented on #${issue} without a ruling marker is UNKNOWN, never zero. Read the issue's comments.`,

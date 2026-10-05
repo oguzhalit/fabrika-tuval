@@ -3,8 +3,8 @@
  * the port exists for. The v1 original exited `1` for drift, for an unreadable ROADMAP.md and for a
  * read that could not answer; each case below pins one of those onto its own code.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	type FakeFsOptions,
 	fakeFs,
@@ -12,24 +12,24 @@ import {
 	type HttpReply,
 	type Scripted,
 } from "../fakes.test-support.ts";
-import {PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE} from "./codes.ts";
-import {runRoadmapGuard} from "./roadmap-verb.ts";
+import { PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE } from "./codes.ts";
+import { runRoadmapGuard } from "./roadmap-verb.ts";
 
 const ROOT = "/repo";
 const ROADMAP = `${ROOT}/ROADMAP.md`;
 const MILESTONES = /^GET .*\/repos\/o\/r\/milestones\?state=all/;
 
-const ENV = {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>;
+const ENV = { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>;
 
 /** The milestone list, as the bare JSON array the read validates its shape against. */
 const milestones = (
 	...rows: ReadonlyArray<readonly [number, "open" | "closed", string]>
 ): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(rows.map(([number, state, title]) => ({number, state, title}))),
+	body: JSON.stringify(rows.map(([number, state, title]) => ({ number, state, title }))),
 });
 
-const roadmap = (body: string): FakeFsOptions => ({files: {[ROADMAP]: body}});
+const roadmap = (body: string): FakeFsOptions => ({ files: { [ROADMAP]: body } });
 
 const IN_SYNC = `# Roadmap
 
@@ -60,7 +60,7 @@ const run = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runRoadmapGuard({root: ROOT, repo: null, cwd: ROOT, env}),
+			runRoadmapGuard({ root: ROOT, repo: null, cwd: ROOT, env }),
 			Layer.merge(fakeFs(fs).layer, fakeSeams(script).layer),
 		),
 	);
@@ -116,7 +116,7 @@ describe("runRoadmapGuard", () => {
 | Zombie | #7 | active |
 `),
 			[[MILESTONES, milestones([7, "closed", "Retired"])]],
-			{...ENV, GITHUB_ACTIONS: "true"},
+			{ ...ENV, GITHUB_ACTIONS: "true" },
 		);
 		expect(out.code).toBe(VIOLATION);
 		expect(
@@ -133,20 +133,20 @@ describe("runRoadmapGuard", () => {
 	});
 
 	it("fails closed when the repo has no milestones at all", async () => {
-		const out = await run(roadmap(IN_SYNC), [[MILESTONES, {status: 200, body: "[]"}]]);
+		const out = await run(roadmap(IN_SYNC), [[MILESTONES, { status: 200, body: "[]" }]]);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.join("\n")).toContain("0 milestone(s)");
 	});
 
 	it("seats an ABSENT ROADMAP.md on PRECONDITION_UNKNOWN, never on a clean or a violation", async () => {
-		const out = await run({files: {}}, [[MILESTONES, PROJECTION]]);
+		const out = await run({ files: {} }, [[MILESTONES, PROJECTION]]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.join("\n")).toContain("UNKNOWN, never clean");
 	});
 
 	it("seats an UNREADABLE ROADMAP.md on PRECONDITION_UNKNOWN too", async () => {
-		const out = await run({files: {[ROADMAP]: IN_SYNC}, unreadable: [ROADMAP]}, [
+		const out = await run({ files: { [ROADMAP]: IN_SYNC }, unreadable: [ROADMAP] }, [
 			[MILESTONES, PROJECTION],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -154,7 +154,7 @@ describe("runRoadmapGuard", () => {
 	});
 
 	it("seats a failed milestone read on PRECONDITION_UNKNOWN, never on ZERO_SCOPE", async () => {
-		const out = await run(roadmap(IN_SYNC), [[MILESTONES, {status: 502, body: "{}"}]]);
+		const out = await run(roadmap(IN_SYNC), [[MILESTONES, { status: 502, body: "{}" }]]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.join("\n")).toContain("HTTP 502");
 	});
@@ -165,7 +165,10 @@ describe("runRoadmapGuard", () => {
 		const out = await run(roadmap(IN_SYNC), [
 			[
 				MILESTONES,
-				{status: 200, body: JSON.stringify([{number: 7, state: "ajar", title: "Four Pillars"}])},
+				{
+					status: 200,
+					body: JSON.stringify([{ number: 7, state: "ajar", title: "Four Pillars" }]),
+				},
 			],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -185,7 +188,7 @@ describe("runRoadmapGuard", () => {
 		const out = await run(
 			{
 				files: {
-					[`${ROOT}/.fabrika.jsonc`]: JSON.stringify({roadmapFile: "docs/PLAN.md"}),
+					[`${ROOT}/.fabrika.jsonc`]: JSON.stringify({ roadmapFile: "docs/PLAN.md" }),
 					[`${ROOT}/docs/PLAN.md`]: IN_SYNC,
 				},
 			},
@@ -199,7 +202,7 @@ describe("runRoadmapGuard", () => {
 		const out = await run(
 			{
 				files: {
-					[`${ROOT}/.fabrika.jsonc`]: JSON.stringify({roadmapFile: 7}),
+					[`${ROOT}/.fabrika.jsonc`]: JSON.stringify({ roadmapFile: 7 }),
 					[ROADMAP]: IN_SYNC,
 				},
 			},
@@ -212,8 +215,8 @@ describe("runRoadmapGuard", () => {
 	it("refuses UNKNOWN when no repo root is found at or above the cwd", async () => {
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runRoadmapGuard({root: null, repo: null, cwd: "/nowhere", env: ENV}),
-				Layer.merge(fakeFs({files: {}}).layer, fakeSeams([[MILESTONES, PROJECTION]]).layer),
+				runRoadmapGuard({ root: null, repo: null, cwd: "/nowhere", env: ENV }),
+				Layer.merge(fakeFs({ files: {} }).layer, fakeSeams([[MILESTONES, PROJECTION]]).layer),
 			),
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);

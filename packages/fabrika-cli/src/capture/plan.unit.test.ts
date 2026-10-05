@@ -3,7 +3,7 @@
  * the one-record-per-surface plan, asserted without a browser — pure logic
  * belongs to the unit tier.
  */
-import {assert, describe, it} from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import {
 	buildCapturePlan,
 	DESKTOP_VIEWPORT,
@@ -75,12 +75,12 @@ describe("joinPreviewUrl", () => {
 describe("surfaceFileName", () => {
 	it("derives a filesystem-safe PNG name from route + state + viewport", () => {
 		assert.strictEqual(
-			surfaceFileName({surface: "/catalog", route: "/catalog", state: null}, DESKTOP_VIEWPORT),
+			surfaceFileName({ surface: "/catalog", route: "/catalog", state: null }, DESKTOP_VIEWPORT),
 			"catalog@desktop.png",
 		);
 		assert.strictEqual(
 			surfaceFileName(
-				{surface: "/catalog:empty", route: "/catalog", state: "empty"},
+				{ surface: "/catalog:empty", route: "/catalog", state: "empty" },
 				MOBILE_VIEWPORT,
 			),
 			"catalog-empty@mobile.png",
@@ -88,7 +88,7 @@ describe("surfaceFileName", () => {
 	});
 
 	it("names the scheme only when one was requested, so light and dark never share a file", () => {
-		const catalog: Surface = {surface: "/catalog", route: "/catalog", state: null};
+		const catalog: Surface = { surface: "/catalog", route: "/catalog", state: null };
 		assert.strictEqual(surfaceFileName(catalog, DESKTOP_VIEWPORT, null), "catalog@desktop.png");
 		assert.strictEqual(
 			surfaceFileName(catalog, DESKTOP_VIEWPORT, "light"),
@@ -101,7 +101,7 @@ describe("surfaceFileName", () => {
 	});
 
 	it("names an interaction's label only when one ran, apart from the route and the scheme", () => {
-		const menu: Surface = {surface: "/lab/menu:auth", route: "/lab/menu", state: "auth"};
+		const menu: Surface = { surface: "/lab/menu:auth", route: "/lab/menu", state: "auth" };
 		assert.strictEqual(surfaceFileName(menu, DESKTOP_VIEWPORT), "lab-menu-auth@desktop.png");
 		assert.strictEqual(
 			surfaceFileName(menu, DESKTOP_VIEWPORT, null, "sil-highlighted"),
@@ -113,21 +113,21 @@ describe("surfaceFileName", () => {
 		);
 		// A route cannot forge the label's separator: the stem never carries `~`.
 		assert.strictEqual(
-			surfaceFileName({surface: "/a~b", route: "/a~b", state: null}, DESKTOP_VIEWPORT),
+			surfaceFileName({ surface: "/a~b", route: "/a~b", state: null }, DESKTOP_VIEWPORT),
 			"a-b@desktop.png",
 		);
 	});
 
 	it("maps the root route to a non-empty name", () => {
 		assert.strictEqual(
-			surfaceFileName({surface: "/", route: "/", state: null}, DESKTOP_VIEWPORT),
+			surfaceFileName({ surface: "/", route: "/", state: null }, DESKTOP_VIEWPORT),
 			"root@desktop.png",
 		);
 	});
 
 	it("collapses non-alnum runs and trims leading/trailing dashes", () => {
 		assert.strictEqual(
-			surfaceFileName({surface: "s", route: "/a//b??c", state: null}, DESKTOP_VIEWPORT),
+			surfaceFileName({ surface: "s", route: "/a//b??c", state: null }, DESKTOP_VIEWPORT),
 			"a-b-c@desktop.png",
 		);
 	});
@@ -138,7 +138,7 @@ describe("surfaceFileName", () => {
 		// now: it returns promptly and still yields a dash-trimmed, alnum-only stem.
 		const evil = `/${"!".repeat(200_000)}x${"!".repeat(200_000)}`;
 		const started = Date.now();
-		const name = surfaceFileName({surface: evil, route: evil, state: null}, DESKTOP_VIEWPORT);
+		const name = surfaceFileName({ surface: evil, route: evil, state: null }, DESKTOP_VIEWPORT);
 		assert.ok(Date.now() - started < 1000, "sanitization must be linear, not polynomial");
 		// Clamped to the bounded stem, collapsed to a single dash, dashes trimmed:
 		// the pathological prefix is all `!` → one `-` → trimmed to "" → "root".
@@ -149,8 +149,8 @@ describe("surfaceFileName", () => {
 
 describe("buildCapturePlan", () => {
 	const surfaces: readonly Surface[] = [
-		{surface: "/catalog", route: "/catalog", state: null},
-		{surface: "/catalog:empty", route: "/catalog", state: "empty"},
+		{ surface: "/catalog", route: "/catalog", state: null },
+		{ surface: "/catalog:empty", route: "/catalog", state: "empty" },
 	];
 
 	it("produces exactly one shot per surface at the plan's one viewport", () => {
@@ -167,7 +167,7 @@ describe("buildCapturePlan", () => {
 	});
 
 	it("carries an interaction onto the shot and its name, and none when none was asked for", () => {
-		const hovered = {label: "hovered", steps: [{verb: "hover", locator: "#b"}]} as const;
+		const hovered = { label: "hovered", steps: [{ verb: "hover", locator: "#b" }] } as const;
 		const [shot] = buildCapturePlan(
 			"https://x.dev",
 			[surfaces[0] as Surface],
@@ -199,8 +199,8 @@ describe("buildCapturePlan", () => {
 
 	it("rejects duplicate surface tokens (on-disk + evidence collision)", () => {
 		const dup: readonly Surface[] = [
-			{surface: "/x", route: "/x", state: null},
-			{surface: "/x", route: "/x", state: null},
+			{ surface: "/x", route: "/x", state: null },
+			{ surface: "/x", route: "/x", state: null },
 		];
 		assert.throws(() => buildCapturePlan("https://x.dev", dup), /duplicate surface/);
 	});
@@ -220,7 +220,7 @@ describe("the viewport vocabulary", () => {
 	});
 
 	it("gives the two viewports of one surface distinct file names", () => {
-		const surface: Surface = {surface: "/feed", route: "/feed", state: null};
+		const surface: Surface = { surface: "/feed", route: "/feed", state: null };
 		assert.notStrictEqual(
 			surfaceFileName(surface, DESKTOP_VIEWPORT),
 			surfaceFileName(surface, MOBILE_VIEWPORT),

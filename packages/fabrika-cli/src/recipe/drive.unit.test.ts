@@ -1,8 +1,8 @@
-import {describe, expect, it} from "vitest";
-import {choreWorkflow} from "../lane/fixtures.test-support.ts";
-import {compile, isOperatorEvent} from "../lane/machine.ts";
+import { describe, expect, it } from "vitest";
+import { choreWorkflow } from "../lane/fixtures.test-support.ts";
+import { compile, isOperatorEvent } from "../lane/machine.ts";
 import * as CODES from "./codes.ts";
-import {dispositionOf, RECIPE_ROUTES, RECIPE_VERBS, routeOf, seatedExits} from "./drive.ts";
+import { dispositionOf, RECIPE_ROUTES, RECIPE_VERBS, routeOf, seatedExits } from "./drive.ts";
 
 /** Every code the group ships, minus the ones that are a refusal of `route` and not a run's exit. */
 const runExits = (): ReadonlyArray<number> => {
@@ -83,10 +83,9 @@ describe("the exit → event table", () => {
 		expect(folded.event).toBe("BLOCKED");
 		expect(unparkState.unpark?.BLOCKED).toBeDefined();
 		expect(
-			(unparkState.unpark?.BLOCKED as (state: unknown, msg: unknown) => readonly [{type: string}])(
-				{type: "unpark", retries: 0, maxRetries: 2, classes: []},
-				{type: "BLOCKED"},
-			)[0].type,
+			(
+				unparkState.unpark?.BLOCKED as (state: unknown, msg: unknown) => readonly [{ type: string }]
+			)({ type: "unpark", retries: 0, maxRetries: 2, classes: [] }, { type: "BLOCKED" })[0].type,
 		).toBe("human:novel-park");
 	});
 

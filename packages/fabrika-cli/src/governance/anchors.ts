@@ -59,7 +59,7 @@ interface AnchorSighting {
 const sightingOf = (text: string, line: number): AnchorSighting | null => {
 	const matched = ANCHOR.exec(maskInlineCode(text));
 	if (matched?.[1] === undefined) return null;
-	return {name: matched[1], rest: text.slice(matched.index + matched[0].length).trim(), line};
+	return { name: matched[1], rest: text.slice(matched.index + matched[0].length).trim(), line };
 };
 
 /** How many anchors a file's bytes carry — the `anchors-in-reach` denominator, per file. */
@@ -94,9 +94,9 @@ export const scanAnchors = (diff: string): ReadonlyArray<AnchorHit> => {
 		for (const gone of removed) {
 			const back = added.find((entry) => entry.name === gone.name);
 			if (back === undefined) {
-				hits.push({kind: "removed", name: gone.name, file, line: gone.line});
+				hits.push({ kind: "removed", name: gone.name, file, line: gone.line });
 			} else if (back.rest !== gone.rest) {
-				hits.push({kind: "modified", name: gone.name, file, line: back.line});
+				hits.push({ kind: "modified", name: gone.name, file, line: back.line });
 			}
 		}
 		removed = [];
@@ -268,7 +268,7 @@ export const anchorBlocksIn = (text: string): ReadonlyArray<AnchorBlock> => {
 			body.push(candidate);
 			if (ends >= 0) break;
 		}
-		blocks.push({name: matched[1], line: index + 1, text: normalize(body.join(" "))});
+		blocks.push({ name: matched[1], line: index + 1, text: normalize(body.join(" ")) });
 	}
 	return blocks;
 };
@@ -313,9 +313,9 @@ export const scanAnchorBlocks = (
 		}
 		const reworded = candidates.shift();
 		if (reworded === undefined) {
-			hits.push({kind: "removed", name: block.name, file, line: block.line});
+			hits.push({ kind: "removed", name: block.name, file, line: block.line });
 		} else {
-			hits.push({kind: "modified", name: block.name, file, line: reworded.line});
+			hits.push({ kind: "modified", name: block.name, file, line: reworded.line });
 		}
 	}
 	return hits;

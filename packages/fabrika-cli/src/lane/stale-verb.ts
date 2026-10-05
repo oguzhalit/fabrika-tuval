@@ -17,16 +17,16 @@
  * a flag this module reads, which is what keeps the default provable: with no reader there is no
  * seam to reach the board through.
  */
-import {Effect, type FileSystem, type Path, Result} from "effect";
-import type {Claimants} from "../build/claim.ts";
-import {exists} from "../io/fs.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {LANE_UNREADABLE} from "./codes.ts";
-import {deriveStatus, foldLog, type LaneStatus} from "./fold.ts";
-import {CHORE_PREFIX, rawKeyIssue} from "./key.ts";
-import {DISPATCH_BUDGET} from "./shell-budget.ts";
-import {type Judgement, judge, lastMoved, type Verdict} from "./stale.ts";
-import {DEFAULT_CHORES_ROOT, listLanes, loadLane} from "./store.ts";
+import { Effect, type FileSystem, type Path, Result } from "effect";
+import type { Claimants } from "../build/claim.ts";
+import { exists } from "../io/fs.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { LANE_UNREADABLE } from "./codes.ts";
+import { deriveStatus, foldLog, type LaneStatus } from "./fold.ts";
+import { CHORE_PREFIX, rawKeyIssue } from "./key.ts";
+import { DISPATCH_BUDGET } from "./shell-budget.ts";
+import { type Judgement, judge, lastMoved, type Verdict } from "./stale.ts";
+import { DEFAULT_CHORES_ROOT, listLanes, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane stale";
 
@@ -67,8 +67,8 @@ type LaneClaim =
 			readonly author: string;
 			readonly commentId: number;
 	  }
-	| {readonly state: "unclaimed"}
-	| {readonly state: "unknown"; readonly reason: string};
+	| { readonly state: "unclaimed" }
+	| { readonly state: "unknown"; readonly reason: string };
 
 interface LaneRow extends Judgement {
 	/** The key this lane is addressed by — what a caller passes to any other `lane` verb. */
@@ -127,7 +127,7 @@ const judgeLane = (
 ): Effect.Effect<LaneRow | null, never, FileSystem.FileSystem | Path.Path> =>
 	Effect.gen(function* () {
 		const key = keyOf(root, name);
-		const loaded = yield* loadLane({root, lane: name});
+		const loaded = yield* loadLane({ root, lane: name });
 		// An entry with no workflow.json is not a lane — a scratch directory under the root is not a
 		// silence to report, and calling it one would put noise in front of every real stall.
 		if (loaded._tag === "Absent") return null;
@@ -164,7 +164,7 @@ const judgeLane = (
 			...judged,
 		};
 		return judged.verdict === "unreadable"
-			? {...row, reason: `${loaded.logPath} carries no parseable \`at\``}
+			? { ...row, reason: `${loaded.logPath} carries no parseable \`at\`` }
 			: row;
 	});
 
@@ -185,14 +185,14 @@ const pair = <R>(row: LaneRow, read: ClaimReader<R>): Effect.Effect<LaneRow, nev
 		if (issue === null || row.verdict === "terminal") return row;
 		const claimants = yield* read(issue);
 		if (claimants._tag === "Unknown") {
-			return {...row, claims: {state: "unknown" as const, reason: claimants.reason}};
+			return { ...row, claims: { state: "unknown" as const, reason: claimants.reason } };
 		}
 		const holder = claimants.holder;
 		return {
 			...row,
 			claims:
 				holder === null
-					? {state: "unclaimed" as const}
+					? { state: "unclaimed" as const }
 					: {
 							state: "held" as const,
 							token: holder.token,
@@ -227,7 +227,7 @@ export const runStale = <R = never>(
 				);
 			}
 			if (!probe.success) {
-				scanned.push({root, present: false, lanes: 0});
+				scanned.push({ root, present: false, lanes: 0 });
 				continue;
 			}
 			const names = yield* Effect.result(listLanes(root));
@@ -244,7 +244,7 @@ export const runStale = <R = never>(
 				found += 1;
 				lanes.push(row);
 			}
-			scanned.push({root, present: true, lanes: found});
+			scanned.push({ root, present: true, lanes: found });
 		}
 
 		const summary = Object.fromEntries(
@@ -254,7 +254,7 @@ export const runStale = <R = never>(
 		const paired: LaneRow[] =
 			reader === null
 				? lanes
-				: yield* Effect.forEach(lanes, (row) => pair(row, reader), {concurrency: 1});
+				: yield* Effect.forEach(lanes, (row) => pair(row, reader), { concurrency: 1 });
 		const sorted = [...paired].sort(byAge);
 		const stale = sorted.filter((row) => row.verdict === "stale");
 		const held = sorted.flatMap((row) =>

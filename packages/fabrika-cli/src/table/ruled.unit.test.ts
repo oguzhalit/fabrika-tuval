@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import type {ListedIssue} from "../io/issues.ts";
-import {rulingComment} from "./ruled.test-support.ts";
-import {ruledSuspects, ruledUnbuiltOf} from "./ruled.ts";
+import { describe, expect, it } from "vitest";
+import type { ListedIssue } from "../io/issues.ts";
+import { rulingComment } from "./ruled.test-support.ts";
+import { ruledSuspects, ruledUnbuiltOf } from "./ruled.ts";
 
 const REPO = "acme/widgets";
 const RULER = "founder";

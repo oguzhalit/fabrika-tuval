@@ -6,13 +6,13 @@
  * function and asserts each divergence is caught — a check that cannot fail reports agreement over a
  * page that has gone stale, which is the whole defect this reconciliation exists to catch.
  */
-import {readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {VerbOutcome} from "../verb.ts";
-import {ARTIFACT_UNKNOWN, MALFORMED, ZERO_SCOPE} from "./codes.ts";
-import {brandWitnesses, type WireFormat, type WireReadLines} from "./format.ts";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { VerbOutcome } from "../verb.ts";
+import { ARTIFACT_UNKNOWN, MALFORMED, ZERO_SCOPE } from "./codes.ts";
+import { brandWitnesses, type WireFormat, type WireReadLines } from "./format.ts";
 import {
 	BEGIN_MARKER,
 	conformIndexDoc,
@@ -23,8 +23,8 @@ import {
 	renderProjection,
 	rewriteIndexDoc,
 } from "./index-doc.ts";
-import {type DocRead, type DocSave, runIndex} from "./index-verb.ts";
-import {registeredFormats} from "./registry.ts";
+import { type DocRead, type DocSave, runIndex } from "./index-verb.ts";
+import { registeredFormats } from "./registry.ts";
 
 const committedDoc = (): string =>
 	readFileSync(fileURLToPath(new URL(`../../../../${DOC_PATH}`, import.meta.url)), "utf8");
@@ -32,7 +32,7 @@ const committedDoc = (): string =>
 const ANSWER = 0;
 
 declare const TOY: unique symbol;
-type ToyText = string & {readonly [TOY]: true};
+type ToyText = string & { readonly [TOY]: true };
 
 const TOY_FORMAT: WireFormat = {
 	key: "toy",
@@ -40,15 +40,15 @@ const TOY_FORMAT: WireFormat = {
 	module: "packages/fabrika-cli/src/wire/toy.ts",
 	producers: ["triage"],
 	consumers: ["build"],
-	emit: (fields) => ({_tag: "Composed", bytes: `toy: ${fields.trim()}\n`}),
-	read: (): WireReadLines => ({_tag: "Found", value: ["value\talpha"]}),
+	emit: (fields) => ({ _tag: "Composed", bytes: `toy: ${fields.trim()}\n` }),
+	read: (): WireReadLines => ({ _tag: "Found", value: ["value\talpha"] }),
 	fixtures: {
-		roundTrip: {fields: "alpha", values: ["alpha"]},
-		found: [{shape: "authored by hand", artifact: "toy: alpha\n", values: ["alpha"]}],
+		roundTrip: { fields: "alpha", values: ["alpha"] },
+		found: [{ shape: "authored by hand", artifact: "toy: alpha\n", values: ["alpha"] }],
 		absent: "prose that reaches for nothing\n",
-		malformed: [{drift: "the key drifted", artifact: "toyish: alpha\n"}],
+		malformed: [{ drift: "the key drifted", artifact: "toyish: alpha\n" }],
 	},
-	brands: brandWitnesses<{readonly value: ToyText; readonly checked: boolean}>({value: true}),
+	brands: brandWitnesses<{ readonly value: ToyText; readonly checked: boolean }>({ value: true }),
 };
 
 const TOY_REGISTRY = [TOY_FORMAT];
@@ -91,7 +91,7 @@ describe("the check bites — each drift is caught", () => {
 	});
 
 	it("catches a registered format the doc never got a section for", () => {
-		const second: WireFormat = {...TOY_FORMAT, key: "toy-two"};
+		const second: WireFormat = { ...TOY_FORMAT, key: "toy-two" };
 		// The doc is rendered for BOTH rows, so only the missing narrative section is left to catch.
 		const markdown = agreeingDoc([TOY_FORMAT, second]).replace(
 			"### `toy-two`\n\nWhy the agreement exists.\n",
@@ -111,12 +111,12 @@ describe("the check bites — each drift is caught", () => {
 	});
 
 	it("catches a producers/consumers change made on the registry side alone", () => {
-		const renamed: WireFormat = {...TOY_FORMAT, consumers: ["build", "ship"]};
+		const renamed: WireFormat = { ...TOY_FORMAT, consumers: ["build", "ship"] };
 		expect(lawsBrokenBy(agreeingDoc(), [renamed])).toContain(INDEX_LAWS.projection);
 	});
 
 	it("catches an owner module that moved under the doc's feet", () => {
-		const moved: WireFormat = {...TOY_FORMAT, module: "packages/fabrika-cli/src/wire/moved.ts"};
+		const moved: WireFormat = { ...TOY_FORMAT, module: "packages/fabrika-cli/src/wire/moved.ts" };
 		expect(lawsBrokenBy(agreeingDoc(), [moved])).toContain(INDEX_LAWS.projection);
 	});
 });
@@ -173,7 +173,7 @@ describe("the generator is the region's only writer", () => {
 });
 
 describe("wire index seats each outcome on its own code", () => {
-	const saves = (): Effect.Effect<DocSave> => Effect.succeed({_tag: "Saved"});
+	const saves = (): Effect.Effect<DocSave> => Effect.succeed({ _tag: "Saved" });
 
 	const index = (options: {
 		readonly doc: DocRead;
@@ -195,39 +195,41 @@ describe("wire index seats each outcome on its own code", () => {
 		_tag: "Text",
 		text: `${agreeingDoc()}\n### \`retired\`\n\nstale\n`,
 	};
-	const UNREADABLE: DocRead = {_tag: "Failed", reason: "ENOENT"};
+	const UNREADABLE: DocRead = { _tag: "Failed", reason: "ENOENT" };
 
 	it("answers agreement on 0, with the counts it judged", () => {
-		const out = index({doc: {_tag: "Text", text: agreeingDoc()}});
+		const out = index({ doc: { _tag: "Text", text: agreeingDoc() } });
 		expect(out.code).toBe(ANSWER);
 		expect(out.stdout).toBe("index\tagrees\t1\t1\n");
 	});
 
 	it("seats a disagreement on MALFORMED with nothing on stdout, naming the finding", () => {
-		const out = index({doc: DRIFTED});
+		const out = index({ doc: DRIFTED });
 		expect(out.code).toBe(MALFORMED);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.join("\n")).toContain("retired");
 	});
 
 	it("refuses a doc it never read as UNKNOWN — not as a disagreement", () => {
-		const out = index({doc: UNREADABLE});
+		const out = index({ doc: UNREADABLE });
 		expect(out.code).toBe(ARTIFACT_UNKNOWN);
 		expect(out.stdout).toBe("");
 	});
 
 	it("refuses zero scope rather than passing vacuously", () => {
-		expect(index({doc: {_tag: "Text", text: agreeingDoc()}, formats: []}).code).toBe(ZERO_SCOPE);
+		expect(index({ doc: { _tag: "Text", text: agreeingDoc() }, formats: [] }).code).toBe(
+			ZERO_SCOPE,
+		);
 	});
 
 	it("writes the rendered doc back and then re-checks what it wrote", () => {
-		const box: {last: string} = {last: ""};
+		const box: { last: string } = { last: "" };
 		const out = index({
 			write: true,
-			doc: {_tag: "Text", text: agreeingDoc().replace("`triage`", "`drifted`")},
+			doc: { _tag: "Text", text: agreeingDoc().replace("`triage`", "`drifted`") },
 			save: (markdown) => {
 				box.last = markdown;
-				return Effect.succeed({_tag: "Saved"});
+				return Effect.succeed({ _tag: "Saved" });
 			},
 		});
 		expect(out.code).toBe(ANSWER);
@@ -236,10 +238,10 @@ describe("wire index seats each outcome on its own code", () => {
 	});
 
 	it("still reds after a write when a narrative section is missing — the generator cannot author prose", () => {
-		const second: WireFormat = {...TOY_FORMAT, key: "toy-two"};
+		const second: WireFormat = { ...TOY_FORMAT, key: "toy-two" };
 		const out = index({
 			write: true,
-			doc: {_tag: "Text", text: agreeingDoc()},
+			doc: { _tag: "Text", text: agreeingDoc() },
 			formats: [TOY_FORMAT, second],
 		});
 		expect(out.code).toBe(MALFORMED);
@@ -249,8 +251,8 @@ describe("wire index seats each outcome on its own code", () => {
 	it("refuses a doc it could not write back as UNKNOWN", () => {
 		const out = index({
 			write: true,
-			doc: {_tag: "Text", text: agreeingDoc()},
-			save: () => Effect.succeed({_tag: "Failed", reason: "EACCES"}),
+			doc: { _tag: "Text", text: agreeingDoc() },
+			save: () => Effect.succeed({ _tag: "Failed", reason: "EACCES" }),
 		});
 		expect(out.code).toBe(ARTIFACT_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -258,9 +260,9 @@ describe("wire index seats each outcome on its own code", () => {
 
 	it("keeps disagreement, unreadable and zero scope on three different codes", () => {
 		const codes = [
-			index({doc: DRIFTED}).code,
-			index({doc: UNREADABLE}).code,
-			index({doc: {_tag: "Text", text: agreeingDoc()}, formats: []}).code,
+			index({ doc: DRIFTED }).code,
+			index({ doc: UNREADABLE }).code,
+			index({ doc: { _tag: "Text", text: agreeingDoc() }, formats: [] }).code,
 		];
 		expect(new Set(codes).size).toBe(codes.length);
 		expect(codes).not.toContain(ANSWER);

@@ -15,9 +15,9 @@
  * correction, so the next sweep skips the line at either polarity and the population shrinks to the
  * lanes nobody has confirmed yet.
  */
-import {applyCorrections, foldLog, type LogEntry} from "./fold.ts";
-import {bareEvent, CORRECTED_EVENT, type CompiledLane} from "./machine.ts";
-import {type Closure, landedFor, type PullFact, traceClosure} from "./prove.ts";
+import { applyCorrections, foldLog, type LogEntry } from "./fold.ts";
+import { bareEvent, CORRECTED_EVENT, type CompiledLane } from "./machine.ts";
+import { type Closure, landedFor, type PullFact, traceClosure } from "./prove.ts";
 
 export type Misroute =
 	/** This entry sat on a partial-guarded cell and recorded no `partial` — the board decides. */
@@ -39,8 +39,8 @@ export type Misroute =
 			readonly pr: string | null;
 	  }
 	/** No recorded line reads the guard, or every one that does already carries its answer. */
-	| {readonly _tag: "Settled"; readonly why: string}
-	| {readonly _tag: "Unreplayable"; readonly defects: ReadonlyArray<string>};
+	| { readonly _tag: "Settled"; readonly why: string }
+	| { readonly _tag: "Unreplayable"; readonly defects: ReadonlyArray<string> };
 
 /** The key a correction names its target by — the pair {@link applyCorrections} matches on. */
 const correctsKey = (task: string, at: string): string => `${task}\u0000${at}`;
@@ -87,7 +87,7 @@ const unanswered = (entry: LogEntry, corrected: ReadonlySet<string>): boolean =>
  */
 export const findMisroute = (lane: CompiledLane, entries: ReadonlyArray<LogEntry>): Misroute => {
 	const resolved = applyCorrections(entries);
-	if (resolved._tag === "Undecidable") return {_tag: "Unreplayable", defects: resolved.defects};
+	if (resolved._tag === "Undecidable") return { _tag: "Unreplayable", defects: resolved.defects };
 	const log = resolved.entries;
 	const corrected = new Set(
 		entries.flatMap((entry) =>
@@ -152,12 +152,12 @@ export type ClosureRead =
 	 * that is what tells a later sweep a `partial` was read rather than fallen through to, which no
 	 * timestamp on the line can say ({@link unanswered}).
 	 */
-	| {readonly _tag: "Read"; readonly closure: Closure; readonly landed: ReadonlyArray<number>}
+	| { readonly _tag: "Read"; readonly closure: Closure; readonly landed: ReadonlyArray<number> }
 	/**
 	 * The board did not answer, or answered and proved nothing. Never read as `Closes` — that is the
 	 * permissive fold this module exists to undo.
 	 */
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * What a board answer *proves* about the merge behind a recorded terminal.

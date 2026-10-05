@@ -14,8 +14,8 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10357
  */
 
-import type {JsonSchema} from "../json-schema.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import type { JsonSchema } from "../json-schema.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const DIGEST = "digest";
 
@@ -36,9 +36,9 @@ export interface DigestSettings {
 	readonly allClear: boolean;
 }
 
-export type Digest = {readonly _tag: "Off"} | ({readonly _tag: "On"} & DigestSettings);
+export type Digest = { readonly _tag: "Off" } | ({ readonly _tag: "On" } & DigestSettings);
 
-export const DIGEST_OFF: Digest = {_tag: "Off"};
+export const DIGEST_OFF: Digest = { _tag: "Off" };
 
 export const SHIPPED_DIGEST: Omit<DigestSettings, "tool"> = {
 	webhookEnv: "FABRIKA_DIGEST_WEBHOOK",
@@ -49,7 +49,7 @@ export const SHIPPED_DIGEST: Omit<DigestSettings, "tool"> = {
 
 const named = (path: string): string => `\`${DIGEST}.${path}\``;
 
-const malformed = (reason: string): {readonly _tag: "Malformed"; readonly reason: string} => ({
+const malformed = (reason: string): { readonly _tag: "Malformed"; readonly reason: string } => ({
 	_tag: "Malformed",
 	reason,
 });
@@ -62,7 +62,7 @@ const isOneOf = <A extends string>(options: ReadonlyArray<A>, raw: unknown): raw
 	typeof raw === "string" && (options as ReadonlyArray<string>).includes(raw);
 
 const sections = (raw: unknown): Decoded<ReadonlyArray<DigestSection>> => {
-	if (raw === undefined) return {_tag: "Value", value: SHIPPED_DIGEST.sections};
+	if (raw === undefined) return { _tag: "Value", value: SHIPPED_DIGEST.sections };
 	if (!Array.isArray(raw)) return malformed(`${named("sections")} is not a list of section names`);
 	const names: DigestSection[] = [];
 	for (const [index, entry] of raw.entries()) {
@@ -78,7 +78,7 @@ const sections = (raw: unknown): Decoded<ReadonlyArray<DigestSection>> => {
 		? malformed(
 				`${named("sections")} names no section — leave \`${DIGEST}\` out to turn the report off`,
 			)
-		: {_tag: "Value", value: names};
+		: { _tag: "Value", value: names };
 };
 
 const decode = (raw: unknown): Decoded<Digest> => {
@@ -140,7 +140,7 @@ const jsonSchema: JsonSchema = {
 		},
 		sections: {
 			type: "array",
-			items: {type: "string", enum: [...DIGEST_SECTIONS]},
+			items: { type: "string", enum: [...DIGEST_SECTIONS] },
 			minItems: 1,
 			uniqueItems: true,
 			description:
@@ -168,7 +168,7 @@ export const digestKey: KeyGroup<Digest> = {
 	decode,
 	render: (value) => {
 		if (value._tag === "Off") return null;
-		const {_tag, ...settings} = value;
+		const { _tag, ...settings } = value;
 		return settings;
 	},
 	jsonSchema,

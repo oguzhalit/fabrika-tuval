@@ -11,22 +11,28 @@
  * single open issue titled exactly `Governance readout`, else a refusal naming both lookups — a
  * guessed number would publish the digest onto somebody else's issue.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {createComment, getComment, getIssue, listComments, openIssuesTitled} from "../io/issues.ts";
-import {patchComment, viewerLogin} from "../io/pulls.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {resolveTargetRepo} from "../review/target.ts";
-import {latestByWriteRecency} from "../review/write-recency.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import {
+	createComment,
+	getComment,
+	getIssue,
+	listComments,
+	openIssuesTitled,
+} from "../io/issues.ts";
+import { patchComment, viewerLogin } from "../io/pulls.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { resolveTargetRepo } from "../review/target.ts";
+import { latestByWriteRecency } from "../review/write-recency.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	emitFromFields,
 	parseFields,
 	read as readDigest,
 	renderRows,
 } from "../wire/governance-digest.ts";
-import {type AuthoredSurface, leakRefusal, readAuthored} from "./authored.ts";
+import { type AuthoredSurface, leakRefusal, readAuthored } from "./authored.ts";
 import {
 	INCOMPLETE_SCAN,
 	OFF_VOCABULARY,
@@ -60,8 +66,8 @@ export interface ReadoutOptions {
 }
 
 type Artifact =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Issue"; readonly issue: number};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Issue"; readonly issue: number };
 
 const resolveArtifact = (
 	repo: string,
@@ -69,12 +75,12 @@ const resolveArtifact = (
 	env: Readonly<Record<string, string | undefined>>,
 ): Effect.Effect<Artifact, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		if (explicit !== null) return {_tag: "Issue" as const, issue: explicit};
+		if (explicit !== null) return { _tag: "Issue" as const, issue: explicit };
 		const named = (env[ARTIFACT_ENV] ?? "").trim();
 		if (named !== "") {
 			const parsed = Number.parseInt(named, 10);
 			return Number.isInteger(parsed) && parsed > 0
-				? {_tag: "Issue" as const, issue: parsed}
+				? { _tag: "Issue" as const, issue: parsed }
 				: {
 						_tag: "Refused" as const,
 						outcome: refuse(
@@ -103,7 +109,7 @@ const resolveArtifact = (
 				),
 			};
 		}
-		return {_tag: "Issue" as const, issue: only.number};
+		return { _tag: "Issue" as const, issue: only.number };
 	});
 
 /**
@@ -139,7 +145,7 @@ export const runReadout = (
 	options: ReadoutOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {json} = options;
+		const { json } = options;
 		const resolved = yield* resolveTargetRepo(VERB, options.repo, options.env);
 		if (resolved._tag === "Refused") return resolved.outcome;
 		const repo = resolved.repo;
@@ -212,16 +218,16 @@ export const runReadout = (
 			),
 		);
 
-		let landed: {readonly id: number; readonly url: string} | null = null;
+		let landed: { readonly id: number; readonly url: string } | null = null;
 		let failure: string | null = null;
 		if (mine === undefined) {
 			const created = yield* createComment(repo, issue, body);
 			if (created._tag === "Failure") failure = created.reason;
-			else landed = {id: created.value.id, url: created.value.url};
+			else landed = { id: created.value.id, url: created.value.url };
 		} else {
 			const edited = yield* patchComment(repo, mine.id, body);
 			if (edited._tag === "Failure") failure = edited.reason;
-			else landed = {id: mine.id, url: edited.value};
+			else landed = { id: mine.id, url: edited.value };
 		}
 		if (landed === null) {
 			return refuse(

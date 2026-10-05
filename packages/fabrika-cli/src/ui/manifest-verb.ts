@@ -8,12 +8,12 @@
  * `existsSync` reports an unreadable parent directory as absent, which is how a missing law comes to
  * look like a repo that never had one.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {noUiSurfaces, uiSurfacesOr} from "../config/paths.ts";
-import {exists} from "../io/fs.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {NO_MANIFEST, PRECONDITION_UNKNOWN} from "./codes.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { noUiSurfaces, uiSurfacesOr } from "../config/paths.ts";
+import { exists } from "../io/fs.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { NO_MANIFEST, PRECONDITION_UNKNOWN } from "./codes.ts";
 import {
 	atRoot,
 	GOLDEN_POINTER_PATHS,
@@ -22,14 +22,14 @@ import {
 	MANIFEST_REMEDY,
 	REGISTRY_PATH,
 } from "./conventions.ts";
-import {resolveRoot} from "./lane.ts";
+import { resolveRoot } from "./lane.ts";
 
 const VERB = "ui manifest";
 
 export type Probe =
-	| {readonly _tag: "Present"; readonly relative: string}
-	| {readonly _tag: "Absent"}
-	| {readonly _tag: "Unknown"; readonly relative: string; readonly reason: string};
+	| { readonly _tag: "Present"; readonly relative: string }
+	| { readonly _tag: "Absent" }
+	| { readonly _tag: "Unknown"; readonly relative: string; readonly reason: string };
 
 /** Probe one convention path. A read fault is its own outcome, never folded into "absent". */
 export const probe = (
@@ -37,9 +37,9 @@ export const probe = (
 	relative: string,
 ): Effect.Effect<Probe, never, FileSystem.FileSystem> =>
 	exists(atRoot(root, relative)).pipe(
-		Effect.map((found): Probe => (found ? {_tag: "Present", relative} : {_tag: "Absent"})),
+		Effect.map((found): Probe => (found ? { _tag: "Present", relative } : { _tag: "Absent" })),
 		Effect.catchTag("fabrika-cli/ReadFailed", (cause) =>
-			Effect.succeed<Probe>({_tag: "Unknown", relative, reason: cause.reason}),
+			Effect.succeed<Probe>({ _tag: "Unknown", relative, reason: cause.reason }),
 		),
 	);
 
@@ -53,10 +53,10 @@ const probeOrder = (
 			const found = yield* probe(root, relative);
 			if (found._tag !== "Absent") return found;
 		}
-		return {_tag: "Absent"} as const;
+		return { _tag: "Absent" } as const;
 	});
 
-const unreadable = (found: Probe & {_tag: "Unknown"}, verb: string): VerbOutcome =>
+const unreadable = (found: Probe & { _tag: "Unknown" }, verb: string): VerbOutcome =>
 	refuse(
 		PRECONDITION_UNKNOWN,
 		`${verb}: cannot probe ${found.relative}: ${found.reason} — presence is UNKNOWN, never "absent".`,

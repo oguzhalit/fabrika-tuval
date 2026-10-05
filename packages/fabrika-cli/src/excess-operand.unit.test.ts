@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import {EXCESS_OPERAND_NAME, excessRefusal} from "./excess-operand.ts";
-import {registeredGroups} from "./registry.ts";
-import type {CommandNode} from "./unknown-subcommand.ts";
+import { describe, expect, it } from "vitest";
+import { EXCESS_OPERAND_NAME, excessRefusal } from "./excess-operand.ts";
+import { registeredGroups } from "./registry.ts";
+import type { CommandNode } from "./unknown-subcommand.ts";
 
 describe("excessRefusal", () => {
 	it("names the token and the path it was rejected at", () => {
@@ -34,8 +34,8 @@ describe("every registered leaf verb declares the excess-operand catch-all", () 
 	}
 
 	interface ConfiguredCommand extends Omit<CommandNode, "subcommands"> {
-		readonly config?: {readonly arguments?: ReadonlyArray<ParamNode>};
-		readonly subcommands: ReadonlyArray<{readonly commands: ReadonlyArray<ConfiguredCommand>}>;
+		readonly config?: { readonly arguments?: ReadonlyArray<ParamNode> };
+		readonly subcommands: ReadonlyArray<{ readonly commands: ReadonlyArray<ConfiguredCommand> }>;
 	}
 
 	const declaredName = (param: ParamNode | undefined): string | undefined => {
@@ -61,11 +61,12 @@ describe("every registered leaf verb declares the excess-operand catch-all", () 
 		expect(verbs.length).toBeGreaterThan(0);
 	});
 
-	it.each(
-		verbs.map(([label, verb]) => [label, verb] as const),
-	)("`%s` binds its trailing operands", (_label, verb) => {
-		const declared = verb.config?.arguments;
-		expect(declared, "the Command runtime config no longer exposes `arguments`").toBeDefined();
-		expect(declaredName(declared?.at(-1))).toBe(EXCESS_OPERAND_NAME);
-	});
+	it.each(verbs.map(([label, verb]) => [label, verb] as const))(
+		"`%s` binds its trailing operands",
+		(_label, verb) => {
+			const declared = verb.config?.arguments;
+			expect(declared, "the Command runtime config no longer exposes `arguments`").toBeDefined();
+			expect(declaredName(declared?.at(-1))).toBe(EXCESS_OPERAND_NAME);
+		},
+	);
 });

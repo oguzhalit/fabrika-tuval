@@ -1,0 +1,121 @@
+import { describe, expect, it } from "vitest";
+import { bodyDefect, classificationIn, deviationsDefect, proseOf } from "./pr-body.ts";
+
+const body = (extra: string) => `Fixes #4312\n\nsome prose.\n${extra}\n## Deviations\n\nNone.\n`;
+
+describe("the Deviations section blocks, and 'None.' counts", () => {
+	it("accepts the `None.` claim", () => {
+		expect(deviationsDefect("## Deviations\n\nNone.\n")).toBeNull();
+	});
+
+	it("accepts a four-field entry", () => {
+		const section =
+			"## Deviations\n\n- **Scope narrowing** — **Said:** four gates. **Did:** three. **Why:** the fourth is trivial. **Disposition:** stated here.\n";
+		expect(deviationsDefect(section)).toBeNull();
+	});
+
+	it("refuses a missing section", () => {
+		expect(deviationsDefect("Fixes #4312\n")).not.toBeNull();
+	});
+
+	it("refuses a section whose only content is the next heading — silence is not content (#4542)", () => {
+		expect(deviationsDefect("## Deviations\n\n## Testing\nran it\n")).not.toBeNull();
+	});
+
+	it("refuses a prose bullet at creation, naming the fields it owes (#5566)", () => {
+		const reason = deviationsDefect("## Deviations\n\n- narrowed the scope a bit.\n");
+		expect(reason).toContain("**Said:**");
+		expect(reason).toContain("**Disposition:**");
+	});
+});
+
+describe("the closing keyword", () => {
+	it("accepts exactly one aimed at this PR's issue", () => {
+		expect(bodyDefect(body(""), 4312, false)).toBeNull();
+	});
+
+	it("counts a closing line below ## Deviations as this PR's own link (#10040)", () => {
+		expect(
+			bodyDefect("Summary.\n\n## Deviations\n\nNone.\n\nFixes #4312\n", 4312, false),
+		).toBeNull();
+	});
+
+	it("refuses a stray keyword aimed elsewhere — the #4471 auto-close", () => {
+		expect(bodyDefect(body("\nAlso closes #999.\n"), 4312, false)).toEqual({
+			_tag: "StrayClosing",
+			target: 999,
+		});
+	});
+
+	it("refuses a body with no link at all", () => {
+		expect(bodyDefect("## Deviations\nNone.\n", 4312, false)).toEqual({ _tag: "NoLink" });
+	});
+
+	it("refuses a duplicated keyword aimed at the same issue", () => {
+		expect(bodyDefect(body("\nfixes #4312 again\n"), 4312, false)).toEqual({
+			_tag: "DuplicateClosing",
+		});
+	});
+
+	it("refuses an auto-close under --partial, and accepts Part of instead", () => {
+		expect(bodyDefect(body(""), 4312, true)).toEqual({ _tag: "ClosesWhilePartial", target: 4312 });
+		expect(bodyDefect("Part of #4312\n\n## Deviations\nNone.\n", 4312, true)).toBeNull();
+	});
+
+	it("puts the Deviations refusal ahead of the link refusal when both are wrong", () => {
+		expect(bodyDefect("no link, no section", 4312, false)?._tag).toBe("NoDeviations");
+	});
+});
+
+describe("a Report section is checked only when a heading reaches for it", () => {
+	it("passes a body with no report, and one whose report reads found", () => {
+		expect(bodyDefect(body(""), 4312, false)).toBeNull();
+		expect(bodyDefect(body("\n## Report\n\nAudit scope: all callers.\n"), 4312, false)).toBeNull();
+	});
+
+	it("refuses a drifted report heading, naming the line it judged", () => {
+		expect(bodyDefect(body("\n### Report\n\nAudit scope: all callers.\n"), 4312, false)).toEqual({
+			_tag: "MalformedReport",
+			reason: 'the report heading has drifted, expected "## Report" — line 5: "### Report"',
+		});
+	});
+});
+
+describe("the classification guard reads prose only", () => {
+	it("catches a control-plane claim in either polarity (#4153)", () => {
+		expect(classificationIn("this is not control-plane")).toBe("control-plane");
+		expect(classificationIn("Control Plane: yes")).toBe("control-plane");
+	});
+
+	it("catches a type and a standalone priority assertion", () => {
+		expect(classificationIn("this lands as type:chore")).toBe("type");
+		expect(classificationIn("priority is p0 here")).toBe("priority");
+	});
+
+	it("passes a body that merely quotes one inside a fence or a block quote", () => {
+		expect(classificationIn(proseOf("```\nnot control-plane\n```\nplain prose\n"))).toBeNull();
+		expect(classificationIn(proseOf("> the reviewer said type:bug\n\nplain prose\n"))).toBeNull();
+	});
+
+	it("passes a mention inside an inline-code span, for every pattern in the set (#6207)", () => {
+		expect(
+			classificationIn(proseOf("edits `tools/control-plane-paths/` and `@acme/control-plane`\n")),
+		).toBeNull();
+		expect(classificationIn(proseOf("the ``type:bug`` label and the `p0` token\n"))).toBeNull();
+	});
+
+	it("keeps the prose around a span, so an assertion beside one still reds", () => {
+		expect(
+			classificationIn(proseOf("touches `control-plane-paths/`; this is not control-plane\n")),
+		).toBe("control-plane");
+	});
+
+	it("leaves an unmatched backtick literal rather than swallowing the line", () => {
+		expect(proseOf("a stray ` then not control-plane")).toBe("a stray ` then not control-plane");
+		expect(proseOf("``a`b`` stays one span")).toBe(" stays one span");
+	});
+
+	it("passes an ordinary body", () => {
+		expect(classificationIn("Editor focus now survives a save.")).toBeNull();
+	});
+});

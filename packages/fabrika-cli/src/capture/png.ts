@@ -32,21 +32,21 @@ export const decodePngHeader = (bytes: Uint8Array): PngHeader | null => {
 	if (SIGNATURE.some((byte, i) => bytes[i] !== byte)) return null;
 	const chunkType = String.fromCharCode(...bytes.slice(12, 16));
 	if (chunkType !== "IHDR") return null;
-	return {width: readUint32(bytes, 16) >>> 0, height: readUint32(bytes, 20) >>> 0};
+	return { width: readUint32(bytes, 16) >>> 0, height: readUint32(bytes, 20) >>> 0 };
 };
 
 /** A capture is a record, or it is one of the three named ways it is not. */
 export type CaptureValidity =
-	| {readonly _tag: "Valid"; readonly width: number; readonly height: number}
-	| {readonly _tag: "Invalid"; readonly reason: string};
+	| { readonly _tag: "Valid"; readonly width: number; readonly height: number }
+	| { readonly _tag: "Invalid"; readonly reason: string };
 
 /** Validate captured bytes: non-empty, decodable, non-zero area. */
 export const validateCaptureBytes = (bytes: Uint8Array): CaptureValidity => {
-	if (bytes.length === 0) return {_tag: "Invalid", reason: "zero bytes"};
+	if (bytes.length === 0) return { _tag: "Invalid", reason: "zero bytes" };
 	const header = decodePngHeader(bytes);
-	if (header === null) return {_tag: "Invalid", reason: "undecodable — not a PNG header"};
+	if (header === null) return { _tag: "Invalid", reason: "undecodable — not a PNG header" };
 	if (header.width === 0 || header.height === 0) {
-		return {_tag: "Invalid", reason: `zero area (${header.width}x${header.height})`};
+		return { _tag: "Invalid", reason: `zero area (${header.width}x${header.height})` };
 	}
-	return {_tag: "Valid", width: header.width, height: header.height};
+	return { _tag: "Valid", width: header.width, height: header.height };
 };

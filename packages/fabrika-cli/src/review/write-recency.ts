@@ -22,7 +22,7 @@
  * emitted line against that consumer's own matcher so the interop cannot drift unnoticed.
  */
 
-import {FENCE, split} from "./supersede.ts";
+import { FENCE, split } from "./supersede.ts";
 
 /**
  * The stamp line. `g` for {@link writtenAtOf}'s `matchAll` and {@link withWrittenAt}'s replace,
@@ -50,7 +50,7 @@ export const stampIso = (epochMillis: number): string =>
  * preserves those verbatim.
  */
 export const withWrittenAt = (body: string, iso: string): string => {
-	const {live, archive} = split(body);
+	const { live, archive } = split(body);
 	const stamped = `${live.replace(WRITTEN_AT, "").replace(/\s+$/, "")}\n\nVerdict-written: ${iso}`;
 	return archive === "" ? stamped : `${stamped}\n\n${FENCE}\n\n${archive}\n`;
 };

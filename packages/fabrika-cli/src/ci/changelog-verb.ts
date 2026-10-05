@@ -9,11 +9,11 @@
  * entries JSON is decoded once, and every step downstream of it is total.
  */
 
-import {Effect, type FileSystem, type Path, Schema} from "effect";
-import {readFile, writeFile} from "../io/fs.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {type ChangelogEntry, deriveChangelog, type ReleaseMeta} from "./changelog.ts";
-import {MALFORMED_DOCUMENT, PRECONDITION_UNKNOWN, WRITE_UNKNOWN} from "./codes.ts";
+import { Effect, type FileSystem, type Path, Schema } from "effect";
+import { readFile, writeFile } from "../io/fs.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { type ChangelogEntry, deriveChangelog, type ReleaseMeta } from "./changelog.ts";
+import { MALFORMED_DOCUMENT, PRECONDITION_UNKNOWN, WRITE_UNKNOWN } from "./codes.ts";
 
 const VERB = "ci changelog";
 
@@ -72,8 +72,8 @@ export const runChangelog = (
 ): Effect.Effect<VerbOutcome, never, FileSystem.FileSystem | Path.Path> =>
 	Effect.gen(function* () {
 		const entries = yield* loadEntries(options.entries);
-		const meta: ReleaseMeta = {version: options.version, date: options.date ?? today()};
-		const markdown = deriveChangelog([{meta, entries}]);
+		const meta: ReleaseMeta = { version: options.version, date: options.date ?? today() };
+		const markdown = deriveChangelog([{ meta, entries }]);
 		if (options.out === null) return answer(markdown);
 		const out = options.out;
 		yield* writeFile(out, markdown).pipe(

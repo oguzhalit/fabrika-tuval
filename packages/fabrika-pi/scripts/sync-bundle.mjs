@@ -18,9 +18,9 @@
  * nothing — so the script refuses instead. The sync is total: `dist/` is removed and rebuilt on
  * every run, so running twice is idempotent and stale copies of deleted sources never survive.
  */
-import {cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync} from "node:fs";
-import {join, resolve} from "node:path";
-import {fileURLToPath} from "node:url";
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const PACKAGE_ROOT = fileURLToPath(new URL("..", import.meta.url));
 const REPO_ROOT = resolve(PACKAGE_ROOT, "../..");
@@ -76,20 +76,20 @@ export function syncBundle(paths = {}) {
 		);
 	}
 
-	rmSync(dest, {recursive: true, force: true});
+	rmSync(dest, { recursive: true, force: true });
 	for (const skill of skills) {
-		cpSync(join(skillsSource, skill), join(dest, "skills", skill), {recursive: true});
+		cpSync(join(skillsSource, skill), join(dest, "skills", skill), { recursive: true });
 	}
-	mkdirSync(join(dest, "agents"), {recursive: true});
+	mkdirSync(join(dest, "agents"), { recursive: true });
 	for (const agent of agents) {
 		cpSync(join(agentsSource, agent), join(dest, "agents", agent));
 	}
 
-	return {skills, agents};
+	return { skills, agents };
 }
 
 /** Print one line naming everything that shipped, so a green run says what it bundled. */
-function report({skills, agents}) {
+function report({ skills, agents }) {
 	console.log(
 		`sync-bundle: bundled ${skills.length} skill${skills.length === 1 ? "" : "s"} (${skills.join(", ")}) ` +
 			`and ${agents.length} agent shell${agents.length === 1 ? "" : "s"} (${agents.join(", ")}) → ${DEST}`,

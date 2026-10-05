@@ -19,17 +19,17 @@
  * permissive arm: a stale directory would silently raise the cap the operator set. The remedy for a
  * dead seat is `lane archive`, `lane settle` or `lane reconcile`, and the refusal says so.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import {CONFIG_PATH} from "../config/document.ts";
-import {LANE_CONCURRENCY_CAP} from "../config/keys/lane-concurrency-cap.ts";
-import type {Read} from "../config/read-key.ts";
-import {exists} from "../io/fs.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import type {ClaimHoldReader} from "./claim-hold.ts";
-import {CONCURRENCY_CAPPED, LANE_UNREADABLE} from "./codes.ts";
-import {deriveStatus, foldLog, standingCauses} from "./fold.ts";
-import {rawKeyIssue} from "./key.ts";
-import {listLanes, loadLane} from "./store.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { CONFIG_PATH } from "../config/document.ts";
+import { LANE_CONCURRENCY_CAP } from "../config/keys/lane-concurrency-cap.ts";
+import type { Read } from "../config/read-key.ts";
+import { exists } from "../io/fs.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import type { ClaimHoldReader } from "./claim-hold.ts";
+import { CONCURRENCY_CAPPED, LANE_UNREADABLE } from "./codes.ts";
+import { deriveStatus, foldLog, standingCauses } from "./fold.ts";
+import { rawKeyIssue } from "./key.ts";
+import { listLanes, loadLane } from "./store.ts";
 
 /** One lane holding a seat, and why it is not free. */
 export interface Seat {
@@ -49,7 +49,7 @@ export type Seats =
 			readonly idle: ReadonlyArray<string>;
 	  }
 	/** The root itself could not be listed — how full it is is UNKNOWN, never zero. */
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /** Numeric lane ids in numeric order, so a refusal reads the same twice over one root. */
 const byLane = (a: string, b: string): number =>
@@ -63,34 +63,34 @@ export const seatsIn = <R = never>(
 	Effect.gen(function* () {
 		const there = yield* Effect.result(exists(root));
 		if (there._tag === "Failure") {
-			return {_tag: "Unreadable", reason: there.failure.reason} as const;
+			return { _tag: "Unreadable", reason: there.failure.reason } as const;
 		}
-		if (!there.success) return {_tag: "Counted", seats: [], idle: []} as const;
+		if (!there.success) return { _tag: "Counted", seats: [], idle: [] } as const;
 		const listed = yield* Effect.result(listLanes(root));
 		if (listed._tag === "Failure") {
-			return {_tag: "Unreadable", reason: listed.failure.reason} as const;
+			return { _tag: "Unreadable", reason: listed.failure.reason } as const;
 		}
 		const seats: Seat[] = [];
 		const idle: string[] = [];
 		for (const lane of listed.success) {
-			const loaded = yield* loadLane({root, lane});
+			const loaded = yield* loadLane({ root, lane });
 			// A directory with no workflow.json is not a lane, so it is not a seat — the same read
 			// `lane reconcile` makes of a scratch directory under the root.
 			if (loaded._tag === "Absent") continue;
 			if (loaded._tag !== "Loaded") {
-				seats.push({lane, held: "unaccountable"});
+				seats.push({ lane, held: "unaccountable" });
 				continue;
 			}
 			const folded = foldLog(loaded.lane, loaded.entries);
 			if (folded._tag !== "Folded") {
-				seats.push({lane, held: "unaccountable"});
+				seats.push({ lane, held: "unaccountable" });
 				continue;
 			}
 			const status = deriveStatus(loaded.lane, folded.states, standingCauses(loaded.entries));
 			if (status.status !== "active") continue;
 			const hold = yield* claimed(lane);
-			if (hold._tag === "Unknown") seats.push({lane, held: "unaccountable"});
-			else if (hold._tag === "Claimed") seats.push({lane, held: "claimed"});
+			if (hold._tag === "Unknown") seats.push({ lane, held: "unaccountable" });
+			else if (hold._tag === "Claimed") seats.push({ lane, held: "claimed" });
 			else idle.push(lane);
 		}
 		return {
@@ -134,7 +134,7 @@ export const capRefusal = <R = never>(
 				`${verb}: cannot list ${root} to count the lanes standing against \`${LANE_CONCURRENCY_CAP}\` (${counted.reason}) — nothing was booted.`,
 			);
 		}
-		const {seats, idle} = counted;
+		const { seats, idle } = counted;
 		if (seats.length < limit) return null;
 		const idleNote =
 			idle.length === 0

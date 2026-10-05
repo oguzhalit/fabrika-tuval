@@ -21,9 +21,9 @@
  * actually being done, off `./shell-budget.ts`, so the same sweep judges a shipper and a builder on
  * their own horizons.
  */
-import {shellState} from "../wire/lane-brief.ts";
-import type {LaneStatus} from "./fold.ts";
-import {budgetMinutesFor} from "./shell-budget.ts";
+import { shellState } from "../wire/lane-brief.ts";
+import type { LaneStatus } from "./fold.ts";
+import { budgetMinutesFor } from "./shell-budget.ts";
 
 /**
  * Whether a leaf state is a park — a hold only a human or a driver clears.
@@ -71,19 +71,19 @@ export const dispositionOf = (status: LaneStatus): Disposition => {
  * "no events", because the two take opposite remedies (fix the log vs drive the lane).
  */
 export type LastMoved =
-	| {readonly _tag: "Moved"; readonly at: string; readonly epochMs: number}
-	| {readonly _tag: "Never"}
-	| {readonly _tag: "Unreadable"};
+	| { readonly _tag: "Moved"; readonly at: string; readonly epochMs: number }
+	| { readonly _tag: "Never" }
+	| { readonly _tag: "Unreadable" };
 
 export const lastMoved = (ats: ReadonlyArray<string>): LastMoved => {
-	if (ats.length === 0) return {_tag: "Never"};
-	let best: {at: string; epochMs: number} | undefined;
+	if (ats.length === 0) return { _tag: "Never" };
+	let best: { at: string; epochMs: number } | undefined;
 	for (const at of ats) {
 		const epochMs = Date.parse(at);
 		if (Number.isNaN(epochMs)) continue;
-		if (best === undefined || epochMs > best.epochMs) best = {at, epochMs};
+		if (best === undefined || epochMs > best.epochMs) best = { at, epochMs };
 	}
-	return best === undefined ? {_tag: "Unreadable"} : {_tag: "Moved", ...best};
+	return best === undefined ? { _tag: "Unreadable" } : { _tag: "Moved", ...best };
 };
 
 /**
@@ -133,10 +133,10 @@ export const judge = (
 		};
 	}
 	if (moved._tag === "Never") {
-		return {verdict: "unstarted", ageMinutes: null, lastEventAt: null, budgetMinutes};
+		return { verdict: "unstarted", ageMinutes: null, lastEventAt: null, budgetMinutes };
 	}
 	if (moved._tag === "Unreadable") {
-		return {verdict: "unreadable", ageMinutes: null, lastEventAt: null, budgetMinutes};
+		return { verdict: "unreadable", ageMinutes: null, lastEventAt: null, budgetMinutes };
 	}
 	const ageMinutes = ageInMinutes(moved.epochMs, nowEpochMs);
 	return {

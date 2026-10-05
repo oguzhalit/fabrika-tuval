@@ -27,9 +27,9 @@
  * `parent` is `null` when the board carried the edge and no number that parses.
  */
 export type Expectation =
-	| {readonly _tag: "Epic"; readonly children: number}
-	| {readonly _tag: "Child"; readonly parent: number | null}
-	| {readonly _tag: "Single"};
+	| { readonly _tag: "Epic"; readonly children: number }
+	| { readonly _tag: "Child"; readonly parent: number | null }
+	| { readonly _tag: "Single" };
 
 /**
  * How a lane's machine document was produced, read off its `id` alone.
@@ -38,16 +38,16 @@ export type Expectation =
  * sweep: an emitted document is `epic-<n>` and a booted one carries its committed template's id.
  */
 export type MachineOrigin =
-	| {readonly _tag: "Generated"; readonly epic: number}
-	| {readonly _tag: "Booted"; readonly template: string};
+	| { readonly _tag: "Generated"; readonly epic: number }
+	| { readonly _tag: "Booted"; readonly template: string };
 
 const EMITTED_ID = /^epic-(\d+)$/;
 
 export const originOf = (documentId: string): MachineOrigin => {
 	const match = EMITTED_ID.exec(documentId);
 	return match === null
-		? {_tag: "Booted", template: documentId}
-		: {_tag: "Generated", epic: Number(match[1])};
+		? { _tag: "Booted", template: documentId }
+		: { _tag: "Generated", epic: Number(match[1]) };
 };
 
 /**
@@ -58,9 +58,9 @@ export const originOf = (documentId: string): MachineOrigin => {
  * (what shipped before) leaves the stray reported as healthy, which is why nobody retired one.
  */
 export type ShapeVerdict =
-	| {readonly _tag: "Matches"}
-	| {readonly _tag: "Mismatched"; readonly reason: string}
-	| {readonly _tag: "Duplicate"; readonly parent: number | null; readonly reason: string};
+	| { readonly _tag: "Matches" }
+	| { readonly _tag: "Mismatched"; readonly reason: string }
+	| { readonly _tag: "Duplicate"; readonly parent: number | null; readonly reason: string };
 
 /**
  * Judge one lane's machine against its issue. Every combination seats, because a mismatch the other
@@ -87,14 +87,14 @@ export const judgeShape = (
 			};
 		}
 		return origin.epic === issue
-			? {_tag: "Matches"}
+			? { _tag: "Matches" }
 			: {
 					_tag: "Mismatched",
 					reason: `this lane drives #${issue} and runs the machine emitted for #${origin.epic}`,
 				};
 	}
 	if (expectation._tag === "Child" && origin._tag === "Booted") {
-		const {parent} = expectation;
+		const { parent } = expectation;
 		return {
 			_tag: "Duplicate",
 			parent,
@@ -105,7 +105,7 @@ export const judgeShape = (
 		};
 	}
 	return origin._tag === "Booted"
-		? {_tag: "Matches"}
+		? { _tag: "Matches" }
 		: {
 				_tag: "Mismatched",
 				reason: `#${issue} is not an epic — no \`type:epic\` label and no sub-issue links — and this lane runs the epic machine emitted for #${origin.epic}`,

@@ -12,16 +12,16 @@
  * carries the reason it quotes in the refusal. The subprocess fault underneath is already typed —
  * `execCapture` folds it into `ok: false` (see `exec.ts`).
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {execCapture, execCaptureInput} from "./exec.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { execCapture, execCaptureInput } from "./exec.ts";
 
-export type Failure = {readonly _tag: "Failure"; readonly reason: string};
-export type Ok<A> = {readonly _tag: "Ok"; readonly value: A};
+export type Failure = { readonly _tag: "Failure"; readonly reason: string };
+export type Ok<A> = { readonly _tag: "Ok"; readonly value: A };
 export type Attempt<A> = Ok<A> | Failure;
 
-export const ok = <A>(value: A): Ok<A> => ({_tag: "Ok", value});
-export const fail = (reason: string): Failure => ({_tag: "Failure", reason});
+export const ok = <A>(value: A): Ok<A> => ({ _tag: "Ok", value });
+export const fail = (reason: string): Failure => ({ _tag: "Failure", reason });
 
 /** Anything in this module: it shells out, so the platform spawner is its one requirement. */
 export type Shell<A> = Effect.Effect<A, never, ChildProcessSpawner.ChildProcessSpawner>;
@@ -40,12 +40,12 @@ export const isObjectName = (s: string): boolean => /^[0-9a-f]{40}([0-9a-f]{24})
 export const splitRemoteRef = (
 	base: string,
 	remoteNames: ReadonlyArray<string>,
-): {readonly remote: string; readonly ref: string} | null => {
+): { readonly remote: string; readonly ref: string } | null => {
 	const slash = base.indexOf("/");
 	if (slash <= 0) return null;
 	const remote = base.slice(0, slash);
 	const ref = base.slice(slash + 1);
-	return remoteNames.includes(remote) && ref !== "" ? {remote, ref} : null;
+	return remoteNames.includes(remote) && ref !== "" ? { remote, ref } : null;
 };
 
 /** `owner/name` from a remote URL, in either the SSH or HTTPS spelling. */
@@ -185,7 +185,7 @@ export const diffRangeRaw = (
 	paths: ReadonlyArray<string> = [],
 ): Shell<Attempt<string>> =>
 	Effect.gen(function* () {
-		const r = yield* execCapture("git", rawDiffArgs({base, tip: head}, paths));
+		const r = yield* execCapture("git", rawDiffArgs({ base, tip: head }, paths));
 		return r.ok ? ok(r.stdout) : fail(r.reason);
 	});
 
@@ -323,7 +323,7 @@ export const parseNameStatus = (stdout: string): ReadonlyArray<ChangedPath> => {
 		const renamed = status.startsWith("R") || status.startsWith("C");
 		const path = fields[i + (renamed ? 2 : 1)];
 		if (path === undefined) break;
-		rows.push({status, path});
+		rows.push({ status, path });
 		i += renamed ? 3 : 2;
 	}
 	return rows;
@@ -424,7 +424,7 @@ export const rangeCommits = (
 			const at = record.indexOf(FIELD_SEPARATOR);
 			const sha = at < 0 ? "" : record.slice(0, at).trim();
 			if (!isObjectName(sha)) return fail(`unreadable log record "${record.trim().slice(0, 80)}"`);
-			rows.push({sha, message: record.slice(at + 1).trim()});
+			rows.push({ sha, message: record.slice(at + 1).trim() });
 		}
 		return ok(rows);
 	});
@@ -463,7 +463,7 @@ export const rangeParents = (
 			if (sha === undefined || !names.every(isObjectName)) {
 				return fail(`unreadable rev-list row "${line.trim().slice(0, 80)}"`);
 			}
-			rows.push({sha, parents});
+			rows.push({ sha, parents });
 		}
 		return ok(rows);
 	});
@@ -533,7 +533,7 @@ export const logCommitsTouching = (
 			const [sha, stamp] = line.split("\t");
 			const date = stamp === undefined ? null : utcDayOf(stamp);
 			if (sha === undefined || date === null) return fail(`unreadable log line "${line}"`);
-			rows.push({sha, date});
+			rows.push({ sha, date });
 		}
 		return ok(rows);
 	});
@@ -568,7 +568,7 @@ const parsePatchIds = (stdout: string): ReadonlyArray<PatchIdentity> =>
 		.split("\n")
 		.map((line) => line.trim().split(/\s+/))
 		.flatMap(([patch, commit]) =>
-			patch === undefined || patch === "" ? [] : [{patch, commit: commit ?? ""}],
+			patch === undefined || patch === "" ? [] : [{ patch, commit: commit ?? "" }],
 		);
 
 /**

@@ -19,8 +19,8 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10294#issuecomment-5974132205
  */
 
-import {RULING_GRAMMAR, type RulingUrl, rulingUrl} from "./decision-ruling.ts";
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
+import { RULING_GRAMMAR, type RulingUrl, rulingUrl } from "./decision-ruling.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
 import {
 	absent,
 	FIELD_SEPARATOR,
@@ -29,11 +29,11 @@ import {
 	payloadOf,
 	reachesFor,
 } from "./grill-marker.ts";
-import {issueField, type MarkedIssue, markedIssue, parseFieldLines} from "./issue-marker.ts";
+import { issueField, type MarkedIssue, markedIssue, parseFieldLines } from "./issue-marker.ts";
 
-export type {RulingUrl} from "./decision-ruling.ts";
-export {rulingUrl} from "./decision-ruling.ts";
-export {type MarkedIssue, markedIssue} from "./issue-marker.ts";
+export type { RulingUrl } from "./decision-ruling.ts";
+export { rulingUrl } from "./decision-ruling.ts";
+export { type MarkedIssue, markedIssue } from "./issue-marker.ts";
 
 /** The key that names these bytes. */
 export const KEY = "pitch-ruled";
@@ -95,11 +95,11 @@ export const read = (artifact: string): PitchRulingRead => {
 			evidence,
 		);
 	}
-	return {_tag: "Found", value: {issue, ruling}};
+	return { _tag: "Found", value: { issue, ruling } };
 };
 
 /** Compose the pointer's first line. Round-trips through {@link read}. */
-export const emit = ({issue, ruling}: PitchRuling): string =>
+export const emit = ({ issue, ruling }: PitchRuling): string =>
 	`${KEY}: #${issue} ${FIELD_SEPARATOR} ${RULING_PREFIX}${ruling}\n`;
 
 export const renderPointer = (pointer: PitchRuling): NonEmptyReadonlyArray<string> => [
@@ -108,8 +108,8 @@ export const renderPointer = (pointer: PitchRuling): NonEmptyReadonlyArray<strin
 ];
 
 export type PitchRulingFields =
-	| {readonly _tag: "Fields"; readonly pointer: PitchRuling}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly pointer: PitchRuling }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 const KEYS = ["issue", "ruling"] as const;
 
@@ -117,7 +117,7 @@ const KEYS = ["issue", "ruling"] as const;
 export const parseFields = (fields: string): PitchRulingFields => {
 	const lines = parseFieldLines(fields, KEYS);
 	if (lines._tag === "Unusable") return lines;
-	const {seen} = lines;
+	const { seen } = lines;
 
 	const issue = issueField(seen.get("issue") ?? "");
 	if (issue === null) {
@@ -133,19 +133,19 @@ export const parseFields = (fields: string): PitchRulingFields => {
 			reason: `"${seen.get("ruling") ?? ""}" is not an issue-comment URL — the grammar is ${RULING_GRAMMAR}`,
 		};
 	}
-	return {_tag: "Fields", pointer: {issue, ruling}};
+	return { _tag: "Fields", pointer: { issue, ruling } };
 };
 
 /** The registry row's byte-level `emit`, bound to this module's typed core. */
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.pointer)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.pointer) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderPointer(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderPointer(result.value) } : result;
 };

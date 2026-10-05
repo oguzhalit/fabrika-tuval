@@ -14,23 +14,23 @@
  * live head": a caller that passes the flag gets it bound and prefix-matched, and one that omits it
  * never reaches the matching logic at all.
  */
-import {tmpdir} from "node:os";
-import {Effect, Option} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStdin} from "../io/stdin.ts";
-import {MERGEABILITY_WINDOW_SECONDS} from "../ship/mergeability.ts";
-import {runClassify} from "./classify-verb.ts";
-import {runDiagnose} from "./diagnose-verb.ts";
-import {runLogs} from "./logs-verb.ts";
-import {runNote} from "./note-verb.ts";
-import {runRerun} from "./rerun-verb.ts";
-import {runScratch} from "./scratch-verb.ts";
-import {RERUNNABLE_SIGNATURE_IDS} from "./signatures.ts";
-import {STALL_TOKENS} from "./stall.ts";
-import {runSurface} from "./surface-verb.ts";
-import {runSweep} from "./sweep-verb.ts";
+import { tmpdir } from "node:os";
+import { Effect, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStdin } from "../io/stdin.ts";
+import { MERGEABILITY_WINDOW_SECONDS } from "../ship/mergeability.ts";
+import { runClassify } from "./classify-verb.ts";
+import { runDiagnose } from "./diagnose-verb.ts";
+import { runLogs } from "./logs-verb.ts";
+import { runNote } from "./note-verb.ts";
+import { runRerun } from "./rerun-verb.ts";
+import { runScratch } from "./scratch-verb.ts";
+import { RERUNNABLE_SIGNATURE_IDS } from "./signatures.ts";
+import { STALL_TOKENS } from "./stall.ts";
+import { runSurface } from "./surface-verb.ts";
+import { runSweep } from "./sweep-verb.ts";
 
 const repoFlag = Flag.string("repo").pipe(
 	Flag.optional,
@@ -137,7 +137,7 @@ const diagnose = leafCommand(
 			'  Derivation: the heal-ci skill\'s contract.md, "heal-ci diagnose"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika heal-ci diagnose 4321"}]),
+	Command.withExamples([{ command: "fabrika heal-ci diagnose 4321" }]),
 );
 
 const sweep = leafCommand(
@@ -204,14 +204,16 @@ const sweep = leafCommand(
 			'  Derivation: the heal-ci skill\'s contract.md, "heal-ci sweep"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika heal-ci sweep --min-age-minutes 30"}]),
+	Command.withExamples([{ command: "fabrika heal-ci sweep --min-age-minutes 30" }]),
 );
 
 const surface = leafCommand(
 	"surface",
-	{pr: prArg, sha: shaFlag, repo: repoFlag, json: jsonFlag},
-	Effect.fn(function* ({pr, sha, repo, json}) {
-		yield* emit(yield* runSurface({pr, sha, repo: Option.getOrNull(repo), json, env: process.env}));
+	{ pr: prArg, sha: shaFlag, repo: repoFlag, json: jsonFlag },
+	Effect.fn(function* ({ pr, sha, repo, json }) {
+		yield* emit(
+			yield* runSurface({ pr, sha, repo: Option.getOrNull(repo), json, env: process.env }),
+		);
 	}),
 ).pipe(
 	Command.withShortDescription("Declared required contexts against the runs at a head."),
@@ -226,7 +228,7 @@ const surface = leafCommand(
 			'  Derivation: the heal-ci skill\'s contract.md, "heal-ci surface"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika heal-ci surface 4321"}]),
+	Command.withExamples([{ command: "fabrika heal-ci surface 4321" }]),
 );
 
 const logs = leafCommand(
@@ -247,7 +249,7 @@ const logs = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({pr, sha, context, maxBytes, repo, json}) {
+	Effect.fn(function* ({ pr, sha, context, maxBytes, repo, json }) {
 		yield* emit(
 			yield* runLogs({
 				pr,
@@ -274,14 +276,14 @@ const logs = leafCommand(
 			'  Derivation: the heal-ci skill\'s contract.md, "heal-ci logs"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika heal-ci logs 4322 --sha 9fe12ab0"}]),
+	Command.withExamples([{ command: "fabrika heal-ci logs 4322 --sha 9fe12ab0" }]),
 );
 
 const classify = leafCommand(
 	"classify",
-	{json: jsonFlag},
-	Effect.fn(function* ({json}) {
-		yield* emit(yield* runClassify({json, stdin: Effect.sync(readStdin)}));
+	{ json: jsonFlag },
+	Effect.fn(function* ({ json }) {
+		yield* emit(yield* runClassify({ json, stdin: Effect.sync(readStdin) }));
 	}),
 ).pipe(
 	Command.withShortDescription("Match log text against the closed failure-signature table."),
@@ -294,7 +296,7 @@ const classify = leafCommand(
 			'  Derivation: the heal-ci skill\'s contract.md, "heal-ci classify"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika heal-ci logs 4322 | fabrika heal-ci classify"}]),
+	Command.withExamples([{ command: "fabrika heal-ci logs 4322 | fabrika heal-ci classify" }]),
 );
 
 const rerun = leafCommand(
@@ -317,7 +319,7 @@ const rerun = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({pr, run, sha, signature, repo, json}) {
+	Effect.fn(function* ({ pr, run, sha, signature, repo, json }) {
 		yield* emit(
 			yield* runRerun({
 				pr,
@@ -372,7 +374,7 @@ const note = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({pr, stallClass, sha, repo, json}) {
+	Effect.fn(function* ({ pr, stallClass, sha, repo, json }) {
 		yield* emit(
 			yield* runNote({
 				pr,
@@ -421,8 +423,8 @@ const scratch = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({pr, slug}) {
-		yield* emit(yield* runScratch({pr, slug, env: process.env, tmpRoot: tmpdir()}));
+	Effect.fn(function* ({ pr, slug }) {
+		yield* emit(yield* runScratch({ pr, slug, env: process.env, tmpRoot: tmpdir() }));
 	}),
 ).pipe(
 	Command.withShortDescription("The per-lane scratch path a healer's note bodies go under."),
@@ -434,7 +436,7 @@ const scratch = leafCommand(
 			'  Derivation: the heal-ci skill\'s contract.md, "heal-ci scratch"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika heal-ci scratch 4321 --slug note"}]),
+	Command.withExamples([{ command: "fabrika heal-ci scratch 4321 --slug note" }]),
 );
 
 export const healCiCommand = Command.make("heal-ci").pipe(

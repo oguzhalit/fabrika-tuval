@@ -1,18 +1,18 @@
 /** `lane assembly` — the run's own worktree is placed, resumed or removed, and never the driver's. */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeFs, fakeSeams, okOut, once, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {runAssembly} from "./assembly-verb.ts";
-import {APPEND_UNKNOWN, LANE_ABSENT, LANE_UNREADABLE, PRIMARY_CHECKOUT} from "./codes.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeFs, fakeSeams, okOut, once, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { runAssembly } from "./assembly-verb.ts";
+import { APPEND_UNKNOWN, LANE_ABSENT, LANE_UNREADABLE, PRIMARY_CHECKOUT } from "./codes.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
 
 const ROOT = ".fabrika/lanes";
 const EPIC = 5680;
 const BRANCH = `epic/${EPIC}`;
 const MAIN = "/checkout/repo";
 const EXPECTED = `${MAIN}/.claude/worktrees/epic-${EPIC}`;
-const LANE_FILES = {[`${ROOT}/${EPIC}/workflow.json`]: coderTemplateText()};
+const LANE_FILES = { [`${ROOT}/${EPIC}/workflow.json`]: coderTemplateText() };
 
 const LIST = /^git worktree list --porcelain$/;
 const ADD = /^git worktree add /;
@@ -23,7 +23,7 @@ const SET_HEAD = /^git remote set-head /;
 const TRUNK = /^git rev-parse --verify origin\/main/;
 /** The trunk read — GitHub's default branch for `o/r` — every placement makes before its fetch. */
 const TRUNK_READ = /^GET \S+\/repos\/o\/r$/;
-const ENV = {CLAUDE_PIPELINE_REPO: "o/r", GITHUB_TOKEN: "ghp_scripted"};
+const ENV = { CLAUDE_PIPELINE_REPO: "o/r", GITHUB_TOKEN: "ghp_scripted" };
 const ANCESTOR = /^git merge-base --is-ancestor /;
 const NAMES = /^git diff .*--name-only/;
 const DIFF = /^git diff .*bbbb222\.\.\./;
@@ -93,19 +93,19 @@ const run = (
 	// Appended, so a case that scripts its own trunk read shadows this one (the script is first-match).
 	const shell = fakeSeams([
 		...script,
-		[TRUNK_READ, {status: 200, body: JSON.stringify({default_branch: "main"})}],
+		[TRUNK_READ, { status: 200, body: JSON.stringify({ default_branch: "main" }) }],
 	]);
 	return Effect.runPromise(
 		Effect.provide(
-			runAssembly({epic: EPIC, remove, root: ROOT, lane: String(EPIC), repo: null, env: ENV}),
-			Layer.merge(shell.layer, fakeFs({files}).layer),
+			runAssembly({ epic: EPIC, remove, root: ROOT, lane: String(EPIC), repo: null, env: ENV }),
+			Layer.merge(shell.layer, fakeFs({ files }).layer),
 		),
-	).then((outcome) => ({outcome, calls: shell.calls}));
+	).then((outcome) => ({ outcome, calls: shell.calls }));
 };
 
 describe("runAssembly", () => {
 	it("places the run's worktree off the trunk and answers its path, switching no checkout", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[once(LIST), CLEAN],
 			[LIST, SEATED],
 			[BRANCHES, NO_BRANCHES],
@@ -123,7 +123,7 @@ describe("runAssembly", () => {
 	});
 
 	it("resumes an already-placed worktree still holding unlanded work, writing nothing", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, SEATED],
 			[BRANCHES, BRANCH_SURVIVED],
 			[FETCH, okOut("")],
@@ -139,7 +139,7 @@ describe("runAssembly", () => {
 	});
 
 	it("refuses the main working tree standing on the assembly branch, placing nothing", async () => {
-		const {outcome, calls} = await run([[LIST, CONSCRIPTED]]);
+		const { outcome, calls } = await run([[LIST, CONSCRIPTED]]);
 
 		expect(outcome.code).toBe(PRIMARY_CHECKOUT);
 		expect(outcome.stdout).toBe("");
@@ -148,14 +148,14 @@ describe("runAssembly", () => {
 	});
 
 	it("is UNKNOWN, never a placement, when the working trees cannot be read", async () => {
-		const {outcome, calls} = await run([[LIST, errOut("not a git repository")]]);
+		const { outcome, calls } = await run([[LIST, errOut("not a git repository")]]);
 
 		expect(outcome.code).toBe(LANE_UNREADABLE);
 		expect(calls).toEqual(["git worktree list --porcelain"]);
 	});
 
 	it("reports a placement that did not land rather than answering the path it meant to make", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[LIST, CLEAN],
 			[BRANCHES, NO_BRANCHES],
 			[FETCH, okOut("")],
@@ -168,7 +168,7 @@ describe("runAssembly", () => {
 	});
 
 	it("never cuts the assembly branch off a stale base — a failed fetch places nothing", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, CLEAN],
 			[BRANCHES, NO_BRANCHES],
 			[FETCH, errOut("network is unreachable")],
@@ -179,7 +179,7 @@ describe("runAssembly", () => {
 	});
 
 	it("removes the run's worktree at terminal, without --force", async () => {
-		const {outcome, calls} = await run(
+		const { outcome, calls } = await run(
 			[
 				[once(LIST), SEATED],
 				[LIST, CLEAN],
@@ -194,7 +194,7 @@ describe("runAssembly", () => {
 	});
 
 	it("tolerates a removal with nothing to remove, answering where the worktree belonged", async () => {
-		const {outcome, calls} = await run([[LIST, CLEAN]], true);
+		const { outcome, calls } = await run([[LIST, CLEAN]], true);
 
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout.trim()).toBe(EXPECTED);
@@ -202,7 +202,7 @@ describe("runAssembly", () => {
 	});
 
 	it("reports a removal that left the tree in place — git refusing a dirty tree is the answer", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			[
 				[LIST, SEATED],
 				[REMOVE, errOut("fatal: contains modified or untracked files")],
@@ -215,7 +215,7 @@ describe("runAssembly", () => {
 	});
 
 	it("resumes a branch that outlived its worktree, checking it out rather than re-cutting it", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[once(LIST), CLEAN],
 			[LIST, SEATED],
 			[BRANCHES, BRANCH_SURVIVED],
@@ -234,7 +234,7 @@ describe("runAssembly", () => {
 	});
 
 	it("re-cuts a branch the trunk already contains, and says so rather than answering a dead base", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[once(LIST), CLEAN],
 			[LIST, SEATED],
 			[BRANCHES, BRANCH_SURVIVED],
@@ -259,7 +259,7 @@ describe("runAssembly", () => {
 	// Every landing here is a squash, so ancestry answers "not contained" for the very branch the
 	// guard exists for. The patch id is what decides it, and this is the case that motivated both.
 	it("re-cuts a branch whose content squash-landed on the trunk, naming the commit it landed as", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[once(LIST), CLEAN],
 			[LIST, SEATED],
 			[BRANCHES, BRANCH_SURVIVED],
@@ -279,7 +279,7 @@ describe("runAssembly", () => {
 	});
 
 	it("is UNKNOWN, never a re-cut, when the patch read that would prove containment fails", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, SEATED],
 			[BRANCHES, BRANCH_SURVIVED],
 			[FETCH, okOut("")],
@@ -298,7 +298,7 @@ describe("runAssembly", () => {
 	});
 
 	it("drops the seat of a contained branch before re-cutting it, and never forces that removal", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[once(LIST), SEATED],
 			[once(LIST), CLEAN],
 			[LIST, SEATED],
@@ -318,7 +318,7 @@ describe("runAssembly", () => {
 	});
 
 	it("re-cuts nothing when the contained branch's seat holds work git will not drop", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, SEATED],
 			[BRANCHES, BRANCH_SURVIVED],
 			[FETCH, okOut("")],
@@ -334,7 +334,7 @@ describe("runAssembly", () => {
 	});
 
 	it("is UNKNOWN, never a re-cut, when the trunk names no commit after the fetch", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, CLEAN],
 			[BRANCHES, BRANCH_SURVIVED],
 			[FETCH, okOut("")],
@@ -347,7 +347,7 @@ describe("runAssembly", () => {
 	});
 
 	it("never judges an existing branch landed against a stale origin — a failed fetch places nothing", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, CLEAN],
 			[BRANCHES, BRANCH_SURVIVED],
 			[FETCH, errOut("network is unreachable")],
@@ -359,7 +359,7 @@ describe("runAssembly", () => {
 	});
 
 	it("clears a worktree record whose directory is gone, then places the branch again", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[once(LIST), STALE],
 			[once(LIST), CLEAN],
 			[LIST, SEATED],
@@ -395,7 +395,7 @@ describe("runAssembly", () => {
 	});
 
 	it("never answers the dead path of a stale record whose registration would not clear", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, STALE],
 			[BRANCHES, BRANCH_SURVIVED],
 			[FETCH, okOut("")],
@@ -411,7 +411,7 @@ describe("runAssembly", () => {
 	});
 
 	it("clears the record left by a worktree already gone when --remove runs at terminal", async () => {
-		const {outcome, calls} = await run(
+		const { outcome, calls } = await run(
 			[
 				[once(LIST), STALE],
 				[LIST, CLEAN],
@@ -427,7 +427,7 @@ describe("runAssembly", () => {
 	});
 
 	it("is UNKNOWN, never a placement, when the branch list cannot be read", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, CLEAN],
 			[BRANCHES, errOut("fatal: not a git repository")],
 		]);
@@ -438,7 +438,7 @@ describe("runAssembly", () => {
 	});
 
 	it("refuses a lane that was never emitted, before it touches any working tree", async () => {
-		const {outcome, calls} = await run([[LIST, CLEAN]], false, {});
+		const { outcome, calls } = await run([[LIST, CLEAN]], false, {});
 
 		expect(outcome.code).toBe(LANE_ABSENT);
 		expect(calls).toEqual([]);

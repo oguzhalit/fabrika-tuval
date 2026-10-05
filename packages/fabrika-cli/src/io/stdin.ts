@@ -17,15 +17,15 @@
  * rather than imported from an older tree, so the lesson is duplicated as behaviour, not as a
  * dependency.
  */
-import {readSync} from "node:fs";
+import { readSync } from "node:fs";
 
 export type StdinRead =
 	/** Bytes arrived and decoded. `text` may be `""` — a genuinely empty pipe stays an answer. */
-	| {readonly _tag: "Text"; readonly text: string}
+	| { readonly _tag: "Text"; readonly text: string }
 	/** fd 0 carried nothing to read at all: a TTY, or a descriptor that is not attached. */
-	| {readonly _tag: "NoStdin"; readonly reason: string}
+	| { readonly _tag: "NoStdin"; readonly reason: string }
 	/** The read itself failed. The body is UNKNOWN. */
-	| {readonly _tag: "Failed"; readonly reason: string};
+	| { readonly _tag: "Failed"; readonly reason: string };
 
 /** The process-level reads the loop needs, injected so the retry path is testable. */
 export interface StdinIo {
@@ -72,7 +72,7 @@ export const readStdinWith = (io: StdinIo, options: StdinOptions = {}): StdinRea
 
 	// A check rather than a deadline: on a TTY the read blocks on keystrokes, which no timeout can
 	// tell apart from a slow producer.
-	if (io.isTTY) return {_tag: "NoStdin", reason: "fd 0 is a TTY — nothing was piped in"};
+	if (io.isTTY) return { _tag: "NoStdin", reason: "fd 0 is a TTY — nothing was piped in" };
 
 	const chunks: Uint8Array[] = [];
 	let bytesRead = 0;
@@ -96,7 +96,7 @@ export const readStdinWith = (io: StdinIo, options: StdinOptions = {}): StdinRea
 				continue;
 			}
 			if (UNATTACHED.has(code) && bytesRead === 0) {
-				return {_tag: "NoStdin", reason: `fd 0 is not readable (${code}) — nothing was piped in`};
+				return { _tag: "NoStdin", reason: `fd 0 is not readable (${code}) — nothing was piped in` };
 			}
 			return {
 				_tag: "Failed",
@@ -117,7 +117,7 @@ export const readStdinWith = (io: StdinIo, options: StdinOptions = {}): StdinRea
 		joined.set(chunk, at);
 		at += chunk.length;
 	}
-	return {_tag: "Text", text: new TextDecoder("utf-8").decode(joined)};
+	return { _tag: "Text", text: new TextDecoder("utf-8").decode(joined) };
 };
 
 const sleepSync = (ms: number): void => {

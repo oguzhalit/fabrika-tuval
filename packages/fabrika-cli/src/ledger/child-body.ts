@@ -19,9 +19,9 @@ import {
 	containmentGap,
 	readContainment,
 } from "../config/keys/containment-vocabulary.ts";
-import {CONTAINMENT_FIELD, fieldLines, readChildStories, STORIES_FIELD} from "../plan/ledger.ts";
-import {read as readAcceptanceCriteria} from "../wire/acceptance-criteria.ts";
-import type {CycleDoc} from "./run.ts";
+import { CONTAINMENT_FIELD, fieldLines, readChildStories, STORIES_FIELD } from "../plan/ledger.ts";
+import { read as readAcceptanceCriteria } from "../wire/acceptance-criteria.ts";
+import type { CycleDoc } from "./run.ts";
 
 const ACCEPTANCE_CRITERIA = "### Acceptance criteria";
 
@@ -85,9 +85,9 @@ export interface ComposedChild {
 	readonly criteria: number;
 }
 
-export type ChildBodyCheck = ComposedChild | {readonly _tag: "Bad"; readonly reason: string};
+export type ChildBodyCheck = ComposedChild | { readonly _tag: "Bad"; readonly reason: string };
 
-const bad = (reason: string): ChildBodyCheck => ({_tag: "Bad", reason});
+const bad = (reason: string): ChildBodyCheck => ({ _tag: "Bad", reason });
 
 export interface ChildBodyInput {
 	readonly text: string;

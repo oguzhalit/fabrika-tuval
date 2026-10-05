@@ -8,14 +8,14 @@
  * changed and when the pathspec matched nothing — so a typo read as "nothing drifted", over a path
  * set the doc was never consulted about.
  */
-import {Effect, type FileSystem, Result} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {exists} from "../io/fs.ts";
-import {fetchAndResolve, readFileAt} from "../io/git.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {DOC_ABSENT, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {isKebabCase} from "./doc.ts";
-import {candidateTokens, type DriftOutcome, driftOutcome, isRepoPath} from "./drift.ts";
+import { Effect, type FileSystem, Result } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { exists } from "../io/fs.ts";
+import { fetchAndResolve, readFileAt } from "../io/git.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { DOC_ABSENT, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { isKebabCase } from "./doc.ts";
+import { candidateTokens, type DriftOutcome, driftOutcome, isRepoPath } from "./drift.ts";
 import {
 	type Commit,
 	commitsTouchingRange,
@@ -83,7 +83,7 @@ export const runDrift = (
 	FileSystem.FileSystem | ChildProcessSpawner.ChildProcessSpawner
 > =>
 	Effect.gen(function* () {
-		const {slug, dir, base} = options;
+		const { slug, dir, base } = options;
 		if (!isKebabCase(slug)) {
 			return refuse(
 				FAILED,
@@ -192,7 +192,7 @@ export const runDrift = (
 		}
 
 		const reading: Reading = {
-			outcome: driftOutcome({inRepo: inRepo.length, moved: moved.length}),
+			outcome: driftOutcome({ inRepo: inRepo.length, moved: moved.length }),
 			anchorSha,
 			cited: cited.length,
 			inRepo: inRepo.length,

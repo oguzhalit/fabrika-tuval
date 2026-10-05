@@ -1,6 +1,6 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
 import {
 	BASE_CONFLICTED,
 	PR_NOT_OURS,
@@ -10,7 +10,7 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {runEnqueue} from "./enqueue-verb.ts";
+import { runEnqueue } from "./enqueue-verb.ts";
 import {
 	ENV,
 	HEAD,
@@ -20,7 +20,7 @@ import {
 	type PullShape,
 	pull,
 } from "./fixtures.test-support.ts";
-import {ADDED} from "./queue.ts";
+import { ADDED } from "./queue.ts";
 
 /**
  * The live-head read and the mergeability read hit the same endpoint, so the first answer is
@@ -47,19 +47,19 @@ const ARMED: HttpReply = {
 	status: 200,
 	body: JSON.stringify({
 		data: {
-			repository: {pullRequest: {id: "PR_kwDOLxx1"}},
-			enablePullRequestAutoMerge: {clientMutationId: null},
+			repository: { pullRequest: { id: "PR_kwDOLxx1" } },
+			enablePullRequestAutoMerge: { clientMutationId: null },
 		},
 	}),
 };
 const refused = (message: string): HttpReply => ({
 	status: 200,
-	body: JSON.stringify({data: null, errors: [{message}]}),
+	body: JSON.stringify({ data: null, errors: [{ message }] }),
 });
-const badGateway: HttpReply = {status: 502, body: '{"message":"Bad gateway"}'};
-const timeline = (...rows: ReadonlyArray<{event: string; at: string}>): HttpReply => ({
+const badGateway: HttpReply = { status: 502, body: '{"message":"Bad gateway"}' };
+const timeline = (...rows: ReadonlyArray<{ event: string; at: string }>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(rows.map((row) => ({event: row.event, created_at: row.at}))),
+	body: JSON.stringify(rows.map((row) => ({ event: row.event, created_at: row.at }))),
 });
 
 /**
@@ -81,7 +81,9 @@ const both = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options
 	const seams = fakeSeams([...script, ...OURS]);
 	return {
 		seams,
-		outcome: Effect.runPromise(Effect.provide(runEnqueue({...options, ...overrides}), seams.layer)),
+		outcome: Effect.runPromise(
+			Effect.provide(runEnqueue({ ...options, ...overrides }), seams.layer),
+		),
 	};
 };
 
@@ -94,7 +96,7 @@ describe("runEnqueue", () => {
 			livePull(),
 			[MERGEABILITY, mergeability()],
 			[GRAPHQL, ARMED],
-			[TIMELINE, timeline({event: ADDED, at: "2026-08-08T10:00:00Z"})],
+			[TIMELINE, timeline({ event: ADDED, at: "2026-08-08T10:00:00Z" })],
 		]);
 		const out = await scripted.outcome;
 		expect(out.code).toBe(0);
@@ -118,7 +120,7 @@ describe("runEnqueue", () => {
 	});
 
 	it("refuses a moved head on 12 — arming a tree nobody verified", async () => {
-		const scripted = both([livePull({head: OTHER_HEAD})]);
+		const scripted = both([livePull({ head: OTHER_HEAD })]);
 		const out = await scripted.outcome;
 		expect(out.code).toBe(STALE_HEAD);
 		expect(out.stdout).toBe("");
@@ -126,7 +128,7 @@ describe("runEnqueue", () => {
 	});
 
 	it("refuses an already-merged PR on 7 — an idempotent success is `ship scope`'s answer", async () => {
-		const out = await run([livePull({merged: true, state: "closed"})]);
+		const out = await run([livePull({ merged: true, state: "closed" })]);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-1)).toBe("ship enqueue: PR #4321 is merged — nothing to enqueue.");
 	});
@@ -151,7 +153,7 @@ describe("runEnqueue", () => {
 	it("refuses on 11 when mergeability stays indefinite — an unknown read is never green", async () => {
 		const scripted = both([
 			livePull(),
-			[MERGEABILITY, mergeability({mergeable: null, mergeableState: "unknown"})],
+			[MERGEABILITY, mergeability({ mergeable: null, mergeableState: "unknown" })],
 		]);
 		const out = await scripted.outcome;
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -167,7 +169,7 @@ describe("runEnqueue", () => {
 	it("refuses on 21 when a definite read says dirty — the base moved, not the head", async () => {
 		const scripted = both([
 			livePull(),
-			[MERGEABILITY, mergeability({mergeable: false, mergeableState: "dirty"})],
+			[MERGEABILITY, mergeability({ mergeable: false, mergeableState: "dirty" })],
 		]);
 		const out = await scripted.outcome;
 		expect(out.code).toBe(BASE_CONFLICTED);
@@ -181,7 +183,7 @@ describe("runEnqueue", () => {
 	it("refuses on 16 when a definite read is not mergeable for any other reason (#6902)", async () => {
 		const scripted = both([
 			livePull(),
-			[MERGEABILITY, mergeability({mergeable: false, mergeableState: "blocked"})],
+			[MERGEABILITY, mergeability({ mergeable: false, mergeableState: "blocked" })],
 		]);
 		const out = await scripted.outcome;
 		expect(out.code).toBe(PROVEN_NOT_IN_STATE);
@@ -213,18 +215,18 @@ describe("runEnqueue", () => {
 });
 
 describe("runEnqueue — a PR is its author's until the pipeline owns it", () => {
-	it.each(OWNERSHIP_CASES)("$name", async ({author, reads, drivable}) => {
+	it.each(OWNERSHIP_CASES)("$name", async ({ author, reads, drivable }) => {
 		const scripted = both([
 			...reads,
-			livePull({author}),
-			[MERGEABILITY, mergeability({author})],
+			livePull({ author }),
+			[MERGEABILITY, mergeability({ author })],
 			[GRAPHQL, ARMED],
 			[TIMELINE, timeline()],
 		]);
 		const out = await scripted.outcome;
 		const armed = scripted.seams.requests.some((line) => GRAPHQL.test(line));
-		expect({code: out.code, armed}).toEqual(
-			drivable ? {code: 0, armed: true} : {code: PR_NOT_OURS, armed: false},
+		expect({ code: out.code, armed }).toEqual(
+			drivable ? { code: 0, armed: true } : { code: PR_NOT_OURS, armed: false },
 		);
 		expect(out.stderr.join("\n").includes(`is ${author}'s to finish — nothing was armed.`)).toBe(
 			!drivable,

@@ -147,7 +147,7 @@ export type Decision =
 			readonly comment: string;
 			readonly reason: string;
 	  }
-	| {readonly action: "noop"; readonly reason: string};
+	| { readonly action: "noop"; readonly reason: string };
 
 const isAlarm = (marker: string, candidate: IssueCandidate): boolean =>
 	candidate.authorLogin === ACTIONS_BOT &&
@@ -258,7 +258,10 @@ export interface RunInput {
  */
 export const decide = (input: RunInput, candidates: ReadonlyArray<IssueCandidate>): Decision => {
 	if (input.event !== "push") {
-		return {action: "noop", reason: `this is a \`${input.event}\` run, not a push — nothing fires`};
+		return {
+			action: "noop",
+			reason: `this is a \`${input.event}\` run, not a push — nothing fires`,
+		};
 	}
 	const alarm = selectAlarm(alarmMarker(input.facts.workflowKey), candidates);
 	if (input.result === "failure") {
@@ -285,7 +288,7 @@ export const decide = (input: RunInput, candidates: ReadonlyArray<IssueCandidate
 		};
 	}
 	if (alarm === null) {
-		return {action: "noop", reason: "green, and no alarm is open — nothing to close"};
+		return { action: "noop", reason: "green, and no alarm is open — nothing to close" };
 	}
 	return {
 		action: "close",

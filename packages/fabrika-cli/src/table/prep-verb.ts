@@ -28,15 +28,15 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10302
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {appetiteSizesKey} from "../config/keys/appetite-sizes.ts";
-import {boardsKey} from "../config/keys/boards.ts";
-import {OUTSIDE_THE_BETS, type TableSettings, tableKey} from "../config/keys/table.ts";
-import {readKey} from "../config/read-key.ts";
-import {subIssues} from "../io/edges.ts";
-import {execRecord} from "../io/exec.ts";
-import {type Attempt, fail, ok} from "../io/git.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { appetiteSizesKey } from "../config/keys/appetite-sizes.ts";
+import { boardsKey } from "../config/keys/boards.ts";
+import { OUTSIDE_THE_BETS, type TableSettings, tableKey } from "../config/keys/table.ts";
+import { readKey } from "../config/read-key.ts";
+import { subIssues } from "../io/edges.ts";
+import { execRecord } from "../io/exec.ts";
+import { type Attempt, fail, ok } from "../io/git.ts";
 import {
 	type CommentRecord,
 	closedIssuesWithLabel,
@@ -59,8 +59,8 @@ import {
 	type StatusUpdateInput,
 	withProjects,
 } from "../io/projects.ts";
-import {EPIC_TYPE_LABEL} from "../triage/facets.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { EPIC_TYPE_LABEL } from "../triage/facets.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	type AgendaRow,
 	admit,
@@ -81,9 +81,9 @@ import {
 	type TriageFirst,
 	textOf,
 } from "./agenda.ts";
-import {BET_STAGE} from "./bets.ts";
-import {dueChecks} from "./check.ts";
-import {type CheckBoard, type GatheredCheck, gatherChecks} from "./check-read.ts";
+import { BET_STAGE } from "./bets.ts";
+import { dueChecks } from "./check.ts";
+import { type CheckBoard, type GatheredCheck, gatherChecks } from "./check-read.ts";
 import {
 	CONFIG_MALFORMED,
 	NOT_SET_UP,
@@ -91,8 +91,8 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {type ConvergeBoard, converge, stopOnWrite} from "./converge.ts";
-import {describePlanned, dryRunPrep} from "./dry-run.ts";
+import { type ConvergeBoard, converge, stopOnWrite } from "./converge.ts";
+import { describePlanned, dryRunPrep } from "./dry-run.ts";
 import {
 	type Deciders,
 	type Flag,
@@ -102,9 +102,9 @@ import {
 	onCallSpendOf,
 	recOf,
 } from "./flags.ts";
-import {readHeads, stopOn} from "./flags-read.ts";
-import {type FlagsBoard, flagsBoard} from "./flags-verb.ts";
-import {type Bets, type Group, groupOf, kindOf, membersOf} from "./group.ts";
+import { readHeads, stopOn } from "./flags-read.ts";
+import { type FlagsBoard, flagsBoard } from "./flags-verb.ts";
+import { type Bets, type Group, groupOf, kindOf, membersOf } from "./group.ts";
 import {
 	flagCount,
 	healthOf,
@@ -113,11 +113,11 @@ import {
 	postedFor,
 	renderHealth,
 } from "./health.ts";
-import {responseTargetOf} from "./on-call.ts";
-import {onCallIssuesOf, onCallItemsOf, readOnCall} from "./on-call-prep.ts";
-import {type RuledUnbuilt, ruledSuspects, ruledUnbuiltOf} from "./ruled.ts";
-import {FIELD} from "./shape.ts";
-import {betsOf, type Row, type SyncNode} from "./sync.ts";
+import { responseTargetOf } from "./on-call.ts";
+import { onCallIssuesOf, onCallItemsOf, readOnCall } from "./on-call-prep.ts";
+import { type RuledUnbuilt, ruledSuspects, ruledUnbuiltOf } from "./ruled.ts";
+import { FIELD } from "./shape.ts";
+import { betsOf, type Row, type SyncNode } from "./sync.ts";
 import {
 	GRAPH_CAP,
 	githubWave,
@@ -127,7 +127,7 @@ import {
 	readNodes,
 	syncBoard,
 } from "./sync-verb.ts";
-import {nextTableDay, weekBefore} from "./table-day.ts";
+import { nextTableDay, weekBefore } from "./table-day.ts";
 
 const VERB = "table prep";
 
@@ -172,11 +172,11 @@ export interface PrepOptions<R> {
 	readonly dryRun: boolean;
 }
 
-const refused = (code: number, reason: string): Refusal => ({_tag: "Refused", code, reason});
+const refused = (code: number, reason: string): Refusal => ({ _tag: "Refused", code, reason });
 
 type Resolved =
-	| {readonly _tag: "Resolved"; readonly fields: PrepFields}
-	| {readonly _tag: "Missing"; readonly what: ReadonlyArray<string>};
+	| { readonly _tag: "Resolved"; readonly fields: PrepFields }
+	| { readonly _tag: "Missing"; readonly what: ReadonlyArray<string> };
 
 /** The fields and options prep writes, or everything the project lacks of them. */
 export const prepFields = (project: ProjectSnapshot, settings: TableSettings): Resolved => {
@@ -193,7 +193,7 @@ export const prepFields = (project: ProjectSnapshot, settings: TableSettings): R
 		for (const option of needs) {
 			if (!options.has(option)) lacking.push(`the ${name} option "${option}"`);
 		}
-		return {id: field.id, options};
+		return { id: field.id, options };
 	};
 	const text = (name: string): string | null => {
 		const field = find(name);
@@ -220,11 +220,11 @@ export const prepFields = (project: ProjectSnapshot, settings: TableSettings): R
 		tableDay === null ||
 		lacking.length > 0
 	) {
-		return {_tag: "Missing", what: lacking};
+		return { _tag: "Missing", what: lacking };
 	}
 	return {
 		_tag: "Resolved",
-		fields: {stage, section, size, rec, plainWords, tableDay},
+		fields: { stage, section, size, rec, plainWords, tableDay },
 	};
 };
 
@@ -311,12 +311,12 @@ const readRuled = <R>(
 	suspects: ReadonlyArray<number>,
 	deciders: Deciders,
 ): Effect.Effect<
-	{readonly _tag: "Read"; readonly ruled: ReadonlyArray<RuledUnbuilt>} | Refusal,
+	{ readonly _tag: "Read"; readonly ruled: ReadonlyArray<RuledUnbuilt> } | Refusal,
 	never,
 	R
 > =>
 	Effect.gen(function* () {
-		if (suspects.length === 0) return {_tag: "Read" as const, ruled: []};
+		if (suspects.length === 0) return { _tag: "Read" as const, ruled: [] };
 		if (deciders._tag !== "Roster") {
 			const why = deciders._tag === "Unread" ? deciders.reason : "the roster was not read";
 			return refused(
@@ -334,7 +334,7 @@ const readRuled = <R>(
 			}
 			reads.push([issue, read.value]);
 		}
-		return {_tag: "Read" as const, ruled: ruledUnbuiltOf(reads, deciders.logins)};
+		return { _tag: "Read" as const, ruled: ruledUnbuiltOf(reads, deciders.logins) };
 	});
 
 export const runPrep = <R>(
@@ -365,14 +365,14 @@ export const runPrep = <R>(
 			);
 		}
 		const repo = resolved.value;
-		const {now} = options;
+		const { now } = options;
 		const dry = options.dryRun ? dryRunPrep(options.board, now.toISOString()) : null;
 		const board = dry?.board ?? options.board;
 		const table = settings.value;
 
 		const heads = yield* readHeads(board, VERB, repo, table, []);
 		if (heads._tag === "Refused") return refuse(heads.code, heads.reason);
-		const {project} = heads;
+		const { project } = heads;
 		const fields = prepFields(project, table);
 		if (fields._tag === "Missing") {
 			return refuse(
@@ -437,14 +437,14 @@ export const runPrep = <R>(
 							boardCreatedAt: split.project.createdAt,
 							issues: onCallIssues,
 							open: onCallOpen,
-							week: {_tag: "Week", ...window},
+							week: { _tag: "Week", ...window },
 						},
 		});
 		const onCallFlagged = report.flags.filter(
 			(flag) => flag._tag === "PastTarget" || flag._tag === "OnCallShare",
 		);
 		const rowFlags = report.flags.filter(
-			(flag): flag is Extract<Flag, {head: number}> => "head" in flag,
+			(flag): flag is Extract<Flag, { head: number }> => "head" in flag,
 		);
 		const flagged = new Map<number, Flag[]>();
 		for (const flag of rowFlags) flagged.set(flag.head, [...(flagged.get(flag.head) ?? []), flag]);
@@ -514,7 +514,7 @@ export const runPrep = <R>(
 				records: heads.records,
 			});
 			if (gathered._tag === "Refused") return refuse(gathered.code, gathered.reason);
-			({checks, vanished} = gathered);
+			({ checks, vanished } = gathered);
 		}
 
 		const agenda: ReadonlyArray<AgendaRow> = selection.chosen.map((chosen) => ({
@@ -554,12 +554,12 @@ export const runPrep = <R>(
 			checks: checks.map((check) => check.row),
 			onCall: routedSet,
 		});
-		const {kept} = prepPlan(planInput(heads.table));
+		const { kept } = prepPlan(planInput(heads.table));
 		const converged = yield* converge(VERB, board, project, repo, heads.table, (rows) =>
 			planPrep(planInput(rows)),
 		);
 		if (converged._tag === "Refused") return refuse(converged.code, converged.reason);
-		const {changes} = converged;
+		const { changes } = converged;
 
 		const onCallHealth: OnCallHealth | null =
 			split === null
@@ -720,7 +720,7 @@ export const runPrep = <R>(
 			`${JSON.stringify({
 				answer: planned !== null ? "dry-run" : wrote ? "prepped" : "unchanged",
 				repo,
-				project: {number: project.number, title: project.title, url: project.url},
+				project: { number: project.number, title: project.title, url: project.url },
 				tableDay: target,
 				agenda: rowsOut,
 				overflow: selection.overflow,
@@ -736,10 +736,10 @@ export const runPrep = <R>(
 				})),
 				triageFirst,
 				outside,
-				health: {posted: posted && planned === null, alreadyPosted: prepped, ...health},
+				health: { posted: posted && planned === null, alreadyPosted: prepped, ...health },
 				recsKept: kept,
 				changes: planned === null ? changes : [],
-				...(planned === null ? {} : {planned}),
+				...(planned === null ? {} : { planned }),
 				...(split === null || onCallHealth === null
 					? {}
 					: {
@@ -777,7 +777,7 @@ const readFollowUps = (repo: string) =>
 			if (children._tag === "Unknown")
 				return fail(`#${epic.number}'s sub-issues: ${children.reason}`);
 			if (children._tag === "Absent") continue;
-			for (const issue of children.value) found.push({issue, epic: epic.number});
+			for (const issue of children.value) found.push({ issue, epic: epic.number });
 		}
 		return ok<ReadonlyArray<FollowUp>>(found);
 	});

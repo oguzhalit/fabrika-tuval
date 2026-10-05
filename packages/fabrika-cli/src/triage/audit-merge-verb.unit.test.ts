@@ -2,11 +2,11 @@
  * `triage audit-merge` runs over a scripted filesystem and nothing else: the layer below provides no
  * HTTP seam, so a merge that reached for the issue tracker would not run.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs} from "../fakes.test-support.ts";
-import {ANSWER} from "../verb.ts";
-import {runAuditMerge} from "./audit-merge-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs } from "../fakes.test-support.ts";
+import { ANSWER } from "../verb.ts";
+import { runAuditMerge } from "./audit-merge-verb.ts";
 import {
 	CHUNK_MISCOUNTED,
 	DUPLICATE_VERDICT,
@@ -25,11 +25,11 @@ const set = (...numbers: ReadonlyArray<number>) =>
 		outcome: "set",
 		label: "audit-me",
 		repo: "o/r",
-		issues: numbers.map((number) => ({number, title: `t${number}`})),
+		issues: numbers.map((number) => ({ number, title: `t${number}` })),
 		scanned: numbers.length,
 	});
 
-const keep = (issue: number) => ({issue, verdict: "KEEP", evidence: "live"});
+const keep = (issue: number) => ({ issue, verdict: "KEEP", evidence: "live" });
 const kill = (issue: number) => ({
 	issue,
 	verdict: "KILL",
@@ -37,7 +37,7 @@ const kill = (issue: number) => ({
 	evidence: "never failed",
 });
 const chunkDoc = (rows: ReadonlyArray<unknown>, declared = rows.length) =>
-	JSON.stringify({declared, rows});
+	JSON.stringify({ declared, rows });
 
 const run = (
 	files: Readonly<Record<string, string>>,
@@ -45,7 +45,7 @@ const run = (
 	json = false,
 ) =>
 	Effect.runPromise(
-		Effect.provide(runAuditMerge({input: INPUT, chunks, json}), fakeFs({files}).layer),
+		Effect.provide(runAuditMerge({ input: INPUT, chunks, json }), fakeFs({ files }).layer),
 	);
 
 describe("runAuditMerge", () => {
@@ -63,11 +63,11 @@ describe("runAuditMerge", () => {
 	});
 
 	it("prints `{outcome, rows, counts}` under --json", async () => {
-		const out = await run({[INPUT]: set(1), [A]: chunkDoc([keep(1)])}, [A], true);
+		const out = await run({ [INPUT]: set(1), [A]: chunkDoc([keep(1)]) }, [A], true);
 		expect(JSON.parse(out.stdout)).toEqual({
 			outcome: "merged",
 			rows: [keep(1)],
-			counts: {KILL: 0, DECIDE: 0, KEEP: 1},
+			counts: { KILL: 0, DECIDE: 0, KEEP: 1 },
 		});
 	});
 
@@ -119,7 +119,7 @@ describe("runAuditMerge", () => {
 		const out = await run(
 			{
 				[INPUT]: set(1),
-				[A]: chunkDoc([{issue: 1, verdict: "KILL", evidence: "no clause"}]),
+				[A]: chunkDoc([{ issue: 1, verdict: "KILL", evidence: "no clause" }]),
 			},
 			[A],
 		);
@@ -129,18 +129,18 @@ describe("runAuditMerge", () => {
 	});
 
 	it("refuses a file that is not JSON on 22", async () => {
-		const out = await run({[INPUT]: set(1), [A]: "| 1 | KEEP |"}, [A]);
+		const out = await run({ [INPUT]: set(1), [A]: "| 1 | KEEP |" }, [A]);
 		expect(out.code).toBe(MALFORMED_AUDIT);
 	});
 
 	it("refuses an unreadable file as UNKNOWN on 11", async () => {
-		const out = await run({[INPUT]: set(1)}, [A]);
+		const out = await run({ [INPUT]: set(1) }, [A]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 	});
 
 	it("refuses an empty input set on 7 — a merge over zero scope proves nothing", async () => {
-		const out = await run({[INPUT]: set(), [A]: chunkDoc([])}, [A]);
+		const out = await run({ [INPUT]: set(), [A]: chunkDoc([]) }, [A]);
 		expect(out.code).toBe(ZERO_SCOPE);
 	});
 });

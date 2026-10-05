@@ -14,16 +14,16 @@
  * beside, and the falsified-`None.` read this verb exists to make possible is only as good as the
  * tree the tokens came from.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {diffRange, diffRangePaths} from "../io/git.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {readDeviations} from "./deviations.ts";
-import {filesInDiff, tierMHits} from "./diff.ts";
-import {bindHead, boundLine} from "./head.ts";
-import {NULL_TOKEN} from "./scope-verb.ts";
-import {badNumber, openPull, resolveTargetRepo, scannedLine} from "./target.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { diffRange, diffRangePaths } from "../io/git.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { INCOMPLETE_SCAN, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { readDeviations } from "./deviations.ts";
+import { filesInDiff, tierMHits } from "./diff.ts";
+import { bindHead, boundLine } from "./head.ts";
+import { NULL_TOKEN } from "./scope-verb.ts";
+import { badNumber, openPull, resolveTargetRepo, scannedLine } from "./target.ts";
 
 const VERB = "review deviations";
 
@@ -43,7 +43,7 @@ export const runDeviations = (
 	options: DeviationsOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -117,7 +117,7 @@ export const runDeviations = (
 			? answer(
 					JSON.stringify({
 						outcome: section.state,
-						entries: section.entries.map((entry) => ({label: entry.label, said: entry.said})),
+						entries: section.entries.map((entry) => ({ label: entry.label, said: entry.said })),
 						tierM: hits,
 					}),
 					diagnostics,

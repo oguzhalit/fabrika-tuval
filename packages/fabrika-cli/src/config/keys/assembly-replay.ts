@@ -22,10 +22,10 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9867#issuecomment-5851529523
  */
 
-import {isRecord} from "../../io/json.ts";
-import {trimmedStrings} from "../entries.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
-import type {Argv} from "./workflow-validators.ts";
+import { isRecord } from "../../io/json.ts";
+import { trimmedStrings } from "../entries.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
+import type { Argv } from "./workflow-validators.ts";
 
 export const ASSEMBLY_REPLAY = "assemblyReplay";
 
@@ -63,7 +63,7 @@ const KNOWN: ReadonlyArray<string> = ["onCollision", "lockfileRegenerator"];
 
 const decodeOnCollision = (raw: unknown): Decoded<OnCollision> =>
 	typeof raw === "string" && (ON_COLLISION_VALUES as ReadonlyArray<string>).includes(raw.trim())
-		? {_tag: "Value", value: raw.trim() as OnCollision}
+		? { _tag: "Value", value: raw.trim() as OnCollision }
 		: {
 				_tag: "Malformed",
 				reason: `${named("onCollision")} is not one of ${ON_COLLISION_VALUES.join(", ")}`,
@@ -74,22 +74,22 @@ const REGENERATOR_KEYS: ReadonlyArray<string> = ["command", "lockfiles"];
 const REGENERATOR_MALFORMED = `${named("lockfileRegenerator")} is not {"command": [non-empty argv of strings], "lockfiles": [non-empty list of repo-relative paths]} — e.g. {"command": ["pnpm", "install", "--lockfile-only"], "lockfiles": ["pnpm-lock.yaml"]}`;
 
 const decodeLockfileRegenerator = (raw: unknown): Decoded<LockfileRegenerator | null> => {
-	if (raw === null) return {_tag: "Value", value: null};
+	if (raw === null) return { _tag: "Value", value: null };
 	if (!isRecord(raw) || Object.keys(raw).some((key) => !REGENERATOR_KEYS.includes(key))) {
-		return {_tag: "Malformed", reason: REGENERATOR_MALFORMED};
+		return { _tag: "Malformed", reason: REGENERATOR_MALFORMED };
 	}
 	const [binary, ...args] = trimmedStrings(raw.command) ?? [];
 	const [lockfile, ...more] = trimmedStrings(raw.lockfiles) ?? [];
 	if (binary === undefined || lockfile === undefined) {
-		return {_tag: "Malformed", reason: REGENERATOR_MALFORMED};
+		return { _tag: "Malformed", reason: REGENERATOR_MALFORMED };
 	}
-	return {_tag: "Value", value: {argv: [binary, ...args], lockfiles: [lockfile, ...more]}};
+	return { _tag: "Value", value: { argv: [binary, ...args], lockfiles: [lockfile, ...more] } };
 };
 
 const decode = (raw: unknown): Decoded<AssemblyReplaySurface> => {
 	const record = asRecord(raw);
 	if (record === null) {
-		return {_tag: "Malformed", reason: `\`${ASSEMBLY_REPLAY}\` is not an object`};
+		return { _tag: "Malformed", reason: `\`${ASSEMBLY_REPLAY}\` is not an object` };
 	}
 	const stray = Object.keys(record).find((key) => !KNOWN.includes(key));
 	if (stray !== undefined) {
@@ -101,19 +101,19 @@ const decode = (raw: unknown): Decoded<AssemblyReplaySurface> => {
 
 	const onCollision =
 		record.onCollision === undefined
-			? ({_tag: "Value", value: SHIPPED_ASSEMBLY_REPLAY.onCollision} as const)
+			? ({ _tag: "Value", value: SHIPPED_ASSEMBLY_REPLAY.onCollision } as const)
 			: decodeOnCollision(record.onCollision);
 	if (onCollision._tag === "Malformed") return onCollision;
 
 	const lockfileRegenerator =
 		record.lockfileRegenerator === undefined
-			? ({_tag: "Value", value: SHIPPED_ASSEMBLY_REPLAY.lockfileRegenerator} as const)
+			? ({ _tag: "Value", value: SHIPPED_ASSEMBLY_REPLAY.lockfileRegenerator } as const)
 			: decodeLockfileRegenerator(record.lockfileRegenerator);
 	if (lockfileRegenerator._tag === "Malformed") return lockfileRegenerator;
 
 	return {
 		_tag: "Value",
-		value: {onCollision: onCollision.value, lockfileRegenerator: lockfileRegenerator.value},
+		value: { onCollision: onCollision.value, lockfileRegenerator: lockfileRegenerator.value },
 	};
 };
 
@@ -122,12 +122,12 @@ export const assemblyReplayKey: KeyGroup<AssemblyReplaySurface> = {
 	shippedDefault: SHIPPED_ASSEMBLY_REPLAY,
 	decode,
 	// `argv` is the spawn shape; the file's key is `command`, and a readout prints what the repo wrote.
-	render: ({onCollision, lockfileRegenerator}) => ({
+	render: ({ onCollision, lockfileRegenerator }) => ({
 		onCollision,
 		lockfileRegenerator:
 			lockfileRegenerator === null
 				? null
-				: {command: [...lockfileRegenerator.argv], lockfiles: [...lockfileRegenerator.lockfiles]},
+				: { command: [...lockfileRegenerator.argv], lockfiles: [...lockfileRegenerator.lockfiles] },
 	}),
 	jsonSchema: {
 		type: "object",
@@ -148,14 +148,14 @@ export const assemblyReplayKey: KeyGroup<AssemblyReplaySurface> = {
 					command: {
 						type: "array",
 						description: 'The argv to spawn — e.g. ["pnpm", "install", "--lockfile-only"].',
-						items: {type: "string"},
+						items: { type: "string" },
 						minItems: 1,
 					},
 					lockfiles: {
 						type: "array",
 						description:
 							'The repo-relative lockfile paths the command regenerates — e.g. ["pnpm-lock.yaml"].',
-						items: {type: "string"},
+						items: { type: "string" },
 						minItems: 1,
 					},
 				},

@@ -3,14 +3,14 @@
  * directory and a `.git` file, which is a filesystem fact, and a fake that scripted the answer would
  * be asserting against the very thing under test.
  */
-import {mkdirSync, mkdtempSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {NodeServices} from "@effect/platform-node";
-import {Effect} from "effect";
-import {afterEach, beforeEach, describe, expect, it} from "vitest";
-import {realPath} from "../io/fs.ts";
-import {gitFileTarget, relateCopy, repositoryOf} from "./repository.ts";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { realPath } from "../io/fs.ts";
+import { gitFileTarget, relateCopy, repositoryOf } from "./repository.ts";
 
 let scratch: string;
 
@@ -18,7 +18,7 @@ beforeEach(() => {
 	scratch = mkdtempSync(join(tmpdir(), "fabrika-repository-"));
 });
 
-afterEach(() => rmSync(scratch, {recursive: true, force: true}));
+afterEach(() => rmSync(scratch, { recursive: true, force: true }));
 
 const run = <A, E>(effect: Effect.Effect<A, E, NodeServices.NodeServices>) =>
 	Effect.runPromise(effect.pipe(Effect.provide(NodeServices.layer)));
@@ -29,7 +29,7 @@ const real = (path: string) => run(realPath(path));
 /** A primary checkout: a real `.git` directory, which is its own common dir. */
 const primary = (name: string): string => {
 	const root = join(scratch, name);
-	mkdirSync(join(root, ".git"), {recursive: true});
+	mkdirSync(join(root, ".git"), { recursive: true });
 	return root;
 };
 
@@ -37,8 +37,8 @@ const primary = (name: string): string => {
 const worktree = (of: string, name: string): string => {
 	const root = join(scratch, name);
 	const gitDir = join(of, ".git", "worktrees", name);
-	mkdirSync(root, {recursive: true});
-	mkdirSync(gitDir, {recursive: true});
+	mkdirSync(root, { recursive: true });
+	mkdirSync(gitDir, { recursive: true });
 	writeFileSync(join(gitDir, "commondir"), "../..\n");
 	writeFileSync(join(root, ".git"), `gitdir: ${gitDir}\n`);
 	return root;
@@ -70,22 +70,22 @@ describe("repositoryOf", () => {
 	it("falls back to the named git dir when no `commondir` sits beside it", async () => {
 		const root = join(scratch, "separate");
 		const gitDir = join(scratch, "elsewhere.git");
-		mkdirSync(root, {recursive: true});
-		mkdirSync(gitDir, {recursive: true});
+		mkdirSync(root, { recursive: true });
+		mkdirSync(gitDir, { recursive: true });
 		writeFileSync(join(root, ".git"), `gitdir: ${gitDir}\n`);
 		expect(await run(repositoryOf(root))).toBe(await real(gitDir));
 	});
 
 	it("answers undefined for a tree that is not a git checkout at all", async () => {
 		const root = join(scratch, "plain");
-		mkdirSync(root, {recursive: true});
+		mkdirSync(root, { recursive: true });
 		expect(await run(repositoryOf(root))).toBeUndefined();
 	});
 
 	/** A pruned worktree leaves its `.git` file behind; an unprovable repository is not a shared one. */
 	it("answers undefined when the `.git` file points at a git dir that is gone", async () => {
 		const root = join(scratch, "stale");
-		mkdirSync(root, {recursive: true});
+		mkdirSync(root, { recursive: true });
 		writeFileSync(join(root, ".git"), `gitdir: ${join(scratch, "pruned", "worktrees", "gone")}\n`);
 		expect(await run(repositoryOf(root))).toBeUndefined();
 	});
@@ -93,13 +93,13 @@ describe("repositoryOf", () => {
 
 describe("relateCopy", () => {
 	it("reads an installed copy as same-repository — it belongs to no repo to cross out of", async () => {
-		expect(await run(relateCopy({_tag: "no-checkout"}, primary("main")))).toEqual({
+		expect(await run(relateCopy({ _tag: "no-checkout" }, primary("main")))).toEqual({
 			_tag: "same-repository",
 		});
 	});
 
 	it("reads the cwd's OWN checkout as same-repository without touching git at all", async () => {
-		expect(await run(relateCopy({_tag: "checkout", root: "/repo"}, "/repo"))).toEqual({
+		expect(await run(relateCopy({ _tag: "checkout", root: "/repo" }, "/repo"))).toEqual({
 			_tag: "same-repository",
 		});
 	});
@@ -108,7 +108,7 @@ describe("relateCopy", () => {
 	it("reads two working trees of ONE repository as same-repository", async () => {
 		const of = primary("main");
 		const lane = worktree(of, "lane");
-		expect(await run(relateCopy({_tag: "checkout", root: of}, lane))).toEqual({
+		expect(await run(relateCopy({ _tag: "checkout", root: of }, lane))).toEqual({
 			_tag: "same-repository",
 		});
 	});
@@ -116,7 +116,7 @@ describe("relateCopy", () => {
 	it("reads two unrelated repositories as other-repository, naming the copy's checkout", async () => {
 		const mine = primary("mine");
 		const theirs = primary("theirs");
-		expect(await run(relateCopy({_tag: "checkout", root: mine}, theirs))).toEqual({
+		expect(await run(relateCopy({ _tag: "checkout", root: mine }, theirs))).toEqual({
 			_tag: "other-repository",
 			checkout: mine,
 		});
@@ -125,8 +125,8 @@ describe("relateCopy", () => {
 	it("refuses to call a non-git tree the same repository — an unprovable peer is a foreign one", async () => {
 		const mine = primary("mine");
 		const plain = join(scratch, "plain");
-		mkdirSync(plain, {recursive: true});
-		expect(await run(relateCopy({_tag: "checkout", root: mine}, plain))).toEqual({
+		mkdirSync(plain, { recursive: true });
+		expect(await run(relateCopy({ _tag: "checkout", root: mine }, plain))).toEqual({
 			_tag: "other-repository",
 			checkout: mine,
 		});

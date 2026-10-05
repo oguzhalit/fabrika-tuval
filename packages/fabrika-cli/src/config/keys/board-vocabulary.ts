@@ -27,10 +27,10 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/6469
  */
 
-import {DEFAULT_BOARD_VOCABULARY} from "../../triage/facets.ts";
-import {type BoardVocabulary, type StatusNames, statusList} from "../board.ts";
-import type {JsonSchema} from "../json-schema.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import { DEFAULT_BOARD_VOCABULARY } from "../../triage/facets.ts";
+import { type BoardVocabulary, type StatusNames, statusList } from "../board.ts";
+import type { JsonSchema } from "../json-schema.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const BOARD_VOCABULARY = "boardVocabulary";
 
@@ -57,24 +57,24 @@ const asRecord = (raw: unknown): Record<string, unknown> | null =>
 const named = (path: string): string => `\`${BOARD_VOCABULARY}\`'s \`${path}\``;
 
 const decodeList = (raw: unknown, key: ListKey): ReadonlyArray<string> | Bad => {
-	if (!Array.isArray(raw)) return {reason: `${named(key)} is not an array`};
+	if (!Array.isArray(raw)) return { reason: `${named(key)} is not an array` };
 	const values: string[] = [];
 	for (const entry of raw) {
 		if (typeof entry !== "string" || entry.trim() === "") {
-			return {reason: `${named(key)} holds an entry that is not a non-empty string`};
+			return { reason: `${named(key)} holds an entry that is not a non-empty string` };
 		}
 		values.push(entry.trim());
 	}
 	if (values.length === 0 && !EMPTY_DECLARABLE.includes(key)) {
-		return {reason: `${named(key)} is empty — a facet with no vocabulary accepts nothing`};
+		return { reason: `${named(key)} is empty — a facet with no vocabulary accepts nothing` };
 	}
 	const duplicate = values.find((value, i) => values.indexOf(value) !== i);
-	return duplicate === undefined ? values : {reason: `${named(key)} names ${duplicate} twice`};
+	return duplicate === undefined ? values : { reason: `${named(key)} names ${duplicate} twice` };
 };
 
 const decodeStatuses = (raw: unknown, shipped: StatusNames): StatusNames | Bad => {
 	const record = asRecord(raw);
-	if (record === null) return {reason: `${named("statuses")} is not an object of role → label`};
+	if (record === null) return { reason: `${named("statuses")} is not an object of role → label` };
 	const roles: ReadonlyArray<string> = STATUS_ROLES;
 	const stray = Object.keys(record).find((key) => !roles.includes(key));
 	if (stray !== undefined) {
@@ -87,7 +87,7 @@ const decodeStatuses = (raw: unknown, shipped: StatusNames): StatusNames | Bad =
 		if (value === undefined) return fallback;
 		return typeof value === "string" && value.trim() !== ""
 			? value.trim()
-			: {reason: `${named(`statuses.${name}`)} is not a non-empty label string`};
+			: { reason: `${named(`statuses.${name}`)} is not a non-empty label string` };
 	};
 	const needsTriage = role("needsTriage", shipped.needsTriage);
 	if (isBad(needsTriage)) return needsTriage;
@@ -100,7 +100,7 @@ const decodeStatuses = (raw: unknown, shipped: StatusNames): StatusNames | Bad =
 	const awaitingRelease = role("awaitingRelease", shipped.awaitingRelease);
 	if (isBad(awaitingRelease)) return awaitingRelease;
 
-	const statuses: StatusNames = {needsTriage, triaged, needsInfo, planned, awaitingRelease};
+	const statuses: StatusNames = { needsTriage, triaged, needsInfo, planned, awaitingRelease };
 	const labels = statusList(statuses);
 	const duplicate = labels.find((label, i) => labels.indexOf(label) !== i);
 	return duplicate === undefined
@@ -113,7 +113,7 @@ const decodeStatuses = (raw: unknown, shipped: StatusNames): StatusNames | Bad =
 const decode = (raw: unknown): Decoded<BoardVocabulary> => {
 	const record = asRecord(raw);
 	if (record === null) {
-		return {_tag: "Malformed", reason: `\`${BOARD_VOCABULARY}\` is not an object`};
+		return { _tag: "Malformed", reason: `\`${BOARD_VOCABULARY}\` is not an object` };
 	}
 	const known: ReadonlyArray<string> = ["statuses", ...LIST_KEYS];
 	const stray = Object.keys(record).find((key) => !known.includes(key));
@@ -128,30 +128,30 @@ const decode = (raw: unknown): Decoded<BoardVocabulary> => {
 		record.statuses === undefined
 			? DEFAULT_BOARD_VOCABULARY.statuses
 			: decodeStatuses(record.statuses, DEFAULT_BOARD_VOCABULARY.statuses);
-	if (isBad(statuses)) return {_tag: "Malformed", reason: statuses.reason};
+	if (isBad(statuses)) return { _tag: "Malformed", reason: statuses.reason };
 
 	const list = (key: ListKey, fallback: ReadonlyArray<string>): ReadonlyArray<string> | Bad =>
 		record[key] === undefined ? fallback : decodeList(record[key], key);
 
 	const types = list("types", DEFAULT_BOARD_VOCABULARY.types);
-	if (isBad(types)) return {_tag: "Malformed", reason: types.reason};
+	if (isBad(types)) return { _tag: "Malformed", reason: types.reason };
 	const priorities = list("priorities", DEFAULT_BOARD_VOCABULARY.priorities);
-	if (isBad(priorities)) return {_tag: "Malformed", reason: priorities.reason};
+	if (isBad(priorities)) return { _tag: "Malformed", reason: priorities.reason };
 	const audiences = list("audiences", DEFAULT_BOARD_VOCABULARY.audiences);
-	if (isBad(audiences)) return {_tag: "Malformed", reason: audiences.reason};
+	if (isBad(audiences)) return { _tag: "Malformed", reason: audiences.reason };
 	const standingLanes = list("standingLanes", []);
-	if (isBad(standingLanes)) return {_tag: "Malformed", reason: standingLanes.reason};
+	if (isBad(standingLanes)) return { _tag: "Malformed", reason: standingLanes.reason };
 
-	return {_tag: "Value", value: {statuses, types, priorities, audiences, standingLanes}};
+	return { _tag: "Value", value: { statuses, types, priorities, audiences, standingLanes } };
 };
 
 /** A facet's label list. `standingLanes` may be empty; the other three refuse an empty declaration. */
 const listSchema = (description: string, allowEmpty: boolean): JsonSchema => ({
 	type: "array",
 	description,
-	items: {type: "string", minLength: 1},
+	items: { type: "string", minLength: 1 },
 	uniqueItems: true,
-	...(allowEmpty ? {} : {minItems: 1}),
+	...(allowEmpty ? {} : { minItems: 1 }),
 });
 
 const statusesSchema: JsonSchema = {
@@ -159,7 +159,7 @@ const statusesSchema: JsonSchema = {
 	description:
 		"The status role → label map. Every role is optional and falls to its shipped label.",
 	properties: Object.fromEntries(
-		STATUS_ROLES.map((role) => [role, {type: "string", minLength: 1} satisfies JsonSchema]),
+		STATUS_ROLES.map((role) => [role, { type: "string", minLength: 1 } satisfies JsonSchema]),
 	),
 	additionalProperties: false,
 };

@@ -2,17 +2,17 @@
  * The shared candidate nominator, and the deadlock it was extracted to end: `lane prove`
  * proving a `DONE` off a `Part of #N` PR that `lane brief` then refused to see.
  */
-import {resolve} from "node:path";
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import type {EntrypointRead} from "../delegate/entrypoint.ts";
-import {fakeFs, fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import {RULES} from "../wire/lane-brief.ts";
-import {runBrief} from "./brief-verb.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
-import {nominatePulls} from "./nominate.ts";
-import {tracePulls} from "./prove.ts";
-import {runProve} from "./prove-verb.ts";
+import { resolve } from "node:path";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import type { EntrypointRead } from "../delegate/entrypoint.ts";
+import { fakeFs, fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import { RULES } from "../wire/lane-brief.ts";
+import { runBrief } from "./brief-verb.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
+import { nominatePulls } from "./nominate.ts";
+import { tracePulls } from "./prove.ts";
+import { runProve } from "./prove-verb.ts";
 
 const ROOT = ".fabrika/lanes";
 const ISSUE = 5751;
@@ -26,7 +26,7 @@ const SEARCH = /^GET .*\/search\/issues\?/;
 const PULL = new RegExp(`^GET .*/repos/o/r/pulls/${PR}$`);
 const ISSUE_READ = new RegExp(`^GET .*/repos/o/r/issues/${ISSUE}$`);
 
-const served = (payload: unknown): HttpReply => ({status: 200, body: JSON.stringify(payload)});
+const served = (payload: unknown): HttpReply => ({ status: 200, body: JSON.stringify(payload) });
 
 const closingEdge = (...numbers: ReadonlyArray<number>): HttpReply =>
 	served({
@@ -34,7 +34,7 @@ const closingEdge = (...numbers: ReadonlyArray<number>): HttpReply =>
 			repository: {
 				issue: {
 					closedByPullRequestsReferences: {
-						pageInfo: {hasNextPage: false, endCursor: null},
+						pageInfo: { hasNextPage: false, endCursor: null },
 						nodes: numbers.map((number) => ({
 							number,
 							url: `https://forge.example/o/r/pull/${number}`,
@@ -47,14 +47,14 @@ const closingEdge = (...numbers: ReadonlyArray<number>): HttpReply =>
 	});
 
 const nominatedBy = (...numbers: ReadonlyArray<number>): HttpReply =>
-	served({total_count: numbers.length, items: numbers.map((number) => ({number}))});
+	served({ total_count: numbers.length, items: numbers.map((number) => ({ number })) });
 
 /** An open PR that links the issue without closing it. */
 const partOfPull = served({
 	number: PR,
 	state: "open",
-	head: {sha: "6ba0a4e2ff5e4f6b9e2b0e4b1f7cf50b7b6a3d21"},
-	base: {ref: "main"},
+	head: { sha: "6ba0a4e2ff5e4f6b9e2b0e4b1f7cf50b7b6a3d21" },
+	base: { ref: "main" },
 	body: `Part of #${ISSUE}.\n\n## Deviations\nNone.\n`,
 	changed_files: 1,
 	comments: 0,
@@ -66,7 +66,7 @@ const issuePayload = served({
 	title: "the two verbs disagree about which PR links the lane",
 	body: "## What is wrong\n\nThe lane deadlocks at review.",
 	state: "open",
-	labels: [{name: "type:bug"}],
+	labels: [{ name: "type:bug" }],
 	html_url: ISSUE_URL,
 });
 
@@ -122,10 +122,10 @@ describe("the shared candidate nominator", () => {
 				Effect.provide(nominatePulls("o/r", ISSUE), fakeSeams(script).layer),
 			);
 
-			expect(nomination).toMatchObject({_tag: "Nominated"});
+			expect(nomination).toMatchObject({ _tag: "Nominated" });
 			if (nomination._tag !== "Nominated") throw new Error("unreachable");
 			expect(nomination.pulls.map((pull) => pull.number)).toEqual([PR]);
-			expect(tracePulls(ISSUE, nomination.pulls)).toEqual({_tag: "One", pr: PR});
+			expect(tracePulls(ISSUE, nomination.pulls)).toEqual({ _tag: "One", pr: PR });
 			expect(nomination.pulls[0]?.htmlUrl).toBe(PR_URL);
 		});
 	}
@@ -136,7 +136,7 @@ describe("the shared candidate nominator", () => {
 				nominatePulls("o/r", ISSUE),
 				fakeSeams([
 					[CLOSERS, closingEdge()],
-					[SEARCH, {status: 502, body: '{"message":"Bad gateway"}'}],
+					[SEARCH, { status: 502, body: '{"message":"Bad gateway"}' }],
 				]).layer,
 			),
 		);
@@ -167,7 +167,7 @@ describe("the `Part of #N` sequence that used to deadlock", () => {
 					pr: null,
 					repo: null,
 					cwd: "/repo",
-					env: {CLAUDE_PIPELINE_REPO: "o/r"},
+					env: { CLAUDE_PIPELINE_REPO: "o/r" },
 				}),
 				Layer.merge(laneAt("WIP").layer, fakeSeams(board).layer),
 			),
@@ -176,7 +176,7 @@ describe("the `Part of #N` sequence that used to deadlock", () => {
 		expect(proven.code).toBe(0);
 		expect(JSON.parse(proven.stdout)).toMatchObject({
 			proof: "proven",
-			evidence: {kind: "open-pull", pr: PR},
+			evidence: { kind: "open-pull", pr: PR },
 		});
 
 		const briefed = await Effect.runPromise(
@@ -186,8 +186,8 @@ describe("the `Part of #N` sequence that used to deadlock", () => {
 					lane: String(ISSUE),
 					task: null,
 					repo: null,
-					env: {CLAUDE_PIPELINE_REPO: "o/r"},
-					entrypoint: {_tag: "Entrypoint", entrypoint: ENTRY} as EntrypointRead,
+					env: { CLAUDE_PIPELINE_REPO: "o/r" },
+					entrypoint: { _tag: "Entrypoint", entrypoint: ENTRY } as EntrypointRead,
 				}),
 				Layer.merge(laneAt("WIP", "DONE").layer, fakeSeams(board).layer),
 			),
@@ -207,8 +207,8 @@ describe("the `Part of #N` sequence that used to deadlock", () => {
 					lane: String(ISSUE),
 					task: null,
 					repo: null,
-					env: {CLAUDE_PIPELINE_REPO: "o/r"},
-					entrypoint: {_tag: "Entrypoint", entrypoint: ENTRY} as EntrypointRead,
+					env: { CLAUDE_PIPELINE_REPO: "o/r" },
+					entrypoint: { _tag: "Entrypoint", entrypoint: ENTRY } as EntrypointRead,
 				}),
 				Layer.merge(laneAt("WIP", "DONE", "PASS").layer, fakeSeams(board).layer),
 			),

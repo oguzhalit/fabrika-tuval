@@ -8,11 +8,11 @@
  * register that exists and could not be read is `11`, UNKNOWN, with nothing answered.
  */
 
-import {Effect, type FileSystem, Path, Result} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {exists, readFile} from "../io/fs.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {BAD_SECTIONS, OFF_VOCABULARY, PRECONDITION_UNKNOWN} from "./codes.ts";
+import { Effect, type FileSystem, Path, Result } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { exists, readFile } from "../io/fs.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { BAD_SECTIONS, OFF_VOCABULARY, PRECONDITION_UNKNOWN } from "./codes.ts";
 import {
 	BOTH,
 	type ParsedRegister,
@@ -22,11 +22,11 @@ import {
 } from "./register.ts";
 
 export type Guarded<A> =
-	| {readonly _tag: "Ok"; readonly value: A}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Ok"; readonly value: A }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
-export const ok = <A>(value: A): Guarded<A> => ({_tag: "Ok", value});
-export const refused = (outcome: VerbOutcome): Guarded<never> => ({_tag: "Refused", outcome});
+export const ok = <A>(value: A): Guarded<A> => ({ _tag: "Ok", value });
+export const refused = (outcome: VerbOutcome): Guarded<never> => ({ _tag: "Refused", outcome });
 
 /** Anything in this module: it reads disk, so the two platform seams are its only requirement. */
 export type GlossaryEffect<A> = Effect.Effect<A, never, FileSystem.FileSystem | Path.Path>;
@@ -40,7 +40,7 @@ export type GlossaryEffect<A> = Effect.Effect<A, never, FileSystem.FileSystem | 
 export const selectRegisters = (
 	verb: string,
 	value: string,
-	both: {readonly allowed: boolean; readonly refusal: string},
+	both: { readonly allowed: boolean; readonly refusal: string },
 ): Guarded<ReadonlyArray<RegisterName>> => {
 	if (value === "terms" || value === "language") return ok([value]);
 	if (value === "both") {
@@ -110,7 +110,7 @@ export const registerFilesIn = (
 	}));
 
 export type RegisterState =
-	| {readonly _tag: "Absent"; readonly file: RegisterFile}
+	| { readonly _tag: "Absent"; readonly file: RegisterFile }
 	| {
 			readonly _tag: "Present";
 			readonly file: RegisterFile;
@@ -141,7 +141,7 @@ export const readRegister = (
 				refuse(PRECONDITION_UNKNOWN, messages.unreadable(file.display, present.failure.reason)),
 			);
 		}
-		if (!present.success) return ok<RegisterState>({_tag: "Absent", file});
+		if (!present.success) return ok<RegisterState>({ _tag: "Absent", file });
 
 		const text = yield* Effect.result(readFile(file.path));
 		if (Result.isFailure(text)) {
@@ -153,5 +153,5 @@ export const readRegister = (
 		if (parsed._tag === "Malformed") {
 			return refused(refuse(BAD_SECTIONS, messages.malformed(file.display, parsed.reason)));
 		}
-		return ok<RegisterState>({_tag: "Present", file, text: text.success, parsed: parsed.value});
+		return ok<RegisterState>({ _tag: "Present", file, text: text.success, parsed: parsed.value });
 	});

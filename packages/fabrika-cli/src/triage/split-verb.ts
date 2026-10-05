@@ -18,8 +18,8 @@
  * auth failure read as a proven "safe to create".
  */
 
-import {Effect} from "effect";
-import type {BoardRead} from "../config/resolve-board.ts";
+import { Effect } from "effect";
+import type { BoardRead } from "../config/resolve-board.ts";
 import {
 	createComment,
 	createIssue,
@@ -32,14 +32,14 @@ import {
 	openIssuesWithLabel,
 	resolveRepo,
 } from "../io/issues.ts";
-import {sessionIdFrom} from "../io/session-id.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {normalizeForReadback, renderFooter} from "../report/compose.ts";
-import {missingLabelRemedy} from "../status/label-remedy.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {type AuthoredSurface, leakRefusal, readAuthored} from "./authored.ts";
-import {PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {scannedLine} from "./scope.ts";
+import { sessionIdFrom } from "../io/session-id.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { normalizeForReadback, renderFooter } from "../report/compose.ts";
+import { missingLabelRemedy } from "../status/label-remedy.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { type AuthoredSurface, leakRefusal, readAuthored } from "./authored.ts";
+import { PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { scannedLine } from "./scope.ts";
 import {
 	type Candidate,
 	composeChildBody,
@@ -47,7 +47,7 @@ import {
 	isExistingChild,
 	normalizeTitle,
 } from "./split.ts";
-import {guardTarget} from "./target-guard.ts";
+import { guardTarget } from "./target-guard.ts";
 
 const VERB = "triage split";
 export const QUEUE_LABEL = "status:needs-triage";
@@ -140,7 +140,7 @@ export const readbackMismatch = (
  * `LLMS.md` §"Using Effect.fn" ("Avoid creating functions that return an Effect.gen").
  */
 export const runSplit = Effect.fn(function* (options: SplitOptions) {
-	const {parent, title, json} = options;
+	const { parent, title, json } = options;
 
 	if (!Number.isInteger(parent) || parent <= 0) {
 		return refuse(FAILED, `${VERB}: ${parent} is not an issue number.`);

@@ -13,14 +13,14 @@
  * that split is deliberate: `execCapture` runs in the process's own working directory, so pointing
  * it at a fixture repository would mean mutating the test runner's cwd.
  */
-import {execFileSync} from "node:child_process";
-import {mkdtempSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {describe, expect, it} from "vitest";
-import {type CommitRange, rawDiffArgs} from "../io/git.ts";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
-import {contentDigest, judgedPaths, parseRaw} from "./content-binding.ts";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import { type CommitRange, rawDiffArgs } from "../io/git.ts";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
+import { contentDigest, judgedPaths, parseRaw } from "./content-binding.ts";
 
 /**
  * Both config layers are pinned away from the developer's own: merge behaviour is configurable
@@ -49,7 +49,7 @@ interface Repo {
 const openRepo = (): Repo => {
 	const dir = mkdtempSync(join(tmpdir(), "fabrika-range-"));
 	const git = (...args: ReadonlyArray<string>): string =>
-		execFileSync("git", [...args], {cwd: dir, env: GIT_ENV, encoding: "utf8"});
+		execFileSync("git", [...args], { cwd: dir, env: GIT_ENV, encoding: "utf8" });
 	git("init", "--quiet", "-b", "epic");
 	const rev = (ref: string): string => git("rev-parse", ref).trim();
 	return {
@@ -93,8 +93,8 @@ const withChild = () => {
 	const tip = repo.commit("child work");
 	repo.git("checkout", "--quiet", "epic");
 
-	const range: CommitRange = {base, tip};
-	return {repo, range, judged: pathsOf(repo, range), verdict: digestOf(repo, range)};
+	const range: CommitRange = { base, tip };
+	return { repo, range, judged: pathsOf(repo, range), verdict: digestOf(repo, range) };
 };
 
 /** The verdict's own re-derivation: `<base>...<state>` limited to the paths the verdict judged. */
@@ -103,19 +103,19 @@ const rederive = (
 	range: CommitRange,
 	judged: ReadonlyArray<string>,
 	state: string,
-): string => digestOf(repo, {base: range.base, tip: state}, judged);
+): string => digestOf(repo, { base: range.base, tip: state }, judged);
 
 describe("a range verdict's digest across the merge into its epic branch", {
 	timeout: SUBPROCESS_TEST_TIMEOUT_MS,
 }, () => {
 	it("holds across a fast-forward — the epic branch becomes the range, byte for byte", () => {
-		const {repo, range, judged, verdict} = withChild();
+		const { repo, range, judged, verdict } = withChild();
 		repo.git("merge", "--quiet", "--ff-only", "child");
 		expect(rederive(repo, range, judged, repo.rev("epic"))).toBe(verdict);
 	});
 
 	it("holds across a clean merge that preserves every judged blob", () => {
-		const {repo, range, judged, verdict} = withChild();
+		const { repo, range, judged, verdict } = withChild();
 		repo.write("sibling.ts", "another child's work\n");
 		repo.commit("a sibling lands first");
 		repo.git("merge", "--quiet", "--no-ff", "-m", "merge child", "child");
@@ -123,11 +123,11 @@ describe("a range verdict's digest across the merge into its epic branch", {
 		// The merge commit's tree carries the sibling's path too; the pathspec is what keeps this
 		// verdict's answer about its own content rather than about the whole branch.
 		expect(rederive(repo, range, judged, repo.rev("epic"))).toBe(verdict);
-		expect(digestOf(repo, {base: range.base, tip: repo.rev("epic")})).not.toBe(verdict);
+		expect(digestOf(repo, { base: range.base, tip: repo.rev("epic") })).not.toBe(verdict);
 	});
 
 	it("MOVES across a conflicted merge whose resolution rewrites a judged path", () => {
-		const {repo, range, judged, verdict} = withChild();
+		const { repo, range, judged, verdict } = withChild();
 		repo.write("cart.ts", "one\nconflicting\n");
 		repo.commit("the epic branch edits the same file");
 		expect(() => repo.git("merge", "--quiet", "--no-ff", "-m", "merge child", "child")).toThrow();
@@ -139,7 +139,7 @@ describe("a range verdict's digest across the merge into its epic branch", {
 	});
 
 	it("MOVES on a later commit touching a judged path, after the merge held", () => {
-		const {repo, range, judged, verdict} = withChild();
+		const { repo, range, judged, verdict } = withChild();
 		repo.git("merge", "--quiet", "--ff-only", "child");
 		expect(rederive(repo, range, judged, repo.rev("epic"))).toBe(verdict);
 
@@ -149,7 +149,7 @@ describe("a range verdict's digest across the merge into its epic branch", {
 	});
 
 	it("holds when a later commit touches a path the verdict never judged", () => {
-		const {repo, range, judged, verdict} = withChild();
+		const { repo, range, judged, verdict } = withChild();
 		repo.git("merge", "--quiet", "--ff-only", "child");
 		repo.write("untouched.ts", "moved on\n");
 		repo.commit("an unjudged path changes");
@@ -165,7 +165,7 @@ describe("a range verdict's digest across the merge into its epic branch", {
 		const tip = repo.commit("rename");
 		repo.git("checkout", "--quiet", "epic");
 
-		const range: CommitRange = {base, tip};
+		const range: CommitRange = { base, tip };
 		const judged = pathsOf(repo, range);
 		expect(judged).toEqual(["new.ts", "old.ts"]);
 

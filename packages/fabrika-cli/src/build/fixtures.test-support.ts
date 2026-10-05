@@ -1,0 +1,254 @@
+/**
+ * The canned GitHub and `git` answers the `build` verb tests script their seams with.
+ *
+ * They are shaped like the real payloads rather than like the parsers, so a parser that starts reading
+ * a different field still has to find it here — a fixture trimmed to exactly what the code reads today
+ * stops being able to catch tomorrow's misread.
+ */
+import { type HttpReply, okOut } from "../fakes.test-support.ts";
+
+/**
+ * The credential a ported test hands its verb.
+ *
+ * `resolveToken` reads the env before it reaches for `gh auth token`, so naming one here keeps a
+ * test about some other axis from having to script a spawn it does not care about.
+ */
+export const GH_TOKEN_ENV = { GITHUB_TOKEN: "ghp_scripted" } as const;
+
+/** One served JSON answer, for a test scripting the HTTP seam. */
+export const served = (payload: unknown, status = 200): HttpReply => ({
+	status,
+	body: JSON.stringify(payload),
+});
+
+/** What the API answers for a number that does not exist — the `Absent` arm's whole evidence. */
+export const NOT_FOUND: HttpReply = { status: 404, body: '{"message":"Not Found"}' };
+
+/** Served, and unreadable for a reason that is not absence — the `Unknown` arm. */
+export const GATEWAY: HttpReply = { status: 502, body: '{"message":"Bad gateway"}' };
+
+export const HEAD = "03135b9188d2be6c0a4b7bd0b7a3ff9c53f0f2b1";
+export const OLD_HEAD = "8f1c2ad4e5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0";
+
+/**
+ * Heads a repair loop pushed before the live one, newest last.
+ *
+ * A round is one graded head (`./rounds.ts`), so a test that wants N rounds needs N distinct heads;
+ * repeating one head is one round however the timestamps are spread.
+ */
+export const PRIOR_HEADS = [
+	"1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d",
+	"2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e",
+	"3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f",
+	"4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f70",
+] as const;
+
+/** What `git rev-parse` names for a checkout: its git dir, then its tree root. */
+export const GIT_DIRS = okOut(["/repo/trees/lane-a/.git", "/repo/trees/lane-a"].join("\n"));
+
+/**
+ * The issue the served pull request closes.
+ *
+ * Named rather than repeated, because {@link pullPayload}'s body has to state the same number for the
+ * link to parse — two literals a future edit could move apart is a fixture that scripts a PR serving
+ * an issue nobody filed.
+ */
+export const SERVED_ISSUE = 4312;
+
+export const issuePayload = (overrides: Record<string, unknown> = {}): Record<string, unknown> => ({
+	number: SERVED_ISSUE,
+	title: "Editor loses focus after save",
+	body: CRITERIA_BODY,
+	state: "open",
+	labels: [{ name: "type:bug" }, { name: "p1" }, { name: "status:triaged" }],
+	html_url: `https://example.test/o/r/issues/${SERVED_ISSUE}`,
+	milestone: null,
+	state_reason: null,
+	...overrides,
+});
+
+export const issue = (overrides: Record<string, unknown> = {}): HttpReply =>
+	served(issuePayload(overrides));
+
+export const pullPayload = (overrides: Record<string, unknown> = {}): Record<string, unknown> => ({
+	number: 4318,
+	state: "open",
+	head: { sha: HEAD, ref: "build/4312-editor-focus-loss-c1a4d6f8" },
+	body: `Fixes #${SERVED_ISSUE}\n\n## Deviations\nNone.\n`,
+	changed_files: 3,
+	comments: 0,
+	merged: false,
+	mergeable: true,
+	mergeable_state: "clean",
+	...overrides,
+});
+
+export const pull = (overrides: Record<string, unknown> = {}): HttpReply =>
+	served(pullPayload(overrides));
+
+export interface CommentFixture {
+	readonly id: number;
+	readonly body: string;
+	readonly author?: string;
+	readonly createdAt?: string;
+}
+
+const commentPayload = (rows: ReadonlyArray<CommentFixture>): ReadonlyArray<unknown> =>
+	rows.map((row) => ({
+		id: row.id,
+		body: row.body,
+		user: { login: row.author ?? "agent" },
+		created_at: row.createdAt ?? "2026-08-09T00:00:00Z",
+	}));
+
+/** One paged `issues/<n>/comments` response. */
+export const comments = (...rows: ReadonlyArray<CommentFixture>): HttpReply =>
+	served(commentPayload(rows));
+
+/**
+ * The same response, cut off before its last comment closes — a 200 whose bytes are not the list
+ * they claim to be, and the read a claim must never resolve ownership from.
+ */
+export const truncatedComments = (...rows: ReadonlyArray<CommentFixture>): HttpReply => {
+	const whole = JSON.stringify(commentPayload(rows));
+	return { status: 200, body: whole.slice(0, whole.lastIndexOf("}")) };
+};
+
+/**
+ * Every `blocked_by` edge list answering empty — the unblocked board, for a test about some other
+ * axis.
+ *
+ * The fakes resolve by first match, so this belongs LAST in a script: a test that scripts a
+ * specific issue's edges wins over it. Without it every claim and every pool candidate reads an
+ * unscripted request, and the blockedness gate correctly seats that as UNKNOWN.
+ */
+export const NO_BLOCKERS: readonly [RegExp, HttpReply] = [
+	/GET .*\/issues\/\d+\/dependencies\/blocked_by/,
+	served([]),
+];
+
+/**
+ * A repository that links no project, so it keeps no table and `build pick` ranks in its own order.
+ *
+ * Every GraphQL request gets this answer, so it belongs LAST in a script beside {@link NO_BLOCKERS}.
+ * Without it every pick reads an unscripted request and refuses the pool on `11`.
+ */
+export const NO_TABLE: readonly [RegExp, HttpReply] = [
+	/^POST https:\/\/api\.github\.com\/graphql/,
+	served({
+		data: {
+			repository: {
+				id: "R_repo",
+				owner: { id: "O_o", login: "o" },
+				projectsV2: { pageInfo: { hasNextPage: false, endCursor: null }, nodes: [] },
+			},
+		},
+	}),
+];
+
+/** The control-plane roster's two reads: the repository (for its default branch), then CODEOWNERS on it. */
+export const TRUNK_READ = /^GET \S+\/repos\/o\/r$/;
+export const CODEOWNERS_READ = /contents\/\.github\/CODEOWNERS\?ref=main$/;
+
+/** `.github/CODEOWNERS` on `main`, naming these owners on one row; none is an empty file. */
+export const codeownersNaming = (...owners: ReadonlyArray<string>): HttpReply => ({
+	status: 200,
+	body: owners.length === 0 ? "" : `/.github/ ${owners.join(" ")}\n`,
+});
+
+/** A control plane of one account, `@usirin` — who may clear a round, and whose grant counts. */
+export const CP_ROSTER: ReadonlyArray<readonly [RegExp, HttpReply]> = [
+	[TRUNK_READ, served({ default_branch: "main" })],
+	[CODEOWNERS_READ, codeownersNaming("@usirin")],
+];
+
+/** The same edge list, naming one blocker — pair it with that blocker's own `issues/<n>` read. */
+export const blockedBy = (...blockers: ReadonlyArray<number>): HttpReply =>
+	served(blockers.map((number) => ({ number, state: "open" })));
+
+/**
+ * A body carrying the conforming block — what a triaged, agent-ready issue looks like.
+ *
+ * Both {@link issue} and {@link candidates} default to it, because the admission test's criteria axis
+ * reads the body at the pool AND at the claim seam: a fixture omitting the block is refused,
+ * so every caller not testing that axis would otherwise have to restate it.
+ */
+export const CRITERIA_BODY =
+	"## Summary\n\ns\n\n### Acceptance criteria\n\n- [ ] the one criterion\n";
+
+export interface CandidateFixture {
+	readonly number: number;
+	readonly title?: string;
+	readonly labels: ReadonlyArray<string>;
+	readonly assignees?: ReadonlyArray<string>;
+	readonly milestone?: number | null;
+	readonly pull?: boolean;
+	readonly body?: string;
+}
+
+/**
+ * One paged `issues?labels=…` response, as the candidate pool reads it.
+ *
+ * `body` defaults to {@link CRITERIA_BODY} because the pool's criteria axis reads it: a row that
+ * omitted it would be excluded, so every caller not testing that axis would have to restate the
+ * block. Pass `body: ""` for an issue with no contract.
+ */
+export const candidates = (
+	...rows: ReadonlyArray<CandidateFixture>
+): ReadonlyArray<Record<string, unknown>> =>
+	rows.map((row) => ({
+		number: row.number,
+		title: row.title ?? `issue ${row.number}`,
+		body: row.body ?? CRITERIA_BODY,
+		labels: row.labels.map((name) => ({ name })),
+		assignees: (row.assignees ?? []).map((login) => ({ login })),
+		milestone:
+			row.milestone === undefined || row.milestone === null ? null : { number: row.milestone },
+		...(row.pull === true ? { pull_request: { url: "…" } } : {}),
+	}));
+
+/** The same rows as one served page — what a test scripts the pool's read with. */
+export const candidatePage = (...rows: ReadonlyArray<CandidateFixture>): HttpReply =>
+	served(candidates(...rows));
+
+/** A `ROADMAP.md` whose `## Campaigns` table marks these milestones `active`. */
+export const campaignsTable = (milestones: number | ReadonlyArray<number>): string => {
+	const rows = (typeof milestones === "number" ? [milestones] : milestones)
+		.map((milestone) => `| Campaign ${milestone} | #${milestone} | active |`)
+		.join("\n");
+	return `# Roadmap\n\n## Campaigns\n\n| Campaign | Milestone | State |\n|----------|-----------|-------|\n${rows}\n\n## Arcs\n`;
+};
+
+/** The claim marker body a session posts. */
+export const marker = (session: string, uuid: string): string =>
+	`build-claim: build:${session}:${uuid} · 2026-08-09T00:00:00Z`;
+
+/** The succession marker a successor session posts over a dead one's claim. */
+export const adoptMarker = (
+	adopted: string,
+	session: string,
+	uuid: string,
+	reason = "the driver session died mid-flight",
+): string =>
+	`build-adopt: ${adopted} by build:${session}:${uuid} · 2026-08-09T00:00:00Z · reason: ${reason}`;
+
+export const LANE_UUID = "c1a4d6f8-3b7e-4a19-9c2d-5e8f0a1b2c3d";
+/** The lane nonce `LANE_UUID` confers. */
+export const NONCE = "c1a4d6f8";
+/** The token the fixture lane holds — what it passes as `--token`. */
+export const LANE_TOKEN = `build:s-9f2e:${LANE_UUID}`;
+
+/** A second lane of the SAME session `s-9f2e` — the two-lanes-one-session shape. */
+export const SIBLING_UUID = "7bab0955-616f-4a6a-af6e-71c34b7c68c7";
+export const SIBLING_NONCE = "7bab0955";
+export const SIBLING_TOKEN = `build:s-9f2e:${SIBLING_UUID}`;
+
+/** The presumed-dead session whose claim a successor adopted — the resume-fence shape. */
+export const GONE_UUID = "9f3c7a21-5d44-4e08-b1c2-77aa0f3e91d0";
+export const GONE_NONCE = "9f3c7a21";
+export const GONE_TOKEN = `build:s-gone:${GONE_UUID}`;
+
+/** The session that adopted the gone lane's claim. */
+export const HEIR_UUID = "b2ee7f04-8a19-4d57-93ba-1c5d92e6f7a8";
+export const HEIR_NONCE = "b2ee7f04";
+export const HEIR_TOKEN = `build:s-heir:${HEIR_UUID}`;

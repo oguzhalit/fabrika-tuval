@@ -15,10 +15,10 @@
  * predicate that drifts from the first is worse than either alone.
  */
 
-import type {StdinRead} from "../io/stdin.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
-import {FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {BARE_AT_PATH, EMPTY_STDIN, LEAKED_PATH} from "./codes.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
+import { FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { BARE_AT_PATH, EMPTY_STDIN, LEAKED_PATH } from "./codes.ts";
 
 /** What one verb calls the text it is guarding, so the refusals read as that verb's own. */
 export interface AuthoredSurface {
@@ -31,9 +31,9 @@ export interface AuthoredSurface {
 }
 
 export type Authored =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
 	/** The authored text, and the byte count a scope line reports. */
-	| {readonly _tag: "Text"; readonly text: string; readonly bytes: number};
+	| { readonly _tag: "Text"; readonly text: string; readonly bytes: number };
 
 /**
  * Resolve stdin into authored text, or the refusal that stops the verb.
@@ -72,7 +72,7 @@ export const readAuthored = (surface: AuthoredSurface, read: StdinRead): Authore
 			),
 		};
 	}
-	return {_tag: "Text", text, bytes};
+	return { _tag: "Text", text, bytes };
 };
 
 /**

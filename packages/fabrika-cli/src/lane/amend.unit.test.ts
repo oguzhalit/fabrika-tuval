@@ -1,12 +1,12 @@
 /** The amendment rule: what a re-derived machine may move, and what it may never drop. */
-import {describe, expect, it} from "vitest";
-import {judgeAmendment} from "./amend.ts";
-import {emitMachine} from "./emit.ts";
-import type {LogEntry} from "./fold.ts";
-import {type CompiledLane, compileText} from "./machine.ts";
+import { describe, expect, it } from "vitest";
+import { judgeAmendment } from "./amend.ts";
+import { emitMachine } from "./emit.ts";
+import type { LogEntry } from "./fold.ts";
+import { type CompiledLane, compileText } from "./machine.ts";
 
 const links = (...numbers: ReadonlyArray<number>) =>
-	numbers.map((number) => ({number, state: "open" as const, stateReason: null, classes: []}));
+	numbers.map((number) => ({ number, state: "open" as const, stateReason: null, classes: [] }));
 
 const bodyOf = (...lines: ReadonlyArray<string>): string =>
 	["## Dependencies", "", ...lines].join("\n");
@@ -37,7 +37,7 @@ describe("judgeAmendment", () => {
 
 		const verdict = judgeAmendment(current, candidate, [line("issue_901", "WIP", AT(1))]);
 
-		expect(verdict).toMatchObject({_tag: "Amendable", added: ["issue_903"], dropped: []});
+		expect(verdict).toMatchObject({ _tag: "Amendable", added: ["issue_903"], dropped: [] });
 		expect(candidate.tasks.issue_903?.initial.type).toBe("queued");
 	});
 
@@ -47,7 +47,7 @@ describe("judgeAmendment", () => {
 
 		const verdict = judgeAmendment(current, candidate, [line("issue_901", "WIP", AT(1))]);
 
-		expect(verdict).toMatchObject({_tag: "Amendable", added: [], dropped: []});
+		expect(verdict).toMatchObject({ _tag: "Amendable", added: [], dropped: [] });
 	});
 
 	it("accepts dropping a task that never started", () => {
@@ -56,7 +56,7 @@ describe("judgeAmendment", () => {
 
 		const verdict = judgeAmendment(current, candidate, [line("issue_901", "WIP", AT(1))]);
 
-		expect(verdict).toMatchObject({_tag: "Amendable", dropped: ["issue_902"]});
+		expect(verdict).toMatchObject({ _tag: "Amendable", dropped: ["issue_902"] });
 	});
 
 	it("refuses dropping a task the log records as landed, naming the final it landed in", () => {
@@ -73,7 +73,7 @@ describe("judgeAmendment", () => {
 
 		expect(verdict).toEqual({
 			_tag: "DropsLanded",
-			landed: [{task: "issue_902", state: "landed"}],
+			landed: [{ task: "issue_902", state: "landed" }],
 		});
 	});
 
@@ -96,8 +96,8 @@ describe("judgeAmendment", () => {
 		// The board closed the second child as completed since emission, so its region now BOOTS in
 		// `landed` — a final holding no `WIP` cell, which is the leaf its own recorded log cannot reach.
 		const emitted = emitMachine(900, ONE_PHASE, [
-			{number: 901, state: "open", stateReason: null, classes: []},
-			{number: 902, state: "closed", stateReason: "completed", classes: []},
+			{ number: 901, state: "open", stateReason: null, classes: [] },
+			{ number: 902, state: "closed", stateReason: "completed", classes: [] },
 		]);
 		if (emitted._tag !== "Emitted") throw new Error("fixture did not emit");
 		const compiled = compileText(emitted.text);
@@ -106,7 +106,9 @@ describe("judgeAmendment", () => {
 		const verdict = judgeAmendment(current, compiled.lane, [line("issue_902", "WIP", AT(1))]);
 
 		expect(verdict._tag).toBe("Unreachable");
-		expect((verdict as {reasons: ReadonlyArray<string>}).reasons.join(" ")).toContain("issue_902");
+		expect((verdict as { reasons: ReadonlyArray<string> }).reasons.join(" ")).toContain(
+			"issue_902",
+		);
 	});
 
 	it("refuses a lane whose own log already does not replay through the machine it runs", () => {
@@ -125,7 +127,7 @@ describe("judgeAmendment with a named deferral", () => {
 		const candidate = machineOf(bodyOf("- phase 1: #901"), [901, 902]);
 		const log = [line("issue_901", "WIP", AT(1)), line("issue_902", "BLOCKED", AT(2))];
 
-		expect(judgeAmendment(current, candidate, log)).toMatchObject({_tag: "Unreachable"});
+		expect(judgeAmendment(current, candidate, log)).toMatchObject({ _tag: "Unreachable" });
 		expect(judgeAmendment(current, candidate, log, ["issue_902"])).toMatchObject({
 			_tag: "Amendable",
 			dropped: ["issue_902"],
@@ -140,7 +142,7 @@ describe("judgeAmendment with a named deferral", () => {
 
 		const verdict = judgeAmendment(current, candidate, log, ["issue_902"]);
 
-		expect(verdict).toMatchObject({_tag: "Unreachable"});
+		expect(verdict).toMatchObject({ _tag: "Unreachable" });
 		expect(verdict._tag === "Unreachable" && verdict.reasons).toEqual([
 			'task "issue_903" carries recorded history and the new topology places it in no phase',
 		]);
@@ -172,7 +174,7 @@ describe("judgeAmendment with a named deferral", () => {
 			["issue_999"],
 		);
 
-		expect(verdict).toMatchObject({_tag: "DeferralRefused"});
+		expect(verdict).toMatchObject({ _tag: "DeferralRefused" });
 		expect(verdict._tag === "DeferralRefused" && verdict.reasons[0]).toContain(
 			"this lane's machine holds no such task",
 		);
@@ -189,7 +191,7 @@ describe("judgeAmendment with a named deferral", () => {
 			["issue_902"],
 		);
 
-		expect(verdict).toMatchObject({_tag: "DeferralRefused"});
+		expect(verdict).toMatchObject({ _tag: "DeferralRefused" });
 		expect(verdict._tag === "DeferralRefused" && verdict.reasons[0]).toContain(
 			"still places it in a phase",
 		);
@@ -206,7 +208,7 @@ describe("judgeAmendment with a named deferral", () => {
 			["issue_902"],
 		);
 
-		expect(verdict).toMatchObject({_tag: "DeferralRefused"});
+		expect(verdict).toMatchObject({ _tag: "DeferralRefused" });
 		expect(verdict._tag === "DeferralRefused" && verdict.reasons[0]).toContain(
 			"carries no recorded history",
 		);
@@ -219,7 +221,7 @@ describe("judgeAmendment with a named deferral", () => {
 
 		const verdict = judgeAmendment(current, candidate, log, ["issue_902"]);
 
-		expect(verdict).toMatchObject({_tag: "Amendable", tasks: ["issue_901", "epic_900"]});
+		expect(verdict).toMatchObject({ _tag: "Amendable", tasks: ["issue_901", "epic_900"] });
 	});
 });
 
@@ -233,7 +235,7 @@ describe("judgeAmendment after an earlier amendment deferred a task", () => {
 			event: "EPIC_900.AMENDED",
 			at: AT(3),
 			tasks: ["issue_901", "issue_903", "epic_900"],
-			defers: [{task: "issue_902", through: AT(2), reason: REASON}],
+			defers: [{ task: "issue_902", through: AT(2), reason: REASON }],
 		},
 		...later,
 	];

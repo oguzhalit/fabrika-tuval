@@ -6,9 +6,9 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9834
  */
-import {Effect, type FileSystem} from "effect";
-import {readFile} from "../io/fs.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, type FileSystem } from "effect";
+import { readFile } from "../io/fs.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	type Chunk,
 	mergeChunks,
@@ -116,7 +116,7 @@ export const runAuditMerge = (
 				const counts = verdictCounts(merged.rows);
 				const summary = `${VERB}: merged ${merged.rows.length} rows from ${chunks.length} chunk(s) over ${input.length} audited issues — ${counts.KILL} KILL, ${counts.DECIDE} DECIDE, ${counts.KEEP} KEEP.`;
 				return options.json
-					? answer(JSON.stringify({outcome: "merged", rows: merged.rows, counts}), [summary])
+					? answer(JSON.stringify({ outcome: "merged", rows: merged.rows, counts }), [summary])
 					: answer(["merged", ...merged.rows.map(rowLine)].join("\n"), [summary]);
 			}
 		}

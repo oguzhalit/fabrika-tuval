@@ -27,10 +27,10 @@
  * half adds only the judged paths, which is what lets a later state be asked the same question.
  */
 
-import {createHash} from "node:crypto";
-import {Effect} from "effect";
-import {type Attempt, type CommitRange, diffRangeRaw, fail, ok, type Shell} from "../io/git.ts";
-import type {NonEmptyReadonlyArray} from "../wire/format.ts";
+import { createHash } from "node:crypto";
+import { Effect } from "effect";
+import { type Attempt, type CommitRange, diffRangeRaw, fail, ok, type Shell } from "../io/git.ts";
+import type { NonEmptyReadonlyArray } from "../wire/format.ts";
 
 /** One `git diff --raw` record: a changed path with both endpoints of its change. */
 export interface ChangedRecord {
@@ -134,7 +134,7 @@ const recordsAt = (
  */
 export const contentDigestAt = (base: string, head: string): Shell<Attempt<string>> =>
 	Effect.gen(function* () {
-		const parsed = yield* recordsAt({base, tip: head});
+		const parsed = yield* recordsAt({ base, tip: head });
 		if (parsed._tag === "Failure") return parsed;
 		return parsed.value.length === 0
 			? fail(`${base}...${head} changes no path — an empty range digests to nothing`)
@@ -175,7 +175,7 @@ export const rangeContentAt = (range: CommitRange): Shell<Attempt<RangeContent>>
 		const [first, ...rest] = paths;
 		return first === undefined
 			? fail(`${range.base}...${range.tip} changes no path — an empty range digests to nothing`)
-			: ok({digest: contentDigest(parsed.value), paths: [first, ...rest] as const});
+			: ok({ digest: contentDigest(parsed.value), paths: [first, ...rest] as const });
 	});
 
 /**
@@ -187,9 +187,9 @@ export const rangeContentAt = (range: CommitRange): Shell<Attempt<RangeContent>>
  * checkout, which is the one thing an operator reading the refusal needs told apart.
  */
 export type Derivation =
-	| {readonly _tag: "Digest"; readonly digest: string}
-	| {readonly _tag: "Unchanged"}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Digest"; readonly digest: string }
+	| { readonly _tag: "Unchanged" }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /**
  * The judged content re-derived from `state` — `<base>...<state>` limited to the judged paths.
@@ -205,11 +205,11 @@ export const rangeDigestOnto = (
 	paths: NonEmptyReadonlyArray<string>,
 ): Shell<Derivation> =>
 	Effect.gen(function* () {
-		const parsed = yield* recordsAt({base, tip: state}, paths);
-		if (parsed._tag === "Failure") return {_tag: "Unreadable" as const, reason: parsed.reason};
+		const parsed = yield* recordsAt({ base, tip: state }, paths);
+		if (parsed._tag === "Failure") return { _tag: "Unreadable" as const, reason: parsed.reason };
 		return parsed.value.length === 0
-			? {_tag: "Unchanged" as const}
-			: {_tag: "Digest" as const, digest: contentDigest(parsed.value)};
+			? { _tag: "Unchanged" as const }
+			: { _tag: "Digest" as const, digest: contentDigest(parsed.value) };
 	});
 
 /**
@@ -226,11 +226,14 @@ export const rangeDigestOnto = (
  * is `Unbindable`, never `Current` and never `Stale`.
  */
 export type RangeBinding =
-	| {readonly _tag: "Current"; readonly digest: string}
-	| {readonly _tag: "Stale"; readonly claimed: string; readonly found: string | null}
-	| {readonly _tag: "Unbindable"; readonly reason: string};
+	| { readonly _tag: "Current"; readonly digest: string }
+	| { readonly _tag: "Stale"; readonly claimed: string; readonly found: string | null }
+	| { readonly _tag: "Unbindable"; readonly reason: string };
 
-export const bindRange = (claim: {readonly content: string}, derived: Derivation): RangeBinding => {
+export const bindRange = (
+	claim: { readonly content: string },
+	derived: Derivation,
+): RangeBinding => {
 	if (!CONTENT_DIGEST_RE.test(claim.content)) {
 		return {
 			_tag: "Unbindable",
@@ -244,9 +247,9 @@ export const bindRange = (claim: {readonly content: string}, derived: Derivation
 		};
 	}
 	if (derived._tag === "Unchanged") {
-		return {_tag: "Stale", claimed: claim.content, found: null};
+		return { _tag: "Stale", claimed: claim.content, found: null };
 	}
 	return derived.digest === claim.content
-		? {_tag: "Current", digest: derived.digest}
-		: {_tag: "Stale", claimed: claim.content, found: derived.digest};
+		? { _tag: "Current", digest: derived.digest }
+		: { _tag: "Stale", claimed: claim.content, found: derived.digest };
 };

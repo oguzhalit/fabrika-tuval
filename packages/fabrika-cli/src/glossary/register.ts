@@ -93,8 +93,8 @@ export interface ParsedRegister {
 }
 
 export type ParseResult =
-	| {readonly _tag: "Parsed"; readonly value: ParsedRegister}
-	| {readonly _tag: "Malformed"; readonly reason: string};
+	| { readonly _tag: "Parsed"; readonly value: ParsedRegister }
+	| { readonly _tag: "Malformed"; readonly reason: string };
 
 /**
  * A heading the section list is read from. The space after the hashes is required by the markdown
@@ -171,7 +171,7 @@ export const parseRegister = (text: string): ParseResult => {
 		const line = lines[i] as string;
 		const heading = SECTION_HEADING.exec(line);
 		if (heading !== null) {
-			if (current !== null) sections.push({...current, rows: current.rows});
+			if (current !== null) sections.push({ ...current, rows: current.rows });
 			headings += 1;
 			current = {
 				name: (heading[1] as string).trim(),
@@ -183,7 +183,7 @@ export const parseRegister = (text: string): ParseResult => {
 			continue;
 		}
 		if (ANY_HEADING.test(line)) {
-			if (current !== null) sections.push({...current, rows: current.rows});
+			if (current !== null) sections.push({ ...current, rows: current.rows });
 			current = null;
 			inTable = false;
 			continue;
@@ -220,9 +220,9 @@ export const parseRegister = (text: string): ParseResult => {
 		if (current === null) orphanRows += 1;
 		else current.rows.push(row);
 	}
-	if (current !== null) sections.push({...current, rows: current.rows});
+	if (current !== null) sections.push({ ...current, rows: current.rows });
 
-	return {_tag: "Parsed", value: {sections, rows, orphanRows, headings}};
+	return { _tag: "Parsed", value: { sections, rows, orphanRows, headings } };
 };
 
 /** A cell's text as one line: newlines become single spaces, so a row cannot grow a line. */

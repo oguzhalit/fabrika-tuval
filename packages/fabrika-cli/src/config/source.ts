@@ -14,10 +14,10 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9020#issuecomment-5625285600
  */
 
-import {Effect, type FileSystem, Result} from "effect";
-import {exists, readFile} from "../io/fs.ts";
-import {CONFIG_PATH, type ConfigSource, LOCAL_CONFIG_PATH} from "./document.ts";
-import type {ConfigLayers} from "./load.ts";
+import { Effect, type FileSystem, Result } from "effect";
+import { exists, readFile } from "../io/fs.ts";
+import { CONFIG_PATH, type ConfigSource, LOCAL_CONFIG_PATH } from "./document.ts";
+import type { ConfigLayers } from "./load.ts";
 
 const readSourceAt = (
 	root: string,
@@ -27,13 +27,13 @@ const readSourceAt = (
 		const path = `${root}/${name}`;
 		const probe = yield* Effect.result(exists(path));
 		if (Result.isFailure(probe)) {
-			return {_tag: "Unreadable" as const, reason: `${path}: ${probe.failure.reason}`};
+			return { _tag: "Unreadable" as const, reason: `${path}: ${probe.failure.reason}` };
 		}
-		if (!probe.success) return {_tag: "Absent" as const};
+		if (!probe.success) return { _tag: "Absent" as const };
 		const text = yield* Effect.result(readFile(path));
 		return Result.isFailure(text)
-			? {_tag: "Unreadable" as const, reason: `${path}: ${text.failure.reason}`}
-			: {_tag: "Text" as const, text: text.success};
+			? { _tag: "Unreadable" as const, reason: `${path}: ${text.failure.reason}` }
+			: { _tag: "Text" as const, text: text.success };
 	});
 
 /** The tracked config file as it sits under `root`. Never fails: an unreadable file is an arm. */

@@ -6,17 +6,17 @@
  * See `guard roadmap-guard check --help` for results and exit codes.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {CONFIG_PATH} from "../config/document.ts";
-import {SHIPPED_ROADMAP_FILE} from "../config/keys/paths.ts";
-import {readRoadmapFile} from "../config/paths.ts";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {type ReadFailed, readFile} from "../io/fs.ts";
-import {listMilestones, resolveRepo} from "../io/issues.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {atFile} from "./annotate.ts";
-import {judge, parseRoadmap, renderReport, VERB} from "./roadmap.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { CONFIG_PATH } from "../config/document.ts";
+import { SHIPPED_ROADMAP_FILE } from "../config/keys/paths.ts";
+import { readRoadmapFile } from "../config/paths.ts";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { type ReadFailed, readFile } from "../io/fs.ts";
+import { listMilestones, resolveRepo } from "../io/issues.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { atFile } from "./annotate.ts";
+import { judge, parseRoadmap, renderReport, VERB } from "./roadmap.ts";
 import {
 	annotationsOrNone,
 	clean,
@@ -111,7 +111,7 @@ export const runRoadmapGuard = (
 			);
 		}
 
-		const {arcs, campaigns} = parseRoadmap(md);
+		const { arcs, campaigns } = parseRoadmap(md);
 		const verdict = judge(arcs, campaigns, listed.value);
 		const report = renderReport(verdict);
 		if (verdict.pass) {

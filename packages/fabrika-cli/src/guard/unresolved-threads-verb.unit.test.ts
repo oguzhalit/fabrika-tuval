@@ -1,10 +1,10 @@
-import {Effect} from "effect";
-import {afterEach, beforeEach, describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {comments, ENV, pull, pullAsIssue, threadPage} from "../ship/fixtures.test-support.ts";
-import {PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE} from "./codes.ts";
-import {runUnresolvedThreadsGuard} from "./unresolved-threads-verb.ts";
+import { Effect } from "effect";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { comments, ENV, pull, pullAsIssue, threadPage } from "../ship/fixtures.test-support.ts";
+import { PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE } from "./codes.ts";
+import { runUnresolvedThreadsGuard } from "./unresolved-threads-verb.ts";
 
 const PULL = /^GET .*\/repos\/o\/r\/pulls\/4321$/;
 const GRAPHQL = /^POST https:\/\/api\.github\.com\/graphql$/;
@@ -14,19 +14,19 @@ const ISSUE = /^GET .*\/repos\/o\/r\/issues\/4321$/;
 const ACL = /^GET .*\/repos\/o\/r\/collaborators\/[^ /]+\/permission/;
 
 /** A fixture's canned JSON, served as the 200 the read now parses. */
-const served = (page: ExecResult): HttpReply => ({status: 200, body: page.stdout});
+const served = (page: ExecResult): HttpReply => ({ status: 200, body: page.stdout });
 
 /** One collaborator's repository permission, in the record the ACL read parses. */
 const permission = (level: string): HttpReply => ({
 	status: 200,
-	body: JSON.stringify({permission: level}),
+	body: JSON.stringify({ permission: level }),
 });
 
 const write = permission("write");
 const readOnly = permission("read");
-const BAD_GATEWAY: HttpReply = {status: 502, body: '{"message":"Bad gateway"}'};
+const BAD_GATEWAY: HttpReply = { status: 502, body: '{"message":"Bad gateway"}' };
 
-const options = {pr: 4321, repo: null, env: ENV};
+const options = { pr: 4321, repo: null, env: ENV };
 
 /**
  * The countless issue read, appended behind every script so no test must know the read happens.
@@ -39,7 +39,7 @@ const COUNTLESS: Scripted = [ISSUE, served(pullAsIssue())];
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
 		Effect.provide(
-			runUnresolvedThreadsGuard({...options, ...overrides}),
+			runUnresolvedThreadsGuard({ ...options, ...overrides }),
 			fakeSeams([...script, COUNTLESS]).layer,
 		),
 	);
@@ -110,7 +110,7 @@ describe("runUnresolvedThreadsGuard", () => {
 	it("REDS the core shape: a live thread the authorized PASS never names", async () => {
 		const out = await run([
 			[PULL, served(pull())],
-			[COMMENTS, served(comments({id: 1, body: PASS_NO_ACCOUNTING, author: "reviewer"}))],
+			[COMMENTS, served(comments({ id: 1, body: PASS_NO_ACCOUNTING, author: "reviewer" }))],
 			[ACL, write],
 			[GRAPHQL, codeqlPage()],
 		]);
@@ -125,7 +125,7 @@ describe("runUnresolvedThreadsGuard", () => {
 	it("passes when the authorized verdict names the site — polarity-blind", async () => {
 		const out = await run([
 			[PULL, served(pull())],
-			[COMMENTS, served(comments({id: 1, body: PASS_ACCOUNTED, author: "reviewer"}))],
+			[COMMENTS, served(comments({ id: 1, body: PASS_ACCOUNTED, author: "reviewer" }))],
 			[ACL, write],
 			[GRAPHQL, codeqlPage()],
 		]);
@@ -160,7 +160,7 @@ describe("runUnresolvedThreadsGuard", () => {
 	it("REDS when the verdict's author holds no write+ permission — a forged marker accounts for nothing", async () => {
 		const out = await run([
 			[PULL, served(pull())],
-			[COMMENTS, served(comments({id: 1, body: PASS_ACCOUNTED, author: "drive-by"}))],
+			[COMMENTS, served(comments({ id: 1, body: PASS_ACCOUNTED, author: "drive-by" }))],
 			[ACL, readOnly],
 			[GRAPHQL, codeqlPage()],
 		]);
@@ -171,7 +171,7 @@ describe("runUnresolvedThreadsGuard", () => {
 	it("REDS when the ACL itself is unreadable — the marker is dropped, never trusted", async () => {
 		const out = await run([
 			[PULL, served(pull())],
-			[COMMENTS, served(comments({id: 1, body: PASS_ACCOUNTED, author: "reviewer"}))],
+			[COMMENTS, served(comments({ id: 1, body: PASS_ACCOUNTED, author: "reviewer" }))],
 			[ACL, BAD_GATEWAY],
 			[GRAPHQL, codeqlPage()],
 		]);
@@ -185,7 +185,7 @@ describe("runUnresolvedThreadsGuard", () => {
 				COMMENTS,
 				served(
 					comments(
-						{id: 1, body: PASS_ACCOUNTED, author: "reviewer", updatedAt: "2026-08-08T00:00:00Z"},
+						{ id: 1, body: PASS_ACCOUNTED, author: "reviewer", updatedAt: "2026-08-08T00:00:00Z" },
 						{
 							id: 2,
 							body: PASS_NO_ACCOUNTING,
@@ -250,8 +250,8 @@ describe("runUnresolvedThreadsGuard", () => {
 	it("is UNKNOWN when the shortfall survives every re-read, naming what it received", async () => {
 		const out = await run([
 			[PULL, served(pull())],
-			[COMMENTS, served(comments({id: 1, body: PASS_ACCOUNTED, author: "reviewer"}))],
-			[ISSUE, served(pullAsIssue({comments: 5}))],
+			[COMMENTS, served(comments({ id: 1, body: PASS_ACCOUNTED, author: "reviewer" }))],
+			[ISSUE, served(pullAsIssue({ comments: 5 }))],
 			[ACL, write],
 			[GRAPHQL, codeqlPage()],
 		]);
@@ -268,12 +268,12 @@ describe("runUnresolvedThreadsGuard", () => {
 		const seams = fakeSeams([
 			// The accounting verdict is the comment the first read misses, so a guard that seated its
 			// answer on that short list would RED here rather than merely answering UNKNOWN.
-			[once(COMMENTS), served(comments({id: 1, body: PASS_NO_ACCOUNTING, author: "reviewer"}))],
+			[once(COMMENTS), served(comments({ id: 1, body: PASS_NO_ACCOUNTING, author: "reviewer" }))],
 			[
 				COMMENTS,
 				served(
 					comments(
-						{id: 1, body: PASS_NO_ACCOUNTING, author: "reviewer"},
+						{ id: 1, body: PASS_NO_ACCOUNTING, author: "reviewer" },
 						{
 							id: 2,
 							body: PASS_ACCOUNTED,
@@ -283,7 +283,7 @@ describe("runUnresolvedThreadsGuard", () => {
 					),
 				),
 			],
-			[ISSUE, served(pullAsIssue({comments: 2}))],
+			[ISSUE, served(pullAsIssue({ comments: 2 }))],
 			[PULL, served(pull())],
 			[ACL, write],
 			[GRAPHQL, codeqlPage()],
@@ -299,12 +299,12 @@ describe("runUnresolvedThreadsGuard", () => {
 	it("is UNKNOWN when the PR read fails, and ZERO SCOPE when the PR is proven absent", async () => {
 		const unreadable = await run([[PULL, BAD_GATEWAY]]);
 		expect(unreadable.code).toBe(PRECONDITION_UNKNOWN);
-		const missing = await run([[PULL, {status: 404, body: '{"message":"Not Found"}'}]]);
+		const missing = await run([[PULL, { status: 404, body: '{"message":"Not Found"}' }]]);
 		expect(missing.code).toBe(ZERO_SCOPE);
 	});
 
 	it("refuses a non-PR number as usage, not as a verdict", async () => {
-		const out = await run([], {pr: 0});
+		const out = await run([], { pr: 0 });
 		expect(out.code).toBe(1);
 	});
 
@@ -312,11 +312,11 @@ describe("runUnresolvedThreadsGuard", () => {
 		const out = await run(
 			[
 				[PULL, served(pull())],
-				[COMMENTS, served(comments({id: 1, body: PASS_NO_ACCOUNTING, author: "reviewer"}))],
+				[COMMENTS, served(comments({ id: 1, body: PASS_NO_ACCOUNTING, author: "reviewer" }))],
 				[ACL, write],
 				[GRAPHQL, codeqlPage()],
 			],
-			{env: {...ENV, GITHUB_ACTIONS: "true"}},
+			{ env: { ...ENV, GITHUB_ACTIONS: "true" } },
 		);
 		expect(out.stderr.some((line) => line.startsWith("::error file="))).toBe(true);
 		expect(out.stderr.join("\n")).toContain(

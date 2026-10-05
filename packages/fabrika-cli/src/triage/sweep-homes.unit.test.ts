@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import type {TriagedIssue} from "../guard/homing.ts";
+import { describe, expect, it } from "vitest";
+import type { TriagedIssue } from "../guard/homing.ts";
 import {
 	type DoubleMarked,
 	hasTrail,
@@ -43,7 +43,7 @@ describe("planSweep", () => {
 			homed: 1,
 			exempt: 1,
 			clears: [
-				{kind: "double-marked", number: 3, title: "issue 3", milestone: 17, lanes: [LANE]},
+				{ kind: "double-marked", number: 3, title: "issue 3", milestone: 17, lanes: [LANE] },
 				{
 					kind: "double-marked",
 					number: 5,
@@ -52,7 +52,7 @@ describe("planSweep", () => {
 					lanes: ["wayfinder:backlog"],
 				},
 			],
-			unhomed: [{kind: "unhomed", number: 4, title: "issue 4"}],
+			unhomed: [{ kind: "unhomed", number: 4, title: "issue 4" }],
 		});
 	});
 

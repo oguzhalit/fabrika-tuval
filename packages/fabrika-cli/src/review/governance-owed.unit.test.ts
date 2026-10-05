@@ -1,9 +1,9 @@
-import {describe, expect, it} from "vitest";
-import type {CheckRun} from "../io/pulls.ts";
-import {planFor} from "../ship/floor-check.ts";
-import type {FloorResolution} from "../ship/floor-verb.ts";
-import type {WorkflowRun} from "../ship/github.ts";
-import {governanceOwed, governanceStale, staleFloorIsTheOnlyRed} from "./governance-owed.ts";
+import { describe, expect, it } from "vitest";
+import type { CheckRun } from "../io/pulls.ts";
+import { planFor } from "../ship/floor-check.ts";
+import type { FloorResolution } from "../ship/floor-verb.ts";
+import type { WorkflowRun } from "../ship/github.ts";
+import { governanceOwed, governanceStale, staleFloorIsTheOnlyRed } from "./governance-owed.ts";
 
 const check = (name: string, status: string): CheckRun => ({
 	name,
@@ -88,7 +88,7 @@ const bound = (state: string): FloorResolution => ({
 const STALE = floorConcluded(publishedTitle(bound("stale")));
 const FAILED_VERDICT = floorConcluded(publishedTitle(bound("fail")));
 const UNRESOLVED = floorConcluded(
-	publishedTitle({_tag: "Unresolved", outcome: {code: 11, stdout: "", stderr: ["unreadable"]}}),
+	publishedTitle({ _tag: "Unresolved", outcome: { code: 11, stdout: "", stderr: ["unreadable"] } }),
 );
 const RED_SUITE: CheckRun = {
 	name: "unit tests",

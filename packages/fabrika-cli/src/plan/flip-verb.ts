@@ -29,24 +29,24 @@
  *    reported as pickable.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {requireCallerToken, requireClaim, requireSession} from "../build/claim.ts";
-import {badNumber, resolveTargetRepo} from "../build/target.ts";
-import type {StatusNames} from "../config/board.ts";
-import {cycleDocOr} from "../config/paths.ts";
-import {type ReasonHistogram, reasonHistogram} from "../evidence.ts";
-import {addLabels, getIssue, listLabels, removeLabel} from "../io/issues.ts";
-import {missingLabelRemedy} from "../status/label-remedy.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { requireCallerToken, requireClaim, requireSession } from "../build/claim.ts";
+import { badNumber, resolveTargetRepo } from "../build/target.ts";
+import type { StatusNames } from "../config/board.ts";
+import { cycleDocOr } from "../config/paths.ts";
+import { type ReasonHistogram, reasonHistogram } from "../evidence.ts";
+import { addLabels, getIssue, listLabels, removeLabel } from "../io/issues.ts";
+import { missingLabelRemedy } from "../status/label-remedy.ts";
 import {
 	audienceSettled,
 	audienceWrites,
 	READY_FOR_AGENT,
 	READY_FOR_HUMAN,
 } from "../triage/audience.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {requireApproval} from "./approval.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { requireApproval } from "./approval.ts";
 import {
 	FLOOR_DEFECTIVE,
 	LABEL_ABSENT,
@@ -56,8 +56,8 @@ import {
 	PRECONDITION_UNKNOWN,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {DIGEST_RE, flipLabels} from "./digest.ts";
-import {getChild} from "./github.ts";
+import { DIGEST_RE, flipLabels } from "./digest.ts";
+import { getChild } from "./github.ts";
 import {
 	deriveFloorFor,
 	FAN_OUT,
@@ -91,7 +91,7 @@ export type FlipResult = "flipped" | "already" | "unchanged" | "not-planned";
  */
 export type AudienceResult = "flipped" | "already" | "unchanged";
 
-export {audienceSettled, audienceWrites} from "../triage/audience.ts";
+export { audienceSettled, audienceWrites } from "../triage/audience.ts";
 
 export interface FlipOptions {
 	readonly number: number;
@@ -108,7 +108,7 @@ export interface FlipOptions {
 export const classify = (
 	before: ReadonlyArray<string>,
 	observed: ReadonlyArray<string>,
-	{planned, triaged}: StatusNames,
+	{ planned, triaged }: StatusNames,
 ): FlipResult => {
 	if (!before.includes(planned)) return before.includes(triaged) ? "already" : "not-planned";
 	return observed.includes(triaged) && !observed.includes(planned) ? "flipped" : "unchanged";
@@ -124,8 +124,8 @@ export const classify = (
  * result vocabulary, which is the whole of what the rows carried past that.
  */
 export const childrenEvidence = (
-	rows: ReadonlyArray<{readonly result: FlipResult}>,
-): {readonly count: number; readonly results: ReasonHistogram} => ({
+	rows: ReadonlyArray<{ readonly result: FlipResult }>,
+): { readonly count: number; readonly results: ReasonHistogram } => ({
 	count: rows.length,
 	results: reasonHistogram(rows, (row) => row.result),
 });
@@ -171,7 +171,7 @@ export const runFlip = (
 
 		const board = yield* readBoardVocabulary(MESSAGES, options.cwd);
 		if (board._tag === "Refused") return board.outcome;
-		const {statuses} = board.read.resolved.board;
+		const { statuses } = board.read.resolved.board;
 
 		const cycle = yield* cycleDocOr(
 			VERB,
@@ -261,7 +261,7 @@ export const runFlip = (
 					const removed = yield* removeLabel(repo, child.number, statuses.planned);
 					if (removed._tag === "Ok") writes += 1;
 				}),
-			{concurrency: FAN_OUT, discard: true},
+			{ concurrency: FAN_OUT, discard: true },
 		);
 
 		const reread = yield* Effect.forEach(
@@ -270,10 +270,10 @@ export const runFlip = (
 				getChild(repo, child.number, options.env).pipe(
 					Effect.map((found) => [child, found] as const),
 				),
-			{concurrency: FAN_OUT},
+			{ concurrency: FAN_OUT },
 		);
 
-		const rows: {number: number; observed: ReadonlyArray<string>; result: FlipResult}[] = [];
+		const rows: { number: number; observed: ReadonlyArray<string>; result: FlipResult }[] = [];
 		for (const [child, found] of reread) {
 			if (found._tag !== "Present") {
 				return refuse(
@@ -344,7 +344,7 @@ export const runFlip = (
 				children: childrenEvidence(rows),
 				flipped,
 				already,
-				audience: {result: audienceResult, observed: audienceObserved},
+				audience: { result: audienceResult, observed: audienceObserved },
 			}),
 			notes,
 		);

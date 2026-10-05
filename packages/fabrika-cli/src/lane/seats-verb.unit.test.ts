@@ -5,16 +5,16 @@
  * The claim reader is injected the way `concurrency.unit.test.ts` injects it, so every row states
  * which lanes a driver holds with no board at all.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import {describe, expect, it} from "vitest";
-import type {Read} from "../config/read-key.ts";
-import {fakeFs} from "../fakes.test-support.ts";
-import type {VerbOutcome} from "../verb.ts";
-import type {ClaimHold, ClaimHoldReader} from "./claim-hold.ts";
-import {LANE_UNREADABLE} from "./codes.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
-import {runSeats} from "./seats-verb.ts";
-import {DEFAULT_LANES_ROOT as ROOT} from "./store.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { describe, expect, it } from "vitest";
+import type { Read } from "../config/read-key.ts";
+import { fakeFs } from "../fakes.test-support.ts";
+import type { VerbOutcome } from "../verb.ts";
+import type { ClaimHold, ClaimHoldReader } from "./claim-hold.ts";
+import { LANE_UNREADABLE } from "./codes.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
+import { runSeats } from "./seats-verb.ts";
+import { DEFAULT_LANES_ROOT as ROOT } from "./store.ts";
 
 /** The instant every row measures `retryAfter` from, so the answer reads the same twice over. */
 const NOW = "2026-09-11T00:00:00.000Z";
@@ -28,7 +28,7 @@ const capped = (value: number | null): Read<number | null> => ({
 /** A root listing the given lanes, each holding a freshly booted machine — every one folds `active`. */
 const rootOf = (...lanes: ReadonlyArray<string>) =>
 	fakeFs({
-		dirs: {[ROOT]: [...lanes]},
+		dirs: { [ROOT]: [...lanes] },
 		directories: [ROOT],
 		files: Object.fromEntries(
 			lanes.map((id) => [`${ROOT}/${id}/workflow.json`, coderTemplateText()]),
@@ -41,14 +41,14 @@ const claims = (...held: ReadonlyArray<string>): ClaimHoldReader<never> => {
 	return (lane) =>
 		Effect.succeed(
 			(holders.has(lane)
-				? {_tag: "Claimed", token: `lane:session:${lane}`}
-				: {_tag: "Unclaimed"}) as ClaimHold,
+				? { _tag: "Claimed", token: `lane:session:${lane}` }
+				: { _tag: "Unclaimed" }) as ClaimHold,
 		);
 };
 
 /** The board would not answer for this lane's claim — UNKNOWN, so the seat stays held. */
 const unreadableClaims: ClaimHoldReader<never> = () =>
-	Effect.succeed({_tag: "Unknown", reason: "the API answered 502"});
+	Effect.succeed({ _tag: "Unknown", reason: "the API answered 502" });
 
 const run = (
 	fs: ReturnType<typeof fakeFs>,
@@ -61,7 +61,7 @@ describe("a root holding as many claimed lanes as the cap allows", () => {
 
 		const out = await run(
 			fs,
-			runSeats({root: ROOT, cap: capped(2), now: NOW, claimed: claims("7000", "7001")}),
+			runSeats({ root: ROOT, cap: capped(2), now: NOW, claimed: claims("7000", "7001") }),
 		);
 
 		expect(out.code).toBe(0);
@@ -84,7 +84,7 @@ describe("a root holding as many claimed lanes as the cap allows", () => {
 
 		const out = await run(
 			fs,
-			runSeats({root: ROOT, cap: capped(1), now: NOW, claimed: claims("7000")}),
+			runSeats({ root: ROOT, cap: capped(1), now: NOW, claimed: claims("7000") }),
 		);
 
 		expect(out.stderr.join(" ")).toContain("refused at 51");
@@ -99,7 +99,7 @@ describe("a root under the cap", () => {
 
 		const out = await run(
 			fs,
-			runSeats({root: ROOT, cap: capped(5), now: NOW, claimed: claims("7000")}),
+			runSeats({ root: ROOT, cap: capped(5), now: NOW, claimed: claims("7000") }),
 		);
 
 		expect(out.code).toBe(0);
@@ -121,7 +121,7 @@ describe("a root under the cap", () => {
 
 		const out = await run(
 			fs,
-			runSeats({root: ROOT, cap: capped(5), now: NOW, claimed: unreadableClaims}),
+			runSeats({ root: ROOT, cap: capped(5), now: NOW, claimed: unreadableClaims }),
 		);
 
 		expect(JSON.parse(out.stdout)).toMatchObject({
@@ -140,7 +140,7 @@ describe("a root under the cap", () => {
 
 		const out = await run(
 			fs,
-			runSeats({root: ROOT, cap: capped(null), now: NOW, claimed: claims("7000")}),
+			runSeats({ root: ROOT, cap: capped(null), now: NOW, claimed: claims("7000") }),
 		);
 
 		expect(JSON.parse(out.stdout)).toMatchObject({
@@ -155,18 +155,24 @@ describe("a root under the cap", () => {
 	it("answers free over a root that is not there at all — an absent root holds no lanes", async () => {
 		const fs = fakeFs({});
 
-		const out = await run(fs, runSeats({root: ROOT, cap: capped(2), now: NOW, claimed: claims()}));
+		const out = await run(
+			fs,
+			runSeats({ root: ROOT, cap: capped(2), now: NOW, claimed: claims() }),
+		);
 
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "free", held: 0, free: 2});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "free", held: 0, free: 2 });
 		expect(fs.written.size).toBe(0);
 	});
 });
 
 describe("a root that cannot be read", () => {
 	it("refuses at 11 with no answer on stdout — the count is UNKNOWN, never free", async () => {
-		const fs = fakeFs({dirs: {[ROOT]: null}, directories: [ROOT]});
+		const fs = fakeFs({ dirs: { [ROOT]: null }, directories: [ROOT] });
 
-		const out = await run(fs, runSeats({root: ROOT, cap: capped(2), now: NOW, claimed: claims()}));
+		const out = await run(
+			fs,
+			runSeats({ root: ROOT, cap: capped(2), now: NOW, claimed: claims() }),
+		);
 
 		expect(out.code).toBe(LANE_UNREADABLE);
 		expect(out.stdout).toBe("");
@@ -181,7 +187,7 @@ describe("a root that cannot be read", () => {
 			fs,
 			runSeats({
 				root: ROOT,
-				cap: {_tag: "Refused", reason: ".fabrika.jsonc is not JSON"},
+				cap: { _tag: "Refused", reason: ".fabrika.jsonc is not JSON" },
 				now: NOW,
 				claimed: claims("7000"),
 			}),

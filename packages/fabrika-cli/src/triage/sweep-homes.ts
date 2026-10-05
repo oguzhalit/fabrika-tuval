@@ -13,10 +13,10 @@
  *
  * IO-free and total; the board reads and writes live in `./sweep-homes-verb.ts`.
  */
-import {judge, resolve, type TriagedIssue, type Violation} from "../guard/homing.ts";
+import { judge, resolve, type TriagedIssue, type Violation } from "../guard/homing.ts";
 
-export type DoubleMarked = Extract<Violation, {readonly kind: "double-marked"}>;
-export type Unhomed = Extract<Violation, {readonly kind: "unhomed"}>;
+export type DoubleMarked = Extract<Violation, { readonly kind: "double-marked" }>;
+export type Unhomed = Extract<Violation, { readonly kind: "unhomed" }>;
 
 /**
  * What the sweep would do over one scanned board. `ZeroScope` carries no counts because there is
@@ -24,7 +24,7 @@ export type Unhomed = Extract<Violation, {readonly kind: "unhomed"}>;
  * refusal and never a plan with zero steps.
  */
 export type SweepPlan =
-	| {readonly _tag: "ZeroScope"}
+	| { readonly _tag: "ZeroScope" }
 	| {
 			readonly _tag: "Planned";
 			readonly scanned: number;
@@ -44,22 +44,22 @@ export const planSweep = (
 	issues: ReadonlyArray<TriagedIssue>,
 	lanes: ReadonlyArray<string>,
 ): SweepPlan => {
-	const verdict = judge(issues, lanes, {_tag: "backlog"});
+	const verdict = judge(issues, lanes, { _tag: "backlog" });
 	if (verdict.pass) {
-		const {scanned, homed, exempt} = verdict;
-		return {_tag: "Planned", scanned, homed, exempt, clears: [], unhomed: []};
+		const { scanned, homed, exempt } = verdict;
+		return { _tag: "Planned", scanned, homed, exempt, clears: [], unhomed: [] };
 	}
 	// The backlog scope never answers `vocabulary-absent` (that fork is the single-issue scope's),
 	// but it is still a scan that resolved to nothing, so it lands with the zero scope.
-	if (verdict.reason !== "violations") return {_tag: "ZeroScope"};
+	if (verdict.reason !== "violations") return { _tag: "ZeroScope" };
 	const clears: DoubleMarked[] = [];
 	const unhomed: Unhomed[] = [];
 	for (const breach of verdict.violations) {
 		if (breach.kind === "double-marked") clears.push(breach);
 		else unhomed.push(breach);
 	}
-	const {scanned, homed, exempt} = verdict;
-	return {_tag: "Planned", scanned, homed, exempt, clears, unhomed};
+	const { scanned, homed, exempt } = verdict;
+	return { _tag: "Planned", scanned, homed, exempt, clears, unhomed };
 };
 
 /**

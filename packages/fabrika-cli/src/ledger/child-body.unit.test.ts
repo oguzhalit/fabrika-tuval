@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import {SHIPPED_CONTAINMENT_VOCABULARY} from "../config/keys/containment-vocabulary.ts";
-import {composeChildBody, normalizeChildBody} from "./child-body.ts";
-import {childBody} from "./fixtures.test-support.ts";
+import { describe, expect, it } from "vitest";
+import { SHIPPED_CONTAINMENT_VOCABULARY } from "../config/keys/containment-vocabulary.ts";
+import { composeChildBody, normalizeChildBody } from "./child-body.ts";
+import { childBody } from "./fixtures.test-support.ts";
 
 const compose = (text: string, cycleDoc: "present" | "absent" | "unknown" = "present") =>
 	composeChildBody({
@@ -57,12 +57,12 @@ describe("composeChildBody", () => {
 	});
 
 	it('reads "none" as an explicit empty story claim', () => {
-		expect(compose(childBody({stories: "none"}))).toMatchObject({stories: []});
+		expect(compose(childBody({ stories: "none" }))).toMatchObject({ stories: [] });
 	});
 
 	/** v1 harvested every digit run, so `1, 3 (see #4021)` silently claimed a story 4021. */
 	it("refuses a **Stories:** value that is not bare integers or none", () => {
-		expect(compose(childBody({stories: "1, 3 (see #4021)"}))).toEqual({
+		expect(compose(childBody({ stories: "1, 3 (see #4021)" }))).toEqual({
 			_tag: "Bad",
 			reason: '**Stories:** value does not conform: "1, 3 (see #4021)" — bare integers or "none".',
 		});
@@ -82,30 +82,30 @@ describe("composeChildBody", () => {
 
 	/** The gate's `MISSING_CONTAINMENT` treats `none` exactly as unset, so admitting it authors a defect. */
 	it("refuses a type:feature child whose containment is none while the cycle doc is present", () => {
-		expect(compose(childBody({containment: "none"}))).toMatchObject({
+		expect(compose(childBody({ containment: "none" }))).toMatchObject({
 			reason: expect.stringContaining("needs **Containment:** flag or exempt"),
 		});
 	});
 
 	it("refuses one whose containment line is missing entirely", () => {
-		expect(compose(childBody({containment: null}))).toMatchObject({
+		expect(compose(childBody({ containment: null }))).toMatchObject({
 			reason: expect.stringContaining("needs **Containment:** flag or exempt"),
 		});
 	});
 
 	it("asks nothing of containment when the cycle doc is absent", () => {
-		expect(compose(childBody({containment: null}), "absent")).toMatchObject({_tag: "Composed"});
+		expect(compose(childBody({ containment: null }), "absent")).toMatchObject({ _tag: "Composed" });
 	});
 
 	it("asks nothing of containment on a child that is not a type:feature", () => {
 		expect(
 			composeChildBody({
-				text: childBody({containment: null}),
+				text: childBody({ containment: null }),
 				vocabulary: SHIPPED_CONTAINMENT_VOCABULARY,
 				cycleDoc: "present",
 				type: "type:chore",
 			}),
-		).toMatchObject({_tag: "Composed"});
+		).toMatchObject({ _tag: "Composed" });
 	});
 
 	it("refuses a duplicated field line — the gate refuses it too", () => {

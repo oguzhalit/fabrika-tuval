@@ -2,8 +2,8 @@
  * The ADR number-lock rule — the duplicate-id and number-mismatch cases from the v1 CLI's
  * `decisions-index.unit.test.ts`, re-seated on a defect list instead of a thrown error.
  */
-import {describe, expect, it} from "vitest";
-import {type DecisionFile, findDefects} from "./decisions-number.ts";
+import { describe, expect, it } from "vitest";
+import { type DecisionFile, findDefects } from "./decisions-number.ts";
 
 const record = (file: string, fields: Readonly<Record<string, string>>): DecisionFile => ({
 	file,
@@ -12,24 +12,24 @@ const record = (file: string, fields: Readonly<Record<string, string>>): Decisio
 		.join("\n")}\n---\n\nbody\n`,
 });
 
-const complete = (id: string) => ({id, title: "A title", status: "accepted", date: "2026-08-18"});
+const complete = (id: string) => ({ id, title: "A title", status: "accepted", date: "2026-08-18" });
 
 describe("findDefects", () => {
 	// The collision class: two branches each mint the same number, each green alone.
 	it("names both files of a duplicate id", () => {
 		expect(
 			findDefects([record("0284-a.md", complete("0284")), record("0284-b.md", complete("0284"))]),
-		).toEqual([{_tag: "DuplicateId", id: "0284", files: ["0284-a.md", "0284-b.md"]}]);
+		).toEqual([{ _tag: "DuplicateId", id: "0284", files: ["0284-a.md", "0284-b.md"] }]);
 	});
 
 	it("reds a filename number that disagrees with the frontmatter id", () => {
 		expect(findDefects([record("0284-a.md", complete("0285"))])).toEqual([
-			{_tag: "NumberMismatch", file: "0284-a.md", filePrefix: "0284", id: "0285"},
+			{ _tag: "NumberMismatch", file: "0284-a.md", filePrefix: "0284", id: "0285" },
 		]);
 	});
 
 	it.each(["id", "title", "status", "date"])("reds a missing %s field", (field) => {
-		const fields = {...complete("0001")} as Record<string, string>;
+		const fields = { ...complete("0001") } as Record<string, string>;
 		delete fields[field];
 		expect(findDefects([record("0001-a.md", fields)])).toContainEqual({
 			_tag: "MissingField",
@@ -39,7 +39,7 @@ describe("findDefects", () => {
 	});
 
 	it("reds an empty field the same as an absent one", () => {
-		expect(findDefects([record("0001-a.md", {...complete("0001"), title: ""})])).toContainEqual({
+		expect(findDefects([record("0001-a.md", { ...complete("0001"), title: "" })])).toContainEqual({
 			_tag: "MissingField",
 			file: "0001-a.md",
 			field: "title",
@@ -62,7 +62,7 @@ describe("findDefects", () => {
 			record("0285-b.md", complete("0284")),
 		]);
 		expect(defects).toEqual([
-			{_tag: "NumberMismatch", file: "0285-b.md", filePrefix: "0285", id: "0284"},
+			{ _tag: "NumberMismatch", file: "0285-b.md", filePrefix: "0285", id: "0284" },
 		]);
 	});
 

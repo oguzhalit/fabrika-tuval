@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import type {CommentRecord} from "../io/issues.ts";
-import {MAP_BODY, parsed} from "./fixtures.test-support.ts";
+import { describe, expect, it } from "vitest";
+import type { CommentRecord } from "../io/issues.ts";
+import { MAP_BODY, parsed } from "./fixtures.test-support.ts";
 import {
 	counts,
 	decisionCites,
@@ -39,20 +39,20 @@ describe("frontierToken", () => {
 	});
 
 	it("is `awaiting-founder` when a decision ticket is open or forked", () => {
-		expect(frontierToken([ticket({state: "open", kind: "decision"})])).toBe("awaiting-founder");
-		expect(frontierToken([ticket({state: "forked", kind: "decision"})])).toBe("awaiting-founder");
+		expect(frontierToken([ticket({ state: "open", kind: "decision" })])).toBe("awaiting-founder");
+		expect(frontierToken([ticket({ state: "forked", kind: "decision" })])).toBe("awaiting-founder");
 	});
 
 	it("is `lanes-pending` for a prototype out at a spike — work in flight is not a question he owes", () => {
-		expect(frontierToken([ticket({state: "forked", kind: "prototype"})])).toBe("lanes-pending");
+		expect(frontierToken([ticket({ state: "forked", kind: "prototype" })])).toBe("lanes-pending");
 	});
 
 	it("is `clear` only when every ticket is terminal", () => {
 		expect(
-			frontierToken([ticket({state: "graduated"}), ticket({number: 9143, state: "retired"})]),
+			frontierToken([ticket({ state: "graduated" }), ticket({ number: 9143, state: "retired" })]),
 		).toBe("clear");
 		expect(
-			frontierToken([ticket({state: "graduated"}), ticket({number: 9143, state: "open"})]),
+			frontierToken([ticket({ state: "graduated" }), ticket({ number: 9143, state: "open" })]),
 		).toBe("lanes-pending");
 	});
 });
@@ -60,8 +60,8 @@ describe("frontierToken", () => {
 describe("counts", () => {
 	it("tallies each state and derives `blocked` separately, so `open` and blocked both survive", () => {
 		const tally = counts([
-			ticket({number: 9142, state: "open"}),
-			ticket({number: 9143, state: "open", blockedBy: [9142]}),
+			ticket({ number: 9142, state: "open" }),
+			ticket({ number: 9143, state: "open", blockedBy: [9142] }),
 		]);
 		expect(tally.open).toBe(2);
 		expect(tally.blocked).toBe(1);
@@ -69,8 +69,8 @@ describe("counts", () => {
 
 	it("does not count a ticket blocked only by a terminal one", () => {
 		const tally = counts([
-			ticket({number: 9142, state: "graduated"}),
-			ticket({number: 9143, state: "open", blockedBy: [9142]}),
+			ticket({ number: 9142, state: "graduated" }),
+			ticket({ number: 9143, state: "open", blockedBy: [9142] }),
 		]);
 		expect(tally.blocked).toBe(0);
 	});
@@ -88,31 +88,36 @@ describe("isTerminal", () => {
 describe("scanTicketMarkers", () => {
 	it("pairs a finding with the lane before it, and a re-lane clears the earlier finding", () => {
 		const scanned = scanTicketMarkers(9140, 9143, [
-			comment(1, composeLaneMarker({map: 9140, ticket: 9143, nonce: "aaaaaaaa"})),
+			comment(1, composeLaneMarker({ map: 9140, ticket: 9143, nonce: "aaaaaaaa" })),
 			comment(
 				2,
-				composeFindingMarker({map: 9140, ticket: 9143, outcome: "unreachable", nonce: "aaaaaaaa"}),
+				composeFindingMarker({
+					map: 9140,
+					ticket: 9143,
+					outcome: "unreachable",
+					nonce: "aaaaaaaa",
+				}),
 			),
-			comment(3, composeLaneMarker({map: 9140, ticket: 9143, nonce: "bbbbbbbb"})),
+			comment(3, composeLaneMarker({ map: 9140, ticket: 9143, nonce: "bbbbbbbb" })),
 		]);
-		expect(scanned.lane).toEqual({nonce: "bbbbbbbb"});
+		expect(scanned.lane).toEqual({ nonce: "bbbbbbbb" });
 		expect(scanned.finding).toBeNull();
 	});
 
 	it("ignores markers naming another map, whatever the sub-issue edge says", () => {
 		const scanned = scanTicketMarkers(9140, 9143, [
-			comment(1, composeLaneMarker({map: 9999, ticket: 9143, nonce: "aaaaaaaa"})),
+			comment(1, composeLaneMarker({ map: 9999, ticket: 9143, nonce: "aaaaaaaa" })),
 		]);
 		expect(scanned.lane).toBeNull();
 	});
 
 	it("reads the fork route and the retirement direction", () => {
 		const scanned = scanTicketMarkers(9140, 9144, [
-			comment(1, composeForkMarker({map: 9140, ticket: 9144, route: "session", issue: 9301})),
-			comment(2, composeRetiredMarker({map: 9140, ticket: 9144, direction: "a decay curve"})),
+			comment(1, composeForkMarker({ map: 9140, ticket: 9144, route: "session", issue: 9301 })),
+			comment(2, composeRetiredMarker({ map: 9140, ticket: 9144, direction: "a decay curve" })),
 		]);
-		expect(scanned.fork).toEqual({route: "session", issue: 9301});
-		expect(scanned.retired).toEqual({direction: "a decay curve"});
+		expect(scanned.fork).toEqual({ route: "session", issue: 9301 });
+		expect(scanned.retired).toEqual({ direction: "a decay curve" });
 	});
 });
 

@@ -16,8 +16,8 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10034#issuecomment-5974043005
  */
 
-import {isRecord} from "../../io/json.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import { isRecord } from "../../io/json.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const SHIP_SCOPE = "shipScope";
 
@@ -31,7 +31,7 @@ export interface ShipScopeSurface {
 }
 
 /** The shipped surface — what a repo declaring nothing still gets: the refusal it has today. */
-export const SHIPPED_SHIP_SCOPE: ShipScopeSurface = {mainWorkingTree: "refuse"};
+export const SHIPPED_SHIP_SCOPE: ShipScopeSurface = { mainWorkingTree: "refuse" };
 
 /** The declaration that lifts the refusal, as a repo writes it — what the refusal itself names. */
 export const SHIP_SCOPE_ALLOW_DECLARATION = `"${SHIP_SCOPE}": {"mainWorkingTree": "allow"}`;
@@ -43,14 +43,14 @@ const KNOWN: ReadonlyArray<string> = ["mainWorkingTree"];
 const decodeMainWorkingTree = (raw: unknown): Decoded<MainWorkingTree> =>
 	typeof raw === "string" &&
 	(MAIN_WORKING_TREE_VALUES as ReadonlyArray<string>).includes(raw.trim())
-		? {_tag: "Value", value: raw.trim() as MainWorkingTree}
+		? { _tag: "Value", value: raw.trim() as MainWorkingTree }
 		: {
 				_tag: "Malformed",
 				reason: `${named("mainWorkingTree")} is not one of ${MAIN_WORKING_TREE_VALUES.join(", ")}`,
 			};
 
 const decode = (raw: unknown): Decoded<ShipScopeSurface> => {
-	if (!isRecord(raw)) return {_tag: "Malformed", reason: `\`${SHIP_SCOPE}\` is not an object`};
+	if (!isRecord(raw)) return { _tag: "Malformed", reason: `\`${SHIP_SCOPE}\` is not an object` };
 	const stray = Object.keys(raw).find((key) => !KNOWN.includes(key));
 	if (stray !== undefined) {
 		return {
@@ -61,11 +61,11 @@ const decode = (raw: unknown): Decoded<ShipScopeSurface> => {
 
 	const mainWorkingTree =
 		raw.mainWorkingTree === undefined
-			? ({_tag: "Value", value: SHIPPED_SHIP_SCOPE.mainWorkingTree} as const)
+			? ({ _tag: "Value", value: SHIPPED_SHIP_SCOPE.mainWorkingTree } as const)
 			: decodeMainWorkingTree(raw.mainWorkingTree);
 	if (mainWorkingTree._tag === "Malformed") return mainWorkingTree;
 
-	return {_tag: "Value", value: {mainWorkingTree: mainWorkingTree.value}};
+	return { _tag: "Value", value: { mainWorkingTree: mainWorkingTree.value } };
 };
 
 export const shipScopeKey: KeyGroup<ShipScopeSurface> = {

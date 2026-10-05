@@ -3,10 +3,10 @@
  * before the clear and reads the clear back, an un-homed issue is never written to, and every read
  * that fails lands as UNKNOWN.
  */
-import {Effect} from "effect";
-import {afterEach, beforeEach, describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
+import { Effect } from "effect";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
 import {
 	EMPTY_STDIN,
 	PRECONDITION_UNKNOWN,
@@ -15,8 +15,8 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {trailMarker} from "./sweep-homes.ts";
-import {runSweepHomes, type SweepMode} from "./sweep-homes-verb.ts";
+import { trailMarker } from "./sweep-homes.ts";
+import { runSweepHomes, type SweepMode } from "./sweep-homes-verb.ts";
 
 const BACKLOG = /^GET .*\/repos\/o\/r\/issues\?state=open&labels=status%3Atriaged/;
 const ISSUE = /^GET .*\/repos\/o\/r\/issues\/3$/;
@@ -25,7 +25,7 @@ const POST = /^POST .*\/repos\/o\/r\/issues\/3\/comments$/;
 const PATCH = /^PATCH .*\/repos\/o\/r\/issues\/3$/;
 const WRITE = /^(POST|PATCH|DELETE) /;
 
-const ENV = {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>;
+const ENV = { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>;
 const LANE = "axis:pipeline-hardening";
 
 interface Shape {
@@ -41,31 +41,31 @@ const body = (shape: Shape) => ({
 	title: `issue ${shape.number}`,
 	body: "",
 	state: "open",
-	labels: ["status:triaged", ...(shape.lanes ?? [])].map((name) => ({name})),
+	labels: ["status:triaged", ...(shape.lanes ?? [])].map((name) => ({ name })),
 	html_url: `https://example.test/issues/${shape.number}`,
-	milestone: shape.milestone == null ? null : {number: shape.milestone},
-	...(shape.comments === undefined ? {} : {comments: shape.comments}),
+	milestone: shape.milestone == null ? null : { number: shape.milestone },
+	...(shape.comments === undefined ? {} : { comments: shape.comments }),
 });
 
 const board = (...shapes: ReadonlyArray<Shape>): HttpReply => ({
 	status: 200,
 	body: JSON.stringify(shapes.map(body)),
 });
-const one = (shape: Shape): HttpReply => ({status: 200, body: JSON.stringify(body(shape))});
+const one = (shape: Shape): HttpReply => ({ status: 200, body: JSON.stringify(body(shape)) });
 const comments = (...bodies: ReadonlyArray<string>): HttpReply => ({
 	status: 200,
 	body: JSON.stringify(
-		bodies.map((text, id) => ({id: id + 1, user: {login: "a"}, body: text, created_at: ""})),
+		bodies.map((text, id) => ({ id: id + 1, user: { login: "a" }, body: text, created_at: "" })),
 	),
 });
-const POSTED: HttpReply = {status: 201, body: '{"id":9,"html_url":"https://example.test/c/9"}'};
-const ACCEPTED: HttpReply = {status: 200, body: "{}"};
-const BROKEN: HttpReply = {status: 500, body: '{"message":"boom"}'};
+const POSTED: HttpReply = { status: 201, body: '{"id":9,"html_url":"https://example.test/c/9"}' };
+const ACCEPTED: HttpReply = { status: 200, body: "{}" };
+const BROKEN: HttpReply = { status: 500, body: '{"message":"boom"}' };
 
-const DOUBLE: Shape = {number: 3, milestone: 17, lanes: [LANE]};
-const SWEPT: Shape = {number: 3, milestone: null, lanes: [LANE]};
+const DOUBLE: Shape = { number: 3, milestone: 17, lanes: [LANE] };
+const SWEPT: Shape = { number: 3, milestone: null, lanes: [LANE] };
 
-const text = (value: string): StdinRead => ({_tag: "Text", text: value});
+const text = (value: string): StdinRead => ({ _tag: "Text", text: value });
 
 const run = (
 	script: ReadonlyArray<Scripted>,
@@ -77,7 +77,7 @@ const run = (
 		Effect.provide(
 			runSweepHomes({
 				mode,
-				standingLanes: {_tag: "Value", value: [LANE], note: "declared"},
+				standingLanes: { _tag: "Value", value: [LANE], note: "declared" },
 				repo: null,
 				json: false,
 				env: ENV,
@@ -85,15 +85,15 @@ const run = (
 			}),
 			seams.layer,
 		),
-	).then((outcome) => ({outcome, requests: seams.requests, bodies: seams.bodies}));
+	).then((outcome) => ({ outcome, requests: seams.requests, bodies: seams.bodies }));
 };
 
 const writes = (requests: ReadonlyArray<string>) => requests.filter((line) => WRITE.test(line));
 
 describe("runSweepHomes — the dry run", () => {
 	it("prints the per-issue plan and writes nothing", async () => {
-		const {outcome, requests} = await run(
-			[[BACKLOG, board({number: 1, milestone: 5}, DOUBLE)]],
+		const { outcome, requests } = await run(
+			[[BACKLOG, board({ number: 1, milestone: 5 }, DOUBLE)]],
 			"dry-run",
 		);
 		expect(outcome.code).toBe(0);
@@ -102,14 +102,14 @@ describe("runSweepHomes — the dry run", () => {
 	});
 
 	it("reads no stdin, so a dry run needs no citation", async () => {
-		const {outcome} = await run([[BACKLOG, board(DOUBLE)]], "dry-run", text(""));
+		const { outcome } = await run([[BACKLOG, board(DOUBLE)]], "dry-run", text(""));
 		expect(outcome.code).toBe(0);
 	});
 });
 
 describe("runSweepHomes — the apply", () => {
 	it("posts the trail, then clears the milestone, then reads the clear back", async () => {
-		const {outcome, requests, bodies} = await run(
+		const { outcome, requests, bodies } = await run(
 			[
 				[BACKLOG, board(DOUBLE)],
 				[once(ISSUE), one(DOUBLE)],
@@ -128,11 +128,11 @@ describe("runSweepHomes — the apply", () => {
 		expect(posted).toContain("Per the homing decision.");
 		expect(posted).toContain(trailMarker(17).replace(/"/g, '\\"'));
 		const patched = bodies[requests.findIndex((line) => PATCH.test(line))] ?? "";
-		expect(JSON.parse(patched)).toEqual({milestone: null});
+		expect(JSON.parse(patched)).toEqual({ milestone: null });
 	});
 
 	it("finds an earlier trail and posts no second one", async () => {
-		const {outcome, requests} = await run(
+		const { outcome, requests } = await run(
 			[
 				[BACKLOG, board(DOUBLE)],
 				[once(ISSUE), one(DOUBLE)],
@@ -149,7 +149,7 @@ describe("runSweepHomes — the apply", () => {
 	});
 
 	it("reports zero breaches and writes nothing when re-run over a swept board", async () => {
-		const {outcome, requests} = await run([[BACKLOG, board(SWEPT)]], "apply");
+		const { outcome, requests } = await run([[BACKLOG, board(SWEPT)]], "apply");
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toBe("swept\t0\t0\n");
 		expect(outcome.stderr.join("\n")).toContain("0 double-marked");
@@ -157,10 +157,10 @@ describe("runSweepHomes — the apply", () => {
 	});
 
 	it("skips an issue whose breach moved after the board read", async () => {
-		const {outcome, requests} = await run(
+		const { outcome, requests } = await run(
 			[
 				[BACKLOG, board(DOUBLE)],
-				[ISSUE, one({number: 3, milestone: 18, lanes: [LANE]})],
+				[ISSUE, one({ number: 3, milestone: 18, lanes: [LANE] })],
 			],
 			"apply",
 		);
@@ -171,13 +171,13 @@ describe("runSweepHomes — the apply", () => {
 	});
 
 	it("refuses on 3 with no citation on stdin, before any read", async () => {
-		const {outcome, requests} = await run([[BACKLOG, board(DOUBLE)]], "apply", text(""));
+		const { outcome, requests } = await run([[BACKLOG, board(DOUBLE)]], "apply", text(""));
 		expect(outcome.code).toBe(EMPTY_STDIN);
 		expect(requests.filter((line) => BACKLOG.test(line))).toEqual([]);
 	});
 
 	it("halts UNKNOWN when the trail write fails, with the milestone untouched", async () => {
-		const {outcome, requests} = await run(
+		const { outcome, requests } = await run(
 			[
 				[BACKLOG, board(DOUBLE)],
 				[ISSUE, one(DOUBLE)],
@@ -192,7 +192,7 @@ describe("runSweepHomes — the apply", () => {
 	});
 
 	it("refuses on 9 when the read-back still carries the milestone", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			[
 				[BACKLOG, board(DOUBLE)],
 				[ISSUE, one(DOUBLE)],
@@ -208,7 +208,7 @@ describe("runSweepHomes — the apply", () => {
 
 describe("runSweepHomes — a comment list short of the declared count", () => {
 	const saved = process.env.FABRIKA_COMMENT_SCAN_DELAY_MS;
-	const DECLARING_ONE: Shape = {...DOUBLE, comments: 1};
+	const DECLARING_ONE: Shape = { ...DOUBLE, comments: 1 };
 
 	beforeEach(() => {
 		process.env.FABRIKA_COMMENT_SCAN_DELAY_MS = "0";
@@ -220,7 +220,7 @@ describe("runSweepHomes — a comment list short of the declared count", () => {
 	});
 
 	it("re-reads past a list that missed the trail it just posted, and posts no second one", async () => {
-		const {outcome, requests} = await run(
+		const { outcome, requests } = await run(
 			[
 				[BACKLOG, board(DOUBLE)],
 				[once(ISSUE), one(DOUBLE)],
@@ -240,7 +240,7 @@ describe("runSweepHomes — a comment list short of the declared count", () => {
 	});
 
 	it("halts UNKNOWN and writes nothing when the shortfall survives every re-read", async () => {
-		const {outcome, requests} = await run(
+		const { outcome, requests } = await run(
 			[
 				[BACKLOG, board(DOUBLE)],
 				[once(ISSUE), one(DOUBLE)],
@@ -257,9 +257,9 @@ describe("runSweepHomes — a comment list short of the declared count", () => {
 
 describe("runSweepHomes — what it refuses", () => {
 	it("clears the double-marked, leaves the un-homed untouched, and exits 27 naming the remedy", async () => {
-		const {outcome, requests} = await run(
+		const { outcome, requests } = await run(
 			[
-				[BACKLOG, board(DOUBLE, {number: 4})],
+				[BACKLOG, board(DOUBLE, { number: 4 })],
 				[once(ISSUE), one(DOUBLE)],
 				[COMMENTS, comments()],
 				[POST, POSTED],
@@ -278,45 +278,45 @@ describe("runSweepHomes — what it refuses", () => {
 	});
 
 	it("exits 27 on a dry run over an un-homed issue too", async () => {
-		const {outcome, requests} = await run([[BACKLOG, board({number: 4})]], "dry-run");
+		const { outcome, requests } = await run([[BACKLOG, board({ number: 4 })]], "dry-run");
 		expect(outcome.code).toBe(UNHOMED_REMAIN);
 		expect(writes(requests)).toEqual([]);
 	});
 
 	it("fails closed on an empty backlog", async () => {
-		const {outcome} = await run([[BACKLOG, board()]], "dry-run");
+		const { outcome } = await run([[BACKLOG, board()]], "dry-run");
 		expect(outcome.code).toBe(ZERO_SCOPE);
 		expect(outcome.stdout).toBe("");
 	});
 
-	it.each<SweepMode>([
-		"dry-run",
-		"apply",
-	])("reads a lane declaration nobody could read as UNKNOWN on %s, and requests nothing", async (mode) => {
-		const seams = fakeSeams([[BACKLOG, board(DOUBLE)]]);
-		const outcome = await Effect.runPromise(
-			Effect.provide(
-				runSweepHomes({
-					mode,
-					standingLanes: {_tag: "Refused", reason: "`boardVocabulary` is not an object."},
-					repo: null,
-					json: false,
-					env: ENV,
-					stdin: Effect.succeed(text("Per the homing decision.")),
-				}),
-				seams.layer,
-			),
-		);
-		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
-		expect(outcome.stdout).toBe("");
-		expect(outcome.stderr.at(-1)).toContain("cannot read the standing lanes this repo declares");
-		expect(outcome.stderr.at(-1)).toContain("`boardVocabulary` is not an object");
-		expect(outcome.stderr.at(-1)).toContain("the sweep is UNKNOWN, never clean");
-		expect(seams.requests).toEqual([]);
-	});
+	it.each<SweepMode>(["dry-run", "apply"])(
+		"reads a lane declaration nobody could read as UNKNOWN on %s, and requests nothing",
+		async (mode) => {
+			const seams = fakeSeams([[BACKLOG, board(DOUBLE)]]);
+			const outcome = await Effect.runPromise(
+				Effect.provide(
+					runSweepHomes({
+						mode,
+						standingLanes: { _tag: "Refused", reason: "`boardVocabulary` is not an object." },
+						repo: null,
+						json: false,
+						env: ENV,
+						stdin: Effect.succeed(text("Per the homing decision.")),
+					}),
+					seams.layer,
+				),
+			);
+			expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
+			expect(outcome.stdout).toBe("");
+			expect(outcome.stderr.at(-1)).toContain("cannot read the standing lanes this repo declares");
+			expect(outcome.stderr.at(-1)).toContain("`boardVocabulary` is not an object");
+			expect(outcome.stderr.at(-1)).toContain("the sweep is UNKNOWN, never clean");
+			expect(seams.requests).toEqual([]);
+		},
+	);
 
 	it("reads an unreadable backlog as UNKNOWN, never clean", async () => {
-		const {outcome} = await run([[BACKLOG, BROKEN]], "dry-run");
+		const { outcome } = await run([[BACKLOG, BROKEN]], "dry-run");
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stdout).toBe("");
 	});

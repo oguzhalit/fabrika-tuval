@@ -1,10 +1,10 @@
-import {describe, expect, it} from "vitest";
-import {buildBound, LANE_TOKENS, laneFor, STANDINGS} from "./lane.ts";
-import {STALL_TOKENS} from "./stall.ts";
+import { describe, expect, it } from "vitest";
+import { buildBound, LANE_TOKENS, laneFor, STANDINGS } from "./lane.ts";
+import { STALL_TOKENS } from "./stall.ts";
 
-const HOLDER = {ownerLogin: "someone-else", authorLogin: "the-author", standing: "ours"} as const;
-const NOBODY = {ownerLogin: null, authorLogin: "the-author", standing: "ours"} as const;
-const SELF = {ownerLogin: "the-author", authorLogin: "the-author", standing: "ours"} as const;
+const HOLDER = { ownerLogin: "someone-else", authorLogin: "the-author", standing: "ours" } as const;
+const NOBODY = { ownerLogin: null, authorLogin: "the-author", standing: "ours" } as const;
+const SELF = { ownerLogin: "the-author", authorLogin: "the-author", standing: "ours" } as const;
 
 describe("the arrow SKILL.md §2 assigns each class", () => {
 	it("sends the two classes the sweep exists to catch to review and ship", () => {
@@ -34,13 +34,13 @@ describe("the arrow SKILL.md §2 assigns each class", () => {
 		expect(laneFor("conflicted", NOBODY)).toBe("build");
 		expect(laneFor("conflicted", HOLDER)).toBe("build");
 		expect(laneFor("conflicted", SELF)).toBe("build");
-		expect(laneFor("conflicted", {...NOBODY, standing: "granted"})).toBe("build");
+		expect(laneFor("conflicted", { ...NOBODY, standing: "granted" })).toBe("build");
 	});
 
 	it("never sends a PR the pipeline does not own to build — its author takes it", () => {
 		for (const standing of ["foreign", "unknown", "unread"] as const) {
-			expect(laneFor("conflicted", {...NOBODY, standing})).toBe("author");
-			expect(laneFor("linkage-refused", {...HOLDER, standing})).toBe("author");
+			expect(laneFor("conflicted", { ...NOBODY, standing })).toBe("author");
+			expect(laneFor("linkage-refused", { ...HOLDER, standing })).toBe("author");
 		}
 	});
 
@@ -56,7 +56,7 @@ describe("the arrow SKILL.md §2 assigns each class", () => {
 			for (const facts of [NOBODY, HOLDER]) {
 				const reachesBuild =
 					token === "red" ||
-					STANDINGS.some((standing) => laneFor(token, {...facts, standing}) === "build");
+					STANDINGS.some((standing) => laneFor(token, { ...facts, standing }) === "build");
 				expect(buildBound(token, facts.ownerLogin)).toBe(reachesBuild);
 			}
 		}

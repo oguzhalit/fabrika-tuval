@@ -1,8 +1,8 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import type {StdinRead} from "../io/stdin.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import type { StdinRead } from "../io/stdin.ts";
 import {
 	BARE_AT_PATH,
 	EMPTY_STDIN,
@@ -11,8 +11,8 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {ENV, pull} from "./fixtures.test-support.ts";
-import {runNote} from "./note-verb.ts";
+import { ENV, pull } from "./fixtures.test-support.ts";
+import { runNote } from "./note-verb.ts";
 
 const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4321$/;
 const POST = /^POST \S+\/repos\/o\/r\/issues\/4321\/comments$/;
@@ -22,24 +22,24 @@ const BODY = "ship: refused — head CI red at 9fe12ab0. Merge intent disarmed a
 const URL = "https://github.com/o/r/pull/4321#issuecomment-5155001122";
 
 /** A canned `ExecResult` fixture as the body of a 200 — the same payload, off the served seam. */
-const served = (result: ExecResult): HttpReply => ({status: 200, body: result.stdout});
+const served = (result: ExecResult): HttpReply => ({ status: 200, body: result.stdout });
 
 const created: HttpReply = {
 	status: 201,
-	body: JSON.stringify({id: 5155001122, html_url: URL}),
+	body: JSON.stringify({ id: 5155001122, html_url: URL }),
 };
-const landed = (body: string): HttpReply => ({status: 200, body: JSON.stringify({body})});
+const landed = (body: string): HttpReply => ({ status: 200, body: JSON.stringify({ body }) });
 
 const options = {
 	pr: 4321,
 	repo: null,
 	json: false,
 	env: ENV,
-	stdin: Effect.succeed({_tag: "Text", text: BODY} as StdinRead),
+	stdin: Effect.succeed({ _tag: "Text", text: BODY } as StdinRead),
 };
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runNote({...options, ...overrides}), fakeSeams(script).layer));
+	Effect.runPromise(Effect.provide(runNote({ ...options, ...overrides }), fakeSeams(script).layer));
 
 describe("runNote", () => {
 	it("posts the note and proves it from a read-back", async () => {
@@ -54,7 +54,7 @@ describe("runNote", () => {
 
 	it("posts on a merged PR — a refusal at any lifecycle stage still deserves a record", async () => {
 		const out = await run([
-			[PULL, served(pull({merged: true, state: "closed"}))],
+			[PULL, served(pull({ merged: true, state: "closed" }))],
 			[POST, created],
 			[READBACK, landed(BODY)],
 		]);
@@ -63,7 +63,7 @@ describe("runNote", () => {
 
 	it("refuses an empty body on 3 — a silent stop is the #1928 defect", async () => {
 		const out = await run([[PULL, served(pull())]], {
-			stdin: Effect.succeed({_tag: "Text", text: "\n\n"} as StdinRead),
+			stdin: Effect.succeed({ _tag: "Text", text: "\n\n" } as StdinRead),
 		});
 		expect(out.code).toBe(EMPTY_STDIN);
 		expect(out.stderr.at(-1)).toContain("write the reason");
@@ -71,7 +71,7 @@ describe("runNote", () => {
 
 	it("refuses a machine-local path on 5, naming the line and class", async () => {
 		const out = await run([[PULL, served(pull())]], {
-			stdin: Effect.succeed({_tag: "Text", text: "logs at /tmp/run/out.txt"} as StdinRead),
+			stdin: Effect.succeed({ _tag: "Text", text: "logs at /tmp/run/out.txt" } as StdinRead),
 		});
 		expect(out.code).toBe(LEAKED_PATH);
 		expect(out.stderr.at(-1)).toContain("machine-local path at line 1 (temp root)");
@@ -79,7 +79,7 @@ describe("runNote", () => {
 
 	it("refuses a bare @ reference on 6", async () => {
 		const out = await run([[PULL, served(pull())]], {
-			stdin: Effect.succeed({_tag: "Text", text: "@notes/stop.md"} as StdinRead),
+			stdin: Effect.succeed({ _tag: "Text", text: "@notes/stop.md" } as StdinRead),
 		});
 		expect(out.code).toBe(BARE_AT_PATH);
 	});
@@ -87,7 +87,7 @@ describe("runNote", () => {
 	it("refuses on 8 when the create fails — UNKNOWN whether it landed", async () => {
 		const out = await run([
 			[PULL, served(pull())],
-			[POST, {status: 502, body: "{}"}],
+			[POST, { status: 502, body: "{}" }],
 		]);
 		expect(out.code).toBe(WRITE_UNKNOWN);
 	});
@@ -114,7 +114,7 @@ describe("runNote", () => {
 	});
 
 	it("refuses a PR proven absent on 7", async () => {
-		const out = await run([[PULL, {status: 404, body: '{"message":"Not Found"}'}]]);
+		const out = await run([[PULL, { status: 404, body: '{"message":"Not Found"}' }]]);
 		expect(out.code).toBe(ZERO_SCOPE);
 	});
 });

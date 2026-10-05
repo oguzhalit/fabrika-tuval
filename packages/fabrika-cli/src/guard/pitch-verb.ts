@@ -13,12 +13,12 @@
  * The whole decision lives in `./pitch.ts`; this file resolves the repo, reads, and emits.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {CONFIG_PATH} from "../config/document.ts";
-import {appetiteSizesKey} from "../config/keys/appetite-sizes.ts";
-import {readKey} from "../config/read-key.ts";
-import {standingRulings} from "../decision/standing-rulings.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { CONFIG_PATH } from "../config/document.ts";
+import { appetiteSizesKey } from "../config/keys/appetite-sizes.ts";
+import { readKey } from "../config/read-key.ts";
+import { standingRulings } from "../decision/standing-rulings.ts";
 import {
 	getIssue,
 	type IssueRecord,
@@ -27,12 +27,12 @@ import {
 	openIssuesWithLabelRecords,
 	resolveRepo,
 } from "../io/issues.ts";
-import {permissionFor} from "../io/pulls.ts";
-import type {BetRow as TableBetRow} from "../table/bet-rows.ts";
-import {readBetRows} from "../table/bet-rows-read.ts";
-import type {TableRead} from "../table/bets-read.ts";
-import {FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {PRESENT, universeOf} from "./label-universe.ts";
+import { permissionFor } from "../io/pulls.ts";
+import type { BetRow as TableBetRow } from "../table/bet-rows.ts";
+import { readBetRows } from "../table/bet-rows-read.ts";
+import type { TableRead } from "../table/bets-read.ts";
+import { FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { PRESENT, universeOf } from "./label-universe.ts";
 import {
 	type BetRow,
 	type BetTable,
@@ -56,7 +56,7 @@ import {
 	toGuardVerdict,
 	VERB,
 } from "./pitch.ts";
-import {emitVerdict, type GuardVerdict, unknown} from "./verdict.ts";
+import { emitVerdict, type GuardVerdict, unknown } from "./verdict.ts";
 
 type Requirements = ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path;
 
@@ -78,10 +78,14 @@ export interface PitchGuardOptions {
 }
 
 type Scan =
-	| {readonly _tag: "Scanned"; readonly candidates: ReadonlyArray<Candidate>; readonly scope: Scope}
-	| {readonly _tag: "Refused"; readonly verdict: GuardVerdict};
+	| {
+			readonly _tag: "Scanned";
+			readonly candidates: ReadonlyArray<Candidate>;
+			readonly scope: Scope;
+	  }
+	| { readonly _tag: "Refused"; readonly verdict: GuardVerdict };
 
-const refused = (report: string): Scan => ({_tag: "Refused", verdict: unknown(report)});
+const refused = (report: string): Scan => ({ _tag: "Refused", verdict: unknown(report) });
 
 const WRITE_PLUS: ReadonlyArray<string> = ["admin", "maintain", "write"];
 
@@ -102,8 +106,8 @@ const looksLaneEntering = (record: IssueRecord): boolean =>
 	record.labels.some((label) => LANE_ENTERING_TYPES.includes(label));
 
 type Hydrated =
-	| {readonly _tag: "Candidate"; readonly candidate: Candidate}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Candidate"; readonly candidate: Candidate }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /**
  * The ruling behind a pointer at the feature's own issue: the one roster-gated marker read every
@@ -115,8 +119,8 @@ const readOwnRuling = (
 ): Effect.Effect<OwnRulingRead, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.map(standingRulings(repo, feature), (rulings) =>
 		rulings._tag === "Unknown"
-			? {_tag: "unread", reason: rulings.reason}
-			: {_tag: "scanned", scan: rulings.scan},
+			? { _tag: "unread", reason: rulings.reason }
+			: { _tag: "scanned", scan: rulings.scan },
 	);
 
 /**
@@ -126,16 +130,16 @@ const readOwnRuling = (
  */
 const readOtherRuling = (
 	repo: string,
-	pointer: Extract<RulingPointer, {_tag: "other"}>,
+	pointer: Extract<RulingPointer, { _tag: "other" }>,
 ): Effect.Effect<OtherRulingRead, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const unread = (reason: string): OtherRulingRead => ({_tag: "unread", reason});
+		const unread = (reason: string): OtherRulingRead => ({ _tag: "unread", reason });
 		const comments = yield* listComments(repo, pointer.issue);
 		if (comments._tag === "Failure") {
 			return unread(`the comments on #${pointer.issue} could not be read: ${comments.reason}`);
 		}
 		const linked = comments.value.find((comment) => comment.id === pointer.comment);
-		if (linked === undefined) return {_tag: "missing"};
+		if (linked === undefined) return { _tag: "missing" };
 
 		const issue = yield* getIssue(repo, pointer.issue);
 		if (issue._tag !== "Present") {
@@ -144,13 +148,13 @@ const readOtherRuling = (
 			);
 		}
 		const homed = issue.value.milestone;
-		let milestone: {readonly number: number; readonly open: boolean} | null = null;
+		let milestone: { readonly number: number; readonly open: boolean } | null = null;
 		if (homed !== null) {
 			const open = yield* listOpenMilestones(repo);
 			if (open._tag === "Failure") {
 				return unread(`the open milestones of ${repo} could not be read: ${open.reason}`);
 			}
-			milestone = {number: homed, open: open.value.some((one) => one.number === homed)};
+			milestone = { number: homed, open: open.value.some((one) => one.number === homed) };
 		}
 		return {
 			_tag: "read",
@@ -168,7 +172,7 @@ const readRuling = (
 	Effect.gen(function* () {
 		switch (pointer._tag) {
 			case "own":
-				return {...pointer, read: yield* readOwnRuling(repo, feature)};
+				return { ...pointer, read: yield* readOwnRuling(repo, feature) };
 			case "other":
 				return {
 					_tag: "other",
@@ -205,7 +209,7 @@ const hydrate = (
 		// Only a parentless feature's pointers are read, and each read sits behind a pointer: an
 		// issue with none costs no call beyond the three above.
 		const rulings: Array<PointedRuling> = [];
-		if (takesPitchRuling({labels: record.labels, hasParent})) {
+		if (takesPitchRuling({ labels: record.labels, hasParent })) {
 			for (const pointer of rulingPointers(record.number, resolved, repo)) {
 				rulings.push(yield* readRuling(repo, record.number, pointer));
 			}
@@ -233,7 +237,7 @@ const readOne = (
 	Effect.gen(function* () {
 		const found = yield* getIssue(repo, number);
 		if (found._tag === "Unknown") {
-			return {_tag: "Unreadable", reason: `cannot read issue #${number}: ${found.reason}`};
+			return { _tag: "Unreadable", reason: `cannot read issue #${number}: ${found.reason}` };
 		}
 		if (found._tag === "Absent") {
 			return {
@@ -264,7 +268,7 @@ const backlogScan = (
 			}
 			candidates.push(one.candidate);
 		}
-		return {_tag: "Scanned", candidates, scope: {_tag: "backlog"}};
+		return { _tag: "Scanned", candidates, scope: { _tag: "backlog" } };
 	});
 
 const issueScan = (
@@ -296,7 +300,7 @@ const issueScan = (
 				? refused(
 						`${VERB}: issue #${number} is not lane-entering work, and the label set of ${repo} could not be read to tell that from a repo that never defined the scoping labels — the verdict is UNKNOWN, never clean.`,
 					)
-				: {_tag: "Scanned", candidates: [], scope: {_tag: "issue", number, universe}};
+				: { _tag: "Scanned", candidates: [], scope: { _tag: "issue", number, universe } };
 		}
 		const one = yield* hydrate(repo, found.value);
 		return one._tag === "Unreadable"
@@ -304,7 +308,7 @@ const issueScan = (
 			: {
 					_tag: "Scanned",
 					candidates: [one.candidate],
-					scope: {_tag: "issue", number, universe: PRESENT},
+					scope: { _tag: "issue", number, universe: PRESENT },
 				};
 	});
 
@@ -315,8 +319,8 @@ const readHeadAppetite = (
 ): Effect.Effect<HeadAppetite, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		const found = yield* getIssue(repo, head);
-		if (found._tag === "Unknown") return {_tag: "unread", reason: found.reason};
-		if (found._tag === "Absent") return {_tag: "unread", reason: `#${head} does not exist`};
+		if (found._tag === "Unknown") return { _tag: "unread", reason: found.reason };
+		if (found._tag === "Absent") return { _tag: "unread", reason: `#${head} does not exist` };
 		return headAppetiteOf(found.value.body);
 	});
 
@@ -332,8 +336,8 @@ const readBetTable = (
 ): Effect.Effect<BetTable, never, Requirements> =>
 	Effect.gen(function* () {
 		const table = yield* read(cwd, repo);
-		if (table._tag === "NoTable") return {_tag: "unread", reason: table.note};
-		if (table._tag === "Unknown") return {_tag: "unread", reason: table.reason};
+		if (table._tag === "NoTable") return { _tag: "unread", reason: table.note };
+		if (table._tag === "Unknown") return { _tag: "unread", reason: table.reason };
 		const authorized = new Map<string, boolean>();
 		const rows: BetRow[] = [];
 		for (const row of table.value) {
@@ -350,7 +354,7 @@ const readBetTable = (
 				authorized: setter !== null && authorized.get(setter) === true,
 			});
 		}
-		return {_tag: "read", source: `${table.source.owner}#${table.source.number}`, rows};
+		return { _tag: "read", source: `${table.source.owner}#${table.source.number}`, rows };
 	});
 
 /** The bet arm's line leads the diagnostics, whatever the verdict. */

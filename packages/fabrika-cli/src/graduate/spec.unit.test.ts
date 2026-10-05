@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {AUTHORED, CLEARED_DECISIONS} from "./fixtures.test-support.ts";
+import { describe, expect, it } from "vitest";
+import { AUTHORED, CLEARED_DECISIONS } from "./fixtures.test-support.ts";
 import {
 	AUTHORED_SECTIONS,
 	carriesDecisionsHeading,
@@ -13,7 +13,7 @@ import {
 	unplacedContent,
 	withFooter,
 } from "./spec.ts";
-import type {DecisionRow} from "./trail.ts";
+import type { DecisionRow } from "./trail.ts";
 
 describe("content the composed spec would not carry", () => {
 	it("finds nothing in a body holding exactly the three sections", () => {
@@ -49,13 +49,13 @@ describe("the authored section floor", () => {
 	it("names an empty section", () => {
 		expect(
 			checkSections("## Problem\n\n## Solution\ny\n\n## Out of scope\nz\n", AUTHORED_SECTIONS),
-		).toEqual({_tag: "Empty", heading: "## Problem"});
+		).toEqual({ _tag: "Empty", heading: "## Problem" });
 	});
 
 	it("names the pair that is out of order", () => {
 		expect(
 			checkSections("## Solution\ny\n\n## Problem\nx\n\n## Out of scope\nz\n", AUTHORED_SECTIONS),
-		).toEqual({_tag: "OutOfOrder", heading: "## Problem", after: "## Solution"});
+		).toEqual({ _tag: "OutOfOrder", heading: "## Problem", after: "## Solution" });
 	});
 
 	it("sees a `## Decisions` heading on an authored body", () => {
@@ -80,12 +80,12 @@ describe("the rendered decisions section", () => {
 
 	it("reads every rendered line back to the row it came from", () => {
 		const read = readDecisionsSection(composeSpec(AUTHORED, CLEARED_DECISIONS));
-		expect(read).toEqual({_tag: "Decisions", value: CLEARED_DECISIONS});
+		expect(read).toEqual({ _tag: "Decisions", value: CLEARED_DECISIONS });
 	});
 
 	it("keeps bulleted and multi-paragraph questions on one line per decision", () => {
 		const rows: ReadonlyArray<DecisionRow> = [
-			{ref: "R1.1", provenance: "established", text: "What exists?\n\nThe table has no cap."},
+			{ ref: "R1.1", provenance: "established", text: "What exists?\n\nThe table has no cap." },
 			{
 				ref: "R1.2",
 				provenance: "ruled",
@@ -105,7 +105,7 @@ describe("the rendered decisions section", () => {
 		expect(readDecisionsSection(body)).toEqual({
 			_tag: "Decisions",
 			value: [
-				{ref: "R1.1", provenance: "established", text: "What exists? The table has no cap."},
+				{ ref: "R1.1", provenance: "established", text: "What exists? The table has no cap." },
 				{
 					ref: "R1.2",
 					provenance: "ruled",
@@ -122,7 +122,7 @@ describe("the rendered decisions section", () => {
 			text: "Weight is earned — never inherited · from a kefil.",
 		};
 		const read = readDecisionsSection(composeSpec(AUTHORED, [row]));
-		expect(read).toEqual({_tag: "Decisions", value: [row]});
+		expect(read).toEqual({ _tag: "Decisions", value: [row] });
 	});
 
 	it("reports a hand-edited line rather than skipping it", () => {
@@ -139,7 +139,7 @@ describe("the rendered decisions section", () => {
 describe("the footer", () => {
 	it("leads with `Filed by an agent` and carries the source and the spec digest", () => {
 		expect(
-			renderFooter({source: 9412, specDigest: "a1b2c3d4e5f6", timestamp: "2026-08-09T18:36:48Z"}),
+			renderFooter({ source: 9412, specDigest: "a1b2c3d4e5f6", timestamp: "2026-08-09T18:36:48Z" }),
 		).toBe(
 			"<sub>Filed by an agent · graduated from #9412 · spec a1b2c3d4e5f6 · 2026-08-09T18:36:48Z</sub>",
 		);
@@ -148,7 +148,7 @@ describe("the footer", () => {
 	it("sits after the sections and a blank line, newline-terminated", () => {
 		const composed = withFooter(
 			composeSpec(AUTHORED, CLEARED_DECISIONS),
-			renderFooter({source: 9412, specDigest: "a1b2c3d4e5f6", timestamp: "2026-08-09T18:36:48Z"}),
+			renderFooter({ source: 9412, specDigest: "a1b2c3d4e5f6", timestamp: "2026-08-09T18:36:48Z" }),
 		);
 		expect(composed.endsWith("</sub>\n")).toBe(true);
 		expect(composed).toContain("Weight decay on a clock — no decision yet.\n\n<sub>");

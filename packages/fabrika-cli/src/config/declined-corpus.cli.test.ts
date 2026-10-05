@@ -9,15 +9,15 @@
  *
  * No spawn reaches the network: each answers at the config read, ahead of any `gh` call.
  */
-import {execFileSync} from "node:child_process";
-import {mkdtempSync, readdirSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {afterAll, beforeAll, describe, expect, it} from "vitest";
-import {CORPUS_DECLINED} from "../adr/codes.ts";
-import {ZERO_SCOPE} from "../governance/codes.ts";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { CORPUS_DECLINED } from "../adr/codes.ts";
+import { ZERO_SCOPE } from "../governance/codes.ts";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
 
 const BIN = fileURLToPath(new URL("../bin.ts", import.meta.url));
 
@@ -33,18 +33,22 @@ const run = (cwd: string, argv: ReadonlyArray<string>): Run => {
 		const stdout = execFileSync(process.execPath, [BIN, ...argv], {
 			cwd,
 			encoding: "utf8",
-			env: {...process.env, FABRIKA_SKIP_INFER: "1"},
+			env: { ...process.env, FABRIKA_SKIP_INFER: "1" },
 			input: "",
 			stdio: ["pipe", "pipe", "pipe"],
 		});
-		return {code: 0, stdout, stderr: ""};
+		return { code: 0, stdout, stderr: "" };
 	} catch (err) {
-		const failure = err as {status?: number; stdout?: string; stderr?: string};
-		return {code: failure.status ?? -1, stdout: failure.stdout ?? "", stderr: failure.stderr ?? ""};
+		const failure = err as { status?: number; stdout?: string; stderr?: string };
+		return {
+			code: failure.status ?? -1,
+			stdout: failure.stdout ?? "",
+			stderr: failure.stderr ?? "",
+		};
 	}
 };
 
-describe("a repo that keeps no decision corpus", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
+describe("a repo that keeps no decision corpus", { timeout: SUBPROCESS_TEST_TIMEOUT_MS }, () => {
 	let root = "";
 
 	beforeAll(() => {
@@ -53,7 +57,7 @@ describe("a repo that keeps no decision corpus", {timeout: SUBPROCESS_TEST_TIMEO
 	});
 
 	afterAll(() => {
-		if (root !== "") rmSync(root, {recursive: true, force: true});
+		if (root !== "") rmSync(root, { recursive: true, force: true });
 	});
 
 	it("refuses `adr new` on its own code and writes nothing", () => {

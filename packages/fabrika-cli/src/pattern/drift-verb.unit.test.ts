@@ -1,9 +1,9 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeFs, fakeShell, okOut} from "../fakes.test-support.ts";
-import {DOC_ABSENT, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {runDrift} from "./drift-verb.ts";
-import {FIXTURES, UNANCHORED_DOC} from "./fixtures.test-support.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeFs, fakeShell, okOut } from "../fakes.test-support.ts";
+import { DOC_ABSENT, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { runDrift } from "./drift-verb.ts";
+import { FIXTURES, UNANCHORED_DOC } from "./fixtures.test-support.ts";
 
 const SHA = "49a22902d1e0c7b3f5a8e4126b9d0f3c7a1e5b82";
 const ANCHOR = "7b1c0e4f2a9d6b83c5417e0af2d9b6c3e81547aa";
@@ -46,7 +46,7 @@ const shell = (overrides: Script = []) =>
 		[/^git log --format=/, okOut("")],
 	]);
 
-const options = {slug: "worker-queue-retry", dir: ".patterns", base: "origin/main", json: false};
+const options = { slug: "worker-queue-retry", dir: ".patterns", base: "origin/main", json: false };
 
 const run = (
 	overrides: Script = [],
@@ -55,8 +55,8 @@ const run = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runDrift({...options, ...opts}),
-			Layer.merge(shell(overrides).layer, fakeFs({files}).layer),
+			runDrift({ ...options, ...opts }),
+			Layer.merge(shell(overrides).layer, fakeFs({ files }).layer),
 		),
 	);
 
@@ -104,7 +104,7 @@ describe("runDrift", () => {
 					okOut(`${FIXTURES}/unanchored-doc/worker-queue-retry.md\n`),
 				],
 			],
-			{dir: `${FIXTURES}/unanchored-doc`},
+			{ dir: `${FIXTURES}/unanchored-doc` },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("drift\tunanchored\t-\t0\t0\t0\t0\n");
@@ -119,7 +119,7 @@ describe("runDrift", () => {
 					okOut(`${FIXTURES}/unanchored-doc/worker-queue-retry.md\n`),
 				],
 			],
-			{dir: `${FIXTURES}/unanchored-doc`, json: true},
+			{ dir: `${FIXTURES}/unanchored-doc`, json: true },
 		);
 		expect(out.stdout).toBe(
 			`{"outcome":"unanchored","anchorSha":"-","cited":0,"inRepo":0,"unresolved":0,"moved":0,"paths":[],"unresolvedPaths":[],"baseRef":"origin/main","baseSha":"${SHA}"}\n`,
@@ -166,7 +166,7 @@ describe("runDrift", () => {
 	});
 
 	it("refuses a slug that is not kebab-case on 1, the usage seat", async () => {
-		const out = await run([], {slug: "Worker_Queue"});
+		const out = await run([], { slug: "Worker_Queue" });
 		expect(out.code).toBe(1);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain("is not kebab-case");

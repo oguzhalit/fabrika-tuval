@@ -6,10 +6,10 @@
  * sentence its several callers print.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import {CONFIG_PATH} from "./document.ts";
-import {reviewFilterExclusionsKey, reviewFilterUnexcludeKey} from "./keys/filter-exclusions.ts";
-import {governedRootsKey} from "./keys/governed-roots.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { CONFIG_PATH } from "./document.ts";
+import { reviewFilterExclusionsKey, reviewFilterUnexcludeKey } from "./keys/filter-exclusions.ts";
+import { governedRootsKey } from "./keys/governed-roots.ts";
 import {
 	cycleDocKey,
 	DECISIONS_DIR,
@@ -17,7 +17,7 @@ import {
 	type PathValue,
 	roadmapFileKey,
 } from "./keys/paths.ts";
-import {type NoPreviewRule, reviewUiKey} from "./keys/review-ui.ts";
+import { type NoPreviewRule, reviewUiKey } from "./keys/review-ui.ts";
 import {
 	NO_UI_SURFACES,
 	prefixesOf,
@@ -26,9 +26,9 @@ import {
 	uiCaptureKey,
 	uiSurfacesKey,
 } from "./keys/ui-surfaces.ts";
-import {type Read, readKey} from "./read-key.ts";
+import { type Read, readKey } from "./read-key.ts";
 
-export type {Read};
+export type { Read };
 
 /** The roots a diff derives the `governance` namespace over, for this repo. */
 export const readGovernedRoots = (
@@ -49,15 +49,15 @@ export const governedRootsOr = (
 	cwd: string,
 	consequence: string,
 ): Effect.Effect<
-	| {readonly _tag: "Roots"; readonly roots: ReadonlyArray<string>; readonly note: string}
-	| {readonly _tag: "Refused"; readonly message: string},
+	| { readonly _tag: "Roots"; readonly roots: ReadonlyArray<string>; readonly note: string }
+	| { readonly _tag: "Refused"; readonly message: string },
 	never,
 	FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
 		const read = yield* readGovernedRoots(cwd);
 		return read._tag === "Value"
-			? {_tag: "Roots" as const, roots: read.value, note: read.note}
+			? { _tag: "Roots" as const, roots: read.value, note: read.note }
 			: {
 					_tag: "Refused" as const,
 					message: `${verb}: ${CONFIG_PATH} is refused — ${read.reason.replace(/\.$/, "")}, so ${consequence}`,
@@ -82,9 +82,9 @@ export const readDecisionsDir = (
  * declined the key, where the flag is how you read a corpus that is not the repo's own.
  */
 export type CorpusRead =
-	| {readonly _tag: "Dir"; readonly dir: string; readonly note: string}
-	| {readonly _tag: "Declined"; readonly message: string}
-	| {readonly _tag: "Refused"; readonly message: string};
+	| { readonly _tag: "Dir"; readonly dir: string; readonly note: string }
+	| { readonly _tag: "Declined"; readonly message: string }
+	| { readonly _tag: "Refused"; readonly message: string };
 
 /**
  * How this caller lets an operator point at a corpus by hand — the flag's own name, and what was
@@ -99,11 +99,11 @@ export type CorpusRead =
  * does not have.
  */
 export type CorpusOverride =
-	| {readonly _tag: "NoFlag"}
-	| {readonly _tag: "Flag"; readonly flag: string; readonly given: string | null};
+	| { readonly _tag: "NoFlag" }
+	| { readonly _tag: "Flag"; readonly flag: string; readonly given: string | null };
 
 /** For a verb that offers no way to point at a corpus: the remedy clause is omitted, not faked. */
-export const noCorpusOverride: CorpusOverride = {_tag: "NoFlag"};
+export const noCorpusOverride: CorpusOverride = { _tag: "NoFlag" };
 
 export const corpusOverride = (flag: string, given: string | null): CorpusOverride => ({
 	_tag: "Flag",
@@ -136,7 +136,7 @@ export const decisionsDirOr = (
 			};
 		}
 		return read.value._tag === "Path"
-			? {_tag: "Dir" as const, dir: read.value.path, note: read.note}
+			? { _tag: "Dir" as const, dir: read.value.path, note: read.note }
 			: {
 					_tag: "Declined" as const,
 					message: `${verb}: ${CONFIG_PATH} declines \`${DECISIONS_DIR}\` — this repo keeps no decision corpus, so ${declinedConsequence}${remedy(override)}`,
@@ -164,12 +164,12 @@ export const readCycleDoc = (
  * answer that quietly switches a gate off for the run.
  */
 export type PathOr =
-	| {readonly _tag: "Path"; readonly path: string; readonly note: string}
-	| {readonly _tag: "Refused"; readonly message: string};
+	| { readonly _tag: "Path"; readonly path: string; readonly note: string }
+	| { readonly _tag: "Refused"; readonly message: string };
 
 const pathOr = (verb: string, consequence: string, read: Read<string>): PathOr =>
 	read._tag === "Value"
-		? {_tag: "Path", path: read.value, note: read.note}
+		? { _tag: "Path", path: read.value, note: read.note }
 		: {
 				_tag: "Refused",
 				message: `${verb}: ${CONFIG_PATH} is refused — ${read.reason.replace(/\.$/, "")}, so ${consequence}`,
@@ -212,7 +212,7 @@ export type UiSurfacesRead =
 			readonly prefixes: ReadonlyArray<string>;
 			readonly note: string;
 	  }
-	| {readonly _tag: "Refused"; readonly message: string};
+	| { readonly _tag: "Refused"; readonly message: string };
 
 export const uiSurfacesOr = (
 	verb: string,
@@ -234,8 +234,8 @@ export const uiSurfacesOr = (
 	);
 
 export type UiCaptureRead =
-	| {readonly _tag: "Capture"; readonly capture: UiCapture; readonly note: string}
-	| {readonly _tag: "Refused"; readonly message: string};
+	| { readonly _tag: "Capture"; readonly capture: UiCapture; readonly note: string }
+	| { readonly _tag: "Refused"; readonly message: string };
 
 /** The capture settings, or the refusal its readers print. */
 export const uiCaptureOr = (
@@ -245,7 +245,7 @@ export const uiCaptureOr = (
 ): Effect.Effect<UiCaptureRead, never, FileSystem.FileSystem | Path.Path> =>
 	Effect.map(readUiCapture(cwd), (read) =>
 		read._tag === "Value"
-			? {_tag: "Capture" as const, capture: read.value, note: read.note}
+			? { _tag: "Capture" as const, capture: read.value, note: read.note }
 			: {
 					_tag: "Refused" as const,
 					message: `${verb}: ${CONFIG_PATH} is refused — ${read.reason.replace(/\.$/, "")}, so ${consequence}`,
@@ -258,7 +258,7 @@ export type NoPreviewRulesRead =
 			readonly rules: ReadonlyArray<NoPreviewRule>;
 			readonly note: string;
 	  }
-	| {readonly _tag: "Refused"; readonly message: string};
+	| { readonly _tag: "Refused"; readonly message: string };
 
 /** The `reviewUi.whenNoPreview` rules, or the refusal their readers print. */
 export const noPreviewRulesOr = (
@@ -268,7 +268,7 @@ export const noPreviewRulesOr = (
 ): Effect.Effect<NoPreviewRulesRead, never, FileSystem.FileSystem | Path.Path> =>
 	Effect.map(readKey(cwd, reviewUiKey), (read) =>
 		read._tag === "Value"
-			? {_tag: "Rules" as const, rules: read.value.whenNoPreview, note: read.note}
+			? { _tag: "Rules" as const, rules: read.value.whenNoPreview, note: read.note }
 			: {
 					_tag: "Refused" as const,
 					message: `${verb}: ${CONFIG_PATH} is refused — ${read.reason.replace(/\.$/, "")}, so ${consequence}`,
@@ -292,10 +292,10 @@ const stringListOr = (
 	consequence: string,
 	read: Read<ReadonlyArray<string>>,
 ):
-	| {readonly _tag: "List"; readonly values: ReadonlyArray<string>; readonly note: string}
-	| {readonly _tag: "Refused"; readonly message: string} =>
+	| { readonly _tag: "List"; readonly values: ReadonlyArray<string>; readonly note: string }
+	| { readonly _tag: "Refused"; readonly message: string } =>
 	read._tag === "Value"
-		? {_tag: "List", values: read.value, note: read.note}
+		? { _tag: "List", values: read.value, note: read.note }
 		: {
 				_tag: "Refused",
 				message: `${verb}: ${CONFIG_PATH} is refused — ${read.reason.replace(/\.$/, "")}, so ${consequence}`,
@@ -313,7 +313,7 @@ export type ReviewFilterExclusionsRead =
 			readonly exclusions: ReadonlyArray<string>;
 			readonly note: string;
 	  }
-	| {readonly _tag: "Refused"; readonly message: string};
+	| { readonly _tag: "Refused"; readonly message: string };
 
 export const reviewFilterExclusionsOr = (
 	verb: string,
@@ -324,7 +324,7 @@ export const reviewFilterExclusionsOr = (
 		const mapped = stringListOr(verb, consequence, read);
 		return mapped._tag === "Refused"
 			? mapped
-			: {_tag: "Exclusions" as const, exclusions: mapped.values, note: mapped.note};
+			: { _tag: "Exclusions" as const, exclusions: mapped.values, note: mapped.note };
 	});
 
 /** The shipped defaults a repo removes from the review diff filter's exclusion set. */
@@ -339,7 +339,7 @@ export type ReviewFilterUnexcludeRead =
 			readonly unexclude: ReadonlyArray<string>;
 			readonly note: string;
 	  }
-	| {readonly _tag: "Refused"; readonly message: string};
+	| { readonly _tag: "Refused"; readonly message: string };
 
 export const reviewFilterUnexcludeOr = (
 	verb: string,
@@ -350,5 +350,5 @@ export const reviewFilterUnexcludeOr = (
 		const mapped = stringListOr(verb, consequence, read);
 		return mapped._tag === "Refused"
 			? mapped
-			: {_tag: "Unexclude" as const, unexclude: mapped.values, note: mapped.note};
+			: { _tag: "Unexclude" as const, unexclude: mapped.values, note: mapped.note };
 	});

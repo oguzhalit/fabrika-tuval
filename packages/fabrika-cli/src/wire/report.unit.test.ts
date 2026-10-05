@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {parseFields, read} from "./report.ts";
+import { describe, expect, it } from "vitest";
+import { parseFields, read } from "./report.ts";
 
 describe("read", () => {
 	it("reads the section's text, subheadings included, up to the next level-2 heading", () => {
@@ -18,13 +18,13 @@ describe("read", () => {
 		].join("\n");
 		expect(read(body)).toEqual({
 			_tag: "Found",
-			value: {text: "### Audit scope\n\nEvery caller of `refocus()`.", line: 3},
+			value: { text: "### Audit scope\n\nEvery caller of `refocus()`.", line: 3 },
 		});
 	});
 
 	it("leaves the body's closing-keyword line out of a report that is the last section", () => {
 		const result = read("## Report\n\nNo live overlap with #12.\n\nFixes #8924\n");
-		expect(result).toMatchObject({_tag: "Found", value: {text: "No live overlap with #12."}});
+		expect(result).toMatchObject({ _tag: "Found", value: { text: "No live overlap with #12." } });
 	});
 
 	it("reads absent when no heading reaches for the section, an author's own headings included", () => {
@@ -42,11 +42,16 @@ describe("read", () => {
 			"## Report\n\nAudit scope: all callers.\n\n### Notes, Report\n\nnone\n",
 			1,
 		],
-	])("reads found past a heading carrying Report as one comma-separated part, %s", (_, body, line) => {
-		const result = read(body);
-		expect(result).toMatchObject({_tag: "Found", value: {line}});
-		expect(result._tag === "Found" ? result.value.text : "").toContain("Audit scope: all callers.");
-	});
+	])(
+		"reads found past a heading carrying Report as one comma-separated part, %s",
+		(_, body, line) => {
+			const result = read(body);
+			expect(result).toMatchObject({ _tag: "Found", value: { line } });
+			expect(result._tag === "Found" ? result.value.text : "").toContain(
+				"Audit scope: all callers.",
+			);
+		},
+	);
 
 	it("does not take a fenced example of the heading for the section", () => {
 		expect(read("```md\n## Report\n\nexample\n```\n")._tag).toBe("Absent");

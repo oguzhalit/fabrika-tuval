@@ -23,14 +23,14 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/10232
  */
-import {isAbsolute} from "node:path";
-import {Effect, type FileSystem, Path, Result} from "effect";
-import {parseToken} from "../build/lane.ts";
-import {readFile} from "../io/fs.ts";
-import {type LaneShell, type ShellState, shellOf, shellState} from "../wire/lane-brief.ts";
-import {type Instant, instant} from "../wire/lane-record.ts";
-import type {LogEntry} from "./fold.ts";
-import {AMENDED_EVENT, bareEvent, CLEARED_EVENT, CORRECTED_EVENT} from "./machine.ts";
+import { isAbsolute } from "node:path";
+import { Effect, type FileSystem, Path, Result } from "effect";
+import { parseToken } from "../build/lane.ts";
+import { readFile } from "../io/fs.ts";
+import { type LaneShell, type ShellState, shellOf, shellState } from "../wire/lane-brief.ts";
+import { type Instant, instant } from "../wire/lane-record.ts";
+import type { LogEntry } from "./fold.ts";
+import { AMENDED_EVENT, bareEvent, CLEARED_EVENT, CORRECTED_EVENT } from "./machine.ts";
 
 export const IN_FLIGHT_FILE = "in-flight.jsonl";
 
@@ -61,21 +61,21 @@ const decodeRecord = (value: unknown): InFlightRecord | string => {
 		const state = shellState(String(raw.state ?? ""));
 		return state === null
 			? "is a dispatched record whose `state` routes to no shell"
-			: {kind: "dispatched", task, state, at};
+			: { kind: "dispatched", task, state, at };
 	}
 	if (raw.kind === "working") {
 		const token = typeof raw.token === "string" ? raw.token : "";
 		const worktree = typeof raw.worktree === "string" ? raw.worktree : "";
 		return parseToken(token) === null || !isAbsolute(worktree)
 			? "is a working record without a build claim `token` and an absolute `worktree`"
-			: {kind: "working", task, token, worktree, at};
+			: { kind: "working", task, token, worktree, at };
 	}
 	return "is neither a dispatched nor a working record";
 };
 
 export type InFlightParse =
-	| {readonly _tag: "Parsed"; readonly records: ReadonlyArray<InFlightRecord>}
-	| {readonly _tag: "Malformed"; readonly defects: ReadonlyArray<string>};
+	| { readonly _tag: "Parsed"; readonly records: ReadonlyArray<InFlightRecord> }
+	| { readonly _tag: "Malformed"; readonly defects: ReadonlyArray<string> };
 
 /** Parse the file's text. A line that does not decode is a defect, never a skipped record. */
 export const parseInFlight = (text: string): InFlightParse => {
@@ -83,12 +83,12 @@ export const parseInFlight = (text: string): InFlightParse => {
 	const defects: string[] = [];
 	for (const [index, line] of text.split("\n").entries()) {
 		if (line.trim() === "") continue;
-		const parsed = Result.try({try: (): unknown => JSON.parse(line), catch: () => null});
+		const parsed = Result.try({ try: (): unknown => JSON.parse(line), catch: () => null });
 		const record = Result.isFailure(parsed) ? "is not JSON" : decodeRecord(parsed.success);
 		if (typeof record === "string") defects.push(`${IN_FLIGHT_FILE} line ${index + 1} ${record}`);
 		else records.push(record);
 	}
-	return defects.length > 0 ? {_tag: "Malformed", defects} : {_tag: "Parsed", records};
+	return defects.length > 0 ? { _tag: "Malformed", defects } : { _tag: "Parsed", records };
 };
 
 export const encodeInFlight = (record: InFlightRecord): string => `${JSON.stringify(record)}\n`;
@@ -99,8 +99,8 @@ export type InFlightLoad =
 			readonly records: ReadonlyArray<InFlightRecord>;
 			readonly path: string;
 	  }
-	| {readonly _tag: "Unreadable"; readonly path: string; readonly reason: string}
-	| {readonly _tag: "Malformed"; readonly path: string; readonly defects: ReadonlyArray<string>};
+	| { readonly _tag: "Unreadable"; readonly path: string; readonly reason: string }
+	| { readonly _tag: "Malformed"; readonly path: string; readonly defects: ReadonlyArray<string> };
 
 /** Read a lane's in-flight records. An absent file is a lane with none, never a fault. */
 export const loadInFlight = (
@@ -111,13 +111,13 @@ export const loadInFlight = (
 		const text = yield* Effect.result(readFile(path));
 		if (Result.isFailure(text)) {
 			return text.failure.notFound
-				? ({_tag: "Loaded", records: [], path} as const)
-				: ({_tag: "Unreadable", path, reason: text.failure.reason} as const);
+				? ({ _tag: "Loaded", records: [], path } as const)
+				: ({ _tag: "Unreadable", path, reason: text.failure.reason } as const);
 		}
 		const parsed = parseInFlight(text.success);
 		return parsed._tag === "Malformed"
-			? ({_tag: "Malformed", path, defects: parsed.defects} as const)
-			: ({_tag: "Loaded", records: parsed.records, path} as const);
+			? ({ _tag: "Malformed", path, defects: parsed.defects } as const)
+			: ({ _tag: "Loaded", records: parsed.records, path } as const);
 	});
 
 export interface Dispatched {
@@ -134,8 +134,8 @@ export interface Working {
 
 /** One task's standing record — a dispatch, a builder's seat, or both, never neither. */
 export type InFlight =
-	| {readonly dispatched: Dispatched; readonly working: Working | null}
-	| {readonly dispatched: null; readonly working: Working};
+	| { readonly dispatched: Dispatched; readonly working: Working | null }
+	| { readonly dispatched: null; readonly working: Working };
 
 const STILL_EVENTS: ReadonlySet<string> = new Set([CLEARED_EVENT, CORRECTED_EVENT, AMENDED_EVENT]);
 
@@ -155,25 +155,25 @@ export const inFlight = (
 	const standing: Record<string, InFlight> = {};
 	for (const task of new Set(records.map((record) => record.task))) {
 		const lastDispatch = records.findLast(
-			(record): record is Extract<InFlightRecord, {kind: "dispatched"}> =>
+			(record): record is Extract<InFlightRecord, { kind: "dispatched" }> =>
 				record.kind === "dispatched" && record.task === task,
 		);
 		const lastWorking = records.findLast(
-			(record): record is Extract<InFlightRecord, {kind: "working"}> =>
+			(record): record is Extract<InFlightRecord, { kind: "working" }> =>
 				record.kind === "working" && record.task === task,
 		);
 		const dispatched: Dispatched | null =
 			lastDispatch === undefined || movedSince(entries, task, lastDispatch.at)
 				? null
-				: {state: lastDispatch.state, shell: shellOf(lastDispatch.state), at: lastDispatch.at};
+				: { state: lastDispatch.state, shell: shellOf(lastDispatch.state), at: lastDispatch.at };
 		const working: Working | null =
 			lastWorking === undefined ||
 			movedSince(entries, task, lastWorking.at) ||
 			(dispatched !== null && Date.parse(lastWorking.at) < Date.parse(dispatched.at))
 				? null
-				: {token: lastWorking.token, worktree: lastWorking.worktree, at: lastWorking.at};
-		if (dispatched !== null) standing[task] = {dispatched, working};
-		else if (working !== null) standing[task] = {dispatched: null, working};
+				: { token: lastWorking.token, worktree: lastWorking.worktree, at: lastWorking.at };
+		if (dispatched !== null) standing[task] = { dispatched, working };
+		else if (working !== null) standing[task] = { dispatched: null, working };
 	}
 	return standing;
 };

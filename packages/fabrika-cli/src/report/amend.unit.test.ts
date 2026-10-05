@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {compose, heading, SEPARATOR} from "./amend.ts";
+import { describe, expect, it } from "vitest";
+import { compose, heading, SEPARATOR } from "./amend.ts";
 
 const ON = new Date("2026-08-21T03:31:36Z");
 
@@ -12,7 +12,7 @@ describe("compose", () => {
 	});
 
 	it("composes the separator and the dated heading itself", () => {
-		const {appended} = compose("prior", "note", ON);
+		const { appended } = compose("prior", "note", ON);
 		expect(appended).toBe(`${SEPARATOR}\n\n${heading(ON)}\n\nnote\n`);
 	});
 

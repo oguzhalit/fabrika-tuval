@@ -1,17 +1,17 @@
-import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {NodeServices} from "@effect/platform-node";
-import {Effect} from "effect";
-import {afterEach, expect, it} from "vitest";
-import {loadGoldenPayload, readGoldenFixture} from "../golden-fixture.ts";
-import {runCodexHook} from "./codex-hook-verb.ts";
-import {readUsageLedger} from "./usage-ledger.ts";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
+import { afterEach, expect, it } from "vitest";
+import { loadGoldenPayload, readGoldenFixture } from "../golden-fixture.ts";
+import { runCodexHook } from "./codex-hook-verb.ts";
+import { readUsageLedger } from "./usage-ledger.ts";
 
 const fixture = "__fixtures__/codex-session-start.payload.golden.json";
 const dirs: string[] = [];
 afterEach(() => {
-	for (const dir of dirs.splice(0)) rmSync(dir, {recursive: true, force: true});
+	for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
 it("accepts the captured native SessionStart key set without inventing a turn or tool", async () => {
@@ -27,7 +27,7 @@ it("accepts the captured native SessionStart key set without inventing a turn or
 	]);
 	expect(event).not.toHaveProperty("turn_id");
 	expect(event).not.toHaveProperty("tool_input");
-	expect(event).toMatchObject({hook_event_name: "SessionStart", source: "startup"});
+	expect(event).toMatchObject({ hook_event_name: "SessionStart", source: "startup" });
 	const dir = mkdtempSync(join(tmpdir(), "codex-golden-"));
 	dirs.push(dir);
 	const sessions = join(dir, "sessions");
@@ -46,11 +46,11 @@ it("accepts the captured native SessionStart key set without inventing a turn or
 		}),
 	);
 	const state = join(dir, "state");
-	mkdirSync(join(state, "dispatch"), {recursive: true});
+	mkdirSync(join(state, "dispatch"), { recursive: true });
 	writeFileSync(
 		join(state, "dispatch", `${encodeURIComponent(dir)}.json`),
 		JSON.stringify({
-			work: {repo: "fixture/repo", issue: 8892, run: "captured-startup"},
+			work: { repo: "fixture/repo", issue: 8892, run: "captured-startup" },
 		}),
 	);
 	const input = readGoldenFixture(import.meta.url, fixture)
@@ -58,7 +58,7 @@ it("accepts the captured native SessionStart key set without inventing a turn or
 		.replace(event.transcript_path as string, transcript);
 	const ledger = join(dir, "ledger.jsonl");
 	const result = await Effect.runPromise(
-		runCodexHook({input, sessions, state, ledger, repo: "fixture/repo"}).pipe(
+		runCodexHook({ input, sessions, state, ledger, repo: "fixture/repo" }).pipe(
 			Effect.provide(NodeServices.layer),
 		),
 	);

@@ -1,7 +1,7 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {GATEWAY, GIT_DIRS, served} from "../build/fixtures.test-support.ts";
-import {fakeFs, fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { GATEWAY, GIT_DIRS, served } from "../build/fixtures.test-support.ts";
+import { fakeFs, fakeSeams, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
 import {
 	BARE_AT_PATH,
 	LEAKED_PATH,
@@ -11,8 +11,8 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {bodyDigest} from "./digest.ts";
-import {CLAIMED, childIssue, DIR, env, epic, subIssues, TOKEN} from "./fixtures.test-support.ts";
+import { bodyDigest } from "./digest.ts";
+import { CLAIMED, childIssue, DIR, env, epic, subIssues, TOKEN } from "./fixtures.test-support.ts";
 import {
 	type ChildRecord,
 	manifestPath,
@@ -20,7 +20,7 @@ import {
 	renderRunRecord,
 	runJsonPath,
 } from "./run.ts";
-import {runSupersede} from "./supersede-verb.ts";
+import { runSupersede } from "./supersede-verb.ts";
 
 const SUBS = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4300\/sub_issues/;
 const CHILD = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4288$/;
@@ -56,7 +56,7 @@ const files = (...records: ReadonlyArray<ChildRecord>) => ({
 });
 
 const COMMENTED = served(
-	{id: 5230661234, html_url: "https://forge.example/o/r/issues/4288#c"},
+	{ id: 5230661234, html_url: "https://forge.example/o/r/issues/4288#c" },
 	201,
 );
 
@@ -73,14 +73,14 @@ const happy = (
 	[EPIC_READ, epic()],
 	[/^git rev-parse --path-format=absolute/, GIT_DIRS],
 	...CLAIMED,
-	[once(SUBS), subIssues({number: 4288, id: 42880})],
-	[once(CHILD), childIssue({number: 4288})],
+	[once(SUBS), subIssues({ number: 4288, id: 42880 })],
+	[once(CHILD), childIssue({ number: 4288 })],
 	[COMMENT, overrides.comment ?? COMMENTED],
 	[UNLINK, overrides.unlink ?? served({})],
 	[CLOSE, overrides.close ?? served({})],
 	[
 		CHILD,
-		overrides.after ?? childIssue({number: 4288, state: "closed", stateReason: "not_planned"}),
+		overrides.after ?? childIssue({ number: 4288, state: "closed", stateReason: "not_planned" }),
 	],
 	[SUBS, overrides.afterSubs ?? served([])],
 ];
@@ -88,10 +88,10 @@ const happy = (
 const run = (
 	script: ReadonlyArray<Scripted> = happy(),
 	fsFiles: Readonly<Record<string, string | null>> = files(record(4288, false)),
-	options: {child?: number; reason?: string} = {},
+	options: { child?: number; reason?: string } = {},
 ) => {
 	const shell = fakeSeams(script);
-	const fs = fakeFs({files: fsFiles});
+	const fs = fakeFs({ files: fsFiles });
 	return Effect.runPromise(
 		Effect.provide(
 			runSupersede({
@@ -116,7 +116,7 @@ const run = (
 
 describe("runSupersede", () => {
 	it("comments, unlinks, closes, and proves the result", async () => {
-		const {outcome} = await run();
+		const { outcome } = await run();
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout)).toEqual({
 			answer: "superseded",
@@ -133,7 +133,7 @@ describe("runSupersede", () => {
 	 * as a child in scope that can never carry a live assignee.
 	 */
 	it("unlinks before it closes, and journals before either", async () => {
-		const {log} = await run();
+		const { log } = await run();
 		const order = log.filter((line) => COMMENT.test(line) || UNLINK.test(line) || CLOSE.test(line));
 		expect(
 			order.map((line) =>
@@ -143,13 +143,13 @@ describe("runSupersede", () => {
 	});
 
 	it("unlinks on the child's id, not its number", async () => {
-		const {requests, bodies} = await run();
+		const { requests, bodies } = await run();
 		const at = requests.findIndex((line) => UNLINK.test(line));
-		expect(JSON.parse(bodies[at] ?? "null")).toEqual({sub_issue_id: 42880});
+		expect(JSON.parse(bodies[at] ?? "null")).toEqual({ sub_issue_id: 42880 });
 	});
 
 	it("refuses a child this run minted — a re-plan does not retire its own work", async () => {
-		const {outcome, requests} = await run(happy(), files(record(4288, true)));
+		const { outcome, requests } = await run(happy(), files(record(4288, true)));
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toBe(
 			"ledger supersede: #4288 was minted by this run — refusing to supersede a child of the current plan.",
@@ -158,12 +158,12 @@ describe("runSupersede", () => {
 	});
 
 	it("refuses a child that is not this epic's sub-issue", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			[
 				[EPIC_READ, epic()],
 				[/^git rev-parse --path-format=absolute/, GIT_DIRS],
 				...CLAIMED,
-				[SUBS, subIssues({number: 4301, id: 43010})],
+				[SUBS, subIssues({ number: 4301, id: 43010 })],
 			],
 			files(),
 		);
@@ -172,18 +172,18 @@ describe("runSupersede", () => {
 	});
 
 	it("refuses a child that is already closed", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[EPIC_READ, epic()],
 			[/^git rev-parse --path-format=absolute/, GIT_DIRS],
 			...CLAIMED,
-			[SUBS, subIssues({number: 4288, id: 42880})],
-			[CHILD, childIssue({number: 4288, state: "closed"})],
+			[SUBS, subIssues({ number: 4288, id: 42880 })],
+			[CHILD, childIssue({ number: 4288, state: "closed" })],
 		]);
 		expect(outcome.code).toBe(ZERO_SCOPE);
 	});
 
 	it("refuses a reason carrying a machine-local path, masked", async () => {
-		const {outcome, log} = await run(happy(), files(record(4288, false)), {
+		const { outcome, log } = await run(happy(), files(record(4288, false)), {
 			reason: "see /Users/someone/notes.md",
 		});
 		expect(outcome.code).toBe(LEAKED_PATH);
@@ -192,13 +192,13 @@ describe("runSupersede", () => {
 	});
 
 	it("refuses a reason that is a bare @ path reference", async () => {
-		const {outcome} = await run(happy(), files(record(4288, false)), {reason: "@some/path.md"});
+		const { outcome } = await run(happy(), files(record(4288, false)), { reason: "@some/path.md" });
 		expect(outcome.code).toBe(BARE_AT_PATH);
 	});
 
 	/** The journal is posted first so the reason survives even if a later leg fails. */
 	it("reports how many legs landed when one could not be proven", async () => {
-		const {outcome} = await run(happy({unlink: GATEWAY}));
+		const { outcome } = await run(happy({ unlink: GATEWAY }));
 		expect(outcome.code).toBe(WRITE_UNKNOWN);
 		expect(outcome.stderr.at(-1)).toBe(
 			"ledger supersede: wrote 1 of 3 legs on #4288 and could not prove the rest — the child is UNKNOWN.",
@@ -206,24 +206,24 @@ describe("runSupersede", () => {
 	});
 
 	it("refuses when the child does not read back closed", async () => {
-		const {outcome} = await run(happy({after: childIssue({number: 4288, state: "open"})}));
+		const { outcome } = await run(happy({ after: childIssue({ number: 4288, state: "open" }) }));
 		expect(outcome.code).toBe(READBACK_MISMATCH);
 	});
 
 	it("refuses when the child reads back closed for the wrong reason", async () => {
-		const {outcome} = await run(
-			happy({after: childIssue({number: 4288, state: "closed", stateReason: "completed"})}),
+		const { outcome } = await run(
+			happy({ after: childIssue({ number: 4288, state: "closed", stateReason: "completed" }) }),
 		);
 		expect(outcome.code).toBe(READBACK_MISMATCH);
 	});
 
 	it("refuses when the child is still linked after the unlink", async () => {
-		const {outcome} = await run(happy({afterSubs: subIssues({number: 4288, id: 42880})}));
+		const { outcome } = await run(happy({ afterSubs: subIssues({ number: 4288, id: 42880 }) }));
 		expect(outcome.code).toBe(READBACK_MISMATCH);
 	});
 
 	it("refuses when the sub-issue list could not be read", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[EPIC_READ, epic()],
 			[/^git rev-parse --path-format=absolute/, GIT_DIRS],
 			...CLAIMED,

@@ -13,13 +13,13 @@
  * platform proved it with `200 []`; every other outcome is {@link FrontierRead.Unknown}.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {blockedBy, blocking, subIssues} from "../io/edges.ts";
-import type {Shell} from "../io/git.ts";
-import {type CommentRecord, getIssue, type IssueRecord, listComments} from "../io/issues.ts";
-import {permissionFor} from "../io/pulls.ts";
-import {type DecisionEntry, type Kind, type MapBody, parseBody} from "./body.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { blockedBy, blocking, subIssues } from "../io/edges.ts";
+import type { Shell } from "../io/git.ts";
+import { type CommentRecord, getIssue, type IssueRecord, listComments } from "../io/issues.ts";
+import { permissionFor } from "../io/pulls.ts";
+import { type DecisionEntry, type Kind, type MapBody, parseBody } from "./body.ts";
 import {
 	type Outcome,
 	reachesForTicketMarker,
@@ -37,10 +37,10 @@ export const MAP_LABEL = "wayfinding:map";
 const AUTHORIZED = new Set(["admin", "maintain", "write"]);
 
 export type MapRead =
-	| {readonly _tag: "Map"; readonly issue: IssueRecord; readonly body: MapBody}
-	| {readonly _tag: "Absent"}
-	| {readonly _tag: "Malformed"; readonly reason: string}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Map"; readonly issue: IssueRecord; readonly body: MapBody }
+	| { readonly _tag: "Absent" }
+	| { readonly _tag: "Malformed"; readonly reason: string }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * The map issue and its parsed body, four ways.
@@ -51,13 +51,13 @@ export type MapRead =
 export const readMap = (repo: string, map: number): Shell<MapRead> =>
 	Effect.gen(function* () {
 		const issue = yield* getIssue(repo, map);
-		if (issue._tag === "Absent") return {_tag: "Absent" as const};
-		if (issue._tag === "Unknown") return {_tag: "Unknown" as const, reason: issue.reason};
-		if (!issue.value.labels.includes(MAP_LABEL)) return {_tag: "Absent" as const};
+		if (issue._tag === "Absent") return { _tag: "Absent" as const };
+		if (issue._tag === "Unknown") return { _tag: "Unknown" as const, reason: issue.reason };
+		if (!issue.value.labels.includes(MAP_LABEL)) return { _tag: "Absent" as const };
 		const parsed = parseBody(issue.value.body);
 		return parsed._tag === "Malformed"
-			? {_tag: "Malformed" as const, reason: parsed.reason}
-			: {_tag: "Map" as const, issue: issue.value, body: parsed.value};
+			? { _tag: "Malformed" as const, reason: parsed.reason }
+			: { _tag: "Map" as const, issue: issue.value, body: parsed.value };
 	});
 
 /** The six states a frontier ticket may hold. `graduated` and `retired` are terminal and always win. */
@@ -100,9 +100,9 @@ export interface Frontier {
 }
 
 export type FrontierRead =
-	| {readonly _tag: "Frontier"; readonly value: Frontier}
-	| {readonly _tag: "MapAbsent"}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Frontier"; readonly value: Frontier }
+	| { readonly _tag: "MapAbsent" }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /** Whether a ticket has left the frontier for good. */
 export const isTerminal = (state: TicketState): boolean =>
@@ -115,10 +115,10 @@ const questionOf = (issue: IssueRecord): string => {
 };
 
 interface MarkerScan {
-	readonly lane: {readonly nonce: string} | null;
-	readonly finding: {readonly outcome: Outcome; readonly nonce: string} | null;
-	readonly fork: {readonly route: "session" | "spike"; readonly issue: number} | null;
-	readonly retired: {readonly direction: string} | null;
+	readonly lane: { readonly nonce: string } | null;
+	readonly finding: { readonly outcome: Outcome; readonly nonce: string } | null;
+	readonly fork: { readonly route: "session" | "spike"; readonly issue: number } | null;
+	readonly retired: { readonly direction: string } | null;
 }
 
 /**
@@ -140,23 +140,23 @@ export const scanTicketMarkers = (
 	for (const comment of comments) {
 		const laneMarker = readLaneMarker(comment.body);
 		if (laneMarker !== null && laneMarker.map === map && laneMarker.ticket === ticket) {
-			lane = {nonce: laneMarker.nonce};
+			lane = { nonce: laneMarker.nonce };
 			finding = null;
 		}
 		const findingMarker = readFindingMarker(comment.body);
 		if (findingMarker !== null && findingMarker.map === map && findingMarker.ticket === ticket) {
-			finding = {outcome: findingMarker.outcome, nonce: findingMarker.nonce};
+			finding = { outcome: findingMarker.outcome, nonce: findingMarker.nonce };
 		}
 		const forkMarker = readForkMarker(comment.body);
 		if (forkMarker !== null && forkMarker.map === map && forkMarker.ticket === ticket) {
-			fork = {route: forkMarker.route, issue: forkMarker.issue};
+			fork = { route: forkMarker.route, issue: forkMarker.issue };
 		}
 		const retiredMarker = readRetiredMarker(comment.body);
 		if (retiredMarker !== null && retiredMarker.map === map && retiredMarker.ticket === ticket) {
-			retired = {direction: retiredMarker.direction};
+			retired = { direction: retiredMarker.direction };
 		}
 	}
-	return {lane, finding, fork, retired};
+	return { lane, finding, fork, retired };
 };
 
 /**
@@ -172,7 +172,7 @@ export const scanTicketMarkers = (
 export const decisionRecorded = (
 	body: MapBody,
 	ticket: number,
-	citation: {readonly session: number; readonly questionId: string} | null,
+	citation: { readonly session: number; readonly questionId: string } | null,
 ): DecisionEntry | undefined =>
 	body.decisions.find((entry) =>
 		entry.authority._tag === "Finding"
@@ -220,10 +220,10 @@ const stateOf = (
 
 /** One resolved child, or the reason it is not counted as a ticket of this map. */
 type ChildOutcome =
-	| {readonly _tag: "Ticket"; readonly value: Ticket}
-	| {readonly _tag: "Disregarded"; readonly value: Disregarded}
-	| {readonly _tag: "Skip"}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Ticket"; readonly value: Ticket }
+	| { readonly _tag: "Disregarded"; readonly value: Disregarded }
+	| { readonly _tag: "Skip" }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 const resolveChild = (
 	repo: string,
@@ -231,7 +231,7 @@ const resolveChild = (
 	body: MapBody,
 	child: number,
 	permissions: Map<string, string | null>,
-	counters: {comments: number; edgeReads: number},
+	counters: { comments: number; edgeReads: number },
 ): Effect.Effect<ChildOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		const issue = yield* getIssue(repo, child);
@@ -241,10 +241,10 @@ const resolveChild = (
 				reason: `#${child} is listed as a child of #${map} and does not exist`,
 			};
 		}
-		if (issue._tag === "Unknown") return {_tag: "Unknown" as const, reason: issue.reason};
+		if (issue._tag === "Unknown") return { _tag: "Unknown" as const, reason: issue.reason };
 
 		const listed = yield* listComments(repo, child);
-		if (listed._tag === "Failure") return {_tag: "Unknown" as const, reason: listed.reason};
+		if (listed._tag === "Failure") return { _tag: "Unknown" as const, reason: listed.reason };
 		counters.comments += listed.value.length;
 
 		const reaching = listed.value.find((comment) => reachesForTicketMarker(comment.body));
@@ -252,7 +252,7 @@ const resolveChild = (
 		// a frontier ticket and is not a ticket that "looks like" this map's, so it is neither counted
 		// nor disregarded. `map ticket`'s partial application leaves exactly this, and re-running it
 		// with the same question resumes rather than duplicating.
-		if (reaching === undefined) return {_tag: "Skip" as const};
+		if (reaching === undefined) return { _tag: "Skip" as const };
 
 		// Content is not authority: every marker this walk reads must come from a `write+`
 		// author, so a thread anyone can comment on cannot hand itself a lane or retire a ticket. A
@@ -345,18 +345,18 @@ const resolveChild = (
 				state,
 				blockedBy: waits.value,
 				blocking: gates.value,
-				...(state === "lane-held" && markers.lane !== null ? {nonce: markers.lane.nonce} : {}),
+				...(state === "lane-held" && markers.lane !== null ? { nonce: markers.lane.nonce } : {}),
 				...(state === "forked" && markers.fork?.route === "session"
-					? {session: markers.fork.issue}
+					? { session: markers.fork.issue }
 					: {}),
 				...(state === "forked" && markers.fork?.route === "spike"
-					? {spike: markers.fork.issue}
+					? { spike: markers.fork.issue }
 					: {}),
 				...(state === "lane-closed" && markers.finding !== null
-					? {outcome: markers.finding.outcome}
+					? { outcome: markers.finding.outcome }
 					: {}),
 				...(state === "retired" && markers.retired !== null
-					? {retiredBy: markers.retired.direction}
+					? { retiredBy: markers.retired.direction }
 					: {}),
 			},
 		};
@@ -376,16 +376,16 @@ export const readFrontier = (
 ): Effect.Effect<FrontierRead, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		const children = yield* subIssues(repo, map);
-		if (children._tag === "Absent") return {_tag: "MapAbsent" as const};
-		if (children._tag === "Unknown") return {_tag: "Unknown" as const, reason: children.reason};
+		if (children._tag === "Absent") return { _tag: "MapAbsent" as const };
+		if (children._tag === "Unknown") return { _tag: "Unknown" as const, reason: children.reason };
 
 		const permissions = new Map<string, string | null>();
-		const counters = {comments: 0, edgeReads: 0};
+		const counters = { comments: 0, edgeReads: 0 };
 		const tickets: Ticket[] = [];
 		const disregarded: Disregarded[] = [];
 		for (const child of children.value) {
 			const outcome = yield* resolveChild(repo, map, body, child, permissions, counters);
-			if (outcome._tag === "Unknown") return {_tag: "Unknown" as const, reason: outcome.reason};
+			if (outcome._tag === "Unknown") return { _tag: "Unknown" as const, reason: outcome.reason };
 			if (outcome._tag === "Ticket") tickets.push(outcome.value);
 			if (outcome._tag === "Disregarded") disregarded.push(outcome.value);
 		}
@@ -395,7 +395,7 @@ export const readFrontier = (
 			value: {
 				tickets,
 				disregarded,
-				scanned: {children: children.value.length, ...counters},
+				scanned: { children: children.value.length, ...counters },
 			},
 		};
 	});

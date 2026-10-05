@@ -11,10 +11,10 @@
  * any-depth `*.sh` clause is what left a non-`.sh` file beside a gated script proven-ordinary in v1.
  */
 
-import {idFromFile, isFourDigitId} from "../adr/records.ts";
-import {type ReasonHistogram, reasonHistogram} from "../evidence.ts";
-import type {ChangedPath} from "../io/git.ts";
-import {touchesGovernanceRoot} from "../review/classes.ts";
+import { idFromFile, isFourDigitId } from "../adr/records.ts";
+import { type ReasonHistogram, reasonHistogram } from "../evidence.ts";
+import type { ChangedPath } from "../io/git.ts";
+import { touchesGovernanceRoot } from "../review/classes.ts";
 
 /** A decision record the diff carries, and what the diff does to it. */
 export interface RecordChange {
@@ -59,7 +59,7 @@ export const recordsIn = (changed: ReadonlyArray<ChangedPath>): ReadonlyArray<Re
 		// by the four-digit `--record` these verbs take, so reporting it would name an id no sibling
 		// verb accepts.
 		if (id === null || !isFourDigitId(id)) continue;
-		out.push({id, change: changeOf(entry.status), path: entry.path});
+		out.push({ id, change: changeOf(entry.status), path: entry.path });
 	}
 	return out;
 };

@@ -5,10 +5,10 @@
 	"description": "App development with Fabrika",
 	"packageManager": "pnpm@10.27.0",
 	"scripts": {
-		"dev": "fabrika dev",
-		"build": "fabrika build",
-		"test": "fabrika test",
-		"typecheck": "fabrika typecheck",
+		"dev": "turbo run dev",
+		"build": "turbo run build",
+		"test": "turbo run test",
+		"typecheck": "echo '✅ Typecheck runs with build step'",
 		"lint": "biome check .",
 		"format": "biome check --write .",
 		"fabrika": "fabrika",
@@ -23,5 +23,10 @@
 	},
 	"volta": {
 		"node": "26.2.0"
+	},
+	"pnpm": {
+		"patchedDependencies": {
+			"effect@4.0.0-rc.112": "patches/effect@4.0.0-rc.112.patch"
+		}
 	}
 }

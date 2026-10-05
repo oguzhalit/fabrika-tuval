@@ -1,7 +1,7 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {runClaim} from "../build/claim-verb.ts";
-import {CLAIM_NOT_MINE as BUILD_CLAIM_NOT_MINE} from "../build/codes.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { runClaim } from "../build/claim-verb.ts";
+import { CLAIM_NOT_MINE as BUILD_CLAIM_NOT_MINE } from "../build/codes.ts";
 import {
 	comments as buildComments,
 	issue as buildIssue,
@@ -18,10 +18,10 @@ import {
 	type Scripted,
 	unconfigured,
 } from "../fakes.test-support.ts";
-import {FAILED} from "../verb.ts";
-import {runLaneAdopt, runLaneClaim, runLaneRelease} from "./claim-verb.ts";
-import {APPEND_UNKNOWN, CLAIM_NOT_MINE, LANE_UNREADABLE, MARKER_READBACK} from "./codes.ts";
-import {parseKey} from "./key.ts";
+import { FAILED } from "../verb.ts";
+import { runLaneAdopt, runLaneClaim, runLaneRelease } from "./claim-verb.ts";
+import { APPEND_UNKNOWN, CLAIM_NOT_MINE, LANE_UNREADABLE, MARKER_READBACK } from "./codes.ts";
+import { parseKey } from "./key.ts";
 
 const COMMENTS = /^GET .*\/repos\/o\/r\/issues\/5492\/comments\?/;
 const POST = /^POST .*\/repos\/o\/r\/issues\/5492\/comments$/;
@@ -32,9 +32,9 @@ const perm = (login: string) => new RegExp(`^GET .*/repos/o/r/collaborators/${lo
 /** The request line a retraction shows up as — what a "which markers were deleted" claim reads. */
 const deleted = (id: number) => `DELETE https://api.github.com/repos/o/r/issues/comments/${id}`;
 
-const WRITE_PERMISSION: HttpReply = served({permission: "write"});
-const GATEWAY: HttpReply = {status: 502, body: '{"message":"Bad gateway"}'};
-const DELETED: HttpReply = {status: 204, body: ""};
+const WRITE_PERMISSION: HttpReply = served({ permission: "write" });
+const GATEWAY: HttpReply = { status: 502, body: '{"message":"Bad gateway"}' };
+const DELETED: HttpReply = { status: 204, body: "" };
 
 const OTHER_UUID = "9d8c7b6a-5f4e-3d2c-1b0a-998877665544";
 
@@ -49,8 +49,8 @@ const SIBLING = laneMarker("s-9f2e", SIBLING_UUID);
 const MY_TOKEN = `lane:s-9f2e:${LANE_UUID}`;
 const SIBLING_TOKEN = `lane:s-9f2e:${SIBLING_UUID}`;
 
-const POSTED = served({id: 9001, html_url: "https://forge.example/o/r/issues/5492#c"}, 201);
-const ECHO = served({body: MINE});
+const POSTED = served({ id: 9001, html_url: "https://forge.example/o/r/issues/5492#c" }, 201);
+const ECHO = served({ body: MINE });
 
 const key = (raw: string) => {
 	const parsed = parseKey(raw);
@@ -64,7 +64,7 @@ const options = {
 	token: null as string | null,
 	repo: null,
 	cwd: "/repo",
-	env: {CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e"} as Record<
+	env: { CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-9f2e" } as Record<
 		string,
 		string | undefined
 	>,
@@ -75,7 +75,7 @@ const options = {
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
 		Effect.provide(
-			runLaneClaim({...options, ...overrides}),
+			runLaneClaim({ ...options, ...overrides }),
 			Layer.merge(fakeSeams(script).layer, unconfigured),
 		),
 	);
@@ -83,7 +83,7 @@ const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options>
 const release = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
 		Effect.provide(
-			runLaneRelease({...options, ...overrides}),
+			runLaneRelease({ ...options, ...overrides }),
 			Layer.merge(fakeSeams(script).layer, unconfigured),
 		),
 	);
@@ -93,7 +93,7 @@ describe("runLaneClaim", () => {
 		const out = await run([
 			[POST, POSTED],
 			[GET_COMMENT, ECHO],
-			[COMMENTS, buildComments({id: 9001, body: MINE})],
+			[COMMENTS, buildComments({ id: 9001, body: MINE })],
 			[perm("agent"), WRITE_PERMISSION],
 		]);
 		expect(out.code).toBe(0);
@@ -109,7 +109,7 @@ describe("runLaneClaim", () => {
 		const seams = fakeSeams([
 			[POST, POSTED],
 			[GET_COMMENT, ECHO],
-			[COMMENTS, buildComments({id: 9001, body: MINE})],
+			[COMMENTS, buildComments({ id: 9001, body: MINE })],
 			[perm("agent"), WRITE_PERMISSION],
 		]);
 		await Effect.runPromise(Effect.provide(runLaneClaim(options), seams.layer));
@@ -126,8 +126,8 @@ describe("runLaneClaim", () => {
 			[
 				COMMENTS,
 				buildComments(
-					{id: 8000, body: THEIRS, createdAt: "2026-08-16T00:00:00Z"},
-					{id: 9001, body: MINE, createdAt: "2026-08-17T00:00:00Z"},
+					{ id: 8000, body: THEIRS, createdAt: "2026-08-16T00:00:00Z" },
+					{ id: 9001, body: MINE, createdAt: "2026-08-17T00:00:00Z" },
 				),
 			],
 			[perm("agent"), WRITE_PERMISSION],
@@ -151,7 +151,7 @@ describe("runLaneClaim", () => {
 		const seams = fakeSeams([
 			[POST, POSTED],
 			[GET_COMMENT, ECHO],
-			[COMMENTS, truncatedComments({id: 9001, body: MINE})],
+			[COMMENTS, truncatedComments({ id: 9001, body: MINE })],
 			[perm("agent"), WRITE_PERMISSION],
 			[DELETE, DELETED],
 		]);
@@ -165,7 +165,10 @@ describe("runLaneClaim", () => {
 	it("exits 1 with no session id, and writes nothing", async () => {
 		const seams = fakeSeams([]);
 		const out = await Effect.runPromise(
-			Effect.provide(runLaneClaim({...options, env: {CLAUDE_PIPELINE_REPO: "o/r"}}), seams.layer),
+			Effect.provide(
+				runLaneClaim({ ...options, env: { CLAUDE_PIPELINE_REPO: "o/r" } }),
+				seams.layer,
+			),
 		);
 		expect(out.code).toBe(FAILED);
 		expect(seams.requests).toEqual([]);
@@ -180,7 +183,7 @@ describe("runLaneClaim", () => {
 	it("exits 9 when the marker lands and does not read back", async () => {
 		const out = await run([
 			[POST, POSTED],
-			[GET_COMMENT, served({body: THEIRS})],
+			[GET_COMMENT, served({ body: THEIRS })],
 		]);
 		expect(out.code).toBe(MARKER_READBACK);
 		expect(out.stderr.join("\n")).toContain("9001");
@@ -190,7 +193,7 @@ describe("runLaneClaim", () => {
 		const seams = fakeSeams([]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runLaneClaim({...options, key: key("chore:park-sweep"), lane: "chore:park-sweep"}),
+				runLaneClaim({ ...options, key: key("chore:park-sweep"), lane: "chore:park-sweep" }),
 				seams.layer,
 			),
 		);
@@ -203,25 +206,25 @@ describe("runLaneClaim", () => {
 describe("runLaneRelease", () => {
 	it("retracts this driver's own marker", async () => {
 		const seams = fakeSeams([
-			[COMMENTS, buildComments({id: 9001, body: MINE})],
+			[COMMENTS, buildComments({ id: 9001, body: MINE })],
 			[perm("agent"), WRITE_PERMISSION],
 			[DELETE, DELETED],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runLaneRelease({...options, token: MY_TOKEN}), seams.layer),
+			Effect.provide(runLaneRelease({ ...options, token: MY_TOKEN }), seams.layer),
 		);
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toEqual({answer: "released", lane: "5492", number: 5492});
+		expect(JSON.parse(out.stdout)).toEqual({ answer: "released", lane: "5492", number: 5492 });
 		expect(seams.requests).toContain(deleted(9001));
 	});
 
 	it("exits 31 rather than retracting another driver's marker", async () => {
 		const seams = fakeSeams([
-			[COMMENTS, buildComments({id: 8000, body: THEIRS})],
+			[COMMENTS, buildComments({ id: 8000, body: THEIRS })],
 			[perm("agent"), WRITE_PERMISSION],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runLaneRelease({...options, token: MY_TOKEN}), seams.layer),
+			Effect.provide(runLaneRelease({ ...options, token: MY_TOKEN }), seams.layer),
 		);
 		expect(out.code).toBe(CLAIM_NOT_MINE);
 		expect(seams.requests.filter((line) => DELETE.test(line))).toEqual([]);
@@ -237,11 +240,11 @@ describe("runLaneRelease", () => {
 	/** A read that failed is UNKNOWN, and an UNKNOWN holding never authorizes a delete. */
 	it("exits 11 on an unreadable marker read, retracting nothing", async () => {
 		const seams = fakeSeams([
-			[COMMENTS, truncatedComments({id: 9001, body: MINE})],
+			[COMMENTS, truncatedComments({ id: 9001, body: MINE })],
 			[perm("agent"), WRITE_PERMISSION],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runLaneRelease({...options, token: MY_TOKEN}), seams.layer),
+			Effect.provide(runLaneRelease({ ...options, token: MY_TOKEN }), seams.layer),
 		);
 		expect(out.code).toBe(LANE_UNREADABLE);
 		expect(out.stderr.join("\n")).toContain("UNKNOWN");
@@ -250,19 +253,19 @@ describe("runLaneRelease", () => {
 
 	it("exits 8 when the delete fails — whether the lane is still held is UNKNOWN", async () => {
 		const seams = fakeSeams([
-			[COMMENTS, buildComments({id: 9001, body: MINE})],
+			[COMMENTS, buildComments({ id: 9001, body: MINE })],
 			[perm("agent"), WRITE_PERMISSION],
 			[DELETE, GATEWAY],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runLaneRelease({...options, token: MY_TOKEN}), seams.layer),
+			Effect.provide(runLaneRelease({ ...options, token: MY_TOKEN }), seams.layer),
 		);
 		expect(out.code).toBe(APPEND_UNKNOWN);
 		expect(out.stderr.join("\n")).toContain("UNKNOWN");
 	});
 
 	it("answers inert on a chore lane, which was never handed a token", async () => {
-		const out = await release([], {key: key("chore:park-sweep"), lane: "chore:park-sweep"});
+		const out = await release([], { key: key("chore:park-sweep"), lane: "chore:park-sweep" });
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).answer).toBe("inert");
 	});
@@ -276,7 +279,7 @@ describe("runLaneRelease", () => {
  */
 describe("one driver, one marker", () => {
 	const held = (...bodies: ReadonlyArray<readonly [number, string]>) =>
-		buildComments(...bodies.map(([id, body]) => ({id, body})));
+		buildComments(...bodies.map(([id, body]) => ({ id, body })));
 
 	it("posts no second marker on a re-claim, and answers with the owning token", async () => {
 		const seams = fakeSeams([
@@ -284,7 +287,7 @@ describe("one driver, one marker", () => {
 			[perm("agent"), WRITE_PERMISSION],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runLaneClaim({...options, token: MY_TOKEN}), seams.layer),
+			Effect.provide(runLaneClaim({ ...options, token: MY_TOKEN }), seams.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toEqual({
@@ -304,7 +307,7 @@ describe("one driver, one marker", () => {
 			[DELETE, DELETED],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runLaneRelease({...options, token: MY_TOKEN}), seams.layer),
+			Effect.provide(runLaneRelease({ ...options, token: MY_TOKEN }), seams.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(seams.requests.filter((line) => DELETE.test(line))).toEqual([
@@ -326,10 +329,10 @@ describe("a driver's claim and the builder it spawns", () => {
 		const claimable = buildIssue({
 			number: 5492,
 			labels: [
-				{name: "type:feature"},
-				{name: "p1"},
-				{name: "status:triaged"},
-				{name: "ready-for:agent"},
+				{ name: "type:feature" },
+				{ name: "p1" },
+				{ name: "status:triaged" },
+				{ name: "ready-for:agent" },
 			],
 		});
 		const buildMarker = `build-claim: build:s-b1:${OTHER_UUID} · 2026-08-17T00:10:00Z`;
@@ -339,7 +342,7 @@ describe("a driver's claim and the builder it spawns", () => {
 					number: 5492,
 					issue: null,
 					repo: null,
-					env: {CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-b1"},
+					env: { CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: "s-b1" },
 					uuid: OTHER_UUID,
 					token: null,
 					at: "2026-08-17T00:10:00Z",
@@ -353,20 +356,20 @@ describe("a driver's claim and the builder it spawns", () => {
 				}),
 				fakeSeams([
 					[BUILD_ISSUE, claimable],
-					[POST, served({id: 9002, html_url: "https://forge.example/o/r#c"}, 201)],
-					[/^GET .*\/repos\/o\/r\/issues\/comments\/9002$/, served({body: buildMarker})],
+					[POST, served({ id: 9002, html_url: "https://forge.example/o/r#c" }, 201)],
+					[/^GET .*\/repos\/o\/r\/issues\/comments\/9002$/, served({ body: buildMarker })],
 					[
 						BUILD_COMMENTS,
 						buildComments(
 							// The driver's own claim, posted first and still held.
-							{id: 9001, body: MINE, createdAt: "2026-08-17T00:00:00Z"},
-							{id: 9002, body: buildMarker, createdAt: "2026-08-17T00:10:00Z"},
+							{ id: 9001, body: MINE, createdAt: "2026-08-17T00:00:00Z" },
+							{ id: 9002, body: buildMarker, createdAt: "2026-08-17T00:10:00Z" },
 						),
 					],
 					[perm("agent"), WRITE_PERMISSION],
 					NO_BLOCKERS,
 				]).layer,
-			).pipe(Effect.provide(fakeFs({files: {}}).layer)),
+			).pipe(Effect.provide(fakeFs({ files: {} }).layer)),
 		);
 		expect(out.code).not.toBe(BUILD_CLAIM_NOT_MINE);
 		expect(JSON.parse(out.stdout).answer).toBe("won");
@@ -397,7 +400,7 @@ describe("runLaneAdopt", () => {
 	const adopt = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof adoptOptions> = {}) =>
 		Effect.runPromise(
 			Effect.provide(
-				runLaneAdopt({...adoptOptions, ...overrides}),
+				runLaneAdopt({ ...adoptOptions, ...overrides }),
 				Layer.merge(fakeSeams(script).layer, unconfigured),
 			),
 		);
@@ -405,7 +408,7 @@ describe("runLaneAdopt", () => {
 	it("posts one marker naming the stranded seat, and prints the successor token", async () => {
 		const seams = fakeSeams([
 			[POST, POSTED],
-			[GET_COMMENT, served({body: ADOPT_BODY})],
+			[GET_COMMENT, served({ body: ADOPT_BODY })],
 		]);
 		const out = await Effect.runPromise(Effect.provide(runLaneAdopt(adoptOptions), seams.layer));
 		expect(out.code).toBe(0);
@@ -420,7 +423,7 @@ describe("runLaneAdopt", () => {
 	});
 
 	it("exits 1 on an empty --session or --reason, writing nothing", async () => {
-		for (const overrides of [{session: "  "}, {reason: ""}]) {
+		for (const overrides of [{ session: "  " }, { reason: "" }]) {
 			const out = await adopt([], overrides);
 			expect(out.code).toBe(FAILED);
 			expect(out.stdout).toBe("");
@@ -428,7 +431,7 @@ describe("runLaneAdopt", () => {
 	});
 
 	it("exits 1 on a --session carrying the marker's own field separator", async () => {
-		const out = await adopt([], {session: "s-9f2e · s-other"});
+		const out = await adopt([], { session: "s-9f2e · s-other" });
 		expect(out.code).toBe(FAILED);
 	});
 
@@ -436,7 +439,7 @@ describe("runLaneAdopt", () => {
 		const seams = fakeSeams([]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runLaneAdopt({...adoptOptions, reason: "the seat was killed\nby an outage"}),
+				runLaneAdopt({ ...adoptOptions, reason: "the seat was killed\nby an outage" }),
 				Layer.merge(seams.layer, unconfigured),
 			),
 		);
@@ -449,7 +452,7 @@ describe("runLaneAdopt", () => {
 		const seams = fakeSeams([]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runLaneAdopt({...adoptOptions, key: key("chore:sweep"), lane: "chore:sweep"}),
+				runLaneAdopt({ ...adoptOptions, key: key("chore:sweep"), lane: "chore:sweep" }),
 				seams.layer,
 			),
 		);
@@ -461,7 +464,7 @@ describe("runLaneAdopt", () => {
 	it("exits 9 when the marker lands and does not read back", async () => {
 		const out = await adopt([
 			[POST, POSTED],
-			[GET_COMMENT, served({body: "lane-adopt: s-other by lane:s-9f2e:x · at · reason: no"})],
+			[GET_COMMENT, served({ body: "lane-adopt: s-other by lane:s-9f2e:x · at · reason: no" })],
 		]);
 		expect(out.code).toBe(MARKER_READBACK);
 	});
@@ -471,15 +474,15 @@ describe("runLaneAdopt", () => {
 			[
 				COMMENTS,
 				buildComments(
-					{id: 8000, body: SIBLING, createdAt: "2026-08-16T00:00:00Z"},
-					{id: 9002, body: ADOPT_BODY, createdAt: "2026-08-17T00:00:00Z"},
+					{ id: 8000, body: SIBLING, createdAt: "2026-08-16T00:00:00Z" },
+					{ id: 9002, body: ADOPT_BODY, createdAt: "2026-08-17T00:00:00Z" },
 				),
 			],
 			[perm("agent"), WRITE_PERMISSION],
 			[DELETE, DELETED],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runLaneRelease({...options, token: MY_TOKEN}), seams.layer),
+			Effect.provide(runLaneRelease({ ...options, token: MY_TOKEN }), seams.layer),
 		);
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toEqual({
@@ -504,7 +507,7 @@ describe("runLaneAdopt", () => {
 	 */
 	describe("a stranded adopt — the marker with no claim beside it", () => {
 		const STRANDED: ReadonlyArray<Scripted> = [
-			[COMMENTS, buildComments({id: 9002, body: ADOPT_BODY, createdAt: "2026-08-17T00:00:00Z"})],
+			[COMMENTS, buildComments({ id: 9002, body: ADOPT_BODY, createdAt: "2026-08-17T00:00:00Z" })],
 			[perm("agent"), WRITE_PERMISSION],
 			[DELETE, DELETED],
 		];
@@ -512,7 +515,7 @@ describe("runLaneAdopt", () => {
 		it("retracts it under the token adopt printed, though no lane-claim marker stands", async () => {
 			const seams = fakeSeams(STRANDED);
 			const out = await Effect.runPromise(
-				Effect.provide(runLaneRelease({...options, token: MY_TOKEN}), seams.layer),
+				Effect.provide(runLaneRelease({ ...options, token: MY_TOKEN }), seams.layer),
 			);
 			expect(out.code).toBe(0);
 			expect(JSON.parse(out.stdout)).toEqual({
@@ -527,7 +530,7 @@ describe("runLaneAdopt", () => {
 		it("refuses a sibling driver's release of it, retracting nothing", async () => {
 			const seams = fakeSeams(STRANDED);
 			const out = await Effect.runPromise(
-				Effect.provide(runLaneRelease({...options, token: SIBLING_TOKEN}), seams.layer),
+				Effect.provide(runLaneRelease({ ...options, token: SIBLING_TOKEN }), seams.layer),
 			);
 			expect(out.code).toBe(CLAIM_NOT_MINE);
 			expect(seams.requests.filter((line) => DELETE.test(line))).toEqual([]);
@@ -536,7 +539,7 @@ describe("runLaneAdopt", () => {
 		it("sends a re-claim under the adopt's own token to that release rather than racing past it", async () => {
 			const seams = fakeSeams(STRANDED);
 			const out = await Effect.runPromise(
-				Effect.provide(runLaneClaim({...options, token: MY_TOKEN}), seams.layer),
+				Effect.provide(runLaneClaim({ ...options, token: MY_TOKEN }), seams.layer),
 			);
 			expect(out.code).toBe(CLAIM_NOT_MINE);
 			expect(out.stderr.join("\n")).toContain(`fabrika lane release 5492 --token ${MY_TOKEN}`);
@@ -554,14 +557,14 @@ describe("runLaneAdopt", () => {
 			[
 				COMMENTS,
 				buildComments(
-					{id: 8000, body: SIBLING, createdAt: "2026-08-16T00:00:00Z"},
-					{id: 9002, body: ADOPT_BODY, createdAt: "2026-08-17T00:00:00Z"},
+					{ id: 8000, body: SIBLING, createdAt: "2026-08-16T00:00:00Z" },
+					{ id: 9002, body: ADOPT_BODY, createdAt: "2026-08-17T00:00:00Z" },
 				),
 			],
 			[perm("agent"), WRITE_PERMISSION],
 		]);
 		const out = await Effect.runPromise(
-			Effect.provide(runLaneClaim({...options, token: MY_TOKEN}), seams.layer),
+			Effect.provide(runLaneClaim({ ...options, token: MY_TOKEN }), seams.layer),
 		);
 		expect(out.code).toBe(CLAIM_NOT_MINE);
 		expect(out.stderr.join("\n")).toContain(SIBLING_TOKEN);

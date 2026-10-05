@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
-import {runApply} from "./apply-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
+import { runApply } from "./apply-verb.ts";
 import {
 	COMMENTS,
 	CWD,
@@ -30,15 +30,15 @@ const PATCH = /PATCH .*\/repos\/o\/r\/issues\/4312$/;
 const REMOVE = /DELETE .*\/repos\/o\/r\/issues\/4312\/labels\//;
 const ADD = /POST .*\/repos\/o\/r\/issues\/4312\/labels$/;
 
-const ACCEPTED: HttpReply = {status: 200, body: "{}"};
-const LABELLED: HttpReply = {status: 200, body: "[]"};
-const UNREADABLE: HttpReply = {status: 502, body: "{}"};
-const NOT_FOUND: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
-const WRITE_FAILED: HttpReply = {status: 500, body: "{}"};
+const ACCEPTED: HttpReply = { status: 200, body: "{}" };
+const LABELLED: HttpReply = { status: 200, body: "[]" };
+const UNREADABLE: HttpReply = { status: 502, body: "{}" };
+const NOT_FOUND: HttpReply = { status: 404, body: '{"message":"Not Found"}' };
+const WRITE_FAILED: HttpReply = { status: 500, body: "{}" };
 
 const labelSet = (...names: ReadonlyArray<string>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(names.map((name) => ({name}))),
+	body: JSON.stringify(names.map((name) => ({ name }))),
 });
 
 /** A body carrying the conforming block — what `--ready-for agent` requires. */
@@ -57,9 +57,9 @@ const issue = (
 		title: "t",
 		body,
 		state: "open",
-		labels: labels.map((name) => ({name})),
+		labels: labels.map((name) => ({ name })),
 		html_url: "https://example.test/issues/4312",
-		milestone: milestone === null ? null : {number: milestone},
+		milestone: milestone === null ? null : { number: milestone },
 	}),
 });
 
@@ -79,8 +79,8 @@ const VOCABULARY = labelSet(
 const OPEN_MILESTONES: HttpReply = {
 	status: 200,
 	body: JSON.stringify([
-		{number: 47, title: "fabrika campaign"},
-		{number: 44, title: "wayfinder"},
+		{ number: 47, title: "fabrika campaign" },
+		{ number: 44, title: "wayfinder" },
 	]),
 };
 
@@ -96,7 +96,7 @@ const options = {
 	token: null as string | null,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 	cwd: CWD,
 };
 
@@ -113,17 +113,17 @@ const happy = (): ReadonlyArray<Scripted> => [
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
-		Effect.provide(runApply({...options, ...overrides}), triageContext(guardedShell(script))),
+		Effect.provide(runApply({ ...options, ...overrides }), triageContext(guardedShell(script))),
 	);
 
 /** A config declaring two standing lanes — a fixture, since a repo that declares none runs none. */
 const LANED_CONFIG = JSON.stringify({
-	boardVocabulary: {standingLanes: ["wayfinder:backlog", "axis:pipeline-hardening"]},
+	boardVocabulary: { standingLanes: ["wayfinder:backlog", "axis:pipeline-hardening"] },
 });
 
 /** A config whose priority facet declares a value `/^p\d+$/` cannot own — that break, as data. */
 const VIOLATING_CONFIG = JSON.stringify({
-	triageFacets: [{name: "priority", owns: "^p\\d+$", values: ["p0", "p1", "urgent"]}],
+	triageFacets: [{ name: "priority", owns: "^p\\d+$", values: ["p0", "p1", "urgent"] }],
 });
 
 describe("runApply under a refused config", () => {
@@ -161,7 +161,7 @@ describe("runApply under a refused config", () => {
 	 * claim, not "the exit code was 18".
 	 */
 	it.each([
-		["a file that is there and denied", {unreadable: true} as const, "could not be read"],
+		["a file that is there and denied", { unreadable: true } as const, "could not be read"],
 		["a document that is not a JSON object", "[1, 2]", "not a JSON object"],
 		["a key no decoder accepted", '{"triageFacets": "garbage"}', "`triageFacets` is not an array"],
 	])("refuses %s, and reads nothing", async (_case, config, expected) => {
@@ -183,7 +183,7 @@ describe("runApply", () => {
 	});
 
 	it("emits the record on STDOUT with --json, carrying what it read BACK", async () => {
-		const out = await run(happy(), {json: true});
+		const out = await run(happy(), { json: true });
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			outcome: "triaged",
 			number: 4312,
@@ -192,7 +192,7 @@ describe("runApply", () => {
 			readyFor: "agent",
 			home: 47,
 			removed: ["status:needs-triage", "p1"],
-			readBack: {labels: ["type:bug", "p2", "status:triaged", "ready-for:agent"], milestone: 47},
+			readBack: { labels: ["type:bug", "p2", "status:triaged", "ready-for:agent"], milestone: 47 },
 		});
 	});
 
@@ -206,8 +206,8 @@ describe("runApply", () => {
 		const shell = guardedShell(happy());
 		await Effect.runPromise(Effect.provide(runApply(options), triageContext(shell)));
 		const writes = shell.requests
-			.map((line, at) => ({line, body: shell.bodies[at] ?? ""}))
-			.filter(({line}) => PATCH.test(line) || REMOVE.test(line) || ADD.test(line));
+			.map((line, at) => ({ line, body: shell.bodies[at] ?? "" }))
+			.filter(({ line }) => PATCH.test(line) || REMOVE.test(line) || ADD.test(line));
 		expect(writes[0]?.line).toBe("PATCH https://api.github.com/repos/o/r/issues/4312");
 		expect(writes[0]?.body).toBe('{"milestone":47}');
 		expect(writes.at(-1)?.line).toContain("POST");
@@ -224,7 +224,7 @@ describe("runApply", () => {
 		const added: unknown = JSON.parse(
 			shell.bodies[shell.requests.findIndex((c) => ADD.test(c))] ?? "{}",
 		);
-		expect((added as {readonly labels: ReadonlyArray<string>}).labels).toContain("p2");
+		expect((added as { readonly labels: ReadonlyArray<string> }).labels).toContain("p2");
 	});
 
 	it("leaves a label no facet owns entirely alone", async () => {
@@ -255,7 +255,7 @@ describe("runApply", () => {
 		]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runApply({...options, home: null, lane: "wayfinder:backlog"}),
+				runApply({ ...options, home: null, lane: "wayfinder:backlog" }),
 				triageContext(shell, LANED_CONFIG),
 			),
 		);
@@ -266,31 +266,31 @@ describe("runApply", () => {
 	});
 
 	it("refuses both --home and --lane", async () => {
-		const out = await run(happy(), {lane: "wayfinder:backlog"});
+		const out = await run(happy(), { lane: "wayfinder:backlog" });
 		expect(out.code).toBe(1);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain("exactly one of --home or --lane");
 	});
 
 	it("refuses neither --home nor --lane", async () => {
-		const out = await run(happy(), {home: null});
+		const out = await run(happy(), { home: null });
 		expect(out.code).toBe(1);
 	});
 
 	it("refuses a non-issue number", async () => {
-		const out = await run(happy(), {issue: 0});
+		const out = await run(happy(), { issue: 0 });
 		expect(out.code).toBe(1);
 	});
 
 	it.each([
-		["type", {type: "task"}],
-		["priority", {priority: "1"}],
-		["ready-for", {readyFor: "robot"}],
-		["lane", {home: null, lane: "axis:whatever"}],
+		["type", { type: "task" }],
+		["priority", { priority: "1" }],
+		["ready-for", { readyFor: "robot" }],
+		["lane", { home: null, lane: "axis:whatever" }],
 	])("refuses an off-vocabulary --%s on 10, before any read", async (_flag, override) => {
 		const shell = guardedShell(happy());
 		const out = await Effect.runPromise(
-			Effect.provide(runApply({...options, ...override}), triageContext(shell)),
+			Effect.provide(runApply({ ...options, ...override }), triageContext(shell)),
 		);
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stdout).toBe("");
@@ -301,7 +301,7 @@ describe("runApply", () => {
 		const shell = guardedShell(happy());
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runApply({...options, home: null, lane: "axis:whatever"}),
+				runApply({ ...options, home: null, lane: "axis:whatever" }),
 				triageContext(shell, LANED_CONFIG),
 			),
 		);
@@ -318,26 +318,29 @@ describe("runApply", () => {
 	 * exist. An absent key and an empty list are that one answer.
 	 */
 	it.each([
-		["an empty list", JSON.stringify({boardVocabulary: {standingLanes: []}})],
-		["an absent key", JSON.stringify({boardVocabulary: {priorities: ["p0", "p1", "p2"]}})],
+		["an empty list", JSON.stringify({ boardVocabulary: { standingLanes: [] } })],
+		["an absent key", JSON.stringify({ boardVocabulary: { priorities: ["p0", "p1", "p2"] } })],
 		["no config at all", undefined],
-	])("refuses --lane over a repo that declares no lane (%s), naming the key", async (_case, config) => {
-		const shell = guardedShell(happy());
-		const out = await Effect.runPromise(
-			Effect.provide(
-				runApply({...options, home: null, lane: "wayfinder:backlog"}),
-				triageContext(shell, config),
-			),
-		);
-		expect(out.code).toBe(OFF_VOCABULARY);
-		expect(out.stdout).toBe("");
-		expect(out.stderr.at(-1)).toContain("this repo declares no standing lane");
-		expect(out.stderr.at(-1)).toContain("`boardVocabulary.standingLanes`");
-		expect(shell.requests).toEqual([]);
-	});
+	])(
+		"refuses --lane over a repo that declares no lane (%s), naming the key",
+		async (_case, config) => {
+			const shell = guardedShell(happy());
+			const out = await Effect.runPromise(
+				Effect.provide(
+					runApply({ ...options, home: null, lane: "wayfinder:backlog" }),
+					triageContext(shell, config),
+				),
+			);
+			expect(out.code).toBe(OFF_VOCABULARY);
+			expect(out.stdout).toBe("");
+			expect(out.stderr.at(-1)).toContain("this repo declares no standing lane");
+			expect(out.stderr.at(-1)).toContain("`boardVocabulary.standingLanes`");
+			expect(shell.requests).toEqual([]);
+		},
+	);
 
 	it("refuses a milestone that is not open, on the same code", async () => {
-		const out = await run(happy(), {home: 99});
+		const out = await run(happy(), { home: 99 });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toContain("not an open milestone");
 	});
@@ -365,9 +368,9 @@ describe("runApply", () => {
 			[LABELS, labelSet("type:bug", "status:triaged", "ready-for:agent")],
 			[MILESTONES, OPEN_MILESTONES],
 		]);
-		const config = JSON.stringify({boardVocabulary: {priorities: ["sev1", "sev2"]}});
+		const config = JSON.stringify({ boardVocabulary: { priorities: ["sev1", "sev2"] } });
 		const out = await Effect.runPromise(
-			Effect.provide(runApply({...options, priority: "sev2"}), triageContext(shell, config)),
+			Effect.provide(runApply({ ...options, priority: "sev2" }), triageContext(shell, config)),
 		);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-1)).toContain("label sev2 does not exist");
@@ -532,7 +535,7 @@ describe("runApply", () => {
 					[REMOVE, LABELLED],
 					[ADD, LABELLED],
 				],
-				{type: "epic"},
+				{ type: "epic" },
 			);
 			expect(out.code).toBe(0);
 			expect(out.stdout).toBe("triaged\t4312\tepic\tp2\tnone\t47\t\t\n");
@@ -549,7 +552,7 @@ describe("runApply", () => {
 					[REMOVE, LABELLED],
 					[ADD, LABELLED],
 				],
-				{readyFor: "human"},
+				{ readyFor: "human" },
 			);
 			expect(out.code).toBe(0);
 			expect(out.stdout).toBe("triaged\t4312\tbug\tp2\thuman\t47\t\t\n");
@@ -581,7 +584,7 @@ describe("runApply", () => {
 				[ADD, LABELLED],
 			]);
 			const out = await Effect.runPromise(
-				Effect.provide(runApply({...options, type: "epic"}), triageContext(shell)),
+				Effect.provide(runApply({ ...options, type: "epic" }), triageContext(shell)),
 			);
 			expect(out.code).toBe(0);
 			expect(out.stdout).toBe("triaged\t4312\tepic\tp2\tnone\t47\t\t\n");
@@ -601,7 +604,7 @@ describe("runApply", () => {
 				[ADD, LABELLED],
 			]);
 			const out = await Effect.runPromise(
-				Effect.provide(runApply({...options, type: "epic"}), triageContext(shell)),
+				Effect.provide(runApply({ ...options, type: "epic" }), triageContext(shell)),
 			);
 			expect(out.code).toBe(0);
 			expect(shell.requests.some((c) => REMOVE.test(c) && c.includes("ready-for%3Aagent"))).toBe(
@@ -620,10 +623,10 @@ describe("runApply", () => {
 					[REMOVE, LABELLED],
 					[ADD, LABELLED],
 				],
-				{type: "epic", json: true},
+				{ type: "epic", json: true },
 			);
 			expect(out.code).toBe(0);
-			expect(JSON.parse(out.stdout)).toMatchObject({type: "epic", readyFor: null});
+			expect(JSON.parse(out.stdout)).toMatchObject({ type: "epic", readyFor: null });
 		});
 
 		/** Parking an epic for a person is triage's own claim, and the gate never makes it. */
@@ -638,7 +641,7 @@ describe("runApply", () => {
 					[REMOVE, LABELLED],
 					[ADD, LABELLED],
 				],
-				{type: "epic", readyFor: "human"},
+				{ type: "epic", readyFor: "human" },
 			);
 			expect(out.code).toBe(0);
 			expect(out.stdout).toBe("triaged\t4312\tepic\tp2\thuman\t47\t\t\n");
@@ -655,7 +658,7 @@ describe("runApply", () => {
 					[REMOVE, LABELLED],
 					[ADD, LABELLED],
 				],
-				{type: "epic"},
+				{ type: "epic" },
 			);
 			expect(out.code).toBe(READBACK_MISMATCH);
 			expect(out.stderr.at(-1)).toContain("no ready-for");
@@ -673,9 +676,9 @@ describe("runApply", () => {
 
 		const edgeList = (...numbers: ReadonlyArray<number>): HttpReply => ({
 			status: 200,
-			body: JSON.stringify(numbers.map((number) => ({number}))),
+			body: JSON.stringify(numbers.map((number) => ({ number }))),
 		});
-		const target = (id: number): HttpReply => ({status: 200, body: JSON.stringify({id})});
+		const target = (id: number): HttpReply => ({ status: 200, body: JSON.stringify({ id }) });
 
 		const withEdges = (...rows: ReadonlyArray<Scripted>): ReadonlyArray<Scripted> => [
 			...rows,
@@ -692,7 +695,7 @@ describe("runApply", () => {
 				),
 			);
 			const out = await Effect.runPromise(
-				Effect.provide(runApply({...options, blockedBy: [4311]}), triageContext(shell)),
+				Effect.provide(runApply({ ...options, blockedBy: [4311] }), triageContext(shell)),
 			);
 			expect(out.code).toBe(0);
 			const at = shell.requests.findIndex((line) => EDGE_WRITE.test(line));
@@ -708,7 +711,7 @@ describe("runApply", () => {
 					[TARGET, target(9911)],
 					[EDGE_WRITE, ACCEPTED],
 				),
-				{blockedBy: [4311]},
+				{ blockedBy: [4311] },
 			);
 			expect(out.stdout).toBe("triaged\t4312\tbug\tp2\tagent\t47\t#4311\t\n");
 			expect(out.stderr.at(-1)).toBe("triage apply: read back #4312 blocked_by #4311.");
@@ -717,7 +720,7 @@ describe("runApply", () => {
 		it("leaves one edge and exits 0 when the edge is already live — the flag is idempotent", async () => {
 			const shell = guardedShell(withEdges([EDGES, edgeList(4311)], [EDGE_WRITE, ACCEPTED]));
 			const out = await Effect.runPromise(
-				Effect.provide(runApply({...options, blockedBy: [4311, 4311]}), triageContext(shell)),
+				Effect.provide(runApply({ ...options, blockedBy: [4311, 4311] }), triageContext(shell)),
 			);
 			expect(out.code).toBe(0);
 			expect(shell.requests.filter((line) => EDGE_WRITE.test(line))).toEqual([]);
@@ -729,7 +732,7 @@ describe("runApply", () => {
 				withEdges([EDGES, edgeList()], [TARGET, NOT_FOUND], [EDGE_WRITE, ACCEPTED]),
 			);
 			const out = await Effect.runPromise(
-				Effect.provide(runApply({...options, blockedBy: [4311]}), triageContext(shell)),
+				Effect.provide(runApply({ ...options, blockedBy: [4311] }), triageContext(shell)),
 			);
 			expect(out.code).toBe(ZERO_SCOPE);
 			expect(out.stderr.at(-1)).toContain("--blocked-by 4311 names no issue");
@@ -741,7 +744,7 @@ describe("runApply", () => {
 		});
 
 		it("is PRECONDITION_UNKNOWN when the live edge set could not be read", async () => {
-			const out = await run(withEdges([EDGES, UNREADABLE]), {blockedBy: [4311]});
+			const out = await run(withEdges([EDGES, UNREADABLE]), { blockedBy: [4311] });
 			expect(out.code).toBe(PRECONDITION_UNKNOWN);
 			expect(out.stderr.at(-1)).toContain("no edge was written");
 		});
@@ -749,7 +752,7 @@ describe("runApply", () => {
 		it("is WRITE_UNKNOWN when the edge POST fails", async () => {
 			const out = await run(
 				withEdges([EDGES, edgeList()], [TARGET, target(9911)], [EDGE_WRITE, WRITE_FAILED]),
-				{blockedBy: [4311]},
+				{ blockedBy: [4311] },
 			);
 			expect(out.code).toBe(WRITE_UNKNOWN);
 			expect(out.stderr.at(-1)).toContain("did NOT land");
@@ -759,7 +762,7 @@ describe("runApply", () => {
 		it("is READBACK_MISMATCH when the written edge is absent from the read-back", async () => {
 			const out = await run(
 				withEdges([EDGES, edgeList()], [TARGET, target(9911)], [EDGE_WRITE, ACCEPTED]),
-				{blockedBy: [4311]},
+				{ blockedBy: [4311] },
 			);
 			expect(out.code).toBe(READBACK_MISMATCH);
 			expect(out.stderr.at(-1)).toContain("#4311");
@@ -769,7 +772,7 @@ describe("runApply", () => {
 		it("refuses a self-edge, which would make the issue permanently unbuildable", async () => {
 			const shell = guardedShell(happy());
 			const out = await Effect.runPromise(
-				Effect.provide(runApply({...options, blockedBy: [4312]}), triageContext(shell)),
+				Effect.provide(runApply({ ...options, blockedBy: [4312] }), triageContext(shell)),
 			);
 			expect(out.code).toBe(ZERO_SCOPE);
 			expect(out.stderr.at(-1)).toContain("names the issue itself");
@@ -789,12 +792,12 @@ describe("runApply", () => {
 			const shell = guardedShell(
 				withEdges(
 					[EDGES, edgeList()],
-					[TARGET, {status: 200, body: JSON.stringify({id: 9911, pull_request: {url: "u"}})}],
+					[TARGET, { status: 200, body: JSON.stringify({ id: 9911, pull_request: { url: "u" } }) }],
 					[EDGE_WRITE, ACCEPTED],
 				),
 			);
 			const out = await Effect.runPromise(
-				Effect.provide(runApply({...options, blockedBy: [4311]}), triageContext(shell)),
+				Effect.provide(runApply({ ...options, blockedBy: [4311] }), triageContext(shell)),
 			);
 			expect(out.code).toBe(PULL_REQUEST_TARGET);
 			expect(out.stderr.at(-1)).toContain("names a pull request, not an issue");
@@ -809,7 +812,7 @@ describe("runApply", () => {
 
 	it("refuses an unresolvable repo rather than guessing one", async () => {
 		const out = await Effect.runPromise(
-			Effect.provide(runApply({...options, env: {}}), triageContext(guardedShell([]))),
+			Effect.provide(runApply({ ...options, env: {} }), triageContext(guardedShell([]))),
 		);
 		expect(out.code).toBe(1);
 		expect(out.stderr.at(-1)).toContain("cannot resolve a target repo");
@@ -820,31 +823,31 @@ describe("runApply", () => {
 describe("runApply — the target guard", () => {
 	const MINE = "session-mine";
 	const THEIRS = "session-theirs";
-	const mine = {CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: MINE} as Record<
+	const mine = { CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: MINE } as Record<
 		string,
 		string | undefined
 	>;
 	const guard = async (script: ReadonlyArray<Scripted>) => {
 		const shell = guardedShell(script);
 		const out = await Effect.runPromise(
-			Effect.provide(runApply({...options, env: mine}), triageContext(shell)),
+			Effect.provide(runApply({ ...options, env: mine }), triageContext(shell)),
 		);
-		return {out, wrote: shell.requests.some((line) => ADD.test(line) || PATCH.test(line))};
+		return { out, wrote: shell.requests.some((line) => ADD.test(line) || PATCH.test(line)) };
 	};
 
 	it("refuses a live claim held by another session on 17 and writes nothing", async () => {
-		const {out, wrote} = await guard([
+		const { out, wrote } = await guard([
 			...happy(),
-			[COMMENTS, claimPage({session: THEIRS, createdAt: LIVE})],
+			[COMMENTS, claimPage({ session: THEIRS, createdAt: LIVE })],
 		]);
 		expect(out.code).toBe(CLAIMED_ELSEWHERE);
 		expect(wrote).toBe(false);
 	});
 
 	it("applies when the live claim is this session's own", async () => {
-		const {out} = await guard([
+		const { out } = await guard([
 			...happy(),
-			[COMMENTS, claimPage({session: MINE, createdAt: LIVE})],
+			[COMMENTS, claimPage({ session: MINE, createdAt: LIVE })],
 		]);
 		expect(out.code).toBe(0);
 	});
@@ -879,20 +882,20 @@ describe("runApply --class", () => {
 	];
 
 	it("stamps class:ui and reports it as the machine line's last column", async () => {
-		const out = await run(classed(), {classes: ["ui"]});
+		const out = await run(classed(), { classes: ["ui"] });
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("triaged\t4312\tbug\tp2\tagent\t47\t\tui\n");
 	});
 
 	it("reports the stamped classes on --json too", async () => {
-		const out = await run(classed(), {classes: ["ui"], json: true});
-		expect(JSON.parse(out.stdout)).toMatchObject({classes: ["ui"]});
+		const out = await run(classed(), { classes: ["ui"], json: true });
+		expect(JSON.parse(out.stdout)).toMatchObject({ classes: ["ui"] });
 	});
 
 	it("refuses an off-set spelling on OFF_VOCABULARY, before it reads or writes anything", async () => {
 		const shell = guardedShell(classed());
 		const out = await Effect.runPromise(
-			Effect.provide(runApply({...options, classes: ["UI"]}), triageContext(shell)),
+			Effect.provide(runApply({ ...options, classes: ["UI"] }), triageContext(shell)),
 		);
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.join(" ")).toContain("--class must be one of code, doc, skill, ui");
@@ -900,7 +903,7 @@ describe("runApply --class", () => {
 	});
 
 	it("refuses to write when the class label does not exist in the repo", async () => {
-		const out = await run(happy(), {classes: ["ui"]});
+		const out = await run(happy(), { classes: ["ui"] });
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.join(" ")).toContain("label class:ui does not exist");
 		expect(out.stderr.join(" ")).toContain("fabrika status bootstrap label-taxonomy");

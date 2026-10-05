@@ -22,8 +22,8 @@
  * walk the same line grammar (`./marker-line.ts`), which is what keeps that symmetry true.
  */
 
-import type {CommitRange} from "../io/git.ts";
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
+import type { CommitRange } from "../io/git.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
 import {
 	CLAUSE_SEPARATOR,
 	type Clause,
@@ -74,7 +74,7 @@ export const parseRange = (raw: string): CommitRange<HeadSha> | null => {
 	if (at <= 0) return null;
 	const base = headSha(raw.slice(0, at));
 	const tip = headSha(raw.slice(at + RANGE_SEPARATOR.length));
-	return base === null || tip === null ? null : {base, tip};
+	return base === null || tip === null ? null : { base, tip };
 };
 
 export const renderRange = (range: CommitRange<HeadSha>): string =>
@@ -84,9 +84,9 @@ export const renderRange = (range: CommitRange<HeadSha>): string =>
 export const read = (artifact: string): RangeVerdictMarkerRead => {
 	const opened = openMarkerLine(artifact);
 	if (opened._tag !== "Open") return opened;
-	const {evidence, emphasis, namespace, rest} = opened;
+	const { evidence, emphasis, namespace, rest } = opened;
 
-	const {token: polarityToken, after: afterPolarity} = takeToken(rest);
+	const { token: polarityToken, after: afterPolarity } = takeToken(rest);
 	if (polarityToken === "") {
 		return malformed(`"${namespace}:" carries no polarity — expected PASS or FAIL`, evidence);
 	}
@@ -95,7 +95,7 @@ export const read = (artifact: string): RangeVerdictMarkerRead => {
 		return malformed(`"${polarityToken}" is not a polarity — expected PASS or FAIL`, evidence);
 	}
 
-	const {token: rangeToken, after: afterRange} = takeToken(afterPolarity);
+	const { token: rangeToken, after: afterRange } = takeToken(afterPolarity);
 	if (!rangeToken.toLowerCase().startsWith(RANGE_PREFIX)) {
 		return malformed(
 			`the ${polarity} marker carries no range — expected ${RANGE_PREFIX}<base>${RANGE_SEPARATOR}<tip>`,
@@ -110,7 +110,7 @@ export const read = (artifact: string): RangeVerdictMarkerRead => {
 		);
 	}
 
-	const {token: contentToken, after: afterContent} = takeToken(afterRange);
+	const { token: contentToken, after: afterContent } = takeToken(afterRange);
 	if (!contentToken.toLowerCase().startsWith(CONTENT_PREFIX)) {
 		return malformed(
 			`the ${polarity} range marker carries no content binding — the SHAs alone do not survive the merge`,
@@ -133,7 +133,7 @@ export const read = (artifact: string): RangeVerdictMarkerRead => {
 		);
 	}
 
-	return {_tag: "Found", value: {namespace, polarity, range, content, clause: text}};
+	return { _tag: "Found", value: { namespace, polarity, range, content, clause: text } };
 };
 
 /** Compose the marker's first line. Round-trips through {@link read}. */
@@ -147,8 +147,8 @@ export const emit = ({
 	`${namespace}: ${polarity} ${RANGE_PREFIX}${renderRange(range)} ${CONTENT_PREFIX}${content} ${CLAUSE_SEPARATOR} ${text}\n`;
 
 export type RangeVerdictMarkerFields =
-	| {readonly _tag: "Fields"; readonly marker: RangeVerdictMarker}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly marker: RangeVerdictMarker }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 /** `<key>: <value>` or `<key><TAB><value>`, so `wire read`'s own output pipes back into `wire emit`. */
 const FIELD_LINE = /^([A-Za-z-]+)[ \t]*[:\t][ \t]*(.*)$/;
@@ -191,7 +191,7 @@ export const parseFields = (fields: string): RangeVerdictMarkerFields => {
 
 	const namespace = (seen.get("namespace") ?? "").trim().toLowerCase();
 	if (!isGateNamespace(namespace)) {
-		return {_tag: "Unusable", reason: `"${namespace}" is not a ${NAMESPACE_PHRASE} namespace`};
+		return { _tag: "Unusable", reason: `"${namespace}" is not a ${NAMESPACE_PHRASE} namespace` };
 	}
 	const polarity = polarityOf((seen.get("polarity") ?? "").trim());
 	if (polarity === null) {
@@ -216,9 +216,12 @@ export const parseFields = (fields: string): RangeVerdictMarkerFields => {
 		};
 	}
 	const text = clause(seen.get("clause") ?? "");
-	if (text === null) return {_tag: "Unusable", reason: "the trailing clause is blank"};
+	if (text === null) return { _tag: "Unusable", reason: "the trailing clause is blank" };
 
-	return {_tag: "Fields", marker: {namespace, polarity, range: {base, tip}, content, clause: text}};
+	return {
+		_tag: "Fields",
+		marker: { namespace, polarity, range: { base, tip }, content, clause: text },
+	};
 };
 
 export const renderMarker = (marker: RangeVerdictMarker): NonEmptyReadonlyArray<string> => [
@@ -234,12 +237,12 @@ export const renderMarker = (marker: RangeVerdictMarker): NonEmptyReadonlyArray<
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.marker)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.marker) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderMarker(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderMarker(result.value) } : result;
 };

@@ -6,17 +6,17 @@
  * runs the pure verb, and emits its outcome. Every decision lives in the verb modules beside it,
  * which is what makes each refusal testable without spawning a process.
  */
-import {Effect, Option} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {parkCauseKey} from "../config/keys/park-cause.ts";
-import {readKey} from "../config/read-key.ts";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {configRootOrRefuse, resolveRootOrRefuse} from "../lane/ground.ts";
-import {DEFAULT_LANES_ROOT} from "../lane/store.ts";
-import {runRerun} from "./rerun-verb.ts";
-import {runRoute} from "./route-verb.ts";
-import {runUnpark} from "./unpark-verb.ts";
+import { Effect, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { parkCauseKey } from "../config/keys/park-cause.ts";
+import { readKey } from "../config/read-key.ts";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { configRootOrRefuse, resolveRootOrRefuse } from "../lane/ground.ts";
+import { DEFAULT_LANES_ROOT } from "../lane/store.ts";
+import { runRerun } from "./rerun-verb.ts";
+import { runRoute } from "./route-verb.ts";
+import { runUnpark } from "./unpark-verb.ts";
 
 const repoFlag = Flag.string("repo").pipe(
 	Flag.optional,
@@ -49,7 +49,7 @@ const unpark = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, root, task, repo, rationale}) {
+	Effect.fn(function* ({ lane, root, task, repo, rationale }) {
 		const cwd = process.cwd();
 		// `driverRouted` is weighed against the lanes root below, which a linked worktree and its
 		// primary checkout derive alike — so reading it at the cwd would let a worktree branch's
@@ -108,7 +108,7 @@ const unpark = leafCommand(
 			'  Derivation: the operate skill\'s contract.md, "recipe unpark"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika recipe unpark 5847"}]),
+	Command.withExamples([{ command: "fabrika recipe unpark 5847" }]),
 );
 
 const rerun = leafCommand(
@@ -119,8 +119,8 @@ const rerun = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({pr, repo}) {
-		yield* emit(yield* runRerun({pr, repo: Option.getOrNull(repo), env: process.env}));
+	Effect.fn(function* ({ pr, repo }) {
+		yield* emit(yield* runRerun({ pr, repo: Option.getOrNull(repo), env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("Rerun a PR's failed runs behind a governance PASS at head."),
@@ -139,7 +139,7 @@ const rerun = leafCommand(
 			'  Derivation: the operate skill\'s contract.md, "recipe rerun"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika recipe rerun 5851"}]),
+	Command.withExamples([{ command: "fabrika recipe rerun 5851" }]),
 );
 
 const route = leafCommand(
@@ -155,8 +155,8 @@ const route = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({state, exit}) {
-		yield* emit(yield* runRoute({state, exit: Option.getOrNull(exit)}));
+	Effect.fn(function* ({ state, exit }) {
+		yield* emit(yield* runRoute({ state, exit: Option.getOrNull(exit) }));
 	}),
 ).pipe(
 	Command.withShortDescription(
@@ -171,8 +171,8 @@ const route = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika recipe route unpark"},
-		{command: "fabrika recipe route unpark --exit 12"},
+		{ command: "fabrika recipe route unpark" },
+		{ command: "fabrika recipe route unpark --exit 12" },
 	]),
 );
 

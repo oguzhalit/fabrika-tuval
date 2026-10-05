@@ -26,7 +26,7 @@
  * here because the refusal has **no override**: a false negative leaves an issue the old, pre-gate
  * world already tolerated, while a false red strands a correct body on the reword escape.
  */
-import {contractRegionLines} from "../wire/acceptance-criteria.ts";
+import { contractRegionLines } from "../wire/acceptance-criteria.ts";
 
 /** One line of a body that states an ordering, and the issues that ordering names. */
 export interface StatedOrdering {
@@ -110,7 +110,7 @@ const phraseStart = (text: string): number | null => {
  */
 export const statedOrderings = (text: string): ReadonlyArray<StatedOrdering> => {
 	const found: StatedOrdering[] = [];
-	for (const {line, text: raw} of contractRegionLines(text.split("\n"))) {
+	for (const { line, text: raw } of contractRegionLines(text.split("\n"))) {
 		if (/^ {0,3}>/.test(raw)) continue;
 		const readable = blankQuotations(raw);
 		const start = phraseStart(readable);
@@ -120,7 +120,7 @@ export const statedOrderings = (text: string): ReadonlyArray<StatedOrdering> => 
 		for (const match of sentenceFrom(readable, start).matchAll(REFERENCE)) {
 			references.add(Number(match[1]));
 		}
-		found.push({line, text: raw, references: [...references]});
+		found.push({ line, text: raw, references: [...references] });
 	}
 	return found;
 };

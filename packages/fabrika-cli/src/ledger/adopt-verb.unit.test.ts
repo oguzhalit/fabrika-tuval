@@ -1,10 +1,10 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {GATEWAY, GIT_DIRS, NOT_FOUND, served} from "../build/fixtures.test-support.ts";
-import {fakeFs, fakeSeams, once, type Scripted} from "../fakes.test-support.ts";
-import {compose} from "../report/amend.ts";
-import {runAdopt} from "./adopt-verb.ts";
-import {amendmentSection} from "./adoption.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { GATEWAY, GIT_DIRS, NOT_FOUND, served } from "../build/fixtures.test-support.ts";
+import { fakeFs, fakeSeams, once, type Scripted } from "../fakes.test-support.ts";
+import { compose } from "../report/amend.ts";
+import { runAdopt } from "./adopt-verb.ts";
+import { amendmentSection } from "./adoption.ts";
 import {
 	BAD_SECTIONS,
 	LINK_UNPROVEN,
@@ -13,9 +13,17 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {bodyDigest} from "./digest.ts";
-import {CLAIMED, DEFAULT_LABELS, DIR, env, epic, labelSet, TOKEN} from "./fixtures.test-support.ts";
-import {manifestPath, parseManifest, renderRunRecord, runJsonPath} from "./run.ts";
+import { bodyDigest } from "./digest.ts";
+import {
+	CLAIMED,
+	DEFAULT_LABELS,
+	DIR,
+	env,
+	epic,
+	labelSet,
+	TOKEN,
+} from "./fixtures.test-support.ts";
+import { manifestPath, parseManifest, renderRunRecord, runJsonPath } from "./run.ts";
 
 const CHILD = 8195;
 const CHILD_ID = 8_195_000;
@@ -54,7 +62,7 @@ const adoptee = (body: string, labels: ReadonlyArray<string> = LABELS, extra = {
 		body,
 		state: "open",
 		state_reason: null,
-		labels: labels.map((name) => ({name})),
+		labels: labels.map((name) => ({ name })),
 		assignees: [],
 		milestone: null,
 		html_url: `https://forge.example/o/r/issues/${CHILD}`,
@@ -79,7 +87,7 @@ const GROUND: ReadonlyArray<Scripted> = [
 	...CLAIMED,
 ];
 
-const LINKED = served([{number: CHILD, id: CHILD_ID, state: "open", state_reason: null}]);
+const LINKED = served([{ number: CHILD, id: CHILD_ID, state: "open", state_reason: null }]);
 
 /** The label writes that move a triaged adoptee onto `status:planned`, add before remove. */
 const PARK: ReadonlyArray<Scripted> = [
@@ -121,9 +129,9 @@ const run = (
 	},
 ) => {
 	const shell = fakeSeams(script);
-	const fs = fakeFs({files});
+	const fs = fakeFs({ files });
 	return Effect.runPromise(
-		Effect.provide(runAdopt({...options, ...overrides}), Layer.mergeAll(shell.layer, fs.layer)),
+		Effect.provide(runAdopt({ ...options, ...overrides }), Layer.mergeAll(shell.layer, fs.layer)),
 	).then((outcome) => ({
 		outcome,
 		manifest: parseManifest(fs.written.get(manifestPath(DIR)) ?? "") ?? [],
@@ -133,9 +141,9 @@ const run = (
 	}));
 };
 
-const sentBody = (result: {requests: ReadonlyArray<string>; bodies: ReadonlyArray<string>}) => {
+const sentBody = (result: { requests: ReadonlyArray<string>; bodies: ReadonlyArray<string> }) => {
 	const at = result.requests.findIndex((line) => PATCH.test(line));
-	return at < 0 ? null : (JSON.parse(result.bodies[at] ?? "{}") as {body: string}).body;
+	return at < 0 ? null : (JSON.parse(result.bodies[at] ?? "{}") as { body: string }).body;
 };
 
 const writes = (requests: ReadonlyArray<string>) =>
@@ -186,9 +194,9 @@ describe("runAdopt", () => {
 	it("links on the issue's id, never mints, and parks it on status:planned before it links", async () => {
 		const result = await run();
 		const at = result.requests.findIndex((line) => LINK.test(line));
-		expect(JSON.parse(result.bodies[at] ?? "{}")).toEqual({sub_issue_id: CHILD_ID});
+		expect(JSON.parse(result.bodies[at] ?? "{}")).toEqual({ sub_issue_id: CHILD_ID });
 		const added = result.requests.findIndex((line) => ADD_LABEL.test(line));
-		expect(JSON.parse(result.bodies[added] ?? "{}")).toEqual({labels: ["status:planned"]});
+		expect(JSON.parse(result.bodies[added] ?? "{}")).toEqual({ labels: ["status:planned"] });
 		expect(writes(result.requests)).toEqual([
 			"PATCH https://api.github.com/repos/o/r/issues/8195",
 			"POST https://api.github.com/repos/o/r/issues/8195/labels",
@@ -270,7 +278,7 @@ describe("runAdopt", () => {
 	});
 
 	it("refuses an issue with no Stories line and no --stories before any write", async () => {
-		const result = await run({stories: null});
+		const result = await run({ stories: null });
 		expect(result.outcome.code).toBe(BAD_SECTIONS);
 		expect(result.outcome.stderr.at(-1)).toBe(
 			"ledger adopt: #8195 cannot be adopted: it declares no **Stories:** line — pass --stories with the plan's story ids, or none.",
@@ -280,7 +288,7 @@ describe("runAdopt", () => {
 	});
 
 	it("refuses a --stories value that differs from the one the issue declares — it never rewrites", async () => {
-		const result = await run({stories: "3"}, [
+		const result = await run({ stories: "3" }, [
 			...GROUND,
 			[ADOPTEE, adoptee(`**Stories:** 2\n\n${REPORT}`)],
 			[PARENT, NOT_FOUND],
@@ -301,7 +309,7 @@ describe("runAdopt", () => {
 	});
 
 	it("asks for --containment on an asked type while the cycle doc is present, then appends it", async () => {
-		const files = {[runJsonPath(DIR)]: RUN_JSON("present"), [manifestPath(DIR)]: ""};
+		const files = { [runJsonPath(DIR)]: RUN_JSON("present"), [manifestPath(DIR)]: "" };
 		const feature = ["type:feature", "p1", "status:triaged", "ready-for:agent"];
 		const refused = await run(
 			{},
@@ -313,7 +321,7 @@ describe("runAdopt", () => {
 
 		const fields = ["**Stories:** 2", "**Containment:** flag (default-off)"];
 		const adopted = await run(
-			{containment: "flag (default-off)"},
+			{ containment: "flag (default-off)" },
 			[
 				...GROUND,
 				[once(ADOPTEE), adoptee(REPORT, feature)],
@@ -330,7 +338,7 @@ describe("runAdopt", () => {
 			files,
 		);
 		expect(adopted.outcome.code).toBe(0);
-		expect(JSON.parse(adopted.outcome.stdout)).toMatchObject({fields, containment: "flag"});
+		expect(JSON.parse(adopted.outcome.stdout)).toMatchObject({ fields, containment: "flag" });
 	});
 
 	it("repeats cleanly: no second amendment, no second link, one manifest line", async () => {
@@ -341,7 +349,7 @@ describe("runAdopt", () => {
 			[
 				...GROUND,
 				[ADOPTEE, adoptee(amended(["**Stories:** 2"]), PARKED)],
-				[PARENT, served({number: 4300})],
+				[PARENT, served({ number: 4300 })],
 				[SUBS, LINKED],
 			],
 			{
@@ -363,7 +371,7 @@ describe("runAdopt", () => {
 		const result = await run({}, [
 			...GROUND,
 			[ADOPTEE, adoptee(REPORT)],
-			[PARENT, served({number: 5000})],
+			[PARENT, served({ number: 5000 })],
 		]);
 		expect(result.outcome.code).toBe(OFF_VOCABULARY);
 		expect(result.outcome.stderr.at(-1)).toContain("already a sub-issue of #5000");
@@ -449,7 +457,7 @@ describe("runAdopt", () => {
 	});
 
 	it("refuses --child naming the epic before reading anything", async () => {
-		const result = await run({child: 4300});
+		const result = await run({ child: 4300 });
 		expect(result.outcome.code).toBe(OFF_VOCABULARY);
 		expect(result.requests).toEqual([]);
 	});

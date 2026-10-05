@@ -13,8 +13,8 @@
  * and the wrong one for a repo with products — so a repo with products declares them.
  */
 
-import {trimmedStrings} from "../entries.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import { trimmedStrings } from "../entries.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const PORTABILITY = "portability";
 
@@ -25,12 +25,12 @@ export interface Portability {
 
 const decode = (raw: unknown): Decoded<Portability> => {
 	if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
-		return {_tag: "Malformed", reason: `\`${PORTABILITY}\` is not an object`};
+		return { _tag: "Malformed", reason: `\`${PORTABILITY}\` is not an object` };
 	}
-	const {repoNames} = raw as {repoNames?: unknown};
-	if (repoNames === undefined) return {_tag: "Value", value: {repoNames: []}};
+	const { repoNames } = raw as { repoNames?: unknown };
+	if (repoNames === undefined) return { _tag: "Value", value: { repoNames: [] } };
 	if (!Array.isArray(repoNames)) {
-		return {_tag: "Malformed", reason: `\`${PORTABILITY}.repoNames\` is not an array`};
+		return { _tag: "Malformed", reason: `\`${PORTABILITY}.repoNames\` is not an array` };
 	}
 	const names = trimmedStrings(repoNames);
 	return names === null
@@ -38,12 +38,12 @@ const decode = (raw: unknown): Decoded<Portability> => {
 				_tag: "Malformed",
 				reason: `\`${PORTABILITY}.repoNames\` holds an entry that is not a non-empty string — expected a product, org or directory name`,
 			}
-		: {_tag: "Value", value: {repoNames: names}};
+		: { _tag: "Value", value: { repoNames: names } };
 };
 
 export const portabilityKey: KeyGroup<Portability> = {
 	key: PORTABILITY,
-	shippedDefault: {repoNames: []},
+	shippedDefault: { repoNames: [] },
 	decode,
 	render: (value) => value.repoNames,
 	jsonSchema: {
@@ -54,7 +54,7 @@ export const portabilityKey: KeyGroup<Portability> = {
 			repoNames: {
 				type: "array",
 				description: "Names that resolve only in this repository.",
-				items: {type: "string", minLength: 1},
+				items: { type: "string", minLength: 1 },
 			},
 		},
 		additionalProperties: false,

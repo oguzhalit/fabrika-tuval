@@ -1,10 +1,10 @@
-import {describe, expect, it} from "vitest";
-import type {CommentRecord} from "../io/issues.ts";
-import {handCheckNote, isCantSeeNote, noteLines, requireRenderNote} from "./cant-see-note.ts";
-import {admitHandCheck} from "./hand-check.ts";
+import { describe, expect, it } from "vitest";
+import type { CommentRecord } from "../io/issues.ts";
+import { handCheckNote, isCantSeeNote, noteLines, requireRenderNote } from "./cant-see-note.ts";
+import { admitHandCheck } from "./hand-check.ts";
 
 const HEAD = "03135b91aa04f7e2c9d8b1640a5c22e9f01b7d3c";
-const SUBJECT = {repo: "o/r", pr: 6};
+const SUBJECT = { repo: "o/r", pr: 6 };
 
 const comment = (body: string, author: string, id: number): CommentRecord => ({
 	id,
@@ -40,8 +40,8 @@ describe("handCheckNote", () => {
 
 	it("says which fact each near miss failed, linking the comment", () => {
 		const note = handCheckNote(SUBJECT, HEAD, [
-			{comment: comment("", "owner", 11), fact: "screenshot"},
-			{comment: comment("", "agent", 12), fact: "author"},
+			{ comment: comment("", "owner", 11), fact: "screenshot" },
+			{ comment: comment("", "agent", 12), fact: "author" },
 		]);
 		expect(note).toContain(
 			"/o/r/pull/6#issuecomment-11) by `owner` names the right commit but has no screenshot image.",
@@ -52,8 +52,8 @@ describe("handCheckNote", () => {
 
 	it("says when an owner account's comment was refused as an agent's", () => {
 		const note = handCheckNote(SUBJECT, HEAD, [
-			{comment: comment("", "owner", 13), fact: "evidence"},
-			{comment: comment("", "owner", 14), fact: "stamp"},
+			{ comment: comment("", "owner", 13), fact: "evidence" },
+			{ comment: comment("", "owner", 14), fact: "stamp" },
 		]);
 		expect(note).toContain(
 			"#issuecomment-13) by `owner` names the right commit and has a screenshot, but it is the builder's own evidence comment",

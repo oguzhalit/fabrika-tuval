@@ -1,15 +1,15 @@
-import {describe, expect, it} from "vitest";
-import {diffBeyondStatusLine, nextStatusValue, parseLinks, rewriteStatus} from "./status-line.ts";
+import { describe, expect, it } from "vitest";
+import { diffBeyondStatusLine, nextStatusValue, parseLinks, rewriteStatus } from "./status-line.ts";
 
 const file = (status: string, body = "## Decision\n\n**A thing.**\n"): string =>
 	`---\nid: 0023\ntitle: A title\nstatus: ${status}\ndate: 2026-01-01\ntags: []\n---\n\n# 0023 — A title\n\n${body}`;
 
-const by = {id: "0240", file: "0240-only-landed-adrs-may-be-cited.md"};
+const by = { id: "0240", file: "0240-only-landed-adrs-may-be-cited.md" };
 
 describe("nextStatusValue", () => {
 	it("orders an out-of-order append by id, not by arrival", () => {
 		const existing = "amended-in-part by [0037](0037-c.md), [0025](0025-a.md)";
-		expect(nextStatusValue("amend-in-part", existing, {id: "0028", file: "0028-b.md"})).toBe(
+		expect(nextStatusValue("amend-in-part", existing, { id: "0028", file: "0028-b.md" })).toBe(
 			"amended-in-part by [0025](0025-a.md), [0028](0028-b.md), [0037](0037-c.md)",
 		);
 	});
@@ -18,8 +18,8 @@ describe("nextStatusValue", () => {
 describe("parseLinks", () => {
 	it("reads every link in order", () => {
 		expect(parseLinks("amended-in-part by [0025](0025-a.md), [0028](0028-b.md)")).toEqual([
-			{id: "0025", file: "0025-a.md"},
-			{id: "0028", file: "0028-b.md"},
+			{ id: "0025", file: "0025-a.md" },
+			{ id: "0028", file: "0028-b.md" },
 		]);
 	});
 });

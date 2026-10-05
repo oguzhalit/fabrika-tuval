@@ -1,7 +1,7 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {GIT_DIRS} from "../build/fixtures.test-support.ts";
-import {fakeFs, fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { GIT_DIRS } from "../build/fixtures.test-support.ts";
+import { fakeFs, fakeSeams, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
 import {
 	EPIC_MOVED,
 	NOT_STAGED,
@@ -11,14 +11,14 @@ import {
 	REGION_UNRESOLVABLE,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {bodyDigest} from "./digest.ts";
-import {CLAIMED, DIR, env, epic, TOKEN} from "./fixtures.test-support.ts";
-import {planPath, renderRunRecord, runJsonPath, topologyPath} from "./run.ts";
-import {runWrite} from "./write-verb.ts";
+import { bodyDigest } from "./digest.ts";
+import { CLAIMED, DIR, env, epic, TOKEN } from "./fixtures.test-support.ts";
+import { planPath, renderRunRecord, runJsonPath, topologyPath } from "./run.ts";
+import { runWrite } from "./write-verb.ts";
 
 const EPIC_READ = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4300$/;
 const PATCH = /^PATCH https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4300$/;
-const PATCHED: HttpReply = {status: 200, body: "{}"};
+const PATCHED: HttpReply = { status: 200, body: "{}" };
 
 const BODY = "An epic brief about the moderation queue.\n";
 const DIGEST = bodyDigest(BODY);
@@ -46,13 +46,13 @@ const STAGED = {
  * the pre-write one. Built per call, because a spent `once` pattern would leak across tests.
  */
 const happy = (
-	options: {before?: string; after?: string; patch?: HttpReply} = {},
+	options: { before?: string; after?: string; patch?: HttpReply } = {},
 ): ReadonlyArray<Scripted> => [
-	[once(EPIC_READ), epic({body: options.before ?? BODY})],
+	[once(EPIC_READ), epic({ body: options.before ?? BODY })],
 	[/^git rev-parse --path-format=absolute/, GIT_DIRS],
 	...CLAIMED,
 	[PATCH, options.patch ?? PATCHED],
-	[EPIC_READ, epic({body: options.after ?? SPLICED})],
+	[EPIC_READ, epic({ body: options.after ?? SPLICED })],
 ];
 
 const run = (
@@ -61,18 +61,18 @@ const run = (
 	digest: string = DIGEST,
 ) => {
 	const shell = fakeSeams(script);
-	const fs = fakeFs({files});
+	const fs = fakeFs({ files });
 	return Effect.runPromise(
 		Effect.provide(
-			runWrite({number: 4300, bodyDigest: digest, token: TOKEN, repo: null, cwd: "/repo", env}),
+			runWrite({ number: 4300, bodyDigest: digest, token: TOKEN, repo: null, cwd: "/repo", env }),
 			Layer.mergeAll(shell.layer, fs.layer),
 		),
-	).then((outcome) => ({outcome, calls: shell.log}));
+	).then((outcome) => ({ outcome, calls: shell.log }));
 };
 
 describe("runWrite", () => {
 	it("splices both documents in one PATCH and proves the whole body read back", async () => {
-		const {outcome, calls} = await run();
+		const { outcome, calls } = await run();
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout)).toMatchObject({
 			answer: "written",
@@ -87,7 +87,7 @@ describe("runWrite", () => {
 	});
 
 	it("names the document that was never staged", async () => {
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			[runJsonPath(DIR)]: runJson("fresh"),
 			[planPath(DIR)]: PLAN,
 		});
@@ -98,7 +98,7 @@ describe("runWrite", () => {
 	});
 
 	it("names the plan when that is the missing one", async () => {
-		const {outcome} = await run(happy(), {
+		const { outcome } = await run(happy(), {
 			[runJsonPath(DIR)]: runJson("fresh"),
 			[topologyPath(DIR)]: TOPOLOGY,
 		});
@@ -108,13 +108,13 @@ describe("runWrite", () => {
 	});
 
 	it("refuses a body that moved since open, and writes nothing", async () => {
-		const {outcome, calls} = await run(happy(), STAGED, "0123456789ab");
+		const { outcome, calls } = await run(happy(), STAGED, "0123456789ab");
 		expect(outcome.code).toBe(EPIC_MOVED);
 		expect(calls.some((line) => PATCH.test(line))).toBe(false);
 	});
 
 	it("refuses a malformed --body-digest before any read", async () => {
-		const {outcome, calls} = await run(happy(), STAGED, "NOPE");
+		const { outcome, calls } = await run(happy(), STAGED, "NOPE");
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(calls).toEqual([]);
 	});
@@ -124,7 +124,7 @@ describe("runWrite", () => {
 	 * observable instead of letting a first-time append silently overwrite a real plan.
 	 */
 	it("refuses a re-plan whose body carries no plan anchor", async () => {
-		const {outcome, calls} = await run(happy(), {
+		const { outcome, calls } = await run(happy(), {
 			...STAGED,
 			[runJsonPath(DIR)]: runJson("re-plan"),
 		});
@@ -135,40 +135,45 @@ describe("runWrite", () => {
 
 	it("refuses a fresh run whose body already carries a plan heading", async () => {
 		const body = `${BODY}\n${PLAN}`;
-		const {outcome} = await run(
+		const { outcome } = await run(
 			[
-				[once(EPIC_READ), epic({body})],
+				[once(EPIC_READ), epic({ body })],
 				[/^git rev-parse --path-format=absolute/, GIT_DIRS],
 				...CLAIMED,
 				[PATCH, PATCHED],
-				[EPIC_READ, epic({body})],
+				[EPIC_READ, epic({ body })],
 			],
-			{...STAGED, [runJsonPath(DIR)]: runJson("fresh")},
+			{ ...STAGED, [runJsonPath(DIR)]: runJson("fresh") },
 			bodyDigest(body),
 		);
 		expect(outcome.code).toBe(REGION_UNRESOLVABLE);
 	});
 
 	it("seats an unconfirmable PATCH on 8", async () => {
-		const {outcome} = await run(happy({patch: {status: 502, body: '{"message":"Bad Gateway"}'}}));
+		const { outcome } = await run(
+			happy({ patch: { status: 502, body: '{"message":"Bad Gateway"}' } }),
+		);
 		expect(outcome.code).toBe(WRITE_UNKNOWN);
 		expect(outcome.stdout).toBe("");
 	});
 
 	/** The comparison is over the WHOLE normalized body, not a re-extraction of the region. */
 	it("refuses a body that landed and does not read back as composed", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[once(EPIC_READ), epic()],
 			[/^git rev-parse --path-format=absolute/, GIT_DIRS],
 			...CLAIMED,
 			[PATCH, PATCHED],
-			[EPIC_READ, epic({body: `${SPLICED}\nsomeone else wrote this\n`})],
+			[EPIC_READ, epic({ body: `${SPLICED}\nsomeone else wrote this\n` })],
 		]);
 		expect(outcome.code).toBe(READBACK_MISMATCH);
 	});
 
 	it("refuses when the run directory holds no run.json", async () => {
-		const {outcome} = await run(happy(), {[planPath(DIR)]: PLAN, [topologyPath(DIR)]: TOPOLOGY});
+		const { outcome } = await run(happy(), {
+			[planPath(DIR)]: PLAN,
+			[topologyPath(DIR)]: TOPOLOGY,
+		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 	});
 });

@@ -16,7 +16,7 @@
  * `BLOCKED`, which every chore machine routes to a `human:` park, so novel reaches a human by the
  * machine's own cell rather than by an operator deciding to escalate.
  */
-import type {OperatorEvent} from "../lane/machine.ts";
+import type { OperatorEvent } from "../lane/machine.ts";
 import {
 	MALFORMED_RECORD,
 	NOT_PARKED,
@@ -99,7 +99,7 @@ export interface Disposition {
 
 const SUCCESS = 0;
 
-const disposition = (event: OperatorEvent, why: string): Disposition => ({event, why});
+const disposition = (event: OperatorEvent, why: string): Disposition => ({ event, why });
 
 /**
  * `recipe unpark`'s exits.

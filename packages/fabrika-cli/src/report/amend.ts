@@ -32,5 +32,5 @@ export interface Amendment {
 export const compose = (prior: string, section: string, on: Date): Amendment => {
 	const above = prior.replace(/\s+$/, "");
 	const appended = `${above === "" ? "" : `${SEPARATOR}\n\n`}${heading(on)}\n\n${section.trim()}\n`;
-	return {body: above === "" ? appended : `${above}\n\n${appended}`, appended};
+	return { body: above === "" ? appended : `${above}\n\n${appended}`, appended };
 };

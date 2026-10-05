@@ -9,20 +9,22 @@
  * driven in a test without a filesystem. A doc that could not be read is UNKNOWN (`6`), never "the
  * index disagrees": those two are the pair this group exists to keep apart.
  */
-import {Effect} from "effect";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {ARTIFACT_UNKNOWN, MALFORMED, ZERO_SCOPE} from "./codes.ts";
-import type {WireFormat} from "./format.ts";
-import {conformIndexDoc, DOC_PATH, describeIndexFindings, rewriteIndexDoc} from "./index-doc.ts";
+import { Effect } from "effect";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { ARTIFACT_UNKNOWN, MALFORMED, ZERO_SCOPE } from "./codes.ts";
+import type { WireFormat } from "./format.ts";
+import { conformIndexDoc, DOC_PATH, describeIndexFindings, rewriteIndexDoc } from "./index-doc.ts";
 
 const VERB = "wire index";
 
 /** The doc's bytes, or the reason they were never seen. */
 export type DocRead =
-	| {readonly _tag: "Text"; readonly text: string}
-	| {readonly _tag: "Failed"; readonly reason: string};
+	| { readonly _tag: "Text"; readonly text: string }
+	| { readonly _tag: "Failed"; readonly reason: string };
 
-export type DocSave = {readonly _tag: "Saved"} | {readonly _tag: "Failed"; readonly reason: string};
+export type DocSave =
+	| { readonly _tag: "Saved" }
+	| { readonly _tag: "Failed"; readonly reason: string };
 
 export interface IndexOptions<R> {
 	readonly write: boolean;
@@ -39,7 +41,7 @@ const verdict = (
 	documented: number,
 ): string =>
 	json
-		? `${JSON.stringify({doc: DOC_PATH, outcome, registered, documented})}\n`
+		? `${JSON.stringify({ doc: DOC_PATH, outcome, registered, documented })}\n`
 		: `index\t${outcome}\t${registered}\t${documented}\n`;
 
 export const runIndex = <R>({

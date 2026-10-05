@@ -2,7 +2,7 @@
  * The `design-inventory` extractor and its firewall — the `design-inventory.unit.test.ts` cases from
  * the v1 CLI.
  */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	buildInventory,
 	extractFromFile,
@@ -50,8 +50,8 @@ describe("parseComponentBlock", () => {
 			source: "x.tsx",
 			whenToUse: "For a message that needs the reader's attention.",
 			slots: [
-				{name: "title", description: "The heading line."},
-				{name: "body", description: ""},
+				{ name: "title", description: "The heading line." },
+				{ name: "body", description: "" },
 			],
 			agentDirectives: ["Never nest an Alert inside an Alert."],
 		});

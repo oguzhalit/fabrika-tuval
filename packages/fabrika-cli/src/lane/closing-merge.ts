@@ -13,16 +13,16 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/10272
  */
-import {Effect} from "effect";
-import type {Existence} from "../io/issues.ts";
+import { Effect } from "effect";
+import type { Existence } from "../io/issues.ts";
 
 /** The part of one issue read this judgement stands on. */
-export type IssueRead = Existence<{readonly state: string; readonly isPullRequest: boolean}>;
+export type IssueRead = Existence<{ readonly state: string; readonly isPullRequest: boolean }>;
 
 export type IssueState =
-	| {readonly _tag: "Open"}
-	| {readonly _tag: "Closed"}
-	| {readonly _tag: "Unread"; readonly reason: string};
+	| { readonly _tag: "Open" }
+	| { readonly _tag: "Closed" }
+	| { readonly _tag: "Unread"; readonly reason: string };
 
 /**
  * The state one issue read proves. A pull request on the issue's number, an absent issue and a
@@ -30,22 +30,22 @@ export type IssueState =
  */
 export const issueStateOf = (issue: number, read: IssueRead): IssueState => {
 	if (read._tag === "Unknown")
-		return {_tag: "Unread", reason: `cannot read #${issue}: ${read.reason}`};
-	if (read._tag === "Absent") return {_tag: "Unread", reason: `#${issue} is not there`};
+		return { _tag: "Unread", reason: `cannot read #${issue}: ${read.reason}` };
+	if (read._tag === "Absent") return { _tag: "Unread", reason: `#${issue} is not there` };
 	if (read.value.isPullRequest) {
-		return {_tag: "Unread", reason: `#${issue} is a pull request, not an issue`};
+		return { _tag: "Unread", reason: `#${issue} is a pull request, not an issue` };
 	}
-	if (read.value.state === "open") return {_tag: "Open"};
-	if (read.value.state === "closed") return {_tag: "Closed"};
-	return {_tag: "Unread", reason: `#${issue} reads state "${read.value.state}"`};
+	if (read.value.state === "open") return { _tag: "Open" };
+	if (read.value.state === "closed") return { _tag: "Closed" };
+	return { _tag: "Unread", reason: `#${issue} reads state "${read.value.state}"` };
 };
 
 export type ClosingMerge =
-	| {readonly _tag: "Closed"; readonly issue: number}
-	| {readonly _tag: "Open"; readonly issue: number; readonly merged: ReadonlyArray<number>}
-	| {readonly _tag: "Unread"; readonly issue: number; readonly reason: string};
+	| { readonly _tag: "Closed"; readonly issue: number }
+	| { readonly _tag: "Open"; readonly issue: number; readonly merged: ReadonlyArray<number> }
+	| { readonly _tag: "Unread"; readonly issue: number; readonly reason: string };
 
-export type OpenMerge = Extract<ClosingMerge, {readonly _tag: "Open"}>;
+export type OpenMerge = Extract<ClosingMerge, { readonly _tag: "Open" }>;
 
 /** Judge the issue a closing merge named, off one read of it. `merged` is the closing PRs. */
 export const judgeClosingMerge = (
@@ -56,11 +56,11 @@ export const judgeClosingMerge = (
 	const state = issueStateOf(issue, read);
 	switch (state._tag) {
 		case "Open":
-			return {_tag: "Open", issue, merged};
+			return { _tag: "Open", issue, merged };
 		case "Closed":
-			return {_tag: "Closed", issue};
+			return { _tag: "Closed", issue };
 		case "Unread":
-			return {_tag: "Unread", issue, reason: state.reason};
+			return { _tag: "Unread", issue, reason: state.reason };
 	}
 };
 
@@ -80,8 +80,8 @@ export const isIssueClose = (value: unknown): value is IssueClose =>
 
 /** What closing an open issue did. */
 export type CloseAct =
-	| {readonly _tag: "Closed"}
-	| {readonly _tag: "Failed"; readonly reason: string};
+	| { readonly _tag: "Closed" }
+	| { readonly _tag: "Failed"; readonly reason: string };
 
 export interface SettledClose {
 	readonly close: IssueClose;

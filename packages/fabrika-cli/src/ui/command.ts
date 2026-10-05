@@ -9,19 +9,19 @@
  * Every leaf is declared with `leafCommand`, never a bare `Command.make` — the bare form silently
  * opts out of the excess-operand guard, which `../excess-operand.unit.test.ts` reds on.
  */
-import {tmpdir} from "node:os";
-import {Effect, Option} from "effect";
-import {Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {playwrightBrowse} from "./browser.ts";
-import {runEvidence} from "./evidence-verb.ts";
-import {runGolden} from "./golden-verb.ts";
-import {fetchGolden, ghAttachmentUpload, storeUpload} from "./http.ts";
-import {runLaw} from "./law-verb.ts";
-import {runManifest} from "./manifest-verb.ts";
-import {runRender} from "./render-verb.ts";
-import {spawnHarness} from "./server.ts";
+import { tmpdir } from "node:os";
+import { Effect, Option } from "effect";
+import { Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { playwrightBrowse } from "./browser.ts";
+import { runEvidence } from "./evidence-verb.ts";
+import { runGolden } from "./golden-verb.ts";
+import { fetchGolden, ghAttachmentUpload, storeUpload } from "./http.ts";
+import { runLaw } from "./law-verb.ts";
+import { runManifest } from "./manifest-verb.ts";
+import { runRender } from "./render-verb.ts";
+import { spawnHarness } from "./server.ts";
 
 const repoFlag = Flag.string("repo").pipe(
 	Flag.optional,
@@ -46,7 +46,7 @@ const manifest = leafCommand(
 			'  Derivation: the build-ui skill\'s contract.md, "ui manifest"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika ui manifest"}]),
+	Command.withExamples([{ command: "fabrika ui manifest" }]),
 );
 
 const law = leafCommand(
@@ -67,7 +67,7 @@ const law = leafCommand(
 			'  Derivation: the build-ui skill\'s contract.md, "ui law"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika ui law"}]),
+	Command.withExamples([{ command: "fabrika ui law" }]),
 );
 
 const render = leafCommand(
@@ -90,7 +90,7 @@ const render = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({out, surface, firstRender, repo}) {
+	Effect.fn(function* ({ out, surface, firstRender, repo }) {
 		yield* emit(
 			yield* runRender({
 				out,
@@ -120,7 +120,7 @@ const render = leafCommand(
 			'  Derivation: the build-ui skill\'s contract.md, "ui render"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika ui render --out after --surface /pano"}]),
+	Command.withExamples([{ command: "fabrika ui render --out after --surface /pano" }]),
 );
 
 const golden = leafCommand(
@@ -136,7 +136,7 @@ const golden = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({surface, candidate}) {
+	Effect.fn(function* ({ surface, candidate }) {
 		yield* emit(
 			yield* runGolden({
 				surface,
@@ -160,7 +160,7 @@ const golden = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika ui golden --surface /board --candidate /…/after/board.png"},
+		{ command: "fabrika ui golden --surface /board --candidate /…/after/board.png" },
 	]),
 );
 
@@ -179,7 +179,7 @@ const evidence = leafCommand(
 		after: Flag.string("after").pipe(Flag.withDescription("the after capture-set name")),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({pr, before, after, repo}) {
+	Effect.fn(function* ({ pr, before, after, repo }) {
 		yield* emit(
 			yield* runEvidence({
 				pr,
@@ -212,7 +212,9 @@ const evidence = leafCommand(
 			'  Derivation: the build-ui skill\'s contract.md, "ui evidence"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika ui evidence --pr 4318 --before before --after after"}]),
+	Command.withExamples([
+		{ command: "fabrika ui evidence --pr 4318 --before before --after after" },
+	]),
 );
 
 export const uiCommand = Command.make("ui").pipe(

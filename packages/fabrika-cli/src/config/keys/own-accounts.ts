@@ -13,7 +13,7 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9844#issuecomment-5852591743
  */
 
-import type {KeyGroup} from "../key-group.ts";
+import type { KeyGroup } from "../key-group.ts";
 import {
 	AUTHOR_TEAM,
 	AUTHOR_USER,
@@ -33,6 +33,6 @@ export const ownAccountsKey: KeyGroup<ReadonlyArray<GrantAuthor>> = {
 		type: "array",
 		description:
 			"The accounts this repo's own agents and drivers run as. A pull request opened by one of them is repaired (`fabrika build`) and shipped (`fabrika ship`) with no grant; any other author's pull request needs a takeover grant (`fabrika build takeover`) first. Each entry is a GitHub `@user` or `@org/team`, `@`-prefixed. Empty (or absent) means only the running, authenticated account counts.",
-		items: {type: "string", pattern: `${AUTHOR_USER.source}|${AUTHOR_TEAM.source}`},
+		items: { type: "string", pattern: `${AUTHOR_USER.source}|${AUTHOR_TEAM.source}` },
 	},
 };

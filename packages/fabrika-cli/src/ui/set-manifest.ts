@@ -15,8 +15,8 @@ export interface SetCapture {
 }
 
 export type SetParse =
-	| {readonly _tag: "Set"; readonly captures: ReadonlyArray<SetCapture>}
-	| {readonly _tag: "Violation"; readonly violation: string};
+	| { readonly _tag: "Set"; readonly captures: ReadonlyArray<SetCapture> }
+	| { readonly _tag: "Violation"; readonly violation: string };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value);
@@ -26,12 +26,13 @@ export const parseSetManifest = (text: string): SetParse => {
 	try {
 		parsed = JSON.parse(text);
 	} catch (err) {
-		return {_tag: "Violation", violation: `it does not parse (${(err as Error).message})`};
+		return { _tag: "Violation", violation: `it does not parse (${(err as Error).message})` };
 	}
 	if (!isRecord(parsed) || !Array.isArray(parsed.captures)) {
-		return {_tag: "Violation", violation: "it carries no captures array"};
+		return { _tag: "Violation", violation: "it carries no captures array" };
 	}
-	if (parsed.captures.length === 0) return {_tag: "Violation", violation: "it names zero captures"};
+	if (parsed.captures.length === 0)
+		return { _tag: "Violation", violation: "it names zero captures" };
 	const captures: SetCapture[] = [];
 	for (const capture of parsed.captures) {
 		if (
@@ -40,7 +41,7 @@ export const parseSetManifest = (text: string): SetParse => {
 			typeof capture.path !== "string" ||
 			typeof capture.sha256 !== "string"
 		) {
-			return {_tag: "Violation", violation: "a capture row is missing surface, path or sha256"};
+			return { _tag: "Violation", violation: "a capture row is missing surface, path or sha256" };
 		}
 		captures.push({
 			surface: capture.surface,
@@ -49,7 +50,7 @@ export const parseSetManifest = (text: string): SetParse => {
 			firstRender: capture.firstRender === true,
 		});
 	}
-	return {_tag: "Set", captures};
+	return { _tag: "Set", captures };
 };
 
 /** An after-surface with its before, or the recorded fact that it is new. */
@@ -60,8 +61,8 @@ export interface Pair {
 }
 
 export type Pairing =
-	| {readonly _tag: "Pairs"; readonly pairs: ReadonlyArray<Pair>}
-	| {readonly _tag: "Unexplained"; readonly surface: string};
+	| { readonly _tag: "Pairs"; readonly pairs: ReadonlyArray<Pair> }
+	| { readonly _tag: "Unexplained"; readonly surface: string };
 
 /**
  * Pair every after-capture with its before by surface id.
@@ -79,7 +80,7 @@ export const pairSets = (
 	for (const capture of after) {
 		const match = index.get(capture.surface) ?? null;
 		if (match === null && !capture.firstRender) {
-			return {_tag: "Unexplained", surface: capture.surface};
+			return { _tag: "Unexplained", surface: capture.surface };
 		}
 		pairs.push({
 			surface: capture.surface,
@@ -87,5 +88,5 @@ export const pairSets = (
 			after: capture,
 		});
 	}
-	return {_tag: "Pairs", pairs};
+	return { _tag: "Pairs", pairs };
 };

@@ -1,6 +1,6 @@
-import {assert, describe, it} from "@effect/vitest";
-import type {CommentRecord} from "../io/issues.ts";
-import {resolvePreview} from "./preview.ts";
+import { assert, describe, it } from "@effect/vitest";
+import type { CommentRecord } from "../io/issues.ts";
+import { resolvePreview } from "./preview.ts";
 
 const comment = (id: number, body: string, updatedAt = "2026-08-09T00:00:00Z"): CommentRecord => ({
 	id,
@@ -30,7 +30,7 @@ describe("resolvePreview", () => {
 		const resolution = resolvePreview([comment(1, block("web", WEB, "abc1234"))], null, HEAD);
 		assert.deepStrictEqual(resolution, {
 			_tag: "Resolved",
-			value: {app: "web", url: WEB, deployedSha: "abc1234"},
+			value: { app: "web", url: WEB, deployedSha: "abc1234" },
 			apps: ["web"],
 		});
 	});
@@ -43,7 +43,7 @@ describe("resolvePreview", () => {
 		});
 		assert.deepStrictEqual(resolvePreview([comment(1, body)], "web", HEAD), {
 			_tag: "Resolved",
-			value: {app: "web", url: WEB, deployedSha: "abc1234"},
+			value: { app: "web", url: WEB, deployedSha: "abc1234" },
 			// Every app the announcement carries, not the chosen one alone: a caller shooting a surface
 			// has to know which apps were deployed at all.
 			apps: ["api", "web"],
@@ -71,7 +71,7 @@ describe("resolvePreview", () => {
 		const newer = comment(2, block("web", WEB, "abc1234"), "2026-08-09T10:00:00Z");
 		assert.deepStrictEqual(resolvePreview([newer, older], null, HEAD), {
 			_tag: "Resolved",
-			value: {app: "web", url: WEB, deployedSha: "abc1234"},
+			value: { app: "web", url: WEB, deployedSha: "abc1234" },
 			apps: ["web"],
 		});
 	});

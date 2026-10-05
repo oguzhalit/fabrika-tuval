@@ -22,13 +22,13 @@
  * `unchanged`.
  */
 
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {getIssue, patchIssueBody} from "../io/issues.ts";
-import {listSubIssues} from "../plan/github.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { getIssue, patchIssueBody } from "../io/issues.ts";
+import { listSubIssues } from "../plan/github.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	BAD_SECTIONS,
 	EPIC_MOVED,
@@ -40,10 +40,10 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {BODY_DIGEST_RE, bodyDigest} from "./digest.ts";
-import {type LedgerMessages, type OpenOptions, openGround} from "./preconditions.ts";
-import {spliceDependencies} from "./region.ts";
-import {checkTopology, type Declared, readDeclared} from "./topology-doc.ts";
+import { BODY_DIGEST_RE, bodyDigest } from "./digest.ts";
+import { type LedgerMessages, type OpenOptions, openGround } from "./preconditions.ts";
+import { spliceDependencies } from "./region.ts";
+import { checkTopology, type Declared, readDeclared } from "./topology-doc.ts";
 
 const VERB = "ledger retopology";
 
@@ -64,7 +64,7 @@ export interface RetopologyOptions extends OpenOptions {
 /** The refusal for every arm of the read that is not a topology this verb can rewrite. */
 const declaredRefusal = (
 	epic: number,
-	declared: Exclude<Declared, {_tag: "Declared"}>,
+	declared: Exclude<Declared, { _tag: "Declared" }>,
 	notes: ReadonlyArray<string>,
 ): VerbOutcome => {
 	switch (declared._tag) {
@@ -125,7 +125,7 @@ export const runRetopology = (
 
 		const ground = yield* openGround(MESSAGES, options);
 		if (ground._tag === "Refused") return ground.outcome;
-		const {repo, epic, notes} = ground;
+		const { repo, epic, notes } = ground;
 
 		const observed = bodyDigest(epic.body);
 		if (observed !== options.bodyDigest) {
@@ -179,7 +179,7 @@ export const runRetopology = (
 			epic: epic.number,
 			children: declared.lines.length,
 			phases: checked.phases,
-			dropped: {count: declared.dropped.length, rows: declared.dropped},
+			dropped: { count: declared.dropped.length, rows: declared.dropped },
 			bodyDigest: options.bodyDigest,
 		};
 

@@ -10,16 +10,16 @@
  * opts out of the excess-operand guard, which `../excess-operand.unit.test.ts` reds on.
  */
 
-import {Effect, type FileSystem, Option, Result} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import type {AuthorizationDocument} from "../authorization.ts";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readFile} from "../io/fs.ts";
-import {readBoard} from "../status/label-remedy.ts";
-import {FAILED, refuse} from "../verb.ts";
-import {type RulingSource, runRule} from "./rule-verb.ts";
-import {runRuling} from "./ruling-verb.ts";
+import { Effect, type FileSystem, Option, Result } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import type { AuthorizationDocument } from "../authorization.ts";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readFile } from "../io/fs.ts";
+import { readBoard } from "../status/label-remedy.ts";
+import { FAILED, refuse } from "../verb.ts";
+import { type RulingSource, runRule } from "./rule-verb.ts";
+import { runRuling } from "./ruling-verb.ts";
 
 /**
  * Read the quoted authorization the verb was pointed at, as a value.
@@ -34,8 +34,8 @@ const document = (
 	Effect.gen(function* () {
 		const read = yield* Effect.result(readFile(path));
 		return Result.isFailure(read)
-			? ({_tag: "Failed", reason: read.failure.reason} satisfies AuthorizationDocument)
-			: ({_tag: "Text", text: read.success} satisfies AuthorizationDocument);
+			? ({ _tag: "Failed", reason: read.failure.reason } satisfies AuthorizationDocument)
+			: ({ _tag: "Text", text: read.success } satisfies AuthorizationDocument);
 	});
 
 /**
@@ -52,9 +52,9 @@ const rulingSource = (
 	const citedUrl = Option.getOrNull(cites);
 	const path = Option.getOrNull(authorization);
 	if (citedUrl !== null && path !== null) return null;
-	if (citedUrl !== null) return {_tag: "Cited", cites: citedUrl};
+	if (citedUrl !== null) return { _tag: "Cited", cites: citedUrl };
 	if (path !== null) {
-		return {_tag: "Quoted", authorizationPath: path, authorization: document(path)};
+		return { _tag: "Quoted", authorizationPath: path, authorization: document(path) };
 	}
 	return null;
 };
@@ -94,7 +94,7 @@ const rule = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({number, cites, authorization, supersedes, repo}) {
+	Effect.fn(function* ({ number, cites, authorization, supersedes, repo }) {
 		const ruling = rulingSource(cites, authorization);
 		if (ruling === null) {
 			yield* emit(
@@ -135,15 +135,15 @@ const rule = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika decision rule 9412 --authorization ruling.md --supersedes 3"},
+		{ command: "fabrika decision rule 9412 --authorization ruling.md --supersedes 3" },
 	]),
 );
 
 const ruling = leafCommand(
 	"ruling",
-	{number: issueArg, repo: repoFlag},
-	Effect.fn(function* ({number, repo}) {
-		yield* emit(yield* runRuling({number, repo: Option.getOrNull(repo), env: process.env}));
+	{ number: issueArg, repo: repoFlag },
+	Effect.fn(function* ({ number, repo }) {
+		yield* emit(yield* runRuling({ number, repo: Option.getOrNull(repo), env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("Whether an issue carries a current founder ruling."),
@@ -155,7 +155,7 @@ const ruling = leafCommand(
 			'  Derivation: claude-plugins/fabrika/docs/wire-formats.md, "decision-ruling"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika decision ruling 6569"}]),
+	Command.withExamples([{ command: "fabrika decision ruling 6569" }]),
 );
 
 export const decisionCommand = Command.make("decision").pipe(

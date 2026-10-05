@@ -15,8 +15,8 @@
  * fault (`gh` absent from `PATH`) arrives as a `PlatformError` and folds into the same record, so
  * `E` is `never` and the status lives in `ok`.
  */
-import {Duration, Effect, Stream} from "effect";
-import {ChildProcess, type ChildProcessSpawner} from "effect/unstable/process";
+import { Duration, Effect, Stream } from "effect";
+import { ChildProcess, type ChildProcessSpawner } from "effect/unstable/process";
 
 export interface ExecResult {
 	readonly ok: boolean;
@@ -56,7 +56,7 @@ export type ChildOutcome =
 			/** Either stream reached the capture bound and the remainder was discarded. */
 			readonly truncated: boolean;
 	  }
-	| {readonly _tag: "Unstartable"; readonly reason: string};
+	| { readonly _tag: "Unstartable"; readonly reason: string };
 
 export interface ChildRequest {
 	readonly file: string;
@@ -77,7 +77,7 @@ export type ChildRunner = (
 const captureBounded = (
 	stream: Stream.Stream<Uint8Array, unknown>,
 	bound: number,
-): Effect.Effect<{readonly bytes: Uint8Array; readonly truncated: boolean}> =>
+): Effect.Effect<{ readonly bytes: Uint8Array; readonly truncated: boolean }> =>
 	Effect.gen(function* () {
 		const parts: Uint8Array[] = [];
 		let total = 0;
@@ -105,7 +105,7 @@ const captureBounded = (
 			bytes.set(part, at);
 			at += part.length;
 		}
-		return {bytes, truncated};
+		return { bytes, truncated };
 	});
 
 /**
@@ -122,7 +122,7 @@ export const execRecord: ChildRunner = (request) =>
 		Effect.gen(function* () {
 			const handle = yield* ChildProcess.make(request.file, [...request.args], {
 				cwd: request.cwd,
-				env: {...request.env},
+				env: { ...request.env },
 				extendEnv: false,
 				detached: true,
 			});
@@ -131,7 +131,7 @@ export const execRecord: ChildRunner = (request) =>
 				catch: () => "the process group could not be signalled" as const,
 			}).pipe(
 				Effect.catchCause(() =>
-					handle.kill({killSignal: "SIGKILL"}).pipe(Effect.orElseSucceed(() => undefined)),
+					handle.kill({ killSignal: "SIGKILL" }).pipe(Effect.orElseSucceed(() => undefined)),
 				),
 				Effect.asVoid,
 			);
@@ -140,14 +140,14 @@ export const execRecord: ChildRunner = (request) =>
 					captureBounded(handle.stdout, request.captureBytes),
 					captureBounded(handle.stderr, request.captureBytes),
 				],
-				{concurrency: "unbounded"},
+				{ concurrency: "unbounded" },
 			);
 			const exit = handle.exitCode.pipe(
 				Effect.map((code): number | null => code),
 				Effect.orElseSucceed((): number | null => null),
 				Effect.timeoutOption(Duration.seconds(request.timeoutSeconds)),
 			);
-			const [captured, status] = yield* Effect.all([streams, exit], {concurrency: "unbounded"});
+			const [captured, status] = yield* Effect.all([streams, exit], { concurrency: "unbounded" });
 			const [out, err] = captured;
 			if (status._tag === "None") {
 				yield* killGroup;
@@ -191,7 +191,7 @@ export type ExecExit =
 			/** The first line of stderr, else `<file> exited <code>`. */
 			readonly reason: string;
 	  }
-	| {readonly _tag: "Unstartable"; readonly reason: string};
+	| { readonly _tag: "Unstartable"; readonly reason: string };
 
 const exited = (
 	file: string,
@@ -208,7 +208,7 @@ const exited = (
 						});
 			const [stdout, stderr, exitCode] = yield* Effect.all(
 				[collect(handle.stdout), collect(handle.stderr), handle.exitCode],
-				{concurrency: "unbounded"},
+				{ concurrency: "unbounded" },
 			);
 			return {
 				_tag: "Exited" as const,
@@ -231,8 +231,8 @@ const captured = (file: string, args: ReadonlyArray<string>, input: string | nul
 		exited(file, args, input),
 		(run): ExecResult =>
 			run._tag === "Exited" && run.code === 0
-				? {ok: true, stdout: run.stdout, reason: ""}
-				: {ok: false, stdout: "", reason: run.reason},
+				? { ok: true, stdout: run.stdout, reason: "" }
+				: { ok: false, stdout: "", reason: run.reason },
 	);
 
 /** Run a command for its exit code, with a spawn fault kept apart from every code. */
@@ -259,8 +259,8 @@ export const execCapture = (file: string, args: ReadonlyArray<string>): Exec =>
  */
 export type ExecStatus =
 	/** `output` is the child's diagnostics — stderr when it wrote any, else stdout. */
-	| {readonly _tag: "Ran"; readonly ok: boolean; readonly output: string}
-	| {readonly _tag: "Unstartable"; readonly reason: string};
+	| { readonly _tag: "Ran"; readonly ok: boolean; readonly output: string }
+	| { readonly _tag: "Unstartable"; readonly reason: string };
 
 /**
  * Run a validator for its status and its diagnostics.
@@ -281,10 +281,10 @@ export const execStatus = (
 			const handle =
 				cwd === undefined
 					? yield* ChildProcess.make(file, [...args])
-					: yield* ChildProcess.make(file, [...args], {cwd});
+					: yield* ChildProcess.make(file, [...args], { cwd });
 			const [stdout, stderr, exitCode] = yield* Effect.all(
 				[collect(handle.stdout), collect(handle.stderr), handle.exitCode],
-				{concurrency: "unbounded"},
+				{ concurrency: "unbounded" },
 			);
 			const output = stderr.trim() === "" ? stdout : stderr;
 			return {

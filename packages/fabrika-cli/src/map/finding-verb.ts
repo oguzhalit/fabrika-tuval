@@ -14,12 +14,12 @@
  * every lane shares.
  */
 
-import {Effect, type FileSystem} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {readFile} from "../io/fs.ts";
-import {createComment, getComment} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, type FileSystem } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { readFile } from "../io/fs.ts";
+import { createComment, getComment } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	BAD_SECTIONS,
 	KIND_MISMATCH,
@@ -27,8 +27,8 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {leakFree, notTerminal, requireMapForState, requireTicket, targetRepo} from "./guards.ts";
-import {composeFindingMarker, isNonce, isOutcome, OUTCOMES} from "./markers.ts";
+import { leakFree, notTerminal, requireMapForState, requireTicket, targetRepo } from "./guards.ts";
+import { composeFindingMarker, isNonce, isOutcome, OUTCOMES } from "./markers.ts";
 
 export interface FindingOptions {
 	readonly map: number;
@@ -74,9 +74,9 @@ export const runFinding = (
 		let text = "";
 		if (options.finding !== null) {
 			const read = yield* readFile(options.finding).pipe(
-				Effect.map((value) => ({ok: true as const, value})),
+				Effect.map((value) => ({ ok: true as const, value })),
 				Effect.catchTag("fabrika-cli/ReadFailed", (cause) =>
-					Effect.succeed({ok: false as const, value: cause.reason}),
+					Effect.succeed({ ok: false as const, value: cause.reason }),
 				),
 			);
 			if (!read.ok) {
@@ -111,7 +111,7 @@ export const runFinding = (
 			options.ticket,
 		);
 		if (resolved._tag === "Refused") return resolved.outcome;
-		const {ticket} = resolved.value;
+		const { ticket } = resolved.value;
 
 		const left = notTerminal(VERB, ticket, "there is no lane left to close.");
 		if (left !== null) return left;

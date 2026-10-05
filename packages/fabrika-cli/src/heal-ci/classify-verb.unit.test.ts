@@ -1,15 +1,15 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {StdinRead} from "../io/stdin.ts";
-import {runClassify} from "./classify-verb.ts";
-import {EMPTY_STDIN} from "./codes.ts";
-import {CI_REQUIRED_ROLLUP_LOG} from "./fixtures.test-support.ts";
-import {renderFrame} from "./frames.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { StdinRead } from "../io/stdin.ts";
+import { runClassify } from "./classify-verb.ts";
+import { EMPTY_STDIN } from "./codes.ts";
+import { CI_REQUIRED_ROLLUP_LOG } from "./fixtures.test-support.ts";
+import { renderFrame } from "./frames.ts";
 
 const run = (read: StdinRead, json = false) =>
-	Effect.runPromise(runClassify({json, stdin: Effect.succeed(read)}));
+	Effect.runPromise(runClassify({ json, stdin: Effect.succeed(read) }));
 
-const text = (value: string): StdinRead => ({_tag: "Text", text: value});
+const text = (value: string): StdinRead => ({ _tag: "Text", text: value });
 
 describe("runClassify", () => {
 	it("emits one class line per framed context, in the order received", async () => {
@@ -94,7 +94,7 @@ describe("runClassify", () => {
 	});
 
 	it("refuses an UNREADABLE pipe on 1, never as empty", async () => {
-		const out = await run({_tag: "Failed", reason: "EAGAIN"});
+		const out = await run({ _tag: "Failed", reason: "EAGAIN" });
 		expect(out.code).toBe(1);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain("UNKNOWN, never empty");
@@ -105,7 +105,7 @@ describe("runClassify", () => {
 		expect(JSON.parse(out.stdout)).toEqual({
 			outcome: "classified",
 			count: 1,
-			contexts: [{context: "-", class: "logic", signature: "assertion-failure", line: 1}],
+			contexts: [{ context: "-", class: "logic", signature: "assertion-failure", line: 1 }],
 		});
 	});
 });

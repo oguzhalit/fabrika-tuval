@@ -17,10 +17,10 @@
  * refusal over it would have no remedy.
  */
 
-import type {CommentRecord} from "../io/issues.ts";
-import {scanBody} from "../report/leaks.ts";
-import {CAME_FROM_HEADING, renderCameFrom} from "../wire/came-from.ts";
-import type {EvidenceRecord, Kind} from "./workspace.ts";
+import type { CommentRecord } from "../io/issues.ts";
+import { scanBody } from "../report/leaks.ts";
+import { CAME_FROM_HEADING, renderCameFrom } from "../wire/came-from.ts";
+import type { EvidenceRecord, Kind } from "./workspace.ts";
 
 /** The label that makes a spike findable, countable and disposable as a class. */
 export const SPIKE_LABEL = "prototyping:spike";

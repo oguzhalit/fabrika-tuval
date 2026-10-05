@@ -15,8 +15,8 @@
  * is why the orphan is named rather than prevented.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	addLabels,
 	createUnlabelledIssue,
@@ -25,11 +25,11 @@ import {
 	openIssuesWithLabel,
 	searchIssues,
 } from "../io/issues.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {tokenize} from "../report/dedup.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {digestOfBody, type MapBody, parseBody, renderMintBody} from "./body.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { tokenize } from "../report/dedup.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { digestOfBody, type MapBody, parseBody, renderMintBody } from "./body.ts";
 import {
 	ALREADY_DESCOPED,
 	EMPTY_STDIN,
@@ -40,8 +40,8 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {MAP_LABEL} from "./frontier.ts";
-import {leakFree, targetRepo} from "./guards.ts";
+import { MAP_LABEL } from "./frontier.ts";
+import { leakFree, targetRepo } from "./guards.ts";
 import {
 	candidatesFor,
 	isQuestion,
@@ -147,7 +147,7 @@ export const runOpen = (
 					`${VERB}: map #${row.number}'s body does not parse (${parsed.reason}) — nothing was written and whether this destination is charted is UNKNOWN.`,
 				);
 			}
-			maps.push({number: row.number, body: parsed.value});
+			maps.push({ number: row.number, body: parsed.value });
 		}
 
 		for (const map of maps) {
@@ -185,11 +185,11 @@ export const runOpen = (
 			}
 			const candidates = candidatesFor(question, hits.value);
 			candidateRows += candidates.length;
-			if (candidates.length > 0) answeredCandidates.push({question, candidates});
+			if (candidates.length > 0) answeredCandidates.push({ question, candidates });
 		}
 
 		const scope = `${VERB}: ${repo}, ${maps.length} open map(s) searched, ${lines.length} line(s) read, ${questions.length} stated as question(s), ${candidateRows} candidate(s) ranked.`;
-		const scanned = {maps: maps.length, candidates: candidateRows};
+		const scanned = { maps: maps.length, candidates: candidateRows };
 
 		const resumed = charted[0];
 		if (resumed !== undefined) {

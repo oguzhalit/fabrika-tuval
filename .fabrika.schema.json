@@ -28,11 +28,7 @@
 					"description": "Dollars a size-L pitch may spend per epic child."
 				}
 			},
-			"required": [
-				"S",
-				"M",
-				"L"
-			],
+			"required": ["S", "M", "L"],
 			"additionalProperties": false
 		},
 		"assemblyRefresh": {
@@ -42,18 +38,12 @@
 				"onReview": {
 					"type": "string",
 					"description": "What `lane refresh --on-review` does: `off` (declines and merges nothing — the shipped default, and today's path into review) or `on` (performs the merge, so the tail review binds to a head the queue can take). A hand-called `lane refresh` is never gated by this.",
-					"enum": [
-						"off",
-						"on"
-					]
+					"enum": ["off", "on"]
 				},
 				"onDispatch": {
 					"type": "string",
 					"description": "What `lane dispatch`'s pre-dispatch refresh does before it cuts a child's worktree off the assembly branch: `off` (declines and merges nothing — the shipped default, and today's dispatch path) or `on` (performs the merge, so the child builds and runs its verbs in a tree at least as new as the trunk). A hand-called `lane refresh` is never gated by this.",
-					"enum": [
-						"off",
-						"on"
-					]
+					"enum": ["off", "on"]
 				}
 			},
 			"additionalProperties": false
@@ -65,16 +55,10 @@
 				"onCollision": {
 					"type": "string",
 					"description": "What `lane integrate` does with a colliding child: `off` (abort the merge and refuse — the shipped default, and today's behaviour) or `on` (replay the child's commits onto the tip, keep both sides of a plain keep-both hunk, and send the child back for one review round over the moved range). A hunk that is not a plain keep-both parks under either.",
-					"enum": [
-						"off",
-						"on"
-					]
+					"enum": ["off", "on"]
 				},
 				"lockfileRegenerator": {
-					"type": [
-						"object",
-						"null"
-					],
+					"type": ["object", "null"],
 					"description": "The repo's write-mode command that regenerates a lockfile from the merged manifests. When every unmerged path of a replayed pick is one of `lockfiles` and `.gitattributes` marks it `merge=binary`, the replay runs `command` in the assembly worktree, stages the regenerated lockfile(s), and continues the pick. Absent or null, that collision parks like any other.",
 					"properties": {
 						"command": {
@@ -94,10 +78,7 @@
 							"minItems": 1
 						}
 					},
-					"required": [
-						"command",
-						"lockfiles"
-					],
+					"required": ["command", "lockfiles"],
 					"additionalProperties": false
 				}
 			},
@@ -258,11 +239,7 @@
 												"minItems": 1
 											}
 										},
-										"required": [
-											"name",
-											"hours",
-											"labels"
-										],
+										"required": ["name", "hours", "labels"],
 										"additionalProperties": false
 									}
 								},
@@ -281,10 +258,7 @@
 											"description": "How many hours an item may wait before it is flagged as past its target."
 										}
 									},
-									"required": [
-										"name",
-										"hours"
-									],
+									"required": ["name", "hours"],
 									"additionalProperties": false
 								}
 							},
@@ -301,17 +275,11 @@
 							"description": "Which GitHub project holds the on-call board. Leave both out to have `fabrika table setup` find or create \"<repo name> on-call\" on the repository's own owner.",
 							"properties": {
 								"owner": {
-									"type": [
-										"string",
-										"null"
-									],
+									"type": ["string", "null"],
 									"description": "The user or organization that owns the project. Default: the repository's owner."
 								},
 								"number": {
-									"type": [
-										"integer",
-										"null"
-									],
+									"type": ["integer", "null"],
 									"minimum": 1,
 									"description": "The project number. Default: the open project `fabrika table setup` finds by its title, or creates."
 								}
@@ -322,9 +290,7 @@
 					"additionalProperties": false
 				}
 			},
-			"required": [
-				"onCall"
-			],
+			"required": ["onCall"],
 			"additionalProperties": false
 		},
 		"campaignAuthors": {
@@ -350,10 +316,7 @@
 				"noProducer": {
 					"type": "string",
 					"description": "What a repo with zero repo-authored `.github/workflows/*` workflows gets — platform-provided `dynamic/*` entries do not count: `refuse` (a rollup over no producer is vacuous) or `degrade`.",
-					"enum": [
-						"refuse",
-						"degrade"
-					]
+					"enum": ["refuse", "degrade"]
 				},
 				"gateWorkflow": {
 					"type": "string",
@@ -401,9 +364,7 @@
 						"minItems": 1
 					}
 				},
-				"required": [
-					"command"
-				],
+				"required": ["command"],
 				"additionalProperties": false
 			}
 		},
@@ -432,10 +393,7 @@
 						"minItems": 1
 					}
 				},
-				"required": [
-					"command",
-					"reads"
-				],
+				"required": ["command", "reads"],
 				"additionalProperties": false
 			}
 		},
@@ -469,19 +427,13 @@
 			"pattern": "^(?!/)(?!\\.\\.).+"
 		},
 		"decisionsDir": {
-			"type": [
-				"string",
-				"null"
-			],
+			"type": ["string", "null"],
 			"description": "The decision corpus directory, repo-relative. Write null to declare that this repo keeps no decision corpus.",
 			"minLength": 1,
 			"pattern": "^(?!/)(?!\\.\\.).+"
 		},
 		"dependencyReconciler": {
-			"type": [
-				"object",
-				"null"
-			],
+			"type": ["object", "null"],
 			"description": "The repo's command that installs what its lockfile pins — `lane integrate` runs it in the assembly worktree after a clean child merge, before the code validators. Absent or null runs no install.",
 			"properties": {
 				"command": {
@@ -493,9 +445,7 @@
 					"minItems": 1
 				}
 			},
-			"required": [
-				"command"
-			],
+			"required": ["command"],
 			"additionalProperties": false
 		},
 		"digest": {
@@ -504,10 +454,7 @@
 			"properties": {
 				"tool": {
 					"type": "string",
-					"enum": [
-						"slack",
-						"discord"
-					],
+					"enum": ["slack", "discord"],
 					"description": "The chat tool whose webhook receives the report."
 				},
 				"webhookEnv": {
@@ -519,10 +466,7 @@
 					"type": "array",
 					"items": {
 						"type": "string",
-						"enum": [
-							"triage",
-							"on-call"
-						]
+						"enum": ["triage", "on-call"]
 					},
 					"minItems": 1,
 					"uniqueItems": true,
@@ -538,9 +482,7 @@
 					"description": "Post a message when nothing is past its target. Default false: an empty report is not sent."
 				}
 			},
-			"required": [
-				"tool"
-			],
+			"required": ["tool"],
 			"additionalProperties": false
 		},
 		"docLeakExempt": {
@@ -561,10 +503,7 @@
 			"minItems": 1
 		},
 		"laneConcurrencyCap": {
-			"type": [
-				"integer",
-				"null"
-			],
+			"type": ["integer", "null"],
 			"description": "How many CLAIMED issue lanes may stand open at once — an active lane no driver claims is idle and counts for nothing. `lane open` and `lane emit` refuse past it, with no override. Write null (or leave it out) for no cap.",
 			"minimum": 1
 		},
@@ -598,10 +537,7 @@
 				"onEmit": {
 					"type": "string",
 					"description": "What `lane emit` writes: `off` (today's machine, byte for byte — the shipped default) or `on` (the machinery `LAP` arms beside the existing ones, each task's lap counter seeded, and lap exhaustion parking on `human:machinery-stall` rather than freezing). The machine is fixed at emission, so flipping this moves no lane already on disk.",
-					"enum": [
-						"off",
-						"on"
-					]
+					"enum": ["off", "on"]
 				}
 			},
 			"additionalProperties": false
@@ -621,26 +557,17 @@
 				"uncaused": {
 					"type": "string",
 					"description": "What a BLOCKED carrying no `--cause` gets: `refuse` (unappended at exit 52, so every park names why — the shipped value) or `record` (the bare park, which routes to a human).",
-					"enum": [
-						"record",
-						"refuse"
-					]
+					"enum": ["record", "refuse"]
 				},
 				"driverRouted": {
 					"type": "string",
 					"description": "What `recipe unpark` does with a park whose cause routes `driver`: `refuse` (exit 12, the park routes to a human) or `clear` (the driver clears it on its own --rationale, recorded on the UNBLOCKED).",
-					"enum": [
-						"refuse",
-						"clear"
-					]
+					"enum": ["refuse", "clear"]
 				},
 				"repairBudgetSpent": {
 					"type": "string",
 					"description": "Whose park a spent repair budget (`repair-budget-spent`) is: `driver` (the driver grants the next round itself with `lane clear`; the pull-request half still needs its account in the control-plane set `.github/CODEOWNERS` names) or `founder` (the task parks on a human like any founder-routed park).",
-					"enum": [
-						"driver",
-						"founder"
-					]
+					"enum": ["driver", "founder"]
 				}
 			},
 			"additionalProperties": false
@@ -699,11 +626,7 @@
 						"minLength": 1
 					}
 				},
-				"required": [
-					"pattern",
-					"subsystem",
-					"constraint"
-				]
+				"required": ["pattern", "subsystem", "constraint"]
 			}
 		},
 		"reviewUi": {
@@ -728,18 +651,11 @@
 							},
 							"mode": {
 								"type": "string",
-								"enum": [
-									"require-render",
-									"hand-check",
-									"skip"
-								],
+								"enum": ["require-render", "hand-check", "skip"],
 								"description": "`require-render`: no preview is CANT-SEE. `hand-check`: an owner's screenshots on the PR naming its exact head stand in for the render, routed with `fabrika review-ui route --hand-check`. `skip`: no rendered review is owed, routed with `fabrika review-ui route --no-preview`. Both non-render outcomes are flagged on the record and in `ship gate`."
 							}
 						},
-						"required": [
-							"paths",
-							"mode"
-						],
+						"required": ["paths", "mode"],
 						"additionalProperties": false
 					}
 				}
@@ -759,10 +675,7 @@
 				"mainWorkingTree": {
 					"type": "string",
 					"description": "What a shipper's own `ship scope` does when it stands in the main working tree: `refuse` (exit 33 with nothing read — the shipped default, and the behaviour before this key) or `allow` (read the pull request and print its scope from there, for a repo that keeps one checkout or ships by hand).",
-					"enum": [
-						"refuse",
-						"allow"
-					]
+					"enum": ["refuse", "allow"]
 				}
 			},
 			"additionalProperties": false
@@ -773,24 +686,12 @@
 			"properties": {
 				"cadence": {
 					"type": "string",
-					"enum": [
-						"weekly",
-						"biweekly",
-						"on-demand"
-					],
+					"enum": ["weekly", "biweekly", "on-demand"],
 					"description": "How often the table meets. Default weekly. Every row is dated by its Table day, the `day` weekday; the cadence words the README."
 				},
 				"day": {
 					"type": "string",
-					"enum": [
-						"sunday",
-						"monday",
-						"tuesday",
-						"wednesday",
-						"thursday",
-						"friday",
-						"saturday"
-					],
+					"enum": ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
 					"description": "The weekday the table meets: every row's Table day falls on it. Default monday."
 				},
 				"timeZone": {
@@ -902,10 +803,7 @@
 								"description": "Seconds before the source is stopped and reported as timed out. Default 60, at most 600."
 							}
 						},
-						"required": [
-							"name",
-							"command"
-						],
+						"required": ["name", "command"],
 						"additionalProperties": false
 					}
 				},
@@ -914,17 +812,11 @@
 					"description": "Which GitHub project holds the table. Leave both out to have `fabrika table setup` find or create one on the repository's own owner.",
 					"properties": {
 						"owner": {
-							"type": [
-								"string",
-								"null"
-							],
+							"type": ["string", "null"],
 							"description": "The user or organization that owns the project. Default: the repository's owner."
 						},
 						"number": {
-							"type": [
-								"integer",
-								"null"
-							],
+							"type": ["integer", "null"],
 							"minimum": 1,
 							"description": "The project number. Default: the open project `fabrika table setup` finds by its title, linked to this repository or under its owner, or creates."
 						}
@@ -970,10 +862,7 @@
 						"minItems": 1
 					}
 				},
-				"required": [
-					"name",
-					"values"
-				],
+				"required": ["name", "values"],
 				"additionalProperties": false
 			}
 		},
@@ -994,33 +883,21 @@
 							"description": "Viewport height in CSS px."
 						}
 					},
-					"required": [
-						"width",
-						"height"
-					],
+					"required": ["width", "height"],
 					"additionalProperties": false
 				},
 				"evidenceStore": {
-					"type": [
-						"string",
-						"null"
-					],
+					"type": ["string", "null"],
 					"description": "The evidence store captures are uploaded to. Null (or absent) hosts evidence on GitHub as an attachment."
 				},
 				"storageState": {
-					"type": [
-						"string",
-						"null"
-					],
+					"type": ["string", "null"],
 					"description": "A repo-relative Playwright storage-state file to browse as. It is a credential — gitignore it, never inline the cookies.",
 					"minLength": 1,
 					"pattern": "^(?!/).+"
 				},
 				"locale": {
-					"type": [
-						"object",
-						"null"
-					],
+					"type": ["object", "null"],
 					"description": "The localStorage key the app reads its locale from and the closed set of values it accepts. `review-ui render --locale` seeds one of them before navigation and proves it against the page's `lang`. Null (or absent) renders at the app's default locale only.",
 					"properties": {
 						"storageKey": {
@@ -1039,17 +916,11 @@
 							"uniqueItems": true
 						}
 					},
-					"required": [
-						"storageKey",
-						"values"
-					],
+					"required": ["storageKey", "values"],
 					"additionalProperties": false
 				},
 				"scheme": {
-					"type": [
-						"object",
-						"null"
-					],
+					"type": ["object", "null"],
 					"description": "Where the page publishes the colour scheme it resolved. `review-ui render --scheme light|dark` emulates `prefers-color-scheme` and proves each shot against this root attribute. Null (or absent) refuses `--scheme`.",
 					"properties": {
 						"rootAttribute": {
@@ -1058,16 +929,11 @@
 							"pattern": "^[a-z][a-z0-9-]*$"
 						}
 					},
-					"required": [
-						"rootAttribute"
-					],
+					"required": ["rootAttribute"],
 					"additionalProperties": false
 				},
 				"accent": {
-					"type": [
-						"object",
-						"null"
-					],
+					"type": ["object", "null"],
 					"description": "The root attribute the app switches its theme accent on and the closed set of accents it accepts. `review-ui render --accent` sets one of them on `document.documentElement` after navigation and proves it read back before the shot. Null (or absent) refuses `--accent`.",
 					"properties": {
 						"rootAttribute": {
@@ -1086,10 +952,7 @@
 							"uniqueItems": true
 						}
 					},
-					"required": [
-						"rootAttribute",
-						"values"
-					],
+					"required": ["rootAttribute", "values"],
 					"additionalProperties": false
 				}
 			},
@@ -1135,10 +998,7 @@
 						"pattern": "^/"
 					},
 					"basePath": {
-						"type": [
-							"string",
-							"null"
-						],
+						"type": ["string", "null"],
 						"description": "Where this app serves its mounted pages, when that is not the mount itself. Defaults to the mount.",
 						"pattern": "^/"
 					},
@@ -1153,22 +1013,14 @@
 						"pattern": "^/"
 					}
 				},
-				"required": [
-					"name",
-					"prefix",
-					"mount",
-					"command"
-				],
+				"required": ["name", "prefix", "mount", "command"],
 				"additionalProperties": false
 			}
 		},
 		"unreadableCodeowners": {
 			"type": "string",
 			"description": "What a §CP read does when `.github/CODEOWNERS` itself cannot be read: `ship` treats the boundary as absent, `refuse` raises the caller's UNKNOWN. Nothing reads this key today.",
-			"enum": [
-				"ship",
-				"refuse"
-			]
+			"enum": ["ship", "refuse"]
 		},
 		"workflowValidators": {
 			"type": "array",
@@ -1194,10 +1046,7 @@
 						"minItems": 1
 					}
 				},
-				"required": [
-					"command",
-					"reads"
-				],
+				"required": ["command", "reads"],
 				"additionalProperties": false
 			}
 		}

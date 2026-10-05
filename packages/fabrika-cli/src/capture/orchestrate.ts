@@ -7,8 +7,8 @@
  * never fails the effect, so a broken endpoint degrades `hostedUrl`/`uploadError`
  * but never loses `localPath` and never breaks the gate.
  */
-import {Effect} from "effect";
-import type {HttpClient} from "effect/unstable/http/HttpClient";
+import { Effect } from "effect";
+import type { HttpClient } from "effect/unstable/http/HttpClient";
 import {
 	type CapturedSurface,
 	CaptureError,
@@ -16,9 +16,9 @@ import {
 	captureShots,
 	requireWritten,
 } from "./capture.ts";
-import type {PageError} from "./page-errors.ts";
-import {buildCapturePlan, type Surface, type Viewport} from "./plan.ts";
-import {type UploadOutcome, uploadAsset} from "./upload.ts";
+import type { PageError } from "./page-errors.ts";
+import { buildCapturePlan, type Surface, type Viewport } from "./plan.ts";
+import { type UploadOutcome, uploadAsset } from "./upload.ts";
 
 /** One captured surface: the always-present local artifact + the upload outcome. */
 export interface CaptureRecord {
@@ -77,7 +77,7 @@ export const captureAndUpload = (
 ): Effect.Effect<readonly CaptureRecord[], CaptureError, HttpClient> =>
 	Effect.try({
 		try: () => buildCapturePlan(request.previewUrl, request.surfaces, request.viewport),
-		catch: (cause) => new CaptureError({message: "failed to build capture plan", cause}),
+		catch: (cause) => new CaptureError({ message: "failed to build capture plan", cause }),
 	}).pipe(
 		Effect.flatMap((plan) => captureShots(plan, request.outDir, request.captureOptions ?? {})),
 		Effect.flatMap(requireWritten),
@@ -91,7 +91,7 @@ export const captureAndUpload = (
 						token: request.token,
 						fileName: shot.fileName,
 					}).pipe(Effect.map((outcome) => mergeRecord(shot, outcome))),
-				{concurrency: 1},
+				{ concurrency: 1 },
 			),
 		),
 	);

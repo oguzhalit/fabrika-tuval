@@ -2,14 +2,14 @@
  * Whether the assembly branch carries the lane verbs a brief names — proven off the branch's own
  * tree, with "the read failed" kept apart from "the path is not there".
  */
-import {existsSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import {Effect, Layer, Path} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeFs, fakeShell, okOut} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {fabrikaEntry, gitRef} from "../wire/lane-brief.ts";
-import {BRIEFED_LANE_VERBS, carriedVerbs, VERB_MODULES} from "./briefed-verbs.ts";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { Effect, Layer, Path } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeFs, fakeShell, okOut } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { fabrikaEntry, gitRef } from "../wire/lane-brief.ts";
+import { BRIEFED_LANE_VERBS, carriedVerbs, VERB_MODULES } from "./briefed-verbs.ts";
 
 const BRANCH = gitRef("epic/5817")!;
 const SOURCE = fabrikaEntry("packages/fabrika-cli/src/bin.ts")!;
@@ -61,12 +61,12 @@ const run = (
 			}),
 			Layer.merge(shell.layer, fakeFs({}).layer),
 		),
-	).then((carriage) => ({carriage, calls: shell.calls}));
+	).then((carriage) => ({ carriage, calls: shell.calls }));
 };
 
 describe("carriedVerbs", () => {
 	it("answers carried when the branch's tree holds every briefed verb's module", async () => {
-		const {carriage, calls} = await run([
+		const { carriage, calls } = await run([
 			[RESOLVE, okOut(`${SHA}\n`)],
 			[LS_TREE, okOut(`${REPORT}\n`)],
 		]);
@@ -77,23 +77,23 @@ describe("carriedVerbs", () => {
 	});
 
 	it("names every verb the tree does not hold, and reads it as absence rather than as a failure", async () => {
-		const {carriage} = await run([
+		const { carriage } = await run([
 			[RESOLVE, okOut(`${SHA}\n`)],
 			[LS_TREE, okOut("")],
 		]);
 
-		expect(carriage).toEqual({_tag: "Missing", verbs: ["report"]});
+		expect(carriage).toEqual({ _tag: "Missing", verbs: ["report"] });
 	});
 
 	it("is UNKNOWN when the branch does not resolve in this tree", async () => {
-		const {carriage, calls} = await run([[RESOLVE, errOut("fatal: bad revision")]]);
+		const { carriage, calls } = await run([[RESOLVE, errOut("fatal: bad revision")]]);
 
 		expect(carriage._tag).toBe("Unreadable");
 		expect(calls.some((call) => call.includes("ls-tree"))).toBe(false);
 	});
 
 	it("is UNKNOWN when the tree read itself fails, never 'the verb is missing'", async () => {
-		const {carriage} = await run([
+		const { carriage } = await run([
 			[RESOLVE, okOut(`${SHA}\n`)],
 			[LS_TREE, errOut("fatal: not a tree object")],
 		]);
@@ -102,7 +102,7 @@ describe("carriedVerbs", () => {
 	});
 
 	it("reads no branch at all for an installed entrypoint the branch cannot carry", async () => {
-		const {carriage, calls} = await run([], INSTALLED);
+		const { carriage, calls } = await run([], INSTALLED);
 
 		expect(carriage._tag).toBe("Carried");
 		expect(calls).toEqual([]);
@@ -112,7 +112,7 @@ describe("carriedVerbs", () => {
 		const where = cwd === "" ? "the repository root" : cwd;
 
 		it(`answers carried for a present module from ${where}`, async () => {
-			const {carriage} = await run(
+			const { carriage } = await run(
 				[[RESOLVE, okOut(`${SHA}\n`)], ...treeReadsFrom(cwd, [REPORT])],
 				SOURCE,
 				okOut(""),
@@ -122,13 +122,13 @@ describe("carriedVerbs", () => {
 		});
 
 		it(`answers missing for a genuinely absent module from ${where}`, async () => {
-			const {carriage} = await run(
+			const { carriage } = await run(
 				[[RESOLVE, okOut(`${SHA}\n`)], ...treeReadsFrom(cwd, [])],
 				SOURCE,
 				okOut(""),
 			);
 
-			expect(carriage).toEqual({_tag: "Missing", verbs: ["report"]});
+			expect(carriage).toEqual({ _tag: "Missing", verbs: ["report"] });
 		});
 	}
 

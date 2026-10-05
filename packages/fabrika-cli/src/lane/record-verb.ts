@@ -11,10 +11,10 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9855
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {findLeaks} from "../guard/leak.ts";
-import type {Attempt} from "../io/git.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { findLeaks } from "../guard/leak.ts";
+import type { Attempt } from "../io/git.ts";
 import {
 	createComment,
 	getComment,
@@ -22,9 +22,9 @@ import {
 	listCommentsReconciled,
 	resolveRepo,
 } from "../io/issues.ts";
-import {isRecord, parseJson} from "../io/json.ts";
-import {scanBody} from "../report/leaks.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { isRecord, parseJson } from "../io/json.ts";
+import { scanBody } from "../report/leaks.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	asksOf,
 	emit,
@@ -33,7 +33,7 @@ import {
 	type Spent,
 	sameTerminal,
 } from "../wire/lane-record.ts";
-import {type IssueRead, issueStateOf} from "./closing-merge.ts";
+import { type IssueRead, issueStateOf } from "./closing-merge.ts";
 import {
 	APPEND_UNKNOWN,
 	ISSUE_LIVE,
@@ -44,11 +44,11 @@ import {
 	MALFORMED_RECORD,
 	MARKER_READBACK,
 } from "./codes.ts";
-import {loadFacts} from "./facts.ts";
-import type {KeyIssue} from "./key.ts";
-import {composeRecord} from "./record.ts";
-import {loadRefusal, replayRefusal} from "./refusals.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { loadFacts } from "./facts.ts";
+import type { KeyIssue } from "./key.ts";
+import { composeRecord } from "./record.ts";
+import { loadRefusal, replayRefusal } from "./refusals.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane record";
 
@@ -73,7 +73,7 @@ export interface RecordBoard<R> {
 	readonly post: (
 		issue: number,
 		body: string,
-	) => Effect.Effect<Attempt<{readonly id: number; readonly url: string}>, never, R>;
+	) => Effect.Effect<Attempt<{ readonly id: number; readonly url: string }>, never, R>;
 	readonly readBack: (id: number) => Effect.Effect<Attempt<string>, never, R>;
 }
 
@@ -95,16 +95,16 @@ const followTable = <R>(
 	options: RecordOptions<R>,
 	issue: number,
 ): Effect.Effect<
-	{readonly table: Record<string, unknown> | null; readonly notes: ReadonlyArray<string>},
+	{ readonly table: Record<string, unknown> | null; readonly notes: ReadonlyArray<string> },
 	never,
 	R | FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
-		if (options.syncTable === undefined) return {table: null, notes: []};
+		if (options.syncTable === undefined) return { table: null, notes: [] };
 		const synced = yield* options.syncTable(issue);
 		if (synced.code !== 0) {
 			return {
-				table: {code: synced.code},
+				table: { code: synced.code },
 				notes: [
 					...synced.stderr,
 					`${VERB}: the record stands, and the table did not sync (exit ${synced.code}) — re-run \`fabrika table sync ${issue}\` once the cause above is fixed.`,
@@ -113,7 +113,7 @@ const followTable = <R>(
 		}
 		const parsed = parseJson(synced.stdout);
 		const verdict = isRecord(parsed) ? (parsed.answer ?? null) : null;
-		return {table: {code: 0, answer: verdict}, notes: synced.stderr};
+		return { table: { code: 0, answer: verdict }, notes: synced.stderr };
 	});
 
 const summary = (record: LaneRecord): Record<string, unknown> => ({
@@ -168,7 +168,7 @@ export const runRecord = <R>(
 				`${VERB}: lane ${options.lane} folds to ${JSON.stringify(composed.stateValue)}, which is not a terminal state — a record is posted once the lane ends. Nothing was posted.`,
 			);
 		}
-		const {record} = composed;
+		const { record } = composed;
 
 		const scan = scanBody(emit(record));
 		const body = scan.redacted;
@@ -206,7 +206,7 @@ export const runRecord = <R>(
 						issue,
 						commentId: comment.id,
 						...summary(record),
-						...(followed.table === null ? {} : {table: followed.table}),
+						...(followed.table === null ? {} : { table: followed.table }),
 					}),
 					[
 						`${VERB}: #${issue} already carries the record of this terminal (comment ${comment.id}) — nothing was written.`,
@@ -268,7 +268,7 @@ export const runRecord = <R>(
 				commentId: posted.value.id,
 				url: posted.value.url,
 				...summary(record),
-				...(followed.table === null ? {} : {table: followed.table}),
+				...(followed.table === null ? {} : { table: followed.table }),
 			}),
 			[
 				...notes,
@@ -289,7 +289,7 @@ export const recordBoard = (
 			Effect.gen(function* () {
 				const name = yield* target;
 				return name._tag === "Failure"
-					? {_tag: "Unknown" as const, reason: name.reason}
+					? { _tag: "Unknown" as const, reason: name.reason }
 					: yield* getIssue(name.value, issue);
 			}),
 		comments: (issue) =>
@@ -299,7 +299,10 @@ export const recordBoard = (
 				const scan = yield* listCommentsReconciled(name.value, issue);
 				return scan._tag === "Failure"
 					? scan
-					: {_tag: "Ok" as const, value: scan.value.comments.map(({id, body}) => ({id, body}))};
+					: {
+							_tag: "Ok" as const,
+							value: scan.value.comments.map(({ id, body }) => ({ id, body })),
+						};
 			}),
 		post: (issue, body) =>
 			Effect.gen(function* () {

@@ -4,9 +4,9 @@
  * One module, because every verb in the group reads the same PR shape — a per-test literal is how
  * two tests come to disagree about what the platform returns.
  */
-import type {HttpReply, Scripted} from "../fakes.test-support.ts";
-import {okOut} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
+import type { HttpReply, Scripted } from "../fakes.test-support.ts";
+import { okOut } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
 
 /**
  * `git rev-parse --git-dir --git-common-dir` as git answers it in a linked worktree — two different
@@ -22,7 +22,7 @@ import type {ExecResult} from "../io/exec.ts";
  */
 export const LINKED_WORKTREE: Scripted = [
 	/^git rev-parse/,
-	{ok: true, stdout: "/repo/.git/worktrees/ship-4321\n/repo/.git\n", reason: ""},
+	{ ok: true, stdout: "/repo/.git/worktrees/ship-4321\n/repo/.git\n", reason: "" },
 ];
 
 /**
@@ -39,7 +39,7 @@ export const RULES = new RegExp(`^GET ${API}\\/repos\\/o\\/r\\/rules\\/branches\
 export const PROTECTION = new RegExp(`^GET ${API}\\/repos\\/o\\/r\\/branches\\/main\\/protection$`);
 
 /** A terminal page: 200 with no `rel="next"`, which is what the exhaustion proof reads. */
-const served = (body: unknown, status = 200): HttpReply => ({status, body: JSON.stringify(body)});
+const served = (body: unknown, status = 200): HttpReply => ({ status, body: JSON.stringify(body) });
 
 /** A `rules/branches/<branch>` page: only `required_status_checks` rules carry contexts. */
 export const rules = (...contexts: ReadonlyArray<string>): HttpReply =>
@@ -50,19 +50,19 @@ export const rules = (...contexts: ReadonlyArray<string>): HttpReply =>
 					{
 						type: "required_status_checks",
 						parameters: {
-							required_status_checks: contexts.map((context) => ({context})),
+							required_status_checks: contexts.map((context) => ({ context })),
 						},
 					},
 				],
 	);
 
 export const protection = (...contexts: ReadonlyArray<string>): HttpReply =>
-	served({required_status_checks: {contexts}});
+	served({ required_status_checks: { contexts } });
 
 /** A served refusal — the status is the fact, and the message is what GitHub prints beside it. */
 export const httpError = (status: number, message = "refused"): HttpReply => ({
 	status,
-	body: JSON.stringify({message}),
+	body: JSON.stringify({ message }),
 });
 
 /**
@@ -113,18 +113,18 @@ export const pull = (shape: PullShape = {}): ExecResult =>
 		JSON.stringify({
 			number: 4321,
 			state: shape.state ?? "open",
-			head: {sha: shape.head ?? HEAD},
-			base: {ref: shape.base ?? "main"},
+			head: { sha: shape.head ?? HEAD },
+			base: { ref: shape.base ?? "main" },
 			body: shape.body ?? `does a thing\n\nFixes #${LINKED_ISSUE}\n`,
 			changed_files: shape.changedFiles ?? 2,
 			comments: shape.comments ?? 0,
 			draft: shape.draft ?? false,
 			merged: shape.merged ?? false,
-			auto_merge: shape.autoMerge === true ? {enabled_by: {login: "usirin"}} : null,
-			user: {login: shape.author ?? "usirin"},
+			auto_merge: shape.autoMerge === true ? { enabled_by: { login: "usirin" } } : null,
+			user: { login: shape.author ?? "usirin" },
 			mergeable: shape.mergeable === undefined ? true : shape.mergeable,
 			mergeable_state: shape.mergeableState ?? "blocked",
-			assignees: (shape.assignees ?? []).map((login) => ({login})),
+			assignees: (shape.assignees ?? []).map((login) => ({ login })),
 			updated_at: shape.updatedAt ?? "2026-08-08T00:00:00Z",
 		}),
 	);
@@ -137,7 +137,7 @@ export const pull = (shape: PullShape = {}): ExecResult =>
  * rather than {@link pull}'s. Omitting the count omits the field, which reads back as `0` and
  * fences nothing: no list is short of zero.
  */
-export const pullAsIssue = (shape: {comments?: number} = {}): ExecResult =>
+export const pullAsIssue = (shape: { comments?: number } = {}): ExecResult =>
 	okOut(
 		JSON.stringify({
 			number: 4321,
@@ -146,12 +146,12 @@ export const pullAsIssue = (shape: {comments?: number} = {}): ExecResult =>
 			state: "open",
 			labels: [],
 			html_url: "https://example.test/issues/4321",
-			...(shape.comments === undefined ? {} : {comments: shape.comments}),
+			...(shape.comments === undefined ? {} : { comments: shape.comments }),
 		}),
 	);
 
 export const files = (...names: ReadonlyArray<string>): ExecResult =>
-	okOut(JSON.stringify(names.map((filename) => ({filename}))));
+	okOut(JSON.stringify(names.map((filename) => ({ filename }))));
 
 export const CODEOWNERS = `# a boundary
 /.github/    @acme/control-plane
@@ -180,7 +180,7 @@ export const checkRuns = (
 				status: run.status,
 				conclusion: run.conclusion ?? null,
 				started_at: run.started_at ?? "2026-08-08T00:00:00Z",
-				check_suite: {id: run.check_suite_id ?? 1},
+				check_suite: { id: run.check_suite_id ?? 1 },
 			})),
 		}),
 	);
@@ -193,7 +193,7 @@ export const checkRuns = (
  * declared one would make every case a coverage case.
  */
 export const workflows = (
-	...entries: ReadonlyArray<string | {state?: string; path: string}>
+	...entries: ReadonlyArray<string | { state?: string; path: string }>
 ): ExecResult =>
 	okOut(
 		JSON.stringify({
@@ -242,20 +242,20 @@ export const runsTotal = (total: number, rows: ReadonlyArray<RunRow> = []): Exec
 				status: row.status ?? "completed",
 				conclusion: row.conclusion === undefined ? "success" : row.conclusion,
 				completed_at: "2026-08-08T00:00:00Z",
-				...(row.event === null ? {} : {event: row.event ?? "pull_request"}),
-				...(row.headSha === null ? {} : {head_sha: row.headSha ?? HEAD}),
+				...(row.event === null ? {} : { event: row.event ?? "pull_request" }),
+				...(row.headSha === null ? {} : { head_sha: row.headSha ?? HEAD }),
 			})),
 		}),
 	);
 
 export const comments = (
-	...rows: ReadonlyArray<{id: number; body: string; author?: string; updatedAt?: string}>
+	...rows: ReadonlyArray<{ id: number; body: string; author?: string; updatedAt?: string }>
 ): ExecResult =>
 	okOut(
 		JSON.stringify(
 			rows.map((row) => ({
 				id: row.id,
-				user: {login: row.author ?? "reviewer"},
+				user: { login: row.author ?? "reviewer" },
 				created_at: "2026-08-08T00:00:00Z",
 				updated_at: row.updatedAt ?? "2026-08-08T00:00:00Z",
 				body: row.body,
@@ -270,7 +270,7 @@ export const threadPage = (
 		isResolved?: boolean;
 		path?: string | null;
 		line?: number | null;
-		comments: ReadonlyArray<{body: string; login: string; typename: string}>;
+		comments: ReadonlyArray<{ body: string; login: string; typename: string }>;
 		declaredComments?: number;
 	}>,
 ): ExecResult =>
@@ -281,7 +281,7 @@ export const threadPage = (
 					pullRequest: {
 						reviewThreads: {
 							totalCount: declared,
-							pageInfo: {hasNextPage: false, endCursor: null},
+							pageInfo: { hasNextPage: false, endCursor: null },
 							nodes: nodes.map((node) => ({
 								id: node.id,
 								isResolved: node.isResolved ?? false,
@@ -291,7 +291,7 @@ export const threadPage = (
 									totalCount: node.declaredComments ?? node.comments.length,
 									nodes: node.comments.map((comment) => ({
 										body: comment.body,
-										author: {login: comment.login, __typename: comment.typename},
+										author: { login: comment.login, __typename: comment.typename },
 									})),
 								},
 							})),
@@ -309,7 +309,7 @@ export const issue = (labels: ReadonlyArray<string> = []): ExecResult =>
 			title: "t",
 			body: "b",
 			state: "open",
-			labels: labels.map((name) => ({name})),
+			labels: labels.map((name) => ({ name })),
 			html_url: `https://example.test/issues/${LINKED_ISSUE}`,
 			milestone: null,
 		}),
@@ -317,11 +317,11 @@ export const issue = (labels: ReadonlyArray<string> = []): ExecResult =>
 
 /** The branch's active rules. `[]` is the answer for a branch nothing governs, not a failure. */
 export const branchRules = (...types: ReadonlyArray<string>): ExecResult =>
-	okOut(JSON.stringify(types.map((type) => ({type}))));
+	okOut(JSON.stringify(types.map((type) => ({ type }))));
 
 /** The repository's permitted merge methods. An omitted flag reads `false`. */
 export const repository = (
-	allowed: {squash?: boolean; merge?: boolean; rebase?: boolean} = {},
+	allowed: { squash?: boolean; merge?: boolean; rebase?: boolean } = {},
 ): ExecResult =>
 	okOut(
 		JSON.stringify({
@@ -334,7 +334,7 @@ export const repository = (
 
 /** The repository payload as the HTTP client reads it — the same flags, off a served body. */
 export const repositoryServed = (
-	allowed: {squash?: boolean; merge?: boolean; rebase?: boolean} = {},
+	allowed: { squash?: boolean; merge?: boolean; rebase?: boolean } = {},
 ): HttpReply => ({
 	status: 200,
 	body: JSON.stringify({
@@ -351,7 +351,7 @@ export const repositoryServed = (
  * `merge_commit_sha` is the payload's key, not the `--jq` era's projected `commit`: the projection
  * is gone with `gh`, so the fixture speaks the endpoint's own shape.
  */
-export const mergeProofServed = (shape: {merged?: boolean; commit?: string} = {}): HttpReply => ({
+export const mergeProofServed = (shape: { merged?: boolean; commit?: string } = {}): HttpReply => ({
 	status: 200,
 	body: JSON.stringify({
 		merged: shape.merged ?? true,
@@ -369,7 +369,7 @@ export const MERGE_COMMIT = "5c7d1e930a2b4f6d8e0c1a3b5d7f9e1c3a5b7d9f";
  * spawn and read the developer's own login, which is exactly the inherited state the scripted seams
  * exist to remove.
  */
-export const ENV = {CLAUDE_PIPELINE_REPO: "o/r", GITHUB_TOKEN: "ghp_scripted"} as Record<
+export const ENV = { CLAUDE_PIPELINE_REPO: "o/r", GITHUB_TOKEN: "ghp_scripted" } as Record<
 	string,
 	string | undefined
 >;
@@ -384,9 +384,9 @@ export const RUNNING_ACCOUNT = /^GET \S+\/user$/;
  * ours: no config at the base, and the running account is the fixture PR's own author.
  */
 export const OURS: ReadonlyArray<Scripted> = [
-	[CONFIG_AT_BASE, {status: 404, body: '{"message":"Not Found"}'}],
-	[RUNNING_ACCOUNT, {status: 200, body: JSON.stringify({login: "usirin"})}],
-	[/^GET \S+\/repos\/o\/r\/issues\/4321\/comments/, {status: 200, body: "[]"}],
+	[CONFIG_AT_BASE, { status: 404, body: '{"message":"Not Found"}' }],
+	[RUNNING_ACCOUNT, { status: 200, body: JSON.stringify({ login: "usirin" }) }],
+	[/^GET \S+\/repos\/o\/r\/issues\/4321\/comments/, { status: 200, body: "[]" }],
 ];
 
 /** One ownership case both landing verbs are pinned against: who opened the PR, and what stands. */
@@ -400,7 +400,7 @@ export interface OwnershipCase {
 
 const configAtBase = (value: Record<string, unknown>): Scripted => [
 	CONFIG_AT_BASE,
-	{status: 200, body: JSON.stringify(value)},
+	{ status: 200, body: JSON.stringify(value) },
 ];
 const grantComments = (author: string): Scripted => [
 	/^GET \S+\/repos\/o\/r\/issues\/4321\/comments/,
@@ -409,7 +409,7 @@ const grantComments = (author: string): Scripted => [
 		body: JSON.stringify([
 			{
 				id: 77,
-				user: {login: author},
+				user: { login: author },
 				created_at: "2026-09-26T07:16:03Z",
 				updated_at: "2026-09-26T07:16:03Z",
 				body: `takeover-granted: #${4321} · 2026-09-26T07:16:03Z\n\nTake over the fixture PR. — 2026-09-26\n`,
@@ -419,7 +419,7 @@ const grantComments = (author: string): Scripted => [
 ];
 const writes = (login: string): Scripted => [
 	new RegExp(`^GET \\S+/repos/o/r/collaborators/${login}/permission`),
-	{status: 200, body: JSON.stringify({permission: "write"})},
+	{ status: 200, body: JSON.stringify({ permission: "write" }) },
 ];
 /**
  * The control-plane set — who may post a takeover grant — read off CODEOWNERS on the default branch.
@@ -439,7 +439,7 @@ const GRANTORS: ReadonlyArray<Scripted> = [
 			}),
 		},
 	],
-	[/contents\/\.github\/CODEOWNERS\?ref=main$/, {status: 200, body: "/.github/ @founder @ada\n"}],
+	[/contents\/\.github\/CODEOWNERS\?ref=main$/, { status: 200, body: "/.github/ @founder @ada\n" }],
 ];
 
 export const OWNERSHIP_CASES: ReadonlyArray<OwnershipCase> = [
@@ -452,7 +452,7 @@ export const OWNERSHIP_CASES: ReadonlyArray<OwnershipCase> = [
 	{
 		name: "the running account's own PR, ownAccounts empty",
 		author: "usirin",
-		reads: [configAtBase({ownAccounts: []})],
+		reads: [configAtBase({ ownAccounts: [] })],
 		drivable: true,
 	},
 	{
@@ -464,19 +464,19 @@ export const OWNERSHIP_CASES: ReadonlyArray<OwnershipCase> = [
 	{
 		name: "another author's PR, ownAccounts empty and no grant",
 		author: "ada",
-		reads: [configAtBase({ownAccounts: []})],
+		reads: [configAtBase({ ownAccounts: [] })],
 		drivable: false,
 	},
 	{
 		name: "a PR a configured own account opened",
 		author: "agent-bot",
-		reads: [configAtBase({ownAccounts: ["@agent-bot"]})],
+		reads: [configAtBase({ ownAccounts: ["@agent-bot"] })],
 		drivable: true,
 	},
 	{
 		name: "the running account's PR when ownAccounts names someone else",
 		author: "usirin",
-		reads: [configAtBase({ownAccounts: ["@agent-bot"]})],
+		reads: [configAtBase({ ownAccounts: ["@agent-bot"] })],
 		drivable: false,
 	},
 	{

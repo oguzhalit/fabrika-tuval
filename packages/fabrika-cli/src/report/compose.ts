@@ -21,9 +21,9 @@ export const REQUIRED_SECTIONS: ReadonlyArray<string> = [
 const MAY_BE_EMPTY = "## Suggested next step (non-binding)";
 
 export type SectionProblem =
-	| {readonly _tag: "Missing"; readonly heading: string}
-	| {readonly _tag: "Empty"; readonly heading: string}
-	| {readonly _tag: "OutOfOrder"; readonly heading: string; readonly after: string};
+	| { readonly _tag: "Missing"; readonly heading: string }
+	| { readonly _tag: "Empty"; readonly heading: string }
+	| { readonly _tag: "OutOfOrder"; readonly heading: string; readonly after: string };
 
 interface Seen {
 	readonly heading: string;
@@ -33,13 +33,13 @@ interface Seen {
 /** The `##` sections of a markdown body, in the order they appear, with their content. */
 const sectionsOf = (body: string): ReadonlyArray<Seen> => {
 	const lines = body.split("\n");
-	const seen: {heading: string; content: string[]}[] = [];
+	const seen: { heading: string; content: string[] }[] = [];
 	for (const line of lines) {
 		const m = /^##\s+(.*?)\s*$/.exec(line);
-		if (m?.[1] !== undefined) seen.push({heading: `## ${m[1]}`, content: []});
+		if (m?.[1] !== undefined) seen.push({ heading: `## ${m[1]}`, content: [] });
 		else seen.at(-1)?.content.push(line);
 	}
-	return seen.map((s) => ({heading: s.heading, content: s.content.join("\n")}));
+	return seen.map((s) => ({ heading: s.heading, content: s.content.join("\n") }));
 };
 
 /**
@@ -54,7 +54,7 @@ export const checkSections = (body: string): SectionProblem | null => {
 	const headings = seen.map((s) => s.heading);
 
 	for (const required of REQUIRED_SECTIONS) {
-		if (!headings.includes(required)) return {_tag: "Missing", heading: required};
+		if (!headings.includes(required)) return { _tag: "Missing", heading: required };
 	}
 
 	const ordered = headings.filter((h) => REQUIRED_SECTIONS.includes(h));
@@ -63,7 +63,7 @@ export const checkSections = (body: string): SectionProblem | null => {
 		const current = ordered[i];
 		if (previous === undefined || current === undefined) continue;
 		if (REQUIRED_SECTIONS.indexOf(current) < REQUIRED_SECTIONS.indexOf(previous)) {
-			return {_tag: "OutOfOrder", heading: current, after: previous};
+			return { _tag: "OutOfOrder", heading: current, after: previous };
 		}
 	}
 
@@ -71,7 +71,7 @@ export const checkSections = (body: string): SectionProblem | null => {
 		if (required === MAY_BE_EMPTY) continue;
 		const section = seen.find((s) => s.heading === required);
 		if (section === undefined || section.content.trim() === "") {
-			return {_tag: "Empty", heading: required};
+			return { _tag: "Empty", heading: required };
 		}
 	}
 	return null;
@@ -142,7 +142,7 @@ export const deriveVocabulary = (labels: ReadonlyArray<string>): Vocabulary => {
 			words.set(lower, "priority");
 		}
 	}
-	return {typeLabels, priorityLabels, words};
+	return { typeLabels, priorityLabels, words };
 };
 
 export const labelKind = (label: string, vocabulary: Vocabulary): "type" | "priority" | null => {

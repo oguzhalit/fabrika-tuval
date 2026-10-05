@@ -14,22 +14,22 @@
  * file that redirect reads and adds no argument to any writing verb, which is why it is the staged
  * route's allocator rather than a body flag.
  */
-import {randomUUID} from "node:crypto";
-import {tmpdir} from "node:os";
-import {Effect, Option} from "effect";
-import {Command, Flag} from "effect/unstable/cli";
-import {leakNamesKey} from "../config/keys/leak-names.ts";
-import {readKey} from "../config/read-key.ts";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStdin} from "../io/stdin.ts";
-import {runAmend} from "./amend-verb.ts";
-import {DEFAULT_LIMIT} from "./dedup.ts";
-import {runDedup} from "./dedup-verb.ts";
-import {runFile} from "./file-verb.ts";
-import {DEFAULT_CLOSED_DAYS} from "./issue-index.ts";
-import {runNote} from "./note-verb.ts";
-import {runScratch} from "./scratch-verb.ts";
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
+import { Effect, Option } from "effect";
+import { Command, Flag } from "effect/unstable/cli";
+import { leakNamesKey } from "../config/keys/leak-names.ts";
+import { readKey } from "../config/read-key.ts";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStdin } from "../io/stdin.ts";
+import { runAmend } from "./amend-verb.ts";
+import { DEFAULT_LIMIT } from "./dedup.ts";
+import { runDedup } from "./dedup-verb.ts";
+import { runFile } from "./file-verb.ts";
+import { DEFAULT_CLOSED_DAYS } from "./issue-index.ts";
+import { runNote } from "./note-verb.ts";
+import { runScratch } from "./scratch-verb.ts";
 
 const DEFAULT_LABEL = "status:needs-triage";
 
@@ -91,7 +91,7 @@ const dedup = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({query, closedDays, refresh, label, limit, exclude, repo, json}) {
+	Effect.fn(function* ({ query, closedDays, refresh, label, limit, exclude, repo, json }) {
 		yield* emit(
 			yield* runDedup({
 				query,
@@ -144,7 +144,7 @@ const fileCmd = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({title, label, redact, repo, json}) {
+	Effect.fn(function* ({ title, label, redact, repo, json }) {
 		yield* emit(
 			yield* runFile({
 				leakNames: yield* readKey(process.cwd(), leakNamesKey),
@@ -177,7 +177,7 @@ const fileCmd = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: 'fabrika report file --title "Retry helper swallows the abort reason" < body.md'},
+		{ command: 'fabrika report file --title "Retry helper swallows the abort reason" < body.md' },
 	]),
 );
 
@@ -189,7 +189,7 @@ const note = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({issue, redact, repo, json}) {
+	Effect.fn(function* ({ issue, redact, repo, json }) {
 		yield* emit(
 			yield* runNote({
 				leakNames: yield* readKey(process.cwd(), leakNamesKey),
@@ -217,7 +217,7 @@ const note = leafCommand(
 			'  Derivation: the report skill\'s contract.md, "report note"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika report note --issue 4312 < note.md"}]),
+	Command.withExamples([{ command: "fabrika report note --issue 4312 < note.md" }]),
 );
 
 const scratch = leafCommand(
@@ -227,8 +227,8 @@ const scratch = leafCommand(
 			Flag.withDescription("the file's leaf name: kebab-case, ≤5 words, no path separators"),
 		),
 	},
-	Effect.fn(function* ({slug}) {
-		yield* emit(yield* runScratch({slug, allocation: randomUUID(), tmpRoot: tmpdir()}));
+	Effect.fn(function* ({ slug }) {
+		yield* emit(yield* runScratch({ slug, allocation: randomUUID(), tmpRoot: tmpdir() }));
 	}),
 ).pipe(
 	Command.withShortDescription("The staging path a body is written into before stdin carries it."),
@@ -240,7 +240,7 @@ const scratch = leafCommand(
 			'  Derivation: the report skill\'s contract.md, "report scratch"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika report scratch --slug body"}]),
+	Command.withExamples([{ command: "fabrika report scratch --slug body" }]),
 );
 
 const amend = leafCommand(
@@ -253,7 +253,7 @@ const amend = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({issue, redact, repo, json}) {
+	Effect.fn(function* ({ issue, redact, repo, json }) {
 		yield* emit(
 			yield* runAmend({
 				leakNames: yield* readKey(process.cwd(), leakNamesKey),
@@ -283,7 +283,7 @@ const amend = leafCommand(
 			'  Derivation: the report skill\'s contract.md, "report amend"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika report amend --issue 4312 < correction.md"}]),
+	Command.withExamples([{ command: "fabrika report amend --issue 4312 < correction.md" }]),
 );
 
 export const reportCommand = Command.make("report").pipe(

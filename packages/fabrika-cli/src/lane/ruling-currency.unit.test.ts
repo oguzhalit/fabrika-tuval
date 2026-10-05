@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {againstRuling} from "./ruling-currency.ts";
+import { describe, expect, it } from "vitest";
+import { againstRuling } from "./ruling-currency.ts";
 
 const RULING = "2026-09-20T12:00:00Z";
 

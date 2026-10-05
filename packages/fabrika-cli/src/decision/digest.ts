@@ -16,7 +16,7 @@
  * criterion, a whole section — still moves the digest.
  */
 
-import {createHash} from "node:crypto";
+import { createHash } from "node:crypto";
 
 export const DIGEST_LENGTH = 12;
 

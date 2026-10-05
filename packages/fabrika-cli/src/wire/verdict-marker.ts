@@ -29,7 +29,7 @@
  * guard are deliberately not carried here.
  */
 
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
 import {
 	CLAUSE_SEPARATOR,
 	type Clause,
@@ -52,7 +52,7 @@ import {
 	takeToken,
 } from "./marker-line.ts";
 
-export type {Clause, ContentDigest, HeadSha, Polarity} from "./marker-line.ts";
+export type { Clause, ContentDigest, HeadSha, Polarity } from "./marker-line.ts";
 export {
 	CLAUSE_SEPARATOR,
 	CONTENT_PREFIX,
@@ -87,9 +87,9 @@ export type VerdictMarkerRead = WireRead<VerdictMarker>;
 export const read = (artifact: string): VerdictMarkerRead => {
 	const opened = openMarkerLine(artifact);
 	if (opened._tag !== "Open") return opened;
-	const {evidence, emphasis, namespace, rest} = opened;
+	const { evidence, emphasis, namespace, rest } = opened;
 
-	const {token: polarityToken, after: afterPolarity} = takeToken(rest);
+	const { token: polarityToken, after: afterPolarity } = takeToken(rest);
 	if (polarityToken === "") {
 		return malformed(`"${namespace}:" carries no polarity — expected PASS or FAIL`, evidence);
 	}
@@ -105,7 +105,7 @@ export const read = (artifact: string): VerdictMarkerRead => {
 			evidence,
 		);
 	}
-	const {token: shaToken, after: afterSha} = takeToken(bound.slice(1));
+	const { token: shaToken, after: afterSha } = takeToken(bound.slice(1));
 	if (shaToken === "") {
 		return malformed(
 			`the ${polarity} marker's "@" is followed by no SHA — a verdict with no head attests no tree`,
@@ -146,7 +146,7 @@ export const read = (artifact: string): VerdictMarkerRead => {
 		);
 	}
 
-	return {_tag: "Found", value: {namespace, polarity, sha, content, clause: text}};
+	return { _tag: "Found", value: { namespace, polarity, sha, content, clause: text } };
 };
 
 /**
@@ -165,7 +165,13 @@ export const readNamespaced = (artifact: string, namespace: string): VerdictMark
 };
 
 /** Compose the marker's first line. Round-trips through {@link read}. */
-export const emit = ({namespace, polarity, sha, content, clause: text}: VerdictMarker): string => {
+export const emit = ({
+	namespace,
+	polarity,
+	sha,
+	content,
+	clause: text,
+}: VerdictMarker): string => {
 	const bound = content === null ? `@ ${sha}` : `@ ${sha} ${CONTENT_PREFIX}${content}`;
 	return `${namespace}: ${polarity} ${bound} ${CLAUSE_SEPARATOR} ${text}\n`;
 };
@@ -180,9 +186,9 @@ export const emit = ({namespace, polarity, sha, content, clause: text}: VerdictM
  * Fold any two of these together and a stale PASS reads as a current one.
  */
 export type Binding =
-	| {readonly _tag: "Current"; readonly sha: HeadSha; readonly via: "head" | "content"}
-	| {readonly _tag: "Stale"; readonly markerSha: HeadSha; readonly head: HeadSha}
-	| {readonly _tag: "Unbindable"; readonly reason: string};
+	| { readonly _tag: "Current"; readonly sha: HeadSha; readonly via: "head" | "content" }
+	| { readonly _tag: "Stale"; readonly markerSha: HeadSha; readonly head: HeadSha }
+	| { readonly _tag: "Unbindable"; readonly reason: string };
 
 export const bindToHead = (marker: VerdictMarker, head: string): Binding => {
 	const resolved = headSha(head);
@@ -193,8 +199,8 @@ export const bindToHead = (marker: VerdictMarker, head: string): Binding => {
 		};
 	}
 	return sameHead(marker.sha, resolved)
-		? {_tag: "Current", sha: marker.sha, via: "head"}
-		: {_tag: "Stale", markerSha: marker.sha, head: resolved};
+		? { _tag: "Current", sha: marker.sha, via: "head" }
+		: { _tag: "Stale", markerSha: marker.sha, head: resolved };
 };
 
 /**
@@ -227,7 +233,7 @@ export const bindToHead = (marker: VerdictMarker, head: string): Binding => {
  *    operator whether to fix a checkout or re-review.
  */
 export const bindToContent = (
-	claim: {readonly sha: string; readonly content: string | null},
+	claim: { readonly sha: string; readonly content: string | null },
 	head: string,
 	digest: string | null,
 ): Binding => {
@@ -239,8 +245,8 @@ export const bindToContent = (
 			reason: `"${(bound === null ? claim.sha : head).trim()}" is not a head SHA — the binding cannot be judged`,
 		};
 	}
-	if (sameHead(bound, resolved)) return {_tag: "Current", sha: bound, via: "head"};
-	if (claim.content === null) return {_tag: "Stale", markerSha: bound, head: resolved};
+	if (sameHead(bound, resolved)) return { _tag: "Current", sha: bound, via: "head" };
+	if (claim.content === null) return { _tag: "Stale", markerSha: bound, head: resolved };
 	if (digest === null) {
 		return {
 			_tag: "Unbindable",
@@ -248,13 +254,13 @@ export const bindToContent = (
 		};
 	}
 	return contentDigest(claim.content) !== null && claim.content === contentDigest(digest)
-		? {_tag: "Current", sha: bound, via: "content"}
-		: {_tag: "Stale", markerSha: bound, head: resolved};
+		? { _tag: "Current", sha: bound, via: "content" }
+		: { _tag: "Stale", markerSha: bound, head: resolved };
 };
 
 export type VerdictMarkerFields =
-	| {readonly _tag: "Fields"; readonly marker: VerdictMarker}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly marker: VerdictMarker }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 /** `<key>: <value>` or `<key><TAB><value>`, so `wire read`'s own output pipes back into `wire emit`. */
 const FIELD_LINE = /^([A-Za-z-]+)[ \t]*[:\t][ \t]*(.*)$/;
@@ -306,7 +312,7 @@ export const parseFields = (fields: string): VerdictMarkerFields => {
 
 	const namespace = (seen.get("namespace") ?? "").trim().toLowerCase();
 	if (!isGateNamespace(namespace)) {
-		return {_tag: "Unusable", reason: `"${namespace}" is not a ${NAMESPACE_PHRASE} namespace`};
+		return { _tag: "Unusable", reason: `"${namespace}" is not a ${NAMESPACE_PHRASE} namespace` };
 	}
 	const polarity = polarityOf((seen.get("polarity") ?? "").trim());
 	if (polarity === null) {
@@ -324,7 +330,7 @@ export const parseFields = (fields: string): VerdictMarkerFields => {
 	}
 	const text = clause(seen.get("clause") ?? "");
 	if (text === null) {
-		return {_tag: "Unusable", reason: "the trailing clause is blank"};
+		return { _tag: "Unusable", reason: "the trailing clause is blank" };
 	}
 	// An omitted `content` is the well-formed no-binding default; a GIVEN one that is not 12 hex is a
 	// refusal, so a typo can never quietly compose a head-only marker out of a content-bound intent.
@@ -336,7 +342,7 @@ export const parseFields = (fields: string): VerdictMarkerFields => {
 			reason: `"${givenContent}" is not a content digest — expected 12 hex characters`,
 		};
 	}
-	return {_tag: "Fields", marker: {namespace, polarity, sha, content, clause: text}};
+	return { _tag: "Fields", marker: { namespace, polarity, sha, content, clause: text } };
 };
 
 export const renderMarker = (marker: VerdictMarker): NonEmptyReadonlyArray<string> => [
@@ -351,12 +357,12 @@ export const renderMarker = (marker: VerdictMarker): NonEmptyReadonlyArray<strin
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.marker)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.marker) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderMarker(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderMarker(result.value) } : result;
 };

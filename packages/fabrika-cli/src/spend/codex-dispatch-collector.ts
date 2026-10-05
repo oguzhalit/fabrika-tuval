@@ -1,6 +1,6 @@
-import {Console, Effect, FileSystem, Path} from "effect";
-import {collectCodexFrom, readCodexInventory} from "./codex-collector.ts";
-import type {CodexWork} from "./codex-records.ts";
+import { Console, Effect, FileSystem, Path } from "effect";
+import { collectCodexFrom, readCodexInventory } from "./codex-collector.ts";
+import type { CodexWork } from "./codex-records.ts";
 
 export interface CodexDispatchCollection {
 	readonly sessions: string;
@@ -13,10 +13,10 @@ export const collectCodexDispatch = Effect.fn("spend.collectCodexDispatch")(
 	function* (options: CodexDispatchCollection) {
 		const fs = yield* FileSystem.FileSystem;
 		const path = yield* Path.Path;
-		yield* fs.makeDirectory(options.state, {recursive: true});
+		yield* fs.makeDirectory(options.state, { recursive: true });
 		const binding = path.join(options.state, `${encodeURIComponent(options.worktree)}.json`);
 		if (!(yield* fs.exists(binding)))
-			yield* fs.writeFileString(binding, JSON.stringify(options), {flag: "wx"});
+			yield* fs.writeFileString(binding, JSON.stringify(options), { flag: "wx" });
 		const inventory = yield* readCodexInventory(options.sessions);
 		const roots = [
 			...new Set(
@@ -27,7 +27,7 @@ export const collectCodexDispatch = Effect.fn("spend.collectCodexDispatch")(
 		];
 		const notices = [...inventory.notices];
 		for (const rootThread of roots.length ? roots : [`dispatch:${options.worktree}`]) {
-			const result = yield* collectCodexFrom(inventory, {...options, rootThread});
+			const result = yield* collectCodexFrom(inventory, { ...options, rootThread });
 			notices.push(...result.notices);
 		}
 		for (const notice of new Set(notices)) yield* Console.warn(`Fabrika usage: ${notice}`);

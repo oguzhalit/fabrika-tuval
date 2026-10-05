@@ -4,7 +4,7 @@
  * Each `kind` is a decidable predicate over the file; what to *do* about one is the skill's. The
  * `detail` text is fixed per kind because a caller may grep it.
  */
-import type {RegisterName, Row} from "./register.ts";
+import type { RegisterName, Row } from "./register.ts";
 
 export type FindingKind =
 	| "row-shape"
@@ -41,9 +41,9 @@ export interface RegisterRows {
 
 /** What a cited decision id resolved to. `Dead` is proven absence, never a failed read. */
 export type CitationState =
-	| {readonly _tag: "Live"}
-	| {readonly _tag: "Dead"}
-	| {readonly _tag: "Superseded"; readonly status: string};
+	| { readonly _tag: "Live" }
+	| { readonly _tag: "Dead" }
+	| { readonly _tag: "Superseded"; readonly status: string };
 
 const CITATION = /\b(\d{4})\b/g;
 
@@ -53,7 +53,7 @@ export const citationsOf = (row: Row): ReadonlyArray<string> => {
 	return [...text.matchAll(CITATION)].map((match) => match[1] as string);
 };
 
-const collator = new Intl.Collator("en", {sensitivity: "base"});
+const collator = new Intl.Collator("en", { sensitivity: "base" });
 
 /** Ascending `normalizeKey` order — the order `add` places a row into and `check` reports against. */
 export const compareKeys = (a: string, b: string): number => collator.compare(a, b);
@@ -97,13 +97,13 @@ const rowShape = (register: string, row: Row): Finding | null => {
  * defect it can only clear by starting to keep one.
  */
 export type CitationScope =
-	| {readonly _tag: "Empty"}
+	| { readonly _tag: "Empty" }
 	| {
 			readonly _tag: "Resolved";
 			readonly dir: string;
 			readonly states: ReadonlyMap<string, CitationState>;
 	  }
-	| {readonly _tag: "Unverified"; readonly detail: string};
+	| { readonly _tag: "Unverified"; readonly detail: string };
 
 export interface DefectInput {
 	readonly registers: ReadonlyArray<RegisterRows>;
@@ -113,7 +113,7 @@ export interface DefectInput {
 export const findDefects = (input: DefectInput): ReadonlyArray<Finding> => {
 	const findings: Finding[] = [];
 
-	for (const {register, rows} of input.registers) {
+	for (const { register, rows } of input.registers) {
 		const seen = new Map<string, Row>();
 		for (const row of rows) {
 			const shape = rowShape(register, row);
@@ -171,8 +171,8 @@ export const findDefects = (input: DefectInput): ReadonlyArray<Finding> => {
 			detail: input.citations.detail,
 		});
 	} else if (input.citations._tag === "Resolved") {
-		const {dir, states} = input.citations;
-		for (const {register, rows} of input.registers) {
+		const { dir, states } = input.citations;
+		for (const { register, rows } of input.registers) {
 			for (const row of rows) {
 				for (const id of citationsOf(row)) {
 					const state = states.get(id);

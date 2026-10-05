@@ -1,7 +1,7 @@
-import {Effect, type FileSystem, Layer, type Path} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs, fakeShell, unconfigured} from "../fakes.test-support.ts";
-import {PROJECT_SCOPE_FIX} from "../io/projects.ts";
+import { Effect, type FileSystem, Layer, type Path } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs, fakeShell, unconfigured } from "../fakes.test-support.ts";
+import { PROJECT_SCOPE_FIX } from "../io/projects.ts";
 import {
 	blankProject,
 	type FakeProjectsOptions,
@@ -15,13 +15,13 @@ import {
 	SCOPE_MISSING,
 	SHAPE_CONFLICT,
 } from "./codes.ts";
-import {runSetup} from "./setup-verb.ts";
-import {INBOX_AUTO_ADD_FILTER} from "./shape.ts";
+import { runSetup } from "./setup-verb.ts";
+import { INBOX_AUTO_ADD_FILTER } from "./shape.ts";
 
 const REPO = "acme/widgets";
 
 const configured = (table: unknown): Layer.Layer<FileSystem.FileSystem | Path.Path> =>
-	fakeFs({files: {"/repo/.fabrika.jsonc": JSON.stringify({table})}}).layer;
+	fakeFs({ files: { "/repo/.fabrika.jsonc": JSON.stringify({ table }) } }).layer;
 
 const setupOn = (
 	github: ReturnType<typeof fakeProjects>,
@@ -29,15 +29,15 @@ const setupOn = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runSetup({repo: REPO, cwd: "/repo", env: {}}),
+			runSetup({ repo: REPO, cwd: "/repo", env: {} }),
 			Layer.mergeAll(fs, fakeShell([]).layer, github.layer),
 		),
 	);
 
 const run = async (options: FakeProjectsOptions = {}) => {
-	const github = fakeProjects({repo: REPO, ...options});
+	const github = fakeProjects({ repo: REPO, ...options });
 	const outcome = await setupOn(github);
-	return {outcome, github};
+	return { outcome, github };
 };
 
 const mutations = (github: ReturnType<typeof fakeProjects>): ReadonlyArray<string> =>
@@ -47,7 +47,7 @@ const mutations = (github: ReturnType<typeof fakeProjects>): ReadonlyArray<strin
 
 describe("table setup on a repo with no `table` block", () => {
 	it("creates the project with its fields, the Table day date field, the five views and the README", async () => {
-		const {outcome, github} = await run();
+		const { outcome, github } = await run();
 
 		expect(outcome.code).toBe(0);
 		const answered = JSON.parse(outcome.stdout);
@@ -126,7 +126,7 @@ describe("table setup on a repo with no `table` block", () => {
 	});
 
 	it("creates each missing view over REST, grouped, naming every field by its numeric id", async () => {
-		const {github} = await run();
+		const { github } = await run();
 		const project = github.projects[0];
 		const idOf = (name: string): number => {
 			const field = project?.fields.find((one) => one.name === name);
@@ -171,7 +171,7 @@ describe("table setup on a repo with no `table` block", () => {
 	});
 
 	it("leaves a view that already stands as it is grouped, creating only the missing ones", async () => {
-		const started = blankProject({number: 20, title: "widgets table"});
+		const started = blankProject({ number: 20, title: "widgets table" });
 		started.views.push({
 			id: "own_agenda",
 			number: 2,
@@ -181,7 +181,7 @@ describe("table setup on a repo with no `table` block", () => {
 			fieldIds: [],
 			groupBy: ["own_grouping"],
 		});
-		const {outcome, github} = await run({projects: [started]});
+		const { outcome, github } = await run({ projects: [started] });
 
 		expect(outcome.code, outcome.stderr.join("\n")).toBe(0);
 		const created = github.operations.flatMap((operation, index) =>
@@ -194,9 +194,9 @@ describe("table setup on a repo with no `table` block", () => {
 	});
 
 	it("prints the grouping and Inbox auto-add steps, and the README's by-hand section lists them", async () => {
-		const {outcome, github} = await run();
+		const { outcome, github } = await run();
 
-		const {manualSteps} = JSON.parse(outcome.stdout) as {manualSteps: string[]};
+		const { manualSteps } = JSON.parse(outcome.stdout) as { manualSteps: string[] };
 		expect(manualSteps).toHaveLength(2);
 		expect(manualSteps[0]).toContain("Group by: Section");
 		expect(manualSteps[1]).toContain(`\`${INBOX_AUTO_ADD_FILTER}\``);
@@ -213,7 +213,7 @@ describe("table setup on a repo with no `table` block", () => {
 	});
 
 	it("names no path, repository, issue number or login beyond the repository it set up", async () => {
-		const {github} = await run();
+		const { github } = await run();
 		const readme = github.projects[0]?.readme ?? "";
 		expect(readme).not.toMatch(/#\d|@(?!today\b)\w/);
 		expect(new Set(readme.match(/[\w.-]+\/[\w.-]+/g))).toEqual(new Set([REPO]));
@@ -222,7 +222,7 @@ describe("table setup on a repo with no `table` block", () => {
 
 describe("table setup is idempotent", () => {
 	it("writes nothing on the second run and answers unchanged", async () => {
-		const github = fakeProjects({repo: REPO});
+		const github = fakeProjects({ repo: REPO });
 		const first = await setupOn(github);
 		expect(first.code).toBe(0);
 		const before = structuredClone(github.projects);
@@ -231,24 +231,24 @@ describe("table setup is idempotent", () => {
 		const second = await setupOn(github);
 
 		expect(second.code).toBe(0);
-		expect(JSON.parse(second.stdout)).toMatchObject({answer: "unchanged", changes: []});
+		expect(JSON.parse(second.stdout)).toMatchObject({ answer: "unchanged", changes: [] });
 		expect(mutations(github).length).toBe(writesBefore);
 		expect(github.projects).toEqual(before);
 		expect(github.projects).toHaveLength(1);
 	});
 
 	it("finishes a project a person started, keeping what they added", async () => {
-		const started = blankProject({number: 20, title: "widgets table"});
+		const started = blankProject({ number: 20, title: "widgets table" });
 		started.fields.push({
 			id: "own_stage",
 			name: "Stage",
 			dataType: "SINGLE_SELECT",
 			options: [
-				{id: "o1", name: "proposed", color: "GRAY", description: ""},
-				{id: "o2", name: "notes", color: "GRAY", description: ""},
+				{ id: "o1", name: "proposed", color: "GRAY", description: "" },
+				{ id: "o2", name: "notes", color: "GRAY", description: "" },
 			],
 		});
-		const {outcome, github} = await run({projects: [started]});
+		const { outcome, github } = await run({ projects: [started] });
 
 		expect(outcome.code).toBe(0);
 		const answered = JSON.parse(outcome.stdout);
@@ -271,8 +271,8 @@ describe("table setup is idempotent", () => {
 	});
 
 	it("reuses an open project under the owner that carries the title but is not linked, and links it", async () => {
-		const unlinked = {...blankProject({number: 9, title: "widgets table"}), linked: false};
-		const {outcome, github} = await run({projects: [unlinked]});
+		const unlinked = { ...blankProject({ number: 9, title: "widgets table" }), linked: false };
+		const { outcome, github } = await run({ projects: [unlinked] });
 
 		expect(outcome.code).toBe(0);
 		const answered = JSON.parse(outcome.stdout);
@@ -284,16 +284,16 @@ describe("table setup is idempotent", () => {
 		expect(mutations(github)).not.toContain("TableCreateProject");
 
 		const again = await setupOn(github);
-		expect(JSON.parse(again.stdout)).toMatchObject({answer: "unchanged", changes: []});
+		expect(JSON.parse(again.stdout)).toMatchObject({ answer: "unchanged", changes: [] });
 	});
 
 	it("does not reuse a closed project carrying the title", async () => {
 		const closed = {
-			...blankProject({number: 9, title: "widgets table"}),
+			...blankProject({ number: 9, title: "widgets table" }),
 			linked: false,
 			closed: true,
 		};
-		const {outcome, github} = await run({projects: [closed]});
+		const { outcome, github } = await run({ projects: [closed] });
 
 		expect(JSON.parse(outcome.stdout).answer).toBe("created");
 		expect(github.projects).toHaveLength(2);
@@ -303,7 +303,7 @@ describe("table setup is idempotent", () => {
 
 describe("table setup's refusals", () => {
 	it("refuses a token without the project scope with the exact fix, before any write", async () => {
-		const {outcome, github} = await run({scopes: "repo, read:org"});
+		const { outcome, github } = await run({ scopes: "repo, read:org" });
 
 		expect(outcome.code).toBe(SCOPE_MISSING);
 		expect(outcome.stdout).toBe("");
@@ -313,15 +313,15 @@ describe("table setup's refusals", () => {
 	});
 
 	it("reads GitHub's INSUFFICIENT_SCOPES error as the same refusal when the token lists no scopes", async () => {
-		const {outcome} = await run({insufficientScopes: true});
+		const { outcome } = await run({ insufficientScopes: true });
 
 		expect(outcome.code).toBe(SCOPE_MISSING);
 		expect(outcome.stderr.join("\n")).toContain(PROJECT_SCOPE_FIX);
 	});
 
 	it("does not create a project when the configured number names none", async () => {
-		const github = fakeProjects({repo: REPO});
-		const outcome = await setupOn(github, configured({project: {number: 99}}));
+		const github = fakeProjects({ repo: REPO });
+		const outcome = await setupOn(github, configured({ project: { number: 99 } }));
 
 		expect(outcome.code).toBe(NO_TARGET);
 		expect(mutations(github)).toEqual([]);
@@ -330,20 +330,20 @@ describe("table setup's refusals", () => {
 	it("uses the configured project when it exists", async () => {
 		const github = fakeProjects({
 			repo: REPO,
-			projects: [{...blankProject({number: 7, title: "Our table"}), linked: false}],
+			projects: [{ ...blankProject({ number: 7, title: "Our table" }), linked: false }],
 		});
-		const outcome = await setupOn(github, configured({project: {number: 7}}));
+		const outcome = await setupOn(github, configured({ project: { number: 7 } }));
 
 		expect(outcome.code).toBe(0);
-		expect(JSON.parse(outcome.stdout).project).toMatchObject({number: 7, title: "Our table"});
+		expect(JSON.parse(outcome.stdout).project).toMatchObject({ number: 7, title: "Our table" });
 		expect(github.projects).toHaveLength(1);
 	});
 
 	it("refuses two linked projects carrying the table's title", async () => {
-		const {outcome, github} = await run({
+		const { outcome, github } = await run({
 			projects: [
-				blankProject({number: 3, title: "widgets table"}),
-				blankProject({number: 4, title: "widgets table"}),
+				blankProject({ number: 3, title: "widgets table" }),
+				blankProject({ number: 4, title: "widgets table" }),
 			],
 		});
 
@@ -352,10 +352,10 @@ describe("table setup's refusals", () => {
 	});
 
 	it("refuses two unlinked projects under the owner carrying the table's title", async () => {
-		const {outcome, github} = await run({
+		const { outcome, github } = await run({
 			projects: [
-				{...blankProject({number: 3, title: "widgets table"}), linked: false},
-				{...blankProject({number: 4, title: "widgets table"}), linked: false},
+				{ ...blankProject({ number: 3, title: "widgets table" }), linked: false },
+				{ ...blankProject({ number: 4, title: "widgets table" }), linked: false },
 			],
 		});
 
@@ -365,9 +365,9 @@ describe("table setup's refusals", () => {
 	});
 
 	it("refuses a field the table needs that holds another type, changing nothing", async () => {
-		const clash = blankProject({number: 5, title: "widgets table"});
-		clash.fields.push({id: "own_asks", name: "Asks", dataType: "TEXT"});
-		const {outcome, github} = await run({projects: [clash]});
+		const clash = blankProject({ number: 5, title: "widgets table" });
+		clash.fields.push({ id: "own_asks", name: "Asks", dataType: "TEXT" });
+		const { outcome, github } = await run({ projects: [clash] });
 
 		expect(outcome.code).toBe(SHAPE_CONFLICT);
 		expect(outcome.stderr.join("\n")).toContain("Asks is TEXT");
@@ -375,8 +375,8 @@ describe("table setup's refusals", () => {
 	});
 
 	it("refuses a malformed table block before reading GitHub", async () => {
-		const github = fakeProjects({repo: REPO});
-		const outcome = await setupOn(github, configured({agendaCap: 0}));
+		const github = fakeProjects({ repo: REPO });
+		const outcome = await setupOn(github, configured({ agendaCap: 0 }));
 
 		expect(outcome.code).toBe(CONFIG_MALFORMED);
 		expect(github.operations).toEqual([]);
@@ -385,17 +385,20 @@ describe("table setup's refusals", () => {
 
 describe("table setup with a boards block", () => {
 	const split = fakeFs({
-		files: {"/repo/.fabrika.jsonc": JSON.stringify({boards: {onCall: {}}})},
+		files: { "/repo/.fabrika.jsonc": JSON.stringify({ boards: { onCall: {} } }) },
 	}).layer;
 
 	it("creates the table and an on-call board whose Response target stands where Size would", async () => {
-		const github = fakeProjects({repo: REPO});
+		const github = fakeProjects({ repo: REPO });
 		const outcome = await setupOn(github, split);
 
 		expect(outcome.code).toBe(0);
 		const answered = JSON.parse(outcome.stdout);
 		expect(answered.answer).toBe("created");
-		expect(answered.onCall).toMatchObject({answer: "created", project: {title: "widgets on-call"}});
+		expect(answered.onCall).toMatchObject({
+			answer: "created",
+			project: { title: "widgets on-call" },
+		});
 		expect(github.projects.map((project) => [project.title, project.linked])).toEqual([
 			["widgets table", true],
 			["widgets on-call", true],
@@ -420,7 +423,7 @@ describe("table setup with a boards block", () => {
 	});
 
 	it("writes nothing to either board on the second run", async () => {
-		const github = fakeProjects({repo: REPO});
+		const github = fakeProjects({ repo: REPO });
 		await setupOn(github, split);
 		const before = structuredClone(github.projects);
 
@@ -428,13 +431,13 @@ describe("table setup with a boards block", () => {
 
 		expect(JSON.parse(second.stdout)).toMatchObject({
 			answer: "unchanged",
-			onCall: {answer: "unchanged", changes: []},
+			onCall: { answer: "unchanged", changes: [] },
 		});
 		expect(github.projects).toEqual(before);
 	});
 
 	it("answers exactly as before with no boards block: one board and no onCall key", async () => {
-		const {outcome, github} = await run();
+		const { outcome, github } = await run();
 
 		expect(github.projects).toHaveLength(1);
 		expect(Object.keys(JSON.parse(outcome.stdout))).toEqual([
@@ -449,9 +452,9 @@ describe("table setup with a boards block", () => {
 	});
 
 	it("refuses a malformed boards block before reading GitHub", async () => {
-		const github = fakeProjects({repo: REPO});
+		const github = fakeProjects({ repo: REPO });
 		const bad = fakeFs({
-			files: {"/repo/.fabrika.jsonc": JSON.stringify({boards: {onCall: {spendShare: 0}}})},
+			files: { "/repo/.fabrika.jsonc": JSON.stringify({ boards: { onCall: { spendShare: 0 } } }) },
 		}).layer;
 
 		expect((await setupOn(github, bad)).code).toBe(CONFIG_MALFORMED);
@@ -461,19 +464,19 @@ describe("table setup with a boards block", () => {
 
 describe("table setup on a project set up with the Week iteration", () => {
 	const legacy = () => {
-		const project = blankProject({number: 20, title: "widgets table"});
+		const project = blankProject({ number: 20, title: "widgets table" });
 		project.fields.push({
 			id: "own_week",
 			name: "Week",
 			dataType: "ITERATION",
-			iteration: {duration: 7, startDay: 6},
-			iterations: [{id: "it_1", title: "Sep 26", startDate: "2026-09-26", duration: 7}],
+			iteration: { duration: 7, startDay: 6 },
+			iterations: [{ id: "it_1", title: "Sep 26", startDate: "2026-09-26", duration: 7 }],
 		});
 		return project;
 	};
 
 	it("adds Table day beside it, leaves Week exactly as it is and reports it as legacy", async () => {
-		const {outcome, github} = await run({projects: [legacy()]});
+		const { outcome, github } = await run({ projects: [legacy()] });
 
 		expect(outcome.code, outcome.stderr.join("\n")).toBe(0);
 		const answered = JSON.parse(outcome.stdout);
@@ -487,14 +490,14 @@ describe("table setup on a project set up with the Week iteration", () => {
 		expect(github.requests.some((request) => /updateProjectV2Field\b/.test(request))).toBe(false);
 
 		const again = await setupOn(github);
-		expect(JSON.parse(again.stdout)).toMatchObject({answer: "unchanged", changes: []});
+		expect(JSON.parse(again.stdout)).toMatchObject({ answer: "unchanged", changes: [] });
 		expect(JSON.parse(again.stdout).legacy).toHaveLength(1);
 	});
 });
 
 describe("table setup reads the size dollars from appetiteSizes", () => {
 	const withConfig = (config: unknown): Layer.Layer<FileSystem.FileSystem | Path.Path> =>
-		fakeFs({files: {"/repo/.fabrika.jsonc": JSON.stringify(config)}}).layer;
+		fakeFs({ files: { "/repo/.fabrika.jsonc": JSON.stringify(config) } }).layer;
 
 	const sizeDescriptions = (github: ReturnType<typeof fakeProjects>) =>
 		github.projects[0]?.fields
@@ -502,7 +505,7 @@ describe("table setup reads the size dollars from appetiteSizes", () => {
 			?.options?.map((option) => option.description);
 
 	it("shows the shipped amounts when no key is set", async () => {
-		const {outcome, github} = await run();
+		const { outcome, github } = await run();
 
 		expect(outcome.code).toBe(0);
 		expect(sizeDescriptions(github)).toEqual([
@@ -513,8 +516,8 @@ describe("table setup reads the size dollars from appetiteSizes", () => {
 	});
 
 	it("shows the amounts a repo configured for its pitches, in the Size options and the README", async () => {
-		const github = fakeProjects({repo: REPO});
-		const outcome = await setupOn(github, withConfig({appetiteSizes: {S: 20, M: 50, L: 90}}));
+		const github = fakeProjects({ repo: REPO });
+		const outcome = await setupOn(github, withConfig({ appetiteSizes: { S: 20, M: 50, L: 90 } }));
 
 		expect(outcome.code).toBe(0);
 		expect(sizeDescriptions(github)).toEqual([
@@ -529,10 +532,10 @@ describe("table setup reads the size dollars from appetiteSizes", () => {
 	});
 
 	it("keeps each Size option's written description when appetiteSizes changes, reporting no drift", async () => {
-		const github = fakeProjects({repo: REPO});
+		const github = fakeProjects({ repo: REPO });
 		expect((await setupOn(github)).code).toBe(0);
 
-		const outcome = await setupOn(github, withConfig({appetiteSizes: {S: 20, M: 50, L: 90}}));
+		const outcome = await setupOn(github, withConfig({ appetiteSizes: { S: 20, M: 50, L: 90 } }));
 
 		expect(outcome.code).toBe(0);
 		expect(sizeDescriptions(github)).toEqual([
@@ -549,8 +552,8 @@ describe("table setup reads the size dollars from appetiteSizes", () => {
 	});
 
 	it("refuses a malformed appetiteSizes before reading GitHub", async () => {
-		const github = fakeProjects({repo: REPO});
-		const outcome = await setupOn(github, withConfig({appetiteSizes: {S: 50, M: 35, L: 40}}));
+		const github = fakeProjects({ repo: REPO });
+		const outcome = await setupOn(github, withConfig({ appetiteSizes: { S: 50, M: 35, L: 40 } }));
 
 		expect(outcome.code).toBe(CONFIG_MALFORMED);
 		expect(outcome.stderr.join("\n")).toContain("appetiteSizes");
@@ -558,8 +561,8 @@ describe("table setup reads the size dollars from appetiteSizes", () => {
 	});
 
 	it("refuses a table block that names its own sizes, so no second key can disagree", async () => {
-		const github = fakeProjects({repo: REPO});
-		const outcome = await setupOn(github, configured({sizes: {S: 50}}));
+		const github = fakeProjects({ repo: REPO });
+		const outcome = await setupOn(github, configured({ sizes: { S: 50 } }));
 
 		expect(outcome.code).toBe(CONFIG_MALFORMED);
 		expect(outcome.stderr.join("\n")).toContain("`table.sizes`");
@@ -570,18 +573,18 @@ describe("table setup reads the size dollars from appetiteSizes", () => {
 describe("table setup on a hand-built board whose Origin lacks an option", () => {
 	/** A board built by hand: Origin has `founder idea` and no `hand-start`, most descriptions blank. */
 	const handBuilt = () => {
-		const project = blankProject({number: 20, title: "widgets table"});
+		const project = blankProject({ number: 20, title: "widgets table" });
 		project.fields.push({
 			id: "own_origin",
 			name: "Origin",
 			dataType: "SINGLE_SELECT",
 			options: [
-				{id: "o_bet", name: "bet", color: "BLUE", description: ""},
-				{id: "o_founder", name: "founder idea", color: "PINK", description: ""},
-				{id: "o_customer", name: "customer", color: "GREEN", description: "Wrote it ourselves."},
-				{id: "o_driver", name: "driver pick", color: "YELLOW", description: ""},
-				{id: "o_mid", name: "found mid-lane", color: "ORANGE", description: ""},
-				{id: "o_experiment", name: "experiment", color: "PURPLE", description: ""},
+				{ id: "o_bet", name: "bet", color: "BLUE", description: "" },
+				{ id: "o_founder", name: "founder idea", color: "PINK", description: "" },
+				{ id: "o_customer", name: "customer", color: "GREEN", description: "Wrote it ourselves." },
+				{ id: "o_driver", name: "driver pick", color: "YELLOW", description: "" },
+				{ id: "o_mid", name: "found mid-lane", color: "ORANGE", description: "" },
+				{ id: "o_experiment", name: "experiment", color: "PURPLE", description: "" },
 			],
 		});
 		project.items.push(
@@ -589,13 +592,13 @@ describe("table setup on a hand-built board whose Origin lacks an option", () =>
 				id: "row_1",
 				contentId: "I_1",
 				number: 1,
-				values: {own_origin: {singleSelectOptionId: "o_founder"}},
+				values: { own_origin: { singleSelectOptionId: "o_founder" } },
 			},
 			{
 				id: "row_2",
 				contentId: "I_2",
 				number: 2,
-				values: {own_origin: {singleSelectOptionId: "o_bet"}},
+				values: { own_origin: { singleSelectOptionId: "o_bet" } },
 			},
 		);
 		return project;
@@ -607,15 +610,15 @@ describe("table setup on a hand-built board whose Origin lacks an option", () =>
 		);
 
 	it("sends every existing option back with its own id, name, color and description, then the new one", async () => {
-		const {outcome, github} = await run({projects: [handBuilt()]});
+		const { outcome, github } = await run({ projects: [handBuilt()] });
 
 		expect(outcome.code, outcome.stderr.join("\n")).toBe(0);
 		expect(optionWrites(github)).toContainEqual({
 			fieldId: "own_origin",
 			singleSelectOptions: [
-				{id: "o_bet", name: "bet", color: "BLUE", description: "Picked at a table."},
-				{id: "o_founder", name: "founder idea", color: "PINK", description: ""},
-				{id: "o_customer", name: "customer", color: "GREEN", description: "Wrote it ourselves."},
+				{ id: "o_bet", name: "bet", color: "BLUE", description: "Picked at a table." },
+				{ id: "o_founder", name: "founder idea", color: "PINK", description: "" },
+				{ id: "o_customer", name: "customer", color: "GREEN", description: "Wrote it ourselves." },
 				{
 					id: "o_driver",
 					name: "driver pick",
@@ -628,19 +631,24 @@ describe("table setup on a hand-built board whose Origin lacks an option", () =>
 					color: "ORANGE",
 					description: "Found while doing other work.",
 				},
-				{id: "o_experiment", name: "experiment", color: "PURPLE", description: "A try-it-and-see."},
-				{name: "hand-start", color: "GRAY", description: "A person started it by hand."},
+				{
+					id: "o_experiment",
+					name: "experiment",
+					color: "PURPLE",
+					description: "A try-it-and-see.",
+				},
+				{ name: "hand-start", color: "GRAY", description: "A person started it by hand." },
 			],
 		});
 	});
 
 	it("keeps every row's Origin, and the option the table does not name keeps its id", async () => {
-		const {github} = await run({projects: [handBuilt()]});
+		const { github } = await run({ projects: [handBuilt()] });
 
 		const project = github.projects[0];
 		expect(project?.items.map((item) => item.values.own_origin)).toEqual([
-			{singleSelectOptionId: "o_founder"},
-			{singleSelectOptionId: "o_bet"},
+			{ singleSelectOptionId: "o_founder" },
+			{ singleSelectOptionId: "o_bet" },
 		]);
 		const origin = project?.fields.find((field) => field.name === "Origin");
 		expect(origin?.options?.find((option) => option.name === "founder idea")).toEqual({
@@ -652,7 +660,7 @@ describe("table setup on a hand-built board whose Origin lacks an option", () =>
 	});
 
 	it("reports the added option and the filled descriptions, and a second run answers unchanged", async () => {
-		const {outcome, github} = await run({projects: [handBuilt()]});
+		const { outcome, github } = await run({ projects: [handBuilt()] });
 
 		const answered = JSON.parse(outcome.stdout);
 		expect(answered.changes).toContain(
@@ -662,7 +670,7 @@ describe("table setup on a hand-built board whose Origin lacks an option", () =>
 
 		const writes = mutations(github).length;
 		const again = await setupOn(github);
-		expect(JSON.parse(again.stdout)).toMatchObject({answer: "unchanged", changes: []});
+		expect(JSON.parse(again.stdout)).toMatchObject({ answer: "unchanged", changes: [] });
 		expect(mutations(github).length).toBe(writes);
 	});
 });
@@ -674,8 +682,8 @@ describe("table setup on an on-call board a person described in their own words"
 				boards: {
 					onCall: {
 						responseTargets: {
-							byLabel: [{name: "4h", hours: 4, labels: ["p0"]}],
-							otherwise: {name: "3 days", hours: 72},
+							byLabel: [{ name: "4h", hours: 4, labels: ["p0"] }],
+							otherwise: { name: "3 days", hours: 72 },
 						},
 					},
 				},
@@ -684,7 +692,7 @@ describe("table setup on an on-call board a person described in their own words"
 	}).layer;
 
 	it("keeps a wording-only difference as written and writes nothing for it", async () => {
-		const github = fakeProjects({repo: REPO});
+		const github = fakeProjects({ repo: REPO });
 		expect((await setupOn(github, split)).code).toBe(0);
 		const target = github.projects[1]?.fields.find((field) => field.name === "Response target");
 		const fourHours = target?.options?.find((option) => option.name === "4h");
@@ -695,7 +703,7 @@ describe("table setup on an on-call board a person described in their own words"
 		const again = await setupOn(github, split);
 
 		expect(again.code).toBe(0);
-		expect(JSON.parse(again.stdout).onCall).toMatchObject({answer: "unchanged", changes: []});
+		expect(JSON.parse(again.stdout).onCall).toMatchObject({ answer: "unchanged", changes: [] });
 		expect(again.stderr.join("\n")).not.toContain("Someone looks");
 		expect(mutations(github).length).toBe(writes);
 		expect(fourHours.description).toBe("Someone looks within 4 hours");
@@ -707,18 +715,18 @@ describe("table setup on a board whose README and short description a person wro
 	const END = "<!-- fabrika:table:end -->";
 	const OWN = "# Our table\n\nWe meet on Mondays. Ask Deniz before betting on anything over M.\n";
 	const split = fakeFs({
-		files: {"/repo/.fabrika.jsonc": JSON.stringify({boards: {onCall: {}}})},
+		files: { "/repo/.fabrika.jsonc": JSON.stringify({ boards: { onCall: {} } }) },
 	}).layer;
 	const withConfig = (config: unknown): Layer.Layer<FileSystem.FileSystem | Path.Path> =>
-		fakeFs({files: {"/repo/.fabrika.jsonc": JSON.stringify(config)}}).layer;
+		fakeFs({ files: { "/repo/.fabrika.jsonc": JSON.stringify(config) } }).layer;
 	const between = (readme: string, start = START, end = END): string =>
 		readme.slice(readme.indexOf(start) + start.length, readme.indexOf(end));
 	const updates = (github: ReturnType<typeof fakeProjects>) =>
 		github.operations.filter((operation) => operation === "TableUpdateProject");
 
 	it("keeps a hand-written README with no markers byte for byte and appends fabrika's marked section", async () => {
-		const {outcome, github} = await run({
-			projects: [blankProject({number: 20, title: "widgets table", readme: OWN})],
+		const { outcome, github } = await run({
+			projects: [blankProject({ number: 20, title: "widgets table", readme: OWN })],
 		});
 
 		expect(outcome.code).toBe(0);
@@ -737,7 +745,7 @@ describe("table setup on a board whose README and short description a person wro
 	it("replaces only the text between the markers when appetiteSizes changes, keeping the text around them", async () => {
 		const github = fakeProjects({
 			repo: REPO,
-			projects: [blankProject({number: 20, title: "widgets table", readme: OWN})],
+			projects: [blankProject({ number: 20, title: "widgets table", readme: OWN })],
 		});
 		expect((await setupOn(github)).code).toBe(0);
 		const project = github.projects[0];
@@ -745,7 +753,7 @@ describe("table setup on a board whose README and short description a person wro
 		const after = "\n\n## Our notes after fabrika's\nKeep the Friday retro.\n";
 		project.readme = `${project.readme}${after}`;
 
-		const outcome = await setupOn(github, withConfig({appetiteSizes: {S: 20, M: 50, L: 90}}));
+		const outcome = await setupOn(github, withConfig({ appetiteSizes: { S: 20, M: 50, L: 90 } }));
 
 		expect(outcome.code).toBe(0);
 		const readme = project.readme ?? "";
@@ -763,8 +771,8 @@ describe("table setup on a board whose README and short description a person wro
 		const github = fakeProjects({
 			repo: REPO,
 			projects: [
-				blankProject({number: 20, title: "widgets table", readme: OWN}),
-				blankProject({number: 21, title: "widgets on-call", readme: onCallOwn}),
+				blankProject({ number: 20, title: "widgets table", readme: OWN }),
+				blankProject({ number: 21, title: "widgets on-call", readme: onCallOwn }),
 			],
 		});
 		expect((await setupOn(github, split)).code).toBe(0);
@@ -782,15 +790,15 @@ describe("table setup on a board whose README and short description a person wro
 		expect(JSON.parse(again.stdout)).toMatchObject({
 			answer: "unchanged",
 			changes: [],
-			onCall: {answer: "unchanged", changes: []},
+			onCall: { answer: "unchanged", changes: [] },
 		});
 		expect(updates(github).length).toBe(writes);
 		expect(github.projects).toEqual(before);
 	});
 
 	it("writes the marked section alone into an empty README", async () => {
-		const {outcome, github} = await run({
-			projects: [blankProject({number: 20, title: "widgets table", readme: ""})],
+		const { outcome, github } = await run({
+			projects: [blankProject({ number: 20, title: "widgets table", readme: "" })],
 		});
 
 		expect(outcome.code).toBe(0);
@@ -803,7 +811,7 @@ describe("table setup on a board whose README and short description a person wro
 	});
 
 	it("replaces an unmarked README fabrika wrote before sections with the marked form, not a second copy", async () => {
-		const github = fakeProjects({repo: REPO});
+		const github = fakeProjects({ repo: REPO });
 		expect((await setupOn(github)).code).toBe(0);
 		const project = github.projects[0];
 		if (project === undefined) throw new Error("no project");
@@ -821,8 +829,8 @@ describe("table setup on a board whose README and short description a person wro
 	});
 
 	it("writes an empty short description", async () => {
-		const {outcome, github} = await run({
-			projects: [blankProject({number: 20, title: "widgets table", shortDescription: null})],
+		const { outcome, github } = await run({
+			projects: [blankProject({ number: 20, title: "widgets table", shortDescription: null })],
 		});
 
 		expect(outcome.code).toBe(0);
@@ -834,8 +842,8 @@ describe("table setup on a board whose README and short description a person wro
 
 	it("reports a short description a person wrote as drift and never overwrites it", async () => {
 		const theirs = "Where the widgets team decides what to build.";
-		const {outcome, github} = await run({
-			projects: [blankProject({number: 20, title: "widgets table", shortDescription: theirs})],
+		const { outcome, github } = await run({
+			projects: [blankProject({ number: 20, title: "widgets table", shortDescription: theirs })],
 		});
 
 		expect(outcome.code).toBe(0);
@@ -856,8 +864,8 @@ describe("table setup on a board whose README and short description a person wro
 
 	it("leaves a README with a broken marker pair alone and reports it as drift", async () => {
 		const broken = `${OWN}\n${START}\nhalf a section, its end marker deleted by hand\n`;
-		const {outcome, github} = await run({
-			projects: [blankProject({number: 20, title: "widgets table", readme: broken})],
+		const { outcome, github } = await run({
+			projects: [blankProject({ number: 20, title: "widgets table", readme: broken })],
 		});
 
 		expect(outcome.code).toBe(0);

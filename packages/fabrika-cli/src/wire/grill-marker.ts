@@ -17,18 +17,18 @@
  * `./verdict-marker.ts` uses to keep an unbound verdict unrepresentable rather than merely unlikely.
  */
 
-import type {NonEmptyReadonlyArray, WireRead} from "./format.ts";
+import type { NonEmptyReadonlyArray, WireRead } from "./format.ts";
 
 declare const QUESTION_ID: unique symbol;
 declare const ROUND_DIGEST: unique symbol;
 declare const MARKER_TIME: unique symbol;
 
 /** A question's address: `R`, its round number, a dot, its 1-based position within that round. */
-export type QuestionId = string & {readonly [QUESTION_ID]: true};
+export type QuestionId = string & { readonly [QUESTION_ID]: true };
 /** The round digest a marker binds: exactly 12 lowercase hex characters. */
-export type RoundDigest = string & {readonly [ROUND_DIGEST]: true};
+export type RoundDigest = string & { readonly [ROUND_DIGEST]: true };
 /** When the marker was stamped: ISO-8601 UTC, `Z`-suffixed. */
-export type MarkerTime = string & {readonly [MARKER_TIME]: true};
+export type MarkerTime = string & { readonly [MARKER_TIME]: true };
 
 const QUESTION_ID_RE = /^R([1-9][0-9]*)\.([1-9][0-9]*)$/;
 const ROUND_DIGEST_RE = /^[0-9a-f]{12}$/;
@@ -92,7 +92,7 @@ export const malformed = <A>(reason: string, evidence: string): WireRead<A> => (
 	evidence,
 });
 
-export const absent = <A>(reason: string): WireRead<A> => ({_tag: "Absent", reason});
+export const absent = <A>(reason: string): WireRead<A> => ({ _tag: "Absent", reason });
 
 /**
  * Whether the artifact reaches for `key` at all.
@@ -127,8 +127,8 @@ export interface Stamp {
 }
 
 export type StampParse =
-	| {readonly _tag: "Stamp"; readonly stamp: Stamp; readonly rest: string}
-	| {readonly _tag: "Drift"; readonly reason: string};
+	| { readonly _tag: "Stamp"; readonly stamp: Stamp; readonly rest: string }
+	| { readonly _tag: "Drift"; readonly reason: string };
 
 /**
  * Parse `<id> @ <digest> · <rest>` out of a marker payload.
@@ -140,7 +140,7 @@ export type StampParse =
 export const parseStampHead = (
 	payload: string,
 ):
-	| {readonly question: QuestionId; readonly digest: RoundDigest; readonly rest: string}
+	| { readonly question: QuestionId; readonly digest: RoundDigest; readonly rest: string }
 	| string => {
 	const [idPart, ...afterAt] = payload.split("@");
 	if (afterAt.length === 0) {
@@ -158,13 +158,13 @@ export const parseStampHead = (
 	if (afterSeparator.length === 0) {
 		return `the marker carries no "${FIELD_SEPARATOR}"-separated field after the digest`;
 	}
-	return {question: id, digest, rest: afterSeparator.join(FIELD_SEPARATOR)};
+	return { question: id, digest, rest: afterSeparator.join(FIELD_SEPARATOR) };
 };
 
 /** The full three-field payload — `parseStampHead` plus the trailing timestamp. */
 export const parseStamp = (payload: string): StampParse => {
 	const head = parseStampHead(payload);
-	if (typeof head === "string") return {_tag: "Drift", reason: head};
+	if (typeof head === "string") return { _tag: "Drift", reason: head };
 	const at = markerTime(head.rest);
 	if (at === null) {
 		return {
@@ -172,7 +172,7 @@ export const parseStamp = (payload: string): StampParse => {
 			reason: `"${head.rest.trim()}" is not an ISO-8601 UTC timestamp — expected a Z-suffixed instant`,
 		};
 	}
-	return {_tag: "Stamp", stamp: {question: head.question, digest: head.digest, at}, rest: ""};
+	return { _tag: "Stamp", stamp: { question: head.question, digest: head.digest, at }, rest: "" };
 };
 
 /** The marker line for a stamp, under `key`. Round-trips through the format's own `read`. */
@@ -186,8 +186,8 @@ export const renderStamp = (stamp: Stamp): NonEmptyReadonlyArray<string> => [
 ];
 
 export type StampFields =
-	| {readonly _tag: "Fields"; readonly stamp: Stamp}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly stamp: Stamp }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 const FIELD_LINE = /^([A-Za-z-]+)[ \t]*[:\t][ \t]*(.*)$/;
 const KEYS = ["question", "digest", "at"] as const;
@@ -245,7 +245,7 @@ export const parseStampFields = (fields: string): StampFields => {
 			reason: `"${seen.get("at") ?? ""}" is not an ISO-8601 UTC timestamp — expected a Z-suffixed instant`,
 		};
 	}
-	return {_tag: "Fields", stamp: {question, digest, at}};
+	return { _tag: "Fields", stamp: { question, digest, at } };
 };
 
 /** The total read shared by the two stamp formats, parameterised by the key that names each. */
@@ -256,6 +256,6 @@ export const readStamp = (artifact: string, key: string): WireRead<Stamp> => {
 	const line = firstNonBlankLine(artifact) ?? "";
 	const parsed = parseStamp(payloadOf(line, key));
 	return parsed._tag === "Stamp"
-		? {_tag: "Found", value: parsed.stamp}
+		? { _tag: "Found", value: parsed.stamp }
 		: malformed(parsed.reason, `first line: "${line}"`);
 };

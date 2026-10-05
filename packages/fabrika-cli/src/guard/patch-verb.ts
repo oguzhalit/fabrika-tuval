@@ -7,11 +7,11 @@
  * answer on the group's exit taxonomy. See `guard patch-guard check --help` for exit codes.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {exists, isDirectory, type ReadFailed, readDir, readFile, realPath} from "../io/fs.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {atFile} from "./annotate.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { exists, isDirectory, type ReadFailed, readDir, readFile, realPath } from "../io/fs.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { atFile } from "./annotate.ts";
 import {
 	auditPins,
 	cleanSummary,

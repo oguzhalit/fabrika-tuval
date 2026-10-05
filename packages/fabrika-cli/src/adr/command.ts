@@ -6,22 +6,22 @@
  * decision the verbs make lives in the `*-verb.ts` modules beside it, which is what makes each
  * refusal testable without spawning a process.
  */
-import {Effect, type FileSystem, Option, type Path} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {corpusOverride, decisionsDirOr} from "../config/paths.ts";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {baseOrTrunk, TRUNK_DEFAULT_HELP, trunkUnresolved} from "../io/trunk.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {BASE_UNFETCHABLE, CORPUS_DECLINED, DIR_UNREADABLE} from "./codes.ts";
-import {runMint} from "./mint-verb.ts";
-import {runNew} from "./new-verb.ts";
-import {runNext} from "./next-verb.ts";
-import {runRelate} from "./relate-verb.ts";
-import {runResolve} from "./resolve-verb.ts";
-import {DEFAULT_LIMIT} from "./sweep.ts";
-import {runSweep} from "./sweep-verb.ts";
+import { Effect, type FileSystem, Option, type Path } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { corpusOverride, decisionsDirOr } from "../config/paths.ts";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { baseOrTrunk, TRUNK_DEFAULT_HELP, trunkUnresolved } from "../io/trunk.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { BASE_UNFETCHABLE, CORPUS_DECLINED, DIR_UNREADABLE } from "./codes.ts";
+import { runMint } from "./mint-verb.ts";
+import { runNew } from "./new-verb.ts";
+import { runNext } from "./next-verb.ts";
+import { runRelate } from "./relate-verb.ts";
+import { runResolve } from "./resolve-verb.ts";
+import { DEFAULT_LIMIT } from "./sweep.ts";
+import { runSweep } from "./sweep-verb.ts";
 
 const dirFlag = Flag.string("dir").pipe(
 	Flag.optional,
@@ -41,8 +41,8 @@ const corpusFor = (
 	verb: string,
 	declared: Option.Option<string>,
 ): Effect.Effect<
-	| {readonly _tag: "Dir"; readonly dir: string}
-	| {readonly _tag: "Stop"; readonly outcome: VerbOutcome},
+	| { readonly _tag: "Dir"; readonly dir: string }
+	| { readonly _tag: "Stop"; readonly outcome: VerbOutcome },
 	never,
 	FileSystem.FileSystem | Path.Path
 > =>
@@ -55,11 +55,11 @@ const corpusFor = (
 		);
 		switch (read._tag) {
 			case "Dir":
-				return {_tag: "Dir" as const, dir: read.dir};
+				return { _tag: "Dir" as const, dir: read.dir };
 			case "Declined":
-				return {_tag: "Stop" as const, outcome: refuse(CORPUS_DECLINED, read.message)};
+				return { _tag: "Stop" as const, outcome: refuse(CORPUS_DECLINED, read.message) };
 			case "Refused":
-				return {_tag: "Stop" as const, outcome: refuse(DIR_UNREADABLE, read.message)};
+				return { _tag: "Stop" as const, outcome: refuse(DIR_UNREADABLE, read.message) };
 		}
 	});
 
@@ -76,14 +76,14 @@ const baseFor = (
 	named: Option.Option<string>,
 	repo: Option.Option<string>,
 ): Effect.Effect<
-	| {readonly _tag: "Base"; readonly base: string}
-	| {readonly _tag: "Stop"; readonly outcome: VerbOutcome},
+	| { readonly _tag: "Base"; readonly base: string }
+	| { readonly _tag: "Stop"; readonly outcome: VerbOutcome },
 	never,
 	ChildProcessSpawner.ChildProcessSpawner
 > =>
 	Effect.map(baseOrTrunk(Option.getOrNull(named), process.env, Option.getOrNull(repo)), (read) =>
 		read._tag === "Ok"
-			? {_tag: "Base" as const, base: read.value}
+			? { _tag: "Base" as const, base: read.value }
 			: {
 					_tag: "Stop" as const,
 					outcome: refuse(
@@ -109,14 +109,14 @@ const today = (): string => new Date().toISOString().slice(0, 10);
 
 const next = leafCommand(
 	"next",
-	{dir: dirFlag, base: baseFlag, repo: repoFlag, json: jsonFlag},
-	Effect.fn(function* ({dir, base, repo, json}) {
+	{ dir: dirFlag, base: baseFlag, repo: repoFlag, json: jsonFlag },
+	Effect.fn(function* ({ dir, base, repo, json }) {
 		const corpus = yield* corpusFor("adr next", dir);
 		if (corpus._tag === "Stop") return yield* emit(corpus.outcome);
 		const at = yield* baseFor("adr next", base, repo);
 		if (at._tag === "Stop") return yield* emit(at.outcome);
 		yield* emit(
-			yield* runNext({dir: corpus.dir, base: at.base, repo: Option.getOrNull(repo), json}),
+			yield* runNext({ dir: corpus.dir, base: at.base, repo: Option.getOrNull(repo), json }),
 		);
 	}),
 ).pipe(
@@ -133,7 +133,7 @@ const next = leafCommand(
 			'  Derivation: the adr skill\'s contract.md, "adr next"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika adr next"}]),
+	Command.withExamples([{ command: "fabrika adr next" }]),
 );
 
 const idArg = Argument.string("id").pipe(
@@ -175,7 +175,7 @@ const newCmd = leafCommand(
 		...templateFlags,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({id, slug, dir, status, date, title, tags, json}) {
+	Effect.fn(function* ({ id, slug, dir, status, date, title, tags, json }) {
 		const corpus = yield* corpusFor("adr new", dir);
 		if (corpus._tag === "Stop") return yield* emit(corpus.outcome);
 		yield* emit(
@@ -200,7 +200,7 @@ const newCmd = leafCommand(
 			'  Derivation: the adr skill\'s contract.md, "adr new"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika adr new 0240 only-landed-adrs-may-be-cited"}]),
+	Command.withExamples([{ command: "fabrika adr new 0240 only-landed-adrs-may-be-cited" }]),
 );
 
 const mint = leafCommand(
@@ -213,7 +213,7 @@ const mint = leafCommand(
 		...templateFlags,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({slug, dir, base, repo, status, date, title, tags, json}) {
+	Effect.fn(function* ({ slug, dir, base, repo, status, date, title, tags, json }) {
 		const corpus = yield* corpusFor("adr mint", dir);
 		if (corpus._tag === "Stop") return yield* emit(corpus.outcome);
 		const at = yield* baseFor("adr mint", base, repo);
@@ -247,7 +247,7 @@ const mint = leafCommand(
 			'  Derivation: the adr skill\'s contract.md, "adr mint"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika adr mint only-landed-adrs-may-be-cited"}]),
+	Command.withExamples([{ command: "fabrika adr mint only-landed-adrs-may-be-cited" }]),
 );
 
 const resolve = leafCommand(
@@ -259,13 +259,19 @@ const resolve = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({ids, dir, base, repo, json}) {
+	Effect.fn(function* ({ ids, dir, base, repo, json }) {
 		const corpus = yield* corpusFor("adr resolve", dir);
 		if (corpus._tag === "Stop") return yield* emit(corpus.outcome);
 		const at = yield* baseFor("adr resolve", base, repo);
 		if (at._tag === "Stop") return yield* emit(at.outcome);
 		yield* emit(
-			yield* runResolve({ids, dir: corpus.dir, base: at.base, repo: Option.getOrNull(repo), json}),
+			yield* runResolve({
+				ids,
+				dir: corpus.dir,
+				base: at.base,
+				repo: Option.getOrNull(repo),
+				json,
+			}),
 		);
 	}),
 ).pipe(
@@ -282,7 +288,7 @@ const resolve = leafCommand(
 			'  Derivation: the adr skill\'s contract.md, "adr resolve"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika adr resolve 0164 0023"}]),
+	Command.withExamples([{ command: "fabrika adr resolve 0164 0023" }]),
 );
 
 const byFlag = Flag.string("by").pipe(
@@ -291,11 +297,11 @@ const byFlag = Flag.string("by").pipe(
 
 const supersede = leafCommand(
 	"supersede",
-	{id: idArg, by: byFlag, dir: dirFlag, json: jsonFlag},
-	Effect.fn(function* ({id, by, dir, json}) {
+	{ id: idArg, by: byFlag, dir: dirFlag, json: jsonFlag },
+	Effect.fn(function* ({ id, by, dir, json }) {
 		const corpus = yield* corpusFor("adr supersede", dir);
 		if (corpus._tag === "Stop") return yield* emit(corpus.outcome);
-		yield* emit(yield* runRelate({relationship: "supersede", id, by, dir: corpus.dir, json}));
+		yield* emit(yield* runRelate({ relationship: "supersede", id, by, dir: corpus.dir, json }));
 	}),
 ).pipe(
 	Command.withShortDescription("Mark an older ADR superseded by this one."),
@@ -310,16 +316,16 @@ const supersede = leafCommand(
 			'  Derivation: the adr skill\'s contract.md, "adr supersede and adr amend-in-part"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika adr supersede 0126 --by 0240"}]),
+	Command.withExamples([{ command: "fabrika adr supersede 0126 --by 0240" }]),
 );
 
 const amendInPart = leafCommand(
 	"amend-in-part",
-	{id: idArg, by: byFlag, dir: dirFlag, json: jsonFlag},
-	Effect.fn(function* ({id, by, dir, json}) {
+	{ id: idArg, by: byFlag, dir: dirFlag, json: jsonFlag },
+	Effect.fn(function* ({ id, by, dir, json }) {
 		const corpus = yield* corpusFor("adr amend-in-part", dir);
 		if (corpus._tag === "Stop") return yield* emit(corpus.outcome);
-		yield* emit(yield* runRelate({relationship: "amend-in-part", id, by, dir: corpus.dir, json}));
+		yield* emit(yield* runRelate({ relationship: "amend-in-part", id, by, dir: corpus.dir, json }));
 	}),
 ).pipe(
 	Command.withShortDescription("Add this ADR to an older one's amended-in-part list."),
@@ -334,7 +340,7 @@ const amendInPart = leafCommand(
 			'  Derivation: the adr skill\'s contract.md, "adr supersede and adr amend-in-part"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika adr amend-in-part 0023 --by 0240"}]),
+	Command.withExamples([{ command: "fabrika adr amend-in-part 0023 --by 0240" }]),
 );
 
 const sweepCmd = leafCommand(
@@ -352,10 +358,10 @@ const sweepCmd = leafCommand(
 		),
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({new: subject, dir, limit, json}) {
+	Effect.fn(function* ({ new: subject, dir, limit, json }) {
 		const corpus = yield* corpusFor("adr sweep", dir);
 		if (corpus._tag === "Stop") return yield* emit(corpus.outcome);
-		yield* emit(yield* runSweep({new: subject, dir: corpus.dir, limit, json}));
+		yield* emit(yield* runSweep({ new: subject, dir: corpus.dir, limit, json }));
 	}),
 ).pipe(
 	Command.withShortDescription("Rank the live ADRs this one may contradict."),
@@ -367,7 +373,7 @@ const sweepCmd = leafCommand(
 			'  Derivation: the adr skill\'s contract.md, "adr sweep"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika adr sweep --new 0240"}]),
+	Command.withExamples([{ command: "fabrika adr sweep --new 0240" }]),
 );
 
 export const adrCommand = Command.make("adr").pipe(

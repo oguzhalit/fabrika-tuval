@@ -1,20 +1,23 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs, fakeSeams, okOut, record, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {binding, HEAD, pull, SHOW_AT, STATUS_AT, statuses} from "./fixtures.test-support.ts";
-import {runSweep} from "./sweep-verb.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs, fakeSeams, okOut, record, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { binding, HEAD, pull, SHOW_AT, STATUS_AT, statuses } from "./fixtures.test-support.ts";
+import { runSweep } from "./sweep-verb.ts";
 
 const PULL = /^GET .*\/repos\/o\/r\/pulls\/4321$/;
 
 /** A fixture's canned JSON, served as the 200 the REST read now parses. */
-const served = (result: ExecResult) => ({status: 200, body: result.stdout});
+const served = (result: ExecResult) => ({ status: 200, body: result.stdout });
 const DIR = ".decisions";
 const SUBJECT_PATH = ".decisions/0240-only-landed-adrs-may-be-cited.md";
 
 /** Twelve members, so the corpus clears the imported rarity floor of ten. */
-const names = Array.from({length: 12}, (_, i) => `${String(i + 1).padStart(4, "0")}-a-decision.md`);
+const names = Array.from(
+	{ length: 12 },
+	(_, i) => `${String(i + 1).padStart(4, "0")}-a-decision.md`,
+);
 
 const corpusFiles = (): Record<string, string> =>
 	Object.fromEntries(
@@ -37,30 +40,30 @@ const options = {
 	limit: 8,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 };
 
 const run = (
 	script: ReadonlyArray<Scripted>,
 	overrides: Partial<typeof options> = {},
-	fs = fakeFs({dirs: {[DIR]: names}, files: corpusFiles()}),
+	fs = fakeFs({ dirs: { [DIR]: names }, files: corpusFiles() }),
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runSweep({...options, ...overrides}),
+			runSweep({ ...options, ...overrides }),
 			Layer.merge(fakeSeams(script).layer, fs.layer),
 		),
 	);
 
 describe("runSweep in --landed mode", () => {
 	it("ranks the corpus against a record already in --dir and exits 0", async () => {
-		const out = await run([], {landed: "0001"});
+		const out = await run([], { landed: "0001" });
 		expect(out.code).toBe(0);
 		expect(out.stdout.split("\n")[0]).toMatch(/^(shortlist|no-overlap)$/);
 	});
 
 	it("carries the not-a-clearance sentence on the no-overlap arm's `reason`", async () => {
-		const out = await run([], {landed: "0002", json: true});
+		const out = await run([], { landed: "0002", json: true });
 		const parsed = JSON.parse(out.stdout);
 		if (parsed.outcome === "no-overlap") {
 			expect(parsed.reason).toContain("this is not a clearance");
@@ -72,9 +75,9 @@ describe("runSweep in --landed mode", () => {
 		const small = ["0001-a.md", "0002-b.md"];
 		const out = await run(
 			[],
-			{landed: "0001"},
+			{ landed: "0001" },
 			fakeFs({
-				dirs: {[DIR]: small},
+				dirs: { [DIR]: small },
 				files: {
 					[`${DIR}/0001-a.md`]: record("0001", "accepted"),
 					[`${DIR}/0002-b.md`]: record("0002", "accepted"),
@@ -86,7 +89,7 @@ describe("runSweep in --landed mode", () => {
 	});
 
 	it("refuses a zero-record corpus on 7 rather than answering no-overlap over nothing", async () => {
-		const out = await run([], {landed: "0001"}, fakeFs({dirs: {[DIR]: []}}));
+		const out = await run([], { landed: "0001" }, fakeFs({ dirs: { [DIR]: [] } }));
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-1)).toBe(
 			"governance sweep: scanned .decisions, 0 decision records — refusing to answer.",
@@ -96,9 +99,9 @@ describe("runSweep in --landed mode", () => {
 	it("refuses an UNREADABLE member on 11 — an incomplete corpus is UNKNOWN", async () => {
 		const out = await run(
 			[],
-			{landed: "0001"},
+			{ landed: "0001" },
 			fakeFs({
-				dirs: {[DIR]: names},
+				dirs: { [DIR]: names },
 				files: corpusFiles(),
 				unreadable: [`${DIR}/${names[3]}`],
 			}),
@@ -109,12 +112,12 @@ describe("runSweep in --landed mode", () => {
 	});
 
 	it("refuses an unlistable --dir on 11, distinct from an empty one", async () => {
-		const out = await run([], {landed: "0001"}, fakeFs({}));
+		const out = await run([], { landed: "0001" }, fakeFs({}));
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 	});
 
 	it("refuses a --landed id the corpus does not carry on 11", async () => {
-		const out = await run([], {landed: "9999"});
+		const out = await run([], { landed: "9999" });
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("carries no decision record 9999");
 	});
@@ -122,7 +125,7 @@ describe("runSweep in --landed mode", () => {
 
 describe("runSweep in --record mode", () => {
 	const scripted: ReadonlyArray<Scripted> = [
-		[PULL, served(pull({changedFiles: 1}))],
+		[PULL, served(pull({ changedFiles: 1 }))],
 		...binding(),
 		[STATUS_AT(), statuses(["A", SUBJECT_PATH])],
 		[
@@ -132,7 +135,7 @@ describe("runSweep in --record mode", () => {
 	];
 
 	it("reads the subject at the BOUND commit and ranks against the corpus", async () => {
-		const out = await run(scripted, {pr: 4321, record: "0240"});
+		const out = await run(scripted, { pr: 4321, record: "0240" });
 		expect(out.code).toBe(0);
 		expect(out.stderr[0]).toContain(`bound to ${HEAD}`);
 	});
@@ -140,11 +143,11 @@ describe("runSweep in --record mode", () => {
 	it("refuses when the bound commit carries no such record on 11", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({changedFiles: 1}))],
+				[PULL, served(pull({ changedFiles: 1 }))],
 				...binding(),
 				[STATUS_AT(), statuses(["M", "src/a.ts"])],
 			],
-			{pr: 4321, record: "0240"},
+			{ pr: 4321, record: "0240" },
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("carries no decision record 0240");
@@ -155,7 +158,7 @@ describe("runSweep in --record mode", () => {
 	it("reports a local read short of the declared count and ranks anyway (#9322)", async () => {
 		const out = await run(
 			[
-				[PULL, served(pull({changedFiles: 9}))],
+				[PULL, served(pull({ changedFiles: 9 }))],
 				...binding(),
 				[STATUS_AT(), statuses(["A", SUBJECT_PATH])],
 				[
@@ -163,7 +166,7 @@ describe("runSweep in --record mode", () => {
 					okOut(record("0240", "proposed", "Only landed ADRs may be cited.")),
 				],
 			],
-			{pr: 4321, record: "0240"},
+			{ pr: 4321, record: "0240" },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stderr.join("\n")).toContain(
@@ -175,15 +178,15 @@ describe("runSweep in --record mode", () => {
 	// "carries no decision record" — a refusal about the subject, not about the read.
 	it("refuses an empty local range on 7 even where the record declares files (#9322)", async () => {
 		const out = await run(
-			[[PULL, served(pull({changedFiles: 9}))], ...binding(), [STATUS_AT(), statuses()]],
-			{pr: 4321, record: "0240"},
+			[[PULL, served(pull({ changedFiles: 9 }))], ...binding(), [STATUS_AT(), statuses()]],
+			{ pr: 4321, record: "0240" },
 		);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-1)).toContain("changes no path — refusing to sweep over an empty diff");
 	});
 
 	it("refuses an absent PR on 7", async () => {
-		const out = await run([[PULL, {status: 404, body: '{"message":"Not Found"}'}]], {
+		const out = await run([[PULL, { status: 404, body: '{"message":"Not Found"}' }]], {
 			pr: 4321,
 			record: "0240",
 		});
@@ -193,12 +196,12 @@ describe("runSweep in --record mode", () => {
 
 describe("runSweep's usage fence", () => {
 	it("refuses both a PR and --landed, and neither, on 10", async () => {
-		expect((await run([], {pr: 4321, record: "0240", landed: "0240"})).code).toBe(OFF_VOCABULARY);
+		expect((await run([], { pr: 4321, record: "0240", landed: "0240" })).code).toBe(OFF_VOCABULARY);
 		expect((await run([], {})).code).toBe(OFF_VOCABULARY);
 	});
 
 	it("refuses a non-four-digit id on 10", async () => {
-		const out = await run([], {landed: "240"});
+		const out = await run([], { landed: "240" });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toBe(
 			'governance sweep: --landed "240" is not a four-digit decision id.',
@@ -206,7 +209,7 @@ describe("runSweep's usage fence", () => {
 	});
 
 	it("refuses a negative --limit on 10", async () => {
-		const out = await run([], {landed: "0001", limit: -1});
+		const out = await run([], { landed: "0001", limit: -1 });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toContain("a shortlist cannot be shorter than empty");
 	});

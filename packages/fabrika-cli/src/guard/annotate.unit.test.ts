@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	annotationsEnabled,
 	atFile,
@@ -38,10 +38,10 @@ describe("formatWorkflowCommand", () => {
 
 describe("annotationsEnabled", () => {
 	it("is on under Actions and off everywhere else", () => {
-		expect(annotationsEnabled({GITHUB_ACTIONS: "true"})).toBe(true);
+		expect(annotationsEnabled({ GITHUB_ACTIONS: "true" })).toBe(true);
 		expect(annotationsEnabled({})).toBe(false);
-		expect(annotationsEnabled({GITHUB_ACTIONS: ""})).toBe(false);
-		expect(annotationsEnabled({GITHUB_ACTIONS: "false"})).toBe(false);
+		expect(annotationsEnabled({ GITHUB_ACTIONS: "" })).toBe(false);
+		expect(annotationsEnabled({ GITHUB_ACTIONS: "false" })).toBe(false);
 	});
 });
 
@@ -69,12 +69,12 @@ describe("fallbackAnnotations", () => {
 	it("manufactures one bare ::error from the report head when it supplied none", () => {
 		const annotations = fallbackAnnotations("line one\nline two");
 		expect(annotations).toHaveLength(1);
-		expect(annotations[0]?.location).toEqual({_tag: "Unlocated"});
+		expect(annotations[0]?.location).toEqual({ _tag: "Unlocated" });
 		expect(annotations[0]?.message).toBe("line one\nline two");
 	});
 
 	it("bounds how much of a long report rides in the fallback", () => {
-		const report = Array.from({length: 40}, (_, i) => `line ${i}`).join("\n");
+		const report = Array.from({ length: 40 }, (_, i) => `line ${i}`).join("\n");
 		expect(fallbackAnnotations(report)[0]?.message.split("\n")).toHaveLength(8);
 	});
 

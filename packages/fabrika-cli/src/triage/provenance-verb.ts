@@ -13,11 +13,11 @@
  * default is reached only once the author has been tested: an operator-authored filing is
  * agent-reported by the ruling however little it says.
  */
-import {Effect} from "effect";
-import {getIssue, resolveRepo} from "../io/issues.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {hasAgentFooter, isOperatorAccount, resolveOperatorAccounts} from "./provenance.ts";
+import { Effect } from "effect";
+import { getIssue, resolveRepo } from "../io/issues.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { hasAgentFooter, isOperatorAccount, resolveOperatorAccounts } from "./provenance.ts";
 
 export interface ProvenanceOptions {
 	readonly issue: number;
@@ -43,11 +43,11 @@ const render = (
 	stderr: ReadonlyArray<string>,
 ): VerbOutcome =>
 	json
-		? answer(JSON.stringify({outcome, marker, operator, reason}), stderr)
+		? answer(JSON.stringify({ outcome, marker, operator, reason }), stderr)
 		: answer(outcome, stderr);
 
 export const runProvenance = Effect.fn("runProvenance")(function* (options: ProvenanceOptions) {
-	const {issue, json} = options;
+	const { issue, json } = options;
 
 	const repoAttempt = yield* resolveRepo(options.repo, options.env);
 	if (repoAttempt._tag === "Failure") {

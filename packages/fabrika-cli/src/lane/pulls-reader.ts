@@ -12,17 +12,17 @@
  * `PASS` stopped proving and four `lane report` tests went red, with nothing in either file's
  * behaviour changed. A module that imports both and is imported by neither adds no such edge.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {resolveRepo} from "../io/issues.ts";
-import {nominatePulls} from "./nominate.ts";
-import type {PullTrace} from "./prove.ts";
-import {tracePulls} from "./prove.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { resolveRepo } from "../io/issues.ts";
+import { nominatePulls } from "./nominate.ts";
+import type { PullTrace } from "./prove.ts";
+import { tracePulls } from "./prove.ts";
 
 /** One issue's open pull requests as a trace, or why the board did not answer. */
 export type PullsTrace =
-	| {readonly _tag: "Read"; readonly trace: PullTrace; readonly scanned: number}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Read"; readonly trace: PullTrace; readonly scanned: number }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * A memoized reader over one repo.
@@ -53,7 +53,7 @@ export const pullsReader = (
 			}
 			const nominated = yield* nominatePulls(resolved, issue);
 			if (nominated._tag === "Unreadable") {
-				return {_tag: "Unknown" as const, reason: `${nominated.what}: ${nominated.reason}`};
+				return { _tag: "Unknown" as const, reason: `${nominated.what}: ${nominated.reason}` };
 			}
 			return {
 				_tag: "Read" as const,

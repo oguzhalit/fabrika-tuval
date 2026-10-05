@@ -24,17 +24,17 @@
  * the refusal costs a *hook* — that its exit code cannot deny the spawn the hook was consulted about.
  */
 
-import {spawnSync} from "node:child_process";
-import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {afterAll, beforeAll, describe, expect, it} from "vitest";
-import {readGoldenFixture} from "../golden-fixture.ts";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
-import {NO_IMPLEMENTATION} from "../verb.ts";
-import {argvOf, declaredHooks} from "./declaration.ts";
-import {HARNESS_BUILD_READ, PRETOOLUSE_BLOCKING_EXIT} from "./harness-exit.ts";
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { readGoldenFixture } from "../golden-fixture.ts";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
+import { NO_IMPLEMENTATION } from "../verb.ts";
+import { argvOf, declaredHooks } from "./declaration.ts";
+import { HARNESS_BUILD_READ, PRETOOLUSE_BLOCKING_EXIT } from "./harness-exit.ts";
 
 const BIN = fileURLToPath(new URL("../bin.ts", import.meta.url));
 const SRC_DIR = fileURLToPath(new URL("..", import.meta.url));
@@ -79,15 +79,15 @@ describe("no bootstrap or dispatch failure is seated on the harness's blocking c
  */
 const foreignCheckout = (): string => {
 	const root = mkdtempSync(join(tmpdir(), "fabrika-foreign-"));
-	writeFileSync(join(root, "package.json"), JSON.stringify({name: "foreign-checkout"}));
+	writeFileSync(join(root, "package.json"), JSON.stringify({ name: "foreign-checkout" }));
 	const installed = join(root, "node_modules", "@kampus", "fabrika-cli");
-	mkdirSync(installed, {recursive: true});
+	mkdirSync(installed, { recursive: true });
 	writeFileSync(
 		join(installed, "package.json"),
 		JSON.stringify({
 			name: "@kampus/fabrika-cli",
 			version: "0.0.0-foreign",
-			bin: {fabrika: "./bin.js"},
+			bin: { fabrika: "./bin.js" },
 		}),
 	);
 	writeFileSync(join(installed, "bin.js"), "");
@@ -102,7 +102,7 @@ describe("a hook the surface declares, run from a checkout it refuses to answer 
 		root = foreignCheckout();
 	});
 	afterAll(() => {
-		rmSync(root, {recursive: true, force: true});
+		rmSync(root, { recursive: true, force: true });
 	});
 
 	const declared = () => {
@@ -115,7 +115,7 @@ describe("a hook the surface declares, run from a checkout it refuses to answer 
 	const run = () => {
 		// `FABRIKA_SKIP_INFER` is deleted rather than merely unset: it is the guard that skips the
 		// delegation entirely, so inheriting one from the runner's shell would exercise nothing.
-		const env: NodeJS.ProcessEnv = {...process.env};
+		const env: NodeJS.ProcessEnv = { ...process.env };
 		delete env.FABRIKA_SKIP_INFER;
 		return spawnSync(process.execPath, [BIN, ...argvOf(declared().command)], {
 			cwd: root,
@@ -126,7 +126,7 @@ describe("a hook the surface declares, run from a checkout it refuses to answer 
 	};
 
 	it("refuses loudly on stderr and not on the blocking code, so the tool call proceeds", () => {
-		const {status, stderr} = run();
+		const { status, stderr } = run();
 		expect(stderr).toContain("different repositories");
 		expect(status).not.toBe(PRETOOLUSE_BLOCKING_EXIT);
 		expect(status).toBe(NO_IMPLEMENTATION);

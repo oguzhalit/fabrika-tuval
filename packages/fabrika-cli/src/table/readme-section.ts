@@ -36,10 +36,10 @@ export type ReadmeCase =
 	| "Rewrote";
 
 export type ReadmeMerge =
-	| {readonly _tag: "Write"; readonly case: ReadmeCase; readonly readme: string}
-	| {readonly _tag: "Unchanged"}
+	| { readonly _tag: "Write"; readonly case: ReadmeCase; readonly readme: string }
+	| { readonly _tag: "Unchanged" }
 	/** The markers are there but do not form one start-then-end pair; the README is left alone. */
-	| {readonly _tag: "Broken"};
+	| { readonly _tag: "Broken" };
 
 const occurrences = (text: string, needle: string): ReadonlyArray<number> => {
 	const found: number[] = [];
@@ -52,7 +52,7 @@ const occurrences = (text: string, needle: string): ReadonlyArray<number> => {
 /** The README `live` should become for `section` to stand in it, keeping every byte a person wrote. */
 export const mergeReadme = (live: string | null, section: ReadmeSection): ReadmeMerge => {
 	if (live === null || live.trim() === "") {
-		return {_tag: "Write", case: "Fresh", readme: markedSection(section)};
+		return { _tag: "Write", case: "Fresh", readme: markedSection(section) };
 	}
 	const start = startMarker(section);
 	const end = endMarker(section);
@@ -61,21 +61,21 @@ export const mergeReadme = (live: string | null, section: ReadmeSection): Readme
 
 	if (starts.length === 0 && ends.length === 0) {
 		if (live === section.body) {
-			return {_tag: "Write", case: "Marked", readme: markedSection(section)};
+			return { _tag: "Write", case: "Marked", readme: markedSection(section) };
 		}
 		const gap = live.endsWith("\n") ? "\n" : "\n\n";
-		return {_tag: "Write", case: "Appended", readme: `${live}${gap}${markedSection(section)}`};
+		return { _tag: "Write", case: "Appended", readme: `${live}${gap}${markedSection(section)}` };
 	}
 
 	const [open] = starts;
 	const [close] = ends;
 	if (starts.length !== 1 || ends.length !== 1 || open === undefined || close === undefined) {
-		return {_tag: "Broken"};
+		return { _tag: "Broken" };
 	}
-	if (close < open) return {_tag: "Broken"};
+	if (close < open) return { _tag: "Broken" };
 
 	const before = live.slice(0, open);
 	const after = live.slice(close + end.length);
 	const readme = `${before}${markedSection(section)}${after}`;
-	return readme === live ? {_tag: "Unchanged"} : {_tag: "Write", case: "Rewrote", readme};
+	return readme === live ? { _tag: "Unchanged" } : { _tag: "Write", case: "Rewrote", readme };
 };

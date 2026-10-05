@@ -16,13 +16,13 @@
  * The leak predicate and the stdin fence are `../ship/authored.ts`'s, imported: this group scans the
  * text a session authored, and scanning *landed* content is `leak-guard.yml`'s enforced seam.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {createComment, getComment, listComments} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {readAuthored, type StdinSource} from "../ship/authored.ts";
-import {badNumber, resolvePull, resolveTargetRepo} from "../ship/target.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { createComment, getComment, listComments } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { readAuthored, type StdinSource } from "../ship/authored.ts";
+import { badNumber, resolvePull, resolveTargetRepo } from "../ship/target.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	INCOMPLETE_SCAN,
 	OFF_VOCABULARY,
@@ -31,8 +31,8 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {keyBoundTo, keyOf, renderKey, withKey} from "./note-key.ts";
-import {isStallToken, STALL_TOKENS} from "./stall.ts";
+import { keyBoundTo, keyOf, renderKey, withKey } from "./note-key.ts";
+import { isStallToken, STALL_TOKENS } from "./stall.ts";
 
 const VERB = "heal-ci note";
 

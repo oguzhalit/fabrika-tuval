@@ -78,13 +78,13 @@ export const inspectsHead = (run: RunProvenance, head: string): boolean =>
 
 export type GateCoverage =
 	/** At least one repo-authored workflow inspected this head — the rollup is over gated bytes. */
-	| {readonly _tag: "Covered"; readonly declared: number; readonly covered: number}
+	| { readonly _tag: "Covered"; readonly declared: number; readonly covered: number }
 	/** The repo declares gates and none of them inspected this head. Never a shade of green. */
-	| {readonly _tag: "Uncovered"; readonly declared: number}
+	| { readonly _tag: "Uncovered"; readonly declared: number }
 	/** The repo authors no workflow of its own, so there is no gate to have missed. */
-	| {readonly _tag: "NoGates"}
+	| { readonly _tag: "NoGates" }
 	/** The provenance coverage needs could not be read, so coverage is UNKNOWN — never `Uncovered`. */
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /**
  * The coverage of one head, over the repo's inventory and the runs that carry that head.
@@ -110,13 +110,13 @@ export const gateCoverageOf = (
 		};
 	}
 	const gates = new Set(inventory.filter(isRepoAuthored));
-	if (gates.size === 0) return {_tag: "NoGates"};
+	if (gates.size === 0) return { _tag: "NoGates" };
 	const covered = new Set(
 		ranAtHead
 			.filter((run) => gates.has(run.path) && inspectsHead(run, head))
 			.map((run) => run.path),
 	);
 	return covered.size === 0
-		? {_tag: "Uncovered", declared: gates.size}
-		: {_tag: "Covered", declared: gates.size, covered: covered.size};
+		? { _tag: "Uncovered", declared: gates.size }
+		: { _tag: "Covered", declared: gates.size, covered: covered.size };
 };

@@ -7,7 +7,7 @@
  * guess, so a range written in a shape this file does not know fails the caller instead of passing
  * it.
  */
-import {compareVersions, parseVersion, type Version} from "./hook/cli-floor.ts";
+import { compareVersions, parseVersion, type Version } from "./hook/cli-floor.ts";
 
 /** One `>= lower < upper` interval; `upper` is absent only for `*`. */
 interface Interval {
@@ -16,13 +16,13 @@ interface Interval {
 }
 
 export type PeerRange =
-	| {readonly _tag: "Range"; readonly text: string; readonly intervals: ReadonlyArray<Interval>}
-	| {readonly _tag: "Unparseable"; readonly text: string; readonly comparator: string};
+	| { readonly _tag: "Range"; readonly text: string; readonly intervals: ReadonlyArray<Interval> }
+	| { readonly _tag: "Unparseable"; readonly text: string; readonly comparator: string };
 
 export type Admission =
-	| {readonly _tag: "Admits"}
-	| {readonly _tag: "Excludes"; readonly range: string; readonly version: string}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Admits" }
+	| { readonly _tag: "Excludes"; readonly range: string; readonly version: string }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 const PARTIAL = /^(0|[1-9]\d*)(?:\.(0|[1-9]\d*|x|\*))?(?:\.(0|[1-9]\d*|x|\*))?$/;
 
@@ -34,7 +34,7 @@ const at = (major: number, minor: number, patch: number): Version => ({
 });
 
 /** `4`, `4.1`, `4.1.5`, `4.x` — how many leading parts were given, and their values. */
-const partial = (text: string): {readonly parts: ReadonlyArray<number>} | undefined => {
+const partial = (text: string): { readonly parts: ReadonlyArray<number> } | undefined => {
 	const matched = PARTIAL.exec(text);
 	if (matched === null) return undefined;
 	const parts: number[] = [];
@@ -42,16 +42,16 @@ const partial = (text: string): {readonly parts: ReadonlyArray<number>} | undefi
 		if (part === undefined || part === "x" || part === "*") break;
 		parts.push(Number(part));
 	}
-	return {parts};
+	return { parts };
 };
 
 /** `^`: the leftmost non-zero part given is the one that may not move. */
 const caret = (parts: ReadonlyArray<number>): Interval => {
 	const [major = 0, minor = 0, patch = 0] = parts;
 	const lower = at(major, minor, patch);
-	if (major > 0 || parts.length === 1) return {lower, upper: at(major + 1, 0, 0)};
-	if (minor > 0 || parts.length === 2) return {lower, upper: at(0, minor + 1, 0)};
-	return {lower, upper: at(0, 0, patch + 1)};
+	if (major > 0 || parts.length === 1) return { lower, upper: at(major + 1, 0, 0) };
+	if (minor > 0 || parts.length === 2) return { lower, upper: at(0, minor + 1, 0) };
+	return { lower, upper: at(0, 0, patch + 1) };
 };
 
 /** `~`: patch moves when a minor is given, minor moves when only a major is. */
@@ -59,21 +59,21 @@ const tilde = (parts: ReadonlyArray<number>): Interval => {
 	const [major = 0, minor = 0, patch = 0] = parts;
 	const lower = at(major, minor, patch);
 	return parts.length === 1
-		? {lower, upper: at(major + 1, 0, 0)}
-		: {lower, upper: at(major, minor + 1, 0)};
+		? { lower, upper: at(major + 1, 0, 0) }
+		: { lower, upper: at(major, minor + 1, 0) };
 };
 
 /** A bare version: exact when complete, an x-range when partial. */
 const bare = (parts: ReadonlyArray<number>): Interval => {
 	const [major = 0, minor = 0, patch = 0] = parts;
 	const lower = at(major, minor, patch);
-	if (parts.length === 1) return {lower, upper: at(major + 1, 0, 0)};
-	if (parts.length === 2) return {lower, upper: at(major, minor + 1, 0)};
-	return {lower, upper: at(major, minor, patch + 1)};
+	if (parts.length === 1) return { lower, upper: at(major + 1, 0, 0) };
+	if (parts.length === 2) return { lower, upper: at(major, minor + 1, 0) };
+	return { lower, upper: at(major, minor, patch + 1) };
 };
 
 const interval = (comparator: string): Interval | undefined => {
-	if (comparator === "*" || comparator === "x") return {lower: at(0, 0, 0), upper: undefined};
+	if (comparator === "*" || comparator === "x") return { lower: at(0, 0, 0), upper: undefined };
 	const operator = comparator[0] === "^" || comparator[0] === "~" ? comparator[0] : "";
 	const read = partial(comparator.slice(operator.length));
 	if (read === undefined || read.parts.length === 0) return undefined;
@@ -86,13 +86,13 @@ export const parsePeerRange = (text: string): PeerRange => {
 	const intervals: Interval[] = [];
 	for (const comparator of text.split("||").map((part) => part.trim())) {
 		const read = interval(comparator);
-		if (read === undefined) return {_tag: "Unparseable", text, comparator};
+		if (read === undefined) return { _tag: "Unparseable", text, comparator };
 		intervals.push(read);
 	}
-	return {_tag: "Range", text, intervals};
+	return { _tag: "Range", text, intervals };
 };
 
-const within = (version: Version, {lower, upper}: Interval): boolean =>
+const within = (version: Version, { lower, upper }: Interval): boolean =>
 	compareVersions(version, lower) >= 0 &&
 	(upper === undefined || compareVersions(version, upper) < 0);
 
@@ -109,9 +109,9 @@ export const admits = (rangeText: string, versionText: string): Admission => {
 		};
 	const version = parseVersion(versionText);
 	if (version === undefined)
-		return {_tag: "Unreadable", reason: `installed version "${versionText}" is not semver`};
+		return { _tag: "Unreadable", reason: `installed version "${versionText}" is not semver` };
 	const inside =
 		version.prerelease.length === 0 &&
 		range.intervals.some((candidate) => within(version, candidate));
-	return inside ? {_tag: "Admits"} : {_tag: "Excludes", range: rangeText, version: versionText};
+	return inside ? { _tag: "Admits" } : { _tag: "Excludes", range: rangeText, version: versionText };
 };

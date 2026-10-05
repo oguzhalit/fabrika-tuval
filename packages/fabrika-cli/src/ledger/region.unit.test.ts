@@ -1,11 +1,11 @@
-import {describe, expect, it} from "vitest";
-import {spliceDependencies, splicePlan} from "./region.ts";
+import { describe, expect, it } from "vitest";
+import { spliceDependencies, splicePlan } from "./region.ts";
 
 const PLAN = "## Plan (plan-epic)\n\n### Summary\n\nA plan.\n";
 const TOPOLOGY = "## Dependencies\n\n- phase 1: #4301\n";
 
 const splice = (body: string, mode: "fresh" | "re-plan") =>
-	splicePlan({epic: 4300, body, mode, plan: PLAN, topology: TOPOLOGY});
+	splicePlan({ epic: 4300, body, mode, plan: PLAN, topology: TOPOLOGY });
 
 const ENRICHED = [
 	"## Pitch",
@@ -25,7 +25,7 @@ const ENRICHED = [
 describe("splicePlan on a fresh run", () => {
 	it("appends the plan and topology below the live bytes, which it does not touch", () => {
 		const spliced = splice(ENRICHED, "fresh");
-		expect(spliced).toMatchObject({_tag: "Composed"});
+		expect(spliced).toMatchObject({ _tag: "Composed" });
 		expect(spliced._tag === "Composed" && spliced.body).toBe(
 			`${ENRICHED.trimEnd()}\n\n${PLAN.trimEnd()}\n\n${TOPOLOGY.trimEnd()}\n`,
 		);
@@ -45,7 +45,7 @@ describe("splicePlan on a re-plan", () => {
 
 	it("replaces the bounded region and preserves every byte above it", () => {
 		const spliced = splice(PLANNED, "re-plan");
-		expect(spliced).toMatchObject({_tag: "Composed"});
+		expect(spliced).toMatchObject({ _tag: "Composed" });
 		const body = spliced._tag === "Composed" ? spliced.body : "";
 		expect(body.startsWith(ENRICHED.trimEnd())).toBe(true);
 		expect(body).toContain("A plan.");
@@ -106,7 +106,7 @@ describe("splicePlan on a re-plan", () => {
 
 describe("spliceDependencies", () => {
 	const REWRITTEN = "## Dependencies\n\n- phase 1: #4301\n- phase 2: #4303\n";
-	const splice = (body: string) => spliceDependencies({epic: 4300, body, topology: REWRITTEN});
+	const splice = (body: string) => spliceDependencies({ epic: 4300, body, topology: REWRITTEN });
 
 	const bodyWith = (topology: string, tail: string): string =>
 		`${ENRICHED}\n${PLAN}\n${topology}\n${tail}`;
@@ -114,7 +114,7 @@ describe("spliceDependencies", () => {
 	it("replaces the block alone, leaving the plan and the envelope byte-identical", () => {
 		const before = bodyWith("## Dependencies\n\n- phase 1: #4301, #4302\n", "");
 		const spliced = splice(before);
-		expect(spliced).toMatchObject({_tag: "Composed"});
+		expect(spliced).toMatchObject({ _tag: "Composed" });
 		expect(spliced._tag === "Composed" && spliced.body).toBe(`${ENRICHED}\n${PLAN}\n${REWRITTEN}`);
 	});
 

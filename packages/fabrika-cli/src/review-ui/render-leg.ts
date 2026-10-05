@@ -12,18 +12,18 @@
  * the first bad shot, so a mixed set could report at most one surface's fate and the rest would go
  * unenumerated — the "judged nothing, found nothing wrong" shape in a different disguise.
  */
-import {Effect} from "effect";
-import {SESSION_PROBE_PATH, type VisitorCause} from "../capture/auth.ts";
-import {captureShots, isWritten} from "../capture/capture.ts";
-import {FLAG_PROBE_PATH, isForcing} from "../capture/flag-override.ts";
-import {stepToken} from "../capture/interaction.ts";
-import {isRenderCrash} from "../capture/page-errors.ts";
-import {buildCapturePlan, joinPreviewUrl, parseSurfaceSpec} from "../capture/plan.ts";
-import {validateCaptureBytes} from "../capture/png.ts";
-import {CAPTURE_IDENTITIES, identityOf} from "../capture/states.ts";
-import {capAndCount} from "../evidence.ts";
-import {type CaptureEntry, PAGE_ERROR_CAP, sha256Hex} from "./manifest.ts";
-import type {RenderLeg, SurfaceRender} from "./render-verb.ts";
+import { Effect } from "effect";
+import { SESSION_PROBE_PATH, type VisitorCause } from "../capture/auth.ts";
+import { captureShots, isWritten } from "../capture/capture.ts";
+import { FLAG_PROBE_PATH, isForcing } from "../capture/flag-override.ts";
+import { stepToken } from "../capture/interaction.ts";
+import { isRenderCrash } from "../capture/page-errors.ts";
+import { buildCapturePlan, joinPreviewUrl, parseSurfaceSpec } from "../capture/plan.ts";
+import { validateCaptureBytes } from "../capture/png.ts";
+import { CAPTURE_IDENTITIES, identityOf } from "../capture/states.ts";
+import { capAndCount } from "../evidence.ts";
+import { type CaptureEntry, PAGE_ERROR_CAP, sha256Hex } from "./manifest.ts";
+import type { RenderLeg, SurfaceRender } from "./render-verb.ts";
 
 /**
  * A navigation that served no response, or a status the machinery could not attach, is UNREACHABLE
@@ -73,7 +73,7 @@ export const makeCaptureRenderLeg =
 				catch: (cause) => String(cause),
 			}).pipe(Effect.catch((reason) => Effect.succeed(reason)));
 			if (typeof plan === "string") {
-				return {_tag: "Failed", reason: plan} satisfies SurfaceRender;
+				return { _tag: "Failed", reason: plan } satisfies SurfaceRender;
 			}
 
 			// A seeded session is asked to prove itself, because pixels cannot: a cookie that does not
@@ -86,7 +86,7 @@ export const makeCaptureRenderLeg =
 			const captured = yield* capture(plan, request.outDir, {
 				cookies: request.cookies,
 				...(wanted !== null
-					? {sessionProbeUrl: joinPreviewUrl(request.previewUrl, SESSION_PROBE_PATH)}
+					? { sessionProbeUrl: joinPreviewUrl(request.previewUrl, SESSION_PROBE_PATH) }
 					: {}),
 				...(forcing
 					? {
@@ -96,13 +96,13 @@ export const makeCaptureRenderLeg =
 							},
 						}
 					: {}),
-				...(request.locale === null ? {} : {locale: request.locale}),
-				...(request.accent === null ? {} : {accent: request.accent}),
+				...(request.locale === null ? {} : { locale: request.locale }),
+				...(request.accent === null ? {} : { accent: request.accent }),
 			}).pipe(Effect.catch((error) => Effect.succeed(error.message)));
 			if (typeof captured === "string") {
 				return captured.startsWith(NAVIGATION_FAILURE_PREFIX)
-					? ({_tag: "Unreachable", reason: captured} satisfies SurfaceRender)
-					: ({_tag: "Failed", reason: captured} satisfies SurfaceRender);
+					? ({ _tag: "Unreachable", reason: captured } satisfies SurfaceRender)
+					: ({ _tag: "Failed", reason: captured } satisfies SurfaceRender);
 			}
 			const shot = captured[0];
 			if (shot === undefined) {
@@ -112,7 +112,7 @@ export const makeCaptureRenderLeg =
 				} as SurfaceRender;
 			}
 			if (shot.status !== undefined && shot.status >= UNREACHABLE_FLOOR) {
-				return {_tag: "Unreachable", reason: `status ${shot.status}`} satisfies SurfaceRender;
+				return { _tag: "Unreachable", reason: `status ${shot.status}` } satisfies SurfaceRender;
 			}
 			// Classified before the bytes: an anonymous shot under a signed-in name is a valid PNG of
 			// the wrong page, so validating it first would answer a question nobody asked.
@@ -164,7 +164,7 @@ export const makeCaptureRenderLeg =
 			}
 			const crash = shot.pageErrors.find(isRenderCrash);
 			if (crash !== undefined) {
-				return {_tag: "Crashed", firstError: crash.text} satisfies SurfaceRender;
+				return { _tag: "Crashed", firstError: crash.text } satisfies SurfaceRender;
 			}
 			// After the crash check, unlike the two proofs above: this one is read off the page itself,
 			// and a page that threw before setting its `lang` is a red render, not an unseeded one. A
@@ -202,7 +202,7 @@ export const makeCaptureRenderLeg =
 									: proof.reason,
 					} satisfies SurfaceRender;
 				}
-				scheme = {requested: request.scheme.scheme, proven: proof.scheme};
+				scheme = { requested: request.scheme.scheme, proven: proof.scheme };
 			}
 			// Read off the page like the scheme, and for the same reason after the crash check. Setting the
 			// attribute is only the request: an app that re-asserts its own accent paints that one, a valid
@@ -222,7 +222,7 @@ export const makeCaptureRenderLeg =
 									: proof.reason,
 					} satisfies SurfaceRender;
 				}
-				accent = {requested: request.accent.value, proven: proof.accent};
+				accent = { requested: request.accent.value, proven: proof.accent };
 			}
 			// Last of the page proofs and after the crash check, for the scheme's reason: a page that threw
 			// is a red render, and the steps ran on the page the other page proofs answered about.
@@ -251,7 +251,7 @@ export const makeCaptureRenderLeg =
 			}
 			const validity = validateCaptureBytes(shot.pngBytes);
 			if (validity._tag === "Invalid") {
-				return {_tag: "Invalid", detail: validity.reason} satisfies SurfaceRender;
+				return { _tag: "Invalid", detail: validity.reason } satisfies SurfaceRender;
 			}
 			// The width comes off the PNG header, never echoed from the request — the same readback
 			// discipline the tier proof runs one layer up. A shot the browser took at another width is
@@ -268,9 +268,9 @@ export const makeCaptureRenderLeg =
 				entry: {
 					surface: request.surface,
 					viewport: request.viewport.label,
-					...(scheme === undefined ? {} : {scheme}),
-					...(accent === undefined ? {} : {accent}),
-					...(interaction === undefined ? {} : {interaction}),
+					...(scheme === undefined ? {} : { scheme }),
+					...(accent === undefined ? {} : { accent }),
+					...(interaction === undefined ? {} : { interaction }),
 					path: shot.localPath,
 					width: validity.width,
 					height: validity.height,

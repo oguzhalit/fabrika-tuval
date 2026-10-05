@@ -1,10 +1,16 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {HttpReply, Scripted} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {KILL_LABEL} from "../labels.ts";
-import {SHIPPED_BOARD} from "../status/board.test-support.ts";
-import {COMMENTS, claimPage, declaring, guardedShell, LIVE} from "./claim-fixtures.test-support.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { HttpReply, Scripted } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { KILL_LABEL } from "../labels.ts";
+import { SHIPPED_BOARD } from "../status/board.test-support.ts";
+import {
+	COMMENTS,
+	claimPage,
+	declaring,
+	guardedShell,
+	LIVE,
+} from "./claim-fixtures.test-support.ts";
 import {
 	BARE_AT_PATH,
 	CLAIMED_ELSEWHERE,
@@ -17,7 +23,7 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {runKill} from "./kill-verb.ts";
+import { runKill } from "./kill-verb.ts";
 
 const ISSUE = /GET .*\/repos\/o\/r\/issues\/4312$/;
 const DUPLICATE = /GET .*\/repos\/o\/r\/issues\/4290$/;
@@ -27,15 +33,15 @@ const FOLD_COMMENT = /POST .*\/repos\/o\/r\/issues\/4290\/comments$/;
 const APPLY_LABEL = /POST .*\/repos\/o\/r\/issues\/4312\/labels$/;
 const CLOSE = /PATCH .*\/repos\/o\/r\/issues\/4312$/;
 
-const ACCEPTED: HttpReply = {status: 200, body: "{}"};
-const LABELLED: HttpReply = {status: 200, body: "[]"};
-const UNREADABLE: HttpReply = {status: 502, body: "{}"};
-const NOT_FOUND: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
-const WRITE_FAILED: HttpReply = {status: 500, body: "{}"};
+const ACCEPTED: HttpReply = { status: 200, body: "{}" };
+const LABELLED: HttpReply = { status: 200, body: "[]" };
+const UNREADABLE: HttpReply = { status: 502, body: "{}" };
+const NOT_FOUND: HttpReply = { status: 404, body: '{"message":"Not Found"}' };
+const WRITE_FAILED: HttpReply = { status: 500, body: "{}" };
 
 const labels = (...names: ReadonlyArray<string>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(names.map((name) => ({name}))),
+	body: JSON.stringify(names.map((name) => ({ name }))),
 });
 
 /** What the first request matching `pattern` carried as its JSON body. */
@@ -103,14 +109,14 @@ const killed: HttpReply = {
 		body: `## Summary\n\nsomething\n\n${FOOTER}`,
 		state: "closed",
 		state_reason: "not_planned",
-		labels: [{name: KILL_LABEL}],
+		labels: [{ name: KILL_LABEL }],
 		html_url: "https://example.test/issues/4312",
 	}),
 };
 
 const comment: HttpReply = {
 	status: 201,
-	body: JSON.stringify({id: 99, html_url: "https://example.test/issues/4312#issuecomment-99"}),
+	body: JSON.stringify({ id: 99, html_url: "https://example.test/issues/4312#issuecomment-99" }),
 };
 
 const labelSet = labels(KILL_LABEL, "status:needs-triage", "p1");
@@ -124,9 +130,9 @@ const options = {
 	token: null as string | null,
 	repo: null as string | null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 	board: SHIPPED_BOARD,
-	stdin: Effect.succeed<StdinRead>({_tag: "Text", text: REASON}),
+	stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: REASON }),
 };
 
 /** A placeholder operator set — these tests measure the mechanism, never a real login. */
@@ -147,33 +153,33 @@ const happy = (): ReadonlyArray<Scripted> => [
 
 const runWith = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) => {
 	const shell = guardedShell(script);
-	return Effect.runPromise(Effect.provide(runKill({...options, ...overrides}), shell.layer)).then(
-		(out) => ({out, requests: shell.requests, bodies: shell.bodies}),
+	return Effect.runPromise(Effect.provide(runKill({ ...options, ...overrides }), shell.layer)).then(
+		(out) => ({ out, requests: shell.requests, bodies: shell.bodies }),
 	);
 };
 
 describe("runKill", () => {
 	it("closes not-planned and prints the outcome line", async () => {
-		const {out, requests} = await runWith(happy());
+		const { out, requests } = await runWith(happy());
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("killed\t4312\tnone\n");
 		expect(requests.filter((c) => CLOSE.test(c))).toHaveLength(1);
 	});
 
 	it("writes in the order that keeps a failure recoverable: reason, label, close", async () => {
-		const {requests} = await runWith(happy());
+		const { requests } = await runWith(happy());
 		const at = (re: RegExp) => requests.findIndex((c) => re.test(c));
 		expect(at(REASON_COMMENT)).toBeLessThan(at(APPLY_LABEL));
 		expect(at(APPLY_LABEL)).toBeLessThan(at(CLOSE));
 	});
 
 	it("reports the label count it scanned", async () => {
-		const {out} = await runWith(happy());
+		const { out } = await runWith(happy());
 		expect(out.stderr.join("\n")).toContain("triage kill: scanned 3 labels in o/r.");
 	});
 
 	it("emits the result object with --json", async () => {
-		const {out} = await runWith(happy(), {json: true});
+		const { out } = await runWith(happy(), { json: true });
 		expect(JSON.parse(out.stdout)).toEqual({
 			outcome: "killed",
 			number: 4312,
@@ -186,8 +192,8 @@ describe("runKill", () => {
 	// --- the provenance guard ------------------------------------------------------------------
 
 	it("refuses a human-filed issue on 12 and writes nothing", async () => {
-		const {out, requests} = await runWith([
-			[firstCallOnly(ISSUE), issue({body: "I typed this myself."})],
+		const { out, requests } = await runWith([
+			[firstCallOnly(ISSUE), issue({ body: "I typed this myself." })],
 			...happy().slice(1),
 		]);
 		expect(out.code).toBe(HUMAN_FILED);
@@ -197,10 +203,10 @@ describe("runKill", () => {
 	});
 
 	it("refuses a body that merely QUOTES the footer — an unanchored match would close it", async () => {
-		const {out, requests} = await runWith([
+		const { out, requests } = await runWith([
 			[
 				firstCallOnly(ISSUE),
-				issue({body: 'The footer text "Filed by an agent" renders wrong on mobile.'}),
+				issue({ body: 'The footer text "Filed by an agent" renders wrong on mobile.' }),
 			],
 			...happy().slice(1),
 		]);
@@ -209,62 +215,65 @@ describe("runKill", () => {
 	});
 
 	it("refuses an empty body as human, and says the answer was defaulted", async () => {
-		const {out} = await runWith([[firstCallOnly(ISSUE), issue({body: ""})], ...happy().slice(1)]);
+		const { out } = await runWith([
+			[firstCallOnly(ISSUE), issue({ body: "" })],
+			...happy().slice(1),
+		]);
 		expect(out.code).toBe(HUMAN_FILED);
 		expect(out.stderr.join("\n")).toContain("fail-closed");
 	});
 
 	it("names the unset operator config on a 12, so the cause of the refusal is readable", async () => {
-		const {out} = await runWith([
-			[firstCallOnly(ISSUE), issue({body: "I typed this myself."})],
+		const { out } = await runWith([
+			[firstCallOnly(ISSUE), issue({ body: "I typed this myself." })],
 			...happy().slice(1),
 		]);
 		expect(out.stderr.join("\n")).toContain("FABRIKA_OPERATOR_ACCOUNTS");
 	});
 
 	it("kills a FOOTERLESS filing authored by a configured operator account (#4619)", async () => {
-		const {out, requests} = await runWith(
+		const { out, requests } = await runWith(
 			[
 				[
 					firstCallOnly(ISSUE),
-					issue({body: "no footer at all", user: {login: "operator-account"}}),
+					issue({ body: "no footer at all", user: { login: "operator-account" } }),
 				],
 				[ISSUE, killed],
 				...happy().slice(2),
 			],
-			{env: OPERATOR_ENV},
+			{ env: OPERATOR_ENV },
 		);
 		expect(out.code).toBe(0);
 		expect(requests.filter((c) => CLOSE.test(c))).toHaveLength(1);
 	});
 
 	it("still refuses a footerless filing by any OTHER author, operator set configured", async () => {
-		const {out, requests} = await runWith(
+		const { out, requests } = await runWith(
 			[
-				[firstCallOnly(ISSUE), issue({body: "no footer at all", user: {login: "cansirin"}})],
+				[firstCallOnly(ISSUE), issue({ body: "no footer at all", user: { login: "cansirin" } })],
 				...happy().slice(1),
 			],
-			{env: OPERATOR_ENV},
+			{ env: OPERATOR_ENV },
 		);
 		expect(out.code).toBe(HUMAN_FILED);
 		expect(requests.some((c) => CLOSE.test(c))).toBe(false);
 	});
 
 	it("drops the empty-body fail-closed notice when the operator author decided the answer", async () => {
-		const {out} = await runWith(
+		const { out } = await runWith(
 			[
-				[firstCallOnly(ISSUE), issue({body: "", user: {login: "operator-account"}})],
+				[firstCallOnly(ISSUE), issue({ body: "", user: { login: "operator-account" } })],
 				[ISSUE, killed],
 				...happy().slice(2),
 			],
-			{env: OPERATOR_ENV},
+			{ env: OPERATOR_ENV },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stderr.join("\n")).not.toContain("fail-closed");
 	});
 
 	it("refuses an UNREADABLE body on 11, never as a human verdict", async () => {
-		const {out, requests} = await runWith([[ISSUE, UNREADABLE]]);
+		const { out, requests } = await runWith([[ISSUE, UNREADABLE]]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("a body that was never read");
 		expect(requests.some((c) => CLOSE.test(c))).toBe(false);
@@ -273,10 +282,10 @@ describe("runKill", () => {
 	// --- the fold exception to the provenance guard -------------------------------------------
 
 	const humanFiled = (over: Record<string, unknown> = {}): HttpReply =>
-		issue({body: "I typed this myself.", ...over});
+		issue({ body: "I typed this myself.", ...over });
 
 	it("closes a HUMAN-filed issue when --duplicate-of folds it into a survivor", async () => {
-		const {out, requests} = await runWith(
+		const { out, requests } = await runWith(
 			[
 				[firstCallOnly(ISSUE), humanFiled()],
 				[ISSUE, killed],
@@ -287,7 +296,7 @@ describe("runKill", () => {
 				[APPLY_LABEL, LABELLED],
 				[CLOSE, ACCEPTED],
 			],
-			{duplicateOf: 4290},
+			{ duplicateOf: 4290 },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("killed\t4312\t4290\n");
@@ -296,7 +305,7 @@ describe("runKill", () => {
 	});
 
 	it("reports the folded issue's provenance as human — the fold does not relabel who filed it", async () => {
-		const {out} = await runWith(
+		const { out } = await runWith(
 			[
 				[firstCallOnly(ISSUE), humanFiled()],
 				[ISSUE, killed],
@@ -307,13 +316,13 @@ describe("runKill", () => {
 				[APPLY_LABEL, LABELLED],
 				[CLOSE, ACCEPTED],
 			],
-			{duplicateOf: 4290, json: true},
+			{ duplicateOf: 4290, json: true },
 		);
-		expect(JSON.parse(out.stdout)).toMatchObject({foldedInto: 4290, provenance: "human"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ foldedInto: 4290, provenance: "human" });
 	});
 
 	it("still refuses a human-filed issue with --confirm but no fold, on 12", async () => {
-		const {out, requests} = await runWith([
+		const { out, requests } = await runWith([
 			[firstCallOnly(ISSUE), humanFiled()],
 			...happy().slice(1),
 		]);
@@ -323,14 +332,14 @@ describe("runKill", () => {
 	});
 
 	it("refuses a human-filed fold that carries no --confirm on 13 — the fold does not weaken it", async () => {
-		const {out, requests} = await runWith(
+		const { out, requests } = await runWith(
 			[
 				[firstCallOnly(ISSUE), humanFiled()],
 				[ISSUE, killed],
 				[DUPLICATE, duplicate()],
 				[LABELS, labelSet],
 			],
-			{duplicateOf: 4290, confirm: false},
+			{ duplicateOf: 4290, confirm: false },
 		);
 		expect(out.code).toBe(UNCONFIRMED);
 		expect(out.stderr.at(-1)).toContain("the confirmation is the guard");
@@ -338,28 +347,28 @@ describe("runKill", () => {
 	});
 
 	it("refuses a human-filed fold into a CLOSED survivor on 7 — provenance is no way around it", async () => {
-		const {out, requests} = await runWith(
+		const { out, requests } = await runWith(
 			[
 				[firstCallOnly(ISSUE), humanFiled()],
 				[ISSUE, killed],
-				[DUPLICATE, duplicate({state: "closed"})],
+				[DUPLICATE, duplicate({ state: "closed" })],
 				[LABELS, labelSet],
 			],
-			{duplicateOf: 4290},
+			{ duplicateOf: 4290 },
 		);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(requests.some((c) => CLOSE.test(c) || FOLD_COMMENT.test(c))).toBe(false);
 	});
 
 	it("refuses a human-filed fold into an ABSENT survivor on 7", async () => {
-		const {out, requests} = await runWith(
+		const { out, requests } = await runWith(
 			[
 				[firstCallOnly(ISSUE), humanFiled()],
 				[ISSUE, killed],
 				[DUPLICATE, NOT_FOUND],
 				[LABELS, labelSet],
 			],
-			{duplicateOf: 4290},
+			{ duplicateOf: 4290 },
 		);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(requests.some((c) => CLOSE.test(c) || FOLD_COMMENT.test(c))).toBe(false);
@@ -368,16 +377,16 @@ describe("runKill", () => {
 	// --- the confirmation guard ----------------------------------------------------------------
 
 	it("refuses an agent-filed issue without --confirm on 13, and writes nothing", async () => {
-		const {out, requests} = await runWith(happy(), {confirm: false});
+		const { out, requests } = await runWith(happy(), { confirm: false });
 		expect(out.code).toBe(UNCONFIRMED);
 		expect(out.stderr.at(-1)).toContain("the confirmation is the guard");
 		expect(requests.some((c) => CLOSE.test(c))).toBe(false);
 	});
 
 	it("checks provenance BEFORE confirmation off the fold path — neither flag refuses on 12, not 13", async () => {
-		const {out} = await runWith(
-			[[firstCallOnly(ISSUE), issue({body: "hand-typed"})], ...happy().slice(1)],
-			{confirm: false},
+		const { out } = await runWith(
+			[[firstCallOnly(ISSUE), issue({ body: "hand-typed" })], ...happy().slice(1)],
+			{ confirm: false },
 		);
 		expect(out.code).toBe(HUMAN_FILED);
 	});
@@ -385,13 +394,13 @@ describe("runKill", () => {
 	// --- preconditions -------------------------------------------------------------------------
 
 	it("refuses an absent issue on 7", async () => {
-		const {out} = await runWith([[ISSUE, NOT_FOUND]]);
+		const { out } = await runWith([[ISSUE, NOT_FOUND]]);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-1)).toBe("triage kill: issue #4312 not found in o/r.");
 	});
 
 	it("refuses when closed-by-triage is absent from the repo — the kill would be unauditable", async () => {
-		const {out, requests} = await runWith([
+		const { out, requests } = await runWith([
 			[firstCallOnly(ISSUE), issue()],
 			[ISSUE, killed],
 			[LABELS, labels("p1", "status:needs-triage")],
@@ -404,7 +413,7 @@ describe("runKill", () => {
 	});
 
 	it("refuses an unreadable label set on 11, not on 7", async () => {
-		const {out} = await runWith([
+		const { out } = await runWith([
 			[firstCallOnly(ISSUE), issue()],
 			[ISSUE, killed],
 			[LABELS, UNREADABLE],
@@ -414,41 +423,41 @@ describe("runKill", () => {
 	});
 
 	it("refuses a closed --duplicate-of on 7 — nobody would read the fold", async () => {
-		const {out, requests} = await runWith(
+		const { out, requests } = await runWith(
 			[
 				[firstCallOnly(ISSUE), issue()],
 				[ISSUE, killed],
-				[DUPLICATE, duplicate({state: "closed"})],
+				[DUPLICATE, duplicate({ state: "closed" })],
 				...happy().slice(2),
 			],
-			{duplicateOf: 4290},
+			{ duplicateOf: 4290 },
 		);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(requests.some((c) => FOLD_COMMENT.test(c))).toBe(false);
 	});
 
 	it("refuses an absent --duplicate-of on 7", async () => {
-		const {out} = await runWith(
+		const { out } = await runWith(
 			[
 				[firstCallOnly(ISSUE), issue()],
 				[ISSUE, killed],
 				[DUPLICATE, NOT_FOUND],
 				...happy().slice(2),
 			],
-			{duplicateOf: 4290},
+			{ duplicateOf: 4290 },
 		);
 		expect(out.code).toBe(ZERO_SCOPE);
 	});
 
 	it("refuses an unreadable --duplicate-of on 11", async () => {
-		const {out} = await runWith(
+		const { out } = await runWith(
 			[
 				[firstCallOnly(ISSUE), issue()],
 				[ISSUE, killed],
 				[DUPLICATE, UNREADABLE],
 				...happy().slice(2),
 			],
-			{duplicateOf: 4290},
+			{ duplicateOf: 4290 },
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 	});
@@ -456,8 +465,8 @@ describe("runKill", () => {
 	// --- the authored reason -------------------------------------------------------------------
 
 	it("refuses an empty-but-read stdin on 3, and says how many bytes it read", async () => {
-		const {out} = await runWith(happy(), {
-			stdin: Effect.succeed({_tag: "Text", text: "   "} satisfies StdinRead),
+		const { out } = await runWith(happy(), {
+			stdin: Effect.succeed({ _tag: "Text", text: "   " } satisfies StdinRead),
 		});
 		expect(out.code).toBe(EMPTY_STDIN);
 		expect(out.stderr.at(-1)).toBe(
@@ -468,7 +477,7 @@ describe("runKill", () => {
 	});
 
 	it("seats a reason that is BOTH a bare @ and a leak on 6 — the bare @ is tested first", async () => {
-		const {out} = await runWith(happy(), {
+		const { out } = await runWith(happy(), {
 			stdin: Effect.succeed({
 				_tag: "Text",
 				text: "@/Users/someone/notes/why.md",
@@ -479,7 +488,7 @@ describe("runKill", () => {
 	});
 
 	it("refuses a machine-local path in the authored reason on 5, listing every hit", async () => {
-		const {out, requests} = await runWith(happy(), {
+		const { out, requests } = await runWith(happy(), {
 			stdin: Effect.succeed({
 				_tag: "Text",
 				text: "see /Users/someone/notes/why.md\nand /Users/someone/notes/how.md",
@@ -499,9 +508,9 @@ describe("runKill", () => {
 	// --- the duplicate fold --------------------------------------------------------------------
 
 	it("folds the redacted body into the survivor and names it on stdout", async () => {
-		const {out, requests, bodies} = await runWith(
+		const { out, requests, bodies } = await runWith(
 			[
-				[firstCallOnly(ISSUE), issue({body: `repro at /Users/someone/x.md\n\n${FOOTER}`})],
+				[firstCallOnly(ISSUE), issue({ body: `repro at /Users/someone/x.md\n\n${FOOTER}` })],
 				[ISSUE, killed],
 				[DUPLICATE, duplicate()],
 				[LABELS, labelSet],
@@ -510,7 +519,7 @@ describe("runKill", () => {
 				[APPLY_LABEL, LABELLED],
 				[CLOSE, ACCEPTED],
 			],
-			{duplicateOf: 4290},
+			{ duplicateOf: 4290 },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("killed\t4312\t4290\n");
@@ -521,7 +530,7 @@ describe("runKill", () => {
 	});
 
 	it("folds before it comments, and comments before it closes", async () => {
-		const {requests} = await runWith(
+		const { requests } = await runWith(
 			[
 				[firstCallOnly(ISSUE), issue()],
 				[ISSUE, killed],
@@ -532,7 +541,7 @@ describe("runKill", () => {
 				[APPLY_LABEL, LABELLED],
 				[CLOSE, ACCEPTED],
 			],
-			{duplicateOf: 4290},
+			{ duplicateOf: 4290 },
 		);
 		const at = (re: RegExp) => requests.findIndex((c) => re.test(c));
 		expect(at(FOLD_COMMENT)).toBeLessThan(at(REASON_COMMENT));
@@ -542,7 +551,7 @@ describe("runKill", () => {
 	// --- the four gated writes -----------------------------------------------------------------
 
 	it("stops at a failed fold: nothing else is attempted and nothing was lost", async () => {
-		const {out, requests} = await runWith(
+		const { out, requests } = await runWith(
 			[
 				[firstCallOnly(ISSUE), issue()],
 				[ISSUE, killed],
@@ -551,7 +560,7 @@ describe("runKill", () => {
 				[FOLD_COMMENT, WRITE_FAILED],
 				...happy().slice(3),
 			],
-			{duplicateOf: 4290},
+			{ duplicateOf: 4290 },
 		);
 		expect(out.code).toBe(WRITE_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("nothing was lost. Re-run.");
@@ -559,7 +568,7 @@ describe("runKill", () => {
 	});
 
 	it("names the landed fold when the reason comment fails — a blind re-run would double-post", async () => {
-		const {out} = await runWith(
+		const { out } = await runWith(
 			[
 				[firstCallOnly(ISSUE), issue()],
 				[ISSUE, killed],
@@ -570,14 +579,14 @@ describe("runKill", () => {
 				[APPLY_LABEL, LABELLED],
 				[CLOSE, ACCEPTED],
 			],
-			{duplicateOf: 4290},
+			{ duplicateOf: 4290 },
 		);
 		expect(out.code).toBe(WRITE_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("the fold on #4290 DID land");
 	});
 
 	it("stops at a failed reason comment: the issue stays open and unlabelled", async () => {
-		const {out, requests} = await runWith([
+		const { out, requests } = await runWith([
 			[firstCallOnly(ISSUE), issue()],
 			[ISSUE, killed],
 			[LABELS, labelSet],
@@ -591,7 +600,7 @@ describe("runKill", () => {
 	});
 
 	it("stops at a failed label: the issue stays OPEN rather than closed and unauditable", async () => {
-		const {out, requests} = await runWith([
+		const { out, requests } = await runWith([
 			[firstCallOnly(ISSUE), issue()],
 			[ISSUE, killed],
 			[LABELS, labelSet],
@@ -605,7 +614,7 @@ describe("runKill", () => {
 	});
 
 	it("reports a failed close as UNKNOWN with the by-hand recovery", async () => {
-		const {out} = await runWith([
+		const { out } = await runWith([
 			[firstCallOnly(ISSUE), issue()],
 			[ISSUE, killed],
 			[LABELS, labelSet],
@@ -620,7 +629,7 @@ describe("runKill", () => {
 	// --- the read-back -------------------------------------------------------------------------
 
 	it("refuses a close that reads back as completed — done is not killed", async () => {
-		const {out} = await runWith([
+		const { out } = await runWith([
 			[firstCallOnly(ISSUE), issue()],
 			[
 				ISSUE,
@@ -643,7 +652,7 @@ describe("runKill", () => {
 	});
 
 	it("refuses when the read-back itself fails — the writes landed but the close is unproven", async () => {
-		const {out} = await runWith([
+		const { out } = await runWith([
 			[firstCallOnly(ISSUE), issue()],
 			// the guard's reconciled comment read takes its denominator off a second issue read
 			[firstCallOnly(ISSUE), declaring()],
@@ -666,12 +675,12 @@ describe("runKill", () => {
 		new RegExp(`DELETE .*/repos/o/r/issues/4312/labels/${encodeURIComponent(label)}$`);
 
 	const carrying = (...names: ReadonlyArray<string>): HttpReply =>
-		issue({labels: names.map((name) => ({name}))});
+		issue({ labels: names.map((name) => ({ name })) });
 
 	/** The read-back, with whatever labels the kill is being scripted to have left behind. */
 	const killedWith = (...names: ReadonlyArray<string>): HttpReply => ({
 		status: 200,
-		body: JSON.stringify({...JSON.parse(killed.body), labels: names.map((name) => ({name}))}),
+		body: JSON.stringify({ ...JSON.parse(killed.body), labels: names.map((name) => ({ name })) }),
 	});
 
 	const stripping = (
@@ -688,7 +697,7 @@ describe("runKill", () => {
 	];
 
 	it("strips status:needs-triage in the label step, before the close", async () => {
-		const {out, requests} = await runWith(stripping(["status:needs-triage"], [KILL_LABEL]));
+		const { out, requests } = await runWith(stripping(["status:needs-triage"], [KILL_LABEL]));
 		expect(out.code).toBe(0);
 		const at = (re: RegExp) => requests.findIndex((c) => re.test(c));
 		expect(at(removalOf("status:needs-triage"))).toBeGreaterThan(-1);
@@ -697,14 +706,14 @@ describe("runKill", () => {
 	});
 
 	it("strips status:triaged too — a kill after an earlier apply leaves no triage status", async () => {
-		const {out, requests} = await runWith(stripping(["status:triaged"], [KILL_LABEL]));
+		const { out, requests } = await runWith(stripping(["status:triaged"], [KILL_LABEL]));
 		expect(out.code).toBe(0);
 		expect(requests.some((c) => removalOf("status:triaged").test(c))).toBe(true);
 	});
 
 	it("preserves every label no facet owns — the strip is the status, not the classification", async () => {
 		const kept = ["type:bug", "p1", "ready-for:agent", "axis:pipeline-hardening"];
-		const {out, requests} = await runWith(
+		const { out, requests } = await runWith(
 			stripping(["status:triaged", ...kept], [KILL_LABEL, ...kept]),
 		);
 		expect(out.code).toBe(0);
@@ -714,13 +723,13 @@ describe("runKill", () => {
 	});
 
 	it("issues no removal at all when the issue carries no triage status", async () => {
-		const {out, requests} = await runWith(happy());
+		const { out, requests } = await runWith(happy());
 		expect(out.code).toBe(0);
 		expect(requests.some((c) => REMOVE_ANY.test(c))).toBe(false);
 	});
 
 	it("refuses on 9 when the read-back still shows a triage status — the strip is proven, not assumed", async () => {
-		const {out} = await runWith(
+		const { out } = await runWith(
 			stripping(["status:needs-triage"], [KILL_LABEL, "status:needs-triage"]),
 		);
 		expect(out.code).toBe(READBACK_MISMATCH);
@@ -729,7 +738,7 @@ describe("runKill", () => {
 	});
 
 	it("stops at a failed removal: the issue stays OPEN and the message counts what landed", async () => {
-		const {out, requests} = await runWith([
+		const { out, requests } = await runWith([
 			[firstCallOnly(ISSUE), carrying("status:needs-triage")],
 			[ISSUE, killed],
 			[LABELS, labelSet],
@@ -747,7 +756,7 @@ describe("runKill", () => {
 	// --- usage ---------------------------------------------------------------------------------
 
 	it("refuses folding an issue into itself", async () => {
-		const {out} = await runWith(happy(), {duplicateOf: 4312});
+		const { out } = await runWith(happy(), { duplicateOf: 4312 });
 		expect(out.code).toBe(1);
 		expect(out.stderr.at(-1)).toContain("into itself");
 	});
@@ -763,23 +772,23 @@ describe("runKill — the target guard", () => {
 	} as Record<string, string | undefined>;
 
 	const guard = async (script: ReadonlyArray<Scripted>) => {
-		const {out, requests} = await runWith(script, {env: mine});
-		return {out, wrote: requests.some((line) => CLOSE.test(line) || REASON_COMMENT.test(line))};
+		const { out, requests } = await runWith(script, { env: mine });
+		return { out, wrote: requests.some((line) => CLOSE.test(line) || REASON_COMMENT.test(line)) };
 	};
 
 	it("refuses a live claim held by another session on 17 and writes nothing", async () => {
-		const {out, wrote} = await guard([
+		const { out, wrote } = await guard([
 			...happy(),
-			[COMMENTS, claimPage({session: THEIRS, createdAt: LIVE})],
+			[COMMENTS, claimPage({ session: THEIRS, createdAt: LIVE })],
 		]);
 		expect(out.code).toBe(CLAIMED_ELSEWHERE);
 		expect(wrote).toBe(false);
 	});
 
 	it("kills when the live claim is this session's own", async () => {
-		const {out} = await guard([
+		const { out } = await guard([
 			...happy(),
-			[COMMENTS, claimPage({session: MINE, createdAt: LIVE})],
+			[COMMENTS, claimPage({ session: MINE, createdAt: LIVE })],
 		]);
 		expect(out.code).toBe(0);
 	});

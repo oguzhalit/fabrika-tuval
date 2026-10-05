@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeSeams, type HttpReply, okOut, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeSeams, type HttpReply, okOut, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
 import {
 	INCOMPLETE_SCAN,
 	OFF_VOCABULARY,
@@ -9,7 +9,7 @@ import {
 	STALE_HEAD,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {runDeviations} from "./deviations-verb.ts";
+import { runDeviations } from "./deviations-verb.ts";
 import {
 	BASE,
 	binding,
@@ -26,7 +26,7 @@ const PULL = /GET .*\/repos\/o\/r\/pulls\/4321$/;
 const NOT_FOUND = '{"message":"Not Found"}';
 
 /** A canned payload as the platform serves it — the fixtures speak `ExecResult`, the seam HTTP. */
-const served = (result: ExecResult, status = 200): HttpReply => ({status, body: result.stdout});
+const served = (result: ExecResult, status = 200): HttpReply => ({ status, body: result.stdout });
 
 /**
  * How many times the run asked GitHub for `pulls/4321`.
@@ -71,14 +71,14 @@ const options = {
 	sha: null as string | null,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 };
 
 const shell = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) => {
 	const fake = fakeSeams(script);
 	return {
 		fake,
-		out: Effect.runPromise(Effect.provide(runDeviations({...options, ...overrides}), fake.layer)),
+		out: Effect.runPromise(Effect.provide(runDeviations({ ...options, ...overrides }), fake.layer)),
 	};
 };
 
@@ -136,7 +136,7 @@ describe("runDeviations", () => {
 	it("prints an entry's label and the first line of its Said", async () => {
 		const body =
 			"## Deviations\n\n- **Pre-existing test or fixture changed** — **Said:** replaced the two-decimal rendering assertion. **Did:** dropped it. **Why:** it asserted the defect. **Disposition:** stated here.";
-		const out = await run(happy({body}));
+		const out = await run(happy({ body }));
 		expect(out.stdout).toBe(
 			["deviations\tfound", "entry\t6\treplaced the two-decimal rendering assertion.", ""].join(
 				"\n",
@@ -145,7 +145,7 @@ describe("runDeviations", () => {
 	});
 
 	it("keeps absent distinct from none-declared — the skill's verdict depends on it", async () => {
-		const out = await run(happy({body: "Fixes #4287\n"}));
+		const out = await run(happy({ body: "Fixes #4287\n" }));
 		expect(out.stdout).toBe("deviations\tabsent\n");
 	});
 
@@ -172,14 +172,14 @@ describe("runDeviations", () => {
 	});
 
 	it("refuses a PR proven absent on 7", async () => {
-		const out = await run([[PULL, {status: 404, body: NOT_FOUND}]]);
+		const out = await run([[PULL, { status: 404, body: NOT_FOUND }]]);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-1)).toBe("review deviations: PR #4321 not found in o/r.");
 	});
 
 	it("refuses an unreadable body or diff on 11, and never answers `none`", async () => {
 		for (const script of [
-			[[PULL, {status: 502, body: "{}"}]] as const,
+			[[PULL, { status: 502, body: "{}" }]] as const,
 			[[PULL, served(pull())], ...binding(), [DIFF_AT(), errOut("fatal: bad revision")]] as const,
 		]) {
 			const out = await run(script as ReadonlyArray<Scripted>);
@@ -198,7 +198,7 @@ describe("runDeviations", () => {
  * pairs into one entry and the platform declares two.
  */
 describe("runDeviations proves its scan complete against git's own count", () => {
-	const renamed = () => scripted(RENAME_DIFF, {changedFiles: 2}, ["src/new.ts"]);
+	const renamed = () => scripted(RENAME_DIFF, { changedFiles: 2 }, ["src/new.ts"]);
 
 	it("scans a rename git paired into one entry, though GitHub declares it as two files", async () => {
 		const out = await run(renamed());
@@ -214,7 +214,7 @@ describe("runDeviations proves its scan complete against git's own count", () =>
 	});
 
 	it("takes the denominator from the same range as the diff it scans", async () => {
-		const {fake, out} = shell(happy());
+		const { fake, out } = shell(happy());
 		await out;
 		expect(fake.calls).toContain(
 			`git diff --no-ext-diff --no-color --find-renames --src-prefix=a/ --dst-prefix=b/ --name-only -z ${BASE}...${HEAD}`,
@@ -234,7 +234,7 @@ describe("runDeviations proves its scan complete against git's own count", () =>
  */
 describe("runDeviations binds its Tier-M scan to a commit", () => {
 	it("scans the bound commit's bytes, never the PR-number endpoint's", async () => {
-		const {fake, out} = shell(scripted(SUPPRESSING_DIFF));
+		const { fake, out } = shell(scripted(SUPPRESSING_DIFF));
 		const result = await out;
 		expect(result.code).toBe(0);
 		expect(result.stdout).toContain("tier-m\tsuppression\tsrc/cart.ts:11\t@ts-expect-error");
@@ -256,7 +256,7 @@ describe("runDeviations binds its Tier-M scan to a commit", () => {
 	// live head and every staleness check passes — while the PR-number endpoint still serves the
 	// intermediate head's bytes. Only reading at the commit tells the two trees apart.
 	it("scans the recorded commit after a REWIND back onto it, not what the endpoint serves", async () => {
-		const {fake, out} = shell(scripted(SUPPRESSING_DIFF), {sha: HEAD});
+		const { fake, out } = shell(scripted(SUPPRESSING_DIFF), { sha: HEAD });
 		const result = await out;
 		expect(result.code).toBe(0);
 		expect(result.stdout).toContain("tier-m\tremoved-assertion");
@@ -275,7 +275,7 @@ describe("runDeviations binds its Tier-M scan to a commit", () => {
 	});
 
 	it("refuses on 12 when --sha is not the PR's head, scanning nothing", async () => {
-		const {fake, out} = shell(happy(), {sha: OLD_HEAD});
+		const { fake, out } = shell(happy(), { sha: OLD_HEAD });
 		const result = await out;
 		expect(result.code).toBe(STALE_HEAD);
 		expect(result.stdout).toBe("");
@@ -284,7 +284,7 @@ describe("runDeviations binds its Tier-M scan to a commit", () => {
 	});
 
 	it("refuses a --sha that is not a head SHA on 10", async () => {
-		const out = await run(happy(), {sha: "origin/main"});
+		const out = await run(happy(), { sha: "origin/main" });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toContain("is not a head SHA");
 	});

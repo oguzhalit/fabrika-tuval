@@ -7,13 +7,13 @@
  * nobody can grade.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {badNumber, resolveTargetRepo} from "../build/target.ts";
-import {cycleDocOr} from "../config/paths.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { badNumber, resolveTargetRepo } from "../build/target.ts";
+import { cycleDocOr } from "../config/paths.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
 import {
 	loadLedger,
 	type PlanMessages,
@@ -22,7 +22,7 @@ import {
 	requireEpic,
 	scannedChildren,
 } from "./load.ts";
-import {renderTopology} from "./model.ts";
+import { renderTopology } from "./model.ts";
 
 const VERB = "plan read";
 

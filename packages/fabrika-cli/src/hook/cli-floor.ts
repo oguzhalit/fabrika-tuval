@@ -64,33 +64,33 @@ export const compareVersions = (a: Version, b: Version): number => {
 
 /** The floor file's bytes, or why they could not be had. */
 export type FloorSource =
-	| {readonly _tag: "Text"; readonly text: string}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Text"; readonly text: string }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 export type FloorVerdict =
-	| {readonly _tag: "Met"; readonly installed: string; readonly minimum: string}
-	| {readonly _tag: "Below"; readonly installed: string; readonly minimum: string}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Met"; readonly installed: string; readonly minimum: string }
+	| { readonly _tag: "Below"; readonly installed: string; readonly minimum: string }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 const minimumOf = (
 	source: FloorSource,
 ):
-	| {readonly _tag: "Read"; readonly minimum: string}
-	| {readonly _tag: "Unknown"; readonly reason: string} => {
-	if (source._tag === "Unreadable") return {_tag: "Unknown", reason: source.reason};
+	| { readonly _tag: "Read"; readonly minimum: string }
+	| { readonly _tag: "Unknown"; readonly reason: string } => {
+	if (source._tag === "Unreadable") return { _tag: "Unknown", reason: source.reason };
 	let parsed: unknown;
 	try {
 		parsed = JSON.parse(source.text);
 	} catch (error) {
-		return {_tag: "Unknown", reason: `${CLI_FLOOR_FILE} is not JSON (${String(error)})`};
+		return { _tag: "Unknown", reason: `${CLI_FLOOR_FILE} is not JSON (${String(error)})` };
 	}
 	const minimum =
 		typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
 			? (parsed as Record<string, unknown>).minimum
 			: undefined;
 	return typeof minimum === "string"
-		? {_tag: "Read", minimum}
-		: {_tag: "Unknown", reason: `${CLI_FLOOR_FILE} carries no string \`minimum\``};
+		? { _tag: "Read", minimum }
+		: { _tag: "Unknown", reason: `${CLI_FLOOR_FILE} carries no string \`minimum\`` };
 };
 
 /**
@@ -106,15 +106,18 @@ export const judgeCliFloor = ({
 }): FloorVerdict => {
 	const running = parseVersion(installed);
 	if (running === undefined)
-		return {_tag: "Unknown", reason: `the running CLI's version "${installed}" is not semver`};
+		return { _tag: "Unknown", reason: `the running CLI's version "${installed}" is not semver` };
 	const read = minimumOf(floor);
 	if (read._tag === "Unknown") return read;
 	const minimum = parseVersion(read.minimum);
 	if (minimum === undefined)
-		return {_tag: "Unknown", reason: `${CLI_FLOOR_FILE}'s minimum "${read.minimum}" is not semver`};
+		return {
+			_tag: "Unknown",
+			reason: `${CLI_FLOOR_FILE}'s minimum "${read.minimum}" is not semver`,
+		};
 	return compareVersions(running, minimum) < 0
-		? {_tag: "Below", installed, minimum: read.minimum}
-		: {_tag: "Met", installed, minimum: read.minimum};
+		? { _tag: "Below", installed, minimum: read.minimum }
+		: { _tag: "Met", installed, minimum: read.minimum };
 };
 
 /** The warning an adopter sees: both versions, what goes wrong, and the upgrade command. */

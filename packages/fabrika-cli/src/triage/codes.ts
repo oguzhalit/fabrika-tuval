@@ -17,7 +17,7 @@ import {
 	READBACK_MISMATCH as SHARED_READBACK_MISMATCH,
 	WRITE_UNKNOWN as SHARED_WRITE_UNKNOWN,
 } from "../exit-codes.ts";
-import {NO_IMPLEMENTATION} from "../verb.ts";
+import { NO_IMPLEMENTATION } from "../verb.ts";
 
 const ANSWER = 0;
 const FAILED = 1;
@@ -261,18 +261,18 @@ export interface ExitCodeRow {
  * for it would be a meaning.
  */
 export const TRIAGE_EXIT_TABLE: ReadonlyArray<ExitCodeRow> = [
-	{code: ANSWER, meaning: "the answer is on stdout"},
-	{code: FAILED, meaning: "usage error, unresolvable repo, or the verb failed to run"},
-	{code: EMPTY_STDIN, meaning: "stdin was read and held nothing"},
-	{code: LEAKED_PATH, meaning: "the authored text carries a machine-local path"},
-	{code: BARE_AT_PATH, meaning: "the authored text is a bare @ path reference — not redactable"},
+	{ code: ANSWER, meaning: "the answer is on stdout" },
+	{ code: FAILED, meaning: "usage error, unresolvable repo, or the verb failed to run" },
+	{ code: EMPTY_STDIN, meaning: "stdin was read and held nothing" },
+	{ code: LEAKED_PATH, meaning: "the authored text carries a machine-local path" },
+	{ code: BARE_AT_PATH, meaning: "the authored text is a bare @ path reference — not redactable" },
 	{
 		code: ZERO_SCOPE,
 		meaning:
 			"zero scope: a read that succeeded over nothing, an absent label vocabulary, or a target issue proven absent (404) or closed",
 	},
-	{code: WRITE_UNKNOWN, meaning: "the write itself failed — the outcome is UNKNOWN"},
-	{code: READBACK_MISMATCH, meaning: "the write landed but the read-back does not match"},
+	{ code: WRITE_UNKNOWN, meaning: "the write itself failed — the outcome is UNKNOWN" },
+	{ code: READBACK_MISMATCH, meaning: "the write landed but the read-back does not match" },
 	{
 		code: OFF_VOCABULARY,
 		meaning:
@@ -357,8 +357,8 @@ export const TRIAGE_EXIT_TABLE: ReadonlyArray<ExitCodeRow> = [
 		meaning:
 			"refused: sweep-homes left un-homed triaged issues untouched — each needs triage's home, lane or kill",
 	},
-	{code: NO_IMPLEMENTATION, meaning: "no implementation could be resolved"},
-	{code: NEVER_RAN, meaning: "the verb never ran (unresolved binary)"},
+	{ code: NO_IMPLEMENTATION, meaning: "no implementation could be resolved" },
+	{ code: NEVER_RAN, meaning: "the verb never ran (unresolved binary)" },
 ];
 
 /** The unallocated code — see the gap note at the top of this file. */

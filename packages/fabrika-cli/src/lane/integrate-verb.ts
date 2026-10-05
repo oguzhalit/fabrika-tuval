@@ -26,10 +26,10 @@
  * Publishing the merged head is `lane push`'s job; the driver records `DONE`. This verb neither
  * pushes nor writes the lane log. See ./command.ts help for its report format.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {CONFIG_PATH} from "../config/document.ts";
-import {ASSEMBLY_REPLAY, assemblyReplayKey} from "../config/keys/assembly-replay.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { CONFIG_PATH } from "../config/document.ts";
+import { ASSEMBLY_REPLAY, assemblyReplayKey } from "../config/keys/assembly-replay.ts";
 import {
 	CODE_VALIDATORS,
 	type CodeValidator,
@@ -40,13 +40,13 @@ import {
 	type DependencyReconciler,
 	dependencyReconcilerKey,
 } from "../config/keys/dependency-reconciler.ts";
-import {loadConfig, resolve} from "../config/load.ts";
-import {readConfigSource} from "../config/source.ts";
-import {execCapture, execStatus} from "../io/exec.ts";
-import {localBranches} from "../io/git.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {epicBranch} from "../wire/lane-brief.ts";
-import {assemblySeat, worktrees} from "./assembly.ts";
+import { loadConfig, resolve } from "../config/load.ts";
+import { readConfigSource } from "../config/source.ts";
+import { execCapture, execStatus } from "../io/exec.ts";
+import { localBranches } from "../io/git.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { epicBranch } from "../wire/lane-brief.ts";
+import { assemblySeat, worktrees } from "./assembly.ts";
 import {
 	APPEND_UNKNOWN,
 	ASSEMBLY_DIRTY,
@@ -59,9 +59,9 @@ import {
 	PROOF_ABSENT,
 	RECONCILE_REFUSED,
 } from "./codes.ts";
-import {loadRefusal} from "./refusals.ts";
-import {type MovedRange, REPLAY_PARK_CAUSE, replayChild} from "./replay.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { loadRefusal } from "./refusals.ts";
+import { type MovedRange, REPLAY_PARK_CAUSE, replayChild } from "./replay.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane integrate";
 
@@ -87,21 +87,21 @@ const diagnostics = (output: string): ReadonlyArray<string> => {
 const headOf = (path: string) =>
 	Effect.map(execCapture("git", ["-C", path, "rev-parse", "HEAD"]), (read) =>
 		read.ok
-			? ({_tag: "Read", sha: read.stdout.trim()} as const)
-			: ({_tag: "Unreadable", reason: read.reason} as const),
+			? ({ _tag: "Read", sha: read.stdout.trim() } as const)
+			: ({ _tag: "Unreadable", reason: read.reason } as const),
 	);
 
 /** Where one branch points, read the same way and answered in the same three shapes as {@link headOf}. */
 const revisionOf = (path: string, branch: string) =>
 	Effect.map(execCapture("git", ["-C", path, "rev-parse", branch]), (read) =>
 		read.ok
-			? ({_tag: "Read", sha: read.stdout.trim()} as const)
-			: ({_tag: "Unreadable", reason: read.reason} as const),
+			? ({ _tag: "Read", sha: read.stdout.trim() } as const)
+			: ({ _tag: "Unreadable", reason: read.reason } as const),
 	);
 
 type TrackedChanges =
-	| {readonly _tag: "Read"; readonly paths: ReadonlyArray<string>}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Read"; readonly paths: ReadonlyArray<string> }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /**
  * The tracked paths git reports as changed in `path`.
@@ -122,7 +122,7 @@ const trackedChanges = (
 						_tag: "Read",
 						paths: read.stdout.split("\n").filter((line) => line.trim() !== ""),
 					} as const)
-				: ({_tag: "Unreadable", reason: read.reason} as const),
+				: ({ _tag: "Unreadable", reason: read.reason } as const),
 	);
 
 /**
@@ -170,7 +170,7 @@ const restore = (
 			);
 		}
 		const back = [...outcome.stderr, `${VERB}: reset ${path} back to ${head}; nothing was pushed.`];
-		if (reseat === null) return {...outcome, stderr: back};
+		if (reseat === null) return { ...outcome, stderr: back };
 
 		const moved = yield* execCapture("git", [
 			"-C",
@@ -198,7 +198,7 @@ const restore = (
 	});
 
 /** A child branch to put back where the replay found it, or `null` on a path that replayed nothing. */
-type Reseat = {readonly child: string; readonly to: string} | null;
+type Reseat = { readonly child: string; readonly to: string } | null;
 
 /** What the merge itself wrote, and what the merge and validator paths reset back through. */
 const ORIG_HEAD = "ORIG_HEAD";
@@ -234,7 +234,7 @@ type Landing =
 			readonly resetRef: string;
 			readonly replay: ReplayEvent | null;
 	  }
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 interface LandOptions {
 	readonly path: string;
@@ -258,7 +258,7 @@ const land = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
-		const {path, branch, child, head} = options;
+		const { path, branch, child, head } = options;
 
 		// `--no-ff` so each landing is one commit a reader can name: a fast-forward would leave two
 		// children's ranges indistinguishable in the history the epic reviewer reads.
@@ -391,8 +391,8 @@ const land = (
 	});
 
 type ReconcileOutcome =
-	| {readonly _tag: "Reconciled"; readonly note: string}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Reconciled"; readonly note: string }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * Install what the merged lockfile pins, then prove the install changed no tracked file.
@@ -468,7 +468,7 @@ const validate = (
 	validators: ReadonlyArray<CodeValidator>,
 ): Effect.Effect<VerbOutcome | null, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		for (const {argv} of validators) {
+		for (const { argv } of validators) {
 			const label = argv.join(" ");
 			const [binary, ...args] = argv;
 			const ran = yield* execStatus(binary, args, path);
@@ -571,11 +571,11 @@ export const runIntegrate = (
 			);
 		}
 
-		const landing = yield* land({path, branch, child: options.child, head});
+		const landing = yield* land({ path, branch, child: options.child, head });
 		if (landing._tag === "Refused") return landing.outcome;
-		const {resetRef, replay} = landing;
+		const { resetRef, replay } = landing;
 		const notes = [...landing.notes];
-		const reseat: Reseat = replay === null ? null : {child: options.child, to: graded.sha};
+		const reseat: Reseat = replay === null ? null : { child: options.child, to: graded.sha };
 
 		const source = loadConfig(yield* readConfigSource(path));
 		const reconciler = resolve(source, dependencyReconcilerKey);
@@ -598,7 +598,7 @@ export const runIntegrate = (
 				path,
 				resetRef,
 				head,
-				{...reconciled.outcome, stderr: [...notes, ...reconciled.outcome.stderr]},
+				{ ...reconciled.outcome, stderr: [...notes, ...reconciled.outcome.stderr] },
 				reseat,
 			);
 		}
@@ -637,7 +637,7 @@ export const runIntegrate = (
 				path,
 				resetRef,
 				head,
-				{...red, stderr: [...notes, ...red.stderr]},
+				{ ...red, stderr: [...notes, ...red.stderr] },
 				reseat,
 			);
 		}

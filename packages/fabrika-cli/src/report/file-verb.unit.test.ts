@@ -1,9 +1,9 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type LeakNames, NO_LEAK_NAMES} from "../config/keys/leak-names.ts";
-import type {Read} from "../config/read-key.ts";
-import {errOut, fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type LeakNames, NO_LEAK_NAMES } from "../config/keys/leak-names.ts";
+import type { Read } from "../config/read-key.ts";
+import { errOut, fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
 import {
 	BAD_SECTIONS,
 	BARE_AT_PATH,
@@ -15,10 +15,10 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {composeBody, REQUIRED_SECTIONS, renderFooter} from "./compose.ts";
-import {runFile} from "./file-verb.ts";
+import { composeBody, REQUIRED_SECTIONS, renderFooter } from "./compose.ts";
+import { runFile } from "./file-verb.ts";
 
-const noNames: Read<LeakNames> = {_tag: "Value", value: NO_LEAK_NAMES, note: "test"};
+const noNames: Read<LeakNames> = { _tag: "Value", value: NO_LEAK_NAMES, note: "test" };
 
 const READBACK = /^GET .*\/repos\/o\/r\/issues\/\d+$/;
 const CREATE = /^POST .*\/repos\/o\/r\/issues$/;
@@ -34,12 +34,12 @@ const sections = REQUIRED_SECTIONS.map((h) =>
 /** What the verb composes for these inputs: no session, no model, detached branch, fixed clock. */
 const composed = composeBody(
 	sections,
-	renderFooter({session: null, model: null, branch: null, timestamp: "2026-08-01T14:22:07Z"}),
+	renderFooter({ session: null, model: null, branch: null, timestamp: "2026-08-01T14:22:07Z" }),
 );
 
 const created: HttpReply = {
 	status: 201,
-	body: JSON.stringify({number: 4732, html_url: "https://example.test/issues/4732"}),
+	body: JSON.stringify({ number: 4732, html_url: "https://example.test/issues/4732" }),
 };
 
 const landed = (
@@ -52,7 +52,7 @@ const landed = (
 		title: "t",
 		body,
 		state: "open",
-		labels: labels.map((name) => ({name})),
+		labels: labels.map((name) => ({ name })),
 		html_url: "https://example.test/issues/4732",
 	}),
 });
@@ -64,14 +64,14 @@ const options = {
 	leakNames: noNames as Read<LeakNames>,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
-	stdin: Effect.succeed<StdinRead>({_tag: "Text", text: sections}),
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
+	stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: sections }),
 	now: () => NOW,
 };
 
 const labelSet = (...names: ReadonlyArray<string>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(names.map((name) => ({name}))),
+	body: JSON.stringify(names.map((name) => ({ name }))),
 });
 
 const labelsOk = [LABELS, labelSet("status:needs-triage", "type:bug", "p0")] as const;
@@ -85,7 +85,7 @@ const happy: ReadonlyArray<Scripted> = [
 ];
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runFile({...options, ...overrides}), fakeSeams(script).layer));
+	Effect.runPromise(Effect.provide(runFile({ ...options, ...overrides }), fakeSeams(script).layer));
 
 describe("runFile", () => {
 	it("files, reads back, and prints a bare tab-separated number and url", async () => {
@@ -95,7 +95,7 @@ describe("runFile", () => {
 	});
 
 	it("emits the full filing record on STDOUT with --json", async () => {
-		const out = await run(happy, {json: true});
+		const out = await run(happy, { json: true });
 		const payload = JSON.parse(out.stdout);
 		expect(payload).toMatchObject({
 			number: 4732,
@@ -118,7 +118,7 @@ describe("runFile", () => {
 
 	it("refuses a FAILED stdin read as UNKNOWN, never as an empty body (#3924)", async () => {
 		const out = await run(happy, {
-			stdin: Effect.succeed({_tag: "Failed", reason: "EAGAIN"} satisfies StdinRead),
+			stdin: Effect.succeed({ _tag: "Failed", reason: "EAGAIN" } satisfies StdinRead),
 		});
 		expect(out.code).toBe(1);
 		expect(out.stdout).toBe("");
@@ -127,7 +127,7 @@ describe("runFile", () => {
 
 	it("refuses an empty-but-READ stdin on its own, different code", async () => {
 		const out = await run(happy, {
-			stdin: Effect.succeed({_tag: "Text", text: ""} satisfies StdinRead),
+			stdin: Effect.succeed({ _tag: "Text", text: "" } satisfies StdinRead),
 		});
 		expect(out.code).toBe(EMPTY_STDIN);
 		expect(out.stderr.at(-1)).toContain("0 bytes");
@@ -135,14 +135,14 @@ describe("runFile", () => {
 
 	it("treats a TTY with nothing piped in as a bodyless filing, not a broken verb", async () => {
 		const out = await run(happy, {
-			stdin: Effect.succeed({_tag: "NoStdin", reason: "fd 0 is a TTY"} satisfies StdinRead),
+			stdin: Effect.succeed({ _tag: "NoStdin", reason: "fd 0 is a TTY" } satisfies StdinRead),
 		});
 		expect(out.code).toBe(EMPTY_STDIN);
 	});
 
 	it("refuses a bare @ path body on its own code — --redact must not apply", async () => {
 		const out = await run(happy, {
-			stdin: Effect.succeed({_tag: "Text", text: "@/tmp/body.md\n"} satisfies StdinRead),
+			stdin: Effect.succeed({ _tag: "Text", text: "@/tmp/body.md\n" } satisfies StdinRead),
 			redact: true,
 		});
 		expect(out.code).toBe(BARE_AT_PATH);
@@ -185,7 +185,7 @@ describe("runFile", () => {
 	describe("with leakNames declared", () => {
 		const declared: Read<LeakNames> = {
 			_tag: "Value",
-			value: {privateRepos: ["acme/secret"], identifiers: ["Jane Roe"]},
+			value: { privateRepos: ["acme/secret"], identifiers: ["Jane Roe"] },
 			note: "test",
 		};
 		const withPointer = (pointer: string) =>
@@ -198,11 +198,16 @@ describe("runFile", () => {
 			const text = sections.replace("content for ## Pointers", "the acme/secret repo does it too");
 			const body = composeBody(
 				text,
-				renderFooter({session: null, model: null, branch: null, timestamp: "2026-08-01T14:22:07Z"}),
+				renderFooter({
+					session: null,
+					model: null,
+					branch: null,
+					timestamp: "2026-08-01T14:22:07Z",
+				}),
 			);
 			const out = await run(
 				[[READBACK, landed(body)], [CREATE, created], labelsOk, branchDetached],
-				{stdin: Effect.succeed({_tag: "Text", text} satisfies StdinRead), leakNames: declared},
+				{ stdin: Effect.succeed({ _tag: "Text", text } satisfies StdinRead), leakNames: declared },
 			);
 			expect(out.code).toBe(0);
 		});
@@ -218,7 +223,7 @@ describe("runFile", () => {
 
 		it("refuses on 11 and files nothing when the key could not be read", async () => {
 			const out = await run([branchDetached], {
-				leakNames: {_tag: "Refused", reason: "`leakNames` is not an object"},
+				leakNames: { _tag: "Refused", reason: "`leakNames` is not an object" },
 			});
 			expect(out.code).toBe(PRECONDITION_UNKNOWN);
 			expect(out.stderr.at(-1)).toContain("cannot read `leakNames`");
@@ -229,11 +234,11 @@ describe("runFile", () => {
 		const text = sections.replace("content for ## Pointers", "/tmp/session/body.md");
 		const masked = composeBody(
 			text.replace("/tmp/session/body.md", "/tmp/<redacted>"),
-			renderFooter({session: null, model: null, branch: null, timestamp: "2026-08-01T14:22:07Z"}),
+			renderFooter({ session: null, model: null, branch: null, timestamp: "2026-08-01T14:22:07Z" }),
 		);
 		const out = await run(
 			[[READBACK, landed(masked)], [CREATE, created], labelsOk, branchDetached],
-			{stdin: Effect.succeed({_tag: "Text", text} satisfies StdinRead), redact: true},
+			{ stdin: Effect.succeed({ _tag: "Text", text } satisfies StdinRead), redact: true },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stderr.join("\n")).toContain("redacted a leak");
@@ -253,20 +258,24 @@ describe("runFile", () => {
 				.replace("/tmp/session/body.md", "/tmp/<redacted>")
 				.replace("/Users/someone/case.md", "/Users/<redacted>")
 				.replace("/private/var/folders/zz/log.txt", "/private/var/<redacted>"),
-			renderFooter({session: null, model: null, branch: null, timestamp: "2026-08-01T14:22:07Z"}),
+			renderFooter({ session: null, model: null, branch: null, timestamp: "2026-08-01T14:22:07Z" }),
 		);
 		const out = await run(
 			[[READBACK, landed(masked)], [CREATE, created], labelsOk, branchDetached],
-			{stdin: Effect.succeed({_tag: "Text", text} satisfies StdinRead), redact: true, json: true},
+			{
+				stdin: Effect.succeed({ _tag: "Text", text } satisfies StdinRead),
+				redact: true,
+				json: true,
+			},
 		);
 		expect(out.code).toBe(0);
 		const payload = JSON.parse(out.stdout);
-		expect(payload.redactions).toEqual({"absolute home root": 1, "temp root": 2});
+		expect(payload.redactions).toEqual({ "absolute home root": 1, "temp root": 2 });
 		expect(out.stdout).not.toContain('"line"');
 	});
 
 	it("refuses a label that does not exist in the repo", async () => {
-		const out = await run(happy, {label: "status:needs-triageee"});
+		const out = await run(happy, { label: "status:needs-triageee" });
 		expect(out.code).toBe(NO_TARGET);
 		expect(out.stderr.at(-1)).toContain("outside the intake queue");
 	});
@@ -275,7 +284,7 @@ describe("runFile", () => {
 		const seams = fakeSeams([
 			[READBACK, landed(composed)],
 			[CREATE, created],
-			[LABELS, {status: 502, body: "{}"}],
+			[LABELS, { status: 502, body: "{}" }],
 			branchDetached,
 		]);
 		const out = await Effect.runPromise(Effect.provide(runFile(options), seams.layer));
@@ -285,13 +294,13 @@ describe("runFile", () => {
 	});
 
 	it("refuses a --label that classifies", async () => {
-		const out = await run(happy, {label: "type:bug"});
+		const out = await run(happy, { label: "type:bug" });
 		expect(out.code).toBe(CLASSIFIED);
 		expect(out.stderr.at(-1)).toContain("Triage classifies; this verb files.");
 	});
 
 	it("refuses a title that leads with a classification prefix", async () => {
-		const out = await run(happy, {title: "BUG: retry helper swallows the abort reason"});
+		const out = await run(happy, { title: "BUG: retry helper swallows the abort reason" });
 		expect(out.code).toBe(CLASSIFIED);
 		expect(out.stderr.at(-1)).toContain('"BUG:"');
 	});
@@ -299,7 +308,7 @@ describe("runFile", () => {
 	it("reports a failed create as UNKNOWN, with the re-run-dedup recovery", async () => {
 		const out = await run([
 			[READBACK, landed(composed)],
-			[CREATE, {status: 503, body: "{}"}],
+			[CREATE, { status: 503, body: "{}" }],
 			labelsOk,
 			branchDetached,
 		]);
@@ -340,7 +349,7 @@ describe("runFile", () => {
 	});
 
 	it("refuses an empty --title", async () => {
-		const out = await run(happy, {title: "  "});
+		const out = await run(happy, { title: "  " });
 		expect(out.code).toBe(1);
 		expect(out.stderr.at(-1)).toContain("untitled");
 	});

@@ -1,17 +1,17 @@
-import {readFileSync} from "node:fs";
-import {Effect} from "effect";
-import {expect, it} from "vitest";
-import {fakeFs} from "../fakes.test-support.ts";
-import {encodeSpendRows} from "./ledger.ts";
-import {runLedgerRead} from "./read-verb.ts";
-import {runRollup} from "./rollup-verb.ts";
+import { readFileSync } from "node:fs";
+import { Effect } from "effect";
+import { expect, it } from "vitest";
+import { fakeFs } from "../fakes.test-support.ts";
+import { encodeSpendRows } from "./ledger.ts";
+import { runLedgerRead } from "./read-verb.ts";
+import { runRollup } from "./rollup-verb.ts";
 
 const path = "/usage.jsonl";
 const text = readFileSync(new URL("./fixtures/attributed/codex.json", import.meta.url), "utf8");
-const layer = fakeFs({files: {[path]: JSON.stringify(JSON.parse(text))}}).layer;
+const layer = fakeFs({ files: { [path]: JSON.stringify(JSON.parse(text)) } }).layer;
 const run = (json: boolean) =>
 	Effect.runPromise(
-		runRollup({ledger: path, since: null, until: null, issue: 42, json}).pipe(
+		runRollup({ ledger: path, since: null, until: null, issue: 42, json }).pipe(
 			Effect.provide(layer),
 		),
 	);
@@ -60,18 +60,18 @@ it("keeps legacy totals separate and distinguishes damage from future records", 
 	const mixed = [legacy.trim(), JSON.stringify(JSON.parse(text)), "interrupted", '{"v":99}'].join(
 		"\n",
 	);
-	const layer = fakeFs({files: {[path]: mixed}}).layer;
+	const layer = fakeFs({ files: { [path]: mixed } }).layer;
 	const out = await Effect.runPromise(
-		runRollup({ledger: path, since: null, until: null, json: true}).pipe(Effect.provide(layer)),
+		runRollup({ ledger: path, since: null, until: null, json: true }).pipe(Effect.provide(layer)),
 	);
 	expect(out.code).toBe(0);
 	const summary = JSON.parse(out.stdout);
 	expect(summary.totals.billed).toBe(14);
-	expect(summary.legacy).toMatchObject({attribution: "unavailable"});
+	expect(summary.legacy).toMatchObject({ attribution: "unavailable" });
 	expect(summary.usage.responses).toBe(1);
-	expect(summary.usage.diagnostics).toMatchObject({malformed: 1, newerVersion: 1});
+	expect(summary.usage.diagnostics).toMatchObject({ malformed: 1, newerVersion: 1 });
 	const bounded = await Effect.runPromise(
-		runRollup({ledger: path, since: "2026-01-01", until: null, json: true}).pipe(
+		runRollup({ ledger: path, since: "2026-01-01", until: null, json: true }).pipe(
 			Effect.provide(layer),
 		),
 	);
@@ -81,13 +81,13 @@ it("keeps legacy totals separate and distinguishes damage from future records", 
 
 it("names absent and unreadable ledger inputs separately", async () => {
 	const missing = await Effect.runPromise(
-		runLedgerRead(path).pipe(Effect.provide(fakeFs({files: {[path]: null}}).layer)),
+		runLedgerRead(path).pipe(Effect.provide(fakeFs({ files: { [path]: null } }).layer)),
 	);
 	expect(missing.code).toBe(7);
 	expect(missing.stderr.join(" ")).toContain("ledger absent;");
 	const unreadable = await Effect.runPromise(
 		runLedgerRead(path).pipe(
-			Effect.provide(fakeFs({files: {[path]: text}, unreadable: [path]}).layer),
+			Effect.provide(fakeFs({ files: { [path]: text }, unreadable: [path] }).layer),
 		),
 	);
 	expect(unreadable.code).toBe(11);

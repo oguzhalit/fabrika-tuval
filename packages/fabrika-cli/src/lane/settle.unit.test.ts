@@ -1,6 +1,6 @@
 /** What one board read entitles — the four answers, and the reads that entitle nothing. */
-import {describe, expect, it} from "vitest";
-import type {PullFact} from "./prove.ts";
+import { describe, expect, it } from "vitest";
+import type { PullFact } from "./prove.ts";
 import {
 	type AssertedPull,
 	CANCELLATION_OUTCOME_TOKENS,
@@ -46,16 +46,18 @@ describe("the settlement entitlement", () => {
 	});
 
 	it("lands over a merged `Part of` PR too — the merge is the evidence, not the keyword", () => {
-		expect(entitlement(ISSUE, "closed", "completed", [fact({linkKind: "part-of"})])).toMatchObject({
+		expect(
+			entitlement(ISSUE, "closed", "completed", [fact({ linkKind: "part-of" })]),
+		).toMatchObject({
 			_tag: "Landed",
 			landed: [6874],
 		});
 	});
 
 	it("names every merged linking PR, so an epic tail's landing is not reported as one merge", () => {
-		const read = entitlement(ISSUE, "closed", "completed", [fact(), fact({number: 6900})]);
+		const read = entitlement(ISSUE, "closed", "completed", [fact(), fact({ number: 6900 })]);
 
-		expect(read).toMatchObject({_tag: "Landed", landed: [6874, 6900]});
+		expect(read).toMatchObject({ _tag: "Landed", landed: [6874, 6900] });
 	});
 
 	it("lands an epic over its own tail, which closes the children and only names the epic", () => {
@@ -73,8 +75,8 @@ describe("the settlement entitlement", () => {
 	});
 
 	it("refuses an open issue: its closure has said nothing yet", () => {
-		expect(entitlement(ISSUE, "open", null, null)).toEqual({_tag: "Live"});
-		expect(entitlement(ISSUE, "open", "reopened", null)).toEqual({_tag: "Live"});
+		expect(entitlement(ISSUE, "open", null, null)).toEqual({ _tag: "Live" });
+		expect(entitlement(ISSUE, "open", "reopened", null)).toEqual({ _tag: "Live" });
 	});
 
 	it("reads a close carrying no reason as UNKNOWN, never as a generous not-planned", () => {
@@ -90,8 +92,10 @@ describe("the settlement entitlement", () => {
 
 	it("reads a completed close with no merged linking PR as UNKNOWN, never as a landing", () => {
 		expect(entitlement(ISSUE, "closed", "completed", [])._tag).toBe("Unknown");
-		expect(entitlement(ISSUE, "closed", "completed", [fact({merged: false})])._tag).toBe("Unknown");
-		expect(entitlement(ISSUE, "closed", "completed", [fact({linkedIssues: [42]})])._tag).toBe(
+		expect(entitlement(ISSUE, "closed", "completed", [fact({ merged: false })])._tag).toBe(
+			"Unknown",
+		);
+		expect(entitlement(ISSUE, "closed", "completed", [fact({ linkedIssues: [42] })])._tag).toBe(
 			"Unknown",
 		);
 	});
@@ -101,7 +105,11 @@ describe("the settlement entitlement", () => {
 	});
 
 	it("counts a merged linking PR and nothing else as landed evidence", () => {
-		const facts = [fact(), fact({number: 1, merged: false}), fact({number: 2, linkedIssues: [9]})];
+		const facts = [
+			fact(),
+			fact({ number: 1, merged: false }),
+			fact({ number: 2, linkedIssues: [9] }),
+		];
 
 		expect(mergedLinking(ISSUE, facts).map((one) => one.number)).toEqual([6874]);
 	});
@@ -112,7 +120,7 @@ describe("the settlement entitlement", () => {
 });
 
 describe("the link a caller asserts", () => {
-	const merged: AssertedPull = {_tag: "Merged", number: 6894, sha: "cafe"};
+	const merged: AssertedPull = { _tag: "Merged", number: 6894, sha: "cafe" };
 
 	it("lands a completed close over the merge the caller named, marked asserted", () => {
 		expect(entitlement(ISSUE, "closed", "completed", [], merged)).toEqual({
@@ -140,14 +148,16 @@ describe("the link a caller asserts", () => {
 				number: 6894,
 				state: "open",
 			}),
-		).toEqual({_tag: "AssertedUnmerged", pr: 6894, state: "open"});
+		).toEqual({ _tag: "AssertedUnmerged", pr: 6894, state: "open" });
 	});
 
 	it("refuses a named pull request the board does not hold", () => {
-		expect(entitlement(ISSUE, "closed", "completed", [], {_tag: "Absent", number: 6894})).toEqual({
-			_tag: "AssertedAbsent",
-			pr: 6894,
-		});
+		expect(entitlement(ISSUE, "closed", "completed", [], { _tag: "Absent", number: 6894 })).toEqual(
+			{
+				_tag: "AssertedAbsent",
+				pr: 6894,
+			},
+		);
 	});
 
 	it("leaves every other closure untouched: an assertion entitles no cancellation and no live lane", () => {

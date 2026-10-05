@@ -7,10 +7,10 @@
  * rubric is a review that never saw it.
  */
 
-import {SHIPPED_GOVERNED_ROOTS} from "../config/keys/governed-roots.ts";
-import {SHIPPED_DECISIONS_DIR} from "../config/keys/paths.ts";
+import { SHIPPED_GOVERNED_ROOTS } from "../config/keys/governed-roots.ts";
+import { SHIPPED_DECISIONS_DIR } from "../config/keys/paths.ts";
 
-export {SHIPPED_GOVERNED_ROOTS};
+export { SHIPPED_GOVERNED_ROOTS };
 
 /** The three artifact classes, in the fixed order the line grammar prints them. */
 export const CLASS_NAMES = ["code", "doc", "skill"] as const;
@@ -149,7 +149,7 @@ export const touchesGovernanceRoot = (
 
 export interface ShipPartition {
 	/** Only the classes actually present, in {@link SHIP_CLASS_NAMES} order. */
-	readonly classes: ReadonlyArray<{readonly name: ShipClassName; readonly files: number}>;
+	readonly classes: ReadonlyArray<{ readonly name: ShipClassName; readonly files: number }>;
 	/** {@link touchesGovernanceRoot} over the same file list — a flag, not a class. */
 	readonly governance: boolean;
 	readonly scanned: number;
@@ -163,7 +163,7 @@ export const partitionWithUi = (
 	const base = partition(files);
 	const ui = files.filter((file) => isUiSurface(file, uiPrefixes)).length;
 	return {
-		classes: ui === 0 ? base.classes : [...base.classes, {name: "ui" as const, files: ui}],
+		classes: ui === 0 ? base.classes : [...base.classes, { name: "ui" as const, files: ui }],
 		governance: touchesGovernanceRoot(files, roots),
 		scanned: base.scanned,
 	};
@@ -266,11 +266,11 @@ export interface IssueRef {
 
 export const issueRefOf = (body: string): IssueRef => {
 	const closing = linkedIssueOf(body);
-	if (closing !== null) return {kind: "fixes", number: closing};
+	if (closing !== null) return { kind: "fixes", number: closing };
 	const part = PART_OF.exec(body);
 	return part?.[1] === undefined
-		? {kind: "none", number: null}
-		: {kind: "part-of", number: Number.parseInt(part[1], 10)};
+		? { kind: "none", number: null }
+		: { kind: "part-of", number: Number.parseInt(part[1], 10) };
 };
 
 export interface IssueRefs {
@@ -310,10 +310,10 @@ export const issueRefsOf = (body: string): IssueRefs => {
 	);
 	const closing = linkedIssuesOf(body);
 	const referenced = [...new Set([...closing, ...parts])];
-	if (closing.length > 0) return {kind: "fixes", numbers: closing, referenced};
+	if (closing.length > 0) return { kind: "fixes", numbers: closing, referenced };
 	return parts.length === 0
-		? {kind: "none", numbers: [], referenced}
-		: {kind: "part-of", numbers: [...new Set(parts)], referenced};
+		? { kind: "none", numbers: [], referenced }
+		: { kind: "part-of", numbers: [...new Set(parts)], referenced };
 };
 
 /** `fixes:<n>` / `part-of:<n>`, or the calling group's null token. */

@@ -17,7 +17,7 @@ import {
 	STALE_HEAD as REVIEW_STALE_HEAD,
 	SUPERSEDES_VERDICT as REVIEW_SUPERSEDES_VERDICT,
 } from "../review/codes.ts";
-import {OFF_VOCABULARY as TRIAGE_OFF_VOCABULARY} from "../triage/codes.ts";
+import { OFF_VOCABULARY as TRIAGE_OFF_VOCABULARY } from "../triage/codes.ts";
 
 export const EMPTY_STDIN = SHARED_EMPTY_STDIN;
 export const LEAKED_PATH = SHARED_LEAKED_PATH;

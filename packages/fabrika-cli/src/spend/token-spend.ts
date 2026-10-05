@@ -102,7 +102,7 @@ export const reconstructSpend = (transcript: string): StageSpend => {
 
 	const billed = input + cacheCreate + cacheRead + output;
 	const exCacheRead = input + cacheCreate + output;
-	return {input, cacheCreate, cacheRead, output, billed, exCacheRead, assistantTurns, model};
+	return { input, cacheCreate, cacheRead, output, billed, exCacheRead, assistantTurns, model };
 };
 
 /**
@@ -117,13 +117,13 @@ export const reconstructSpend = (transcript: string): StageSpend => {
  * out.
  */
 export type RunSpend =
-	| {readonly _tag: "Reconstructed"; readonly spend: StageSpend}
-	| {readonly _tag: "NoBilledTurns"}
-	| {readonly _tag: "TranscriptMissing"};
+	| { readonly _tag: "Reconstructed"; readonly spend: StageSpend }
+	| { readonly _tag: "NoBilledTurns" }
+	| { readonly _tag: "TranscriptMissing" };
 
 /** Resolve a transcript to one of the three `RunSpend` outcomes. Pure + total. */
 export const classifyRunSpend = (transcript: string | null): RunSpend => {
-	if (transcript === null) return {_tag: "TranscriptMissing"};
+	if (transcript === null) return { _tag: "TranscriptMissing" };
 	const spend = reconstructSpend(transcript);
-	return spend.assistantTurns === 0 ? {_tag: "NoBilledTurns"} : {_tag: "Reconstructed", spend};
+	return spend.assistantTurns === 0 ? { _tag: "NoBilledTurns" } : { _tag: "Reconstructed", spend };
 };

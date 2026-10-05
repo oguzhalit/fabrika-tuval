@@ -19,26 +19,26 @@
  * declares is the whole guarantee for that repo.
  */
 
-import {isRecord} from "../../io/json.ts";
-import {trimmedStrings} from "../entries.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
-import type {Argv} from "./workflow-validators.ts";
+import { isRecord } from "../../io/json.ts";
+import { trimmedStrings } from "../entries.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
+import type { Argv } from "./workflow-validators.ts";
 
 export const DEPENDENCY_RECONCILER = "dependencyReconciler";
 
 /** The declared install, or `null` when the repo declares none. */
-export type DependencyReconciler = {readonly argv: Argv} | null;
+export type DependencyReconciler = { readonly argv: Argv } | null;
 
 const MALFORMED = `\`${DEPENDENCY_RECONCILER}\` is not {"command": [non-empty argv of strings]} — e.g. {"command": ["pnpm", "install", "--frozen-lockfile"]}`;
 
 const decode = (raw: unknown): Decoded<DependencyReconciler> => {
-	if (raw === null) return {_tag: "Value", value: null};
-	if (!isRecord(raw)) return {_tag: "Malformed", reason: MALFORMED};
+	if (raw === null) return { _tag: "Value", value: null };
+	if (!isRecord(raw)) return { _tag: "Malformed", reason: MALFORMED };
 	const command = trimmedStrings(raw.command);
-	if (command === null) return {_tag: "Malformed", reason: MALFORMED};
+	if (command === null) return { _tag: "Malformed", reason: MALFORMED };
 	const [binary, ...args] = command;
-	if (binary === undefined) return {_tag: "Malformed", reason: MALFORMED};
-	return {_tag: "Value", value: {argv: [binary, ...args]}};
+	if (binary === undefined) return { _tag: "Malformed", reason: MALFORMED };
+	return { _tag: "Value", value: { argv: [binary, ...args] } };
 };
 
 export const SHIPPED_DEPENDENCY_RECONCILER: DependencyReconciler = null;
@@ -48,7 +48,7 @@ export const dependencyReconcilerKey: KeyGroup<DependencyReconciler> = {
 	shippedDefault: SHIPPED_DEPENDENCY_RECONCILER,
 	decode,
 	// `argv` is the spawn shape; the file's key is `command`, and a readout prints what the repo wrote.
-	render: (reconciler) => (reconciler === null ? null : {command: [...reconciler.argv]}),
+	render: (reconciler) => (reconciler === null ? null : { command: [...reconciler.argv] }),
 	jsonSchema: {
 		type: ["object", "null"],
 		description:
@@ -57,7 +57,7 @@ export const dependencyReconcilerKey: KeyGroup<DependencyReconciler> = {
 			command: {
 				type: "array",
 				description: 'The argv to spawn — e.g. ["pnpm", "install", "--frozen-lockfile"].',
-				items: {type: "string"},
+				items: { type: "string" },
 				minItems: 1,
 			},
 		},

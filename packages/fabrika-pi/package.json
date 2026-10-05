@@ -17,7 +17,8 @@
 	"scripts": {
 		"sync": "node scripts/sync-bundle.mjs",
 		"prepack": "node scripts/sync-bundle.mjs",
-		"test": "node --test 'scripts/*.unit.test.mjs'"
+		"test": "node --test 'scripts/*.unit.test.mjs'",
+		"typecheck": "effect-tsgo diagnostics --project tsconfig.json --strict && tsc --noEmit"
 	},
 	"pi": {
 		"skills": [
@@ -28,6 +29,10 @@
 				"./dist/agents"
 			]
 		}
+	},
+	"devDependencies": {
+		"@effect/tsgo": "^0.36.4",
+		"typescript": "^7.0.2"
 	},
 	"engines": {
 		"node": ">=22.12"

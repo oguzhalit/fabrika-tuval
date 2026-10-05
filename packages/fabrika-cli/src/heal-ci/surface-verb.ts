@@ -8,11 +8,11 @@
  * `extra` rows are reported, never judged — a gating run answering no requirement is normal, and
  * printing both sides is what lets a reader see which of the two mistakes they have.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {commitExists} from "../io/pulls.ts";
-import {latestPerContext, listShipCheckRuns} from "../ship/github.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { commitExists } from "../io/pulls.ts";
+import { latestPerContext, listShipCheckRuns } from "../ship/github.ts";
 import {
 	badNumber,
 	inspectedSha,
@@ -21,9 +21,9 @@ import {
 	resolvePull,
 	resolveTargetRepo,
 } from "../ship/target.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {compare, readDeclared} from "./surface.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { compare, readDeclared } from "./surface.ts";
 
 const VERB = "heal-ci surface";
 
@@ -121,7 +121,7 @@ export const runSurface = (
 							sha: bound,
 							required: null,
 							extra: comparison.extra,
-							counts: {required: null, producing: null, extra: comparison.extra.length},
+							counts: { required: null, producing: null, extra: comparison.extra.length },
 						}),
 						notices,
 					)
@@ -151,7 +151,7 @@ export const runSurface = (
 					JSON.stringify({
 						outcome: comparison.token,
 						sha: bound,
-						required: comparison.required.map((row) => ({name: row.name, state: row.state})),
+						required: comparison.required.map((row) => ({ name: row.name, state: row.state })),
 						extra: comparison.extra,
 						counts: {
 							required: comparison.required.length,

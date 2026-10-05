@@ -12,14 +12,14 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/8924#issuecomment-5625300585
  */
-import {isClosingLine} from "./closing-keyword.ts";
-import {scanHeadings, sectionBody} from "./doc-section.ts";
-import type {WireEmit, WireMalformed, WireRead, WireReadLines} from "./format.ts";
+import { isClosingLine } from "./closing-keyword.ts";
+import { scanHeadings, sectionBody } from "./doc-section.ts";
+import type { WireEmit, WireMalformed, WireRead, WireReadLines } from "./format.ts";
 
 declare const REPORT_TEXT: unique symbol;
 
 /** The section's prose: non-blank, outer blank lines and the body's closing-keyword line removed. */
-export type ReportText = string & {readonly [REPORT_TEXT]: true};
+export type ReportText = string & { readonly [REPORT_TEXT]: true };
 
 export interface Report {
 	readonly text: ReportText;
@@ -72,7 +72,7 @@ export const read = (body: string): ReportRead => {
 	const candidates = scanHeadings(lines).filter((heading) => reachesForBlock(heading.text));
 	const [only, ...others] = candidates;
 	if (only === undefined) {
-		return {_tag: "Absent", reason: `no heading in the body reaches for "${REPORT_HEADING}"`};
+		return { _tag: "Absent", reason: `no heading in the body reaches for "${REPORT_HEADING}"` };
 	}
 	if (others.length > 0) {
 		return malformed(
@@ -90,15 +90,15 @@ export const read = (body: string): ReportRead => {
 	if (text === "") {
 		return malformed(`"${REPORT_HEADING}" is present and its section is empty`, quote(only));
 	}
-	return {_tag: "Found", value: {text: text as ReportText, line: only.line}};
+	return { _tag: "Found", value: { text: text as ReportText, line: only.line } };
 };
 
 /** Compose the section's bytes. Round-trips through {@link read} for a text {@link parseFields} admits. */
 export const emit = (text: ReportText): string => `${REPORT_HEADING}\n\n${text}\n`;
 
 export type ReportFields =
-	| {readonly _tag: "Fields"; readonly text: ReportText}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly text: ReportText }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 /**
  * Parse `wire emit`'s stdin: the report's prose, whole.
@@ -109,10 +109,10 @@ export type ReportFields =
  */
 export const parseFields = (fields: string): ReportFields => {
 	const text = fields.replace(/^(?:[ \t]*\n)+/, "").trimEnd();
-	if (text === "") return {_tag: "Unusable", reason: "the report is empty"};
+	if (text === "") return { _tag: "Unusable", reason: "the report is empty" };
 	const back = read(emit(text as ReportText));
 	if (back._tag !== "Found") {
-		return {_tag: "Unusable", reason: `the report does not read back — ${back.reason}`};
+		return { _tag: "Unusable", reason: `the report does not read back — ${back.reason}` };
 	}
 	if (back.value.text !== text) {
 		return {
@@ -121,15 +121,15 @@ export const parseFields = (fields: string): ReportFields => {
 				"the report does not read back whole — a level-1 or level-2 heading ends the section, and a trailing closing-keyword line is left out",
 		};
 	}
-	return {_tag: "Fields", text: back.value.text};
+	return { _tag: "Fields", text: back.value.text };
 };
 
 /** The registry row's byte-level `emit`, bound to this module's typed core. */
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.text)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.text) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`: the report's text, one answer line per text line. */
@@ -137,5 +137,5 @@ export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
 	if (result._tag !== "Found") return result;
 	const [head, ...rest] = result.value.text.split("\n");
-	return {_tag: "Found", value: [head ?? "", ...rest]};
+	return { _tag: "Found", value: [head ?? "", ...rest] };
 };

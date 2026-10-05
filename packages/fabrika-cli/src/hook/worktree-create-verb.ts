@@ -20,11 +20,11 @@
  * reads any non-zero exit as a creation failure and does not fall back to git, so a blocked spawn is
  * the only honest alternative to handing an agent a tree this verb could not finish.
  */
-import {randomUUID} from "node:crypto";
-import {Effect} from "effect";
-import type {ChildOutcome} from "../io/exec.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { randomUUID } from "node:crypto";
+import { Effect } from "effect";
+import type { ChildOutcome } from "../io/exec.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	EMPTY_STDIN,
 	ENVELOPE_UNKNOWN,
@@ -32,8 +32,8 @@ import {
 	UNPLANNABLE_WORKTREE,
 	WRONG_EVENT,
 } from "./codes.ts";
-import {type LockHost, thisProcess} from "./creation-lock.ts";
-import {classifyEnvelope, type EnvelopeRead} from "./envelope.ts";
+import { type LockHost, thisProcess } from "./creation-lock.ts";
+import { classifyEnvelope, type EnvelopeRead } from "./envelope.ts";
 import {
 	childEnv,
 	listWorktreesArgs,
@@ -63,7 +63,7 @@ export interface WorktreeCreateOptions {
 }
 
 const readEnvelope = (piped: StdinRead): EnvelopeRead =>
-	piped._tag === "Text" ? classifyEnvelope(piped.text) : {_tag: "Unknown", reason: piped.reason};
+	piped._tag === "Text" ? classifyEnvelope(piped.text) : { _tag: "Unknown", reason: piped.reason };
 
 const stdoutIfSucceeded = (outcome: ChildOutcome): string | null =>
 	succeeded(outcome) && outcome._tag === "Ran" ? new TextDecoder().decode(outcome.stdout) : null;
@@ -122,6 +122,6 @@ export const runWorktreeCreate = ({
 
 		const nonce = randomUUID().replaceAll("-", "").slice(0, 12);
 		return yield* createWorktree(planned.plan, child, nonce, host).pipe(
-			Effect.map((outcome) => ({...outcome, stderr: [scope, ...outcome.stderr]})),
+			Effect.map((outcome) => ({ ...outcome, stderr: [scope, ...outcome.stderr] })),
 		);
 	});

@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {insertRow, linesChangedBeyond, readBackCarries} from "./register.ts";
+import { describe, expect, it } from "vitest";
+import { insertRow, linesChangedBeyond, readBackCarries } from "./register.ts";
 
 const INDEX = `# Patterns
 
@@ -56,14 +56,14 @@ describe("insertRow", () => {
 	});
 
 	it("places the row under the NAMED section, not the first one", () => {
-		const out = insertRow(INDEX, {...request, section: "Index — edge"});
+		const out = insertRow(INDEX, { ...request, section: "Index — edge" });
 		if (out._tag !== "Inserted") throw new Error(`expected Inserted, got ${out._tag}`);
 		expect(readBackCarries(out.text, "worker-queue-retry", "Index — edge")).toBe(true);
 		expect(readBackCarries(out.text, "worker-queue-retry", "Index — services")).toBe(false);
 	});
 
 	it("is a no-op when a row already links the doc — registering twice is not an error", () => {
-		expect(insertRow(INDEX, {...request, slug: "cache-invalidation"})).toEqual({
+		expect(insertRow(INDEX, { ...request, slug: "cache-invalidation" })).toEqual({
 			_tag: "Already",
 			section: "Index — services",
 		});
@@ -72,7 +72,7 @@ describe("insertRow", () => {
 	// Never truncated: a caller correcting a flag needs the whole set, so the next invocation is a
 	// correction rather than a guess.
 	it("names every section carrying a table when the flag names none of them", () => {
-		expect(insertRow(INDEX, {...request, section: "Nonexistent Section"})).toEqual({
+		expect(insertRow(INDEX, { ...request, section: "Nonexistent Section" })).toEqual({
 			_tag: "NoSection",
 			present: ["Index — services", "Index — edge"],
 		});
@@ -81,7 +81,7 @@ describe("insertRow", () => {
 	// A different fact with a different remedy: the flag is right and the index needs disambiguating.
 	it("refuses an ambiguous section rather than picking one", () => {
 		const doubled = `${INDEX}\n## Index — services\n\n| Doc | Topic | Read when |\n|---|---|---|\n| [x.md](./x.md) | a | b |\n`;
-		expect(insertRow(doubled, request)).toEqual({_tag: "Ambiguous", count: 2});
+		expect(insertRow(doubled, request)).toEqual({ _tag: "Ambiguous", count: 2 });
 	});
 
 	it("puts the first row of an empty table directly below its |---| line", () => {
@@ -120,13 +120,13 @@ describe("insertRow", () => {
 			twoSections.replace("|---|---|---|\n\n", `|---|---|---|\n${first.row}\n\n`),
 		);
 
-		const second = insertRow(twoSections, {...request, section: "Index — edge"});
+		const second = insertRow(twoSections, { ...request, section: "Index — edge" });
 		if (second._tag !== "Inserted") throw new Error(`expected Inserted, got ${second._tag}`);
 		expect(second.text).toBe(`${twoSections}${second.row}\n`);
 	});
 
 	it("reports a document holding no table rather than inventing one", () => {
-		expect(insertRow("# Patterns\n\nNothing yet.\n", request)).toEqual({_tag: "NoTable"});
+		expect(insertRow("# Patterns\n\nNothing yet.\n", request)).toEqual({ _tag: "NoTable" });
 	});
 });
 

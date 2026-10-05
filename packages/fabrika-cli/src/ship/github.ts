@@ -20,7 +20,7 @@
  * Neither has a REST route at all. The third is `pullsClosing` in `../io/pulls.ts`.
  */
 
-import {Effect} from "effect";
+import { Effect } from "effect";
 import {
 	type Api,
 	attemptOf,
@@ -38,9 +38,9 @@ import {
 	restRead,
 	restWrite,
 } from "../io/gh-api.ts";
-import {type Attempt, fail, ok, type Shell} from "../io/git.ts";
-import {absent, type Existence, present, unknown} from "../io/issues.ts";
-import {isRecord} from "../io/json.ts";
+import { type Attempt, fail, ok, type Shell } from "../io/git.ts";
+import { absent, type Existence, present, unknown } from "../io/issues.ts";
+import { isRecord } from "../io/json.ts";
 
 const str = (value: unknown): string => (typeof value === "string" ? value : "");
 
@@ -79,7 +79,7 @@ export const listReviews = (repo: string, pr: number): Shell<Attempt<ReviewRead>
 					submittedAt: str(value.submitted_at),
 				});
 			}
-			return ok({reviews, exhausted: paged.value.exhausted});
+			return ok({ reviews, exhausted: paged.value.exhausted });
 		}),
 	);
 
@@ -220,7 +220,7 @@ export const listShipCheckRuns = (repo: string, sha: string): Shell<Attempt<Chec
 						checkSuiteId: value.check_suite.id,
 					});
 				}
-				return ok({declared: enveloped.value.declared, runs});
+				return ok({ declared: enveloped.value.declared, runs });
 			},
 		),
 	);
@@ -260,8 +260,8 @@ const checkRunBody = (draft: CheckRunDraft): Record<string, unknown> => ({
 	name: draft.name,
 	head_sha: draft.headSha,
 	status: draft._tag === "Pending" ? "in_progress" : "completed",
-	...(draft._tag === "Pending" ? {} : {conclusion: draft.conclusion}),
-	output: {title: draft.title, summary: draft.summary},
+	...(draft._tag === "Pending" ? {} : { conclusion: draft.conclusion }),
+	output: { title: draft.title, summary: draft.summary },
 });
 
 const toWrittenCheckRun = (body: unknown): Attempt<WrittenCheckRun> => {
@@ -300,7 +300,7 @@ export const updateCheckRun = (
 	draft: CheckRunDraft,
 ): Shell<Attempt<WrittenCheckRun>> =>
 	authed((token) => {
-		const {head_sha: _pinned, ...mutable} = checkRunBody(draft);
+		const { head_sha: _pinned, ...mutable } = checkRunBody(draft);
 		return Effect.map(
 			restWrite(token, "PATCH", `repos/${repo}/check-runs/${id}`, mutable),
 			(outcome) => attemptOf(outcome, toWrittenCheckRun),
@@ -351,7 +351,7 @@ export const listWorkflowInventory = (repo: string): Shell<Attempt<WorkflowInven
 				if (enveloped._tag === "Failure") return enveloped;
 				const active = enveloped.value.entries.flatMap((value) =>
 					isRecord(value) && value.state === "active"
-						? [{name: str(value.name), path: str(value.path)}]
+						? [{ name: str(value.name), path: str(value.path) }]
 						: [],
 				);
 				return ok({
@@ -465,7 +465,7 @@ export interface WorkflowRun {
 export const listRunsAtHead = (
 	repo: string,
 	sha: string,
-): Shell<Attempt<{declared: number; runs: ReadonlyArray<WorkflowRun>}>> =>
+): Shell<Attempt<{ declared: number; runs: ReadonlyArray<WorkflowRun> }>> =>
 	authed((token) =>
 		Effect.map(
 			envelopeOverHttp(token, `repos/${repo}/actions/runs?head_sha=${sha}`, "workflow_runs"),
@@ -499,7 +499,7 @@ export const listRunsAtHead = (
 						checkSuiteId: typeof value.check_suite_id === "number" ? value.check_suite_id : null,
 					});
 				}
-				return ok({declared: enveloped.value.declared, runs});
+				return ok({ declared: enveloped.value.declared, runs });
 			},
 		),
 	);
@@ -531,9 +531,9 @@ export const pullTimeline = (repo: string, pr: number): Shell<Attempt<TimelineRe
 				if (!isRecord(value) || typeof value.event !== "string") {
 					return fail("GitHub answered 200 but one entry is not a timeline event");
 				}
-				events.push({event: value.event, createdAt: str(value.created_at)});
+				events.push({ event: value.event, createdAt: str(value.created_at) });
 			}
-			return ok({events, exhausted: paged.value.exhausted});
+			return ok({ events, exhausted: paged.value.exhausted });
 		}),
 	);
 
@@ -610,7 +610,7 @@ export const isQueueGoverned = (repo: string, branch: string): Shell<Attempt<boo
 		Effect.map(restRead(token, "GET", `repos/${repo}/rules/branches/${branch}`), (outcome) => {
 			if (
 				outcome._tag === "Response" &&
-				isPlanGated({status: outcome.status, message: githubMessage(outcome)})
+				isPlanGated({ status: outcome.status, message: githubMessage(outcome) })
 			) {
 				return ok(false);
 			}
@@ -685,11 +685,11 @@ const graphql = (
 const PULL_ID_QUERY =
 	"query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){id}}}";
 
-const ownerAndName = (repo: string): Attempt<{owner: string; name: string}> => {
+const ownerAndName = (repo: string): Attempt<{ owner: string; name: string }> => {
 	const [owner, name] = repo.split("/");
 	return owner === undefined || name === undefined || owner === "" || name === ""
 		? fail(`\`${repo}\` is not owner/name`)
-		: ok({owner, name});
+		: ok({ owner, name });
 };
 
 /** The PR's GraphQL node id — the one extra read both auto-merge mutations need. */
@@ -729,7 +729,7 @@ export const armAutoMerge = (repo: string, pr: number): Shell<Attempt<void>> =>
 		Effect.gen(function* () {
 			const id = yield* pullRequestId(token, repo, pr);
 			if (id._tag === "Failure") return id;
-			const armed = yield* graphql(token, ARM_MUTATION, {pull: id.value});
+			const armed = yield* graphql(token, ARM_MUTATION, { pull: id.value });
 			return armed._tag === "Failure" ? armed : ok(undefined);
 		}),
 	);
@@ -740,7 +740,7 @@ export const disableAutoMerge = (repo: string, pr: number): Shell<Attempt<void>>
 		Effect.gen(function* () {
 			const id = yield* pullRequestId(token, repo, pr);
 			if (id._tag === "Failure") return id;
-			const cleared = yield* graphql(token, DISARM_MUTATION, {pull: id.value});
+			const cleared = yield* graphql(token, DISARM_MUTATION, { pull: id.value });
 			return cleared._tag === "Failure" ? cleared : ok(undefined);
 		}),
 	);
@@ -748,7 +748,7 @@ export const disableAutoMerge = (repo: string, pr: number): Shell<Attempt<void>>
 /** Close or reopen a pull request. Each leg is read back by the caller; neither is trusted here. */
 export const setPullState = (repo: string, pr: number, state: string): Shell<Attempt<void>> =>
 	authed((token) =>
-		Effect.map(restWrite(token, "PATCH", `repos/${repo}/pulls/${pr}`, {state}), (outcome) => {
+		Effect.map(restWrite(token, "PATCH", `repos/${repo}/pulls/${pr}`, { state }), (outcome) => {
 			if (outcome._tag === "Unreachable") return fail(outcome.reason);
 			return outcome.status >= 200 && outcome.status < 300
 				? ok(undefined)
@@ -805,7 +805,7 @@ const threadOf = (value: unknown): ReviewThread | null => {
 export const listReviewThreads = (
 	repo: string,
 	pr: number,
-): Shell<Attempt<{declared: number; threads: ReadonlyArray<ReviewThread>}>> =>
+): Shell<Attempt<{ declared: number; threads: ReadonlyArray<ReviewThread> }>> =>
 	authed((token) =>
 		Effect.gen(function* () {
 			const named = ownerAndName(repo);
@@ -818,7 +818,7 @@ export const listReviewThreads = (
 					owner: named.value.owner,
 					name: named.value.name,
 					number: pr,
-					...(cursor === null ? {} : {cursor}),
+					...(cursor === null ? {} : { cursor }),
 				});
 				if (data._tag === "Failure") return data;
 				const repository = isRecord(data.value.repository) ? data.value.repository : null;
@@ -847,7 +847,7 @@ export const listReviewThreads = (
 			}
 			return declared === null
 				? fail("the GraphQL endpoint answered 200 and printed no thread page at all")
-				: ok({declared, threads});
+				: ok({ declared, threads });
 		}),
 	);
 
@@ -860,7 +860,7 @@ const RESOLVE_MUTATION =
 /** Post the rationale reply. It lands **before** the resolve, so an interrupted run is never silent. */
 export const replyToThread = (thread: string, body: string): Shell<Attempt<string>> =>
 	authed((token) =>
-		Effect.map(graphql(token, REPLY_MUTATION, {thread, body}), (data) => {
+		Effect.map(graphql(token, REPLY_MUTATION, { thread, body }), (data) => {
 			if (data._tag === "Failure") return data;
 			const added = isRecord(data.value.addPullRequestReviewThreadReply)
 				? data.value.addPullRequestReviewThreadReply
@@ -875,7 +875,7 @@ export const replyToThread = (thread: string, body: string): Shell<Attempt<strin
 /** Fire the resolve. Its response is never the proof — the caller re-reads the thread. */
 export const resolveThread = (thread: string): Shell<Attempt<void>> =>
 	authed((token) =>
-		Effect.map(graphql(token, RESOLVE_MUTATION, {thread}), (data) =>
+		Effect.map(graphql(token, RESOLVE_MUTATION, { thread }), (data) =>
 			data._tag === "Failure" ? data : ok(undefined),
 		),
 	);

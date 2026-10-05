@@ -2,8 +2,8 @@
  * The one content judgment the replay makes: an append each is kept both ways, and everything else
  * is refused rather than guessed at.
  */
-import {describe, expect, it} from "vitest";
-import {resolveKeepBoth} from "./keep-both.ts";
+import { describe, expect, it } from "vitest";
+import { resolveKeepBoth } from "./keep-both.ts";
 
 /** The collision the replay exists for: two children appending a row to one flag registry. */
 const REGISTRY_APPEND = [

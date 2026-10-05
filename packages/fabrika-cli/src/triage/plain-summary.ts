@@ -17,14 +17,14 @@ export interface EnrichText {
 }
 
 export type PlainSummaryRead =
-	| {readonly _tag: "Found"; readonly value: EnrichText}
-	| {readonly _tag: "Missing"}
+	| { readonly _tag: "Found"; readonly value: EnrichText }
+	| { readonly _tag: "Missing" }
 	/** The heading is there with no paragraph under it. */
-	| {readonly _tag: "Empty"}
+	| { readonly _tag: "Empty" }
 	/** More than one heading: which one the author meant is not decidable. */
-	| {readonly _tag: "Repeated"; readonly count: number}
+	| { readonly _tag: "Repeated"; readonly count: number }
 	/** The summary was the whole of stdin, so there is no rewrite or pitch to place under it. */
-	| {readonly _tag: "Alone"};
+	| { readonly _tag: "Alone" };
 
 const FENCE_RE = /^\s*(```|~~~)/;
 const HEADING_RE = /^#{1,6}\s/;
@@ -51,8 +51,8 @@ export const readPlainSummary = (text: string): PlainSummaryRead => {
 	const lines = text.split("\n");
 	const headings = headingLines(lines);
 	const at = headings[0];
-	if (at === undefined) return {_tag: "Missing"};
-	if (headings.length > 1) return {_tag: "Repeated", count: headings.length};
+	if (at === undefined) return { _tag: "Missing" };
+	if (headings.length > 1) return { _tag: "Repeated", count: headings.length };
 
 	let start = at + 1;
 	while (start < lines.length && lines[start]?.trim() === "") start++;
@@ -61,13 +61,13 @@ export const readPlainSummary = (text: string): PlainSummaryRead => {
 		end++;
 	}
 	const summary = lines.slice(start, end).join("\n").trim();
-	if (summary === "") return {_tag: "Empty"};
+	if (summary === "") return { _tag: "Empty" };
 
 	let after = end;
 	while (after < lines.length && lines[after]?.trim() === "") after++;
 	const body = [...lines.slice(0, at), ...lines.slice(after)].join("\n").trim();
-	if (body === "") return {_tag: "Alone"};
-	return {_tag: "Found", value: {summary, body}};
+	if (body === "") return { _tag: "Alone" };
+	return { _tag: "Found", value: { summary, body } };
 };
 
 /** The section as the envelope writes it, heading included. */

@@ -1,8 +1,8 @@
 /** Summarize native response usage and coverage, retaining separately labelled legacy totals. */
-import {Effect, type FileSystem, Result} from "effect";
-import {type CapAndCount, capAndCount} from "../evidence.ts";
-import {exists, readFile} from "../io/fs.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, type FileSystem, Result } from "effect";
+import { type CapAndCount, capAndCount } from "../evidence.ts";
+import { exists, readFile } from "../io/fs.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	INPUT_ABSENT,
 	INPUT_UNREADABLE,
@@ -19,8 +19,8 @@ import {
 	type SpendTotals,
 	type StageArmTotals,
 } from "./rollup.ts";
-import {readUsageLedger} from "./usage-ledger.ts";
-import {rollUpUsage, type UsageScope} from "./usage-rollup.ts";
+import { readUsageLedger } from "./usage-ledger.ts";
+import { rollUpUsage, type UsageScope } from "./usage-rollup.ts";
 
 const VERB = "fabrika spend rollup";
 
@@ -142,7 +142,7 @@ export const runRollup = (
 		const window: ResolvedWindow = {
 			sinceAt,
 			untilAt,
-			text: {since: options.since, until: options.until},
+			text: { since: options.since, until: options.until },
 		};
 
 		const text = yield* Effect.result(readFile(path));
@@ -177,7 +177,7 @@ export const runRollup = (
 				newerVersion: ledger.diagnostics.newerVersion,
 			},
 		};
-		const skipped = {total: read.skipped, ...read.skips};
+		const skipped = { total: read.skipped, ...read.skips };
 		if (ledger.legacy.length === 0 && ledger.records.length === 0) {
 			return refuse(
 				NOTHING_MEASURED,
@@ -206,7 +206,7 @@ export const runRollup = (
 		const scope = `${VERB}: summed ${rollup.totals.runs} run(s) from ${path} within ${bounds}; ${rollup.totals.measuredRuns} carried a reconstructed spend. ${skippedNote(skipped)}${rollup.undatedRows === 0 ? "" : ` ${rollup.undatedRows} row(s) carry no readable timestamp and this bounded window excluded them.`}`;
 		return answer(
 			options.json
-				? JSON.stringify({...bounded, legacy, usage})
+				? JSON.stringify({ ...bounded, legacy, usage })
 				: [
 						render(bounded),
 						`legacy\t${JSON.stringify(legacy)}`,

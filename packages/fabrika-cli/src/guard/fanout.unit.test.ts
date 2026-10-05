@@ -3,7 +3,7 @@
  * report wording, and every source parse. No IO. The pass, the zero-scope floor and each red's seat
  * run through real sources in `./fanout-verb.unit.test.ts`.
  */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	type DiscoveredMutation,
 	type FanoutGuardFacts,
@@ -22,7 +22,7 @@ import {
 
 const VERB = "guard fanout-guard check";
 
-const disc = (key: string, feature: string): DiscoveredMutation => ({key, feature});
+const disc = (key: string, feature: string): DiscoveredMutation => ({ key, feature });
 const man = (key: string, fanned: boolean, topics: ReadonlyArray<string> = []): ManifestEntry => ({
 	key,
 	fanned,
@@ -35,7 +35,7 @@ const facts = (
 	manifest: ReadonlyArray<ManifestEntry>,
 	featurePublishes: ReadonlyMap<string, boolean>,
 	featureTargets: FeatureTargets = new Map(),
-): FanoutGuardFacts => ({discovered, manifest, featurePublishes, featureTargets});
+): FanoutGuardFacts => ({ discovered, manifest, featurePublishes, featureTargets });
 
 describe("judge — drift (every mutation must be classified)", () => {
 	it("FAILS with an unclassified discovered mutation", () => {
@@ -199,15 +199,17 @@ describe("parseManifestEntries — read {key, fanned, topics} rows from manifest
 			];
 		`;
 		expect(parseManifestEntries(source)).toEqual([
-			{key: "post.submit", fanned: true, topics: ["posts"]},
-			{key: "post.delete", fanned: true, topics: ["Post", "posts"]},
-			{key: "bildirim.markRead", fanned: false, topics: []},
+			{ key: "post.submit", fanned: true, topics: ["posts"] },
+			{ key: "post.delete", fanned: true, topics: ["Post", "posts"] },
+			{ key: "bildirim.markRead", fanned: false, topics: [] },
 		]);
 	});
 
 	it("a fanned row that OMITS topics parses to [] (the guard then flags it undeclared)", () => {
 		const source = `{key: "post.submit", fanned: true, rationale: "oops, no topics"},`;
-		expect(parseManifestEntries(source)).toEqual([{key: "post.submit", fanned: true, topics: []}]);
+		expect(parseManifestEntries(source)).toEqual([
+			{ key: "post.submit", fanned: true, topics: [] },
+		]);
 	});
 
 	it("returns [] on an empty/unparseable manifest (the verb fails closed on this)", () => {

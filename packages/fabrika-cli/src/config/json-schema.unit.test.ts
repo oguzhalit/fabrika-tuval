@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	assembleSchema,
 	CONFIG_SCHEMA_FILE,
@@ -6,13 +6,13 @@ import {
 	schemaMatches,
 	serializeSchema,
 } from "./json-schema.ts";
-import {type KeyGroup, register} from "./key-group.ts";
-import {KEY_GROUPS} from "./registry.ts";
+import { type KeyGroup, register } from "./key-group.ts";
+import { KEY_GROUPS } from "./registry.ts";
 
 const noop: KeyGroup<string> = {
 	key: "example",
 	shippedDefault: "",
-	decode: () => ({_tag: "Value", value: ""}),
+	decode: () => ({ _tag: "Value", value: "" }),
 };
 
 describe("the assembly is complete only when every registered key carries a fragment", () => {
@@ -56,7 +56,7 @@ describe("serialize and match round-trip", () => {
 	it("does not match a document with a changed value, whatever its whitespace", () => {
 		const assembly = assembleSchema(KEY_GROUPS);
 		if (assembly._tag !== "Complete") throw new Error("expected complete");
-		const drifted = {...assembly.schema, title: "changed"};
+		const drifted = { ...assembly.schema, title: "changed" };
 		expect(schemaMatches(drifted, assembly.schema)).toBe(false);
 		// Re-formatting the identical content is still a match.
 		const reformatted = JSON.parse(JSON.stringify(assembly.schema, null, 4));

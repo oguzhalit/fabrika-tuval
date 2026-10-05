@@ -3,11 +3,11 @@
  * See `graduate trail --help` for readiness and refusal details.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {resolveRepo} from "../io/issues.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {deriveTrail, requireSource} from "./source.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { resolveRepo } from "../io/issues.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { deriveTrail, requireSource } from "./source.ts";
 
 export interface TrailOptions {
 	readonly source: number;
@@ -21,7 +21,7 @@ export const runTrail = (
 	options: TrailOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {source} = options;
+		const { source } = options;
 		if (!Number.isInteger(source) || source <= 0) {
 			return refuse(FAILED, `${VERB}: ${source} is not an issue number.`);
 		}
@@ -41,7 +41,7 @@ export const runTrail = (
 		const resolved = yield* deriveTrail(VERB, repo, source, found.value.kind, options.env);
 		if (resolved._tag === "Refused") return resolved.outcome;
 
-		const {trail, scope} = resolved.value;
+		const { trail, scope } = resolved.value;
 		return answer(JSON.stringify(trail), [
 			scope,
 			`${VERB}: readiness "${trail.readiness}" over ${trail.counts.ruled} ruled, ${trail.counts.established} established and ${trail.counts.unresolved} unresolved.`,

@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import {registeredGroups} from "./registry.ts";
-import {SHORT_DESCRIPTION_BUDGET, shortDescriptionDefects} from "./short-description.ts";
-import type {CommandNode} from "./unknown-subcommand.ts";
+import { describe, expect, it } from "vitest";
+import { registeredGroups } from "./registry.ts";
+import { SHORT_DESCRIPTION_BUDGET, shortDescriptionDefects } from "./short-description.ts";
+import type { CommandNode } from "./unknown-subcommand.ts";
 
 describe("shortDescriptionDefects", () => {
 	it("passes a one-sentence line inside the budget", () => {
@@ -41,7 +41,7 @@ describe("every registered leaf verb carries a short list-row description", () =
 	interface DescribedCommand extends Omit<CommandNode, "subcommands"> {
 		readonly description?: string | undefined;
 		readonly shortDescription?: string | undefined;
-		readonly subcommands: ReadonlyArray<{readonly commands: ReadonlyArray<DescribedCommand>}>;
+		readonly subcommands: ReadonlyArray<{ readonly commands: ReadonlyArray<DescribedCommand> }>;
 	}
 
 	const leaves = (
@@ -61,18 +61,20 @@ describe("every registered leaf verb carries a short list-row description", () =
 		expect(verbs.length).toBeGreaterThan(0);
 	});
 
-	it.each(
-		verbs.map(([label, verb]) => [label, verb] as const),
-	)("`%s` lists as one scannable line", (_label, verb) => {
-		expect(shortDescriptionDefects(verb.shortDescription)).toEqual([]);
-	});
+	it.each(verbs.map(([label, verb]) => [label, verb] as const))(
+		"`%s` lists as one scannable line",
+		(_label, verb) => {
+			expect(shortDescriptionDefects(verb.shortDescription)).toEqual([]);
+		},
+	);
 
-	it.each(
-		verbs.map(([label, verb]) => [label, verb] as const),
-	)("`%s` keeps its full contract in the long description", (_label, verb) => {
-		expect(verb.description ?? "").not.toBe("");
-		expect((verb.description ?? "").length).toBeGreaterThan((verb.shortDescription ?? "").length);
-	});
+	it.each(verbs.map(([label, verb]) => [label, verb] as const))(
+		"`%s` keeps its full contract in the long description",
+		(_label, verb) => {
+			expect(verb.description ?? "").not.toBe("");
+			expect((verb.description ?? "").length).toBeGreaterThan((verb.shortDescription ?? "").length);
+		},
+	);
 });
 
 /**
@@ -100,22 +102,27 @@ describe("every registered verb group carries a short list-row description", () 
 		expect(groups.length).toBeGreaterThan(0);
 	});
 
-	it.each(
-		groups.filter((group) => !isPending(group)).map((group) => [group.name, group] as const),
-	)("`fabrika %s` lists as one scannable line", (_name, group) => {
-		expect(shortDescriptionDefects(group.shortDescription)).toEqual([]);
-	});
+	it.each(groups.filter((group) => !isPending(group)).map((group) => [group.name, group] as const))(
+		"`fabrika %s` lists as one scannable line",
+		(_name, group) => {
+			expect(shortDescriptionDefects(group.shortDescription)).toEqual([]);
+		},
+	);
 
-	it.each(
-		groups.filter(isPending).map((group) => [group.name, group] as const),
-	)("`fabrika %s` is still pending — delete its entry once it is authored", (_name, group) => {
-		expect(shortDescriptionDefects(group.shortDescription)).not.toEqual([]);
-	});
+	it.each(groups.filter(isPending).map((group) => [group.name, group] as const))(
+		"`fabrika %s` is still pending — delete its entry once it is authored",
+		(_name, group) => {
+			expect(shortDescriptionDefects(group.shortDescription)).not.toEqual([]);
+		},
+	);
 
-	it.each(
-		groups.map((group) => [group.name, group] as const),
-	)("`fabrika %s` keeps its full description for its own --help", (_name, group) => {
-		expect(group.description ?? "").not.toBe("");
-		expect((group.description ?? "").length).toBeGreaterThan((group.shortDescription ?? "").length);
-	});
+	it.each(groups.map((group) => [group.name, group] as const))(
+		"`fabrika %s` keeps its full description for its own --help",
+		(_name, group) => {
+			expect(group.description ?? "").not.toBe("");
+			expect((group.description ?? "").length).toBeGreaterThan(
+				(group.shortDescription ?? "").length,
+			);
+		},
+	);
 });

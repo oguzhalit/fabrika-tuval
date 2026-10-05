@@ -2,11 +2,11 @@
  * `hook stash-guard` around its decision core: when it probes, what it says, and that every state in
  * which it judged nothing fails open, on a code the harness cannot read as a block.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeShell, okOut, type ScriptedExec} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import type {VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeShell, okOut, type ScriptedExec } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import type { VerbOutcome } from "../verb.ts";
 import {
 	EMPTY_STDIN,
 	ENVELOPE_UNKNOWN,
@@ -15,8 +15,8 @@ import {
 	MALFORMED_ENVELOPE,
 	WRONG_EVENT,
 } from "./codes.ts";
-import {PRETOOLUSE_BLOCKING_EXIT} from "./harness-exit.ts";
-import {runStashGuard} from "./stash-guard-verb.ts";
+import { PRETOOLUSE_BLOCKING_EXIT } from "./harness-exit.ts";
+import { runStashGuard } from "./stash-guard-verb.ts";
 
 const LINKED = okOut("/r/.git/worktrees/wt\n/r/.git\n");
 const PRIMARY = okOut("/r/.git\n/r/.git\n");
@@ -29,7 +29,7 @@ const envelope = (command: string, cwd = "/r/wt") =>
 		transcript_path: "/t.jsonl",
 		cwd,
 		tool_name: "Bash",
-		tool_input: {command},
+		tool_input: { command },
 	});
 
 const run = async (
@@ -44,21 +44,21 @@ const run = async (
 	const shell = fakeShell([[REV_PARSE, probe]], undefined, unstartable);
 	const out = await Effect.runPromise(
 		Effect.provide(
-			runStashGuard({stdin: Effect.succeed(stdin), env: {PATH: "/usr/bin"}}),
+			runStashGuard({ stdin: Effect.succeed(stdin), env: { PATH: "/usr/bin" } }),
 			shell.layer,
 		),
 	);
-	return {out, calls: shell.calls, cwds: shell.cwds};
+	return { out, calls: shell.calls, cwds: shell.cwds };
 };
 
-const text = (value: string): StdinRead => ({_tag: "Text", text: value});
+const text = (value: string): StdinRead => ({ _tag: "Text", text: value });
 
 const decisionOf = (out: VerbOutcome): Record<string, unknown> | undefined =>
-	(JSON.parse(out.stdout) as {hookSpecificOutput?: Record<string, unknown>}).hookSpecificOutput;
+	(JSON.parse(out.stdout) as { hookSpecificOutput?: Record<string, unknown> }).hookSpecificOutput;
 
 describe("the verdict", () => {
 	it("denies a git stash in a linked worktree, at exit 0 through hookSpecificOutput", async () => {
-		const {out, cwds} = await run(text(envelope("git -C /r/wt stash pop")));
+		const { out, cwds } = await run(text(envelope("git -C /r/wt stash pop")));
 
 		expect(out.code).toBe(0);
 		expect(decisionOf(out)).toMatchObject({
@@ -73,15 +73,15 @@ describe("the verdict", () => {
 	});
 
 	it("lets a git stash through where the git dir and common dir agree, with no decision", async () => {
-		const {out} = await run(text(envelope("git stash", "/r")), PRIMARY);
+		const { out } = await run(text(envelope("git stash", "/r")), PRIMARY);
 
 		expect(out.code).toBe(0);
 		expect(decisionOf(out)).toBeUndefined();
-		expect(JSON.parse(out.stdout)).toMatchObject({fabrika: {outcome: "allow"}});
+		expect(JSON.parse(out.stdout)).toMatchObject({ fabrika: { outcome: "allow" } });
 	});
 
 	it("runs no git at all for a command with no git stash in it", async () => {
-		const {out, calls} = await run(text(envelope("git status && pnpm test")));
+		const { out, calls } = await run(text(envelope("git status && pnpm test")));
 
 		expect(out.code).toBe(0);
 		expect(decisionOf(out)).toBeUndefined();
@@ -94,7 +94,7 @@ describe("the states in which nothing was judged fail open, and say so", () => {
 		["an empty stdin", () => run(text("")), EMPTY_STDIN],
 		[
 			"an unread fd 0",
-			() => run({_tag: "Failed", reason: "read failed"} as StdinRead),
+			() => run({ _tag: "Failed", reason: "read failed" } as StdinRead),
 			ENVELOPE_UNKNOWN,
 		],
 		["bytes that are not an envelope", () => run(text("{}")), MALFORMED_ENVELOPE],
@@ -112,7 +112,7 @@ describe("the states in which nothing was judged fail open, and say so", () => {
 	];
 
 	it.each(cases)("%s", async (_label, go, code) => {
-		const {out} = await go();
+		const { out } = await go();
 
 		expect(out.code).toBe(code);
 		expect(out.stdout).toBe("");
@@ -123,7 +123,7 @@ describe("the states in which nothing was judged fail open, and say so", () => {
 
 describe("routing", () => {
 	it("refuses an envelope for another event on WRONG_EVENT, rather than judging it", async () => {
-		const {out, calls} = await run(
+		const { out, calls } = await run(
 			text(
 				JSON.stringify({
 					hook_event_name: "SessionStart",
@@ -139,7 +139,7 @@ describe("routing", () => {
 	});
 
 	it("refuses a PreToolUse envelope carrying no command on WRONG_EVENT", async () => {
-		const {out} = await run(
+		const { out } = await run(
 			text(
 				JSON.stringify({
 					hook_event_name: "PreToolUse",
@@ -147,7 +147,7 @@ describe("routing", () => {
 					transcript_path: "/t",
 					cwd: "/r/wt",
 					tool_name: "Agent",
-					tool_input: {subagent_type: "general-purpose"},
+					tool_input: { subagent_type: "general-purpose" },
 				}),
 			),
 		);

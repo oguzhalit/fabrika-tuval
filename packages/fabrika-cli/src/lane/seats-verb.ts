@@ -18,15 +18,15 @@
  * holds: a seat count nobody could take is UNKNOWN, and answering `free` off a failed read would
  * send an operator to claim a lane the cap has no room for.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import {CONFIG_PATH} from "../config/document.ts";
-import {LANE_CONCURRENCY_CAP} from "../config/keys/lane-concurrency-cap.ts";
-import type {Read} from "../config/read-key.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import type {ClaimHoldReader} from "./claim-hold.ts";
-import {LANE_UNREADABLE} from "./codes.ts";
-import {type Seat, seatsIn} from "./concurrency.ts";
-import {DISPATCH_BUDGET} from "./shell-budget.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { CONFIG_PATH } from "../config/document.ts";
+import { LANE_CONCURRENCY_CAP } from "../config/keys/lane-concurrency-cap.ts";
+import type { Read } from "../config/read-key.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import type { ClaimHoldReader } from "./claim-hold.ts";
+import { LANE_UNREADABLE } from "./codes.ts";
+import { type Seat, seatsIn } from "./concurrency.ts";
+import { DISPATCH_BUDGET } from "./shell-budget.ts";
 
 const VERB = "fabrika lane seats";
 
@@ -74,7 +74,7 @@ export const runSeats = <R = never>(
 	options: SeatsOptions<R>,
 ): Effect.Effect<VerbOutcome, never, R | FileSystem.FileSystem | Path.Path> =>
 	Effect.gen(function* () {
-		const {cap, root} = options;
+		const { cap, root } = options;
 		if (cap._tag === "Refused") {
 			return refuse(
 				LANE_UNREADABLE,
@@ -88,7 +88,7 @@ export const runSeats = <R = never>(
 				`${VERB}: cannot list ${root} to count the lanes standing against \`${LANE_CONCURRENCY_CAP}\` (${counted.reason}) — the seat count is UNKNOWN, never zero.`,
 			);
 		}
-		const {seats, idle} = counted;
+		const { seats, idle } = counted;
 		const limit = cap.value;
 		const claimed = seats.filter((seat) => seat.held === "claimed");
 		const unaccountable = seats.filter((seat) => seat.held === "unaccountable");

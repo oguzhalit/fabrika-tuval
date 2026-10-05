@@ -1,18 +1,18 @@
-import {describe, expect, it} from "vitest";
-import {parseLocaleOperand, readLocaleProof} from "./locale-seed.ts";
+import { describe, expect, it } from "vitest";
+import { parseLocaleOperand, readLocaleProof } from "./locale-seed.ts";
 
-const DECLARED = {storageKey: "app.locale", values: ["tr", "en"]};
+const DECLARED = { storageKey: "app.locale", values: ["tr", "en"] };
 
 describe("parseLocaleOperand", () => {
 	it("seeds nothing when no operand was passed, declared or not", () => {
-		expect(parseLocaleOperand(null, DECLARED)).toEqual({_tag: "Default"});
-		expect(parseLocaleOperand(null, null)).toEqual({_tag: "Default"});
+		expect(parseLocaleOperand(null, DECLARED)).toEqual({ _tag: "Default" });
+		expect(parseLocaleOperand(null, null)).toEqual({ _tag: "Default" });
 	});
 
 	it("seeds the declared key with a declared value", () => {
 		expect(parseLocaleOperand("en", DECLARED)).toEqual({
 			_tag: "Seeded",
-			seed: {storageKey: "app.locale", value: "en"},
+			seed: { storageKey: "app.locale", value: "en" },
 		});
 	});
 
@@ -36,12 +36,12 @@ describe("parseLocaleOperand", () => {
 
 describe("readLocaleProof", () => {
 	it("proves a page whose lang names the requested value", () => {
-		expect(readLocaleProof("en", "en")).toEqual({_tag: "Seeded"});
+		expect(readLocaleProof("en", "en")).toEqual({ _tag: "Seeded" });
 	});
 
 	it("names the lang a default-locale page read back", () => {
-		expect(readLocaleProof("en", "tr")).toEqual({_tag: "Mismatch", rendered: "tr"});
-		expect(readLocaleProof("en", "")).toEqual({_tag: "Mismatch", rendered: ""});
+		expect(readLocaleProof("en", "tr")).toEqual({ _tag: "Mismatch", rendered: "tr" });
+		expect(readLocaleProof("en", "")).toEqual({ _tag: "Mismatch", rendered: "" });
 	});
 
 	it("keeps a lang that is not a string unreadable, never a mismatch", () => {

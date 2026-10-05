@@ -3,12 +3,12 @@
  * sends, when it stays silent, and that neither a failed read nor a failed post passes for an empty
  * report.
  */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs, fakeShell, unconfigured} from "../fakes.test-support.ts";
-import {type Attempt, fail, ok} from "../io/git.ts";
-import {type ListedIssue, present} from "../io/issues.ts";
-import type {ProjectItem, ProjectSnapshot, ProjectsAnswer} from "../io/projects.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs, fakeShell, unconfigured } from "../fakes.test-support.ts";
+import { type Attempt, fail, ok } from "../io/git.ts";
+import { type ListedIssue, present } from "../io/issues.ts";
+import type { ProjectItem, ProjectSnapshot, ProjectsAnswer } from "../io/projects.ts";
 import {
 	CONFIG_MALFORMED,
 	NO_WEBHOOK,
@@ -16,19 +16,19 @@ import {
 	SCOPE_MISSING,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {type DigestBoard, runDigest} from "./digest-verb.ts";
-import type {SyncNode} from "./sync.ts";
-import type {Located} from "./sync-verb.ts";
+import { type DigestBoard, runDigest } from "./digest-verb.ts";
+import type { SyncNode } from "./sync.ts";
+import type { Located } from "./sync-verb.ts";
 
 const REPO = "acme/widgets";
 const NOW = new Date("2026-10-03T12:00:00.000Z");
 const URL_TEXT = "https://hooks.example.test/services/T000/B000/secret-token";
-const ENV = {FABRIKA_DIGEST_WEBHOOK: URL_TEXT};
+const ENV = { FABRIKA_DIGEST_WEBHOOK: URL_TEXT };
 
 const ON_CALL: ProjectSnapshot = {
 	id: "PVT_2",
 	number: 4,
-	owner: {kind: "Organization", login: "acme"},
+	owner: { kind: "Organization", login: "acme" },
 	url: "https://github.com/orgs/acme/projects/4",
 	title: "widgets on-call",
 	createdAt: "2026-10-02T12:00:00.000Z",
@@ -74,11 +74,11 @@ const world = (
 		/** The issues on the on-call board. */
 		onCall?: ReadonlyArray<number>;
 		/** The table's rows and the Stage each reads. */
-		table?: ReadonlyArray<{readonly number: number; readonly stage: string}>;
+		table?: ReadonlyArray<{ readonly number: number; readonly stage: string }>;
 	} = {},
 ) => {
 	const calls: string[] = [];
-	const posts: Array<{tool: string; url: string; text: string}> = [];
+	const posts: Array<{ tool: string; url: string; text: string }> = [];
 	const item = (number: number, values: ProjectItem["values"]): ProjectItem => ({
 		itemId: `PVTI_${number}`,
 		contentNumber: number,
@@ -87,12 +87,12 @@ const world = (
 		values,
 	});
 	const tableItems = (): ReadonlyArray<ProjectItem> =>
-		(over.table ?? [{number: 5, stage: "bet"}]).map((row) =>
+		(over.table ?? [{ number: 5, stage: "bet" }]).map((row) =>
 			item(row.number, [
 				{
 					fieldId: "F_Stage",
 					fieldName: "Stage",
-					value: {_tag: "Option", optionId: `Stage:${row.stage}`, name: row.stage},
+					value: { _tag: "Option", optionId: `Stage:${row.stage}`, name: row.stage },
 					creator: "octo-owner",
 					updatedAt: "2026-10-01T00:00:00.000Z",
 				},
@@ -107,7 +107,7 @@ const world = (
 			calls.push("locate");
 			const found = (project: ProjectSnapshot): ProjectsAnswer<Located> => ({
 				_tag: "Ok",
-				value: {_tag: "Located", project},
+				value: { _tag: "Located", project },
 			});
 			return Effect.succeed(
 				target.key.startsWith("boards.")
@@ -138,31 +138,31 @@ const world = (
 			),
 		post: (tool, url, text) => {
 			calls.push("post");
-			posts.push({tool, url: url.href, text});
+			posts.push({ tool, url: url.href, text });
 			return Effect.succeed(over.posted ?? ok(null));
 		},
 	};
-	return {board, calls, posts};
+	return { board, calls, posts };
 };
 
 const config = (blocks: Readonly<Record<string, unknown>>) =>
-	fakeFs({files: {"/repo/.fabrika.jsonc": JSON.stringify(blocks)}}).layer;
+	fakeFs({ files: { "/repo/.fabrika.jsonc": JSON.stringify(blocks) } }).layer;
 
 const SPLIT = {
 	onCall: {
 		responseTargets: {
-			byLabel: [{name: "4h", hours: 4, labels: ["p0"]}],
-			otherwise: {name: "3 days", hours: 72},
+			byLabel: [{ name: "4h", hours: 4, labels: ["p0"] }],
+			otherwise: { name: "3 days", hours: 72 },
 		},
 	},
 };
 
-const SLACK = config({digest: {tool: "slack"}, boards: SPLIT});
+const SLACK = config({ digest: { tool: "slack" }, boards: SPLIT });
 
 const digest = (
 	board: DigestBoard<never>,
 	layer: typeof unconfigured = SLACK,
-	over: {env?: Readonly<Record<string, string | undefined>>; dryRun?: boolean} = {},
+	over: { env?: Readonly<Record<string, string | undefined>>; dryRun?: boolean } = {},
 ) =>
 	Effect.runPromise(
 		Effect.provide(
@@ -180,18 +180,18 @@ const digest = (
 
 describe("a repository with no digest block", () => {
 	it("exits clean, reads nothing and sends nothing", async () => {
-		const {board, calls} = world();
-		const out = await digest(board, unconfigured, {env: {}});
+		const { board, calls } = world();
+		const out = await digest(board, unconfigured, { env: {} });
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toEqual({answer: "off"});
+		expect(JSON.parse(out.stdout)).toEqual({ answer: "off" });
 		expect(calls).toEqual([]);
 	});
 });
 
 describe("a repository that opted in", () => {
 	it("posts the late triage queue and the late items on the on-call board", async () => {
-		const {board, posts} = world();
+		const { board, posts } = world();
 		const out = await digest(board);
 
 		expect(out.code).toBe(0);
@@ -201,75 +201,77 @@ describe("a repository that opted in", () => {
 			tool: "slack",
 			late: 2,
 			sections: [
-				{section: "triage", late: [{issue: 1, target: "24 hours", waitedHours: 60}]},
+				{ section: "triage", late: [{ issue: 1, target: "24 hours", waitedHours: 60 }] },
 				{
 					section: "on-call",
-					late: [{issue: 3, target: "4h", since: "2026-10-03T02:00:00.000Z", waitedHours: 10}],
+					late: [{ issue: 3, target: "4h", since: "2026-10-03T02:00:00.000Z", waitedHours: 10 }],
 				},
 			],
 			notAsked: [],
 		});
 		expect(posts).toHaveLength(1);
-		expect(posts[0]).toMatchObject({tool: "slack", url: URL_TEXT});
+		expect(posts[0]).toMatchObject({ tool: "slack", url: URL_TEXT });
 		expect(posts[0]?.text).toContain("#1 Issue 1: target 24 hours, waited 2 days.");
 		expect(posts[0]?.text).toContain("#3 Issue 3: target 4h, waited 10 hours.");
 	});
 
 	it("reports an issue the routing rule sends to on-call that nobody has placed on the board yet", async () => {
-		const {board} = world({table: []});
+		const { board } = world({ table: [] });
 		const out = await digest(board);
 
 		expect(JSON.parse(out.stdout).sections[1]).toEqual({
 			section: "on-call",
 			late: [
-				{issue: 5, target: "4h", hours: 4, since: ON_CALL.createdAt, waitedHours: 24},
-				{issue: 3, target: "4h", hours: 4, since: "2026-10-03T02:00:00.000Z", waitedHours: 10},
+				{ issue: 5, target: "4h", hours: 4, since: ON_CALL.createdAt, waitedHours: 24 },
+				{ issue: 3, target: "4h", hours: 4, since: "2026-10-03T02:00:00.000Z", waitedHours: 10 },
 			],
 		});
 	});
 
 	it("follows the routing rule the block declares", async () => {
-		const {board} = world({table: [], onCall: []});
-		const byLabel = {onCall: {...SPLIT.onCall, route: {origins: [], types: [], labels: ["p0"]}}};
-		const out = await digest(board, config({digest: {tool: "slack"}, boards: byLabel}));
-		const none = {onCall: {...SPLIT.onCall, route: {origins: [], types: [], labels: []}}};
-		const quiet = await digest(board, config({digest: {tool: "slack"}, boards: none}));
+		const { board } = world({ table: [], onCall: [] });
+		const byLabel = {
+			onCall: { ...SPLIT.onCall, route: { origins: [], types: [], labels: ["p0"] } },
+		};
+		const out = await digest(board, config({ digest: { tool: "slack" }, boards: byLabel }));
+		const none = { onCall: { ...SPLIT.onCall, route: { origins: [], types: [], labels: [] } } };
+		const quiet = await digest(board, config({ digest: { tool: "slack" }, boards: none }));
 
 		expect(
-			JSON.parse(out.stdout).sections[1].late.map((late: {issue: number}) => late.issue),
+			JSON.parse(out.stdout).sections[1].late.map((late: { issue: number }) => late.issue),
 		).toEqual([5, 3]);
 		expect(JSON.parse(quiet.stdout).sections[1].late).toEqual([]);
 	});
 
 	it("leaves out a routed issue the table still holds", async () => {
-		const {board} = world({table: [{number: 5, stage: "not now"}], onCall: []});
+		const { board } = world({ table: [{ number: 5, stage: "not now" }], onCall: [] });
 		const out = await digest(board);
 
 		expect(
-			JSON.parse(out.stdout).sections[1].late.map((late: {issue: number}) => late.issue),
+			JSON.parse(out.stdout).sections[1].late.map((late: { issue: number }) => late.issue),
 		).toEqual([3]);
 	});
 
 	it("reports the triage queue alone, with no board read, when the block names only that section", async () => {
-		const {board, calls} = world();
-		const out = await digest(board, config({digest: {tool: "slack", sections: ["triage"]}}));
+		const { board, calls } = world();
+		const out = await digest(board, config({ digest: { tool: "slack", sections: ["triage"] } }));
 
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "sent", late: 1});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "sent", late: 1 });
 		expect(calls).toEqual(["openIssues", "post"]);
 	});
 
 	it("sends nothing when nothing is late", async () => {
-		const {board, calls} = world({issues: ok([OPEN[1] as ListedIssue]), onCall: []});
+		const { board, calls } = world({ issues: ok([OPEN[1] as ListedIssue]), onCall: [] });
 		const out = await digest(board);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "quiet", late: 0, text: null});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "quiet", late: 0, text: null });
 		expect(calls).not.toContain("post");
 	});
 
 	it("sends the all-clear when the block asks for one", async () => {
-		const {board, posts} = world({issues: ok([])});
-		const out = await digest(board, config({digest: {tool: "discord", allClear: true}}));
+		const { board, posts } = world({ issues: ok([]) });
+		const out = await digest(board, config({ digest: { tool: "discord", allClear: true } }));
 
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			answer: "sent",
@@ -283,11 +285,11 @@ describe("a repository that opted in", () => {
 	});
 
 	it("prints the report and sends nothing on --dry-run, with no webhook variable set", async () => {
-		const {board, calls} = world();
-		const out = await digest(board, SLACK, {env: {}, dryRun: true});
+		const { board, calls } = world();
+		const out = await digest(board, SLACK, { env: {}, dryRun: true });
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "dry-run", late: 2});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "dry-run", late: 2 });
 		expect(JSON.parse(out.stdout).text).toContain("acme/widgets: 2 issues past");
 		expect(calls).not.toContain("post");
 	});
@@ -295,7 +297,7 @@ describe("a repository that opted in", () => {
 
 describe("what it refuses", () => {
 	it("refuses an unreadable issue list and never reports it as empty", async () => {
-		const {board, calls} = world({issues: fail("HTTP 502")});
+		const { board, calls } = world({ issues: fail("HTTP 502") });
 		const out = await digest(board);
 
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -305,7 +307,7 @@ describe("what it refuses", () => {
 	});
 
 	it("refuses an on-call board it could not read, naming the read and the way out", async () => {
-		const unreachable = world({located: {_tag: "Failed", reason: "HTTP 502"}});
+		const unreachable = world({ located: { _tag: "Failed", reason: "HTTP 502" } });
 		const failed = await digest(unreachable.board);
 
 		expect(failed.code).toBe(PRECONDITION_UNKNOWN);
@@ -314,13 +316,15 @@ describe("what it refuses", () => {
 		expect(failed.stderr.join("\n")).toContain("leave `on-call` out of `digest.sections`");
 		expect(unreachable.calls).not.toContain("post");
 
-		const unscoped = world({located: {_tag: "MissingScope", reason: "the token lacks the scope"}});
+		const unscoped = world({
+			located: { _tag: "MissingScope", reason: "the token lacks the scope" },
+		});
 		expect((await digest(unscoped.board)).code).toBe(SCOPE_MISSING);
 		expect(unscoped.calls).not.toContain("post");
 	});
 
 	it("refuses a table it could not read, since the held issues decide who is on-call", async () => {
-		const {board, calls} = world({tableLocated: {_tag: "Failed", reason: "HTTP 502"}});
+		const { board, calls } = world({ tableLocated: { _tag: "Failed", reason: "HTTP 502" } });
 		const out = await digest(board);
 
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -331,7 +335,7 @@ describe("what it refuses", () => {
 	});
 
 	it("refuses a failed post, with the webhook URL in no line it prints", async () => {
-		const {board} = world({posted: fail(`POST ${URL_TEXT} returned HTTP 404`)});
+		const { board } = world({ posted: fail(`POST ${URL_TEXT} returned HTTP 404`) });
 		const out = await digest(board);
 		const printed = [out.stdout, ...out.stderr].join("\n");
 
@@ -345,7 +349,7 @@ describe("what it refuses", () => {
 
 	it("refuses before any read when the named variable holds no URL, without printing its value", async () => {
 		const unset = world();
-		const none = await digest(unset.board, SLACK, {env: {}});
+		const none = await digest(unset.board, SLACK, { env: {} });
 
 		expect(none.code).toBe(NO_WEBHOOK);
 		expect(none.stderr.join("\n")).toContain("FABRIKA_DIGEST_WEBHOOK");
@@ -353,7 +357,7 @@ describe("what it refuses", () => {
 
 		const junk = world();
 		const bad = await digest(junk.board, SLACK, {
-			env: {FABRIKA_DIGEST_WEBHOOK: "secret-token-not-a-url"},
+			env: { FABRIKA_DIGEST_WEBHOOK: "secret-token-not-a-url" },
 		});
 
 		expect(bad.code).toBe(NO_WEBHOOK);
@@ -362,8 +366,8 @@ describe("what it refuses", () => {
 	});
 
 	it("refuses a digest block that does not decode", async () => {
-		const {board, calls} = world();
-		const out = await digest(board, config({digest: {tool: "teams"}}));
+		const { board, calls } = world();
+		const out = await digest(board, config({ digest: { tool: "teams" } }));
 
 		expect(out.code).toBe(CONFIG_MALFORMED);
 		expect(out.stderr.join("\n")).toContain("`digest.tool` is not a chat tool");

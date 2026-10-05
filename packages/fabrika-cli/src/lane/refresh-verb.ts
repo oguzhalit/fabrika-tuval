@@ -22,15 +22,15 @@
  * and recording the park is the driver's. On exit 0 the last stdout line is
  * `REFRESH-VERDICT: MERGED` or `REFRESH-VERDICT: CURRENT`, and the line above it the head.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {ASSEMBLY_REFRESH, type AssemblyRefreshSurface} from "../config/keys/assembly-refresh.ts";
-import type {Read} from "../config/read-key.ts";
-import {execCapture} from "../io/exec.ts";
-import {baseOrTrunk, trunkUnresolved} from "../io/trunk.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {epicBranch} from "../wire/lane-brief.ts";
-import {assemblySeat, worktrees} from "./assembly.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { ASSEMBLY_REFRESH, type AssemblyRefreshSurface } from "../config/keys/assembly-refresh.ts";
+import type { Read } from "../config/read-key.ts";
+import { execCapture } from "../io/exec.ts";
+import { baseOrTrunk, trunkUnresolved } from "../io/trunk.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { epicBranch } from "../wire/lane-brief.ts";
+import { assemblySeat, worktrees } from "./assembly.ts";
 import {
 	APPEND_UNKNOWN,
 	ASSEMBLY_DIRTY,
@@ -41,8 +41,8 @@ import {
 	PRIMARY_CHECKOUT,
 	PROOF_ABSENT,
 } from "./codes.ts";
-import {loadRefusal} from "./refusals.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { loadRefusal } from "./refusals.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane refresh";
 
@@ -102,8 +102,8 @@ const diagnostics = (output: string): ReadonlyArray<string> => {
 const headOf = (path: string) =>
 	Effect.map(execCapture("git", ["-C", path, "rev-parse", "HEAD"]), (read) =>
 		read.ok
-			? ({_tag: "Read", sha: read.stdout.trim()} as const)
-			: ({_tag: "Unreadable", reason: read.reason} as const),
+			? ({ _tag: "Read", sha: read.stdout.trim() } as const)
+			: ({ _tag: "Unreadable", reason: read.reason } as const),
 	);
 
 const trackedChanges = (path: string) =>
@@ -115,7 +115,7 @@ const trackedChanges = (path: string) =>
 						_tag: "Read",
 						paths: read.stdout.split("\n").filter((line) => line.trim() !== ""),
 					} as const)
-				: ({_tag: "Unreadable", reason: read.reason} as const),
+				: ({ _tag: "Unreadable", reason: read.reason } as const),
 	);
 
 /**

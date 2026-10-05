@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {emitFromFields, parseFields, read, readToLines} from "./map-ticket.ts";
+import { describe, expect, it } from "vitest";
+import { emitFromFields, parseFields, read, readToLines } from "./map-ticket.ts";
 
 const marker = "map-ticket: #4 · research · 7f3a9c21";
 
@@ -7,7 +7,7 @@ describe("read", () => {
 	it("finds the marker's three fields", () => {
 		expect(read(`${marker}\n`)).toEqual({
 			_tag: "Found",
-			value: {map: 4, kind: "research", nonce: "7f3a9c21"},
+			value: { map: 4, kind: "research", nonce: "7f3a9c21" },
 		});
 	});
 
@@ -15,14 +15,15 @@ describe("read", () => {
 		expect(read("\n \n")._tag).toBe("Absent");
 	});
 
-	it.each([
-		["a separator that drifted", "map-ticket: #4 - research - 7f3a9c21"],
-	])("answers Malformed, not Absent, on %s", (_drift, artifact) => {
-		const result = read(`${artifact}\n`);
-		expect(result._tag).toBe("Malformed");
-		// The evidence is the offending bytes quoted back, so a reader can see what was judged.
-		expect(result._tag === "Malformed" && result.evidence).toContain(artifact);
-	});
+	it.each([["a separator that drifted", "map-ticket: #4 - research - 7f3a9c21"]])(
+		"answers Malformed, not Absent, on %s",
+		(_drift, artifact) => {
+			const result = read(`${artifact}\n`);
+			expect(result._tag).toBe("Malformed");
+			// The evidence is the offending bytes quoted back, so a reader can see what was judged.
+			expect(result._tag === "Malformed" && result.evidence).toContain(artifact);
+		},
+	);
 
 	it("does not read a marker quoted further down the body", () => {
 		expect(read(`Someone wrote:\n\n${marker}\n`)._tag).toBe("Absent");
@@ -33,7 +34,7 @@ describe("parseFields", () => {
 	it("takes the fields in any order", () => {
 		expect(parseFields("nonce: 7f3a9c21\nkind: prototype\nmap: 4")).toMatchObject({
 			_tag: "Fields",
-			marker: {map: 4, kind: "prototype", nonce: "7f3a9c21"},
+			marker: { map: 4, kind: "prototype", nonce: "7f3a9c21" },
 		});
 	});
 

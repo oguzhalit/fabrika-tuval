@@ -19,16 +19,16 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9821
  */
 
-import {type AppetiteSizes, SIZES, type Size} from "../config/keys/appetite-sizes.ts";
-import type {OnCallBoard, ResponseTargets} from "../config/keys/boards.ts";
-import type {TableSettings} from "../config/keys/table.ts";
-import type {LaneRecord} from "../wire/lane-record.ts";
-import {type RouteBasis, readRoutedBasis} from "../wire/routed-elsewhere.ts";
-import {BET_STAGE} from "./bets.ts";
-import {type Group, type GroupKind, issuesOf, kindOf} from "./group.ts";
-import {responseTargetOf} from "./on-call.ts";
-import {tallyOver} from "./sync.ts";
-import {latestPerLane, latestRecord, measuredUsd} from "./tally.ts";
+import { type AppetiteSizes, SIZES, type Size } from "../config/keys/appetite-sizes.ts";
+import type { OnCallBoard, ResponseTargets } from "../config/keys/boards.ts";
+import type { TableSettings } from "../config/keys/table.ts";
+import type { LaneRecord } from "../wire/lane-record.ts";
+import { type RouteBasis, readRoutedBasis } from "../wire/routed-elsewhere.ts";
+import { BET_STAGE } from "./bets.ts";
+import { type Group, type GroupKind, issuesOf, kindOf } from "./group.ts";
+import { responseTargetOf } from "./on-call.ts";
+import { tallyOver } from "./sync.ts";
+import { latestPerLane, latestRecord, measuredUsd } from "./tally.ts";
 
 /** The Stage values that mean work is live: said yes to, or in a lane. */
 export const LIVE_STAGES: ReadonlySet<string> = new Set([BET_STAGE, "in lane"]);
@@ -73,16 +73,16 @@ export interface NotAsked {
 	readonly _tag: "NotAsked";
 }
 
-export const NOT_ASKED: NotAsked = {_tag: "NotAsked"};
+export const NOT_ASKED: NotAsked = { _tag: "NotAsked" };
 
 export type Deciders =
-	| {readonly _tag: "Roster"; readonly logins: ReadonlySet<string>}
-	| {readonly _tag: "Unread"; readonly reason: string}
+	| { readonly _tag: "Roster"; readonly logins: ReadonlySet<string> }
+	| { readonly _tag: "Unread"; readonly reason: string }
 	| NotAsked;
 
 export type Campaigns =
-	| {readonly _tag: "Read"; readonly active: ReadonlyArray<string>}
-	| {readonly _tag: "Unread"; readonly reason: string}
+	| { readonly _tag: "Read"; readonly active: ReadonlyArray<string> }
+	| { readonly _tag: "Unread"; readonly reason: string }
 	| NotAsked;
 
 /** The week the fabrika share is judged over, and which issues are fabrika's own work. */
@@ -95,7 +95,7 @@ export type ShareWeek =
 			readonly table: number;
 			readonly fabrika: ReadonlySet<number>;
 	  }
-	| {readonly _tag: "Unread"; readonly reason: string}
+	| { readonly _tag: "Unread"; readonly reason: string }
 	| NotAsked;
 
 /** An open on-call item: its labels pick the target it waits against, and its filing starts the wait. */
@@ -117,10 +117,10 @@ export type OnCallRead =
 			readonly open: ReadonlyArray<OnCallItem>;
 			/** The week the share is judged over. */
 			readonly week:
-				| {readonly _tag: "Week"; readonly start: string; readonly end: string}
-				| {readonly _tag: "Unread"; readonly reason: string};
+				| { readonly _tag: "Week"; readonly start: string; readonly end: string }
+				| { readonly _tag: "Unread"; readonly reason: string };
 	  }
-	| {readonly _tag: "Unread"; readonly reason: string}
+	| { readonly _tag: "Unread"; readonly reason: string }
 	| NotAsked;
 
 export interface FlagInput {
@@ -155,7 +155,7 @@ export interface OverSize extends OnRow {
 
 export type Flag =
 	| OverSize
-	| (OnRow & {readonly _tag: "Asks"; readonly asks: number})
+	| (OnRow & { readonly _tag: "Asks"; readonly asks: number })
 	| (OnRow & {
 			readonly _tag: "Stuck";
 			readonly quietSince: string;
@@ -163,9 +163,9 @@ export type Flag =
 			/** Why the row waits, when a record says so. */
 			readonly waiting: string | null;
 	  })
-	| (OnRow & {readonly _tag: "UnknownDecider"; readonly setter: string | null})
+	| (OnRow & { readonly _tag: "UnknownDecider"; readonly setter: string | null })
 	| NotRendered
-	| {readonly _tag: "Campaigns"; readonly active: ReadonlyArray<string>; readonly cap: number}
+	| { readonly _tag: "Campaigns"; readonly active: ReadonlyArray<string>; readonly cap: number }
 	| {
 			readonly _tag: "FabrikaShare";
 			readonly percent: number;
@@ -250,10 +250,10 @@ const cents = (usd: number): number => Math.round(usd * 100) / 100;
 /** A row's spend against its size. */
 export type SizeRead =
 	/** The row has no size, or spent no more than it. */
-	| {readonly _tag: "Within"}
-	| {readonly _tag: "Over"; readonly flag: OverSize}
+	| { readonly _tag: "Within" }
+	| { readonly _tag: "Over"; readonly flag: OverSize }
 	/** Within its size on what was measured, with a lane unmeasured: over or not is unknown. */
-	| {readonly _tag: "Unmeasured"; readonly unread: Unread};
+	| { readonly _tag: "Unmeasured"; readonly unread: Unread };
 
 /**
  * One row's spend against its size. The measured dollars are a floor on the real spend, so a floor
@@ -264,7 +264,7 @@ export const sizeReadOf = (
 	input: Pick<FlagInput, "settings" | "sizes" | "records">,
 ): SizeRead => {
 	const limit = limitOf(row, input.sizes);
-	if (row.size === null || limit === null) return {_tag: "Within"};
+	if (row.size === null || limit === null) return { _tag: "Within" };
 	const spend = tallyOver(issuesOf(row.group), input.records, sinceOf(row)).spend;
 	const spent = measuredUsd(spend);
 	if (spent > limit * input.settings.flagMultiple) {
@@ -289,7 +289,7 @@ export const sizeReadOf = (
 					reason: `${spend.lanes} lane(s) went unmeasured and the measured $${spent} is within its flag point, ${input.settings.flagMultiple}x its $${limit} size`,
 				},
 			}
-		: {_tag: "Within"};
+		: { _tag: "Within" };
 };
 
 /** The latest moment anything happened on the row: a lane ending, or its Stage being set. */
@@ -361,14 +361,17 @@ export const unrenderedOf = (
 				readonly pr: string | null;
 			}>;
 	  }
-	| {readonly _tag: "Unread"; readonly reason: string} => {
+	| { readonly _tag: "Unread"; readonly reason: string } => {
 	const lastPass = new Map<string, Record<string, unknown>>();
 	for (const [index, line] of record.log.entries()) {
 		let parsed: unknown;
 		try {
 			parsed = JSON.parse(line);
 		} catch {
-			return {_tag: "Unread", reason: `lane log line ${index + 1} on #${record.issue} is not JSON`};
+			return {
+				_tag: "Unread",
+				reason: `lane log line ${index + 1} on #${record.issue} is not JSON`,
+			};
 		}
 		if (typeof parsed !== "object" || parsed === null) continue;
 		const entry = parsed as Record<string, unknown>;
@@ -381,7 +384,7 @@ export const unrenderedOf = (
 		const read = readRoutedBasis(entry.routedBasis, routed);
 		if (read === null) return [null];
 		const pr = typeof entry.pr === "string" ? entry.pr : null;
-		return Object.entries(read).map(([namespace, basis]) => ({namespace, basis, pr}));
+		return Object.entries(read).map(([namespace, basis]) => ({ namespace, basis, pr }));
 	});
 	return routes.includes(null)
 		? {
@@ -401,14 +404,14 @@ const notRenderedOf = (row: HeadRow, input: FlagInput, unread: Unread[]): Readon
 		for (const record of latestPerLane(input.records.get(issue) ?? [])) {
 			const read = unrenderedOf(record);
 			if (read._tag === "Unread") {
-				unread.push({check: "not-rendered", issue, reason: read.reason});
+				unread.push({ check: "not-rendered", issue, reason: read.reason });
 				continue;
 			}
 			for (const route of read.routes) {
 				const key = `${issue} ${route.namespace} ${route.basis}`;
 				if (seen.has(key)) continue;
 				seen.add(key);
-				flags.push({_tag: "NotRendered", ...onRow(row.group), issue, ...route});
+				flags.push({ _tag: "NotRendered", ...onRow(row.group), issue, ...route });
 			}
 		}
 	}
@@ -421,7 +424,7 @@ const rowFlags = (row: HeadRow, input: FlagInput, unread: Unread[]): ReadonlyArr
 		const setter = row.stage.setter;
 		const known = new Set([...input.deciders.logins].map((login) => login.toLowerCase()));
 		if (setter === null || !known.has(setter.toLowerCase())) {
-			flags.push({_tag: "UnknownDecider", ...onRow(row.group), setter});
+			flags.push({ _tag: "UnknownDecider", ...onRow(row.group), setter });
 		}
 	}
 	if (!isLive(row)) return flags;
@@ -429,7 +432,7 @@ const rowFlags = (row: HeadRow, input: FlagInput, unread: Unread[]): ReadonlyArr
 	if (size._tag === "Over") flags.push(size.flag);
 	if (size._tag === "Unmeasured") unread.push(size.unread);
 	const asks = tallyOver(issuesOf(row.group), input.records, sinceOf(row)).asks;
-	if (asks >= input.settings.asksFlag) flags.push({_tag: "Asks", ...onRow(row.group), asks});
+	if (asks >= input.settings.asksFlag) flags.push({ _tag: "Asks", ...onRow(row.group), asks });
 	const stuck = stuckOf(row, input);
 	if (stuck !== null) flags.push(stuck);
 	return flags;
@@ -444,7 +447,7 @@ export const shareTarget = (settings: TableSettings, table: number): number =>
 /** Each issue's lanes whose latest terminal falls inside the week. */
 export const weekLanes = (
 	records: ReadonlyMap<number, ReadonlyArray<LaneRecord>>,
-	week: {readonly start: string; readonly end: string},
+	week: { readonly start: string; readonly end: string },
 ): ReadonlyMap<number, ReadonlyArray<LaneRecord>> => {
 	const from = Date.parse(week.start);
 	const to = Date.parse(week.end);
@@ -463,7 +466,7 @@ const shareOf = (input: FlagInput, unread: Unread[]): Flag | null => {
 	const week = input.share;
 	if (week._tag === "NotAsked") return null;
 	if (week._tag === "Unread") {
-		unread.push({check: "fabrika-share", issue: null, reason: week.reason});
+		unread.push({ check: "fabrika-share", issue: null, reason: week.reason });
 		return null;
 	}
 	let total = 0;
@@ -508,10 +511,10 @@ export const flagsOf = (input: FlagInput): FlagReport => {
 	const rows = [...input.rows].sort((a, b) => a.group.head - b.group.head);
 	const flags: Flag[] = rows.flatMap((row) => rowFlags(row, input, unread));
 	if (input.deciders._tag === "Unread" && rows.some((row) => row.stage?.name === BET_STAGE)) {
-		unread.push({check: "unknown-decider", issue: null, reason: input.deciders.reason});
+		unread.push({ check: "unknown-decider", issue: null, reason: input.deciders.reason });
 	}
 	if (input.campaigns._tag === "Unread") {
-		unread.push({check: "campaigns", issue: null, reason: input.campaigns.reason});
+		unread.push({ check: "campaigns", issue: null, reason: input.campaigns.reason });
 	} else if (
 		input.campaigns._tag === "Read" &&
 		input.campaigns.active.length > input.settings.activeCampaignFlag
@@ -525,7 +528,7 @@ export const flagsOf = (input: FlagInput): FlagReport => {
 	const share = shareOf(input, unread);
 	if (share !== null) flags.push(share);
 	flags.push(...onCallFlags(input, unread));
-	return {flags, unread};
+	return { flags, unread };
 };
 
 const HOUR_MS = 3_600_000;
@@ -567,13 +570,13 @@ export type OnCallSpend =
 			readonly totalUsd: number;
 	  }
 	/** Some lane went unmeasured, so no share of the week is known. */
-	| {readonly _tag: "Unmeasured"; readonly lanes: number}
+	| { readonly _tag: "Unmeasured"; readonly lanes: number }
 	/** Nothing was spent that week. */
-	| {readonly _tag: "Nothing"};
+	| { readonly _tag: "Nothing" };
 
 export const onCallSpendOf = (
 	records: ReadonlyMap<number, ReadonlyArray<LaneRecord>>,
-	week: {readonly start: string; readonly end: string},
+	week: { readonly start: string; readonly end: string },
 	onCall: ReadonlySet<number>,
 ): OnCallSpend => {
 	let total = 0;
@@ -589,8 +592,8 @@ export const onCallSpendOf = (
 			if (onCall.has(issue)) spent += lane.spent.usd;
 		}
 	}
-	if (unmeasured > 0) return {_tag: "Unmeasured", lanes: unmeasured};
-	if (total === 0) return {_tag: "Nothing"};
+	if (unmeasured > 0) return { _tag: "Unmeasured", lanes: unmeasured };
+	if (total === 0) return { _tag: "Nothing" };
 	return {
 		_tag: "Measured",
 		percent: cents((spent / total) * 100),
@@ -603,8 +606,8 @@ const onCallFlags = (input: FlagInput, unread: Unread[]): ReadonlyArray<Flag> =>
 	const board = input.onCall;
 	if (board._tag === "NotAsked") return [];
 	if (board._tag === "Unread") {
-		unread.push({check: "past-target", issue: null, reason: board.reason});
-		unread.push({check: "on-call-share", issue: null, reason: board.reason});
+		unread.push({ check: "past-target", issue: null, reason: board.reason });
+		unread.push({ check: "on-call-share", issue: null, reason: board.reason });
 		return [];
 	}
 	const flags: Flag[] = [];
@@ -618,7 +621,7 @@ const onCallFlags = (input: FlagInput, unread: Unread[]): ReadonlyArray<Flag> =>
 		if (past !== null) flags.push(past);
 	}
 	if (board.week._tag === "Unread") {
-		unread.push({check: "on-call-share", issue: null, reason: board.week.reason});
+		unread.push({ check: "on-call-share", issue: null, reason: board.week.reason });
 		return flags;
 	}
 	const spend = onCallSpendOf(input.records, board.week, board.issues);
@@ -684,8 +687,8 @@ export const recOf = (flag: Flag, settings: TableSettings): string => {
 
 /** Whether the rows standing for one issue stop its lane. */
 export type StopRead =
-	| {readonly _tag: "Stopped"; readonly flag: OverSize}
-	| {readonly _tag: "Short"}
+	| { readonly _tag: "Stopped"; readonly flag: OverSize }
+	| { readonly _tag: "Short" }
 	/** Short of the stop on the measured floor, with a lane unmeasured: whether it reached it is unknown. */
 	| {
 			readonly _tag: "Unmeasured";
@@ -709,7 +712,7 @@ export const stopOf = (
 	for (const row of rows) {
 		if (!isLive(row) || !issuesOf(row.group).includes(issue)) continue;
 		const size = sizeReadOf(row, input);
-		if (size._tag === "Over" && size.flag.stopped) return {_tag: "Stopped", flag: size.flag};
+		if (size._tag === "Over" && size.flag.stopped) return { _tag: "Stopped", flag: size.flag };
 		const limit = limitOf(row, input.sizes);
 		const spend = tallyOver(issuesOf(row.group), input.records, sinceOf(row)).spend;
 		if (unmeasured === null && limit !== null && spend._tag === "Unmeasured") {
@@ -722,5 +725,5 @@ export const stopOf = (
 			};
 		}
 	}
-	return unmeasured ?? {_tag: "Short"};
+	return unmeasured ?? { _tag: "Short" };
 };

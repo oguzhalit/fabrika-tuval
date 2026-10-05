@@ -8,7 +8,7 @@
  * becomes of it is the repo owner's to rule.
  */
 
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const UNREADABLE_CODEOWNERS = "unreadableCodeowners";
 
@@ -26,7 +26,7 @@ const isValue = (raw: unknown): raw is UnreadableCodeowners =>
 
 const decode = (raw: unknown): Decoded<UnreadableCodeowners> =>
 	isValue(raw)
-		? {_tag: "Value", value: raw}
+		? { _tag: "Value", value: raw }
 		: {
 				_tag: "Malformed",
 				reason: `\`${UNREADABLE_CODEOWNERS}\` is ${JSON.stringify(raw)} — expected ${VALUES.map((value) => `"${value}"`).join(" or ")}`,

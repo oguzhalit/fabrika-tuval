@@ -19,21 +19,21 @@
  * filter actually excludes a path under a governed root, so a pattern too generic to refuse at
  * the pattern level cannot silently carve governed content out of the read either.
  */
-import {MANIFEST} from "../guard/catalog-verb.ts";
-import {CI_CHANGES_SOURCE} from "../guard/change-detect.ts";
-import {CODEOWNERS} from "../guard/codeowners-cp-verb.ts";
-import {COMPONENTS_DIR} from "../guard/design-inventory-verb.ts";
-import {RAW_LAYER} from "../guard/design-token-verb.ts";
-import {MANIFEST_PATH} from "../guard/fanout.ts";
-import {FEATURES_DIR} from "../guard/fanout-verb.ts";
-import {SOURCE} from "../guard/no-gh-verb.ts";
-import {WORKSPACE} from "../guard/patch-verb.ts";
-import {CI_E2E_SOURCE, DEPLOY_SOURCE} from "../guard/path-filter.ts";
-import {DOC as POINTER_DOC} from "../guard/pointer-verb.ts";
-import {PUBLISH_WORKFLOW} from "../guard/publish-isolation-verb.ts";
-import {SETTINGS} from "../guard/settings-env-verb.ts";
-import {CORPUS} from "../guard/skill-lint-verb.ts";
-import type {GuardProbe} from "./filter-spike.ts";
+import { MANIFEST } from "../guard/catalog-verb.ts";
+import { CI_CHANGES_SOURCE } from "../guard/change-detect.ts";
+import { CODEOWNERS } from "../guard/codeowners-cp-verb.ts";
+import { COMPONENTS_DIR } from "../guard/design-inventory-verb.ts";
+import { RAW_LAYER } from "../guard/design-token-verb.ts";
+import { MANIFEST_PATH } from "../guard/fanout.ts";
+import { FEATURES_DIR } from "../guard/fanout-verb.ts";
+import { SOURCE } from "../guard/no-gh-verb.ts";
+import { WORKSPACE } from "../guard/patch-verb.ts";
+import { CI_E2E_SOURCE, DEPLOY_SOURCE } from "../guard/path-filter.ts";
+import { DOC as POINTER_DOC } from "../guard/pointer-verb.ts";
+import { PUBLISH_WORKFLOW } from "../guard/publish-isolation-verb.ts";
+import { SETTINGS } from "../guard/settings-env-verb.ts";
+import { CORPUS } from "../guard/skill-lint-verb.ts";
+import type { GuardProbe } from "./filter-spike.ts";
 
 /**
  * One probe per guarded surface. The composed representatives name real files: the catalog guard's
@@ -41,7 +41,7 @@ import type {GuardProbe} from "./filter-spike.ts";
  * token layer, the CI changes-glob sources the path-filter guard defends, and so on.
  */
 export const guardProbes = (): ReadonlyArray<GuardProbe> => [
-	{guard: "catalog-guard", path: MANIFEST, source: "src/guard/catalog-verb.ts:MANIFEST"},
+	{ guard: "catalog-guard", path: MANIFEST, source: "src/guard/catalog-verb.ts:MANIFEST" },
 	{
 		guard: "catalog-guard",
 		path: `packages/fabrika-cli/${MANIFEST}`,
@@ -57,16 +57,20 @@ export const guardProbes = (): ReadonlyArray<GuardProbe> => [
 		path: `${CORPUS}/fabrika/skills/review/SKILL.md`,
 		source: "src/guard/skill-lint-verb.ts:CORPUS",
 	},
-	{guard: "no-gh", path: `${SOURCE}/bin.ts`, source: "src/guard/no-gh-verb.ts:SOURCE"},
-	{guard: "settings-env-guard", path: SETTINGS, source: "src/guard/settings-env-verb.ts:SETTINGS"},
-	{guard: "fanout-guard", path: MANIFEST_PATH, source: "src/guard/fanout.ts:MANIFEST_PATH"},
+	{ guard: "no-gh", path: `${SOURCE}/bin.ts`, source: "src/guard/no-gh-verb.ts:SOURCE" },
+	{
+		guard: "settings-env-guard",
+		path: SETTINGS,
+		source: "src/guard/settings-env-verb.ts:SETTINGS",
+	},
+	{ guard: "fanout-guard", path: MANIFEST_PATH, source: "src/guard/fanout.ts:MANIFEST_PATH" },
 	{
 		guard: "fanout-guard",
 		path: `${FEATURES_DIR}/fate-live/live.ts`,
 		source: "src/guard/fanout-verb.ts:FEATURES_DIR",
 	},
-	{guard: "patch-guard", path: WORKSPACE, source: "src/guard/patch-verb.ts:WORKSPACE"},
-	{guard: "pointer-guard", path: POINTER_DOC, source: "src/guard/pointer-verb.ts:DOC"},
+	{ guard: "patch-guard", path: WORKSPACE, source: "src/guard/patch-verb.ts:WORKSPACE" },
+	{ guard: "pointer-guard", path: POINTER_DOC, source: "src/guard/pointer-verb.ts:DOC" },
 	{
 		guard: "publish-isolation-guard",
 		path: PUBLISH_WORKFLOW,
@@ -87,7 +91,11 @@ export const guardProbes = (): ReadonlyArray<GuardProbe> => [
 		path: CI_CHANGES_SOURCE.file,
 		source: "src/guard/change-detect.ts:CI_CHANGES_SOURCE",
 	},
-	{guard: "codeowners-cp", path: CODEOWNERS, source: "src/guard/codeowners-cp-verb.ts:CODEOWNERS"},
+	{
+		guard: "codeowners-cp",
+		path: CODEOWNERS,
+		source: "src/guard/codeowners-cp-verb.ts:CODEOWNERS",
+	},
 	{
 		guard: "design-token-guard",
 		path: RAW_LAYER,

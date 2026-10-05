@@ -17,8 +17,8 @@
  * The vocabulary and the total read live in `./grill-marker.ts`; this module binds them to a key.
  */
 
-import type {WireEmit, WireRead, WireReadLines} from "./format.ts";
-import {emitStamp, parseStampFields, readStamp, renderStamp, type Stamp} from "./grill-marker.ts";
+import type { WireEmit, WireRead, WireReadLines } from "./format.ts";
+import { emitStamp, parseStampFields, readStamp, renderStamp, type Stamp } from "./grill-marker.ts";
 
 /** The key that names these bytes. Never widened — a second meaning would need a second format. */
 export const KEY = "grill-ruled";
@@ -34,12 +34,12 @@ export const emit = (ruling: GrillRuling): string => emitStamp(KEY, ruling);
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseStampFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.stamp)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.stamp) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderStamp(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderStamp(result.value) } : result;
 };

@@ -9,13 +9,13 @@
  * **`<as-of>` is the artifact comment's own `updated_at`, never the fetch time.** Printing the
  * fetch time for a digest written three weeks ago claims a freshness nobody has.
  */
-import {Effect} from "effect";
-import type {Shell} from "../io/git.ts";
-import {listComments, openIssuesTitled} from "../io/issues.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {findFormat} from "../wire/registry.ts";
-import {OFF_VOCABULARY, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {type AsOf, asOfToken, fromArtifact, noAsOf, row} from "./fields.ts";
+import { Effect } from "effect";
+import type { Shell } from "../io/git.ts";
+import { listComments, openIssuesTitled } from "../io/issues.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { findFormat } from "../wire/registry.ts";
+import { OFF_VOCABULARY, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { type AsOf, asOfToken, fromArtifact, noAsOf, row } from "./fields.ts";
 
 const VERB = "status readout";
 
@@ -35,9 +35,9 @@ export type ReadoutState = "found" | "absent" | "malformed";
 
 export type ReadoutRead =
 	/** The decoder does not exist, so nothing about the digest is knowable. */
-	| {readonly _tag: "NoFormat"}
+	| { readonly _tag: "NoFormat" }
 	/** No artifact resolved — a **proven** fact about the repository, and the caller bootstraps one. */
-	| {readonly _tag: "NoArtifact"; readonly repo: string}
+	| { readonly _tag: "NoArtifact"; readonly repo: string }
 	/** The artifact could not be fetched, or its freshness could not be established. */
 	| {
 			readonly _tag: "Unfetchable";
@@ -51,7 +51,7 @@ export type ReadoutRead =
 			readonly issue: number;
 			readonly scanned: number;
 			/** The most recently updated comment carrying the heading, or `null` when none does. */
-			readonly digest: {readonly body: string; readonly updatedAt: string} | null;
+			readonly digest: { readonly body: string; readonly updatedAt: string } | null;
 	  };
 
 /** A positive integer, or `null` — the shape a supplied issue number must have. */
@@ -66,7 +66,7 @@ export const issueNumberOf = (value: string): number | null =>
  * Skipping a newer non-conforming publication in favour of an older valid one would render a stale
  * digest as current.
  */
-export const digestComment = <A extends {readonly body: string; readonly updatedAt: string}>(
+export const digestComment = <A extends { readonly body: string; readonly updatedAt: string }>(
 	comments: ReadonlyArray<A>,
 ): A | null => {
 	const carrying = comments.filter((comment) =>
@@ -87,27 +87,27 @@ export interface ReadoutSources {
 }
 
 /** Resolve the artifact and fetch it. The format check is the caller's first gate. */
-export const readReadout = ({repo, issue, env}: ReadoutSources): Shell<ReadoutRead> =>
+export const readReadout = ({ repo, issue, env }: ReadoutSources): Shell<ReadoutRead> =>
 	Effect.gen(function* () {
-		if (findFormat(DIGEST_FORMAT) === undefined) return {_tag: "NoFormat"} as const;
+		if (findFormat(DIGEST_FORMAT) === undefined) return { _tag: "NoFormat" } as const;
 
 		const fromEnv = env[ARTIFACT_ISSUE_ENV];
 		let target = issue ?? (fromEnv === undefined ? null : issueNumberOf(fromEnv));
 		if (target === null) {
 			const titled = yield* openIssuesTitled(repo, ARTIFACT_TITLE);
 			if (titled._tag === "Failure") {
-				return {_tag: "Unfetchable", repo, issue: null, reason: titled.reason} as const;
+				return { _tag: "Unfetchable", repo, issue: null, reason: titled.reason } as const;
 			}
 			// Several issues sharing the title is not a resolution: guessing which one is the digest
 			// would display somebody else's issue as the readout.
-			if (titled.value.length !== 1) return {_tag: "NoArtifact", repo} as const;
+			if (titled.value.length !== 1) return { _tag: "NoArtifact", repo } as const;
 			target = titled.value[0]?.number ?? null;
-			if (target === null) return {_tag: "NoArtifact", repo} as const;
+			if (target === null) return { _tag: "NoArtifact", repo } as const;
 		}
 
 		const comments = yield* listComments(repo, target);
 		if (comments._tag === "Failure") {
-			return {_tag: "Unfetchable", repo, issue: target, reason: comments.reason} as const;
+			return { _tag: "Unfetchable", repo, issue: target, reason: comments.reason } as const;
 		}
 		const digest = digestComment(comments.value);
 		if (digest !== null && digest.updatedAt === "") {
@@ -123,7 +123,7 @@ export const readReadout = ({repo, issue, env}: ReadoutSources): Shell<ReadoutRe
 			repo,
 			issue: target,
 			scanned: comments.value.length,
-			digest: digest === null ? null : {body: digest.body, updatedAt: digest.updatedAt},
+			digest: digest === null ? null : { body: digest.body, updatedAt: digest.updatedAt },
 		} as const;
 	});
 
@@ -173,8 +173,8 @@ export const readingOf = (read: ReadoutRead): ReadoutReading | null => {
 		};
 	}
 	return decoded._tag === "Malformed"
-		? {state: "malformed", rows: [], source, asOf, detail: decoded.reason}
-		: {state: "absent", rows: [], source, asOf, detail: decoded.reason};
+		? { state: "malformed", rows: [], source, asOf, detail: decoded.reason }
+		: { state: "absent", rows: [], source, asOf, detail: decoded.reason };
 };
 
 export interface ReadoutInput {
@@ -182,7 +182,7 @@ export interface ReadoutInput {
 	readonly json: boolean;
 }
 
-export const runReadout = ({read, json}: ReadoutInput): VerbOutcome => {
+export const runReadout = ({ read, json }: ReadoutInput): VerbOutcome => {
 	if (read._tag === "NoFormat") {
 		return refuse(
 			PRECONDITION_UNKNOWN,

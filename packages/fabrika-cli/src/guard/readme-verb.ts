@@ -14,13 +14,13 @@
  * is then red only on a lane that adds or edits a README-less member, never on every lane.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {exists, type ReadFailed} from "../io/fs.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {type Annotation, atFile} from "./annotate.ts";
-import type {TreeScope} from "./local-tree.ts";
-import {scanWorkspaceMembers, undeclaredGlobs, type WorkspaceMember} from "./members.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { exists, type ReadFailed } from "../io/fs.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { type Annotation, atFile } from "./annotate.ts";
+import type { TreeScope } from "./local-tree.ts";
+import { scanWorkspaceMembers, undeclaredGlobs, type WorkspaceMember } from "./members.ts";
 import {
 	annotationsOrNone,
 	clean,
@@ -67,7 +67,7 @@ const judged = (
 const missingReport = (
 	missing: ReadonlyArray<string>,
 	scanned: number,
-): {readonly report: string; readonly annotations: () => ReadonlyArray<Annotation>} => ({
+): { readonly report: string; readonly annotations: () => ReadonlyArray<Annotation> } => ({
 	report: [
 		`${VERB}: ${missing.length} ${GLOB} workspace ${missing.length === 1 ? "member lacks" : "members lack"} a ${README} (of ${scanned} scanned):`,
 		...missing.map((dir) => `  ${dir}`),
@@ -115,7 +115,7 @@ const judge = (
 				scan.members.length,
 			);
 		}
-		const {report, annotations} = missingReport(missing, scan.members.length);
+		const { report, annotations } = missingReport(missing, scan.members.length);
 		return violation(report, annotationsOrNone(annotations));
 	});
 

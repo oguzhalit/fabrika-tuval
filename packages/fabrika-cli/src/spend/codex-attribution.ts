@@ -1,4 +1,4 @@
-import {id, json, object} from "./codex-records.ts";
+import { id, json, object } from "./codex-records.ts";
 
 const commands = (text: string): string[][] | null => {
 	const result: string[][] = [];
@@ -94,15 +94,16 @@ const invocationIssue = (event: Record<string, unknown>, words: string[]): numbe
 };
 
 export type CodexAttribution =
-	| {readonly kind: "issue"; readonly issue: number}
-	| {readonly kind: "none" | "continuation" | "unresolved"};
+	| { readonly kind: "issue"; readonly issue: number }
+	| { readonly kind: "none" | "continuation" | "unresolved" };
 
 export const codexAttribution = (event: Record<string, unknown>): CodexAttribution => {
-	if (!["PreToolUse", "PostToolUse"].includes(String(event.hook_event_name))) return {kind: "none"};
+	if (!["PreToolUse", "PostToolUse"].includes(String(event.hook_event_name)))
+		return { kind: "none" };
 	const input = object(event.tool_input);
 	const command = id(input.cmd) ?? id(input.command);
 	const parsed = commands(command ?? "");
-	if (!parsed) return {kind: /\bfabrika\b/.test(command ?? "") ? "unresolved" : "none"};
+	if (!parsed) return { kind: /\bfabrika\b/.test(command ?? "") ? "unresolved" : "none" };
 	const issues = new Set<number>();
 	let detected = false;
 	for (const words of parsed) {
@@ -123,9 +124,11 @@ export const codexAttribution = (event: Record<string, unknown>): CodexAttributi
 				)) ||
 			/^(?:review|ship) scope$/.test(words.slice(offset, offset + 2).join(" "))
 		)
-			return {kind: "unresolved"};
+			return { kind: "unresolved" };
 	}
-	if (issues.size > 1) return {kind: "unresolved"};
+	if (issues.size > 1) return { kind: "unresolved" };
 	const issue = issues.values().next().value;
-	return issue !== undefined ? {kind: "issue", issue} : {kind: detected ? "continuation" : "none"};
+	return issue !== undefined
+		? { kind: "issue", issue }
+		: { kind: detected ? "continuation" : "none" };
 };

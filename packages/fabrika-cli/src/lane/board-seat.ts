@@ -27,24 +27,24 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9435#issuecomment-5752589286
  */
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {newestRulingAt} from "../decision/ruling.ts";
-import {standingRulings} from "../decision/standing-rulings.ts";
-import {createComment, resolveRepo} from "../io/issues.ts";
-import {isRecord, parseJson} from "../io/json.ts";
-import {getPullRequest} from "../io/pulls.ts";
-import {foldNamespaces, type Proof} from "./prove.ts";
-import {readNamespaceRows} from "./prove-verb.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { newestRulingAt } from "../decision/ruling.ts";
+import { standingRulings } from "../decision/standing-rulings.ts";
+import { createComment, resolveRepo } from "../io/issues.ts";
+import { isRecord, parseJson } from "../io/json.ts";
+import { getPullRequest } from "../io/pulls.ts";
+import { foldNamespaces, type Proof } from "./prove.ts";
+import { readNamespaceRows } from "./prove-verb.ts";
 
 export type BoardSeat =
 	/** The board proves this pull request is verified at `head` — the lane may be seated. */
-	| {readonly _tag: "Seatable"; readonly pr: number; readonly head: string; readonly note: string}
+	| { readonly _tag: "Seatable"; readonly pr: number; readonly head: string; readonly note: string }
 	/** The board was read in full and does not prove it — the prior-lane refusal stands. */
-	| {readonly _tag: "Unproven"; readonly why: string}
+	| { readonly _tag: "Unproven"; readonly why: string }
 	/** A read failed, so the seat is UNKNOWN — never a seat, and never a fresh lane either. */
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 export type BoardSeatReader<R> = (
 	issue: number,
@@ -52,8 +52,8 @@ export type BoardSeatReader<R> = (
 ) => Effect.Effect<BoardSeat, never, R>;
 
 export type BoardRecord =
-	| {readonly _tag: "Recorded"; readonly url: string}
-	| {readonly _tag: "Unrecorded"; readonly reason: string};
+	| { readonly _tag: "Recorded"; readonly url: string }
+	| { readonly _tag: "Unrecorded"; readonly reason: string };
 
 /** Writes the adoption onto the issue — the record that makes this boot reviewable afterwards. */
 export type BoardRecorder<R> = (
@@ -70,8 +70,8 @@ export type BoardRecorder<R> = (
 export const solePull = (
 	pulls: ReadonlyArray<number>,
 ):
-	| {readonly _tag: "One"; readonly pr: number}
-	| {readonly _tag: "Unproven"; readonly why: string} => {
+	| { readonly _tag: "One"; readonly pr: number }
+	| { readonly _tag: "Unproven"; readonly why: string } => {
 	const [first, ...rest] = pulls;
 	if (first === undefined) {
 		return {
@@ -80,7 +80,7 @@ export const solePull = (
 		};
 	}
 	return rest.length === 0
-		? {_tag: "One", pr: first}
+		? { _tag: "One", pr: first }
 		: {
 				_tag: "Unproven",
 				why: `the board hangs ${pulls.map((pull) => `#${pull}`).join(", ")} off it, and which one the prior lane drove is not derivable — drive the pull request itself`,
@@ -96,7 +96,7 @@ export const solePull = (
  */
 export const seatFromProof = (pr: number, head: string, proof: Proof): BoardSeat => {
 	if (proof._tag === "Proven") {
-		return {_tag: "Seatable", pr, head, note: proof.note};
+		return { _tag: "Seatable", pr, head, note: proof.note };
 	}
 	if (proof._tag === "Contradicted") {
 		return {
@@ -104,12 +104,12 @@ export const seatFromProof = (pr: number, head: string, proof: Proof): BoardSeat
 			why: `${proof.what} — a repair round is owed, and how many the prior lane already spent is exactly what no read here can prove`,
 		};
 	}
-	return {_tag: "Unproven", why: proof.what};
+	return { _tag: "Unproven", why: proof.what };
 };
 
 export type BudgetSeed =
-	| {readonly _tag: "Spent"; readonly text: string}
-	| {readonly _tag: "Unseedable"; readonly reason: string};
+	| { readonly _tag: "Spent"; readonly text: string }
+	| { readonly _tag: "Unseedable"; readonly reason: string };
 
 /**
  * Declare every task's repair budget spent in the document about to be placed.
@@ -122,24 +122,24 @@ export type BudgetSeed =
  */
 export const spendBudget = (text: string): BudgetSeed => {
 	const document = parseJson(text);
-	if (!isRecord(document)) return {_tag: "Unseedable", reason: "the document is not JSON"};
+	if (!isRecord(document)) return { _tag: "Unseedable", reason: "the document is not JSON" };
 	const machine = document.machine;
 	if (!isRecord(machine) || !isRecord(machine.context)) {
-		return {_tag: "Unseedable", reason: "the document carries no `machine.context` object"};
+		return { _tag: "Unseedable", reason: "the document carries no `machine.context` object" };
 	}
 	const tasks = Object.keys(machine.context);
 	if (tasks.length === 0) {
-		return {_tag: "Unseedable", reason: "the document's `machine.context` declares no task"};
+		return { _tag: "Unseedable", reason: "the document's `machine.context` declares no task" };
 	}
 	const context = Object.fromEntries(
 		tasks.map((task) => {
 			const seat = (machine.context as Record<string, unknown>)[task];
-			return [task, {...(isRecord(seat) ? seat : {}), maxRetries: 0}];
+			return [task, { ...(isRecord(seat) ? seat : {}), maxRetries: 0 }];
 		}),
 	);
 	return {
 		_tag: "Spent",
-		text: `${JSON.stringify({...document, machine: {...machine, context}}, null, "\t")}\n`,
+		text: `${JSON.stringify({ ...document, machine: { ...machine, context } }, null, "\t")}\n`,
 	};
 };
 
@@ -216,10 +216,10 @@ export const boardSeatReader =
 
 			const pull = yield* getPullRequest(target, pr);
 			if (pull._tag === "Unknown") {
-				return {_tag: "Unknown" as const, reason: `cannot read #${pr}: ${pull.reason}`};
+				return { _tag: "Unknown" as const, reason: `cannot read #${pr}: ${pull.reason}` };
 			}
 			if (pull._tag === "Absent") {
-				return {_tag: "Unproven" as const, why: `#${pr} is not there to be verified`};
+				return { _tag: "Unproven" as const, why: `#${pr} is not there to be verified` };
 			}
 			if (pull.value.merged || pull.value.state !== "open") {
 				return {
@@ -238,13 +238,16 @@ export const boardSeatReader =
 
 			const read = yield* readNamespaceRows(target, pr, [], [], newestRulingAt(ruled.scan));
 			if (read._tag === "Unread") {
-				return {_tag: "Unknown" as const, reason: `cannot read ${read.what}: ${read.reason}`};
+				return { _tag: "Unknown" as const, reason: `cannot read ${read.what}: ${read.reason}` };
 			}
-			if (read._tag === "Gone") return {_tag: "Unproven" as const, why: read.what};
+			if (read._tag === "Gone") return { _tag: "Unproven" as const, why: read.what };
 			// Nothing is deferred on this path, so the head derives no cell to defer to and this arm is
 			// unreachable — it is folded to UNKNOWN rather than read as a seat.
 			if (read._tag === "Underived") {
-				return {_tag: "Unknown" as const, reason: `#${pr} at ${read.head} derived no required set`};
+				return {
+					_tag: "Unknown" as const,
+					reason: `#${pr} at ${read.head} derived no required set`,
+				};
 			}
 			return seatFromProof(pr, read.head, foldNamespaces(read.rows, `#${pr}`));
 		});
@@ -266,6 +269,6 @@ export const boardRecorder =
 			}
 			const posted = yield* createComment(resolved.value, issue, body);
 			return posted._tag === "Failure"
-				? ({_tag: "Unrecorded", reason: posted.reason} as const)
-				: ({_tag: "Recorded", url: posted.value.url} as const);
+				? ({ _tag: "Unrecorded", reason: posted.reason } as const)
+				: ({ _tag: "Recorded", url: posted.value.url } as const);
 		});

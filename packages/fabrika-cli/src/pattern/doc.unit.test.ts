@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	ANCHOR_DECLARATION,
 	anchorLine,
@@ -34,11 +34,11 @@ describe("splitAnchorToken", () => {
 	// Splitting at the LAST `@` is what makes a scoped package work; a first-`@` split yields an
 	// empty package name and would make every scoped anchor malformed.
 	it("splits a scoped package at its last @", () => {
-		expect(splitAnchorToken("@nkzw/fate@1.3.1")).toEqual({pkg: "@nkzw/fate", version: "1.3.1"});
+		expect(splitAnchorToken("@nkzw/fate@1.3.1")).toEqual({ pkg: "@nkzw/fate", version: "1.3.1" });
 	});
 
 	it("splits an unscoped package", () => {
-		expect(splitAnchorToken("acme-queue@4.2.0")).toEqual({pkg: "acme-queue", version: "4.2.0"});
+		expect(splitAnchorToken("acme-queue@4.2.0")).toEqual({ pkg: "acme-queue", version: "4.2.0" });
 	});
 
 	it("refuses a token with no @, or with an empty half", () => {

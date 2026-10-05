@@ -11,16 +11,16 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9882
  */
-import {applyCorrections, foldLog, type LogEntry} from "./fold.ts";
-import {INTEGRATE_STATE, type IntegrateFailure} from "./integrate-failure.ts";
-import {bareEvent, CORRECTED_EVENT, type CompiledLane} from "./machine.ts";
+import { applyCorrections, foldLog, type LogEntry } from "./fold.ts";
+import { INTEGRATE_STATE, type IntegrateFailure } from "./integrate-failure.ts";
+import { bareEvent, CORRECTED_EVENT, type CompiledLane } from "./machine.ts";
 
 export type Attachment =
 	/** The named line is a pair-less integrate `FAIL` still standing; `entry` is what to append. */
-	| {readonly _tag: "Attachable"; readonly entry: LogEntry}
+	| { readonly _tag: "Attachable"; readonly entry: LogEntry }
 	/** The named line is not one the pair may ride, and `reason` says why. */
-	| {readonly _tag: "Refused"; readonly reason: string}
-	| {readonly _tag: "Unreplayable"; readonly defects: ReadonlyArray<string>};
+	| { readonly _tag: "Refused"; readonly reason: string }
+	| { readonly _tag: "Unreplayable"; readonly defects: ReadonlyArray<string> };
 
 /**
  * Judge whether `failure` may be attached to the line of `task` recorded at `target`, and build the
@@ -42,7 +42,7 @@ export const judgeAttachment = (
 	now: string,
 ): Attachment => {
 	const resolved = applyCorrections(entries);
-	if (resolved._tag === "Undecidable") return {_tag: "Unreplayable", defects: resolved.defects};
+	if (resolved._tag === "Undecidable") return { _tag: "Unreplayable", defects: resolved.defects };
 	const log = resolved.entries;
 	const matches = log.flatMap((entry, index) =>
 		entry.task === task && entry.at === target ? [index] : [],

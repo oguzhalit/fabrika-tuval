@@ -25,10 +25,10 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9020#issuecomment-5625285600
  */
 
-import {Effect} from "effect";
-import {parseJson} from "../io/json.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {INCOMPLETE_REGISTRY, IO_UNKNOWN, SCHEMA_DRIFT} from "./codes.ts";
+import { Effect } from "effect";
+import { parseJson } from "../io/json.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { INCOMPLETE_REGISTRY, IO_UNKNOWN, SCHEMA_DRIFT } from "./codes.ts";
 import {
 	assembleLocalSchema,
 	assembleSchema,
@@ -38,7 +38,7 @@ import {
 	schemaMatches,
 	serializeSchema,
 } from "./json-schema.ts";
-import type {Registration} from "./key-group.ts";
+import type { Registration } from "./key-group.ts";
 
 const VERB = "config schema";
 
@@ -49,18 +49,18 @@ const VERB = "config schema";
  * not: that is a real directory holding no schema file, and an answer about it is a proven one.
  */
 export type SchemaRoot =
-	| {readonly _tag: "Root"; readonly root: string}
-	| {readonly _tag: "Unlocated"; readonly reason: string};
+	| { readonly _tag: "Root"; readonly root: string }
+	| { readonly _tag: "Unlocated"; readonly reason: string };
 
 /** A committed file's bytes, its proven absence, or the reason they were never seen. */
 export type SchemaRead =
-	| {readonly _tag: "Text"; readonly text: string}
-	| {readonly _tag: "Absent"}
-	| {readonly _tag: "Failed"; readonly reason: string};
+	| { readonly _tag: "Text"; readonly text: string }
+	| { readonly _tag: "Absent" }
+	| { readonly _tag: "Failed"; readonly reason: string };
 
 export type SchemaSave =
-	| {readonly _tag: "Saved"}
-	| {readonly _tag: "Failed"; readonly reason: string};
+	| { readonly _tag: "Saved" }
+	| { readonly _tag: "Failed"; readonly reason: string };
 
 export interface SchemaOptions<R> {
 	readonly write: boolean;
@@ -91,7 +91,7 @@ const verdict = (
 	files: ReadonlyArray<FileResult>,
 ) =>
 	json
-		? `${JSON.stringify({outcome, keys, files})}\n`
+		? `${JSON.stringify({ outcome, keys, files })}\n`
 		: `${[
 				`schema\t${outcome}\t${keys}`,
 				...files.map((one) => `file\t${one.file}\t${one.outcome}\t${one.keys}`),
@@ -107,12 +107,12 @@ export const runSchema = <R>({
 }: SchemaOptions<R>): Effect.Effect<VerbOutcome, never, R> =>
 	Effect.gen(function* () {
 		const documents = [
-			{file: CONFIG_SCHEMA_FILE, assembly: assembleSchema(registrations)},
-			{file: LOCAL_CONFIG_SCHEMA_FILE, assembly: assembleLocalSchema(registrations)},
+			{ file: CONFIG_SCHEMA_FILE, assembly: assembleSchema(registrations) },
+			{ file: LOCAL_CONFIG_SCHEMA_FILE, assembly: assembleLocalSchema(registrations) },
 		];
 		const scope = `${VERB}: assembled ${registrations.length} key fragment(s) into ${documents.map((one) => one.file).join(" and ")}.`;
 
-		for (const {assembly} of documents) {
+		for (const { assembly } of documents) {
 			if (assembly._tag === "Incomplete") {
 				return refuse(
 					INCOMPLETE_REGISTRY,
@@ -131,7 +131,7 @@ export const runSchema = <R>({
 		}
 
 		const files: Array<FileResult> = [];
-		for (const {file, assembly} of documents) {
+		for (const { file, assembly } of documents) {
 			if (assembly._tag !== "Complete") continue;
 			const keys = keyCount(assembly.schema);
 
@@ -142,7 +142,7 @@ export const runSchema = <R>({
 						scope,
 					]);
 				}
-				files.push({file, outcome: "written", keys});
+				files.push({ file, outcome: "written", keys });
 				continue;
 			}
 
@@ -170,7 +170,7 @@ export const runSchema = <R>({
 					[scope],
 				);
 			}
-			files.push({file, outcome: "agrees", keys});
+			files.push({ file, outcome: "agrees", keys });
 		}
 
 		return answer(verdict(json, write ? "written" : "agrees", registrations.length, files), [

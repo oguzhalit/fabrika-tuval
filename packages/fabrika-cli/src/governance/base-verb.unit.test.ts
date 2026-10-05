@@ -1,9 +1,9 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeSeams, okOut, once, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {runBase} from "./base-verb.ts";
-import {OFF_VOCABULARY, PRECONDITION_UNKNOWN, STALE_HEAD, ZERO_SCOPE} from "./codes.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeSeams, okOut, once, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { runBase } from "./base-verb.ts";
+import { OFF_VOCABULARY, PRECONDITION_UNKNOWN, STALE_HEAD, ZERO_SCOPE } from "./codes.ts";
 import {
 	binding,
 	HEAD,
@@ -22,7 +22,7 @@ import {
 const PULL = /^GET .*\/repos\/o\/r\/pulls\/4321$/;
 
 /** A fixture's canned JSON, served as the 200 the REST read now parses. */
-const served = (result: ExecResult) => ({status: 200, body: result.stdout});
+const served = (result: ExecResult) => ({ status: 200, body: result.stdout });
 
 const options = {
 	pr: 4321 as number | null,
@@ -30,11 +30,11 @@ const options = {
 	base: null as string | null,
 	tip: null as string | null,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 };
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runBase({...options, ...overrides}), fakeSeams(script).layer));
+	Effect.runPromise(Effect.provide(runBase({ ...options, ...overrides }), fakeSeams(script).layer));
 
 const SKILL_BYTES = "---\nname: governance\n---\n\n# governance\n";
 const CONTRACT_BYTES = "# contract\n";
@@ -74,7 +74,7 @@ describe("runBase", () => {
 	});
 
 	it("refuses a --path outside the resolved root on 10 — this verb reads only its own text", async () => {
-		const out = await run(happy, {path: ["claude-plugins/fabrika/skills/review/SKILL.md"]});
+		const out = await run(happy, { path: ["claude-plugins/fabrika/skills/review/SKILL.md"] });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toBe(
@@ -123,7 +123,7 @@ describe("runBase", () => {
 		const out = await run([
 			[once(PULL), served(pull())],
 			...binding(),
-			[PULL, served(pull({head: moved}))],
+			[PULL, served(pull({ head: moved }))],
 		]);
 		expect(out.code).toBe(STALE_HEAD);
 		expect(out.stderr.at(-1)).toBe(
@@ -146,10 +146,10 @@ describe("runBase", () => {
 	});
 
 	it("refuses an absent PR on 7 and a non-PR number on 1", async () => {
-		expect((await run([[PULL, {status: 404, body: '{"message":"Not Found"}'}]])).code).toBe(
+		expect((await run([[PULL, { status: 404, body: '{"message":"Not Found"}' }]])).code).toBe(
 			ZERO_SCOPE,
 		);
-		expect((await run(happy, {pr: 0})).code).toBe(1);
+		expect((await run(happy, { pr: 0 })).code).toBe(1);
 	});
 
 	it("reads the head it bound, so nothing is ever checked out", async () => {
@@ -161,7 +161,7 @@ describe("runBase", () => {
 	});
 });
 
-const ranged = {pr: null, base: RANGE_BASE, tip: RANGE_TIP};
+const ranged = { pr: null, base: RANGE_BASE, tip: RANGE_TIP };
 
 const overRange = (
 	tree: ReadonlyArray<string> = [`${SKILL_ROOT}SKILL.md`, `${SKILL_ROOT}contract.md`],
@@ -231,24 +231,24 @@ describe("runBase over a range", () => {
 
 	it("refuses a lone end, a positional beside a range, and a subject named neither way, on 10", async () => {
 		for (const overrides of [
-			{pr: null, base: RANGE_BASE, tip: null},
-			{pr: null, base: null, tip: RANGE_TIP},
+			{ pr: null, base: RANGE_BASE, tip: null },
+			{ pr: null, base: null, tip: RANGE_TIP },
 		]) {
 			const out = await run([], overrides);
 			expect(out.code).toBe(OFF_VOCABULARY);
 			expect(out.stderr.join("\n")).toContain("--base and --tip come together");
 		}
-		const withPr = await run([], {...ranged, pr: 4321});
+		const withPr = await run([], { ...ranged, pr: 4321 });
 		expect(withPr.code).toBe(OFF_VOCABULARY);
 		expect(withPr.stderr.join("\n")).toContain("a range is its own subject");
 
-		const none = await run([], {pr: null, base: null, tip: null});
+		const none = await run([], { pr: null, base: null, tip: null });
 		expect(none.code).toBe(OFF_VOCABULARY);
 		expect(none.stderr.join("\n")).toContain("there is no subject here");
 	});
 
 	it("refuses a range end that is not a revision, under this verb's own name, on 10", async () => {
-		const bad = await run([], {...ranged, tip: "origin/main"});
+		const bad = await run([], { ...ranged, tip: "origin/main" });
 		expect(bad.code).toBe(OFF_VOCABULARY);
 		expect(bad.stderr.join("\n")).toContain(
 			'governance base: --tip "origin/main" is not a revision',
@@ -257,7 +257,7 @@ describe("runBase over a range", () => {
 
 	it("resolves no PR on a range — the epic child has none to resolve", async () => {
 		const fake = fakeSeams(happyRange);
-		await Effect.runPromise(Effect.provide(runBase({...options, ...ranged}), fake.layer));
+		await Effect.runPromise(Effect.provide(runBase({ ...options, ...ranged }), fake.layer));
 		expect(fake.requests).toEqual([]);
 		expect(fake.calls.some((call) => call.startsWith("git checkout"))).toBe(false);
 		expect(fake.calls).toContain(`git ls-tree -r --full-tree --name-only -z ${RANGE_MERGE_BASE}`);

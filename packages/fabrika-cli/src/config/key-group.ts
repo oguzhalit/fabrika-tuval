@@ -13,23 +13,23 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9020#issuecomment-5625285600
  */
 
-import {CONFIG_PATH, type ConfigLayer, type DocumentState, type Documents} from "./document.ts";
-import type {JsonSchema} from "./json-schema.ts";
+import { CONFIG_PATH, type ConfigLayer, type DocumentState, type Documents } from "./document.ts";
+import type { JsonSchema } from "./json-schema.ts";
 
 export type Resolution<A> =
 	/** A file declared this key and the value decoded, in the layer named. */
-	| {readonly _tag: "Declared"; readonly value: A; readonly layer: ConfigLayer}
+	| { readonly _tag: "Declared"; readonly value: A; readonly layer: ConfigLayer }
 	/** No file, or no key: the shipped default, with the arm named. */
-	| {readonly _tag: "Default"; readonly value: A; readonly reason: string}
+	| { readonly _tag: "Default"; readonly value: A; readonly reason: string }
 	/** The key is present and its value is refused whole, naming what was rejected. */
-	| {readonly _tag: "Malformed"; readonly reason: string}
+	| { readonly _tag: "Malformed"; readonly reason: string }
 	/** The file exists and could not be read. Never a default, never an empty set. */
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /** A key module's answer for a value that is present. */
 export type Decoded<A> =
-	| {readonly _tag: "Value"; readonly value: A}
-	| {readonly _tag: "Malformed"; readonly reason: string};
+	| { readonly _tag: "Value"; readonly value: A }
+	| { readonly _tag: "Malformed"; readonly reason: string };
 
 export interface KeyGroup<A> {
 	readonly key: string;
@@ -97,7 +97,7 @@ const resolveLocal = <A>(local: DocumentState, group: KeyGroup<A>): Resolution<A
 	switch (local._tag) {
 		case "Unreadable":
 		case "NotAnObject":
-			return {_tag: "Unknown", reason: local.reason};
+			return { _tag: "Unknown", reason: local.reason };
 		case "Absent":
 			return null;
 		case "Record": {
@@ -106,7 +106,7 @@ const resolveLocal = <A>(local: DocumentState, group: KeyGroup<A>): Resolution<A
 			const decoded = group.decode(raw);
 			return decoded._tag === "Malformed"
 				? decoded
-				: {_tag: "Declared", value: decoded.value, layer: "local"};
+				: { _tag: "Declared", value: decoded.value, layer: "local" };
 		}
 	}
 };
@@ -114,9 +114,9 @@ const resolveLocal = <A>(local: DocumentState, group: KeyGroup<A>): Resolution<A
 const resolveTracked = <A>(tracked: DocumentState, group: KeyGroup<A>): Resolution<A> => {
 	switch (tracked._tag) {
 		case "Unreadable":
-			return {_tag: "Unknown", reason: tracked.reason};
+			return { _tag: "Unknown", reason: tracked.reason };
 		case "NotAnObject":
-			return {_tag: "Malformed", reason: tracked.reason};
+			return { _tag: "Malformed", reason: tracked.reason };
 		case "Absent":
 			return {
 				_tag: "Default",
@@ -135,7 +135,7 @@ const resolveTracked = <A>(tracked: DocumentState, group: KeyGroup<A>): Resoluti
 			const decoded = group.decode(raw);
 			return decoded._tag === "Malformed"
 				? decoded
-				: {_tag: "Declared", value: decoded.value, layer: "tracked"};
+				: { _tag: "Declared", value: decoded.value, layer: "tracked" };
 		}
 	}
 };
@@ -194,17 +194,17 @@ export const register = <A>(group: KeyGroup<A>): Registration => ({
 	machineLocal: group.machineLocal === true,
 	// Spread rather than assign: under `exactOptionalPropertyTypes` an optional field may not carry
 	// an explicit `undefined`, so a key with no fragment simply omits it.
-	...(group.jsonSchema !== undefined ? {jsonSchema: group.jsonSchema} : {}),
+	...(group.jsonSchema !== undefined ? { jsonSchema: group.jsonSchema } : {}),
 	resolve: (documents) => resolveKey(documents, group),
 	readout: (documents) => {
 		const resolved = resolveKey(documents, group);
 		const render = group.render;
 		if (render === undefined) return resolved;
 		if (resolved._tag === "Declared") {
-			return {_tag: "Declared", value: render(resolved.value), layer: resolved.layer};
+			return { _tag: "Declared", value: render(resolved.value), layer: resolved.layer };
 		}
 		if (resolved._tag === "Default") {
-			return {_tag: "Default", value: render(resolved.value), reason: resolved.reason};
+			return { _tag: "Default", value: render(resolved.value), reason: resolved.reason };
 		}
 		return resolved;
 	},

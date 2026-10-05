@@ -1,11 +1,11 @@
 /**
  * The digest's report and message: which issues it lists, in what order, and what each tool is sent.
  */
-import {describe, expect, it} from "vitest";
-import type {ResponseTargets} from "../config/keys/boards.ts";
-import type {ListedIssue} from "../io/issues.ts";
-import {type DigestReport, digestOf, MESSAGE_LIMIT, payloadOf, renderDigest} from "./digest.ts";
-import {pastTargetOf} from "./flags.ts";
+import { describe, expect, it } from "vitest";
+import type { ResponseTargets } from "../config/keys/boards.ts";
+import type { ListedIssue } from "../io/issues.ts";
+import { type DigestReport, digestOf, MESSAGE_LIMIT, payloadOf, renderDigest } from "./digest.ts";
+import { pastTargetOf } from "./flags.ts";
 
 const NOW = new Date("2026-10-03T12:00:00.000Z");
 
@@ -30,13 +30,13 @@ const issue = (
 
 const TARGETS: ResponseTargets = {
 	byLabel: [
-		{name: "4h", hours: 4, labels: ["p0"]},
-		{name: "1 day", hours: 24, labels: ["p1"]},
+		{ name: "4h", hours: 4, labels: ["p0"] },
+		{ name: "1 day", hours: 24, labels: ["p1"] },
 	],
-	otherwise: {name: "3 days", hours: 72},
+	otherwise: { name: "3 days", hours: 72 },
 };
 
-const BOTH = {sections: ["triage", "on-call"] as const, triageTargetHours: 24};
+const BOTH = { sections: ["triage", "on-call"] as const, triageTargetHours: 24 };
 
 const WHERE = {
 	repo: "acme/widgets",
@@ -53,7 +53,7 @@ describe("the triage section", () => {
 	];
 
 	it("lists every untriaged or unlabeled issue past the target, oldest first", () => {
-		const report = digestOf({now: NOW, open, settings: BOTH, onCall: null});
+		const report = digestOf({ now: NOW, open, settings: BOTH, onCall: null });
 
 		expect(report.sections).toEqual([
 			{
@@ -84,7 +84,7 @@ describe("the triage section", () => {
 		const report = digestOf({
 			now: NOW,
 			open,
-			settings: {sections: ["triage"], triageTargetHours: 20},
+			settings: { sections: ["triage"], triageTargetHours: 20 },
 			onCall: null,
 		});
 
@@ -100,15 +100,15 @@ describe("the on-call section", () => {
 		issue(13, 60, ["type:bug"]),
 		issue(14, 900, ["type:bug"]),
 	];
-	const items = open.map(({number, labels, createdAt}) => ({issue: number, labels, createdAt}));
+	const items = open.map(({ number, labels, createdAt }) => ({ issue: number, labels, createdAt }));
 	const BOARD_MADE = hoursAgo(100);
 
 	it("lists every open on-call item past the target its labels pick, exactly as pastTargetOf judges it", () => {
 		const report = digestOf({
 			now: NOW,
 			open,
-			settings: {sections: ["on-call"], triageTargetHours: 24},
-			onCall: {targets: TARGETS, boardCreatedAt: BOARD_MADE, open: items},
+			settings: { sections: ["on-call"], triageTargetHours: 24 },
+			onCall: { targets: TARGETS, boardCreatedAt: BOARD_MADE, open: items },
 		});
 		const late = report.sections[0]?.late ?? [];
 
@@ -117,7 +117,7 @@ describe("the on-call section", () => {
 			[12, "1 day", 30, hoursAgo(30)],
 			[10, "4h", 5, hoursAgo(5)],
 		]);
-		expect(late.map(({title: _title, ...judged}) => ({_tag: "PastTarget", ...judged}))).toEqual(
+		expect(late.map(({ title: _title, ...judged }) => ({ _tag: "PastTarget", ...judged }))).toEqual(
 			items
 				.flatMap((item) => pastTargetOf(item, TARGETS, BOARD_MADE, NOW) ?? [])
 				.sort((a, b) => Date.parse(a.since) - Date.parse(b.since)),
@@ -125,7 +125,7 @@ describe("the on-call section", () => {
 	});
 
 	it("is not asked when no boards block gives an issue a response target", () => {
-		const report = digestOf({now: NOW, open, settings: BOTH, onCall: null});
+		const report = digestOf({ now: NOW, open, settings: BOTH, onCall: null });
 
 		expect(report.notAsked).toEqual(["on-call"]);
 		expect(report.sections.map((section) => section.section)).toEqual(["triage"]);
@@ -140,7 +140,7 @@ describe("the message", () => {
 		onCall: {
 			targets: TARGETS,
 			boardCreatedAt: hoursAgo(1000),
-			open: [{issue: 10, labels: ["type:bug", "p0"], createdAt: hoursAgo(5)}],
+			open: [{ issue: 10, labels: ["type:bug", "p0"], createdAt: hoursAgo(5) }],
 		},
 	});
 
@@ -157,7 +157,7 @@ describe("the message", () => {
 	});
 
 	it("says so when nothing is past its target", () => {
-		const clear: DigestReport = {sections: [{section: "triage", late: []}], notAsked: []};
+		const clear: DigestReport = { sections: [{ section: "triage", late: [] }], notAsked: [] };
 
 		expect(renderDigest(clear, WHERE)).toBe("acme/widgets: nothing is past its response target.");
 	});
@@ -165,8 +165,8 @@ describe("the message", () => {
 	it("stays inside the limit and counts the lines it dropped", () => {
 		const many = digestOf({
 			now: NOW,
-			open: Array.from({length: 60}, (_, index) =>
-				issue(index + 1, 100 + index, [], {title: "x".repeat(200)}),
+			open: Array.from({ length: 60 }, (_, index) =>
+				issue(index + 1, 100 + index, [], { title: "x".repeat(200) }),
 			),
 			settings: BOTH,
 			onCall: null,
@@ -183,12 +183,12 @@ describe("the message", () => {
 	it("escapes Slack's control characters so a title starts no link or mention", () => {
 		const hostile = digestOf({
 			now: NOW,
-			open: [issue(1, 30, [], {title: "<!channel> a & b"})],
+			open: [issue(1, 30, [], { title: "<!channel> a & b" })],
 			settings: BOTH,
 			onCall: null,
 		});
 
-		expect(renderDigest(hostile, {...WHERE, tool: "slack"})).toContain(
+		expect(renderDigest(hostile, { ...WHERE, tool: "slack" })).toContain(
 			"#1 &lt;!channel&gt; a &amp; b:",
 		);
 	});
@@ -196,10 +196,10 @@ describe("the message", () => {
 
 describe("the payload", () => {
 	it("is Slack's `text`, and Discord's `content` with no mention parsed and no link preview", () => {
-		expect(payloadOf("slack", "hello")).toEqual({text: "hello"});
+		expect(payloadOf("slack", "hello")).toEqual({ text: "hello" });
 		expect(payloadOf("discord", "hello")).toEqual({
 			content: "hello",
-			allowed_mentions: {parse: []},
+			allowed_mentions: { parse: [] },
 			flags: 4,
 		});
 	});

@@ -14,7 +14,7 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9020#issuecomment-5625285600
  */
 
-import {isRecord, parseJson} from "../io/json.ts";
+import { isRecord, parseJson } from "../io/json.ts";
 
 /** The file, at the repository root. Read at a base ref, never only from the working tree. */
 export const CONFIG_PATH = ".fabrika.jsonc";
@@ -83,16 +83,16 @@ export const stripJsonComments = (text: string): string => {
  * `git show` at a base ref — reports which of the three it got, and the loader does the rest.
  */
 export type ConfigSource =
-	| {readonly _tag: "Absent"}
-	| {readonly _tag: "Text"; readonly text: string}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Absent" }
+	| { readonly _tag: "Text"; readonly text: string }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /** What one load found: the parsed record, or the reason there is none. */
 export type DocumentState =
-	| {readonly _tag: "Absent"}
-	| {readonly _tag: "Record"; readonly record: Record<string, unknown>}
-	| {readonly _tag: "NotAnObject"; readonly reason: string}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Absent" }
+	| { readonly _tag: "Record"; readonly record: Record<string, unknown> }
+	| { readonly _tag: "NotAnObject"; readonly reason: string }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /**
  * Both layers of one load, in precedence order when read: local first, then tracked.
@@ -109,7 +109,7 @@ export interface Documents {
 /** One tracked document with no machine-local layer over it. */
 export const trackedOnly = (tracked: DocumentState): Documents => ({
 	tracked,
-	local: {_tag: "Absent"},
+	local: { _tag: "Absent" },
 });
 
 /** Comment-strip and parse, once. Every key module is handed the record this produces. */
@@ -117,6 +117,6 @@ export const readDocument = (source: ConfigSource, path: string = CONFIG_PATH): 
 	if (source._tag !== "Text") return source;
 	const parsed = parseJson(stripJsonComments(source.text));
 	return isRecord(parsed)
-		? {_tag: "Record", record: parsed}
-		: {_tag: "NotAnObject", reason: `${path} is not a JSON object with comments`};
+		? { _tag: "Record", record: parsed }
+		: { _tag: "NotAnObject", reason: `${path} is not a JSON object with comments` };
 };

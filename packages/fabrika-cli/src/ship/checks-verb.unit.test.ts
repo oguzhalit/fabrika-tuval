@@ -1,10 +1,10 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs, fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {blockingSet} from "../review/blocking.ts";
-import {rollupFor, runChecks} from "./checks-verb.ts";
-import {INCOMPLETE_SCAN, NO_GATE_COVERAGE, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs, fakeSeams, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { blockingSet } from "../review/blocking.ts";
+import { rollupFor, runChecks } from "./checks-verb.ts";
+import { INCOMPLETE_SCAN, NO_GATE_COVERAGE, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
 import {
 	checkRuns,
 	ENV,
@@ -33,7 +33,7 @@ const RUN_COUNT = /\/repos\/o\/r\/actions\/runs\?head_sha=/;
  * The three CI reads moved to the fetch client; the payload shapes did not, so the fixtures stay
  * their one source and only the transport around them changes.
  */
-const served = (result: ExecResult): HttpReply => ({status: 200, body: result.stdout});
+const served = (result: ExecResult): HttpReply => ({ status: 200, body: result.stdout });
 
 const options = {
 	pr: 4321,
@@ -58,8 +58,8 @@ const run = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runChecks({...options, ...overrides}),
-			Layer.merge(fakeSeams([...shell, ...http, ...UNDECLARED]).layer, fakeFs({files}).layer),
+			runChecks({ ...options, ...overrides }),
+			Layer.merge(fakeSeams([...shell, ...http, ...UNDECLARED]).layer, fakeFs({ files }).layer),
 		),
 	);
 
@@ -69,7 +69,7 @@ const UNDECLARED_SET = blockingSet([]);
 /** The PR and the commit probe — a present PR at a commit the repository holds. */
 const found: ReadonlyArray<Scripted> = [
 	[PULL, served(pull())],
-	[COMMIT, {status: 200, body: JSON.stringify({sha: HEAD})}],
+	[COMMIT, { status: 200, body: JSON.stringify({ sha: HEAD }) }],
 ];
 
 const noRun = (name: string, status: string, conclusion: string | null = null) => ({
@@ -78,11 +78,11 @@ const noRun = (name: string, status: string, conclusion: string | null = null) =
 	conclusion,
 });
 
-const empty = {runs: [], ranAtHead: [], superseded: new Set<number>()};
+const empty = { runs: [], ranAtHead: [], superseded: new Set<number>() };
 
 /** An inventory of N workflows, path-addressed the way the platform answers. */
 const inventory = (count: number): ReadonlyArray<string> =>
-	Array.from({length: count}, (_, index) => `.github/workflows/w${index}.yml`);
+	Array.from({ length: count }, (_, index) => `.github/workflows/w${index}.yml`);
 
 /**
  * One sample's check rows, with the suites a newer run replaced.
@@ -92,7 +92,7 @@ const inventory = (count: number): ReadonlyArray<string> =>
  * verb has no way to receive.
  */
 const sampleOf = (
-	rows: ReadonlyArray<{name: string; conclusion: string; suite?: number}>,
+	rows: ReadonlyArray<{ name: string; conclusion: string; suite?: number }>,
 	superseded: ReadonlyArray<number> = [],
 ) => ({
 	runs: rows.map((row, index) => ({
@@ -112,24 +112,28 @@ const sampleOf = (
 describe("rollupFor", () => {
 	it("names any wedged check as the whole answer", () => {
 		expect(
-			rollupFor({...empty, workflows: inventory(3), runCount: 0}, ["ci-required"], UNDECLARED_SET),
+			rollupFor(
+				{ ...empty, workflows: inventory(3), runCount: 0 },
+				["ci-required"],
+				UNDECLARED_SET,
+			),
 		).toBe("wedged");
 	});
 
 	it("is no-runs only with positive evidence: workflows exist and none fired at this head", () => {
-		expect(rollupFor({...empty, workflows: inventory(12), runCount: 0}, [], UNDECLARED_SET)).toBe(
+		expect(rollupFor({ ...empty, workflows: inventory(12), runCount: 0 }, [], UNDECLARED_SET)).toBe(
 			"no-runs",
 		);
 	});
 
 	it("is no-producer on zero workflows, never collapsed into pending (#6298)", () => {
-		expect(rollupFor({...empty, workflows: [], runCount: 0}, [], UNDECLARED_SET)).toBe(
+		expect(rollupFor({ ...empty, workflows: [], runCount: 0 }, [], UNDECLARED_SET)).toBe(
 			"no-producer",
 		);
 	});
 
 	it("keeps no-producer apart from pending — the second waits on a run, the first never will", () => {
-		expect(rollupFor({...empty, workflows: inventory(1), runCount: 3}, [], UNDECLARED_SET)).toBe(
+		expect(rollupFor({ ...empty, workflows: inventory(1), runCount: 3 }, [], UNDECLARED_SET)).toBe(
 			"pending",
 		);
 	});
@@ -141,7 +145,7 @@ describe("rollupFor over a concurrency-cancelled run", () => {
 	it("pends a superseded cancelled aggregator rather than reding it", () => {
 		expect(
 			rollupFor(
-				sampleOf([{name: "ci-required", conclusion: "cancelled", suite: 91}], [91]),
+				sampleOf([{ name: "ci-required", conclusion: "cancelled", suite: 91 }], [91]),
 				[],
 				UNDECLARED_SET,
 			),
@@ -151,7 +155,7 @@ describe("rollupFor over a concurrency-cancelled run", () => {
 	it("reds a cancelled run no newer run of its workflow replaced", () => {
 		expect(
 			rollupFor(
-				sampleOf([{name: "ci-required", conclusion: "cancelled", suite: 91}]),
+				sampleOf([{ name: "ci-required", conclusion: "cancelled", suite: 91 }]),
 				[],
 				UNDECLARED_SET,
 			),
@@ -161,8 +165,8 @@ describe("rollupFor over a concurrency-cancelled run", () => {
 	it("reds when the newer run has already concluded failure at the same head", () => {
 		const sample = sampleOf(
 			[
-				{name: "ci-required", conclusion: "cancelled", suite: 91},
-				{name: "unit tests", conclusion: "failure", suite: 92},
+				{ name: "ci-required", conclusion: "cancelled", suite: 91 },
+				{ name: "unit tests", conclusion: "failure", suite: 92 },
 			],
 			[91],
 		);
@@ -179,7 +183,7 @@ describe("rollupFor over a concurrency-cancelled run", () => {
 		]) {
 			expect(
 				rollupFor(
-					sampleOf([{name: "ci-required", conclusion, suite: 91}], [91]),
+					sampleOf([{ name: "ci-required", conclusion, suite: 91 }], [91]),
 					[],
 					UNDECLARED_SET,
 				),
@@ -190,8 +194,8 @@ describe("rollupFor over a concurrency-cancelled run", () => {
 	it("leaves an informational run carved out on both sides of the rule", () => {
 		const sample = sampleOf(
 			[
-				{name: "deploy (web)", conclusion: "cancelled", suite: 91},
-				{name: "ci-required", conclusion: "success", suite: 92},
+				{ name: "deploy (web)", conclusion: "cancelled", suite: 91 },
+				{ name: "ci-required", conclusion: "success", suite: 92 },
 			],
 			[91],
 		);
@@ -223,8 +227,8 @@ describe("runChecks under the base branch's required set", () => {
 						]),
 					),
 				],
-				[WORKFLOWS, served(workflows({path: ".github/workflows/ci.yml"}))],
-				[RUN_COUNT, served(runsTotal(2, [{id: 1}]))],
+				[WORKFLOWS, served(workflows({ path: ".github/workflows/ci.yml" }))],
+				[RUN_COUNT, served(runsTotal(2, [{ id: 1 }]))],
 			],
 		);
 		expect(out.stdout.split("\n")[0]).toBe(`checks\t${HEAD}\tgreen`);
@@ -326,10 +330,10 @@ describe("runChecks under the base branch's required set", () => {
 			"validate skill frontmatter",
 		]);
 		const FOUR = sampleOf([
-			{name: "ci-required", conclusion: "success"},
-			{name: "governance floor at head", conclusion: "success"},
-			{name: "scan changed files for leaks", conclusion: "success"},
-			{name: "validate skill frontmatter", conclusion: "success"},
+			{ name: "ci-required", conclusion: "success" },
+			{ name: "governance floor at head", conclusion: "success" },
+			{ name: "scan changed files for leaks", conclusion: "success" },
+			{ name: "validate skill frontmatter", conclusion: "success" },
 		]);
 
 		it("rolls up green once all four declared contexts concluded success", () => {
@@ -337,7 +341,7 @@ describe("runChecks under the base branch's required set", () => {
 		});
 
 		it("still rolls up red over a failing declared context, however many are missing", () => {
-			const failing = sampleOf([{name: "scan changed files for leaks", conclusion: "failure"}]);
+			const failing = sampleOf([{ name: "scan changed files for leaks", conclusion: "failure" }]);
 			expect(rollupFor(failing, [], FOUR_DECLARED)).toBe("red");
 		});
 
@@ -500,7 +504,7 @@ describe("runChecks", () => {
 				[WORKFLOWS, served(workflows("active", "active"))],
 				[RUN_COUNT, served(runsTotal(14))],
 			],
-			{json: true},
+			{ json: true },
 		);
 		expect(JSON.parse(out.stdout).checks).toEqual({
 			"success/gating": 2,
@@ -523,8 +527,8 @@ describe("runChecks", () => {
 				RUNS,
 				served(
 					checkRuns(2, [
-						{...noRun("ci-required", "completed", "failure"), id: 1},
-						{...noRun("ci-required", "completed", "success"), id: 2},
+						{ ...noRun("ci-required", "completed", "failure"), id: 1 },
+						{ ...noRun("ci-required", "completed", "success"), id: 2 },
 					]),
 				),
 			],
@@ -540,7 +544,9 @@ describe("runChecks", () => {
 			[RUNS, served(checkRuns(0, []))],
 			[
 				WORKFLOWS,
-				served(workflows({path: ".github/workflows/ci.yml"}, {path: ".github/workflows/e2e.yml"})),
+				served(
+					workflows({ path: ".github/workflows/ci.yml" }, { path: ".github/workflows/e2e.yml" }),
+				),
 			],
 			[RUN_COUNT, served(runsTotal(0))],
 		]);
@@ -550,7 +556,7 @@ describe("runChecks", () => {
 	});
 
 	it("refuses an unreadable enumeration on 11 — CI state is UNKNOWN, never green", async () => {
-		const out = await run(found, [[RUNS, {status: 502, body: '{"message":"Bad gateway"}'}]]);
+		const out = await run(found, [[RUNS, { status: 502, body: '{"message":"Bad gateway"}' }]]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain("CI state is UNKNOWN, never green");
@@ -568,7 +574,7 @@ describe("runChecks", () => {
 		const out = await run(
 			[
 				[PULL, served(pull())],
-				[COMMIT, {status: 404, body: '{"message":"Not Found"}'}],
+				[COMMIT, { status: 404, body: '{"message":"Not Found"}' }],
 			],
 			[],
 		);
@@ -597,8 +603,8 @@ describe("the gate-coverage floor under a green head", () => {
 	it("refuses on 20 when the repo declares a gate and none of them ran at this head", async () => {
 		const out = await run(found, [
 			[RUNS, passingChecks],
-			[WORKFLOWS, served(workflows({path: CI}, {path: CODEQL}))],
-			[RUN_COUNT, served(runsTotal(1, [{id: 11, path: CODEQL}]))],
+			[WORKFLOWS, served(workflows({ path: CI }, { path: CODEQL }))],
+			[RUN_COUNT, served(runsTotal(1, [{ id: 11, path: CODEQL }]))],
 		]);
 		expect(out.code).toBe(NO_GATE_COVERAGE);
 		expect(out.stdout).toBe("");
@@ -610,13 +616,13 @@ describe("the gate-coverage floor under a green head", () => {
 	it("answers green when the declared gate workflow produced a run at this head", async () => {
 		const out = await run(found, [
 			[RUNS, served(checkRuns(1, [noRun("ci-required", "completed", "success")]))],
-			[WORKFLOWS, served(workflows({path: CI}, {path: CODEQL}))],
+			[WORKFLOWS, served(workflows({ path: CI }, { path: CODEQL }))],
 			[
 				RUN_COUNT,
 				served(
 					runsTotal(2, [
-						{id: 11, path: CI},
-						{id: 12, path: CODEQL, workflowId: 2},
+						{ id: 11, path: CI },
+						{ id: 12, path: CODEQL, workflowId: 2 },
 					]),
 				),
 			],
@@ -632,8 +638,8 @@ describe("the gate-coverage floor under a green head", () => {
 		const CLEANUP = ".github/workflows/pr-cleanup.yml";
 		const out = await run(found, [
 			[RUNS, passingChecks],
-			[WORKFLOWS, served(workflows({path: CI}, {path: CLEANUP}))],
-			[RUN_COUNT, served(runsTotal(1, [{id: 11, path: CLEANUP, event: "pull_request_target"}]))],
+			[WORKFLOWS, served(workflows({ path: CI }, { path: CLEANUP }))],
+			[RUN_COUNT, served(runsTotal(1, [{ id: 11, path: CLEANUP, event: "pull_request_target" }]))],
 		]);
 		expect(out.code).toBe(NO_GATE_COVERAGE);
 		expect(out.stdout).toBe("");
@@ -642,11 +648,11 @@ describe("the gate-coverage floor under a green head", () => {
 	it("refuses on 20 when the repo-authored run at this head carries another commit", async () => {
 		const out = await run(found, [
 			[RUNS, passingChecks],
-			[WORKFLOWS, served(workflows({path: CI}, {path: CODEQL}))],
+			[WORKFLOWS, served(workflows({ path: CI }, { path: CODEQL }))],
 			[
 				RUN_COUNT,
 				served(
-					runsTotal(1, [{id: 11, path: CI, headSha: "0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f708192"}]),
+					runsTotal(1, [{ id: 11, path: CI, headSha: "0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f708192" }]),
 				),
 			],
 		]);
@@ -660,14 +666,14 @@ describe("the gate-coverage floor under a green head", () => {
 		const out = await run(
 			[
 				[PULL, served(pull())],
-				[COMMIT, {status: 200, body: JSON.stringify({sha: HEAD})}],
+				[COMMIT, { status: 200, body: JSON.stringify({ sha: HEAD }) }],
 			],
 			[
 				[RUNS, served(checkRuns(1, [noRun("ci-required", "completed", "success")]))],
-				[WORKFLOWS, served(workflows({path: CI}, {path: CODEQL}))],
-				[AT_FULL, served(runsTotal(1, [{id: 11, path: CI}]))],
+				[WORKFLOWS, served(workflows({ path: CI }, { path: CODEQL }))],
+				[AT_FULL, served(runsTotal(1, [{ id: 11, path: CI }]))],
 			],
-			{sha: "03135b91"},
+			{ sha: "03135b91" },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout.split("\n")[0]).toBe("checks\t03135b91\tgreen");
@@ -677,8 +683,8 @@ describe("the gate-coverage floor under a green head", () => {
 	it("judges no coverage on a repo that authors no workflow of its own", async () => {
 		const out = await run(found, [
 			[RUNS, served(checkRuns(1, [noRun("CodeQL", "completed", "success")]))],
-			[WORKFLOWS, served(workflows({path: CODEQL}))],
-			[RUN_COUNT, served(runsTotal(1, [{id: 11, path: CODEQL}]))],
+			[WORKFLOWS, served(workflows({ path: CODEQL }))],
+			[RUN_COUNT, served(runsTotal(1, [{ id: 11, path: CODEQL }]))],
 		]);
 		expect(out.code).toBe(0);
 		expect(out.stdout.split("\n")[0]).toBe(`checks\t${HEAD}\tgreen`);
@@ -692,8 +698,8 @@ describe("the gate-coverage floor under a green head", () => {
 	it("leaves a red ungated head red rather than refusing it", async () => {
 		const out = await run(found, [
 			[RUNS, served(checkRuns(1, [noRun("unit tests", "completed", "failure")]))],
-			[WORKFLOWS, served(workflows({path: CI}))],
-			[RUN_COUNT, served(runsTotal(1, [{id: 11, path: CODEQL}]))],
+			[WORKFLOWS, served(workflows({ path: CI }))],
+			[RUN_COUNT, served(runsTotal(1, [{ id: 11, path: CODEQL }]))],
 		]);
 		expect(out.code).toBe(0);
 		expect(out.stdout.split("\n")[0]).toBe(`checks\t${HEAD}\tred`);
@@ -707,14 +713,14 @@ describe("the gate-coverage floor under a green head", () => {
  */
 describe("the concurrency-cancelled head", () => {
 	const cancelledAggregator = served(
-		checkRuns(1, [{...noRun("ci-required", "completed", "cancelled"), check_suite_id: 91}]),
+		checkRuns(1, [{ ...noRun("ci-required", "completed", "cancelled"), check_suite_id: 91 }]),
 	);
 
 	/** The older run cancelled, the newer run of the same workflow still going, at one head. */
 	const supersededRuns = served(
 		runsTotal(2, [
-			{id: 11, workflowId: 7, checkSuiteId: 91, conclusion: "cancelled"},
-			{id: 12, workflowId: 7, checkSuiteId: 92, status: "in_progress", conclusion: null},
+			{ id: 11, workflowId: 7, checkSuiteId: 91, conclusion: "cancelled" },
+			{ id: 12, workflowId: 7, checkSuiteId: 92, status: "in_progress", conclusion: null },
 		]),
 	);
 
@@ -738,7 +744,9 @@ describe("the concurrency-cancelled head", () => {
 			[WORKFLOWS, served(workflows("active"))],
 			[
 				RUN_COUNT,
-				served(runsTotal(1, [{id: 11, workflowId: 7, checkSuiteId: 91, conclusion: "cancelled"}])),
+				served(
+					runsTotal(1, [{ id: 11, workflowId: 7, checkSuiteId: 91, conclusion: "cancelled" }]),
+				),
 			],
 		]);
 		expect(out.stdout.split("\n")[0]).toBe(`checks\t${HEAD}\tred`);
@@ -756,7 +764,7 @@ describe("the concurrency-cancelled head", () => {
 					RUNS,
 					served(
 						checkRuns(1, [
-							{...noRun("ci-required", "completed", "success"), id: 5, check_suite_id: 92},
+							{ ...noRun("ci-required", "completed", "success"), id: 5, check_suite_id: 92 },
 						]),
 					),
 				],
@@ -766,13 +774,13 @@ describe("the concurrency-cancelled head", () => {
 					RUN_COUNT,
 					served(
 						runsTotal(2, [
-							{id: 11, workflowId: 7, checkSuiteId: 91, conclusion: "cancelled"},
-							{id: 12, workflowId: 7, checkSuiteId: 92, conclusion: "success"},
+							{ id: 11, workflowId: 7, checkSuiteId: 91, conclusion: "cancelled" },
+							{ id: 12, workflowId: 7, checkSuiteId: 92, conclusion: "success" },
 						]),
 					),
 				],
 			],
-			{wait: true, cadenceSeconds: 0},
+			{ wait: true, cadenceSeconds: 0 },
 		);
 		expect(out.stdout.split("\n").slice(0, 2)).toEqual([
 			"settle\tsettled",
@@ -802,8 +810,8 @@ describe("the no-producer split", () => {
 			WORKFLOWS,
 			served(
 				workflows(
-					{path: "dynamic/github-code-scanning/codeql"},
-					{path: "dynamic/dependabot/dependabot-updates"},
+					{ path: "dynamic/github-code-scanning/codeql" },
+					{ path: "dynamic/dependabot/dependabot-updates" },
 				),
 			),
 		],
@@ -818,7 +826,12 @@ describe("the no-producer split", () => {
 	});
 
 	it("prints no-producer over an all-`dynamic/*` inventory when the repo declares degrade", async () => {
-		const out = await run(found, platformOnly, {}, {[CONFIG]: '{"ci": {"noProducer": "degrade"}}'});
+		const out = await run(
+			found,
+			platformOnly,
+			{},
+			{ [CONFIG]: '{"ci": {"noProducer": "degrade"}}' },
+		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(
 			[`checks\t${HEAD}\tno-producer`, "run\t0", "facts\tworkflows:2\truns:3", ""].join("\n"),
@@ -826,7 +839,12 @@ describe("the no-producer split", () => {
 	});
 
 	it("prints no-producer, never pending and never green, when the repo declares degrade", async () => {
-		const out = await run(found, noWorkflows, {}, {[CONFIG]: '{"ci": {"noProducer": "degrade"}}'});
+		const out = await run(
+			found,
+			noWorkflows,
+			{},
+			{ [CONFIG]: '{"ci": {"noProducer": "degrade"}}' },
+		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(
 			[`checks\t${HEAD}\tno-producer`, "run\t0", "facts\tworkflows:0\truns:0", ""].join("\n"),
@@ -835,7 +853,7 @@ describe("the no-producer split", () => {
 	});
 
 	it("refuses an off-vocabulary noProducer on 11 — never the shipped default", async () => {
-		const out = await run(found, noWorkflows, {}, {[CONFIG]: '{"ci": {"noProducer": "ignore"}}'});
+		const out = await run(found, noWorkflows, {}, { [CONFIG]: '{"ci": {"noProducer": "ignore"}}' });
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.at(-1)).toContain("is not one of refuse, degrade");
 	});

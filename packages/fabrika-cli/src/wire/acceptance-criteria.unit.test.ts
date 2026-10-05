@@ -7,7 +7,7 @@
  * "Malformed")` is the whole point; a test that only asserted "criteria is empty" would pass
  * against the defect.
  */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	type AcceptanceCriterion,
 	criterionText,
@@ -31,7 +31,7 @@ const criterion = (text: string, checked: boolean, evidence?: string): Acceptanc
 	if (evidence !== undefined && source === null) {
 		throw new Error(`"${evidence}" is not an evidence source`);
 	}
-	return {text: value, checked, evidence: source};
+	return { text: value, checked, evidence: source };
 };
 
 const found = (source: string): ReadonlyArray<AcceptanceCriterion> => {
@@ -595,7 +595,7 @@ describe("the outside-diff evidence marker", () => {
 	it("round-trips a marked criterion through emit", () => {
 		const first = criterion("the old checkpoint loads", false, "hand-verification");
 		const second = criterion("the reader paints", true);
-		expect(read(emit([first, second]))).toEqual({_tag: "Found", value: [first, second]});
+		expect(read(emit([first, second]))).toEqual({ _tag: "Found", value: [first, second] });
 	});
 
 	it("carries the source through parseFields and refuses an unusable marker there too", () => {

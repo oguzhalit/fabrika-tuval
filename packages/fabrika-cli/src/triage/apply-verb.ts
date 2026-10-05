@@ -20,13 +20,13 @@
  * `--class` supplies the seed read by `../lane/class-seed.ts`. Unlike the other facets,
  * its vocabulary is closed in code rather than declared on the board.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {getIssue, listLabels, listOpenMilestones, resolveRepo} from "../io/issues.ts";
-import {missingLabelRemedy} from "../status/label-remedy.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {read as readCriteria} from "../wire/acceptance-criteria.ts";
-import {edgeLine, landEdges, planEdges} from "./blocked-by.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { getIssue, listLabels, listOpenMilestones, resolveRepo } from "../io/issues.ts";
+import { missingLabelRemedy } from "../status/label-remedy.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { read as readCriteria } from "../wire/acceptance-criteria.ts";
+import { edgeLine, landEdges, planEdges } from "./blocked-by.ts";
 import {
 	CRITERIA_REQUIRED,
 	OFF_VOCABULARY,
@@ -35,8 +35,8 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {guardConfig} from "./config-guard.ts";
-import {applyChanges} from "./facet-writes.ts";
+import { guardConfig } from "./config-guard.ts";
+import { applyChanges } from "./facet-writes.ts";
 import {
 	audienceKeep,
 	CLASSES,
@@ -48,8 +48,8 @@ import {
 	shapeViolations,
 	triagedFacets,
 } from "./facets.ts";
-import {scannedLine} from "./scope.ts";
-import {guardTarget} from "./target-guard.ts";
+import { scannedLine } from "./scope.ts";
+import { guardTarget } from "./target-guard.ts";
 
 export interface ApplyOptions {
 	readonly issue: number;
@@ -123,7 +123,7 @@ export const runApply = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
-		const {issue, json} = options;
+		const { issue, json } = options;
 
 		if (!Number.isInteger(issue) || issue <= 0) {
 			return refuse(FAILED, `triage apply: ${issue} is not an issue number.`);
@@ -132,7 +132,7 @@ export const runApply = (
 		const gate = yield* guardConfig("triage apply", options.cwd);
 		if (gate._tag === "Refused") return gate.outcome;
 		const resolved = gate.resolved;
-		const {types, priorities, audiences, standingLanes} = resolved.board;
+		const { types, priorities, audiences, standingLanes } = resolved.board;
 
 		if ((options.home === null) === (options.lane === null)) {
 			return refuse(
@@ -244,7 +244,7 @@ export const runApply = (
 
 		// Only the labels THIS invocation writes, not the whole vocabulary: checking all six types
 		// would refuse a good `--type bug` in a repo that merely lacks `type:investigation`.
-		const facets = triagedFacets({type, priority, readyFor, lane, classes}, resolved);
+		const facets = triagedFacets({ type, priority, readyFor, lane, classes }, resolved);
 		// What LANDED, never what was asked: an epic asked for the agent audience is stamped by
 		// `check-epic-plan` and by nothing here, so both channels report the absence.
 		const stampedAudience = audienceKeep(type, readyFor).length === 0 ? null : readyFor;
@@ -258,7 +258,7 @@ export const runApply = (
 		if (missing !== undefined) {
 			return refuse(
 				ZERO_SCOPE,
-				`triage apply: label ${missing} does not exist in ${repo} — refusing to write, because the API would create it. ${missingLabelRemedy(missing, {_tag: "Resolved", resolved})}`,
+				`triage apply: label ${missing} does not exist in ${repo} — refusing to write, because the API would create it. ${missingLabelRemedy(missing, { _tag: "Resolved", resolved })}`,
 				diagnostics,
 			);
 		}
@@ -278,7 +278,7 @@ export const runApply = (
 
 		const home = options.home;
 		const plan = planReconcile(
-			{labels: target.value.labels, milestone: target.value.milestone},
+			{ labels: target.value.labels, milestone: target.value.milestone },
 			facets,
 			home,
 		);
@@ -307,7 +307,7 @@ export const runApply = (
 				diagnostics,
 			);
 		}
-		const observed = {labels: back.value.labels, milestone: back.value.milestone};
+		const observed = { labels: back.value.labels, milestone: back.value.milestone };
 		const violations = shapeViolations(observed, facets, home);
 		if (violations.length > 0) {
 			return refuse(
@@ -337,7 +337,7 @@ export const runApply = (
 						home: home === null ? lane : home,
 						removed: plan.removed,
 						blockedBy: landed.value,
-						readBack: {labels: observed.labels, milestone: observed.milestone},
+						readBack: { labels: observed.labels, milestone: observed.milestone },
 					}),
 					diagnostics,
 				)

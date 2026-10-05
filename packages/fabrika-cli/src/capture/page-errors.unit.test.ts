@@ -5,7 +5,7 @@
  * load-bearing case is a read-only rich-text editor's null-editor `TypeError`,
  * which a single good-tick screenshot missed.
  */
-import {assert, describe, it} from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import {
 	isRenderCrash,
 	type PageError,
@@ -29,19 +29,19 @@ describe("toPageError — normalization", () => {
 
 describe("isRenderCrash — only uncaught exceptions hard-fail", () => {
 	it("treats an uncaught pageerror as a crash", () => {
-		assert.strictEqual(isRenderCrash({kind: "pageerror", text: "TypeError: x"}), true);
+		assert.strictEqual(isRenderCrash({ kind: "pageerror", text: "TypeError: x" }), true);
 	});
 
 	it("does NOT treat a console.error as a crash (advisory — noisy in dev)", () => {
-		assert.strictEqual(isRenderCrash({kind: "console.error", text: "Warning: bad key"}), false);
+		assert.strictEqual(isRenderCrash({ kind: "console.error", text: "Warning: bad key" }), false);
 	});
 });
 
 describe("renderCrashFailure — the deterministic gate FAIL", () => {
 	it("returns null when no surface threw", () => {
 		const surfaces: SurfacePageErrors[] = [
-			{surface: "/catalog", pageErrors: []},
-			{surface: "/feed", pageErrors: []},
+			{ surface: "/catalog", pageErrors: [] },
+			{ surface: "/feed", pageErrors: [] },
 		];
 		assert.strictEqual(renderCrashFailure(surfaces), null);
 	});
@@ -55,7 +55,7 @@ describe("renderCrashFailure — the deterministic gate FAIL", () => {
 			text: "TypeError: Cannot read properties of null (reading 'commands')",
 		};
 		const surfaces: SurfacePageErrors[] = [
-			{surface: "/editor/read-only", pageErrors: [nullEditor]},
+			{ surface: "/editor/read-only", pageErrors: [nullEditor] },
 		];
 		const failure = renderCrashFailure(surfaces);
 		assert.isNotNull(failure);
@@ -68,7 +68,7 @@ describe("renderCrashFailure — the deterministic gate FAIL", () => {
 		const surfaces: SurfacePageErrors[] = [
 			{
 				surface: "/catalog",
-				pageErrors: [{kind: "console.error", text: "Warning: missing key prop"}],
+				pageErrors: [{ kind: "console.error", text: "Warning: missing key prop" }],
 			},
 		];
 		assert.strictEqual(renderCrashFailure(surfaces), null);
@@ -76,9 +76,9 @@ describe("renderCrashFailure — the deterministic gate FAIL", () => {
 
 	it("pluralizes and lists every crashed surface", () => {
 		const surfaces: SurfacePageErrors[] = [
-			{surface: "/a", pageErrors: [{kind: "pageerror", text: "TypeError: a"}]},
-			{surface: "/b", pageErrors: [{kind: "console.error", text: "warn"}]},
-			{surface: "/c", pageErrors: [{kind: "pageerror", text: "ReferenceError: c"}]},
+			{ surface: "/a", pageErrors: [{ kind: "pageerror", text: "TypeError: a" }] },
+			{ surface: "/b", pageErrors: [{ kind: "console.error", text: "warn" }] },
+			{ surface: "/c", pageErrors: [{ kind: "pageerror", text: "ReferenceError: c" }] },
 		];
 		const failure = renderCrashFailure(surfaces);
 		assert.match(failure as string, /2 uncaught runtime exceptions thrown during capture render/);

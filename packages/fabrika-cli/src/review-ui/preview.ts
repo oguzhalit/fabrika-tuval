@@ -22,7 +22,7 @@ import {
 	type PreviewAnnouncement,
 	readPreviewAnnouncement,
 } from "../capture/resolve.ts";
-import type {CommentRecord} from "../io/issues.ts";
+import type { CommentRecord } from "../io/issues.ts";
 
 export type PreviewResolution =
 	/**
@@ -40,11 +40,11 @@ export type PreviewResolution =
 	 * Proven: no comment carries the preview anchor at all (`markedAt: null`), or the newest one is a
 	 * no-preview marker naming the judged head (`markedAt` is the SHA it names).
 	 */
-	| {readonly _tag: "NoPreview"; readonly markedAt: string | null}
+	| { readonly _tag: "NoPreview"; readonly markedAt: string | null }
 	/** The announcement names several apps and the caller picked none. */
-	| {readonly _tag: "Ambiguous"; readonly apps: readonly string[]}
+	| { readonly _tag: "Ambiguous"; readonly apps: readonly string[] }
 	/** The anchor is there and unreadable for this app — unreadable is not absent. */
-	| {readonly _tag: "Malformed"; readonly reason: string};
+	| { readonly _tag: "Malformed"; readonly reason: string };
 
 /** The write stamp when the platform gave one, else the filing time — never an arbitrary order. */
 const writtenAt = (comment: CommentRecord): string =>
@@ -73,7 +73,7 @@ export const resolvePreview = (
 	head: string,
 ): PreviewResolution => {
 	const announcement = newestAnnouncement(comments);
-	if (announcement === undefined) return {_tag: "NoPreview", markedAt: null};
+	if (announcement === undefined) return { _tag: "NoPreview", markedAt: null };
 	const apps = announcedApps(announcement.body);
 	const marked = noPreviewHead(announcement.body);
 	if (marked !== null) {
@@ -83,7 +83,7 @@ export const resolvePreview = (
 				reason: `the comment carries both a no-preview marker and app blocks (${apps.join(", ")})`,
 			};
 		}
-		if (sameHead(marked, head)) return {_tag: "NoPreview", markedAt: marked};
+		if (sameHead(marked, head)) return { _tag: "NoPreview", markedAt: marked };
 		return {
 			_tag: "Malformed",
 			reason: `the no-preview marker names ${marked}, not the head ${head} — no preview at an earlier push is not proof of none at this one`,
@@ -95,11 +95,11 @@ export const resolvePreview = (
 			reason: "the comment carries the preview anchor but names no app block",
 		};
 	}
-	if (app === null && apps.length > 1) return {_tag: "Ambiguous", apps};
+	if (app === null && apps.length > 1) return { _tag: "Ambiguous", apps };
 	const chosen = app ?? (apps[0] as string);
 	const read = readPreviewAnnouncement(announcement.body, chosen);
-	if (read._tag === "Announced") return {_tag: "Resolved", value: read.value, apps};
-	if (read._tag === "Malformed") return {_tag: "Malformed", reason: read.reason};
+	if (read._tag === "Announced") return { _tag: "Resolved", value: read.value, apps };
+	if (read._tag === "Malformed") return { _tag: "Malformed", reason: read.reason };
 	return {
 		_tag: "Malformed",
 		reason: `the announcement names apps ${apps.join(", ")}, not "${chosen}"`,

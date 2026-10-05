@@ -122,17 +122,17 @@ export const RERUNNABLE_SIGNATURE_IDS: ReadonlyArray<string> = SIGNATURES.filter
 ).map((row) => row.id);
 
 export type RerunLicence =
-	| {readonly _tag: "Licensed"; readonly signature: Signature}
-	| {readonly _tag: "NotTransient"; readonly signature: Signature}
-	| {readonly _tag: "UnknownId"};
+	| { readonly _tag: "Licensed"; readonly signature: Signature }
+	| { readonly _tag: "NotTransient"; readonly signature: Signature }
+	| { readonly _tag: "UnknownId" };
 
 /** Whether a signature id licenses the one rerun. Only a `transient` row does. */
 export const rerunLicence = (id: string): RerunLicence => {
 	const signature = SIGNATURES.find((row) => row.id === id);
-	if (signature === undefined) return {_tag: "UnknownId"};
+	if (signature === undefined) return { _tag: "UnknownId" };
 	return signature.class === "transient"
-		? {_tag: "Licensed", signature}
-		: {_tag: "NotTransient", signature};
+		? { _tag: "Licensed", signature }
+		: { _tag: "NotTransient", signature };
 };
 
 /** `unclassified` is a **third** token: recognising nothing is not the same as recognising a bug. */
@@ -143,7 +143,7 @@ export type Classification =
 			/** 1-based within the block the text came from. */
 			readonly line: number;
 	  }
-	| {readonly _tag: "Unclassified"; readonly lines: number};
+	| { readonly _tag: "Unclassified"; readonly lines: number };
 
 /**
  * The first row whose pattern matches any line, scanned row-major so precedence is the table's.
@@ -156,8 +156,8 @@ export const classifyLog = (text: string): Classification => {
 	const lines = text.split("\n");
 	for (const signature of SIGNATURES) {
 		for (const [index, line] of lines.entries()) {
-			if (signature.pattern.test(line)) return {_tag: "Matched", signature, line: index + 1};
+			if (signature.pattern.test(line)) return { _tag: "Matched", signature, line: index + 1 };
 		}
 	}
-	return {_tag: "Unclassified", lines: lines.length};
+	return { _tag: "Unclassified", lines: lines.length };
 };

@@ -17,9 +17,9 @@
  * re-imports the verb. The specifiers below are byte-identical to the ones the verbs themselves
  * import, so no path is re-derived and nothing resolves through a symlink.
  */
-import {Effect, type FileSystem, Layer, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {afterEach, describe, expect, it, vi} from "vitest";
+import { Effect, type FileSystem, Layer, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	fakeSeams,
 	type HttpReply,
@@ -28,9 +28,9 @@ import {
 	type Scripted,
 	unconfigured,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {UNDECLARED} from "../ship/fixtures.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { UNDECLARED } from "../ship/fixtures.test-support.ts";
 import {
 	APPEND_ONLY,
 	INCOMPLETE_SCAN,
@@ -62,7 +62,7 @@ const RUNS = /GET .*\/repos\/o\/r\/commits\/[0-9a-f]+\/check-runs/;
 /** The linked issue `review post`'s PASS fence reads before it composes anything. */
 const LINKED: Scripted = [
 	/GET .*\/repos\/o\/r\/issues\/4287$/,
-	{status: 200, body: issue().stdout},
+	{ status: 200, body: issue().stdout },
 ];
 const COMMENTS = /GET .*\/repos\/o\/r\/issues\/4321\/comments/;
 const CREATE = /POST .*\/repos\/o\/r\/issues\/4321\/comments/;
@@ -72,7 +72,7 @@ const PERMISSION = /GET .*\/repos\/o\/r\/collaborators\/kampus-bot\/permission$/
 const ISSUE = /GET .*\/repos\/o\/r\/issues\/4287$/;
 const PATCH = /PATCH .*\/repos\/o\/r\/issues\/4287$/;
 
-const ENV = {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>;
+const ENV = { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>;
 
 /** The point read `review ci` answers with by default — no `--wait`, so the bound is unused. */
 const POINT_READ = {
@@ -108,7 +108,7 @@ const withShell = <A>(
 	);
 
 /** A canned payload as the platform serves it — the fixtures speak `ExecResult`, the seam HTTP. */
-const served = (result: ExecResult): HttpReply => ({status: 200, body: result.stdout});
+const served = (result: ExecResult): HttpReply => ({ status: 200, body: result.stdout });
 
 /** The two Actions reads, addressed by their full URLs — the query is what tells them apart. */
 const WORKFLOWS = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/actions\/workflows\?/;
@@ -132,12 +132,12 @@ const mutate = async <M extends Record<string, unknown>>(
 ): Promise<void> => {
 	vi.resetModules();
 	const actual = (await vi.importActual(specifier)) as M;
-	vi.doMock(specifier, () => ({...actual, ...patch(actual)}));
+	vi.doMock(specifier, () => ({ ...actual, ...patch(actual) }));
 };
 
 describe("the CI rollup's fail-closed buckets", () => {
 	const CANCELLED = checkRuns(1, [
-		{name: "unit tests", status: "completed", conclusion: "cancelled"},
+		{ name: "unit tests", status: "completed", conclusion: "cancelled" },
 	]);
 	const CI_YML = ".github/workflows/ci.yml";
 	// Scripted so the mutant reaches the exact wrong answer this case pins. The real verb short-
@@ -153,7 +153,7 @@ describe("the CI rollup's fail-closed buckets", () => {
 	];
 
 	it("reds a cancelled check — a check that proved nothing must not read green", async () => {
-		const {runCi} = await import("./ci-verb.ts");
+		const { runCi } = await import("./ci-verb.ts");
 		const out = await withShell(runCi(POINT_READ), script, http);
 		expect(out.stdout.split("\n")[0]).toBe(`ci\t${HEAD}\tred`);
 	});
@@ -162,7 +162,7 @@ describe("the CI rollup's fail-closed buckets", () => {
 		await mutate<typeof import("./rollup.ts")>("./rollup.ts", (actual) => ({
 			rollupOf: (runs) => actual.rollupOf(runs.filter((run) => run.conclusion !== "cancelled")),
 		}));
-		const {runCi} = await import("./ci-verb.ts");
+		const { runCi } = await import("./ci-verb.ts");
 		const out = await withShell(runCi(POINT_READ), script, http);
 		// The intended death, named exactly: the answer flips to the permissive token, at exit 0.
 		expect(out.code).toBe(0);
@@ -176,7 +176,7 @@ describe("the CI rollup's gate-coverage refusal", () => {
 	/** The head: a complete, all-passed enumeration that no gate of this repo produced. */
 	const script: ReadonlyArray<Scripted> = [
 		[PULL, served(pull())],
-		[RUNS, served(checkRuns(1, [{name: "CodeQL", status: "completed", conclusion: "success"}]))],
+		[RUNS, served(checkRuns(1, [{ name: "CodeQL", status: "completed", conclusion: "success" }]))],
 	];
 	const http: ReadonlyArray<Scripted> = [
 		[WORKFLOWS, served(inventory(CI_YML, CODEQL))],
@@ -184,7 +184,7 @@ describe("the CI rollup's gate-coverage refusal", () => {
 	];
 
 	it("refuses a head no gate inspected — a passing check set is not gate coverage", async () => {
-		const {runCi} = await import("./ci-verb.ts");
+		const { runCi } = await import("./ci-verb.ts");
 		const out = await withShell(runCi(POINT_READ), script, http);
 		expect(out.code).toBe(NO_GATE_COVERAGE);
 		expect(out.stdout).toBe("");
@@ -192,9 +192,9 @@ describe("the CI rollup's gate-coverage refusal", () => {
 
 	it("MUTANT: calling every head covered makes the same PR report GREEN", async () => {
 		await mutate<typeof import("./gate-coverage.ts")>("./gate-coverage.ts", () => ({
-			gateCoverageOf: () => ({_tag: "Covered", declared: 1, covered: 1}),
+			gateCoverageOf: () => ({ _tag: "Covered", declared: 1, covered: 1 }),
 		}));
-		const {runCi} = await import("./ci-verb.ts");
+		const { runCi } = await import("./ci-verb.ts");
 		const out = await withShell(runCi(POINT_READ), script, http);
 		// The intended death: the ungated head reports the permissive token, at exit 0.
 		expect(out.code).toBe(0);
@@ -205,13 +205,16 @@ describe("the CI rollup's gate-coverage refusal", () => {
 describe("the three-outcome binding", () => {
 	const STALE = `review-code: PASS @ ${OLD_HEAD} — merge-ready`;
 	const script: ReadonlyArray<Scripted> = [
-		[PULL, served(pull({comments: 1}))],
-		[COMMENTS, served(comments({id: 1, body: STALE}))],
+		[PULL, served(pull({ comments: 1 }))],
+		[COMMENTS, served(comments({ id: 1, body: STALE }))],
 	];
 
 	it("prints a stale PASS as stale", async () => {
-		const {runVerdicts} = await import("./verdicts-verb.ts");
-		const out = await withShell(runVerdicts({pr: 4321, repo: null, json: false, env: ENV}), script);
+		const { runVerdicts } = await import("./verdicts-verb.ts");
+		const out = await withShell(
+			runVerdicts({ pr: 4321, repo: null, json: false, env: ENV }),
+			script,
+		);
 		expect(out.stdout).toContain("\tstale\t");
 	});
 
@@ -222,13 +225,16 @@ describe("the three-outcome binding", () => {
 				bindToContent: (claim, head, digest) => {
 					const binding = actual.bindToContent(claim, head, digest);
 					return binding._tag === "Stale"
-						? ({_tag: "Current", sha: binding.markerSha, via: "head"} as const)
+						? ({ _tag: "Current", sha: binding.markerSha, via: "head" } as const)
 						: binding;
 				},
 			}),
 		);
-		const {runVerdicts} = await import("./verdicts-verb.ts");
-		const out = await withShell(runVerdicts({pr: 4321, repo: null, json: false, env: ENV}), script);
+		const { runVerdicts } = await import("./verdicts-verb.ts");
+		const out = await withShell(
+			runVerdicts({ pr: 4321, repo: null, json: false, env: ENV }),
+			script,
+		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toContain("\tcurrent\t");
 		expect(out.stdout).not.toContain("\tstale\t");
@@ -239,7 +245,7 @@ describe("the diff completeness proof", () => {
 	// The range carries seven files; the served diff carries two. Both counts are git's, over the
 	// same range — anything but a refusal judges 2/7.
 	const script: ReadonlyArray<Scripted> = [
-		[PULL, served(pull({changedFiles: 7}))],
+		[PULL, served(pull({ changedFiles: 7 }))],
 		...binding(),
 		LINKED,
 		[DIFF_AT(), okOut(DIFF)],
@@ -247,16 +253,16 @@ describe("the diff completeness proof", () => {
 	];
 
 	it("refuses a short diff on 13", async () => {
-		const {runDiff} = await import("./diff-verb.ts");
-		const out = await withShell(runDiff({pr: 4321, sha: null, repo: null, env: ENV}), script);
+		const { runDiff } = await import("./diff-verb.ts");
+		const out = await withShell(runDiff({ pr: 4321, sha: null, repo: null, env: ENV }), script);
 		expect(out.code).toBe(INCOMPLETE_SCAN);
 		expect(out.stdout).toBe("");
 	});
 
 	it("MUTANT: a file count that always matches serves the partial diff as the whole (#3925)", async () => {
-		await mutate<typeof import("./diff.ts")>("./diff.ts", () => ({filesInDiff: () => 7}));
-		const {runDiff} = await import("./diff-verb.ts");
-		const out = await withShell(runDiff({pr: 4321, sha: null, repo: null, env: ENV}), script);
+		await mutate<typeof import("./diff.ts")>("./diff.ts", () => ({ filesInDiff: () => 7 }));
+		const { runDiff } = await import("./diff-verb.ts");
+		const out = await withShell(runDiff({ pr: 4321, sha: null, repo: null, env: ENV }), script);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(DIFF);
 	});
@@ -281,7 +287,7 @@ describe("the commit binding on the read verbs", () => {
 `;
 
 	const diffScript: ReadonlyArray<Scripted> = [
-		[PULL, served(pull({changedFiles: 1}))],
+		[PULL, served(pull({ changedFiles: 1 }))],
 		...binding(),
 		LINKED,
 		[DIFF_AT(), okOut(DIFF)],
@@ -289,25 +295,25 @@ describe("the commit binding on the read verbs", () => {
 	];
 
 	it("serves the bound commit's bytes", async () => {
-		const {runDiff} = await import("./diff-verb.ts");
-		const out = await withShell(runDiff({pr: 4321, sha: HEAD, repo: null, env: ENV}), diffScript);
+		const { runDiff } = await import("./diff-verb.ts");
+		const out = await withShell(runDiff({ pr: 4321, sha: HEAD, repo: null, env: ENV }), diffScript);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(DIFF);
 	});
 
 	it("MUTANT: reading the PR-number diff endpoint serves another head's bytes under this SHA", async () => {
 		await mutate<typeof import("../io/git.ts")>("../io/git.ts", () => ({
-			diffRange: () => Effect.succeed({_tag: "Ok" as const, value: MOVED_DIFF}),
+			diffRange: () => Effect.succeed({ _tag: "Ok" as const, value: MOVED_DIFF }),
 		}));
-		const {runDiff} = await import("./diff-verb.ts");
-		const out = await withShell(runDiff({pr: 4321, sha: HEAD, repo: null, env: ENV}), diffScript);
+		const { runDiff } = await import("./diff-verb.ts");
+		const out = await withShell(runDiff({ pr: 4321, sha: HEAD, repo: null, env: ENV }), diffScript);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(MOVED_DIFF);
 		expect(out.stdout).not.toBe(DIFF);
 	});
 
 	const scopeScript: ReadonlyArray<Scripted> = [
-		[PULL, served(pull({changedFiles: 1}))],
+		[PULL, served(pull({ changedFiles: 1 }))],
 		...binding(),
 		LINKED,
 		[PATHS_AT(), paths("src/cart.ts")],
@@ -315,26 +321,26 @@ describe("the commit binding on the read verbs", () => {
 	];
 
 	it("partitions the bound commit's file list", async () => {
-		const {runScope} = await import("./scope-verb.ts");
+		const { runScope } = await import("./scope-verb.ts");
 		const out = await withShell(
-			runScope({pr: 4321, sha: HEAD, repo: null, json: true, cwd: "/repo", env: ENV}),
+			runScope({ pr: 4321, sha: HEAD, repo: null, json: true, cwd: "/repo", env: ENV }),
 			scopeScript,
 		);
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({head: HEAD, namespaces: ["review-code"]});
+		expect(JSON.parse(out.stdout)).toMatchObject({ head: HEAD, namespaces: ["review-code"] });
 	});
 
 	it("MUTANT: reading the PR-number file list derives a namespace the printed head never had", async () => {
 		await mutate<typeof import("../io/git.ts")>("../io/git.ts", () => ({
-			diffRangePaths: () => Effect.succeed({_tag: "Ok" as const, value: ["docs/moved.md"]}),
+			diffRangePaths: () => Effect.succeed({ _tag: "Ok" as const, value: ["docs/moved.md"] }),
 		}));
-		const {runScope} = await import("./scope-verb.ts");
+		const { runScope } = await import("./scope-verb.ts");
 		const out = await withShell(
-			runScope({pr: 4321, sha: HEAD, repo: null, json: true, cwd: "/repo", env: ENV}),
+			runScope({ pr: 4321, sha: HEAD, repo: null, json: true, cwd: "/repo", env: ENV }),
 			scopeScript,
 		);
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({head: HEAD, namespaces: ["review-doc"]});
+		expect(JSON.parse(out.stdout)).toMatchObject({ head: HEAD, namespaces: ["review-doc"] });
 	});
 
 	// The other half: the same unbound read, at the two seams the binding left behind. Both mutants die
@@ -362,9 +368,9 @@ diff --git a/README.md b/README.md
 	];
 
 	it("scans the bound commit's bytes for Tier-M tokens", async () => {
-		const {runDeviations} = await import("./deviations-verb.ts");
+		const { runDeviations } = await import("./deviations-verb.ts");
 		const out = await withShell(
-			runDeviations({pr: 4321, sha: HEAD, repo: null, json: false, env: ENV}),
+			runDeviations({ pr: 4321, sha: HEAD, repo: null, json: false, env: ENV }),
 			deviationsScript,
 		);
 		expect(out.code).toBe(0);
@@ -373,11 +379,11 @@ diff --git a/README.md b/README.md
 
 	it("MUTANT: reading the PR-number diff prints a clean scan beside a `None.` that is false", async () => {
 		await mutate<typeof import("../io/git.ts")>("../io/git.ts", () => ({
-			diffRange: () => Effect.succeed({_tag: "Ok" as const, value: DIFF}),
+			diffRange: () => Effect.succeed({ _tag: "Ok" as const, value: DIFF }),
 		}));
-		const {runDeviations} = await import("./deviations-verb.ts");
+		const { runDeviations } = await import("./deviations-verb.ts");
 		const out = await withShell(
-			runDeviations({pr: 4321, sha: HEAD, repo: null, json: false, env: ENV}),
+			runDeviations({ pr: 4321, sha: HEAD, repo: null, json: false, env: ENV }),
 			deviationsScript,
 		);
 		expect(out.code).toBe(0);
@@ -396,20 +402,23 @@ diff --git a/README.md b/README.md
 		repo: null,
 		json: false,
 		env: ENV,
-		stdin: Effect.succeed<StdinRead>({_tag: "Text", text: "the table\n"}),
+		stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: "the table\n" }),
 		now: NOW,
 		supersede: false,
 		round: 1,
 	};
 	const postScript: ReadonlyArray<Scripted> = [
-		[PULL, served(pull({changedFiles: 1}))],
+		[PULL, served(pull({ changedFiles: 1 }))],
 		...binding(),
 		LINKED,
 		[PATHS_AT(), paths("src/cart.ts")],
 		[FILES, served(files("skills/deploy/SKILL.md"))],
-		[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+		[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 		[COMMENTS, served(comments())],
-		[CREATE, {status: 201, body: JSON.stringify({id: 1, html_url: "https://example.test/c/1"})}],
+		[
+			CREATE,
+			{ status: 201, body: JSON.stringify({ id: 1, html_url: "https://example.test/c/1" }) },
+		],
 		[
 			READBACK,
 			{
@@ -422,7 +431,7 @@ diff --git a/README.md b/README.md
 	];
 
 	it("refuses a namespace the bound commit's file list does not derive", async () => {
-		const {runPost} = await import("./post-verb.ts");
+		const { runPost } = await import("./post-verb.ts");
 		const shell = fakeSeams(postScript);
 		const out = await Effect.runPromise(Effect.provide(runPost(postOptions), shell.layer));
 		expect(out.code).toBe(10);
@@ -432,9 +441,9 @@ diff --git a/README.md b/README.md
 	it("MUTANT: reading the PR-number file list POSTS a namespace this run never derived", async () => {
 		await mutate<typeof import("../io/git.ts")>("../io/git.ts", () => ({
 			diffRangePaths: () =>
-				Effect.succeed({_tag: "Ok" as const, value: ["skills/deploy/SKILL.md"]}),
+				Effect.succeed({ _tag: "Ok" as const, value: ["skills/deploy/SKILL.md"] }),
 		}));
-		const {runPost} = await import("./post-verb.ts");
+		const { runPost } = await import("./post-verb.ts");
 		const shell = fakeSeams(postScript);
 		const out = await Effect.runPromise(Effect.provide(runPost(postOptions), shell.layer));
 		expect(out.code).toBe(0);
@@ -457,7 +466,7 @@ describe("the leak predicate over the assembled verdict", () => {
 		repo: null,
 		json: false,
 		env: ENV,
-		stdin: Effect.succeed<StdinRead>({_tag: "Text", text: LEAKY}),
+		stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: LEAKY }),
 		now: NOW,
 		supersede: false,
 		round: 1,
@@ -468,9 +477,12 @@ describe("the leak predicate over the assembled verdict", () => {
 		LINKED,
 		[PATHS_AT(), paths("src/cart.ts", "README.md")],
 		[FILES, served(files("skills/deploy/SKILL.md"))],
-		[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+		[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 		[COMMENTS, served(comments())],
-		[CREATE, {status: 201, body: JSON.stringify({id: 1, html_url: "https://example.test/c/1"})}],
+		[
+			CREATE,
+			{ status: 201, body: JSON.stringify({ id: 1, html_url: "https://example.test/c/1" }) },
+		],
 		[
 			READBACK,
 			{
@@ -483,7 +495,7 @@ describe("the leak predicate over the assembled verdict", () => {
 	];
 
 	it("refuses a machine-local path in the verdict body on 5, posting nothing", async () => {
-		const {runPost} = await import("./post-verb.ts");
+		const { runPost } = await import("./post-verb.ts");
 		const shell = fakeSeams(script);
 		const out = await Effect.runPromise(Effect.provide(runPost(options), shell.layer));
 		expect(out.code).toBe(LEAKED_PATH);
@@ -492,9 +504,9 @@ describe("the leak predicate over the assembled verdict", () => {
 
 	it("MUTANT: a predicate that finds nothing posts the machine-local path to the PR (#3173)", async () => {
 		await mutate<typeof import("../report/leaks.ts")>("../report/leaks.ts", () => ({
-			scanBody: (body: string) => ({leaks: [], redacted: body}),
+			scanBody: (body: string) => ({ leaks: [], redacted: body }),
 		}));
-		const {runPost} = await import("./post-verb.ts");
+		const { runPost } = await import("./post-verb.ts");
 		const shell = fakeSeams(script);
 		const out = await Effect.runPromise(Effect.provide(runPost(options), shell.layer));
 		expect(out.code).toBe(0);
@@ -517,7 +529,7 @@ describe("normalizeForReadback's trailing-newline step", () => {
 		repo: null,
 		json: false,
 		env: ENV,
-		stdin: Effect.succeed<StdinRead>({_tag: "Text", text: "the table\n"}),
+		stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: "the table\n" }),
 		now: NOW,
 		supersede: false,
 		round: 1,
@@ -528,9 +540,12 @@ describe("normalizeForReadback's trailing-newline step", () => {
 		LINKED,
 		[PATHS_AT(), paths("src/cart.ts", "README.md")],
 		[FILES, served(files("skills/deploy/SKILL.md"))],
-		[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
+		[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
 		[COMMENTS, served(comments())],
-		[CREATE, {status: 201, body: JSON.stringify({id: 1, html_url: "https://example.test/c/1"})}],
+		[
+			CREATE,
+			{ status: 201, body: JSON.stringify({ id: 1, html_url: "https://example.test/c/1" }) },
+		],
 		[
 			READBACK,
 			{
@@ -543,7 +558,7 @@ describe("normalizeForReadback's trailing-newline step", () => {
 	];
 
 	it("accepts a read-back that differs only in trailing whitespace", async () => {
-		const {runPost} = await import("./post-verb.ts");
+		const { runPost } = await import("./post-verb.ts");
 		const out = await withShell(runPost(options), script);
 		expect(out.code).toBe(0);
 	});
@@ -552,7 +567,7 @@ describe("normalizeForReadback's trailing-newline step", () => {
 		await mutate<typeof import("../report/compose.ts")>("../report/compose.ts", () => ({
 			normalizeForReadback: (text: string) => text,
 		}));
-		const {runPost} = await import("./post-verb.ts");
+		const { runPost } = await import("./post-verb.ts");
 		const out = await withShell(runPost(options), script);
 		expect(out.code).toBe(READBACK_MISMATCH);
 		expect(out.stderr.at(-1)).toContain("the comment's bytes are not the ones that were sent");
@@ -570,7 +585,7 @@ describe("the append-only fence", () => {
 		repo: null,
 		json: false,
 		env: ENV,
-		stdin: Effect.succeed<StdinRead>({_tag: "Text", text: TEXT}),
+		stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: TEXT }),
 	};
 	const WITH_LATER_SECTION = `### Acceptance criteria
 
@@ -581,10 +596,10 @@ describe("the append-only fence", () => {
 nothing yet.
 `;
 	const script: ReadonlyArray<Scripted> = [
-		[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-		[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
+		[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+		[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
 		[ISSUE, served(issue(WITH_LATER_SECTION))],
-		[PATCH, {status: 200, body: "{}"}],
+		[PATCH, { status: 200, body: "{}" }],
 	];
 
 	it("MUTANT: a composition that appends PAST the block reds on 15, before any PATCH", async () => {
@@ -594,7 +609,7 @@ nothing yet.
 				body: `${body}\n${row}`,
 			}),
 		}));
-		const {runAppendCriterion} = await import("./append-criterion-verb.ts");
+		const { runAppendCriterion } = await import("./append-criterion-verb.ts");
 		const shell = fakeSeams(script);
 		const out = await Effect.runPromise(Effect.provide(runAppendCriterion(options), shell.layer));
 		expect(out.code).toBe(APPEND_ONLY);
@@ -609,26 +624,26 @@ nothing yet.
 		await mutate<typeof import("./append.ts")>("./append.ts", () => ({
 			grewByOne: () => true,
 		}));
-		const {runAppendCriterion} = await import("./append-criterion-verb.ts");
+		const { runAppendCriterion } = await import("./append-criterion-verb.ts");
 		const unchanged: ReadonlyArray<Scripted> = [
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
 			[once(ISSUE), served(issue())],
 			[ISSUE, served(issue())],
-			[PATCH, {status: 200, body: "{}"}],
+			[PATCH, { status: 200, body: "{}" }],
 		];
 		const out = await withShell(runAppendCriterion(options), unchanged);
 		expect(out.code).toBe(0);
 	});
 
 	it("without the mutant, that same unchanged read-back reds on 9", async () => {
-		const {runAppendCriterion} = await import("./append-criterion-verb.ts");
+		const { runAppendCriterion } = await import("./append-criterion-verb.ts");
 		const unchanged: ReadonlyArray<Scripted> = [
-			[USER, {status: 200, body: JSON.stringify({login: "kampus-bot"})}],
-			[PERMISSION, {status: 200, body: JSON.stringify({permission: "write"})}],
+			[USER, { status: 200, body: JSON.stringify({ login: "kampus-bot" }) }],
+			[PERMISSION, { status: 200, body: JSON.stringify({ permission: "write" }) }],
 			[once(ISSUE), served(issue())],
 			[ISSUE, served(issue())],
-			[PATCH, {status: 200, body: "{}"}],
+			[PATCH, { status: 200, body: "{}" }],
 		];
 		const out = await withShell(runAppendCriterion(options), unchanged);
 		expect(out.code).toBe(READBACK_MISMATCH);
@@ -639,16 +654,16 @@ describe("the empty-read refusal on the changed-file list", () => {
 	// git reports no paths while GitHub declares nine: the emptiness refuses, the disagreement does
 	// not.
 	const script: ReadonlyArray<Scripted> = [
-		[PULL, served(pull({changedFiles: 9}))],
+		[PULL, served(pull({ changedFiles: 9 }))],
 		...binding(),
 		LINKED,
 		[PATHS_AT(), paths()],
 	];
 
 	it("refuses a partition over an empty read on 13", async () => {
-		const {runScope} = await import("./scope-verb.ts");
+		const { runScope } = await import("./scope-verb.ts");
 		const out = await withShell(
-			runScope({pr: 4321, sha: null, repo: null, json: false, cwd: "/repo", env: ENV}),
+			runScope({ pr: 4321, sha: null, repo: null, json: false, cwd: "/repo", env: ENV }),
 			script,
 		);
 		expect(out.code).toBe(INCOMPLETE_SCAN);
@@ -659,13 +674,13 @@ describe("the empty-read refusal on the changed-file list", () => {
 			diffRangePaths: (base: string, head: string) =>
 				Effect.map(actual.diffRangePaths(base, head), (attempt) =>
 					attempt._tag === "Ok" && attempt.value.length === 0
-						? {_tag: "Ok" as const, value: ["pad-0.ts"]}
+						? { _tag: "Ok" as const, value: ["pad-0.ts"] }
 						: attempt,
 				),
 		}));
-		const {runScope} = await import("./scope-verb.ts");
+		const { runScope } = await import("./scope-verb.ts");
 		const out = await withShell(
-			runScope({pr: 4321, sha: null, repo: null, json: false, cwd: "/repo", env: ENV}),
+			runScope({ pr: 4321, sha: null, repo: null, json: false, cwd: "/repo", env: ENV }),
 			script,
 		);
 		expect(out.code).toBe(0);
@@ -673,10 +688,10 @@ describe("the empty-read refusal on the changed-file list", () => {
 	});
 
 	it("proves the harness itself is live — an unscripted call still fails loudly", async () => {
-		const {runScope} = await import("./scope-verb.ts");
+		const { runScope } = await import("./scope-verb.ts");
 		const out = await withShell(
-			runScope({pr: 4321, sha: null, repo: null, json: false, cwd: "/repo", env: ENV}),
-			[[PULL, {status: 502, body: "{}"}]],
+			runScope({ pr: 4321, sha: null, repo: null, json: false, cwd: "/repo", env: ENV }),
+			[[PULL, { status: 502, body: "{}" }]],
 		);
 		expect(out.code).not.toBe(0);
 	});

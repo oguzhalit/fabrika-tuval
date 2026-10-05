@@ -14,34 +14,34 @@
  * derive — the working directory and the environment — runs the pure verb, and emits its outcome.
  */
 
-import {Effect, Option} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStandingLanes} from "../triage/standing-lanes.ts";
-import {runCatalogGuard} from "./catalog-verb.ts";
-import {runChangeDetectGuard} from "./change-detect-verb.ts";
-import {runCodeownersCpGuard} from "./codeowners-cp-verb.ts";
-import {runDecisionsIndexGuard} from "./decisions-number-verb.ts";
-import {runDesignInventoryCheck, runDesignInventoryGenerate} from "./design-inventory-verb.ts";
-import {runDesignTokenGuard} from "./design-token-verb.ts";
-import {runFanoutGuard} from "./fanout-verb.ts";
-import {runHomingGuard} from "./homing-verb.ts";
-import {runI18nGuard} from "./i18n-literal-verb.ts";
-import {runLeakGuard} from "./leak-verb.ts";
-import {type LocalTreeGuard, localTree, membersOf, notLocalTree} from "./local-tree.ts";
-import {runNoGh} from "./no-gh-verb.ts";
-import {runPatchGuard} from "./patch-verb.ts";
-import {runPathFilterGuard} from "./path-filter-verb.ts";
-import {runPitchGuard} from "./pitch-verb.ts";
-import {runPointerGuard} from "./pointer-verb.ts";
-import {runPortabilityCheck, runPortabilityGuard} from "./portability-verb.ts";
-import {runPublishIsolationGuard} from "./publish-isolation-verb.ts";
-import {runReadmeGuard} from "./readme-verb.ts";
-import {runRoadmapGuard} from "./roadmap-verb.ts";
-import {runSettingsEnvGuard} from "./settings-env-verb.ts";
-import {runSkillLint} from "./skill-lint-verb.ts";
-import {runUnresolvedThreadsGuard} from "./unresolved-threads-verb.ts";
+import { Effect, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStandingLanes } from "../triage/standing-lanes.ts";
+import { runCatalogGuard } from "./catalog-verb.ts";
+import { runChangeDetectGuard } from "./change-detect-verb.ts";
+import { runCodeownersCpGuard } from "./codeowners-cp-verb.ts";
+import { runDecisionsIndexGuard } from "./decisions-number-verb.ts";
+import { runDesignInventoryCheck, runDesignInventoryGenerate } from "./design-inventory-verb.ts";
+import { runDesignTokenGuard } from "./design-token-verb.ts";
+import { runFanoutGuard } from "./fanout-verb.ts";
+import { runHomingGuard } from "./homing-verb.ts";
+import { runI18nGuard } from "./i18n-literal-verb.ts";
+import { runLeakGuard } from "./leak-verb.ts";
+import { type LocalTreeGuard, localTree, membersOf, notLocalTree } from "./local-tree.ts";
+import { runNoGh } from "./no-gh-verb.ts";
+import { runPatchGuard } from "./patch-verb.ts";
+import { runPathFilterGuard } from "./path-filter-verb.ts";
+import { runPitchGuard } from "./pitch-verb.ts";
+import { runPointerGuard } from "./pointer-verb.ts";
+import { runPortabilityCheck, runPortabilityGuard } from "./portability-verb.ts";
+import { runPublishIsolationGuard } from "./publish-isolation-verb.ts";
+import { runReadmeGuard } from "./readme-verb.ts";
+import { runRoadmapGuard } from "./roadmap-verb.ts";
+import { runSettingsEnvGuard } from "./settings-env-verb.ts";
+import { runSkillLint } from "./skill-lint-verb.ts";
+import { runUnresolvedThreadsGuard } from "./unresolved-threads-verb.ts";
 
 /** A leaf's help in the leaf help rule's shape, ending on the pointer to its contract section. */
 const leafHelp = (verb: string, lines: ReadonlyArray<string>): string =>
@@ -62,14 +62,14 @@ const repoFlag = Flag.string("repo").pipe(
 
 const readmeCheck = leafCommand(
 	"check",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runReadmeGuard({
 				root: Option.getOrNull(root),
 				cwd: process.cwd(),
 				env: process.env,
-				scope: {_tag: "WholeTree"},
+				scope: { _tag: "WholeTree" },
 			}),
 		);
 	}),
@@ -84,7 +84,7 @@ const readmeCheck = leafCommand(
 			"  12: a member has no README.md",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard readme-guard check"}]),
+	Command.withExamples([{ command: "fabrika guard readme-guard check" }]),
 );
 
 const readmeGuard = Command.make("readme-guard").pipe(
@@ -97,8 +97,8 @@ const readmeGuard = Command.make("readme-guard").pipe(
 
 const skillLintCheck = leafCommand(
 	"check",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runSkillLint({
 				root: Option.getOrNull(root),
@@ -118,7 +118,7 @@ const skillLintCheck = leafCommand(
 			"  12: a defect was found",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard skill-lint check"}]),
+	Command.withExamples([{ command: "fabrika guard skill-lint check" }]),
 );
 
 const skillLint = Command.make("skill-lint").pipe(
@@ -131,8 +131,8 @@ const skillLint = Command.make("skill-lint").pipe(
 
 const noGhCheck = leafCommand(
 	"check",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runNoGh({
 				root: Option.getOrNull(root),
@@ -152,7 +152,7 @@ const noGhCheck = leafCommand(
 			"  12: an invocation was found",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard no-gh check"}]),
+	Command.withExamples([{ command: "fabrika guard no-gh check" }]),
 );
 
 const noGhGuard = Command.make("no-gh").pipe(
@@ -174,7 +174,7 @@ const portabilityCheck = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({root, sha}) {
+	Effect.fn(function* ({ root, sha }) {
 		yield* emit(
 			yield* runPortabilityCheck({
 				root: Option.getOrNull(root),
@@ -198,7 +198,7 @@ const portabilityCheck = leafCommand(
 		]),
 	),
 	Command.withExamples([
-		{command: "fabrika guard portability-guard check"},
+		{ command: "fabrika guard portability-guard check" },
 		{
 			command: "fabrika guard portability-guard check --sha 03135b91",
 			description: "Judge a pull request's head without standing on it",
@@ -223,7 +223,7 @@ const homingCheck = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({issue, repo}) {
+	Effect.fn(function* ({ issue, repo }) {
 		yield* emit(
 			yield* runHomingGuard({
 				issue: Option.getOrNull(issue),
@@ -246,7 +246,7 @@ const homingCheck = leafCommand(
 			"  12: an issue has no home, or claims two",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard homing-guard check --issue 4312"}]),
+	Command.withExamples([{ command: "fabrika guard homing-guard check --issue 4312" }]),
 );
 
 const homingGuard = Command.make("homing-guard").pipe(
@@ -268,7 +268,7 @@ const pitchCheck = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({issue, repo}) {
+	Effect.fn(function* ({ issue, repo }) {
 		yield* emit(
 			yield* runPitchGuard({
 				issue: Option.getOrNull(issue),
@@ -291,7 +291,7 @@ const pitchCheck = leafCommand(
 			"  12: a pickable bet carries no founder-approved pitch",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard pitch-guard check --issue 4312"}]),
+	Command.withExamples([{ command: "fabrika guard pitch-guard check --issue 4312" }]),
 );
 
 const pitchGuard = Command.make("pitch-guard").pipe(
@@ -304,8 +304,8 @@ const pitchGuard = Command.make("pitch-guard").pipe(
 
 const roadmapCheck = leafCommand(
 	"check",
-	{root: rootFlag, repo: repoFlag},
-	Effect.fn(function* ({root, repo}) {
+	{ root: rootFlag, repo: repoFlag },
+	Effect.fn(function* ({ root, repo }) {
 		yield* emit(
 			yield* runRoadmapGuard({
 				root: Option.getOrNull(root),
@@ -326,7 +326,7 @@ const roadmapCheck = leafCommand(
 			"  12: drift",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard roadmap-guard check"}]),
+	Command.withExamples([{ command: "fabrika guard roadmap-guard check" }]),
 );
 
 const roadmapGuard = Command.make("roadmap-guard").pipe(
@@ -345,9 +345,9 @@ const unresolvedThreadsCheck = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({pr, repo}) {
+	Effect.fn(function* ({ pr, repo }) {
 		yield* emit(
-			yield* runUnresolvedThreadsGuard({pr, repo: Option.getOrNull(repo), env: process.env}),
+			yield* runUnresolvedThreadsGuard({ pr, repo: Option.getOrNull(repo), env: process.env }),
 		);
 	}),
 ).pipe(
@@ -362,7 +362,7 @@ const unresolvedThreadsCheck = leafCommand(
 			"  12: a live thread is unaccounted-for",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard unresolved-threads-guard check --pr 4321"}]),
+	Command.withExamples([{ command: "fabrika guard unresolved-threads-guard check --pr 4321" }]),
 );
 
 const unresolvedThreadsGuard = Command.make("unresolved-threads-guard").pipe(
@@ -375,8 +375,8 @@ const unresolvedThreadsGuard = Command.make("unresolved-threads-guard").pipe(
 
 const settingsEnvCheck = leafCommand(
 	"check",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runSettingsEnvGuard({
 				root: Option.getOrNull(root),
@@ -397,7 +397,7 @@ const settingsEnvCheck = leafCommand(
 			"  12: an env value carries a brace token",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard settings-env-guard check"}]),
+	Command.withExamples([{ command: "fabrika guard settings-env-guard check" }]),
 );
 
 const settingsEnvGuard = Command.make("settings-env-guard").pipe(
@@ -411,8 +411,8 @@ const settingsEnvGuard = Command.make("settings-env-guard").pipe(
 
 const catalogCheck = leafCommand(
 	"check",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runCatalogGuard({
 				root: Option.getOrNull(root),
@@ -432,7 +432,7 @@ const catalogCheck = leafCommand(
 			"  12: a dependency pins a hardcoded version",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard catalog-guard check"}]),
+	Command.withExamples([{ command: "fabrika guard catalog-guard check" }]),
 );
 
 const catalogGuard = Command.make("catalog-guard").pipe(
@@ -445,8 +445,8 @@ const catalogGuard = Command.make("catalog-guard").pipe(
 
 const fanoutCheck = leafCommand(
 	"check",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runFanoutGuard({
 				root: Option.getOrNull(root),
@@ -466,7 +466,7 @@ const fanoutCheck = leafCommand(
 			"  12: drift, a missing publish, or a mis-aimed topic",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard fanout-guard check"}]),
+	Command.withExamples([{ command: "fabrika guard fanout-guard check" }]),
 );
 
 const fanoutGuard = Command.make("fanout-guard").pipe(
@@ -479,8 +479,8 @@ const fanoutGuard = Command.make("fanout-guard").pipe(
 
 const patchCheck = leafCommand(
 	"check",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runPatchGuard({
 				root: Option.getOrNull(root),
@@ -500,7 +500,7 @@ const patchCheck = leafCommand(
 			"  12: an unpinned patch or a stale pin",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard patch-guard check"}]),
+	Command.withExamples([{ command: "fabrika guard patch-guard check" }]),
 );
 
 const patchGuard = Command.make("patch-guard").pipe(
@@ -513,8 +513,8 @@ const patchGuard = Command.make("patch-guard").pipe(
 
 const pointerCheck = leafCommand(
 	"check",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runPointerGuard({
 				root: Option.getOrNull(root),
@@ -534,7 +534,7 @@ const pointerCheck = leafCommand(
 			"  12: a pointer does not resolve",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard pointer-guard check"}]),
+	Command.withExamples([{ command: "fabrika guard pointer-guard check" }]),
 );
 
 const pointerGuard = Command.make("pointer-guard").pipe(
@@ -547,8 +547,8 @@ const pointerGuard = Command.make("pointer-guard").pipe(
 
 const publishIsolationCheck = leafCommand(
 	"check",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runPublishIsolationGuard({
 				root: Option.getOrNull(root),
@@ -568,7 +568,7 @@ const publishIsolationCheck = leafCommand(
 			"  12: a published package links a private or workspace dependency",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard publish-isolation-guard check"}]),
+	Command.withExamples([{ command: "fabrika guard publish-isolation-guard check" }]),
 );
 
 const publishIsolationGuard = Command.make("publish-isolation-guard").pipe(
@@ -593,8 +593,8 @@ const leakScan = leafCommand(
 			Argument.withDescription("the changed files to scan for machine-local paths"),
 		),
 	},
-	Effect.fn(function* ({files}) {
-		yield* emit(yield* runLeakGuard({files, cwd: process.cwd(), env: process.env}));
+	Effect.fn(function* ({ files }) {
+		yield* emit(yield* runLeakGuard({ files, cwd: process.cwd(), env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("Red on a machine-local path in a changed doc or shell file."),
@@ -608,7 +608,7 @@ const leakScan = leafCommand(
 			"  12: a machine-local path is in a scanned surface",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard leak-guard scan docs/guide.md scripts/run.sh"}]),
+	Command.withExamples([{ command: "fabrika guard leak-guard scan docs/guide.md scripts/run.sh" }]),
 );
 
 const leakGuard = Command.make("leak-guard").pipe(
@@ -621,8 +621,8 @@ const leakGuard = Command.make("leak-guard").pipe(
 
 const pathFilterCheck = leafCommand(
 	"check",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runPathFilterGuard({
 				root: Option.getOrNull(root),
@@ -644,7 +644,7 @@ const pathFilterCheck = leafCommand(
 			"  12: the globs or the diff basis drifted",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard path-filter-guard check"}]),
+	Command.withExamples([{ command: "fabrika guard path-filter-guard check" }]),
 );
 
 const pathFilterGuard = Command.make("path-filter-guard").pipe(
@@ -657,8 +657,8 @@ const pathFilterGuard = Command.make("path-filter-guard").pipe(
 
 const changeDetectCheck = leafCommand(
 	"check",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runChangeDetectGuard({
 				root: Option.getOrNull(root),
@@ -678,7 +678,7 @@ const changeDetectCheck = leafCommand(
 			"  12: the step is in API mode",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard change-detect-guard check"}]),
+	Command.withExamples([{ command: "fabrika guard change-detect-guard check" }]),
 );
 
 const changeDetectGuard = Command.make("change-detect-guard").pipe(
@@ -691,8 +691,8 @@ const changeDetectGuard = Command.make("change-detect-guard").pipe(
 
 const codeownersCpCheck = leafCommand(
 	"check",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runCodeownersCpGuard({
 				root: Option.getOrNull(root),
@@ -712,7 +712,7 @@ const codeownersCpCheck = leafCommand(
 			"  12: a §CP path is unowned",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard codeowners-cp check"}]),
+	Command.withExamples([{ command: "fabrika guard codeowners-cp check" }]),
 );
 
 const codeownersCpGuard = Command.make("codeowners-cp").pipe(
@@ -725,8 +725,8 @@ const codeownersCpGuard = Command.make("codeowners-cp").pipe(
 
 const decisionsIndexValidate = leafCommand(
 	"validate",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runDecisionsIndexGuard({
 				root: Option.getOrNull(root),
@@ -747,7 +747,7 @@ const decisionsIndexValidate = leafCommand(
 			"  12: a defect",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard decisions-index validate"}]),
+	Command.withExamples([{ command: "fabrika guard decisions-index validate" }]),
 );
 
 const decisionsIndexGuard = Command.make("decisions-index").pipe(
@@ -767,7 +767,7 @@ const designTokenCheck = leafCommand(
 			Flag.withDescription("re-snapshot the raw-px ceilings from this tree instead of judging it"),
 		),
 	},
-	Effect.fn(function* ({root, "write-baseline": writeBaseline}) {
+	Effect.fn(function* ({ root, "write-baseline": writeBaseline }) {
 		yield* emit(
 			yield* runDesignTokenGuard({
 				root: Option.getOrNull(root),
@@ -788,7 +788,7 @@ const designTokenCheck = leafCommand(
 			"  12: the token layer is bypassed",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard design-token-guard check"}]),
+	Command.withExamples([{ command: "fabrika guard design-token-guard check" }]),
 );
 
 const designTokenGuard = Command.make("design-token-guard").pipe(
@@ -801,8 +801,8 @@ const designTokenGuard = Command.make("design-token-guard").pipe(
 
 const i18nCheck = leafCommand(
 	"check",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runI18nGuard({
 				root: Option.getOrNull(root),
@@ -822,7 +822,7 @@ const i18nCheck = leafCommand(
 			"  12: Turkish copy sits outside the catalog",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard i18n-guard check"}]),
+	Command.withExamples([{ command: "fabrika guard i18n-guard check" }]),
 );
 
 const i18nGuard = Command.make("i18n-guard").pipe(
@@ -835,8 +835,8 @@ const i18nGuard = Command.make("i18n-guard").pipe(
 
 const designInventoryCheck = leafCommand(
 	"check",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runDesignInventoryCheck({
 				root: Option.getOrNull(root),
@@ -856,13 +856,13 @@ const designInventoryCheck = leafCommand(
 			"  12: the inventory is stale or missing",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard design-inventory check"}]),
+	Command.withExamples([{ command: "fabrika guard design-inventory check" }]),
 );
 
 const designInventoryGenerate = leafCommand(
 	"generate",
-	{root: rootFlag},
-	Effect.fn(function* ({root}) {
+	{ root: rootFlag },
+	Effect.fn(function* ({ root }) {
 		yield* emit(
 			yield* runDesignInventoryGenerate({
 				root: Option.getOrNull(root),
@@ -880,7 +880,7 @@ const designInventoryGenerate = leafCommand(
 			"  11: a source could not be read, or the write did not land (UNKNOWN)",
 		]),
 	),
-	Command.withExamples([{command: "fabrika guard design-inventory generate"}]),
+	Command.withExamples([{ command: "fabrika guard design-inventory generate" }]),
 );
 
 const designInventoryGuard = Command.make("design-inventory").pipe(
@@ -905,47 +905,51 @@ const registry = [
 			root: o.root,
 			cwd: o.root,
 			env: o.env,
-			scope: {_tag: "Change", paths: o.changed},
+			scope: { _tag: "Change", paths: o.changed },
 		}),
 	),
-	localTree(skillLint, "check", (o) => runSkillLint({root: o.root, cwd: o.root, env: o.env})),
+	localTree(skillLint, "check", (o) => runSkillLint({ root: o.root, cwd: o.root, env: o.env })),
 	notLocalTree(homingGuard, "reads the live board"),
 	notLocalTree(pitchGuard, "reads the live board and resolves approval at the repository ACL"),
 	notLocalTree(roadmapGuard, "projects the repository's milestones off the API"),
 	notLocalTree(unresolvedThreadsGuard, "takes a pull-request number"),
 	localTree(settingsEnvGuard, "check", (o) =>
-		runSettingsEnvGuard({root: o.root, cwd: o.root, env: o.env}),
+		runSettingsEnvGuard({ root: o.root, cwd: o.root, env: o.env }),
 	),
-	localTree(catalogGuard, "check", (o) => runCatalogGuard({root: o.root, cwd: o.root, env: o.env})),
-	localTree(fanoutGuard, "check", (o) => runFanoutGuard({root: o.root, cwd: o.root, env: o.env})),
-	localTree(patchGuard, "check", (o) => runPatchGuard({root: o.root, cwd: o.root, env: o.env})),
-	localTree(pointerGuard, "check", (o) => runPointerGuard({root: o.root, cwd: o.root, env: o.env})),
+	localTree(catalogGuard, "check", (o) =>
+		runCatalogGuard({ root: o.root, cwd: o.root, env: o.env }),
+	),
+	localTree(fanoutGuard, "check", (o) => runFanoutGuard({ root: o.root, cwd: o.root, env: o.env })),
+	localTree(patchGuard, "check", (o) => runPatchGuard({ root: o.root, cwd: o.root, env: o.env })),
+	localTree(pointerGuard, "check", (o) =>
+		runPointerGuard({ root: o.root, cwd: o.root, env: o.env }),
+	),
 	localTree(publishIsolationGuard, "check", (o) =>
-		runPublishIsolationGuard({root: o.root, cwd: o.root, env: o.env}),
+		runPublishIsolationGuard({ root: o.root, cwd: o.root, env: o.env }),
 	),
 	notLocalTree(leakGuard, "takes the changed files as arguments"),
 	localTree(pathFilterGuard, "check", (o) =>
-		runPathFilterGuard({root: o.root, cwd: o.root, env: o.env}),
+		runPathFilterGuard({ root: o.root, cwd: o.root, env: o.env }),
 	),
 	localTree(changeDetectGuard, "check", (o) =>
-		runChangeDetectGuard({root: o.root, cwd: o.root, env: o.env}),
+		runChangeDetectGuard({ root: o.root, cwd: o.root, env: o.env }),
 	),
 	localTree(codeownersCpGuard, "check", (o) =>
-		runCodeownersCpGuard({root: o.root, cwd: o.root, env: o.env}),
+		runCodeownersCpGuard({ root: o.root, cwd: o.root, env: o.env }),
 	),
 	localTree(decisionsIndexGuard, "validate", (o) =>
-		runDecisionsIndexGuard({root: o.root, cwd: o.root, env: o.env}),
+		runDecisionsIndexGuard({ root: o.root, cwd: o.root, env: o.env }),
 	),
 	localTree(designTokenGuard, "check", (o) =>
-		runDesignTokenGuard({root: o.root, cwd: o.root, env: o.env, writeBaseline: false}),
+		runDesignTokenGuard({ root: o.root, cwd: o.root, env: o.env, writeBaseline: false }),
 	),
 	localTree(designInventoryGuard, "check", (o) =>
-		runDesignInventoryCheck({root: o.root, cwd: o.root, env: o.env}),
+		runDesignInventoryCheck({ root: o.root, cwd: o.root, env: o.env }),
 	),
-	localTree(i18nGuard, "check", (o) => runI18nGuard({root: o.root, cwd: o.root, env: o.env})),
-	localTree(noGhGuard, "check", (o) => runNoGh({root: o.root, cwd: o.root, env: o.env})),
+	localTree(i18nGuard, "check", (o) => runI18nGuard({ root: o.root, cwd: o.root, env: o.env })),
+	localTree(noGhGuard, "check", (o) => runNoGh({ root: o.root, cwd: o.root, env: o.env })),
 	localTree(portabilityGuard, "check", (o) =>
-		runPortabilityGuard({root: o.root, cwd: o.root, env: o.env}),
+		runPortabilityGuard({ root: o.root, cwd: o.root, env: o.env }),
 	),
 ];
 

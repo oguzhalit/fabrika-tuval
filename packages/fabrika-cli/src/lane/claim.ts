@@ -16,8 +16,8 @@
  * writes `events.jsonl`, and no claim state is derivable from a fold.
  */
 
-import {type ClaimGrammar, claimGrammar} from "../build/claim.ts";
-import {CHORE_PREFIX, type LaneKey, parseKey, resolveKeyIssue} from "./key.ts";
+import { type ClaimGrammar, claimGrammar } from "../build/claim.ts";
+import { CHORE_PREFIX, type LaneKey, parseKey, resolveKeyIssue } from "./key.ts";
 
 /** The driver's namespace. Separate from the builder's by construction — see the module note. */
 export const LANE_CLAIM: ClaimGrammar = claimGrammar("lane-claim", "lane");
@@ -35,8 +35,8 @@ export const LANE_CLAIM: ClaimGrammar = claimGrammar("lane-claim", "lane");
  * thread while every other verb agreed the lane was 8012's.
  */
 export type ClaimTarget =
-	| {readonly _tag: "Number"; readonly number: number}
-	| {readonly _tag: "Inert"; readonly why: string};
+	| { readonly _tag: "Number"; readonly number: number }
+	| { readonly _tag: "Inert"; readonly why: string };
 
 export const claimTarget = (key: LaneKey): ClaimTarget => {
 	if (key._tag === "Chore") {
@@ -47,7 +47,7 @@ export const claimTarget = (key: LaneKey): ClaimTarget => {
 	}
 	const resolved = resolveKeyIssue(key);
 	return resolved._tag === "Issue"
-		? {_tag: "Number", number: resolved.number}
+		? { _tag: "Number", number: resolved.number }
 		: {
 				_tag: "Inert",
 				why: `"${key.lane}" carries no leading board number, so there is no thread to race a claim on`,

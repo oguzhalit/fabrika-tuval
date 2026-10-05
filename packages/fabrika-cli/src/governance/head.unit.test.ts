@@ -1,9 +1,9 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeShell, okOut} from "../fakes.test-support.ts";
-import {PRECONDITION_UNKNOWN, STALE_HEAD} from "./codes.ts";
-import {binding, HEAD, OLD_HEAD} from "./fixtures.test-support.ts";
-import {bindGovernanceHead, withBindingNoun} from "./head.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeShell, okOut } from "../fakes.test-support.ts";
+import { PRECONDITION_UNKNOWN, STALE_HEAD } from "./codes.ts";
+import { binding, HEAD, OLD_HEAD } from "./fixtures.test-support.ts";
+import { bindGovernanceHead, withBindingNoun } from "./head.ts";
 
 const PULL_RECORD = {
 	number: 4321,

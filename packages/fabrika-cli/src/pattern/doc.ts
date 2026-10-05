@@ -27,12 +27,12 @@ export const titleFrom = (slug: string): string =>
  */
 export const splitAnchorToken = (
 	token: string,
-): {readonly pkg: string; readonly version: string} | null => {
+): { readonly pkg: string; readonly version: string } | null => {
 	const at = token.lastIndexOf("@");
 	if (at <= 0) return null;
 	const pkg = token.slice(0, at);
 	const version = token.slice(at + 1);
-	return pkg === "" || version === "" ? null : {pkg, version};
+	return pkg === "" || version === "" ? null : { pkg, version };
 };
 
 /** The strict grammar of an anchor declaration. The em-dash is literal. */

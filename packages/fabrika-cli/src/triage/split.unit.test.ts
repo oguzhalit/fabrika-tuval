@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {renderFooter} from "../report/compose.ts";
+import { describe, expect, it } from "vitest";
+import { renderFooter } from "../report/compose.ts";
 import {
 	backReference,
 	composeChildBody,
@@ -71,14 +71,14 @@ describe("isExistingChild", () => {
 
 	it("refuses a title-only match — a same-titled child of ANOTHER parent is not this child", () => {
 		expect(
-			isExistingChild(child({body: "split from #9999"}), 4312, "Editor loses focus after save"),
+			isExistingChild(child({ body: "split from #9999" }), 4312, "Editor loses focus after save"),
 		).toBe(false);
 	});
 
 	it("refuses a back-reference-only match — a sibling split from the same parent is not this child", () => {
 		expect(
 			isExistingChild(
-				child({title: "Autosave drops the draft"}),
+				child({ title: "Autosave drops the draft" }),
 				4312,
 				"Editor loses focus after save",
 			),

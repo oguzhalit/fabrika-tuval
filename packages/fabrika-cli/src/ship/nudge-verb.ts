@@ -13,9 +13,9 @@
  * unguarded PATCH pair could close a PR, fail the reopen, and still report "nudged". Folding that
  * into `8` would hide the one fact the operator must act on immediately.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	INCOMPLETE_SCAN,
 	NUDGE_REOPEN_UNCONFIRMED,
@@ -32,8 +32,8 @@ import {
 	pullTimeline,
 	setPullState,
 } from "./github.ts";
-import {reopensSince} from "./queue.ts";
-import {badNumber, inspectedSha, prefixMatch, resolvePull, resolveTargetRepo} from "./target.ts";
+import { reopensSince } from "./queue.ts";
+import { badNumber, inspectedSha, prefixMatch, resolvePull, resolveTargetRepo } from "./target.ts";
 
 const VERB = "ship nudge";
 
@@ -49,7 +49,7 @@ export const runNudge = (
 	options: NudgeOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 		const bound = inspectedSha(VERB, options.sha);
@@ -146,6 +146,6 @@ export const runNudge = (
 		}
 
 		return json
-			? answer(JSON.stringify({outcome: "nudged", sha: bound}))
+			? answer(JSON.stringify({ outcome: "nudged", sha: bound }))
 			: answer(`nudged\t${bound}`);
 	});

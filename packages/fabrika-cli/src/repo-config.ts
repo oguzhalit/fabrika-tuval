@@ -12,22 +12,22 @@
  * callers refuse on it before opening these readers.
  */
 
-import type {KeyGroup} from "./config/key-group.ts";
-import {CAP_CLEAR_AUTHORS} from "./config/keys/cap-clear-authors.ts";
-import {DOC_LEAK_EXEMPT, docLeakExemptKey} from "./config/keys/doc-leak-exempt.ts";
+import type { KeyGroup } from "./config/key-group.ts";
+import { CAP_CLEAR_AUTHORS } from "./config/keys/cap-clear-authors.ts";
+import { DOC_LEAK_EXEMPT, docLeakExemptKey } from "./config/keys/doc-leak-exempt.ts";
 import {
 	WORKFLOW_VALIDATORS,
 	type WorkflowValidator,
 	workflowValidatorsKey,
 } from "./config/keys/workflow-validators.ts";
-import {loadConfig, resolve} from "./config/load.ts";
+import { loadConfig, resolve } from "./config/load.ts";
 
-export {CONFIG_PATH, stripJsonComments} from "./config/document.ts";
-export type {Argv, WorkflowValidator} from "./config/keys/workflow-validators.ts";
-export {CAP_CLEAR_AUTHORS, DOC_LEAK_EXEMPT, WORKFLOW_VALIDATORS};
+export { CONFIG_PATH, stripJsonComments } from "./config/document.ts";
+export type { Argv, WorkflowValidator } from "./config/keys/workflow-validators.ts";
+export { CAP_CLEAR_AUTHORS, DOC_LEAK_EXEMPT, WORKFLOW_VALIDATORS };
 
 /** The bytes were read in full and hold no usable value — the key's strictest answer. */
-type Unusable = {readonly _tag: "Unusable"; readonly reason: string};
+type Unusable = { readonly _tag: "Unusable"; readonly reason: string };
 
 /**
  * One widen-only key's entries, or why there are none.
@@ -40,18 +40,20 @@ const entries = <A>(
 	text: string,
 	group: KeyGroup<ReadonlyArray<A>>,
 	emptyReason: string,
-): {readonly _tag: "Entries"; readonly entries: ReadonlyArray<A>} | Unusable => {
-	const resolved = resolve(loadConfig({_tag: "Text", text}), group);
+): { readonly _tag: "Entries"; readonly entries: ReadonlyArray<A> } | Unusable => {
+	const resolved = resolve(loadConfig({ _tag: "Text", text }), group);
 	if (resolved._tag === "Malformed" || resolved._tag === "Unknown") {
-		return {_tag: "Unusable", reason: resolved.reason};
+		return { _tag: "Unusable", reason: resolved.reason };
 	}
-	if (resolved._tag === "Default") return {_tag: "Unusable", reason: resolved.reason};
+	if (resolved._tag === "Default") return { _tag: "Unusable", reason: resolved.reason };
 	return resolved.value.length === 0
-		? {_tag: "Unusable", reason: emptyReason}
-		: {_tag: "Entries", entries: resolved.value};
+		? { _tag: "Unusable", reason: emptyReason }
+		: { _tag: "Entries", entries: resolved.value };
 };
 
-export type ExemptRead = {readonly _tag: "Paths"; readonly paths: ReadonlyArray<string>} | Unusable;
+export type ExemptRead =
+	| { readonly _tag: "Paths"; readonly paths: ReadonlyArray<string> }
+	| Unusable;
 
 /** The leak-scan exemptions the config declares, or why nothing is exempt. */
 export const readDocLeakExempt = (text: string): ExemptRead => {
@@ -60,11 +62,11 @@ export const readDocLeakExempt = (text: string): ExemptRead => {
 		docLeakExemptKey,
 		`\`${DOC_LEAK_EXEMPT}\` is empty — nothing is exempt`,
 	);
-	return read._tag === "Entries" ? {_tag: "Paths", paths: read.entries} : read;
+	return read._tag === "Entries" ? { _tag: "Paths", paths: read.entries } : read;
 };
 
 export type ValidatorsRead =
-	| {readonly _tag: "Validators"; readonly validators: ReadonlyArray<WorkflowValidator>}
+	| { readonly _tag: "Validators"; readonly validators: ReadonlyArray<WorkflowValidator> }
 	| Unusable;
 
 /** The repo's own workflow validators, or why this repo declares none. */
@@ -74,5 +76,5 @@ export const readWorkflowValidators = (text: string): ValidatorsRead => {
 		workflowValidatorsKey,
 		`\`${WORKFLOW_VALIDATORS}\` is empty — this repo declares none`,
 	);
-	return read._tag === "Entries" ? {_tag: "Validators", validators: read.entries} : read;
+	return read._tag === "Entries" ? { _tag: "Validators", validators: read.entries } : read;
 };

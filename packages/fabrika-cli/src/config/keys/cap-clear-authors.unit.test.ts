@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {capClearAuthorsKey} from "./cap-clear-authors.ts";
+import { describe, expect, it } from "vitest";
+import { capClearAuthorsKey } from "./cap-clear-authors.ts";
 
 const pattern = new RegExp(capClearAuthorsKey.jsonSchema?.items?.pattern ?? "(?!)");
 

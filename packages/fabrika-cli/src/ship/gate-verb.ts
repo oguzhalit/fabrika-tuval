@@ -58,21 +58,21 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9322#issuecomment-5703498377
  * @ruling https://github.com/kamp-us/phoenix/issues/6796#issuecomment-5519868349
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type CommentRecord, listComments} from "../io/issues.ts";
-import {listPullFiles, permissionFor} from "../io/pulls.ts";
-import {advisoryPolarity, readAdvisory} from "../review/advisory.ts";
-import {classConfigOfPull} from "../review/class-config.ts";
-import {SHIP_NAMESPACES, touchesGovernanceRoot} from "../review/classes.ts";
-import {headContentFor} from "../review/head-content.ts";
-import {platformCapLine, platformFileSet} from "../review/local-file-set.ts";
-import {standingEvidence} from "../review-ui/standing-evidence.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {type RouteBasis, read as readRoute} from "../wire/routed-elsewhere.ts";
-import {bindToContent, read as readMarker} from "../wire/verdict-marker.ts";
-import {INCOMPLETE_SCAN, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {listReviews, type ReviewRecord} from "./github.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type CommentRecord, listComments } from "../io/issues.ts";
+import { listPullFiles, permissionFor } from "../io/pulls.ts";
+import { advisoryPolarity, readAdvisory } from "../review/advisory.ts";
+import { classConfigOfPull } from "../review/class-config.ts";
+import { SHIP_NAMESPACES, touchesGovernanceRoot } from "../review/classes.ts";
+import { headContentFor } from "../review/head-content.ts";
+import { platformCapLine, platformFileSet } from "../review/local-file-set.ts";
+import { standingEvidence } from "../review-ui/standing-evidence.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { type RouteBasis, read as readRoute } from "../wire/routed-elsewhere.ts";
+import { bindToContent, read as readMarker } from "../wire/verdict-marker.ts";
+import { INCOMPLETE_SCAN, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { listReviews, type ReviewRecord } from "./github.ts";
 import {
 	badNumber,
 	inspectedSha,
@@ -147,7 +147,7 @@ export interface NamespaceVerdict {
  */
 const evidenceBearing = (
 	verdict: NamespaceVerdict,
-): verdict is NamespaceVerdict & {readonly commentId: number} =>
+): verdict is NamespaceVerdict & { readonly commentId: number } =>
 	verdict.name === ROUTABLE &&
 	(verdict.state === "pass" || verdict.state === "fail") &&
 	(verdict.carrier === "marker" || verdict.carrier === "advisory") &&
@@ -215,7 +215,7 @@ const candidateOf = (comment: CommentRecord): Candidate | null => {
 					carrier: "routed-elsewhere",
 					stamp: comment.updatedAt,
 					commentId: comment.id,
-					...(route.value.basis === undefined ? {} : {basis: route.value.basis}),
+					...(route.value.basis === undefined ? {} : { basis: route.value.basis }),
 				};
 	}
 	const advisory = readAdvisory(comment.body);
@@ -254,11 +254,11 @@ export const requiredWithFloor = (
 	requested: ReadonlyArray<string>,
 	files: ReadonlyArray<string>,
 	roots: ReadonlyArray<string>,
-): {readonly required: ReadonlyArray<string>; readonly floored: ReadonlyArray<string>} => {
+): { readonly required: ReadonlyArray<string>; readonly floored: ReadonlyArray<string> } => {
 	const distinct = new Set(requested);
 	const floored =
 		touchesGovernanceRoot(files, roots) && !distinct.has("governance") ? ["governance"] : [];
-	return {required: [...distinct, ...floored], floored};
+	return { required: [...distinct, ...floored], floored };
 };
 
 /**
@@ -314,7 +314,7 @@ export const runGate = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
-		const {pr, json, cp} = options;
+		const { pr, json, cp } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 		const bound = inspectedSha(VERB, options.sha);
@@ -400,7 +400,7 @@ export const runGate = (
 		if (classConfig._tag === "Refused") {
 			return refuse(PRECONDITION_UNKNOWN, classConfig.message, diagnostics);
 		}
-		const {required, floored} = requiredWithFloor(
+		const { required, floored } = requiredWithFloor(
 			requested,
 			changed,
 			classConfig.config.governedRoots,
@@ -501,7 +501,7 @@ export const runGate = (
 		const winners = required.map((name) => {
 			const own = candidates.filter((claim) => claim.namespace === name);
 			const pool = name === "review-code" && fold !== null ? [...own, fold] : own;
-			return {name, winner: inForce(pool, bound)};
+			return { name, winner: inForce(pool, bound) };
 		});
 
 		// One derivation with `build verdicts` (`../review/head-content.ts`), so the merge gate and the
@@ -512,21 +512,21 @@ export const runGate = (
 			pr,
 			pull,
 			options.sha,
-			winners.flatMap(({winner}) => (winner === null ? [] : [winner])),
+			winners.flatMap(({ winner }) => (winner === null ? [] : [winner])),
 			bound,
 		);
 		const headDigest = headContent.digest;
 		diagnostics.push(...headContent.diagnostics);
 
-		const verdicts: NamespaceVerdict[] = winners.map(({name, winner}) => {
-			if (winner === null) return {name, state: "absent", carrier: "-", commentId: null};
+		const verdicts: NamespaceVerdict[] = winners.map(({ name, winner }) => {
+			if (winner === null) return { name, state: "absent", carrier: "-", commentId: null };
 			const commentId = winner.carrier === "review-fold" ? null : winner.commentId;
 			const binding = bindToContent(winner, bound, headDigest);
 			if (binding._tag !== "Current") {
 				if (binding._tag === "Unbindable") {
 					diagnostics.push(`${VERB}: ${name}: ${binding.reason} — resolved stale.`);
 				}
-				return {name, state: "stale", carrier: winner.carrier, commentId};
+				return { name, state: "stale", carrier: winner.carrier, commentId };
 			}
 			if (binding.via === "content") {
 				diagnostics.push(
@@ -543,7 +543,7 @@ export const runGate = (
 				carrier: winner.carrier,
 				commentId,
 				...(winner.polarity === "ROUTED" && winner.basis !== undefined
-					? {basis: winner.basis}
+					? { basis: winner.basis }
 					: {}),
 			};
 		});
@@ -553,7 +553,7 @@ export const runGate = (
 		for (const [index, verdict] of verdicts.entries()) {
 			if (!evidenceBearing(verdict)) continue;
 			const body = commented.value.find((comment) => comment.id === verdict.commentId)?.body ?? "";
-			const standing = yield* standingEvidence(repo, {id: verdict.commentId, body});
+			const standing = yield* standingEvidence(repo, { id: verdict.commentId, body });
 			if (standing._tag === "Unreadable") {
 				return refuse(
 					PRECONDITION_UNKNOWN,
@@ -565,7 +565,7 @@ export const runGate = (
 				diagnostics.push(
 					`${VERB}: ${verdict.name}: the verdict in comment ${verdict.commentId} does not count — its evidence does not open (${standing.reasons.join("; ")}).`,
 				);
-				verdicts[index] = {...verdict, state: "unopened"};
+				verdicts[index] = { ...verdict, state: "unopened" };
 			}
 		}
 
@@ -602,7 +602,7 @@ export const runGate = (
 			: "blocked";
 		return json
 			? answer(
-					JSON.stringify({outcome, sha: bound, namespaces: verdicts, required: required.length}),
+					JSON.stringify({ outcome, sha: bound, namespaces: verdicts, required: required.length }),
 					diagnostics,
 				)
 			: answer(

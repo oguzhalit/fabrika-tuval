@@ -4,7 +4,7 @@
  * is a violation, an allowlisted exception passes, and the line-locator survives the npm names that
  * broke it. Scope and the fail-closed floor are covered in `catalog-verb.unit.test.ts`.
  */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	type AllowlistEntry,
 	cleanSummary,
@@ -18,15 +18,15 @@ import {
 
 const VERB = "guard catalog-guard check";
 
-const manifest = (path: string, deps: PackageManifest["deps"]): PackageManifest => ({path, deps});
+const manifest = (path: string, deps: PackageManifest["deps"]): PackageManifest => ({ path, deps });
 
 describe("findViolations", () => {
 	it("passes every dep on catalog: (incl. a named catalog)", () => {
 		expect(
 			findViolations([
 				manifest("packages/a/package.json", [
-					{field: "dependencies", name: "react", value: "catalog:"},
-					{field: "devDependencies", name: "vite", value: "catalog:react"},
+					{ field: "dependencies", name: "react", value: "catalog:" },
+					{ field: "devDependencies", name: "vite", value: "catalog:react" },
 				]),
 			]),
 		).toEqual([]);
@@ -36,32 +36,32 @@ describe("findViolations", () => {
 		expect(
 			findViolations([
 				manifest("packages/a/package.json", [
-					{field: "dependencies", name: "bar", value: "^1.2.3"},
+					{ field: "dependencies", name: "bar", value: "^1.2.3" },
 				]),
 			]),
 		).toEqual([
-			{path: "packages/a/package.json", field: "dependencies", name: "bar", value: "^1.2.3"},
+			{ path: "packages/a/package.json", field: "dependencies", name: "bar", value: "^1.2.3" },
 		]);
 	});
 
 	it("scopes a path-qualified allowlist entry to that manifest only", () => {
 		const allowlist: ReadonlyArray<AllowlistEntry> = [
-			{name: "bar", path: "packages/a/package.json", reason: "scoped exception"},
+			{ name: "bar", path: "packages/a/package.json", reason: "scoped exception" },
 		];
 		expect(
 			findViolations(
 				[
 					manifest("packages/a/package.json", [
-						{field: "dependencies", name: "bar", value: "^1.2.3"},
+						{ field: "dependencies", name: "bar", value: "^1.2.3" },
 					]),
 					manifest("packages/b/package.json", [
-						{field: "dependencies", name: "bar", value: "^1.2.3"},
+						{ field: "dependencies", name: "bar", value: "^1.2.3" },
 					]),
 				],
 				allowlist,
 			),
 		).toEqual([
-			{path: "packages/b/package.json", field: "dependencies", name: "bar", value: "^1.2.3"},
+			{ path: "packages/b/package.json", field: "dependencies", name: "bar", value: "^1.2.3" },
 		]);
 	});
 });
@@ -70,16 +70,16 @@ describe("manifestDeps", () => {
 	it("reads dependencies / devDependencies / peerDependencies and ignores others", () => {
 		expect(
 			manifestDeps({
-				dependencies: {a: "catalog:"},
-				devDependencies: {b: "^1.0.0"},
-				peerDependencies: {c: "workspace:*"},
-				optionalDependencies: {d: "^2.0.0"},
-				scripts: {build: "tsc"},
+				dependencies: { a: "catalog:" },
+				devDependencies: { b: "^1.0.0" },
+				peerDependencies: { c: "workspace:*" },
+				optionalDependencies: { d: "^2.0.0" },
+				scripts: { build: "tsc" },
 			}),
 		).toEqual([
-			{field: "dependencies", name: "a", value: "catalog:"},
-			{field: "devDependencies", name: "b", value: "^1.0.0"},
-			{field: "peerDependencies", name: "c", value: "workspace:*"},
+			{ field: "dependencies", name: "a", value: "catalog:" },
+			{ field: "devDependencies", name: "b", value: "^1.0.0" },
+			{ field: "peerDependencies", name: "c", value: "workspace:*" },
 		]);
 	});
 });
@@ -93,7 +93,7 @@ describe("the reports", () => {
 	it("names each offender, the root cause and the catalog fix", () => {
 		const report = violationReport(
 			VERB,
-			[{path: "packages/a/package.json", field: "dependencies", name: "bar", value: "^1.2.3"}],
+			[{ path: "packages/a/package.json", field: "dependencies", name: "bar", value: "^1.2.3" }],
 			3,
 		);
 		expect(report).toContain("1 dependency pin");
@@ -173,7 +173,7 @@ describe("findDepLine", () => {
 
 describe("violationAnnotations", () => {
 	const violations = [
-		{path: "packages/a/package.json", field: "dependencies", name: "foo", value: "^1.0.0"},
+		{ path: "packages/a/package.json", field: "dependencies", name: "foo", value: "^1.0.0" },
 	];
 
 	it("annotates nothing when there is nothing to annotate", () => {

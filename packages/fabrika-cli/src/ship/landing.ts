@@ -10,13 +10,13 @@
  * See the scope help in ./command.ts for landing routes. A queue owns the method, so its path
  * skips the permitted-method read. A repo permitting no method cannot be repaired by guessing one.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {refusalText, resolveToken, restRead, restWrite} from "../io/gh-api.ts";
-import {type Attempt, fail, ok} from "../io/git.ts";
-import {isRecord} from "../io/json.ts";
-import {isQueueGoverned} from "./github.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { refusalText, resolveToken, restRead, restWrite } from "../io/gh-api.ts";
+import { type Attempt, fail, ok } from "../io/git.ts";
+import { isRecord } from "../io/json.ts";
+import { isQueueGoverned } from "./github.ts";
 
 /** An authenticated GitHub read: the transport, plus the spawner the `gh auth token` leg needs. */
 type Authed<A> = Effect.Effect<
@@ -77,9 +77,9 @@ export interface Landing {
 }
 
 export const landingOf = (queueGoverned: boolean, allowed: AllowedMethods | null): Landing => {
-	if (queueGoverned) return {path: "queue", method: null};
+	if (queueGoverned) return { path: "queue", method: null };
 	const method = allowed === null ? null : preferredMethod(allowed);
-	return method === null ? {path: "none", method: null} : {path: "direct", method};
+	return method === null ? { path: "none", method: null } : { path: "direct", method };
 };
 
 export const readLanding = (repo: string, base: string, env: Env): Authed<Attempt<Landing>> =>
@@ -124,7 +124,7 @@ export const readMergeProof = (repo: string, pr: number, env: Env): Authed<Attem
 			return fail("GitHub answered 200 but named no merge state");
 		}
 		const commit = parsed.merge_commit_sha;
-		return ok({merged: parsed.merged, mergeCommitSha: typeof commit === "string" ? commit : ""});
+		return ok({ merged: parsed.merged, mergeCommitSha: typeof commit === "string" ? commit : "" });
 	});
 
 /**

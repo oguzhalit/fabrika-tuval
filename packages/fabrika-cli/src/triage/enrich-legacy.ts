@@ -15,7 +15,7 @@
  * pasted envelope from impersonating an enrichment through the legacy door.
  */
 
-import {SUMMARY_LINE} from "./enrich.ts";
+import { SUMMARY_LINE } from "./enrich.ts";
 
 const DETAILS_OPEN = "<details>";
 const DETAILS_CLOSE = "</details>";

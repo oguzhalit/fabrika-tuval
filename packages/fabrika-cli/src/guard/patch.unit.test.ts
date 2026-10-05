@@ -6,7 +6,7 @@
  * The marker tag is assembled at runtime (`TAG`) rather than written contiguously, so this file —
  * itself a `*.test.ts` the real-tree scan reads — never contributes a stray pin marker of its own.
  */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	auditPins,
 	cleanSummary,
@@ -28,7 +28,7 @@ const THREE = `patchedDependencies:
 
 describe("parsePatchKey", () => {
 	it("keeps a scoped name's leading @ and splits on the last one", () => {
-		expect(parsePatchKey("@nkzw/fate@1.3.1")).toEqual({name: "@nkzw/fate", version: "1.3.1"});
+		expect(parsePatchKey("@nkzw/fate@1.3.1")).toEqual({ name: "@nkzw/fate", version: "1.3.1" });
 	});
 
 	it("answers null for a bare name with no version", () => {
@@ -40,16 +40,16 @@ describe("parsePatchKey", () => {
 describe("parsePatchedDependencies", () => {
 	it("reads quoted + bare keys and splits scoped name@version", () => {
 		expect(parsePatchedDependencies(THREE)).toEqual([
-			{key: "@nkzw/fate@1.3.1", name: "@nkzw/fate", version: "1.3.1"},
-			{key: "alchemy@2.0.0-beta.59", name: "alchemy", version: "2.0.0-beta.59"},
-			{key: "react-fate@1.3.1", name: "react-fate", version: "1.3.1"},
+			{ key: "@nkzw/fate@1.3.1", name: "@nkzw/fate", version: "1.3.1" },
+			{ key: "alchemy@2.0.0-beta.59", name: "alchemy", version: "2.0.0-beta.59" },
+			{ key: "react-fate@1.3.1", name: "react-fate", version: "1.3.1" },
 		]);
 	});
 
 	it("stops at the next top-level key and tolerates blank lines", () => {
 		const yaml = `catalog:\n  react: 19.0.0\npatchedDependencies:\n\n  alchemy@2.0.0-beta.59: patches/x.patch\n\npackages:\n  - packages/*\n`;
 		expect(parsePatchedDependencies(yaml)).toEqual([
-			{key: "alchemy@2.0.0-beta.59", name: "alchemy", version: "2.0.0-beta.59"},
+			{ key: "alchemy@2.0.0-beta.59", name: "alchemy", version: "2.0.0-beta.59" },
 		]);
 	});
 
@@ -62,14 +62,19 @@ describe("parsePinMarkers", () => {
 	it("extracts markers and normalizes the scoped name@version key", () => {
 		const src = `// ${TAG} @nkzw/fate@1.3.1\nimport x from "y";\n/* ${TAG} alchemy@2.0.0-beta.59 */`;
 		expect(parsePinMarkers(src, "a.test.ts")).toEqual([
-			{key: "@nkzw/fate@1.3.1", name: "@nkzw/fate", version: "1.3.1", path: "a.test.ts"},
-			{key: "alchemy@2.0.0-beta.59", name: "alchemy", version: "2.0.0-beta.59", path: "a.test.ts"},
+			{ key: "@nkzw/fate@1.3.1", name: "@nkzw/fate", version: "1.3.1", path: "a.test.ts" },
+			{
+				key: "alchemy@2.0.0-beta.59",
+				name: "alchemy",
+				version: "2.0.0-beta.59",
+				path: "a.test.ts",
+			},
 		]);
 	});
 
 	it("records a malformed (versionless) marker so it surfaces as stale, never dropped", () => {
 		expect(parsePinMarkers(`// ${TAG} react-fate`, "b.test.ts")).toEqual([
-			{key: "react-fate", name: "react-fate", version: "", path: "b.test.ts"},
+			{ key: "react-fate", name: "react-fate", version: "", path: "b.test.ts" },
 		]);
 	});
 });

@@ -1,8 +1,8 @@
-import {mkdirSync, mkdtempSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
 import * as adr from "./adr/codes.ts";
 import * as build from "./build/codes.ts";
 import * as campaign from "./campaign/codes.ts";
@@ -30,14 +30,14 @@ import * as guard from "./guard/codes.ts";
 import * as handoff from "./handoff/codes.ts";
 import * as healCi from "./heal-ci/codes.ts";
 import * as hook from "./hook/codes.ts";
-import {PRETOOLUSE_BLOCKING_EXIT} from "./hook/harness-exit.ts";
+import { PRETOOLUSE_BLOCKING_EXIT } from "./hook/harness-exit.ts";
 import * as lane from "./lane/codes.ts";
 import * as ledger from "./ledger/codes.ts";
 import * as map from "./map/codes.ts";
 import * as pattern from "./pattern/codes.ts";
 import * as plan from "./plan/codes.ts";
 import * as recipe from "./recipe/codes.ts";
-import {registeredGroups} from "./registry.ts";
+import { registeredGroups } from "./registry.ts";
 import * as report from "./report/codes.ts";
 import * as review from "./review/codes.ts";
 import * as reviewUi from "./review-ui/codes.ts";
@@ -94,7 +94,7 @@ const TABLES: Readonly<Record<string, CodeTable>> = {
 describe("every verb group the CLI ships is accounted for", () => {
 	const shipped = registeredGroups.map((group) => group.name);
 	const onDisk = codeTableGroupsIn(SRC_DIR);
-	const gaps = () => coverageGaps({registered: shipped, onDisk});
+	const gaps = () => coverageGaps({ registered: shipped, onDisk });
 
 	it("finds groups and tables at all — a scan over nothing is a failure, not a pass", () => {
 		expect(shipped.length).toBeGreaterThan(0);
@@ -146,20 +146,20 @@ describe("no group's exit table seats the harness's blocking code", () => {
  */
 describe("the coverage scan can see a group that ships no table", () => {
 	it("reports a shipped group with no table and no registration", () => {
-		expect(coverageGaps({registered: ["report", "ghost"], onDisk: ["report"]})).toMatchObject({
+		expect(coverageGaps({ registered: ["report", "ghost"], onDisk: ["report"] })).toMatchObject({
 			unclassified: ["ghost"],
 		});
 	});
 
 	it("reports a table on disk that no registry classifies", () => {
-		expect(coverageGaps({registered: ["report"], onDisk: ["report", "ghost"]})).toMatchObject({
+		expect(coverageGaps({ registered: ["report"], onDisk: ["report", "ghost"] })).toMatchObject({
 			unclassified: ["ghost"],
 		});
 	});
 
 	it("throws rather than reporting no gaps when there is nothing to scan", () => {
-		expect(() => coverageGaps({registered: [], onDisk: ["report"]})).toThrow(ZeroCoverageScope);
-		expect(() => coverageGaps({registered: ["report"], onDisk: []})).toThrow(ZeroCoverageScope);
+		expect(() => coverageGaps({ registered: [], onDisk: ["report"] })).toThrow(ZeroCoverageScope);
+		expect(() => coverageGaps({ registered: ["report"], onDisk: [] })).toThrow(ZeroCoverageScope);
 	});
 });
 
@@ -215,7 +215,7 @@ describe("no verb file seats an exit code its group's table does not", () => {
 	});
 
 	it("reds on a bare number handed straight to `refuse`", () => {
-		const root = stub({"thing-verb.ts": "refuse(12, 'nope');\n"});
+		const root = stub({ "thing-verb.ts": "refuse(12, 'nope');\n" });
 		expect(verbSeatedExitCodes(root, ["ghost"]).seated).toEqual(["ghost/thing-verb.ts: 12"]);
 	});
 
@@ -233,19 +233,20 @@ describe("no verb file seats an exit code its group's table does not", () => {
 	});
 });
 
-describe.each(
-	Object.entries(ALIGNED_GROUPS),
-)("`%s` against the shared registry", (group, seats) => {
-	const table = TABLES[group];
+describe.each(Object.entries(ALIGNED_GROUPS))(
+	"`%s` against the shared registry",
+	(group, seats) => {
+		const table = TABLES[group];
 
-	it("seats every shared meaning on the base's number", () => {
-		expect(checkAlignment(exitCodes, table as CodeTable, seats).drifted).toEqual([]);
-	});
+		it("seats every shared meaning on the base's number", () => {
+			expect(checkAlignment(exitCodes, table as CodeTable, seats).drifted).toEqual([]);
+		});
 
-	it("adds no code the base already spoke for", () => {
-		expect(checkAlignment(exitCodes, table as CodeTable, seats).collisions).toEqual([]);
-	});
-});
+		it("adds no code the base already spoke for", () => {
+			expect(checkAlignment(exitCodes, table as CodeTable, seats).collisions).toEqual([]);
+		});
+	},
+);
 
 /**
  * `wire` is the control: it is registered as unaligned, and it would fail the alignment check it is
@@ -254,7 +255,7 @@ describe.each(
  */
 describe("the unaligned groups are genuinely unaligned", () => {
 	it("`wire` does not share the base's seats", () => {
-		const {drifted} = checkAlignment(report, wire, ALIGNED_GROUPS.triage ?? {});
+		const { drifted } = checkAlignment(report, wire, ALIGNED_GROUPS.triage ?? {});
 		expect(drifted.length).toBeGreaterThan(0);
 	});
 });

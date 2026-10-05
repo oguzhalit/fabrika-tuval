@@ -13,4 +13,4 @@ export class LegFailed extends Schema.TaggedError<LegFailed>()("fabrika-cli/ui/L
 
 /** Lower an unknown thrown cause into the tagged failure, keeping its message. */
 export const legFailed = (cause: unknown): LegFailed =>
-	new LegFailed({reason: cause instanceof Error ? cause.message : String(cause)});
+	new LegFailed({ reason: cause instanceof Error ? cause.message : String(cause) });

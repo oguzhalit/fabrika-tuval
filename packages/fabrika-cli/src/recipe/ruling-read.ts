@@ -13,27 +13,27 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/10290#issuecomment-5974131397
  */
-import {isRecord, parseJson} from "../io/json.ts";
+import { isRecord, parseJson } from "../io/json.ts";
 
 export type RulingRead =
 	/** A ruling marker newer than the park stands on the issue. */
-	| {readonly _tag: "Made"; readonly state: "current" | "stale"; readonly at: string}
+	| { readonly _tag: "Made"; readonly state: "current" | "stale"; readonly at: string }
 	/** The read is sound and the ruling the park waits on is not there. */
-	| {readonly _tag: "Holds"; readonly reason: string}
+	| { readonly _tag: "Holds"; readonly reason: string }
 	/** The answer or the park's own time does not read, so whether a ruling was made is UNKNOWN. */
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /** Whether `decision ruling`'s stdout names a ruling made after `parkedAt`. */
 export const rulingSince = (stdout: string, parkedAt: string | null): RulingRead => {
 	const parsed = parseJson(stdout);
 	if (!isRecord(parsed) || typeof parsed.state !== "string") {
-		return {_tag: "Unreadable", reason: "decision ruling answered no `state`"};
+		return { _tag: "Unreadable", reason: "decision ruling answered no `state`" };
 	}
 	if (parsed.state === "absent") {
-		return {_tag: "Holds", reason: "no ruling marker stands on it"};
+		return { _tag: "Holds", reason: "no ruling marker stands on it" };
 	}
 	if (parsed.state !== "current" && parsed.state !== "stale") {
-		return {_tag: "Unreadable", reason: `decision ruling answered the state "${parsed.state}"`};
+		return { _tag: "Unreadable", reason: `decision ruling answered the state "${parsed.state}"` };
 	}
 	const at = typeof parsed.at === "string" ? parsed.at : null;
 	const ruled = at === null ? Number.NaN : Date.parse(at);
@@ -51,7 +51,7 @@ export const rulingSince = (stdout: string, parkedAt: string | null): RulingRead
 		};
 	}
 	return ruled > parked
-		? {_tag: "Made", state: parsed.state, at}
+		? { _tag: "Made", state: parsed.state, at }
 		: {
 				_tag: "Holds",
 				reason: `its ruling marker is dated ${at}, which is not later than the park at ${parkedAt}`,

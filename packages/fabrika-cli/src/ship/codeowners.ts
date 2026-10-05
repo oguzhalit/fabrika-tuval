@@ -50,7 +50,7 @@ export const parseCodeowners = (text: string): ReadonlyArray<OwnerRow> => {
 		if (line === "") continue;
 		const [pattern, ...owners] = line.split(/\s+/);
 		if (pattern === undefined) continue;
-		rows.push({pattern, owners});
+		rows.push({ pattern, owners });
 	}
 	return rows;
 };
@@ -150,7 +150,7 @@ export const classify = (rows: ReadonlyArray<OwnerRow>, files: ReadonlyArray<str
  * `null` for an individual `@login` owner, which is the discriminator `ship cp-approval` routes on:
  * a team is expanded through a roster read, a user IS the roster entry and needs no read at all.
  */
-export const splitTeam = (owner: string): {org: string; team: string} | null => {
+export const splitTeam = (owner: string): { org: string; team: string } | null => {
 	const m = /^@([^/\s]+)\/([^/\s]+)$/.exec(owner);
-	return m?.[1] === undefined || m[2] === undefined ? null : {org: m[1], team: m[2]};
+	return m?.[1] === undefined || m[2] === undefined ? null : { org: m[1], team: m[2] };
 };

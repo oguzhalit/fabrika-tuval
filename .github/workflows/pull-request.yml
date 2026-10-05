@@ -1,0 +1,557 @@
+name: 🔄 Pull Request Workflow
+
+on:
+  pull_request:
+    types: [opened, synchronize, closed]
+  pull_request_review:
+    types: [submitted]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: goal-hedef-preview
+  CONTAINER_PORT: 80
+  GUEST_VMID: "101"
+
+jobs:
+  # ========== CI STAGE ==========
+  lint:
+    name: 📝 Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint with biome
+        run: pnpm lint
+
+  test:
+    name: 🧪 Type Check
+    needs: [lint]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Type check
+        run: pnpm typecheck
+
+  build:
+    name: 🏗️ Build packages
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm build
+
+  ci-required:
+    name: ✅ CI Status Check
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [build]
+    steps:
+      - name: Check CI passed
+        run: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
+
+  # ========== PREVIEW DEPLOY STAGE ==========
+  deploy-preview:
+    name: 🚀 Deploy Preview
+    needs: [ci-required]
+    if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      packages: write
+    env:
+      PR_NUMBER: ${{ github.event.number }}
+      IMAGE_TAG: pr-${{ github.event.number }}
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: 🐳 Build Docker image
+        run: |
+          docker build \
+            -t ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} \
+            -f apps/goal-hedef/Dockerfile \
+            .
+
+      - name: 🔐 Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📤 Push Docker image
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+      - name: 🚀 Deploy to Homelab
+        env:
+          PVE_TOKEN: PVEAPIToken=${{ secrets.PROXMOX_USER }}@pve!${{ secrets.PROXMOX_TOKEN_NAME }}=${{ secrets.PROXMOX_TOKEN_SECRET }}
+          PVE_URL: https://${{ secrets.PROXMOX_HOST }}:${{ secrets.PROXMOX_PORT }}
+          REGISTRY_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          REGISTRY: ${{ env.REGISTRY }}
+          NODE: prox
+          VMID: ${{ env.GUEST_VMID }}
+        run: |
+          set -e
+
+          echo "📍 Connecting to Proxmox Guest Agent via $PVE_URL"
+
+          # Helper function to execute command via guest agent
+          exec_guest_cmd() {
+            local desc=$1
+            local cmd=$2
+            echo ""
+            echo "⏳ $desc"
+
+            # 1. Start command and get PID
+            # Extract actual command from "sh -c 'command'" pattern
+            if [[ $cmd =~ ^sh\ -c\ \'(.*)\'$ ]]; then
+              local actual_cmd="${BASH_REMATCH[1]}"
+              RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+                -H "Authorization: $PVE_TOKEN" \
+                --data-urlencode "command=sh" \
+                --data-urlencode "command=-c" \
+                --data-urlencode "command=$actual_cmd")
+            else
+              echo "❌ Command must be wrapped with sh -c 'command'"
+              return 1
+            fi
+
+            echo "  [DEBUG] curl response: $RESP"
+            PID=$(echo "$RESP" | jq -r '.data.pid // empty')
+            if [ -z "$PID" ]; then
+              echo "❌ Failed to start command"
+              echo "Response: $RESP"
+              return 1
+            fi
+
+            echo "  PID: $PID"
+
+            # 2. Poll for completion (max 30s)
+            for i in {1..30}; do
+              sleep 1
+
+              STATUS=$(curl -s -k -X GET "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec-status?pid=$PID" \
+                -H "Authorization: $PVE_TOKEN")
+
+              EXITED=$(echo "$STATUS" | jq -r '.data.exited // 0')
+
+              if [ "$EXITED" -eq 1 ]; then
+                EXITCODE=$(echo "$STATUS" | jq -r '.data.exitcode // 0')
+                OUT=$(echo "$STATUS" | jq -r '.data["out-data"] // ""')
+                ERR=$(echo "$STATUS" | jq -r '.data["err-data"] // ""')
+
+                if [ -n "$OUT" ]; then
+                  echo "  Output: $OUT"
+                fi
+                if [ -n "$ERR" ]; then
+                  echo "  Error: $ERR"
+                fi
+
+                if [ "$EXITCODE" -eq 0 ]; then
+                  echo "  ✅ Success"
+                  return 0
+                else
+                  echo "  ❌ Exit code: $EXITCODE"
+                  return $EXITCODE
+                fi
+              fi
+            done
+
+            echo "  ⚠️ Timeout waiting for command"
+            return 1
+          }
+
+          # Find available port and generate unique container name
+          CONTAINER_SUFFIX=$(date +%s%N | tail -c 6)
+          CONTAINER_NAME="pr-${{ env.PR_NUMBER }}-draw-$CONTAINER_SUFFIX"
+
+          # Find first available port (3000-3999)
+          PREVIEW_PORT=""
+          for port in {3000..3999}; do
+            # Test if port is available using /dev/tcp
+            PORT_TEST=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+              -H "Authorization: $PVE_TOKEN" \
+              --data-urlencode "command=sh" \
+              --data-urlencode "command=-c" \
+              --data-urlencode "command=(timeout 1 bash -c '</dev/tcp/localhost/$port') 2>/dev/null && echo USED || echo FREE" 2>/dev/null)
+
+            PID=$(echo "$PORT_TEST" | jq -r '.data.pid // empty')
+            if [ -z "$PID" ]; then
+              PREVIEW_PORT=$port
+              break
+            fi
+
+            # Check result (max 3s wait)
+            for i in {1..6}; do
+              sleep 0.5
+              STATUS=$(curl -s -k -X GET "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec-status?pid=$PID" \
+                -H "Authorization: $PVE_TOKEN")
+              EXITED=$(echo "$STATUS" | jq -r '.data.exited // 0')
+              if [ "$EXITED" -eq 1 ]; then
+                RESULT=$(echo "$STATUS" | jq -r '.data["out-data"] // "UNKNOWN"' | tr -d ' \n')
+                if [ "$RESULT" = "FREE" ]; then
+                  PREVIEW_PORT=$port
+                  break 2
+                fi
+                break
+              fi
+            done
+          done
+
+          # Fallback
+          if [ -z "$PREVIEW_PORT" ]; then
+            PREVIEW_PORT=$((3000 + ${{ env.PR_NUMBER }}))
+          fi
+
+          echo "📌 Container: $CONTAINER_NAME"
+          echo "📌 Port: $PREVIEW_PORT"
+
+          # Save deployment info for next steps
+          echo "CONTAINER_NAME=$CONTAINER_NAME" >> $GITHUB_ENV
+          echo "PREVIEW_PORT=$PREVIEW_PORT" >> $GITHUB_ENV
+
+          # Step 1: Docker login
+          exec_guest_cmd "🔐 Docker login" "sh -c 'echo $GITHUB_TOKEN | docker login -u $GITHUB_ACTOR --password-stdin $REGISTRY'"
+
+          # Step 2: Pull image
+          exec_guest_cmd "📥 Pull image" "sh -c 'docker pull $REGISTRY_IMAGE'"
+
+          # Step 3: Run container with unique name on available port
+          exec_guest_cmd "🐳 Run $CONTAINER_NAME:$PREVIEW_PORT" "sh -c 'docker run -d --name $CONTAINER_NAME -p $PREVIEW_PORT:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
+
+          # Step 4: Verify
+          exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=$CONTAINER_NAME'"
+
+          echo ""
+          echo "✅ Container deployed successfully"
+
+      - name: 🌐 Setup Cloudflare Tunnel & DNS
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_DOMAIN: ${{ secrets.CLOUDFLARE_DOMAIN }}
+          TUNNEL_CNAME: ${{ secrets.CLOUDFLARE_TUNNEL_CNAME }}
+          HOMELAB_IP: ${{ secrets.HOMELAB_IP }}
+          PVE_TOKEN: PVEAPIToken=${{ secrets.PROXMOX_USER }}@pve!${{ secrets.PROXMOX_TOKEN_NAME }}=${{ secrets.PROXMOX_TOKEN_SECRET }}
+          PVE_URL: https://${{ secrets.PROXMOX_HOST }}:${{ secrets.PROXMOX_PORT }}
+          NODE: prox
+          VMID: ${{ env.GUEST_VMID }}
+        run: |
+          set -e
+          SUBDOMAIN="pr-${{ env.PR_NUMBER }}-draw"
+
+          # 1. Add ingress rule to Cloudflare Tunnel config (uses HOMELAB_IP not localhost)
+          UPDATE_TUNNEL=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+            -H "Authorization: $PVE_TOKEN" \
+            --data-urlencode "command=sh" \
+            --data-urlencode "command=-c" \
+            --data-urlencode "command=sed -i '/^ingress:/a\  - hostname: $SUBDOMAIN\n    service: http://$HOMELAB_IP:$PREVIEW_PORT' /root/.cloudflared/config.yml && systemctl restart cloudflared")
+
+          PID=$(echo "$UPDATE_TUNNEL" | jq -r '.data.pid // empty')
+          if [ -n "$PID" ]; then
+            for i in {1..15}; do
+              sleep 1
+              STATUS=$(curl -s -k -X GET "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec-status?pid=$PID" \
+                -H "Authorization: $PVE_TOKEN")
+              EXITED=$(echo "$STATUS" | jq -r '.data.exited // 0')
+              if [ "$EXITED" -eq 1 ]; then
+                echo "✅ Tunnel config updated and restarted"
+                break
+              fi
+            done
+          fi
+
+          # 2. Create DNS CNAME record pointing to Tunnel CNAME (NOT home.oguzsak.com!)
+          curl -s -X POST -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records \
+            -d "{\"type\": \"CNAME\", \"name\": \"$SUBDOMAIN\", \"content\": \"$TUNNEL_CNAME\", \"ttl\": 1, \"proxied\": false}" | jq '.'
+
+          echo "✅ DNS CNAME record created: $SUBDOMAIN → $TUNNEL_CNAME"
+
+      - name: 💬 Comment Preview URL
+        env:
+          CONTAINER_SUFFIX: ${{ env.CONTAINER_SUFFIX }}
+          PREVIEW_PORT: ${{ env.PREVIEW_PORT }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: ${{ env.PR_NUMBER }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ **Preview Ready!**\n\n🌐 **URL:** [https://pr-${{ env.PR_NUMBER }}-draw.${{ secrets.CLOUDFLARE_DOMAIN }}](https://pr-${{ env.PR_NUMBER }}-draw.${{ secrets.CLOUDFLARE_DOMAIN }})\n\n📝 **Details:**\n- Container: \`pr-${{ env.PR_NUMBER }}-draw-${{ env.CONTAINER_SUFFIX }}\`\n- Port: \`${{ env.PREVIEW_PORT }}\``
+            })
+
+  # ========== PRODUCTION DEPLOY STAGE ==========
+  deploy-production:
+    name: 🌍 Deploy Production
+    needs: [ci-required]
+    if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      packages: write
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: 🐳 Build Docker image
+        run: |
+          docker build \
+            -t ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:latest \
+            -f apps/goal-hedef/Dockerfile \
+            .
+
+      - name: 🔐 Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📤 Push Docker image
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: 🚀 Deploy to Production
+        env:
+          PVE_TOKEN: PVEAPIToken=${{ secrets.PROXMOX_USER }}@pve!${{ secrets.PROXMOX_TOKEN_NAME }}=${{ secrets.PROXMOX_TOKEN_SECRET }}
+          PVE_URL: https://${{ secrets.PROXMOX_HOST }}:${{ secrets.PROXMOX_PORT }}
+          REGISTRY_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:latest
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          REGISTRY: ${{ env.REGISTRY }}
+          NODE: prox
+          VMID: ${{ env.GUEST_VMID }}
+        run: |
+          set -e
+
+          echo "🌍 Deploying to production..."
+
+          # Helper function to execute command via guest agent
+          exec_guest_cmd() {
+            local desc=$1
+            local cmd=$2
+            echo ""
+            echo "⏳ $desc"
+
+            # 1. Start command and get PID
+            # Extract actual command from "sh -c 'command'" pattern
+            if [[ $cmd =~ ^sh\ -c\ \'(.*)\'$ ]]; then
+              local actual_cmd="${BASH_REMATCH[1]}"
+              RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+                -H "Authorization: $PVE_TOKEN" \
+                --data-urlencode "command=sh" \
+                --data-urlencode "command=-c" \
+                --data-urlencode "command=$actual_cmd")
+            else
+              echo "❌ Command must be wrapped with sh -c 'command'"
+              return 1
+            fi
+
+            echo "  [DEBUG] curl response: $RESP"
+            PID=$(echo "$RESP" | jq -r '.data.pid // empty')
+            if [ -z "$PID" ]; then
+              echo "❌ Failed to start command"
+              echo "Response: $RESP"
+              return 1
+            fi
+
+            echo "  PID: $PID"
+
+            # 2. Poll for completion (max 60s for production)
+            for i in {1..60}; do
+              sleep 1
+
+              STATUS=$(curl -s -k -X GET "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec-status?pid=$PID" \
+                -H "Authorization: $PVE_TOKEN")
+
+              EXITED=$(echo "$STATUS" | jq -r '.data.exited // 0')
+
+              if [ "$EXITED" -eq 1 ]; then
+                EXITCODE=$(echo "$STATUS" | jq -r '.data.exitcode // 0')
+                OUT=$(echo "$STATUS" | jq -r '.data["out-data"] // ""')
+                ERR=$(echo "$STATUS" | jq -r '.data["err-data"] // ""')
+
+                if [ -n "$OUT" ]; then
+                  echo "  Output: $OUT"
+                fi
+                if [ -n "$ERR" ]; then
+                  echo "  Error: $ERR"
+                fi
+
+                if [ "$EXITCODE" -eq 0 ]; then
+                  echo "  ✅ Success"
+                  return 0
+                else
+                  echo "  ❌ Exit code: $EXITCODE"
+                  return $EXITCODE
+                fi
+              fi
+            done
+
+            echo "  ⚠️ Timeout waiting for command"
+            return 1
+          }
+
+          # Step 1: Docker login
+          exec_guest_cmd "🔐 Docker login" "sh -c 'echo $GITHUB_TOKEN | docker login -u $GITHUB_ACTOR --password-stdin $REGISTRY'"
+
+          # Step 2: Pull image
+          exec_guest_cmd "📥 Pull image" "sh -c 'docker pull $REGISTRY_IMAGE'"
+
+          # Step 3: Run production container
+          exec_guest_cmd "🐳 Run production container" "sh -c 'docker run -d --name draw -p 80:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
+
+          # Step 4: Verify
+          exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=draw'"
+
+          echo ""
+          echo "✅ Production deployed successfully"
+
+      - name: 💬 Comment Production URL
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: ${{ env.PR_NUMBER }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🌍 **Production Live!**\n\n🎉 Your changes are now live at https://draw.oguzsak.com`
+            })
+
+  # ========== CLEANUP STAGE ==========
+  cleanup:
+    name: 🧹 Cleanup Preview
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    env:
+      PR_NUMBER: ${{ github.event.number }}
+
+    steps:
+      - name: 🗑️ Stop Container
+        env:
+          PVE_TOKEN: PVEAPIToken=${{ secrets.PROXMOX_USER }}@pve!${{ secrets.PROXMOX_TOKEN_NAME }}=${{ secrets.PROXMOX_TOKEN_SECRET }}
+          PVE_URL: https://${{ secrets.PROXMOX_HOST }}:${{ secrets.PROXMOX_PORT }}
+          NODE: prox
+          VMID: ${{ env.GUEST_VMID }}
+        run: |
+          set -e
+
+          # Helper function to execute command via guest agent
+          exec_guest_cmd() {
+            local desc=$1
+            local cmd=$2
+            echo "⏳ $desc..."
+
+            # 1. Start command and get PID
+            # Extract actual command from "sh -c 'command'" pattern
+            if [[ $cmd =~ ^sh\ -c\ \'(.*)\'$ ]]; then
+              local actual_cmd="${BASH_REMATCH[1]}"
+              RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+                -H "Authorization: $PVE_TOKEN" \
+                --data-urlencode "command=sh" \
+                --data-urlencode "command=-c" \
+                --data-urlencode "command=$actual_cmd" 2>/dev/null)
+            else
+              echo "❌ Command must be wrapped with sh -c 'command'"
+              return 1
+            fi
+
+            PID=$(echo "$RESP" | jq -r '.data.pid // empty')
+            if [ -z "$PID" ]; then
+              echo "⚠️ Could not start cleanup"
+              return 0
+            fi
+
+            # 2. Poll for completion (max 15s)
+            for i in {1..15}; do
+              sleep 1
+
+              STATUS=$(curl -s -k -X GET "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec-status?pid=$PID" \
+                -H "Authorization: $PVE_TOKEN" 2>/dev/null)
+
+              EXITED=$(echo "$STATUS" | jq -r '.data.exited // 0')
+
+              if [ "$EXITED" -eq 1 ]; then
+                echo "✅ Cleaned up"
+                return 0
+              fi
+            done
+
+            echo "⚠️ Cleanup timeout"
+            return 0
+          }
+
+      - name: 🌐 Remove DNS Record
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_DOMAIN: ${{ secrets.CLOUDFLARE_DOMAIN }}
+        run: |
+          set -e
+          RECORD=$(curl -s -X GET -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records?name=pr-${{ env.PR_NUMBER }}-draw.$CF_DOMAIN")
+
+          RECORD_ID=$(echo $RECORD | jq -r '.result[0].id // empty')
+          [ ! -z "$RECORD_ID" ] && curl -s -X DELETE -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records/$RECORD_ID" || true
+
+          echo "✅ DNS cleaned up"
+
+      - name: 💬 Cleanup Comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: ${{ env.PR_NUMBER }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🧹 **Preview Cleaned**\n\nDocker container and DNS record removed.`
+            })

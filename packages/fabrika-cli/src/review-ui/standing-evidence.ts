@@ -14,18 +14,18 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9725#issuecomment-5800916149
  */
-import {Effect} from "effect";
-import {readBack, renderedHtml} from "../io/attachment-read-back.ts";
-import {ambientToken, onTransport} from "../io/gh-api.ts";
-import type {Shell} from "../io/git.ts";
-import {isRecord} from "../io/json.ts";
-import {read as readGallery} from "./evidence-gallery.ts";
-import {renderedCommentCall} from "./upload-leg.ts";
+import { Effect } from "effect";
+import { readBack, renderedHtml } from "../io/attachment-read-back.ts";
+import { ambientToken, onTransport } from "../io/gh-api.ts";
+import type { Shell } from "../io/git.ts";
+import { isRecord } from "../io/json.ts";
+import { read as readGallery } from "./evidence-gallery.ts";
+import { renderedCommentCall } from "./upload-leg.ts";
 
 export type EvidenceStanding =
-	| {readonly _tag: "Opens"}
-	| {readonly _tag: "DoesNotOpen"; readonly reasons: readonly [string, ...string[]]}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Opens" }
+	| { readonly _tag: "DoesNotOpen"; readonly reasons: readonly [string, ...string[]] }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /** The comment a verdict was read from: its id for the rendered read, its body for the gallery. */
 export interface VerdictComment {
@@ -37,10 +37,10 @@ export const standingEvidence = (repo: string, comment: VerdictComment): Shell<E
 	Effect.gen(function* () {
 		const gallery = readGallery(comment.body);
 		if (gallery._tag === "Unprovable") {
-			return {_tag: "DoesNotOpen", reasons: [gallery.reason]} as const;
+			return { _tag: "DoesNotOpen", reasons: [gallery.reason] } as const;
 		}
 		const token = yield* ambientToken;
-		if (token._tag === "Failure") return {_tag: "Unreadable", reason: token.reason} as const;
+		if (token._tag === "Failure") return { _tag: "Unreadable", reason: token.reason } as const;
 		return yield* onTransport(
 			Effect.gen(function* () {
 				const rendered = yield* renderedHtml(
@@ -50,7 +50,7 @@ export const standingEvidence = (repo: string, comment: VerdictComment): Shell<E
 						isRecord(r.body) && typeof r.body.body_html === "string" ? r.body.body_html : null,
 				);
 				if ("reason" in rendered) {
-					return {_tag: "Unreadable", reason: rendered.reason} as const;
+					return { _tag: "Unreadable", reason: rendered.reason } as const;
 				}
 				const reasons: string[] = [];
 				for (const evidence of gallery.evidence) {
@@ -59,8 +59,8 @@ export const standingEvidence = (repo: string, comment: VerdictComment): Shell<E
 				}
 				const [first, ...rest] = reasons;
 				return first === undefined
-					? ({_tag: "Opens"} as const)
-					: ({_tag: "DoesNotOpen", reasons: [first, ...rest]} as const);
+					? ({ _tag: "Opens" } as const)
+					: ({ _tag: "DoesNotOpen", reasons: [first, ...rest] } as const);
 			}),
 		);
 	});

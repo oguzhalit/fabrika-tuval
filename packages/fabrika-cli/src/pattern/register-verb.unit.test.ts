@@ -1,6 +1,6 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFsOptions, fakeFs} from "../fakes.test-support.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFsOptions, fakeFs } from "../fakes.test-support.ts";
 import {
 	DOC_ABSENT,
 	INDEX_UNPARSEABLE,
@@ -9,9 +9,9 @@ import {
 	SECTION_AMBIGUOUS,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {FIXTURES, THREE_SECTIONS_INDEX} from "./fixtures.test-support.ts";
-import {readBackCarries} from "./register.ts";
-import {runRegister} from "./register-verb.ts";
+import { FIXTURES, THREE_SECTIONS_INDEX } from "./fixtures.test-support.ts";
+import { readBackCarries } from "./register.ts";
+import { runRegister } from "./register-verb.ts";
 
 const DIR = `${FIXTURES}/three-sections`;
 const INDEX = `${DIR}/index.md`;
@@ -36,14 +36,14 @@ const tree = (extra: Readonly<Record<string, string | null>> = {}): FakeFsOption
 
 const run = (opts: Partial<typeof options> = {}, fs: FakeFsOptions = tree()) => {
 	const fake = fakeFs(fs);
-	return Effect.runPromise(Effect.provide(runRegister({...options, ...opts}), fake.layer)).then(
-		(outcome) => ({outcome, written: fake.written}),
+	return Effect.runPromise(Effect.provide(runRegister({ ...options, ...opts }), fake.layer)).then(
+		(outcome) => ({ outcome, written: fake.written }),
 	);
 };
 
 describe("runRegister", () => {
 	it("inserts one row under the named section and proves nothing else moved", async () => {
-		const {outcome, written} = await run({slug: "worker-queue-retry"});
+		const { outcome, written } = await run({ slug: "worker-queue-retry" });
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toBe(`inserted\t${INDEX}\tIndex — services\n`);
 		const after = written.get(INDEX) ?? "";
@@ -61,7 +61,7 @@ describe("runRegister", () => {
 	// carrying a table, in document order, never truncated — a caller correcting a flag needs the
 	// whole set, so its next invocation is a correction rather than a guess.
 	it("names every section carrying a table when --section matches none", async () => {
-		const {outcome, written} = await run({
+		const { outcome, written } = await run({
 			section: "Nonexistent Section",
 			topic: "x",
 			readWhen: "y",
@@ -76,7 +76,7 @@ describe("runRegister", () => {
 
 	// The contract's third worked example. Registering twice is a no-op, not an error.
 	it("answers `already` at exit 0 without writing when the row is there", async () => {
-		const {outcome, written} = await run();
+		const { outcome, written } = await run();
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toBe(`already\t${INDEX}\tIndex — services\n`);
 		expect(written.size).toBe(0);
@@ -85,7 +85,10 @@ describe("runRegister", () => {
 	// The flag is right and the index is what needs disambiguating, so it is a different code from 10.
 	it("refuses a section name matching more than one heading", async () => {
 		const doubled = `${THREE_SECTIONS_INDEX}\n## Index — services\n\n| Doc | Topic | Read when |\n|---|---|---|\n| [x.md](./x.md) | a | b |\n`;
-		const {outcome, written} = await run({slug: "worker-queue-retry"}, tree({[INDEX]: doubled}));
+		const { outcome, written } = await run(
+			{ slug: "worker-queue-retry" },
+			tree({ [INDEX]: doubled }),
+		);
 		expect(outcome.code).toBe(SECTION_AMBIGUOUS);
 		expect(outcome.stderr.at(-1)).toContain("matches 2 headings");
 		expect(written.size).toBe(0);
@@ -94,7 +97,7 @@ describe("runRegister", () => {
 	// The doc lands even when the index cannot take its row — which is why `new` and `register` are
 	// separable in the first place.
 	it("refuses an absent index while naming the doc as written and unregistered", async () => {
-		const {outcome} = await run({slug: "worker-queue-retry"}, tree({[INDEX]: null}));
+		const { outcome } = await run({ slug: "worker-queue-retry" }, tree({ [INDEX]: null }));
 		expect(outcome.code).toBe(INDEX_UNPARSEABLE);
 		expect(outcome.stderr.at(-1)).toBe(
 			`pattern register: ${INDEX} is absent — the doc at ${DIR}/worker-queue-retry.md is written and unregistered; front-door bootstraps the index.`,
@@ -102,9 +105,9 @@ describe("runRegister", () => {
 	});
 
 	it("refuses an index holding no parseable table on the same code", async () => {
-		const {outcome} = await run(
-			{slug: "worker-queue-retry"},
-			tree({[INDEX]: "# Patterns\n\nNothing yet.\n"}),
+		const { outcome } = await run(
+			{ slug: "worker-queue-retry" },
+			tree({ [INDEX]: "# Patterns\n\nNothing yet.\n" }),
 		);
 		expect(outcome.code).toBe(INDEX_UNPARSEABLE);
 		expect(outcome.stderr.at(-1)).toContain("holds no parseable markdown table");
@@ -113,8 +116,8 @@ describe("runRegister", () => {
 	// A row pointing at a file that does not exist is a dead link a link gate reds later and a reader
 	// hits sooner, so the target is proven first.
 	it("refuses to register a row pointing at nothing", async () => {
-		const {outcome, written} = await run(
-			{slug: "worker-queue-retry"},
+		const { outcome, written } = await run(
+			{ slug: "worker-queue-retry" },
 			tree({
 				[`${DIR}/worker-queue-retry.md`]: null,
 			}),
@@ -127,8 +130,8 @@ describe("runRegister", () => {
 	});
 
 	it("reports a failed write as UNKNOWN rather than as a usage error", async () => {
-		const {outcome} = await run(
-			{slug: "worker-queue-retry"},
+		const { outcome } = await run(
+			{ slug: "worker-queue-retry" },
 			{
 				...tree(),
 				unwritable: [INDEX],
@@ -140,7 +143,7 @@ describe("runRegister", () => {
 	});
 
 	it("emits the same facts through --json", async () => {
-		const {outcome} = await run({slug: "worker-queue-retry", json: true});
+		const { outcome } = await run({ slug: "worker-queue-retry", json: true });
 		expect(JSON.parse(outcome.stdout)).toEqual({
 			outcome: "inserted",
 			path: INDEX,
@@ -151,7 +154,7 @@ describe("runRegister", () => {
 	});
 
 	it("refuses a slug that is not kebab-case", async () => {
-		const {outcome, written} = await run({slug: "Worker Queue"});
+		const { outcome, written } = await run({ slug: "Worker Queue" });
 		expect(outcome.code).toBe(1);
 		expect(written.size).toBe(0);
 	});

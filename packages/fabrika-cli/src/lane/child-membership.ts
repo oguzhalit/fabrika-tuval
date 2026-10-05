@@ -16,14 +16,14 @@
  * Nothing here writes. The read is the same guarded {@link loadLane} every other lane verb goes
  * through, so a malformed epic machine is a defect here exactly as it is there.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import {childTaskId} from "./emit.ts";
-import {loadLane} from "./store.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { childTaskId } from "./emit.ts";
+import { loadLane } from "./store.ts";
 
 export type ChildMembership =
-	| {readonly _tag: "Represented"; readonly parent: number; readonly taskId: string}
-	| {readonly _tag: "Absent"; readonly parent: number; readonly taskId: string}
-	| {readonly _tag: "Unknown"; readonly parent: number | null; readonly reason: string};
+	| { readonly _tag: "Represented"; readonly parent: number; readonly taskId: string }
+	| { readonly _tag: "Absent"; readonly parent: number; readonly taskId: string }
+	| { readonly _tag: "Unknown"; readonly parent: number | null; readonly reason: string };
 
 /**
  * Judge one child against its parent lane's emitted task set.
@@ -46,14 +46,14 @@ export const childMembership = (
 					"the board carried the edge and no parent number that reads, so there is no lane to look in",
 			} as const;
 		}
-		const loaded = yield* loadLane({root, lane: String(parent)});
+		const loaded = yield* loadLane({ root, lane: String(parent) });
 		switch (loaded._tag) {
 			case "Loaded":
 				return Object.hasOwn(loaded.lane.tasks, taskId)
-					? ({_tag: "Represented", parent, taskId} as const)
-					: ({_tag: "Absent", parent, taskId} as const);
+					? ({ _tag: "Represented", parent, taskId } as const)
+					: ({ _tag: "Absent", parent, taskId } as const);
 			case "Absent":
-				return {_tag: "Unknown", parent, reason: `no lane is on disk at ${loaded.dir}`} as const;
+				return { _tag: "Unknown", parent, reason: `no lane is on disk at ${loaded.dir}` } as const;
 			case "Unreadable":
 				return {
 					_tag: "Unknown",

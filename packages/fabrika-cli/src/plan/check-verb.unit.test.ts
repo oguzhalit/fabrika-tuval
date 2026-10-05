@@ -1,9 +1,9 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {comments} from "../build/fixtures.test-support.ts";
-import type {HttpReply} from "../fakes.test-support.ts";
-import {runCheck} from "./check-verb.ts";
-import {OFF_VOCABULARY, PLAN_UNAPPROVED, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { comments } from "../build/fixtures.test-support.ts";
+import type { HttpReply } from "../fakes.test-support.ts";
+import { runCheck } from "./check-verb.ts";
+import { OFF_VOCABULARY, PLAN_UNAPPROVED, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
 import {
 	APPROVER,
 	approvalRow,
@@ -35,7 +35,7 @@ const REF_9999 = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/9999$/;
 const EXTERNAL = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/7511$/;
 const CYCLE = CYCLE_DOC;
 
-const options = {number: 4300, repo: null, env: ENV, cwd: CWD};
+const options = { number: 4300, repo: null, env: ENV, cwd: CWD };
 
 const COMMENTS = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4300\/comments/;
 
@@ -48,9 +48,9 @@ const COMMENTS = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4300\/co
  */
 const approvedLayer = async (
 	script: ReadonlyArray<Scripted>,
-	config?: string | {readonly unreadable: true},
+	config?: string | { readonly unreadable: true },
 ) => {
-	const digest = await digestOver(script, {config});
+	const digest = await digestOver(script, { config });
 	return planSeams([...script, ...ROSTER, [COMMENTS, comments(approvalRow(digest))]], config).layer;
 };
 
@@ -58,13 +58,13 @@ const run = async (script: ReadonlyArray<Scripted>) =>
 	Effect.runPromise(Effect.provide(runCheck(options), await approvedLayer(script)));
 
 /** An epic whose phase line names exactly the one child a single-child script serves. */
-const ONE_CHILD_EPIC = epic({body: epicBody({dependencies: "- phase 1: #4301"})});
+const ONE_CHILD_EPIC = epic({ body: epicBody({ dependencies: "- phase 1: #4301" }) });
 
 const CLEAN: ReadonlyArray<Scripted> = [
 	[EPIC, epic()],
 	[SUBS, subIssues(4301, 4302)],
-	[CHILD_1, child({number: 4301})],
-	[CHILD_2, child({number: 4302, body: childBody({stories: "2"})})],
+	[CHILD_1, child({ number: 4301 })],
+	[CHILD_2, child({ number: 4302, body: childBody({ stories: "2" }) })],
 	[CYCLE, cycleDoc],
 ];
 
@@ -90,13 +90,13 @@ describe("runCheck", () => {
 		const out = await run([
 			[EPIC, ONE_CHILD_EPIC],
 			[SUBS, subIssues(4301)],
-			[CHILD_1, child({number: 4301, body: childBody({criteria: "no boxes here"})})],
+			[CHILD_1, child({ number: 4301, body: childBody({ criteria: "no boxes here" }) })],
 			[CYCLE, cycleDoc],
 		]);
 		expect(out.code).toBe(0);
 		const answer = JSON.parse(out.stdout);
 		expect(answer.answer).toBe("defective");
-		expect(answer.defects[0]).toMatchObject({type: "ZERO_AC", refs: [4301]});
+		expect(answer.defects[0]).toMatchObject({ type: "ZERO_AC", refs: [4301] });
 	});
 
 	it("names the scanned set on BOTH arms, so a clean answer states its scope", async () => {
@@ -105,7 +105,7 @@ describe("runCheck", () => {
 		const defective = await run([
 			[EPIC, ONE_CHILD_EPIC],
 			[SUBS, subIssues(4301)],
-			[CHILD_1, child({number: 4301, body: childBody({criteria: "none"})})],
+			[CHILD_1, child({ number: 4301, body: childBody({ criteria: "none" }) })],
 			[CYCLE, cycleDoc],
 		]);
 		expect(defective.stderr[0]).toBe("plan check: scanned 1 child; #4301.");
@@ -116,9 +116,9 @@ describe("runCheck", () => {
 		const out = await run([
 			[EPIC, epic()],
 			[SUBS, subIssues(4301, 4302)],
-			[CHILD_1, child({number: 4301})],
-			[CHILD_2, child({number: 4302, body: childBody({stories: "2"})})],
-			[CYCLE, {status: 502, body: '{"message":"Bad gateway"}'}],
+			[CHILD_1, child({ number: 4301 })],
+			[CHILD_2, child({ number: 4302, body: childBody({ stories: "2" }) })],
+			[CYCLE, { status: 502, body: '{"message":"Bad gateway"}' }],
 		]);
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			answer: "clean",
@@ -132,13 +132,13 @@ describe("runCheck", () => {
 	 */
 	it("derives DANGLING_DEP from a 404 and refuses 11 on anything else", async () => {
 		const referencing = epic({
-			body: epicBody({dependencies: "- phase 1: #4301\n- #4301 requires: #9999"}),
+			body: epicBody({ dependencies: "- phase 1: #4301\n- #4301 requires: #9999" }),
 		});
 		const dangling = await run([
 			[EPIC, referencing],
 			[SUBS, subIssues(4301)],
-			[CHILD_1, child({number: 4301})],
-			[REF_9999, {status: 404, body: '{"message":"Not Found"}'}],
+			[CHILD_1, child({ number: 4301 })],
+			[REF_9999, { status: 404, body: '{"message":"Not Found"}' }],
 			[CYCLE, cycleDoc],
 		]);
 		expect(JSON.parse(dangling.stdout).defects).toContainEqual({
@@ -150,8 +150,8 @@ describe("runCheck", () => {
 		const unreadable = await run([
 			[EPIC, referencing],
 			[SUBS, subIssues(4301)],
-			[CHILD_1, child({number: 4301})],
-			[REF_9999, {status: 502, body: '{"message":"Bad gateway"}'}],
+			[CHILD_1, child({ number: 4301 })],
+			[REF_9999, { status: 502, body: '{"message":"Bad gateway"}' }],
 			[CYCLE, cycleDoc],
 		]);
 		expect(unreadable.code).toBe(PRECONDITION_UNKNOWN);
@@ -166,19 +166,21 @@ describe("runCheck", () => {
 	 */
 	it("reds UNENFORCED_DEP when the graph does not carry a stated dependency", async () => {
 		const gated = epic({
-			body: epicBody({dependencies: "- phase 1: #4301\n- phase 2: #4302\n- #4302 requires: #4301"}),
+			body: epicBody({
+				dependencies: "- phase 1: #4301\n- phase 2: #4302\n- #4302 requires: #4301",
+			}),
 		});
 		const script: ReadonlyArray<Scripted> = [
 			[EPIC, gated],
 			[SUBS, subIssues(4301, 4302)],
-			[CHILD_1, child({number: 4301})],
-			[CHILD_2, child({number: 4302, body: childBody({stories: "2"})})],
+			[CHILD_1, child({ number: 4301 })],
+			[CHILD_2, child({ number: 4302, body: childBody({ stories: "2" }) })],
 			[CYCLE, cycleDoc],
 		];
 
 		const blind = await run([...script, [BLOCKED_BY(4302), blockers()]]);
 		expect(blind.code).toBe(0);
-		expect(JSON.parse(blind.stdout)).toMatchObject({answer: "defective"});
+		expect(JSON.parse(blind.stdout)).toMatchObject({ answer: "defective" });
 		expect(JSON.parse(blind.stdout).defects).toContainEqual({
 			type: "UNENFORCED_DEP",
 			refs: [4301, 4302],
@@ -186,7 +188,7 @@ describe("runCheck", () => {
 		});
 
 		const written = await run([...script, [BLOCKED_BY(4302), blockers(4301)]]);
-		expect(JSON.parse(written.stdout)).toMatchObject({answer: "clean"});
+		expect(JSON.parse(written.stdout)).toMatchObject({ answer: "clean" });
 	});
 
 	/**
@@ -198,11 +200,11 @@ describe("runCheck", () => {
 		const dropped = await run([
 			[EPIC, epic()],
 			[SUBS, subIssues(4301, 4302)],
-			[CHILD_1, child({number: 4301})],
-			[CHILD_2, child({number: 4302, body: childBody({stories: "2"})})],
+			[CHILD_1, child({ number: 4301 })],
+			[CHILD_2, child({ number: 4302, body: childBody({ stories: "2" }) })],
 			[CYCLE, cycleDoc],
 			[BLOCKED_BY(4300), blockers(7511)],
-			[EXTERNAL, child({number: 7511})],
+			[EXTERNAL, child({ number: 7511 })],
 		]);
 		expect(dropped.code).toBe(0);
 		const defects = JSON.parse(dropped.stdout).defects;
@@ -228,15 +230,15 @@ describe("runCheck", () => {
 				}),
 			],
 			[SUBS, subIssues(4301, 4302)],
-			[CHILD_1, child({number: 4301})],
-			[CHILD_2, child({number: 4302, body: childBody({stories: "2"})})],
+			[CHILD_1, child({ number: 4301 })],
+			[CHILD_2, child({ number: 4302, body: childBody({ stories: "2" }) })],
 			[CYCLE, cycleDoc],
-			[EXTERNAL, child({number: 7511})],
+			[EXTERNAL, child({ number: 7511 })],
 			[BLOCKED_BY(4300), blockers(7511)],
 			[BLOCKED_BY(4301), blockers(7511)],
 			[BLOCKED_BY(4302), blockers(7511)],
 		]);
-		expect(JSON.parse(carried.stdout)).toMatchObject({answer: "clean"});
+		expect(JSON.parse(carried.stdout)).toMatchObject({ answer: "clean" });
 	});
 
 	/** A closed blocker is carried down by nobody — the amendment names the *open* targets only. */
@@ -244,24 +246,24 @@ describe("runCheck", () => {
 		const out = await run([
 			[EPIC, epic()],
 			[SUBS, subIssues(4301, 4302)],
-			[CHILD_1, child({number: 4301})],
-			[CHILD_2, child({number: 4302, body: childBody({stories: "2"})})],
+			[CHILD_1, child({ number: 4301 })],
+			[CHILD_2, child({ number: 4302, body: childBody({ stories: "2" }) })],
 			[CYCLE, cycleDoc],
 			[BLOCKED_BY(4300), blockers(7511)],
-			[EXTERNAL, child({number: 7511, state: "closed"})],
+			[EXTERNAL, child({ number: 7511, state: "closed" })],
 		]);
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "clean"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "clean" });
 	});
 
 	it("refuses 11 when the epic's own blocker state could not be read", async () => {
 		const out = await run([
 			[EPIC, epic()],
 			[SUBS, subIssues(4301, 4302)],
-			[CHILD_1, child({number: 4301})],
-			[CHILD_2, child({number: 4302, body: childBody({stories: "2"})})],
+			[CHILD_1, child({ number: 4301 })],
+			[CHILD_2, child({ number: 4302, body: childBody({ stories: "2" }) })],
 			[CYCLE, cycleDoc],
 			[BLOCKED_BY(4300), blockers(7511)],
-			[EXTERNAL, {status: 502, body: '{"message":"Bad gateway"}'}],
+			[EXTERNAL, { status: 502, body: '{"message":"Bad gateway"}' }],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -270,12 +272,15 @@ describe("runCheck", () => {
 
 	it("refuses 11 on an unread blocked_by list — an unseen edge is never a present one", async () => {
 		const out = await run([
-			[EPIC, epic({body: epicBody({dependencies: "- phase 1: #4301\n- #4301 requires: #4302"})})],
+			[
+				EPIC,
+				epic({ body: epicBody({ dependencies: "- phase 1: #4301\n- #4301 requires: #4302" }) }),
+			],
 			[SUBS, subIssues(4301, 4302)],
-			[CHILD_1, child({number: 4301})],
-			[CHILD_2, child({number: 4302, body: childBody({stories: "2"})})],
+			[CHILD_1, child({ number: 4301 })],
+			[CHILD_2, child({ number: 4302, body: childBody({ stories: "2" }) })],
 			[CYCLE, cycleDoc],
-			[BLOCKED_BY(4301), {status: 502, body: '{"message":"Bad gateway"}'}],
+			[BLOCKED_BY(4301), { status: 502, body: '{"message":"Bad gateway"}' }],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -292,7 +297,7 @@ describe("runCheck", () => {
 	});
 
 	it("refuses a non-epic on 10", async () => {
-		const out = await run([[EPIC, epic({labels: [{name: "type:chore"}]})]]);
+		const out = await run([[EPIC, epic({ labels: [{ name: "type:chore" }] })]]);
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(out.stderr.at(-1)).toContain("refusing to gate it");
 	});
@@ -334,7 +339,7 @@ describe("the approval precondition", () => {
 			[
 				[EPIC, ONE_CHILD_EPIC],
 				[SUBS, subIssues(4301)],
-				[CHILD_1, child({number: 4301, body: childBody({criteria: "no boxes here"})})],
+				[CHILD_1, child({ number: 4301, body: childBody({ criteria: "no boxes here" }) })],
 				[CYCLE, cycleDoc],
 			],
 			comments(),
@@ -344,7 +349,10 @@ describe("the approval precondition", () => {
 	});
 
 	it("refuses 25 when the marker's digest names a plan the epic has moved off", async () => {
-		const out = await unapproved(CLEAN, comments(approvalRow("0000000000ff", {author: APPROVER})));
+		const out = await unapproved(
+			CLEAN,
+			comments(approvalRow("0000000000ff", { author: APPROVER })),
+		);
 		expect(out.code).toBe(PLAN_UNAPPROVED);
 		expect(out.stderr.at(-1)).toContain("state stale");
 	});
@@ -352,7 +360,7 @@ describe("the approval precondition", () => {
 	it("passes through unchanged when the marker binds the derived digest", async () => {
 		const out = await run(CLEAN);
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "clean", defects: []});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "clean", defects: [] });
 	});
 
 	/** The same collapse, on this side too: a roster nobody could read is UNKNOWN, never `absent`. */
@@ -364,7 +372,7 @@ describe("the approval precondition", () => {
 					...CLEAN,
 					[
 						/^GET https:\/\/api\.github\.com\/repos\/o\/r$/,
-						{status: 502, body: '{"message":"Bad gateway"}'},
+						{ status: 502, body: '{"message":"Bad gateway"}' },
 					],
 				]).layer,
 			),
@@ -380,7 +388,7 @@ describe("the approval precondition", () => {
  * is the bare-repo arm — none of them writes a config — so these two only have to move the config.
  */
 describe("the containment vocabulary, resolved", () => {
-	const withConfig = async (config: string | {readonly unreadable: true}) =>
+	const withConfig = async (config: string | { readonly unreadable: true }) =>
 		Effect.runPromise(Effect.provide(runCheck(options), await approvedLayer(CLEAN, config)));
 
 	it("reds a marker the shipped vocabulary allows and a foreign one does not carry", async () => {
@@ -402,8 +410,8 @@ describe("the containment vocabulary, resolved", () => {
 		const unmarked: ReadonlyArray<Scripted> = [
 			[EPIC, epic()],
 			[SUBS, subIssues(4301, 4302)],
-			[CHILD_1, child({number: 4301, body: childBody({containment: null})})],
-			[CHILD_2, child({number: 4302, body: childBody({stories: "2", containment: null})})],
+			[CHILD_1, child({ number: 4301, body: childBody({ containment: null }) })],
+			[CHILD_2, child({ number: 4302, body: childBody({ stories: "2", containment: null }) })],
 			[CYCLE, cycleDoc],
 		];
 		const off = await Effect.runPromise(
@@ -414,13 +422,13 @@ describe("the containment vocabulary, resolved", () => {
 		);
 		const bare = await run(unmarked);
 		expect(JSON.parse(off.stdout).answer).toBe("clean");
-		expect(JSON.parse(bare.stdout).defects.map((defect: {type: string}) => defect.type)).toContain(
-			"MISSING_CONTAINMENT",
-		);
+		expect(
+			JSON.parse(bare.stdout).defects.map((defect: { type: string }) => defect.type),
+		).toContain("MISSING_CONTAINMENT");
 	});
 
 	it("leaves the floor UNKNOWN when the config exists and cannot be read", async () => {
-		const out = await withConfig({unreadable: true});
+		const out = await withConfig({ unreadable: true });
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain("the floor is UNKNOWN, not clean");

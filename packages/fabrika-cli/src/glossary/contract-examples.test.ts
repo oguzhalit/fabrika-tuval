@@ -10,20 +10,20 @@
  * The reads are the real filesystem through `NodeServices.layer` — the same layer `run.ts` provides
  * — so a fixture that moves reds here instead of drifting away from the document that pins it.
  */
-import {copyFileSync, mkdtempSync, readFileSync, rmSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {NodeServices} from "@effect/platform-node";
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {runAdd} from "./add-verb.ts";
-import {runCheck} from "./check-verb.ts";
-import {TERM_COLLISION, ZERO_SCOPE} from "./codes.ts";
-import {runDrift} from "./drift-verb.ts";
-import {runInit} from "./init-verb.ts";
-import {runLookup} from "./lookup-verb.ts";
-import {runSections} from "./sections-verb.ts";
+import { copyFileSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { runAdd } from "./add-verb.ts";
+import { runCheck } from "./check-verb.ts";
+import { TERM_COLLISION, ZERO_SCOPE } from "./codes.ts";
+import { runDrift } from "./drift-verb.ts";
+import { runInit } from "./init-verb.ts";
+import { runLookup } from "./lookup-verb.ts";
+import { runSections } from "./sections-verb.ts";
 
 /** The two fixture directories, repo-relative exactly as the contract's examples spell them. */
 const REGISTERS = "packages/fabrika-cli/test-fixtures/glossary/registers";
@@ -43,7 +43,7 @@ const run = <A>(effect: Effect.Effect<A, never, NodeServices.NodeServices>) =>
 
 describe("glossary sections, against the committed fixture register", () => {
 	it("names the three sections and their row counts", async () => {
-		const out = await run(runSections({register: "terms", dir: REGISTERS, json: false, cwd}));
+		const out = await run(runSections({ register: "terms", dir: REGISTERS, json: false, cwd }));
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(
 			"terms\tCore / shape\t2\nterms\tProducts (domains)\t3\nterms\tIndexing\t1\n",
@@ -53,7 +53,7 @@ describe("glossary sections, against the committed fixture register", () => {
 
 describe("glossary lookup, against the committed fixture register", () => {
 	const lookup = (terms: ReadonlyArray<string>) =>
-		run(runLookup({terms, register: "terms", dir: REGISTERS, json: false, cwd}));
+		run(runLookup({ terms, register: "terms", dir: REGISTERS, json: false, cwd }));
 
 	it("reports the first `pano` row, leaving the duplication to `check`", async () => {
 		expect((await lookup(["pano"])).stdout).toBe("declared\tterms\tCore / shape\tpano\n");
@@ -97,7 +97,7 @@ citation-superseded\tterms\tCore / shape\tworker\tcites 0044, status "superseded
 	 */
 	it("reds on the present-and-empty LANGUAGE register under --register both", async () => {
 		const out = await run(
-			runCheck({register: "both", dir: REGISTERS, decisions: DECISIONS, json: false, cwd}),
+			runCheck({ register: "both", dir: REGISTERS, decisions: DECISIONS, json: false, cwd }),
 		);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stdout).toBe("");
@@ -107,7 +107,7 @@ citation-superseded\tterms\tCore / shape\tworker\tcites 0044, status "superseded
 describe("glossary drift, against the committed fixtures", () => {
 	it("answers bootstrap for a readable directory holding no register", async () => {
 		const out = await run(
-			runDrift({register: "terms", dir: EMPTY, paths: "", limit: 40, json: false, cwd}),
+			runDrift({ register: "terms", dir: EMPTY, paths: "", limit: 40, json: false, cwd }),
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe("bootstrap\n");
@@ -149,13 +149,13 @@ describe("glossary add, against a copy of the committed fixture register", () =>
 		const after = readFileSync(join(dir, "TERMS.md"), "utf8").split("\n");
 		expect(after[17]).toBe("| capture ledger | The append-only record of one capture run. | |");
 		expect([...after.slice(0, 17), ...after.slice(18)]).toEqual(before.split("\n"));
-		rmSync(dir, {recursive: true, force: true});
+		rmSync(dir, { recursive: true, force: true });
 	});
 });
 
 describe("glossary init, against the committed fixture register", () => {
 	it("refuses to overwrite the register that is already there", async () => {
-		const out = await run(runInit({register: "terms", dir: REGISTERS, json: false, cwd}));
+		const out = await run(runInit({ register: "terms", dir: REGISTERS, json: false, cwd }));
 		expect(out.code).toBe(TERM_COLLISION);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toBe(

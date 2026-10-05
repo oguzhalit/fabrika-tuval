@@ -14,36 +14,36 @@
  * **Every leaf is declared with `leafCommand`, never a bare `Command.make`** — the bare form
  * silently opts out of the excess-operand guard, which `../excess-operand.unit.test.ts` reds on.
  */
-import {randomUUID} from "node:crypto";
-import {tmpdir} from "node:os";
-import {Effect, Option} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {CONFIG_PATH} from "../config/document.ts";
-import {readRoadmapFile} from "../config/paths.ts";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStdin} from "../io/stdin.ts";
-import {readBoard} from "../status/label-remedy.ts";
-import {FAILED, refuse} from "../verb.ts";
-import {runApply} from "./apply-verb.ts";
-import {runAuditMerge} from "./audit-merge-verb.ts";
-import {runAuditSet} from "./audit-set-verb.ts";
-import {runClaim} from "./claim-verb.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {runCodes} from "./codes-verb.ts";
-import {runEnrich} from "./enrich-verb.ts";
-import {AUDIENCES, CLASSES, PRIORITIES, TYPES} from "./facets.ts";
-import {runHomes} from "./homes-verb.ts";
-import {runKill} from "./kill-verb.ts";
-import {runPark} from "./park-verb.ts";
-import {runProvenance} from "./provenance-verb.ts";
-import {DEFAULT_QUEUE_LABEL, DEFAULT_QUEUE_LIMIT, runQueue} from "./queue-verb.ts";
-import {runRepairCriteria} from "./repair-criteria-verb.ts";
-import {ROADMAP_FILE} from "./roadmap.ts";
-import {runScratch} from "./scratch-verb.ts";
-import {runSplit} from "./split-verb.ts";
-import {readStandingLanes} from "./standing-lanes.ts";
-import {runSweepHomes} from "./sweep-homes-verb.ts";
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
+import { Effect, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { CONFIG_PATH } from "../config/document.ts";
+import { readRoadmapFile } from "../config/paths.ts";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStdin } from "../io/stdin.ts";
+import { readBoard } from "../status/label-remedy.ts";
+import { FAILED, refuse } from "../verb.ts";
+import { runApply } from "./apply-verb.ts";
+import { runAuditMerge } from "./audit-merge-verb.ts";
+import { runAuditSet } from "./audit-set-verb.ts";
+import { runClaim } from "./claim-verb.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { runCodes } from "./codes-verb.ts";
+import { runEnrich } from "./enrich-verb.ts";
+import { AUDIENCES, CLASSES, PRIORITIES, TYPES } from "./facets.ts";
+import { runHomes } from "./homes-verb.ts";
+import { runKill } from "./kill-verb.ts";
+import { runPark } from "./park-verb.ts";
+import { runProvenance } from "./provenance-verb.ts";
+import { DEFAULT_QUEUE_LABEL, DEFAULT_QUEUE_LIMIT, runQueue } from "./queue-verb.ts";
+import { runRepairCriteria } from "./repair-criteria-verb.ts";
+import { ROADMAP_FILE } from "./roadmap.ts";
+import { runScratch } from "./scratch-verb.ts";
+import { runSplit } from "./split-verb.ts";
+import { readStandingLanes } from "./standing-lanes.ts";
+import { runSweepHomes } from "./sweep-homes-verb.ts";
 
 /**
  * The two flags every verb in this group shares, declared once here.
@@ -80,16 +80,16 @@ export const laneTokenFlag = Flag.string("token").pipe(
 
 const codes = leafCommand(
 	"codes",
-	{json: jsonFlag},
-	Effect.fn(function* ({json}) {
-		yield* emit(runCodes({json}));
+	{ json: jsonFlag },
+	Effect.fn(function* ({ json }) {
+		yield* emit(runCodes({ json }));
 	}),
 ).pipe(
 	Command.withShortDescription("Print the exit taxonomy this group allocates from."),
 	Command.withDescription(
 		"Prints the exit taxonomy this group allocates from, one `<code>\\t<meaning>` line per code.",
 	),
-	Command.withExamples([{command: "fabrika triage codes"}]),
+	Command.withExamples([{ command: "fabrika triage codes" }]),
 );
 
 const kill = leafCommand(
@@ -117,7 +117,7 @@ const kill = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({issue, confirm, duplicateOf, token, repo, json}) {
+	Effect.fn(function* ({ issue, confirm, duplicateOf, token, repo, json }) {
 		yield* emit(
 			yield* runKill({
 				issue,
@@ -151,7 +151,7 @@ const kill = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika triage kill 4312 --confirm --duplicate-of 4290 < reason.md"},
+		{ command: "fabrika triage kill 4312 --confirm --duplicate-of 4290 < reason.md" },
 	]),
 );
 
@@ -174,7 +174,7 @@ const split = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({parent, title, token, repo, json}) {
+	Effect.fn(function* ({ parent, title, token, repo, json }) {
 		yield* emit(
 			yield* runSplit({
 				parent,
@@ -206,7 +206,7 @@ const split = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: 'fabrika triage split 4312 --title "Editor loses focus after save" < child.md'},
+		{ command: 'fabrika triage split 4312 --title "Editor loses focus after save" < child.md' },
 	]),
 );
 
@@ -328,8 +328,8 @@ const apply = leafCommand(
 
 const park = leafCommand(
 	"park",
-	{issue: issueArg, token: laneTokenFlag, repo: repoFlag, json: jsonFlag},
-	Effect.fn(function* ({issue, token, repo, json}) {
+	{ issue: issueArg, token: laneTokenFlag, repo: repoFlag, json: jsonFlag },
+	Effect.fn(function* ({ issue, token, repo, json }) {
 		yield* emit(
 			yield* runPark({
 				issue,
@@ -359,7 +359,7 @@ const park = leafCommand(
 			'  Derivation: the triage skill\'s contract.md, "triage park"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika triage park 4290 < questions.md"}]),
+	Command.withExamples([{ command: "fabrika triage park 4290 < questions.md" }]),
 );
 
 const claim = leafCommand(
@@ -375,7 +375,7 @@ const claim = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({issue, token, repo, json}) {
+	Effect.fn(function* ({ issue, token, repo, json }) {
 		yield* emit(
 			yield* runClaim({
 				issue,
@@ -400,7 +400,7 @@ const claim = leafCommand(
 			'  Derivation: the triage skill\'s contract.md, "triage claim"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika triage claim 4312"}]),
+	Command.withExamples([{ command: "fabrika triage claim 4312" }]),
 );
 
 const queue = leafCommand(
@@ -419,7 +419,7 @@ const queue = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({label, limit, repo, json}) {
+	Effect.fn(function* ({ label, limit, repo, json }) {
 		yield* emit(
 			yield* runQueue({
 				label,
@@ -444,7 +444,7 @@ const queue = leafCommand(
 			'  Derivation: the triage skill\'s contract.md, "triage queue"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika triage queue --limit 20"}]),
+	Command.withExamples([{ command: "fabrika triage queue --limit 20" }]),
 );
 
 const provenance = leafCommand(
@@ -454,9 +454,9 @@ const provenance = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({issue, repo, json}) {
+	Effect.fn(function* ({ issue, repo, json }) {
 		yield* emit(
-			yield* runProvenance({issue, repo: Option.getOrNull(repo), json, env: process.env}),
+			yield* runProvenance({ issue, repo: Option.getOrNull(repo), json, env: process.env }),
 		);
 	}),
 ).pipe(
@@ -470,7 +470,7 @@ const provenance = leafCommand(
 			'  Derivation: the triage skill\'s contract.md, "triage provenance"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika triage provenance 4312"}]),
+	Command.withExamples([{ command: "fabrika triage provenance 4312" }]),
 );
 
 const homes = leafCommand(
@@ -485,7 +485,7 @@ const homes = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({roadmap, repo, json}) {
+	Effect.fn(function* ({ roadmap, repo, json }) {
 		const named = Option.getOrNull(roadmap);
 		const declared = named === null ? yield* readRoadmapFile(process.cwd()) : null;
 		if (declared !== null && declared._tag === "Refused") {
@@ -527,7 +527,7 @@ const homes = leafCommand(
 			'  Derivation: the triage skill\'s contract.md, "triage homes"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika triage homes"}]),
+	Command.withExamples([{ command: "fabrika triage homes" }]),
 );
 
 /**
@@ -549,7 +549,7 @@ const enrich = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({issue, epic, token, repo, json}) {
+	Effect.fn(function* ({ issue, epic, token, repo, json }) {
 		yield* emit(
 			yield* runEnrich({
 				issue,
@@ -582,7 +582,7 @@ const enrich = leafCommand(
 			'  Derivation: the triage skill\'s contract.md, "triage enrich"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika triage enrich 4312 < enriched.md"}]),
+	Command.withExamples([{ command: "fabrika triage enrich 4312 < enriched.md" }]),
 );
 
 const repairCriteria = leafCommand(
@@ -607,7 +607,7 @@ const repairCriteria = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({issue, sweep, dryRun, repo, json}) {
+	Effect.fn(function* ({ issue, sweep, dryRun, repo, json }) {
 		yield* emit(
 			yield* runRepairCriteria({
 				issue: Option.getOrNull(issue),
@@ -634,8 +634,8 @@ const repairCriteria = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika triage repair-criteria 5726"},
-		{command: "fabrika triage repair-criteria --sweep --dry-run"},
+		{ command: "fabrika triage repair-criteria 5726" },
+		{ command: "fabrika triage repair-criteria --sweep --dry-run" },
 	]),
 );
 
@@ -653,7 +653,7 @@ const scratch = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({issue, slug, token, repo}) {
+	Effect.fn(function* ({ issue, slug, token, repo }) {
 		yield* emit(
 			yield* runScratch({
 				issue,
@@ -679,7 +679,7 @@ const scratch = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika triage scratch 4312 --slug authored --token triage:s-9f2e:c1a4d6f8-…"},
+		{ command: "fabrika triage scratch 4312 --slug authored --token triage:s-9f2e:c1a4d6f8-…" },
 	]),
 );
 
@@ -694,7 +694,7 @@ const auditSet = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({label, repo, json}) {
+	Effect.fn(function* ({ label, repo, json }) {
 		yield* emit(
 			yield* runAuditSet({
 				label,
@@ -717,7 +717,7 @@ const auditSet = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika triage audit-set --label status:triaged --json > set.json"},
+		{ command: "fabrika triage audit-set --label status:triaged --json > set.json" },
 	]),
 );
 
@@ -735,8 +735,8 @@ const auditMerge = leafCommand(
 		),
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({input, chunks, json}) {
-		yield* emit(yield* runAuditMerge({input, chunks, json}));
+	Effect.fn(function* ({ input, chunks, json }) {
+		yield* emit(yield* runAuditMerge({ input, chunks, json }));
 	}),
 ).pipe(
 	Command.withShortDescription("Merge a read-only audit's chunk results, checked against the set."),
@@ -755,7 +755,7 @@ const auditMerge = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika triage audit-merge --input set.json --chunk a.json --chunk b.json"},
+		{ command: "fabrika triage audit-merge --input set.json --chunk a.json --chunk b.json" },
 	]),
 );
 
@@ -781,7 +781,7 @@ const sweepHomes = leafCommand(
 		repo: repoFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({dryRun, apply, repo, json}) {
+	Effect.fn(function* ({ dryRun, apply, repo, json }) {
 		if (dryRun && apply) {
 			return yield* emit(
 				refuse(FAILED, "triage sweep-homes: pass --dry-run or --apply, not both."),
@@ -817,8 +817,8 @@ const sweepHomes = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika triage sweep-homes"},
-		{command: "fabrika triage sweep-homes --apply < citation.md"},
+		{ command: "fabrika triage sweep-homes" },
+		{ command: "fabrika triage sweep-homes --apply < citation.md" },
 	]),
 );
 

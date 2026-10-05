@@ -1,5 +1,5 @@
-import {Result} from "effect";
-import type {Counter, Measurement, UsageRecord} from "./usage-record.ts";
+import { Result } from "effect";
+import type { Counter, Measurement, UsageRecord } from "./usage-record.ts";
 
 export const object = (value: unknown): Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value)
@@ -8,7 +8,7 @@ export const object = (value: unknown): Record<string, unknown> =>
 export const id = (value: unknown): string | null =>
 	typeof value === "string" && value.trim() !== "" ? value : null;
 export const json = (text: string): unknown => {
-	const parsed = Result.try({try: (): unknown => JSON.parse(text), catch: () => null});
+	const parsed = Result.try({ try: (): unknown => JSON.parse(text), catch: () => null });
 	return Result.isSuccess(parsed) ? parsed.success : null;
 };
 export interface CodexWork {
@@ -67,7 +67,7 @@ export class CodexSessionReader {
 		this.#line(this.#pending);
 		this.#pending = "";
 		if (!this.#header) return null;
-		return {...this.#header, rows: this.#rows, malformed: this.#malformed};
+		return { ...this.#header, rows: this.#rows, malformed: this.#malformed };
 	}
 	#line(line: string): void {
 		if (line.trim() === "" || this.#header === null) return;
@@ -87,12 +87,12 @@ export const readCodexSession = (text: string): NativeSession | null => {
 const definitions: ReadonlyArray<
 	readonly [string, (typeof Counter.Type)["category"], (typeof Counter.Type)["meaning"]]
 > = [
-	["input_tokens", "input", {kind: "additive"}],
-	["cached_input_tokens", "cacheRead", {kind: "subset", of: "input_tokens"}],
-	["cache_write_input_tokens", "cacheWrite", {kind: "unknown"}],
-	["output_tokens", "output", {kind: "additive"}],
-	["reasoning_output_tokens", "reasoning", {kind: "subset", of: "output_tokens"}],
-	["total_tokens", "total", {kind: "aggregate", of: ["input_tokens", "output_tokens"]}],
+	["input_tokens", "input", { kind: "additive" }],
+	["cached_input_tokens", "cacheRead", { kind: "subset", of: "input_tokens" }],
+	["cache_write_input_tokens", "cacheWrite", { kind: "unknown" }],
+	["output_tokens", "output", { kind: "additive" }],
+	["reasoning_output_tokens", "reasoning", { kind: "subset", of: "output_tokens" }],
+	["total_tokens", "total", { kind: "aggregate", of: ["input_tokens", "output_tokens"] }],
 ];
 const counters = (value: unknown): ReadonlyArray<typeof Counter.Type> | null => {
 	const fields = object(value);
@@ -104,23 +104,23 @@ const counters = (value: unknown): ReadonlyArray<typeof Counter.Type> | null => 
 		meaning,
 		value:
 			typeof fields[field] === "number"
-				? {state: "measured", tokens: fields[field]}
-				: {state: "absent"},
+				? { state: "measured", tokens: fields[field] }
+				: { state: "absent" },
 	}));
 	for (const [field, tokens] of Object.entries(fields)) {
 		if (!definitions.some(([known]) => known === field))
 			result.push({
 				field,
 				category: "other",
-				meaning: {kind: "unknown"},
-				value: {state: "measured", tokens: tokens as number},
+				meaning: { kind: "unknown" },
+				value: { state: "measured", tokens: tokens as number },
 			});
 	}
 	result.push({
 		field: "cached_output_tokens",
 		category: "cachedOutput",
-		meaning: {kind: "unknown"},
-		value: {state: "unsupported"},
+		meaning: { kind: "unknown" },
+		value: { state: "unsupported" },
 	});
 	return result;
 };
@@ -133,13 +133,14 @@ export const codexCommon = (
 	work: CodexWork,
 ) => ({
 	v: 2 as const,
-	source: {host: "codex", format: "token_usage_record", version},
-	work: {...work, attempt: thread},
+	source: { host: "codex", format: "token_usage_record", version },
+	work: { ...work, attempt: thread },
 	agent: {
 		session: thread,
 		nativeSession: root,
 		rootSession: root,
-		parent: parent === null ? {kind: "root" as const} : {kind: "known" as const, session: parent},
+		parent:
+			parent === null ? { kind: "root" as const } : { kind: "known" as const, session: parent },
 	},
 });
 
@@ -176,9 +177,9 @@ export const codexRecords = (
 			continue;
 		}
 		for (const [field, basis] of [
-			["usage", {kind: "response"}],
-			["turn_token_usage", {kind: "cumulative", snapshot: response, scope: "turn"}],
-			["thread_token_usage", {kind: "cumulative", snapshot: response, scope: "session"}],
+			["usage", { kind: "response" }],
+			["turn_token_usage", { kind: "cumulative", snapshot: response, scope: "turn" }],
+			["thread_token_usage", { kind: "cumulative", snapshot: response, scope: "session" }],
 		] as const) {
 			const counts = counters(payload[field]);
 			if (!counts || Object.keys(object(payload[field])).length === 0) {
@@ -187,7 +188,7 @@ export const codexRecords = (
 			}
 			const record: typeof Measurement.Type = {
 				...common,
-				agent: {...common.agent, nativeSession: nativeRoot},
+				agent: { ...common.agent, nativeSession: nativeRoot },
 				kind: "measurement",
 				recordId: JSON.stringify([session.thread, turn, response, field]),
 				response,
@@ -204,5 +205,5 @@ export const codexRecords = (
 	}
 	if (!records.some((row) => row.kind === "measurement"))
 		notices.push(`No supported response records for ${session.thread}; coverage is incomplete.`);
-	return {records, notices};
+	return { records, notices };
 };

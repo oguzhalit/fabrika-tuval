@@ -5,11 +5,11 @@
  * The marker tag is assembled at runtime (`TAG`) rather than written contiguously, so this file —
  * itself a `*.test.ts` the real-tree scan reads — never contributes a stray pin marker of its own.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFsOptions, fakeFs} from "../fakes.test-support.ts";
-import {PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE} from "./codes.ts";
-import {runPatchGuard} from "./patch-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFsOptions, fakeFs } from "../fakes.test-support.ts";
+import { PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE } from "./codes.ts";
+import { runPatchGuard } from "./patch-verb.ts";
 
 const TAG = ["@patch", "pin:"].join("-");
 
@@ -27,7 +27,7 @@ const pinned = (key: string): string => `// ${TAG} ${key}\nimport {expect} from 
 
 /** Every directory implied by the file paths, so the fake can answer `readDirectory` for the walk. */
 const dirsOf = (files: Readonly<Record<string, string>>): Record<string, Array<string>> => {
-	const dirs: Record<string, Array<string>> = {[ROOT]: []};
+	const dirs: Record<string, Array<string>> = { [ROOT]: [] };
 	for (const path of Object.keys(files)) {
 		const segments = path.slice(`${ROOT}/`.length).split("/");
 		let dir = ROOT;
@@ -46,14 +46,14 @@ const repo = (
 	pins: Readonly<Record<string, string>> = {},
 	extra: Partial<FakeFsOptions> = {},
 ): FakeFsOptions => {
-	const files: Record<string, string> = {[WORKSPACE]: workspace(patches)};
+	const files: Record<string, string> = { [WORKSPACE]: workspace(patches) };
 	for (const [relative, key] of Object.entries(pins)) files[`${ROOT}/${relative}`] = pinned(key);
-	return {files, dirs: dirsOf(files), ...extra};
+	return { files, dirs: dirsOf(files), ...extra };
 };
 
 const run = (options: FakeFsOptions, env: Record<string, string | undefined> = {}) =>
 	Effect.runPromise(
-		Effect.provide(runPatchGuard({root: ROOT, cwd: ROOT, env}), fakeFs(options).layer),
+		Effect.provide(runPatchGuard({ root: ROOT, cwd: ROOT, env }), fakeFs(options).layer),
 	);
 
 const ALL_PINNED = {
@@ -88,8 +88,8 @@ describe("runPatchGuard", () => {
 		const outcome = await run(
 			repo(
 				[THREE[1]],
-				{"linked/pinned.test.ts": THREE[1]},
-				{real: {[`${ROOT}/linked`]: "/outside"}},
+				{ "linked/pinned.test.ts": THREE[1] },
+				{ real: { [`${ROOT}/linked`]: "/outside" } },
 			),
 		);
 		expect(outcome.code).toBe(VIOLATION);
@@ -99,8 +99,8 @@ describe("runPatchGuard", () => {
 		const outcome = await run(
 			repo(
 				[THREE[1]],
-				{"apps/site/tests/linked.test.ts": THREE[1]},
-				{real: {[`${ROOT}/apps/site/tests/linked.test.ts`]: "/outside/pinned.test.ts"}},
+				{ "apps/site/tests/linked.test.ts": THREE[1] },
+				{ real: { [`${ROOT}/apps/site/tests/linked.test.ts`]: "/outside/pinned.test.ts" } },
 			),
 		);
 		expect(outcome.code).toBe(0);
@@ -112,7 +112,7 @@ describe("runPatchGuard", () => {
 				"apps/site/src/fate/nkzw.test.ts": THREE[0],
 				"apps/site/tests/integration/flagship.test.ts": THREE[1],
 			}),
-			{GITHUB_ACTIONS: "true"},
+			{ GITHUB_ACTIONS: "true" },
 		);
 		expect(outcome.code).toBe(VIOLATION);
 		expect(outcome.stdout).toBe("");
@@ -128,7 +128,7 @@ describe("runPatchGuard", () => {
 				"apps/site/tests/integration/flagship.test.ts": THREE[1],
 				"apps/site/tests/integration/stale.test.ts": "alchemy@2.0.0-beta.1",
 			}),
-			{GITHUB_ACTIONS: "true"},
+			{ GITHUB_ACTIONS: "true" },
 		);
 		expect(outcome.code).toBe(VIOLATION);
 		expect(
@@ -140,19 +140,19 @@ describe("runPatchGuard", () => {
 
 	// The fail-closed floor: nothing in scope cannot report clean.
 	it("fails closed when patchedDependencies is empty", async () => {
-		const outcome = await run(repo([], {"apps/site/tests/orphan.test.ts": THREE[1]}));
+		const outcome = await run(repo([], { "apps/site/tests/orphan.test.ts": THREE[1] }));
 		expect(outcome.code).toBe(ZERO_SCOPE);
 		expect(outcome.stderr.join("\n")).toContain("ZERO patchedDependencies");
 	});
 
 	it("fails closed when the workspace file is absent", async () => {
-		const outcome = await run({files: {}, dirs: {[ROOT]: []}});
+		const outcome = await run({ files: {}, dirs: { [ROOT]: [] } });
 		expect(outcome.code).toBe(ZERO_SCOPE);
 		expect(outcome.stderr.join("\n")).toContain("does not exist");
 	});
 
 	it("answers UNKNOWN when the workspace file cannot be read", async () => {
-		const outcome = await run({...repo(THREE, ALL_PINNED), unreadable: [WORKSPACE]});
+		const outcome = await run({ ...repo(THREE, ALL_PINNED), unreadable: [WORKSPACE] });
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stdout).toBe("");
 		expect(outcome.stderr.join("\n")).toContain("UNKNOWN");
@@ -170,8 +170,8 @@ describe("runPatchGuard", () => {
 	it("answers UNKNOWN when no repo root sits above the cwd", async () => {
 		const outcome = await Effect.runPromise(
 			Effect.provide(
-				runPatchGuard({root: null, cwd: "/nowhere", env: {}}),
-				fakeFs({files: {}}).layer,
+				runPatchGuard({ root: null, cwd: "/nowhere", env: {} }),
+				fakeFs({ files: {} }).layer,
 			),
 		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);

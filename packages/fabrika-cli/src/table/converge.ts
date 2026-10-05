@@ -7,12 +7,12 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10302
  */
 
-import {Effect} from "effect";
-import type {ProjectSnapshot, ProjectsAnswer} from "../io/projects.ts";
-import {describePrepWrite, type PrepWrite} from "./agenda.ts";
-import {READBACK_MISMATCH, SCOPE_MISSING, WRITE_UNKNOWN} from "./codes.ts";
-import type {Row} from "./sync.ts";
-import {type Refusal, rowsOf, type SyncBoard} from "./sync-verb.ts";
+import { Effect } from "effect";
+import type { ProjectSnapshot, ProjectsAnswer } from "../io/projects.ts";
+import { describePrepWrite, type PrepWrite } from "./agenda.ts";
+import { READBACK_MISMATCH, SCOPE_MISSING, WRITE_UNKNOWN } from "./codes.ts";
+import type { Row } from "./sync.ts";
+import { type Refusal, rowsOf, type SyncBoard } from "./sync-verb.ts";
 
 /** The board acts a converge takes: the rows, and the four writes a plan holds. */
 export interface ConvergeBoard<R> extends Pick<SyncBoard<R>, "items" | "add" | "set" | "clear"> {
@@ -22,11 +22,11 @@ export interface ConvergeBoard<R> extends Pick<SyncBoard<R>, "items" | "add" | "
 	) => Effect.Effect<ProjectsAnswer<string>, never, R>;
 }
 
-const refused = (code: number, reason: string): Refusal => ({_tag: "Refused", code, reason});
+const refused = (code: number, reason: string): Refusal => ({ _tag: "Refused", code, reason });
 
 export const stopOnWrite = (
 	verb: string,
-	failed: Exclude<ProjectsAnswer<unknown>, {_tag: "Ok"}>,
+	failed: Exclude<ProjectsAnswer<unknown>, { _tag: "Ok" }>,
 	onFailure: number,
 	what: string,
 ): Refusal =>
@@ -52,7 +52,7 @@ const applyAll = <R>(
 					break;
 				case "Set":
 					done = yield* board.set(
-						{projectId: project.id, itemId: write.itemId, fieldId: write.fieldId},
+						{ projectId: project.id, itemId: write.itemId, fieldId: write.fieldId },
 						write.value,
 					);
 					break;
@@ -81,7 +81,7 @@ const applyAll = <R>(
 		return null;
 	});
 
-export type Converged = {readonly _tag: "Converged"; readonly changes: ReadonlyArray<string>};
+export type Converged = { readonly _tag: "Converged"; readonly changes: ReadonlyArray<string> };
 
 /** Apply `plan` until the rows read in step. `where` names the board in what the run reports. */
 export const converge = <R>(
@@ -99,7 +99,7 @@ export const converge = <R>(
 		const readRows = Effect.map(
 			board.items(project.id),
 			(items): ProjectsAnswer<ReadonlyMap<number, Row>> =>
-				items._tag === "Ok" ? {_tag: "Ok", value: rowsOf(items.value, repo)} : items,
+				items._tag === "Ok" ? { _tag: "Ok", value: rowsOf(items.value, repo) } : items,
 		);
 
 		const adds = plan(first).filter((write) => write._tag === "Add");
@@ -148,5 +148,5 @@ export const converge = <R>(
 				);
 			}
 		}
-		return {_tag: "Converged", changes: landed};
+		return { _tag: "Converged", changes: landed };
 	});

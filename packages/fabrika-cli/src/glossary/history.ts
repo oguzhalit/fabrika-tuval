@@ -7,10 +7,10 @@
  * Every read here returns an {@link Attempt}, and an empty answer where a commit was expected is a
  * `Failure`, never a fact.
  */
-import {Effect} from "effect";
-import {execCapture} from "../io/exec.ts";
-import {type Attempt, fail, ok, type Shell} from "../io/git.ts";
-import type {CommitText} from "./candidates.ts";
+import { Effect } from "effect";
+import { execCapture } from "../io/exec.ts";
+import { type Attempt, fail, ok, type Shell } from "../io/git.ts";
+import type { CommitText } from "./candidates.ts";
 
 /** Field and record separators git will not find inside a subject or a body. */
 const FIELD = "\u001f";
@@ -35,7 +35,7 @@ export const lastCommitTouching = (path: string): Shell<Attempt<CommitStamp>> =>
 		const [sha, when] = run.stdout.trim().split(" ");
 		return sha === undefined || sha === ""
 			? fail("git named no commit touching it")
-			: ok({sha, when: Number.parseInt(when ?? "0", 10)});
+			: ok({ sha, when: Number.parseInt(when ?? "0", 10) });
 	});
 
 /** The tracked files `paths` matches. Zero matches is an answer the caller reds on. */
@@ -70,7 +70,7 @@ export const commitsSince = (
 		for (const record of run.stdout.split(RECORD)) {
 			const [sha, subject, body] = record.replace(/^\s+/, "").split(FIELD);
 			if (sha === undefined || sha.trim() === "") continue;
-			commits.push({sha: sha.trim(), subject: subject ?? "", body: body ?? ""});
+			commits.push({ sha: sha.trim(), subject: subject ?? "", body: body ?? "" });
 		}
 		return ok(commits);
 	});

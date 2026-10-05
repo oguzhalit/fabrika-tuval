@@ -17,8 +17,8 @@
  *
  * Reads refs and objects only, never a board: a re-cut is opened by what git can prove.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	diffRange,
 	diffRangePaths,
@@ -38,12 +38,12 @@ import {
  * caller refuses on it.
  */
 export type Containment =
-	| {readonly _tag: "Ancestor"}
-	| {readonly _tag: "Squashed"; readonly commit: string}
+	| { readonly _tag: "Ancestor" }
+	| { readonly _tag: "Squashed"; readonly commit: string }
 	/** The commit diverges from the trunk and adds no content to it — nothing here is only here. */
-	| {readonly _tag: "NoChange"}
-	| {readonly _tag: "Unlanded"}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "NoChange" }
+	| { readonly _tag: "Unlanded" }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /**
  * How far back along the trunk a squash is looked for.
@@ -64,14 +64,17 @@ export const containmentOf = (
 	trunk: string,
 ): Effect.Effect<Containment, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		if (head === "") return {_tag: "Unknown" as const, reason: "no HEAD commit was named"};
-		if (yield* isAncestor(head, trunk)) return {_tag: "Ancestor" as const};
+		if (head === "") return { _tag: "Unknown" as const, reason: "no HEAD commit was named" };
+		if (yield* isAncestor(head, trunk)) return { _tag: "Ancestor" as const };
 
 		const diff = yield* diffRange(trunk, head);
 		if (diff._tag === "Failure") {
-			return {_tag: "Unknown" as const, reason: `cannot diff it against ${trunk}: ${diff.reason}`};
+			return {
+				_tag: "Unknown" as const,
+				reason: `cannot diff it against ${trunk}: ${diff.reason}`,
+			};
 		}
-		if (diff.value.trim() === "") return {_tag: "NoChange" as const};
+		if (diff.value.trim() === "") return { _tag: "NoChange" as const };
 
 		const own = yield* patchIdsOf(diff.value);
 		const mine = own._tag === "Ok" ? own.value[0] : undefined;
@@ -105,6 +108,6 @@ export const containmentOf = (
 		}
 		const match = landed.value.find((row) => row.patch === mine.patch);
 		return match === undefined
-			? {_tag: "Unlanded" as const}
-			: {_tag: "Squashed" as const, commit: match.commit};
+			? { _tag: "Unlanded" as const }
+			: { _tag: "Squashed" as const, commit: match.commit };
 	});

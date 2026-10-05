@@ -17,14 +17,14 @@
  * zero issue, because those types have no such inhabitant.
  */
 
-import type {NonEmptyReadonlyArray} from "./format.ts";
-import {FIELD_SEPARATOR} from "./grill-marker.ts";
+import type { NonEmptyReadonlyArray } from "./format.ts";
+import { FIELD_SEPARATOR } from "./grill-marker.ts";
 
 declare const MARKED_ISSUE: unique symbol;
 declare const SCOPE_DIGEST: unique symbol;
 
 /** The issue a marker names: a positive integer. No other inhabitant exists. */
-export type MarkedIssue = number & {readonly [MARKED_ISSUE]: true};
+export type MarkedIssue = number & { readonly [MARKED_ISSUE]: true };
 
 /**
  * The digest a marker binds: exactly 12 lowercase hex.
@@ -33,7 +33,7 @@ export type MarkedIssue = number & {readonly [MARKED_ISSUE]: true};
  * width, so a shorter-or-longer one is a drift and reads `Malformed` — never a value to compare
  * loosely, because a loose compare is a marker that survives the thing it bound being rewritten.
  */
-export type ScopeDigest = string & {readonly [SCOPE_DIGEST]: true};
+export type ScopeDigest = string & { readonly [SCOPE_DIGEST]: true };
 
 /** The token between the issue and the digest, matching the `grill` markers' own binding word. */
 export const BINDS = "@";
@@ -83,7 +83,7 @@ export const parseIssueBinding = (payload: string, noun: string): IssueBinding |
 	if (digest === null) {
 		return `"${digestToken}" is not a scope digest — expected 12 lowercase hex`;
 	}
-	return {issue, digest, rest: afterSeparator.join(FIELD_SEPARATOR)};
+	return { issue, digest, rest: afterSeparator.join(FIELD_SEPARATOR) };
 };
 
 /** Compose a marker's first line: the binding, then this format's tail fields, separator-joined. */
@@ -99,8 +99,8 @@ export const emitIssueMarker = (
 const FIELD_LINE = /^([A-Za-z-]+)[ \t]*[:\t][ \t]*(.*)$/;
 
 export type FieldLines<K extends string> =
-	| {readonly _tag: "Lines"; readonly seen: ReadonlyMap<K, string>}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Lines"; readonly seen: ReadonlyMap<K, string> }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 /**
  * Parse `wire emit`'s stdin into a field map over `keys`, in any order.
@@ -133,7 +133,7 @@ export const parseFieldLines = <K extends string>(
 		}
 		seen.set(key as K, matched[2] ?? "");
 	}
-	return {_tag: "Lines", seen};
+	return { _tag: "Lines", seen };
 };
 
 /** An issue number off a field line, with or without its `#`. */

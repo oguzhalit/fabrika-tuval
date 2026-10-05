@@ -20,23 +20,23 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10357
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {boardsKey} from "../config/keys/boards.ts";
-import {type ChatTool, type DigestSettings, digestKey} from "../config/keys/digest.ts";
-import {tableKey} from "../config/keys/table.ts";
-import {readKey} from "../config/read-key.ts";
-import type {Attempt} from "../io/git.ts";
-import {type ListedIssue, listOpenIssueFacts, resolveRepo} from "../io/issues.ts";
-import {withProjects} from "../io/projects.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {dueChecks} from "./check.ts";
-import {CONFIG_MALFORMED, NO_WEBHOOK, PRECONDITION_UNKNOWN, WRITE_UNKNOWN} from "./codes.ts";
-import {digestOf, lateCount, type OnCallQueue, renderDigest} from "./digest.ts";
-import {postWebhook} from "./digest-post.ts";
-import {readHeadRows} from "./flags-read.ts";
-import {onCallIssuesOf, onCallItemsOf, readOnCall} from "./on-call-prep.ts";
-import {githubWave, locateTable, syncBoard, type TableBoard} from "./sync-verb.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { boardsKey } from "../config/keys/boards.ts";
+import { type ChatTool, type DigestSettings, digestKey } from "../config/keys/digest.ts";
+import { tableKey } from "../config/keys/table.ts";
+import { readKey } from "../config/read-key.ts";
+import type { Attempt } from "../io/git.ts";
+import { type ListedIssue, listOpenIssueFacts, resolveRepo } from "../io/issues.ts";
+import { withProjects } from "../io/projects.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { dueChecks } from "./check.ts";
+import { CONFIG_MALFORMED, NO_WEBHOOK, PRECONDITION_UNKNOWN, WRITE_UNKNOWN } from "./codes.ts";
+import { digestOf, lateCount, type OnCallQueue, renderDigest } from "./digest.ts";
+import { postWebhook } from "./digest-post.ts";
+import { readHeadRows } from "./flags-read.ts";
+import { onCallIssuesOf, onCallItemsOf, readOnCall } from "./on-call-prep.ts";
+import { githubWave, locateTable, syncBoard, type TableBoard } from "./sync-verb.ts";
 
 const VERB = "table digest";
 
@@ -58,8 +58,8 @@ export interface DigestOptions<R> {
 }
 
 type Webhook =
-	| {readonly _tag: "Url"; readonly url: URL; readonly raw: string}
-	| {readonly _tag: "None"; readonly reason: string};
+	| { readonly _tag: "Url"; readonly url: URL; readonly raw: string }
+	| { readonly _tag: "None"; readonly reason: string };
 
 /** The webhook URL off the variable the block names, or what is wrong with it, never its value. */
 const webhookOf = (
@@ -68,12 +68,12 @@ const webhookOf = (
 ): Webhook => {
 	const raw = (env[settings.webhookEnv] ?? "").trim();
 	const variable = `the environment variable ${settings.webhookEnv}, named by \`digest.webhookEnv\`,`;
-	if (raw === "") return {_tag: "None", reason: `${variable} is unset or empty`};
-	if (!URL.canParse(raw)) return {_tag: "None", reason: `${variable} does not hold a URL`};
+	if (raw === "") return { _tag: "None", reason: `${variable} is unset or empty` };
+	if (!URL.canParse(raw)) return { _tag: "None", reason: `${variable} does not hold a URL` };
 	const url = new URL(raw);
 	return url.protocol === "https:" || url.protocol === "http:"
-		? {_tag: "Url", url, raw}
-		: {_tag: "None", reason: `${variable} does not hold an http(s) URL`};
+		? { _tag: "Url", url, raw }
+		: { _tag: "None", reason: `${variable} does not hold an http(s) URL` };
 };
 
 const ON_CALL_FIX =
@@ -92,7 +92,7 @@ export const runDigest = <R>(
 			return refuse(CONFIG_MALFORMED, `${VERB}: ${digest.reason}. Nothing was read from GitHub.`);
 		}
 		if (digest.value._tag === "Off") {
-			return answer(`${JSON.stringify({answer: "off"})}\n`, [
+			return answer(`${JSON.stringify({ answer: "off" })}\n`, [
 				`${VERB}: read ${digest.note}; the report is off. Nothing was read from GitHub and nothing was sent.`,
 			]);
 		}
@@ -122,7 +122,7 @@ export const runDigest = <R>(
 			);
 		}
 		const repo = resolved.value;
-		const {board} = options;
+		const { board } = options;
 		const listing = yield* board.openIssues(repo);
 		if (listing._tag === "Failure") {
 			return refuse(
@@ -147,7 +147,7 @@ export const runDigest = <R>(
 				};
 			}
 		}
-		const report = digestOf({now: options.now, open: listing.value, settings, onCall});
+		const report = digestOf({ now: options.now, open: listing.value, settings, onCall });
 		const late = lateCount(report);
 		const notes = [
 			`${VERB}: read ${digest.note}; ${boards.note}.`,
@@ -163,12 +163,12 @@ export const runDigest = <R>(
 			late,
 			sections: report.sections.map((section) => ({
 				section: section.section,
-				late: section.late.map(({title: _title, ...fields}) => fields),
+				late: section.late.map(({ title: _title, ...fields }) => fields),
 			})),
 			notAsked: report.notAsked,
 		};
 		if (late === 0 && !settings.allClear) {
-			return answer(`${JSON.stringify({answer: "quiet", ...facts, text: null})}\n`, [
+			return answer(`${JSON.stringify({ answer: "quiet", ...facts, text: null })}\n`, [
 				...notes,
 				`${VERB}: nothing to report and \`digest.allClear\` is off, so nothing was sent.`,
 			]);
@@ -179,7 +179,7 @@ export const runDigest = <R>(
 			tool: settings.tool,
 		});
 		if (webhook === null) {
-			return answer(`${JSON.stringify({answer: "dry-run", ...facts, text})}\n`, [
+			return answer(`${JSON.stringify({ answer: "dry-run", ...facts, text })}\n`, [
 				...notes,
 				`${VERB}: --dry-run, so nothing was sent.`,
 			]);
@@ -194,7 +194,7 @@ export const runDigest = <R>(
 				`${VERB}: the post to the ${settings.tool} webhook did not land: ${reason}. The report was built and not delivered.`,
 			);
 		}
-		return answer(`${JSON.stringify({answer: "sent", ...facts, text})}\n`, [
+		return answer(`${JSON.stringify({ answer: "sent", ...facts, text })}\n`, [
 			...notes,
 			`${VERB}: posted to the ${settings.tool} webhook.`,
 		]);

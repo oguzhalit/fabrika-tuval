@@ -1,9 +1,9 @@
-import {describe, expect, it} from "vitest";
-import {type RollupRun, rollupOf, statusOf} from "./rollup.ts";
+import { describe, expect, it } from "vitest";
+import { type RollupRun, rollupOf, statusOf } from "./rollup.ts";
 
-const done = (conclusion: string): RollupRun => ({status: "completed", conclusion});
-const running = (status = "in_progress"): RollupRun => ({status, conclusion: null});
-const concludedWithout: RollupRun = {status: "completed", conclusion: null};
+const done = (conclusion: string): RollupRun => ({ status: "completed", conclusion });
+const running = (status = "in_progress"): RollupRun => ({ status, conclusion: null });
+const concludedWithout: RollupRun = { status: "completed", conclusion: null };
 
 describe("rollupOf", () => {
 	it("is green only when every run completed and each concluded non-blocking", () => {

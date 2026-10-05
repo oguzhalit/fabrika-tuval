@@ -16,11 +16,11 @@
  * the empty string.
  */
 
-import {Effect} from "effect";
-import {getIssue, listComments} from "../io/issues.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {newestCapture} from "./bodies.ts";
-import {READ_OR_EXEC_UNKNOWN} from "./codes.ts";
+import { Effect } from "effect";
+import { getIssue, listComments } from "../io/issues.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { newestCapture } from "./bodies.ts";
+import { READ_OR_EXEC_UNKNOWN } from "./codes.ts";
 import {
 	nonceGrammar,
 	probe,
@@ -30,7 +30,7 @@ import {
 	type SpikeEffect,
 	targetRepo,
 } from "./guards.ts";
-import {workspacePath} from "./workspace.ts";
+import { workspacePath } from "./workspace.ts";
 
 export interface StatusOptions {
 	readonly nonce: string;
@@ -64,7 +64,7 @@ export const runStatus = (options: StatusOptions): SpikeEffect<VerbOutcome> =>
 		if (present._tag === "Refused") return present.outcome;
 		const scope = `${VERB}: nonce ${options.nonce}, workspace ${present.value ? "present" : "absent"}.`;
 		if (!present.value) {
-			return answer(JSON.stringify({nonce: options.nonce, ...ABSENT_FIELDS}), [scope]);
+			return answer(JSON.stringify({ nonce: options.nonce, ...ABSENT_FIELDS }), [scope]);
 		}
 
 		const manifest = yield* readManifest(
@@ -109,8 +109,8 @@ interface SpikeState {
 }
 
 type Resolved =
-	| {readonly _tag: "Ok"; readonly value: SpikeState}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Ok"; readonly value: SpikeState }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * The issue half of the answer.
@@ -134,7 +134,7 @@ const spikeState = (spike: number | null, options: StatusOptions): SpikeEffect<R
 			};
 		}
 		const target = yield* targetRepo(VERB, options.repo, options.env);
-		if (target._tag === "Refused") return {_tag: "Refused" as const, outcome: target.outcome};
+		if (target._tag === "Refused") return { _tag: "Refused" as const, outcome: target.outcome };
 		const repo = target.value;
 
 		const issue = yield* getIssue(repo, spike);

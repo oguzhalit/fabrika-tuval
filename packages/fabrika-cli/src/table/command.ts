@@ -5,17 +5,17 @@
  * `leafCommand`, never a bare `Command.make`, so the excess-operand guard covers it.
  */
 
-import {Effect, Option} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {digestBoard, runDigest} from "./digest-verb.ts";
-import {flagsBoard, runFlags} from "./flags-verb.ts";
-import {migrateBoard, runMigrate} from "./migrate-verb.ts";
-import {prepBoard, runPrep} from "./prep-verb.ts";
-import {routeBoard, runRoute} from "./route-verb.ts";
-import {runSetup} from "./setup-verb.ts";
-import {runSync, syncBoard} from "./sync-verb.ts";
+import { Effect, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { digestBoard, runDigest } from "./digest-verb.ts";
+import { flagsBoard, runFlags } from "./flags-verb.ts";
+import { migrateBoard, runMigrate } from "./migrate-verb.ts";
+import { prepBoard, runPrep } from "./prep-verb.ts";
+import { routeBoard, runRoute } from "./route-verb.ts";
+import { runSetup } from "./setup-verb.ts";
+import { runSync, syncBoard } from "./sync-verb.ts";
 
 /** A leaf's help in the leaf help rule's shape, ending on the pointer to its contract section. */
 const tableHelp = (verb: string, lines: ReadonlyArray<string>): string =>
@@ -31,7 +31,7 @@ const setup = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({repo}) {
+	Effect.fn(function* ({ repo }) {
 		yield* emit(
 			yield* runSetup({
 				repo: Option.getOrNull(repo),
@@ -55,7 +55,7 @@ const setup = leafCommand(
 			"  22: two open projects carry the table's title",
 		]),
 	),
-	Command.withExamples([{command: "fabrika table setup"}]),
+	Command.withExamples([{ command: "fabrika table setup" }]),
 );
 
 const repoFlag = Flag.string("repo").pipe(
@@ -82,7 +82,7 @@ const sync = leafCommand(
 		repo: repoFlag,
 		dryRun: dryRunFlag,
 	},
-	Effect.fn(function* ({issues, repo, dryRun}) {
+	Effect.fn(function* ({ issues, repo, dryRun }) {
 		yield* emit(
 			yield* runSync({
 				repo: Option.getOrNull(repo),
@@ -111,8 +111,8 @@ const sync = leafCommand(
 		]),
 	),
 	Command.withExamples([
-		{command: "fabrika table sync 9856"},
-		{command: "fabrika table sync --dry-run"},
+		{ command: "fabrika table sync 9856" },
+		{ command: "fabrika table sync --dry-run" },
 	]),
 );
 
@@ -127,7 +127,7 @@ const flags = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({issues, repo}) {
+	Effect.fn(function* ({ issues, repo }) {
 		yield* emit(
 			yield* runFlags({
 				repo: Option.getOrNull(repo),
@@ -152,13 +152,13 @@ const flags = leafCommand(
 			"  24: a lane record does not read",
 		]),
 	),
-	Command.withExamples([{command: "fabrika table flags"}]),
+	Command.withExamples([{ command: "fabrika table flags" }]),
 );
 
 const prep = leafCommand(
 	"prep",
-	{repo: repoFlag, dryRun: dryRunFlag},
-	Effect.fn(function* ({repo, dryRun}) {
+	{ repo: repoFlag, dryRun: dryRunFlag },
+	Effect.fn(function* ({ repo, dryRun }) {
 		yield* emit(
 			yield* runPrep({
 				repo: Option.getOrNull(repo),
@@ -189,15 +189,15 @@ const prep = leafCommand(
 		]),
 	),
 	Command.withExamples([
-		{command: "fabrika table prep --dry-run"},
-		{command: "fabrika table prep"},
+		{ command: "fabrika table prep --dry-run" },
+		{ command: "fabrika table prep" },
 	]),
 );
 
 const route = leafCommand(
 	"route",
-	{repo: repoFlag, dryRun: dryRunFlag},
-	Effect.fn(function* ({repo, dryRun}) {
+	{ repo: repoFlag, dryRun: dryRunFlag },
+	Effect.fn(function* ({ repo, dryRun }) {
 		yield* emit(
 			yield* runRoute({
 				repo: Option.getOrNull(repo),
@@ -226,15 +226,15 @@ const route = leafCommand(
 		]),
 	),
 	Command.withExamples([
-		{command: "fabrika table route --dry-run"},
-		{command: "fabrika table route"},
+		{ command: "fabrika table route --dry-run" },
+		{ command: "fabrika table route" },
 	]),
 );
 
 const migrateWeek = leafCommand(
 	"migrate-week",
-	{repo: repoFlag},
-	Effect.fn(function* ({repo}) {
+	{ repo: repoFlag },
+	Effect.fn(function* ({ repo }) {
 		yield* emit(
 			yield* runMigrate({
 				repo: Option.getOrNull(repo),
@@ -259,7 +259,7 @@ const migrateWeek = leafCommand(
 			"  23: no Table day field; run table setup",
 		]),
 	),
-	Command.withExamples([{command: "fabrika table migrate-week"}]),
+	Command.withExamples([{ command: "fabrika table migrate-week" }]),
 );
 
 const digest = leafCommand(
@@ -273,7 +273,7 @@ const digest = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({repo, dryRun}) {
+	Effect.fn(function* ({ repo, dryRun }) {
 		yield* emit(
 			yield* runDigest({
 				repo: Option.getOrNull(repo),
@@ -300,8 +300,8 @@ const digest = leafCommand(
 		]),
 	),
 	Command.withExamples([
-		{command: "fabrika table digest --dry-run"},
-		{command: "fabrika table digest"},
+		{ command: "fabrika table digest --dry-run" },
+		{ command: "fabrika table digest" },
 	]),
 );
 

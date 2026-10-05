@@ -12,10 +12,10 @@
  * or it loaded. An absent `events.jsonl` alone is NOT one of them — a lane with no events yet is a
  * well-formed fresh lane, not a fault.
  */
-import {Effect, type FileSystem, Path, Result} from "effect";
-import {exists, isDirectory, type ReadFailed, readDir, readFile, writeFile} from "../io/fs.ts";
-import {type LogEntry, parseLog} from "./fold.ts";
-import {type CompiledLane, compileText} from "./machine.ts";
+import { Effect, type FileSystem, Path, Result } from "effect";
+import { exists, isDirectory, type ReadFailed, readDir, readFile, writeFile } from "../io/fs.ts";
+import { type LogEntry, parseLog } from "./fold.ts";
+import { type CompiledLane, compileText } from "./machine.ts";
 
 /**
  * The lanes root leaf — `.fabrika/lanes` — and its chore sibling. Relative leaves, joined onto the
@@ -83,9 +83,9 @@ export type LoadedLane =
 			readonly dir: string;
 			readonly logPath: string;
 	  }
-	| {readonly _tag: "Absent"; readonly dir: string}
-	| {readonly _tag: "Unreadable"; readonly path: string; readonly reason: string}
-	| {readonly _tag: "Malformed"; readonly path: string; readonly defects: ReadonlyArray<string>};
+	| { readonly _tag: "Absent"; readonly dir: string }
+	| { readonly _tag: "Unreadable"; readonly path: string; readonly reason: string }
+	| { readonly _tag: "Malformed"; readonly path: string; readonly defects: ReadonlyArray<string> };
 
 /**
  * Read and compile one lane. Every outcome is proven; nothing resolves to a plausible default.
@@ -118,32 +118,32 @@ export const loadLane = (
 					reason: workflowText.failure.reason,
 				} as const;
 			}
-			return {_tag: "Absent", dir} as const;
+			return { _tag: "Absent", dir } as const;
 		}
 
 		const compiled = compileText(workflowText.success);
 		if (compiled._tag === "Malformed") {
-			return {_tag: "Malformed", path: workflowPath, defects: compiled.defects} as const;
+			return { _tag: "Malformed", path: workflowPath, defects: compiled.defects } as const;
 		}
 
 		const logText = yield* Effect.result(readFile(logPath));
 		if (Result.isFailure(logText)) {
 			if (!logText.failure.notFound) {
-				return {_tag: "Unreadable", path: logPath, reason: logText.failure.reason} as const;
+				return { _tag: "Unreadable", path: logPath, reason: logText.failure.reason } as const;
 			}
-			return {_tag: "Loaded", lane: compiled.lane, entries: [], dir, logPath} as const;
+			return { _tag: "Loaded", lane: compiled.lane, entries: [], dir, logPath } as const;
 		}
 		const parsed = parseLog(logText.success);
 		if (parsed._tag === "Malformed") {
-			return {_tag: "Malformed", path: logPath, defects: parsed.defects} as const;
+			return { _tag: "Malformed", path: logPath, defects: parsed.defects } as const;
 		}
-		return {_tag: "Loaded", lane: compiled.lane, entries: parsed.entries, dir, logPath} as const;
+		return { _tag: "Loaded", lane: compiled.lane, entries: parsed.entries, dir, logPath } as const;
 	});
 
 export type LanePresence =
-	| {readonly _tag: "Present"; readonly dir: string}
-	| {readonly _tag: "Absent"; readonly dir: string}
-	| {readonly _tag: "Unprobeable"; readonly dir: string; readonly reason: string};
+	| { readonly _tag: "Present"; readonly dir: string }
+	| { readonly _tag: "Absent"; readonly dir: string }
+	| { readonly _tag: "Unprobeable"; readonly dir: string; readonly reason: string };
 
 /**
  * Whether a lane directory is already there — the probe {@link placeMachine} refuses on, split out
@@ -157,16 +157,16 @@ export const probeLane = (
 		const dir = path.join(ref.root, ref.lane);
 		const probe = yield* Effect.result(exists(dir));
 		if (Result.isFailure(probe)) {
-			return {_tag: "Unprobeable", dir, reason: probe.failure.reason} as const;
+			return { _tag: "Unprobeable", dir, reason: probe.failure.reason } as const;
 		}
-		return probe.success ? ({_tag: "Present", dir} as const) : ({_tag: "Absent", dir} as const);
+		return probe.success ? ({ _tag: "Present", dir } as const) : ({ _tag: "Absent", dir } as const);
 	});
 
 export type Placement =
-	| {readonly _tag: "Placed"; readonly dir: string; readonly workflow: string}
-	| {readonly _tag: "Exists"; readonly dir: string}
-	| {readonly _tag: "Unprobeable"; readonly dir: string; readonly reason: string}
-	| {readonly _tag: "Unwritten"; readonly path: string; readonly reason: string};
+	| { readonly _tag: "Placed"; readonly dir: string; readonly workflow: string }
+	| { readonly _tag: "Exists"; readonly dir: string }
+	| { readonly _tag: "Unprobeable"; readonly dir: string; readonly reason: string }
+	| { readonly _tag: "Unwritten"; readonly path: string; readonly reason: string };
 
 /**
  * Place one machine document as a NEW lane — the boot both `lane open` and `lane emit` share.
@@ -182,15 +182,15 @@ export const placeMachine = (
 	Effect.gen(function* () {
 		const path = yield* Path.Path;
 		const presence = yield* probeLane(ref);
-		const {dir} = presence;
+		const { dir } = presence;
 		if (presence._tag === "Unprobeable") {
-			return {_tag: "Unprobeable", dir, reason: presence.reason} as const;
+			return { _tag: "Unprobeable", dir, reason: presence.reason } as const;
 		}
-		if (presence._tag === "Present") return {_tag: "Exists", dir} as const;
+		if (presence._tag === "Present") return { _tag: "Exists", dir } as const;
 		const workflow = path.join(dir, WORKFLOW_FILE);
 		const wrote = yield* Effect.result(writeFile(workflow, text));
 		if (Result.isFailure(wrote)) {
-			return {_tag: "Unwritten", path: workflow, reason: wrote.failure.reason} as const;
+			return { _tag: "Unwritten", path: workflow, reason: wrote.failure.reason } as const;
 		}
-		return {_tag: "Placed", dir, workflow} as const;
+		return { _tag: "Placed", dir, workflow } as const;
 	});

@@ -11,19 +11,20 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/8924#issuecomment-5625300585
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {answer, type VerbOutcome} from "../verb.ts";
-import {REPORT_HEADING, type ReportRead, read as readReport} from "../wire/report.ts";
-import {badNumber, openPull, resolveTargetRepo} from "./target.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { answer, type VerbOutcome } from "../verb.ts";
+import { REPORT_HEADING, type ReportRead, read as readReport } from "../wire/report.ts";
+import { badNumber, openPull, resolveTargetRepo } from "./target.ts";
 
 const VERB = "review report";
 
 /** The verb's state words, one per answer of the registered read. */
-const STATE = {Found: "found", Absent: "absent", Malformed: "malformed"} as const satisfies Record<
-	ReportRead["_tag"],
-	string
->;
+const STATE = {
+	Found: "found",
+	Absent: "absent",
+	Malformed: "malformed",
+} as const satisfies Record<ReportRead["_tag"], string>;
 
 export interface ReportOptions {
 	readonly pr: number;
@@ -36,7 +37,7 @@ export const runReport = (
 	options: ReportOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -61,7 +62,7 @@ export const runReport = (
 					: `${state} — ${report.reason} — ${report.evidence}`;
 		const text = report._tag === "Found" ? report.value.text : null;
 		return json
-			? answer(JSON.stringify({outcome: state, text}), [`${VERB}: ${diagnostic}.`])
+			? answer(JSON.stringify({ outcome: state, text }), [`${VERB}: ${diagnostic}.`])
 			: answer([`report\t${state}`, ...(text === null ? [] : [text])].join("\n"), [
 					`${VERB}: ${diagnostic}.`,
 				]);

@@ -52,13 +52,13 @@
  * still a defect — the budget is a fold over recorded events, so a grant is a line in
  * `events.jsonl`, never a field the compiler reads out of mutable context.
  */
-import type {Machine} from "@demlik/tea";
-import {defineMachine} from "@demlik/tea";
-import {budgetWith} from "../cap-clearance.ts";
-import {MACHINERY_LAP_BUDGET, RETRY_BUDGET} from "../retry-budget.ts";
-import {SHIP_CLASS_NAMES} from "../review/classes.ts";
-import {WAIT_BUDGET} from "../wait-budget.ts";
-import {classStands} from "./routing-class.ts";
+import type { Machine } from "@demlik/tea";
+import { defineMachine } from "@demlik/tea";
+import { budgetWith } from "../cap-clearance.ts";
+import { MACHINERY_LAP_BUDGET, RETRY_BUDGET } from "../retry-budget.ts";
+import { SHIP_CLASS_NAMES } from "../review/classes.ts";
+import { WAIT_BUDGET } from "../wait-budget.ts";
+import { classStands } from "./routing-class.ts";
 
 /**
  * The machinery event — a lap the pipeline spent on itself, not a round the artifact owes.
@@ -321,9 +321,9 @@ export interface CompiledTask {
 
 export interface CompiledLane {
 	readonly tasks: Readonly<Record<string, CompiledTask>>;
-	readonly phases: ReadonlyArray<{readonly name: string; readonly tasks: ReadonlyArray<string>}>;
+	readonly phases: ReadonlyArray<{ readonly name: string; readonly tasks: ReadonlyArray<string> }>;
 	/** The workflow's two terminal names, read off the last phase's `onDone` pair. */
-	readonly terminals: {readonly complete: string; readonly tripped: string};
+	readonly terminals: { readonly complete: string; readonly tripped: string };
 	/**
 	 * What fires this lane, as the document declares it — a chore workflow's own field. Read
 	 * and carried rather than ignored, so a mistyped declaration is a defect instead of a silence;
@@ -333,8 +333,8 @@ export interface CompiledLane {
 }
 
 export type CompileResult =
-	| {readonly _tag: "Compiled"; readonly lane: CompiledLane}
-	| {readonly _tag: "Malformed"; readonly defects: ReadonlyArray<string>};
+	| { readonly _tag: "Compiled"; readonly lane: CompiledLane }
+	| { readonly _tag: "Malformed"; readonly defects: ReadonlyArray<string> };
 
 type Cell = (state: TaskState, msg: LaneMsg) => readonly [TaskState, readonly never[]];
 
@@ -371,17 +371,17 @@ const classCellOf = (
 	transition: ReadonlyArray<unknown>,
 ):
 	| {
-			readonly arms: ReadonlyArray<{readonly name: string; readonly target: string | undefined}>;
+			readonly arms: ReadonlyArray<{ readonly name: string; readonly target: string | undefined }>;
 			readonly fallthrough: string | undefined;
 	  }
 	| undefined => {
-	const arms: Array<{name: string; target: string | undefined}> = [];
+	const arms: Array<{ name: string; target: string | undefined }> = [];
 	for (const arm of transition.slice(0, -1)) {
 		const name = classGuardOf(arm);
 		if (name === undefined) return undefined;
-		arms.push({name, target: targetOf(arm)});
+		arms.push({ name, target: targetOf(arm) });
 	}
-	return arms.length === 0 ? undefined : {arms, fallthrough: targetOf(transition.at(-1))};
+	return arms.length === 0 ? undefined : { arms, fallthrough: targetOf(transition.at(-1)) };
 };
 
 /**
@@ -430,8 +430,8 @@ const lapGuardOf = (arm: unknown): string | undefined => {
 /** A lap's leading `lap:<cause>` arms, in declaration order — the routes before the budget pair. */
 const lapRoutesOf = (
 	transition: ReadonlyArray<unknown>,
-): ReadonlyArray<{readonly cause: string; readonly target: string | undefined}> => {
-	const routes: Array<{cause: string; target: string | undefined}> = [];
+): ReadonlyArray<{ readonly cause: string; readonly target: string | undefined }> => {
+	const routes: Array<{ cause: string; target: string | undefined }> = [];
 	for (const arm of transition) {
 		const cause = lapGuardOf(arm);
 		if (cause === undefined) break;
@@ -459,8 +459,8 @@ const lapRoutesOf = (
  */
 const classRoutesOf = (
 	transition: ReadonlyArray<unknown>,
-): ReadonlyArray<{readonly name: string; readonly target: string | undefined}> => {
-	const candidates: Array<{name: string; target: string | undefined}> = [];
+): ReadonlyArray<{ readonly name: string; readonly target: string | undefined }> => {
+	const candidates: Array<{ name: string; target: string | undefined }> = [];
 	for (const arm of transition) {
 		const name = classGuardOf(arm);
 		if (name === undefined) break;
@@ -498,10 +498,10 @@ const routingSpelling = (arm: unknown): string | undefined => {
  * the same `maxWaits` because the grant is read off the line rather than accumulated in context.
  */
 const withPayload = (state: TaskState, msg: LaneMsg): TaskState => {
-	const classed = msg.classes === undefined ? state : {...state, classes: msg.classes};
+	const classed = msg.classes === undefined ? state : { ...state, classes: msg.classes };
 	return msg.waitGrant === undefined
 		? classed
-		: {...classed, maxWaits: classed.maxWaits + msg.waitGrant};
+		: { ...classed, maxWaits: classed.maxWaits + msg.waitGrant };
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -524,7 +524,7 @@ interface RegionCompilation {
 const compileRegion = (taskId: string, region: unknown, context: unknown): RegionCompilation => {
 	const defects: string[] = [];
 	if (!isRecord(region) || !isRecord(region.states) || typeof region.initial !== "string") {
-		return {defects: [`task "${taskId}": region must carry string \`initial\` and \`states\``]};
+		return { defects: [`task "${taskId}": region must carry string \`initial\` and \`states\``] };
 	}
 	const states = region.states;
 	const initialState = region.initial;
@@ -605,7 +605,7 @@ const compileRegion = (taskId: string, region: unknown, context: unknown): Regio
 			if (Array.isArray(transition)) {
 				const classCell = classCellOf(transition);
 				if (classCell !== undefined) {
-					const {arms, fallthrough} = classCell;
+					const { arms, fallthrough } = classCell;
 					if (fallthrough === undefined || arms.some((arm) => arm.target === undefined)) {
 						defects.push(
 							`task "${taskId}": guarded "${eventName}" carries a "class:<name>" arm or a fallthrough with no \`target\` — an arm that names no state routes nowhere`,
@@ -622,7 +622,7 @@ const compileRegion = (taskId: string, region: unknown, context: unknown): Regio
 						const c = withPayload(s, m);
 						const target =
 							routed.find(([name]) => classStands(c.classes, name))?.[1] ?? fallthrough;
-						return [{...c, type: target, was: c.type}, []];
+						return [{ ...c, type: target, was: c.type }, []];
 					};
 					continue;
 				}
@@ -668,7 +668,7 @@ const compileRegion = (taskId: string, region: unknown, context: unknown): Regio
 					cells[msg] = (s, m) => {
 						const c = withPayload(s, m);
 						const target = m.diagnosis === true ? taken : fallthrough;
-						return [{...c, type: target, was: c.type}, []];
+						return [{ ...c, type: target, was: c.type }, []];
 					};
 					continue;
 				}
@@ -679,7 +679,7 @@ const compileRegion = (taskId: string, region: unknown, context: unknown): Regio
 					cells[msg] = (s, m) => {
 						const c = withPayload(s, m);
 						const target = m.partial === true ? taken : fallthrough;
-						return [{...c, type: target, was: c.type}, []];
+						return [{ ...c, type: target, was: c.type }, []];
 					};
 					continue;
 				}
@@ -717,8 +717,8 @@ const compileRegion = (taskId: string, region: unknown, context: unknown): Regio
 					cells[msg] = (s, m) => {
 						const c = withPayload(s, m);
 						return c.retries < c.maxRetries
-							? [{...c, type: loopTarget(c), retries: c.retries + 1, was: c.type}, []]
-							: [{...c, type: fallthrough, was: c.type}, []];
+							? [{ ...c, type: loopTarget(c), retries: c.retries + 1, was: c.type }, []]
+							: [{ ...c, type: fallthrough, was: c.type }, []];
 					};
 				} else if (msg === MACHINERY_EVENT) {
 					// The route picks the target and never the budget: a routed lap is still a lap, so a
@@ -728,15 +728,15 @@ const compileRegion = (taskId: string, region: unknown, context: unknown): Regio
 						const c = withPayload(s, m);
 						const loop = (m.cause === undefined ? undefined : routed.get(m.cause)) ?? loopTarget(c);
 						return c.laps < c.maxLaps
-							? [{...c, type: loop, laps: c.laps + 1, was: c.type}, []]
-							: [{...c, type: fallthrough, was: c.type}, []];
+							? [{ ...c, type: loop, laps: c.laps + 1, was: c.type }, []]
+							: [{ ...c, type: fallthrough, was: c.type }, []];
 					};
 				} else {
 					cells[msg] = (s, m) => {
 						const c = withPayload(s, m);
 						return c.waits < c.maxWaits
-							? [{...c, type: loopTarget(c), waits: c.waits + 1, was: c.type}, []]
-							: [{...c, type: fallthrough, was: c.type}, []];
+							? [{ ...c, type: loopTarget(c), waits: c.waits + 1, was: c.type }, []]
+							: [{ ...c, type: fallthrough, was: c.type }, []];
 					};
 				}
 				continue;
@@ -752,18 +752,18 @@ const compileRegion = (taskId: string, region: unknown, context: unknown): Regio
 			if (nodeType(states[transition]) === "history") {
 				cells[msg] = (s, m) => {
 					const c = withPayload(s, m);
-					return [{...c, type: c.was ?? initialState}, []];
+					return [{ ...c, type: c.was ?? initialState }, []];
 				};
 			} else {
 				const target = transition;
 				cells[msg] = (s, m) => {
 					const c = withPayload(s, m);
-					return [{...c, type: target, was: c.type}, []];
+					return [{ ...c, type: target, was: c.type }, []];
 				};
 			}
 		}
 	}
-	if (defects.length > 0) return {defects};
+	if (defects.length > 0) return { defects };
 
 	// Each board-proven final is the compiler's, so it holds a row of its own: a `CLEARED` landing on
 	// an already-settled task must fold, not throw the log unreplayable.
@@ -795,7 +795,7 @@ const compileRegion = (taskId: string, region: unknown, context: unknown): Regio
 		// Set-semantic by the round it names, so a re-recorded grant buys nothing.
 		if (round === undefined || s.cleared.includes(round)) return [s, []];
 		const cleared = [...s.cleared, round].sort((a, b) => a - b);
-		return [{...s, cleared, maxRetries: budgetWith(declared, cleared)}, []];
+		return [{ ...s, cleared, maxRetries: budgetWith(declared, cleared) }, []];
 	};
 	for (const cells of Object.values(table)) cells[CLEARED_EVENT] = clearedCell;
 
@@ -803,7 +803,7 @@ const compileRegion = (taskId: string, region: unknown, context: unknown): Regio
 	// `workflow.json` was copied from a template that never declared it. A board final itself gets
 	// none: settling a settled task would fold as movement that did not happen.
 	for (const [event, terminal] of Object.entries(BOARD_TERMINALS)) {
-		const cell: Cell = (s) => [{...s, type: terminal, was: s.type}, []];
+		const cell: Cell = (s) => [{ ...s, type: terminal, was: s.type }, []];
 		for (const [name, cells] of Object.entries(table)) {
 			if (!isBoardTerminalState(name)) cells[event] = cell;
 		}
@@ -879,15 +879,15 @@ const compileRegion = (taskId: string, region: unknown, context: unknown): Regio
 const onDoneTargets = (
 	phaseName: string,
 	onDone: unknown,
-): {targets?: readonly [string, string]; defect?: string} => {
+): { targets?: readonly [string, string]; defect?: string } => {
 	const defect = `phase "${phaseName}": \`onDone\` must be a two-arm array of \`{target}\` — [{target, guard}, {target}]`;
-	if (!Array.isArray(onDone) || onDone.length !== 2) return {defect};
+	if (!Array.isArray(onDone) || onDone.length !== 2) return { defect };
 	const [success, trip] = onDone.map((arm) =>
 		isRecord(arm) && typeof arm.target === "string" ? arm.target : undefined,
 	);
 	return success === undefined || trip === undefined
-		? {defect}
-		: {targets: [success, trip] as const};
+		? { defect }
+		: { targets: [success, trip] as const };
 };
 
 /**
@@ -898,7 +898,7 @@ export const compile = (workflow: unknown): CompileResult => {
 	const defects: string[] = [];
 	const machineDef = isRecord(workflow) ? workflow.machine : undefined;
 	if (!isRecord(machineDef) || !isRecord(machineDef.states)) {
-		return {_tag: "Malformed", defects: ["document must carry a `machine.states` object"]};
+		return { _tag: "Malformed", defects: ["document must carry a `machine.states` object"] };
 	}
 	const context = isRecord(machineDef.context) ? machineDef.context : {};
 	const declaredTrigger = isRecord(workflow) ? workflow.trigger : undefined;
@@ -908,9 +908,9 @@ export const compile = (workflow: unknown): CompileResult => {
 
 	const machineStates = machineDef.states;
 	const tasks: Record<string, CompiledTask> = {};
-	const phases: Array<{name: string; tasks: string[]}> = [];
+	const phases: Array<{ name: string; tasks: string[] }> = [];
 	const gateTargets = new Set<string>();
-	let terminals: {complete: string; tripped: string} | undefined;
+	let terminals: { complete: string; tripped: string } | undefined;
 	for (const [phaseName, node] of Object.entries(machineStates)) {
 		if (nodeType(node) !== "parallel" || !isRecord(node)) continue;
 		const regions = node.states;
@@ -925,7 +925,7 @@ export const compile = (workflow: unknown): CompileResult => {
 			if (compiled.task !== undefined) tasks[taskId] = compiled.task;
 			phaseTasks.push(taskId);
 		}
-		phases.push({name: phaseName, tasks: phaseTasks});
+		phases.push({ name: phaseName, tasks: phaseTasks });
 		const gate = onDoneTargets(phaseName, node.onDone);
 		if (gate.defect !== undefined) defects.push(gate.defect);
 		// Every phase names the same trip terminal; the LAST phase's success target is the
@@ -939,7 +939,7 @@ export const compile = (workflow: unknown): CompileResult => {
 					);
 				}
 			}
-			terminals = {complete: gate.targets[0], tripped: gate.targets[1]};
+			terminals = { complete: gate.targets[0], tripped: gate.targets[1] };
 		}
 	}
 	// A machine-level state the loop above did not compile is a terminal or a defect — never
@@ -955,9 +955,9 @@ export const compile = (workflow: unknown): CompileResult => {
 		}
 	}
 	if (phases.length === 0) defects.push("machine holds no `parallel` phase state");
-	if (defects.length > 0) return {_tag: "Malformed", defects};
+	if (defects.length > 0) return { _tag: "Malformed", defects };
 	if (terminals === undefined) {
-		return {_tag: "Malformed", defects: ["no phase carried a readable `onDone` pair"]};
+		return { _tag: "Malformed", defects: ["no phase carried a readable `onDone` pair"] };
 	}
 	return {
 		_tag: "Compiled",
@@ -965,7 +965,7 @@ export const compile = (workflow: unknown): CompileResult => {
 			tasks,
 			phases,
 			terminals,
-			...(typeof declaredTrigger === "string" ? {trigger: declaredTrigger} : {}),
+			...(typeof declaredTrigger === "string" ? { trigger: declaredTrigger } : {}),
 		},
 	};
 };
@@ -976,7 +976,7 @@ export const compileText = (text: string): CompileResult => {
 	try {
 		parsed = JSON.parse(text);
 	} catch {
-		return {_tag: "Malformed", defects: ["the document is not JSON"]};
+		return { _tag: "Malformed", defects: ["the document is not JSON"] };
 	}
 	return compile(parsed);
 };
@@ -1008,7 +1008,7 @@ export interface LaneTopology {
 export const topology = (lane: CompiledLane): LaneTopology => ({
 	phases: lane.phases,
 	terminals: lane.terminals,
-	...(lane.trigger === undefined ? {} : {trigger: lane.trigger}),
+	...(lane.trigger === undefined ? {} : { trigger: lane.trigger }),
 	tasks: Object.fromEntries(
 		Object.entries(lane.tasks).map(([taskId, task]) => [
 			taskId,

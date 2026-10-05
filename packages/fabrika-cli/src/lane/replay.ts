@@ -23,12 +23,12 @@
  * merge. Left on commits the replay rewrote, that branch says a range the assembly branch does not
  * carry, and the next integrate collides with the landing this one made.
  */
-import {Effect, type FileSystem, type Path, Result} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {LockfileRegenerator} from "../config/keys/assembly-replay.ts";
-import {execCapture, execStatus} from "../io/exec.ts";
-import {readFile, writeFile} from "../io/fs.ts";
-import {type KeepBoth, resolveKeepBoth} from "./keep-both.ts";
+import { Effect, type FileSystem, type Path, Result } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { LockfileRegenerator } from "../config/keys/assembly-replay.ts";
+import { execCapture, execStatus } from "../io/exec.ts";
+import { readFile, writeFile } from "../io/fs.ts";
+import { type KeepBoth, resolveKeepBoth } from "./keep-both.ts";
 
 /** The cause a replay that is not a plain keep-both parks under — `lane report --cause`'s closed set. */
 export const REPLAY_PARK_CAUSE = "replay-conflict";
@@ -64,7 +64,7 @@ export type ReplayOutcome =
 			readonly regenerated: ReadonlyArray<string>;
 	  }
 	/** A hunk no keep-both reaches. The seat is back on its branch; the caller proves the reset. */
-	| {readonly _tag: "NotKeepBoth"; readonly reason: string; readonly paths: ReadonlyArray<string>}
+	| { readonly _tag: "NotKeepBoth"; readonly reason: string; readonly paths: ReadonlyArray<string> }
 	/**
 	 * A lockfile-only collision whose regenerator failed, could not start, or wrote beyond the
 	 * lockfiles. The seat is back on its branch, as on every refusal.
@@ -85,7 +85,7 @@ export type ReplayOutcome =
 			readonly head: string;
 	  }
 	/** Something on the path could not be read or run — UNKNOWN, never a clean refusal. */
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /**
  * The branch a replay lands on, derived from the child and the tip it was replayed onto.
@@ -111,9 +111,9 @@ const unmergedPaths = (path: string): Shell<ReadonlyArray<string> | null> =>
 	);
 
 type Resolution =
-	| {readonly _tag: "Resolved"; readonly paths: ReadonlyArray<string>}
-	| {readonly _tag: "NotKeepBoth"; readonly reason: string; readonly paths: ReadonlyArray<string>}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Resolved"; readonly paths: ReadonlyArray<string> }
+	| { readonly _tag: "NotKeepBoth"; readonly reason: string; readonly paths: ReadonlyArray<string> }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /**
  * Resolve every unmerged path by keeping both sides, or refuse the whole pick.
@@ -143,7 +143,7 @@ const resolveAll = (
 			}
 			const judged: KeepBoth = resolveKeepBoth(read.success);
 			if (judged._tag === "NotKeepBoth") {
-				return {_tag: "NotKeepBoth" as const, reason: `${file}: ${judged.reason}`, paths};
+				return { _tag: "NotKeepBoth" as const, reason: `${file}: ${judged.reason}`, paths };
 			}
 			const wrote = yield* Effect.result(writeFile(full, judged.text));
 			if (Result.isFailure(wrote)) {
@@ -161,7 +161,7 @@ const resolveAll = (
 			}
 			written.push(file);
 		}
-		return {_tag: "Resolved" as const, paths: written};
+		return { _tag: "Resolved" as const, paths: written };
 	});
 
 /** The unmerged paths among `files` that `.gitattributes` marks `merge=binary`, or `null` unread. */
@@ -189,8 +189,8 @@ const regenerable = (
 ): boolean => unmerged.every((file) => regenerator.lockfiles.includes(file) && binary.has(file));
 
 type Regeneration =
-	| {readonly _tag: "Regenerated"; readonly paths: ReadonlyArray<string>}
-	| Extract<ReplayOutcome, {readonly _tag: "NotRegenerated" | "Unreadable"}>;
+	| { readonly _tag: "Regenerated"; readonly paths: ReadonlyArray<string> }
+	| Extract<ReplayOutcome, { readonly _tag: "NotRegenerated" | "Unreadable" }>;
 
 /**
  * Rebuild the colliding lockfiles with the repo's command and stage them, or refuse the pick.
@@ -247,7 +247,7 @@ const regenerate = (
 				reason: `cannot stage the regenerated ${lockfiles}: ${staged.reason}`,
 			};
 		}
-		return {_tag: "Regenerated" as const, paths: unmerged};
+		return { _tag: "Regenerated" as const, paths: unmerged };
 	});
 
 /**
@@ -286,7 +286,7 @@ const answerPick = (
 /** The arms a stopped replay can end on, before the seat is put back on its branch. */
 type Refusal = Extract<
 	ReplayOutcome,
-	{readonly _tag: "NotKeepBoth" | "NotRegenerated" | "Unreadable"}
+	{ readonly _tag: "NotKeepBoth" | "NotRegenerated" | "Unreadable" }
 >;
 
 /**
@@ -344,7 +344,7 @@ export const replayChild = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
-		const {path, branch, child, tip} = options;
+		const { path, branch, child, tip } = options;
 
 		const listed = yield* git(path, "rev-list", "--reverse", `${tip}..${child}`);
 		if (!listed.ok) {
@@ -471,7 +471,7 @@ export const replayChild = (
 		return {
 			_tag: "Replayed" as const,
 			replayBranch,
-			range: {from: tip, to: head},
+			range: { from: tip, to: head },
 			commits: commits.length,
 			resolved: [...resolved],
 			regenerated: [...regenerated],

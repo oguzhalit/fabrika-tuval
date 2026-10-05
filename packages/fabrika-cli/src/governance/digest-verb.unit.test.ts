@@ -1,9 +1,9 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeShell, okOut, record} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {INCOMPLETE_SCAN, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {runDigest} from "./digest-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeShell, okOut, record } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { INCOMPLETE_SCAN, OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { runDigest } from "./digest-verb.ts";
 
 const BASE_SHA = "0f1e2d3c4b5a69788796a5b4c3d2e1f009182736";
 const LANDING = "1f8e83b1aa04f7e2c9d8b1640a5c22e9f01b7d3c";
@@ -53,7 +53,9 @@ const run = (
 	script: ReadonlyArray<readonly [RegExp, ExecResult]>,
 	overrides: Partial<typeof options> = {},
 ) =>
-	Effect.runPromise(Effect.provide(runDigest({...options, ...overrides}), fakeShell(script).layer));
+	Effect.runPromise(
+		Effect.provide(runDigest({ ...options, ...overrides }), fakeShell(script).layer),
+	);
 
 const happy: ReadonlyArray<readonly [RegExp, ExecResult]> = [
 	REMOTES,
@@ -92,17 +94,17 @@ describe("runDigest", () => {
 	});
 
 	it("emits the record with --json, naming the window it walked", async () => {
-		const out = await run(happy, {json: true, until: "2026-08-09"});
+		const out = await run(happy, { json: true, until: "2026-08-09" });
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			outcome: "landed",
 			count: 1,
-			window: {since: "2026-08-02", until: "2026-08-09"},
+			window: { since: "2026-08-02", until: "2026-08-09" },
 			base: "origin/main",
 		});
 	});
 
 	it("states the base, the window and the commit count on stderr", async () => {
-		const out = await run(happy, {until: "2026-08-09"});
+		const out = await run(happy, { until: "2026-08-09" });
 		expect(out.stderr.at(-1)).toBe(
 			"governance digest: walked origin/main from 2026-08-02 to 2026-08-09, 1 commits touching .decisions.",
 		);
@@ -118,13 +120,13 @@ describe("runDigest", () => {
 	});
 
 	it("refuses a malformed date, and a window that runs backwards, on 10", async () => {
-		const malformed = await run(happy, {since: "08/02/2026"});
+		const malformed = await run(happy, { since: "08/02/2026" });
 		expect(malformed.code).toBe(OFF_VOCABULARY);
 		expect(malformed.stdout).toBe("");
 		expect(malformed.stderr.join("\n")).toContain(
 			'governance digest: --since "08/02/2026" is not a YYYY-MM-DD date.',
 		);
-		expect((await run(happy, {until: "2026-08-01"})).code).toBe(OFF_VOCABULARY);
+		expect((await run(happy, { until: "2026-08-01" })).code).toBe(OFF_VOCABULARY);
 	});
 
 	it("refuses an unfetchable base on 11 — what landed is UNKNOWN, never `none`", async () => {

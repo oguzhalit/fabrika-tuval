@@ -22,15 +22,15 @@
  * question retired with no replacement posted is a silently dropped decision.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {createComment, getComment, listComments, resolveRepo} from "../io/issues.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import type {QuestionId, RoundDigest} from "../wire/grill-marker.ts";
-import {questionId, stampOf} from "../wire/grill-marker.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { createComment, getComment, listComments, resolveRepo } from "../io/issues.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import type { QuestionId, RoundDigest } from "../wire/grill-marker.ts";
+import { questionId, stampOf } from "../wire/grill-marker.ts";
 import * as grillSupersede from "../wire/grill-supersede.ts";
 import {
 	BAD_SECTIONS,
@@ -92,7 +92,7 @@ export const runRound = (
 	options: RoundOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {session} = options;
+		const { session } = options;
 		if (!Number.isInteger(session) || session <= 0) {
 			return refuse(FAILED, `grill round: ${session} is not a session issue number.`);
 		}
@@ -185,7 +185,7 @@ export const runRound = (
 
 		// The retirement scan runs only when there is something to retire: it costs one ACL read per
 		// distinct marker author, and the common path retires nothing.
-		const retired: {id: QuestionId; digest: RoundDigest}[] = [];
+		const retired: { id: QuestionId; digest: RoundDigest }[] = [];
 		if (options.supersedes.length > 0) {
 			const markers = yield* scanMarkers(repo, comments.value);
 			if (markers._tag === "Unknown") {
@@ -222,7 +222,7 @@ export const runRound = (
 						diagnostics,
 					);
 				}
-				retired.push({id, digest: bound.digest});
+				retired.push({ id, digest: bound.digest });
 			}
 		}
 
@@ -252,7 +252,7 @@ export const runRound = (
 		const entries: grillSupersede.SupersedeEntry[] =
 			at === null
 				? []
-				: retired.map((entry) => ({question: entry.id, digest: entry.digest, round, at}));
+				: retired.map((entry) => ({ question: entry.id, digest: entry.digest, round, at }));
 		const [head, ...tail] = entries;
 		if (retired.length > 0) {
 			const orphaned = `${retired.map((entry) => entry.id).join(", ")} are NOT retired and still hold the frontier. Re-run grill round --supersedes on the new round, do not re-post the round.`;
@@ -291,7 +291,7 @@ export const runRound = (
 				session,
 				round,
 				digest: digested.digest,
-				questions: questions.map((question) => ({id: question.id, kind: question.kind})),
+				questions: questions.map((question) => ({ id: question.id, kind: question.kind })),
 				supersedes: retired.map((entry) => entry.id),
 				comment: posted.value.id,
 				supersedeComment,

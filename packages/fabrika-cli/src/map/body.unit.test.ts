@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {normalizeForReadback} from "../report/compose.ts";
+import { describe, expect, it } from "vitest";
+import { normalizeForReadback } from "../report/compose.ts";
 import {
 	bulletEntries,
 	digestOf,
@@ -10,7 +10,7 @@ import {
 	renderOutOfScope,
 	spliceSection,
 } from "./body.ts";
-import {MAP_BODY, MAP_BODY_WITH_REJECTION, parsed} from "./fixtures.test-support.ts";
+import { MAP_BODY, MAP_BODY_WITH_REJECTION, parsed } from "./fixtures.test-support.ts";
 
 describe("parseBody", () => {
 	it("reads the five sections, their entries and the fog count", () => {
@@ -57,8 +57,8 @@ describe("parseBody", () => {
 			),
 		);
 		expect(body.decisions.map((entry) => entry.authority)).toEqual([
-			{_tag: "Ruled", session: 9301, questionId: "R2.3"},
-			{_tag: "Finding", ticket: 9146},
+			{ _tag: "Ruled", session: 9301, questionId: "R2.3" },
+			{ _tag: "Finding", ticket: 9146 },
 		]);
 	});
 

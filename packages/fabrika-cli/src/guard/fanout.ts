@@ -58,8 +58,8 @@ export interface MisaimedMutation {
 
 /** The verdict — a union, so a pass can never carry a failure list and each shape carries only its own evidence. */
 export type FanoutGuardVerdict =
-	| {readonly pass: true; readonly checked: number; readonly fanned: number}
-	| {readonly pass: false; readonly reason: "zero-scope"}
+	| { readonly pass: true; readonly checked: number; readonly fanned: number }
+	| { readonly pass: false; readonly reason: "zero-scope" }
 	| {
 			readonly pass: false;
 			readonly reason: "drift";
@@ -82,10 +82,10 @@ export type FanoutGuardVerdict =
 	  };
 
 export const judge = (facts: FanoutGuardFacts): FanoutGuardVerdict => {
-	const {discovered, manifest, featurePublishes, featureTargets} = facts;
+	const { discovered, manifest, featurePublishes, featureTargets } = facts;
 
 	if (discovered.length === 0) {
-		return {pass: false, reason: "zero-scope"};
+		return { pass: false, reason: "zero-scope" };
 	}
 
 	const discoveredKeys = new Set(discovered.map((d) => d.key));
@@ -97,7 +97,7 @@ export const judge = (facts: FanoutGuardFacts): FanoutGuardVerdict => {
 		.filter((k) => !discoveredKeys.has(k))
 		.sort();
 	if (unclassified.length > 0 || stale.length > 0) {
-		return {pass: false, reason: "drift", unclassified, stale};
+		return { pass: false, reason: "drift", unclassified, stale };
 	}
 
 	const featureOf = new Map(discovered.map((d) => [d.key, d.feature] as const));
@@ -108,7 +108,7 @@ export const judge = (facts: FanoutGuardFacts): FanoutGuardVerdict => {
 		.filter((k) => featurePublishes.get(featureOf.get(k) ?? "") !== true)
 		.sort();
 	if (omitted.length > 0) {
-		return {pass: false, reason: "missing-publish", omitted};
+		return { pass: false, reason: "missing-publish", omitted };
 	}
 
 	const undeclared: Array<string> = [];
@@ -122,7 +122,7 @@ export const judge = (facts: FanoutGuardFacts): FanoutGuardVerdict => {
 		const feature = featureOf.get(key) ?? "";
 		const reachable = featureTargets.get(feature) ?? new Set<string>();
 		const unreachable = declared.filter((t) => !reachable.has(t)).sort();
-		if (unreachable.length > 0) misaimed.push({key, feature, declared, unreachable});
+		if (unreachable.length > 0) misaimed.push({ key, feature, declared, unreachable });
 	}
 	if (undeclared.length > 0 || misaimed.length > 0) {
 		return {
@@ -133,7 +133,7 @@ export const judge = (facts: FanoutGuardFacts): FanoutGuardVerdict => {
 		};
 	}
 
-	return {pass: true, checked: discovered.length, fanned: fannedKeys.length};
+	return { pass: true, checked: discovered.length, fanned: fannedKeys.length };
 };
 
 export const MANIFEST_PATH = "apps/web/worker/features/fate-live/fanned-mutations.ts";
@@ -229,7 +229,7 @@ export const parseManifestEntries = (source: string): ReadonlyArray<ManifestEntr
 		const topics = topicsRaw
 			? [...topicsRaw.matchAll(/["']([^"']+)["']/g)].map((t) => t[1] as string)
 			: [];
-		out.push({key, fanned: fanned === "true", topics});
+		out.push({ key, fanned: fanned === "true", topics });
 	}
 	return out;
 };

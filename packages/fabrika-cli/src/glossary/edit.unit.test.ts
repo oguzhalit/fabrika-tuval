@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import {appendIndex, linesChangedBeyond, newSectionBlock, placeRow} from "./edit.ts";
-import {parseRegister, type Section} from "./register.ts";
+import { describe, expect, it } from "vitest";
+import { appendIndex, linesChangedBeyond, newSectionBlock, placeRow } from "./edit.ts";
+import { parseRegister, type Section } from "./register.ts";
 
 const register = `# fixture
 
@@ -72,20 +72,20 @@ describe("linesChangedBeyond", () => {
 
 	it("is 0 for a single inserted row", () => {
 		const after = [...before.slice(0, 6), "| capture ledger | x | |", ...before.slice(6)];
-		expect(linesChangedBeyond(before, after, {at: 6, added: 1, replaced: 0})).toBe(0);
+		expect(linesChangedBeyond(before, after, { at: 6, added: 1, replaced: 0 })).toBe(0);
 	});
 
 	it("is 0 for a single rewritten row", () => {
 		const after = [...before];
 		after[7] = "| pano | The board product, redefined. | |";
-		expect(linesChangedBeyond(before, after, {at: 7, added: 1, replaced: 1})).toBe(0);
+		expect(linesChangedBeyond(before, after, { at: 7, added: 1, replaced: 1 })).toBe(0);
 	});
 
 	it("is 0 for the five lines --create-section appends", () => {
 		const at = appendIndex(before);
 		const block = newSectionBlock("Indexing", "| tag | x | |");
 		const after = [...before.slice(0, at), ...block, ...before.slice(at)];
-		expect(linesChangedBeyond(before, after, {at, added: block.length, replaced: 0})).toBe(0);
+		expect(linesChangedBeyond(before, after, { at, added: block.length, replaced: 0 })).toBe(0);
 	});
 
 	/**
@@ -101,12 +101,12 @@ describe("linesChangedBeyond", () => {
 			"| depo | The internal asset store. | |",
 			...before.slice(9),
 		];
-		expect(linesChangedBeyond(before, after, {at: 6, added: 1, replaced: 0})).toBeGreaterThan(0);
+		expect(linesChangedBeyond(before, after, { at: 6, added: 1, replaced: 0 })).toBeGreaterThan(0);
 	});
 
 	it("counts a trailing truncation the splice did not ask for", () => {
 		const after = [...before.slice(0, 6), "| capture ledger | x | |", ...before.slice(6, -2)];
-		expect(linesChangedBeyond(before, after, {at: 6, added: 1, replaced: 0})).toBeGreaterThan(0);
+		expect(linesChangedBeyond(before, after, { at: 6, added: 1, replaced: 0 })).toBeGreaterThan(0);
 	});
 });
 

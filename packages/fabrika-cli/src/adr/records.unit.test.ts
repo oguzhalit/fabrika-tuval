@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	frontmatterBlock,
 	idFromFile,
@@ -30,7 +30,7 @@ describe("idFromFile", () => {
 
 describe("partitionRecordNames", () => {
 	it("keeps records, ignores non-records, and surfaces malformed ones", () => {
-		const {records, unparseable} = partitionRecordNames([
+		const { records, unparseable } = partitionRecordNames([
 			"0002-b.md",
 			"0001-a.md",
 			"index.md",

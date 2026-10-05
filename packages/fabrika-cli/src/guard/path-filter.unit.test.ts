@@ -5,7 +5,7 @@
  * guard while the two steps read two different changed-file sets, so equality of the LISTS is
  * asserted separately from equality of the `(token, base)` pair, and both are proven to red alone.
  */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	CI_E2E_SOURCE,
 	describeBasis,
@@ -36,8 +36,11 @@ describe("judge", () => {
 	// Set equality, not list equality: the two files order their globs for human reading.
 	it("passes the same set in a different order", () => {
 		expect(
-			judge({ciText: workflow("e2e", GLOBS), deployText: workflow("deploy", [...GLOBS].reverse())}),
-		).toMatchObject({pass: true});
+			judge({
+				ciText: workflow("e2e", GLOBS),
+				deployText: workflow("deploy", [...GLOBS].reverse()),
+			}),
+		).toMatchObject({ pass: true });
 	});
 
 	it("names both directions of a drift", () => {
@@ -60,7 +63,7 @@ describe("judge", () => {
 				ciText: workflow("e2e", GLOBS, "          token: ''\n"),
 				deployText: workflow("deploy", GLOBS, "          token: abc\n"),
 			}),
-		).toMatchObject({pass: false, reason: "basis-drift"});
+		).toMatchObject({ pass: false, reason: "basis-drift" });
 	});
 
 	it("reds equal globs read from a different base", () => {
@@ -69,7 +72,7 @@ describe("judge", () => {
 				ciText: workflow("e2e", GLOBS, "          token: ''\n          base: main\n"),
 				deployText: workflow("deploy", GLOBS, "          token: ''\n"),
 			}),
-		).toMatchObject({pass: false, reason: "basis-drift"});
+		).toMatchObject({ pass: false, reason: "basis-drift" });
 	});
 
 	it.each([
@@ -82,7 +85,7 @@ describe("judge", () => {
 			"jobs:\n  changes:\n    steps:\n      - uses: dorny/paths-filter@v3\n        with:\n          filters: |\n            e2e: []\n",
 		],
 	])("fails closed on zero scope: %s", (_name, ciText) => {
-		expect(judge({ciText, deployText: workflow("deploy", GLOBS)})).toMatchObject({
+		expect(judge({ ciText, deployText: workflow("deploy", GLOBS) })).toMatchObject({
 			pass: false,
 			reason: "zero-scope",
 		});
@@ -95,21 +98,21 @@ describe("extractFilterList", () => {
 			workflow("e2e", GLOBS, "          base: main\n"),
 			CI_E2E_SOURCE,
 		);
-		expect(extraction).toMatchObject({ok: true, basis: {token: undefined, base: "main"}});
+		expect(extraction).toMatchObject({ ok: true, basis: { token: undefined, base: "main" } });
 	});
 });
 
 describe("describeBasis", () => {
 	it("names the mode each token value selects", () => {
-		expect(describeBasis({token: undefined, base: undefined})).toContain("API/listFiles mode");
-		expect(describeBasis({token: "", base: undefined})).toContain("API-free git-diff mode");
+		expect(describeBasis({ token: undefined, base: undefined })).toContain("API/listFiles mode");
+		expect(describeBasis({ token: "", base: undefined })).toContain("API-free git-diff mode");
 	});
 });
 
 describe("renderReport", () => {
 	it("names the wedged-poll consequence on a drift", () => {
 		const report = renderReport(
-			judge({ciText: workflow("e2e", ["a/**"]), deployText: workflow("deploy", ["b/**"])}),
+			judge({ ciText: workflow("e2e", ["a/**"]), deployText: workflow("deploy", ["b/**"]) }),
 		);
 		expect(report).toContain("wedge ci-required");
 		expect(report).toContain("ONLY in ci.yml changes.e2e");

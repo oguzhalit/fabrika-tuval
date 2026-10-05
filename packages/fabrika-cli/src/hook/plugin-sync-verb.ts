@@ -35,11 +35,11 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9031#issuecomment-5625309469
  * @ruling https://github.com/kamp-us/phoenix/issues/9459#issuecomment-5745160952
  */
-import {Effect, FileSystem} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type ChildOutcome, execRecord} from "../io/exec.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, FileSystem } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type ChildOutcome, execRecord } from "../io/exec.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	EMPTY_STDIN,
 	ENVELOPE_UNKNOWN,
@@ -50,7 +50,7 @@ import {
 	SYNC_REFUSED,
 	WRONG_EVENT,
 } from "./codes.ts";
-import {classifyEnvelope, type EnvelopeRead} from "./envelope.ts";
+import { classifyEnvelope, type EnvelopeRead } from "./envelope.ts";
 import {
 	changedPathsIn,
 	directoryMarketplacesAt,
@@ -63,7 +63,12 @@ import {
 	short,
 	type WorktreeFacts,
 } from "./plugin-sync.ts";
-import {childEnv, originHeadArgs, originHeadBranch, setOriginHeadArgs} from "./worktree-create.ts";
+import {
+	childEnv,
+	originHeadArgs,
+	originHeadBranch,
+	setOriginHeadArgs,
+} from "./worktree-create.ts";
 
 const VERB = "fabrika hook plugin-sync";
 const EVENT = "SessionStart";
@@ -82,7 +87,7 @@ export interface PluginSyncOptions {
 type Requirements = ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem;
 
 const readEnvelope = (piped: StdinRead): EnvelopeRead =>
-	piped._tag === "Text" ? classifyEnvelope(piped.text) : {_tag: "Unknown", reason: piped.reason};
+	piped._tag === "Text" ? classifyEnvelope(piped.text) : { _tag: "Unknown", reason: piped.reason };
 
 /**
  * One git read or move, in a named directory, under the hook-safe child environment.
@@ -300,7 +305,7 @@ const planLine = (outcome: SyncPlan, dryRun: boolean): string => {
  * `Refused` is excluded in the type rather than handled and never reached: a refusal's answer channel
  * is empty by the interface convention, so a token for one is a value this verb may never construct.
  */
-const token = (outcome: Exclude<SyncPlan, {_tag: "Refused"}>, dryRun: boolean): string => {
+const token = (outcome: Exclude<SyncPlan, { _tag: "Refused" }>, dryRun: boolean): string => {
 	if (outcome._tag === "Current") return `current\t${outcome.branch}\t${short(outcome.commit)}`;
 	return `${dryRun ? "would-advance" : "advanced"}\t${outcome.branch}\t${short(outcome.to)}`;
 };
@@ -326,7 +331,7 @@ const refuseLeadingWithReason = (
 	context: ReadonlyArray<string> = [],
 ): VerbOutcome => {
 	const outcome = refuse(code, reason);
-	return {...outcome, stderr: [...outcome.stderr, ...context]};
+	return { ...outcome, stderr: [...outcome.stderr, ...context] };
 };
 
 export const runPluginSync = ({

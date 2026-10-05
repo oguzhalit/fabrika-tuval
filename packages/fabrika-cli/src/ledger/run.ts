@@ -14,8 +14,8 @@
  * an unreadable manifest and an empty one take opposite branches, and only one of them is a fact.
  */
 
-import {nonceOf} from "../build/lane.ts";
-import {isRecord, parseJson} from "../io/json.ts";
+import { nonceOf } from "../build/lane.ts";
+import { isRecord, parseJson } from "../io/json.ts";
 
 /** The directory the run tree lives under, inside the epic's tree. */
 export const RUN_ROOT = ".fabrika-plan";
@@ -83,11 +83,11 @@ const isCycleDoc = (value: unknown): value is CycleDoc =>
 export const parseRunRecord = (text: string): RunRecord | null => {
 	const value = parseJson(text);
 	if (!isRecord(value)) return null;
-	const {epic, run, mode, cycleDoc, bodyDigest} = value;
+	const { epic, run, mode, cycleDoc, bodyDigest } = value;
 	if (typeof epic !== "number" || typeof run !== "string" || typeof bodyDigest !== "string") {
 		return null;
 	}
-	return isMode(mode) && isCycleDoc(cycleDoc) ? {epic, run, mode, cycleDoc, bodyDigest} : null;
+	return isMode(mode) && isCycleDoc(cycleDoc) ? { epic, run, mode, cycleDoc, bodyDigest } : null;
 };
 
 /**
@@ -121,7 +121,7 @@ const stringOrNull = (value: unknown): string | null => (typeof value === "strin
 const parseChildRecord = (line: string): ChildRecord | null => {
 	const value = parseJson(line);
 	if (!isRecord(value)) return null;
-	const {number, id, title, stories, linked, mintedThisRun} = value;
+	const { number, id, title, stories, linked, mintedThisRun } = value;
 	if (typeof number !== "number" || typeof id !== "number") return null;
 	const ids = Array.isArray(stories)
 		? stories.every((s) => typeof s === "number")

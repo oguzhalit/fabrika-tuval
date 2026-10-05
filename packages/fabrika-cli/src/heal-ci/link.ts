@@ -6,7 +6,7 @@
  * `linkage-refused` — a body that reaches for a reference form the merge seam does not recognise —
  * is a stall class, and it needs the *other* forms named to be detectable at all.
  */
-import {linkedIssueOf} from "../review/classes.ts";
+import { linkedIssueOf } from "../review/classes.ts";
 
 export type LinkKind = "fixes" | "part-of" | "other" | "none";
 
@@ -21,12 +21,14 @@ const OTHER_REFERENCE = /(?:\bre\b[ \t]*:|\brefs?\b|\bsee\b)[ \t]*#\d+|#\d+/i;
 
 export const linkOf = (body: string): Link => {
 	const fixes = linkedIssueOf(body);
-	if (fixes !== null) return {kind: "fixes", number: fixes};
+	if (fixes !== null) return { kind: "fixes", number: fixes };
 	const partOf = PART_OF.exec(body);
 	if (partOf?.[1] !== undefined) {
-		return {kind: "part-of", number: Number.parseInt(partOf[1], 10)};
+		return { kind: "part-of", number: Number.parseInt(partOf[1], 10) };
 	}
-	return OTHER_REFERENCE.test(body) ? {kind: "other", number: null} : {kind: "none", number: null};
+	return OTHER_REFERENCE.test(body)
+		? { kind: "other", number: null }
+		: { kind: "none", number: null };
 };
 
 /** The line grammar's `link` field: the kind, with its number where it has one. */

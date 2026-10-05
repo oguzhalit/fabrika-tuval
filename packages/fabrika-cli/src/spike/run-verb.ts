@@ -24,12 +24,12 @@
  * knowable and no field claims to hold one.
  */
 
-import {Effect} from "effect";
-import type {ChildRunner} from "../io/exec.ts";
-import {appendText, writeBytes} from "../io/fs.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {OFF_VOCABULARY, READ_OR_EXEC_UNKNOWN, WORKSPACE_IN_TREE} from "./codes.ts";
-import {nonceGrammar, readEvidence, readManifest, type SpikeEffect} from "./guards.ts";
+import { Effect } from "effect";
+import type { ChildRunner } from "../io/exec.ts";
+import { appendText, writeBytes } from "../io/fs.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { OFF_VOCABULARY, READ_OR_EXEC_UNKNOWN, WORKSPACE_IN_TREE } from "./codes.ts";
+import { nonceGrammar, readEvidence, readManifest, type SpikeEffect } from "./guards.ts";
 import {
 	CAPTURE_BYTES,
 	captureErrPath,
@@ -82,8 +82,8 @@ export const childEnv = (input: {
 	readonly pairs: ReadonlyArray<string>;
 	readonly workspace: string;
 }):
-	| {readonly _tag: "Env"; readonly env: Record<string, string>}
-	| {readonly _tag: "Refused"; readonly pair: string} => {
+	| { readonly _tag: "Env"; readonly env: Record<string, string> }
+	| { readonly _tag: "Refused"; readonly pair: string } => {
 	const env: Record<string, string> = {};
 	for (const name of PASSED_THROUGH) {
 		const value = input.parentEnv[name];
@@ -92,12 +92,12 @@ export const childEnv = (input: {
 	for (const pair of input.pairs) {
 		const match = ENV_PAIR_RE.exec(pair);
 		if (match?.[1] === undefined || match[2] === undefined || isCredentialName(match[1])) {
-			return {_tag: "Refused", pair};
+			return { _tag: "Refused", pair };
 		}
 		env[match[1]] = match[2];
 	}
 	env.SPIKE_WORKSPACE = input.workspace;
-	return {_tag: "Env", env};
+	return { _tag: "Env", env };
 };
 
 export const runRun = (options: RunOptions): SpikeEffect<VerbOutcome> =>
@@ -203,7 +203,7 @@ export const runRun = (options: RunOptions): SpikeEffect<VerbOutcome> =>
 			);
 		}
 
-		return answer(JSON.stringify({nonce: options.nonce, ...record}), [scope]);
+		return answer(JSON.stringify({ nonce: options.nonce, ...record }), [scope]);
 	});
 
 const writeCapture = (path: string, bytes: Uint8Array): SpikeEffect<string | null> =>

@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, linkNext, once, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, linkNext, once, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
 import {
 	INCOMPLETE_SCAN,
 	NUDGE_REOPEN_UNCONFIRMED,
@@ -9,8 +9,8 @@ import {
 	PROVEN_NOT_IN_STATE,
 	STALE_HEAD,
 } from "./codes.ts";
-import {checkRuns, ENV, HEAD, OTHER_HEAD, pull, workflows} from "./fixtures.test-support.ts";
-import {runNudge} from "./nudge-verb.ts";
+import { checkRuns, ENV, HEAD, OTHER_HEAD, pull, workflows } from "./fixtures.test-support.ts";
+import { runNudge } from "./nudge-verb.ts";
 
 /** The live-head read is `../io/pulls.ts`'s, served over HTTP like every other leg. */
 const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4321$/;
@@ -25,19 +25,19 @@ const PATCH_PULL = /^PATCH \S+\/repos\/o\/r\/pulls\/4321$/;
 
 const PUSHED = "2026-08-08T09:00:00Z";
 
-const served = (result: ExecResult): HttpReply => ({status: 200, body: result.stdout});
-const badGateway: HttpReply = {status: 502, body: '{"message":"Bad gateway"}'};
+const served = (result: ExecResult): HttpReply => ({ status: 200, body: result.stdout });
+const badGateway: HttpReply = { status: 502, body: '{"message":"Bad gateway"}' };
 const statusTotal = (total: number): HttpReply => ({
 	status: 200,
-	body: JSON.stringify({total_count: total}),
+	body: JSON.stringify({ total_count: total }),
 });
 const commitDate = (date: string): HttpReply => ({
 	status: 200,
-	body: JSON.stringify({commit: {committer: {date}}}),
+	body: JSON.stringify({ commit: { committer: { date } } }),
 });
-const timeline = (...rows: ReadonlyArray<{event: string; at: string}>): HttpReply => ({
+const timeline = (...rows: ReadonlyArray<{ event: string; at: string }>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(rows.map((row) => ({event: row.event, created_at: row.at}))),
+	body: JSON.stringify(rows.map((row) => ({ event: row.event, created_at: row.at }))),
 });
 /** The same page, but declaring a `next` — the read that can never prove it is complete. */
 const unexhaustedPage = (): HttpReply => ({
@@ -46,7 +46,7 @@ const unexhaustedPage = (): HttpReply => ({
 	headers: linkNext("https://api.github.com/repos/o/r/issues/4321/timeline?page=2"),
 });
 
-const options = {pr: 4321, sha: HEAD, repo: null, json: false, env: ENV};
+const options = { pr: 4321, sha: HEAD, repo: null, json: false, env: ENV };
 
 const both = (rows: ReadonlyArray<Scripted>, http: ReadonlyArray<Scripted>) => {
 	const seams = fakeSeams([...rows, ...http]);
@@ -72,10 +72,10 @@ describe("runNudge", () => {
 		const out = await run(
 			[
 				[once(PULL), served(pull())],
-				[once(PULL), served(pull({state: "closed"}))],
+				[once(PULL), served(pull({ state: "closed" }))],
 				[PULL, served(pull())],
 			],
-			[...preconditionsMet, [PATCH_PULL, {status: 200, body: "{}"}]],
+			[...preconditionsMet, [PATCH_PULL, { status: 200, body: "{}" }]],
 		);
 		expect(out.code).toBe(0);
 		expect(out.stdout).toBe(`nudged\t${HEAD}\n`);
@@ -124,7 +124,7 @@ describe("runNudge", () => {
 				[STATUS, statusTotal(0)],
 				[WORKFLOWS, served(workflows("active"))],
 				[COMMIT_DATE, commitDate(PUSHED)],
-				[TIMELINE, timeline({event: "reopened", at: "2026-08-08T09:30:00Z"})],
+				[TIMELINE, timeline({ event: "reopened", at: "2026-08-08T09:30:00Z" })],
 			],
 		);
 		expect(out.code).toBe(PROVEN_NOT_IN_STATE);
@@ -132,7 +132,7 @@ describe("runNudge", () => {
 	});
 
 	it("refuses a moved head on 12 — the state diagnosed is another tree's", async () => {
-		const out = await run([[PULL, served(pull({head: OTHER_HEAD}))]], []);
+		const out = await run([[PULL, served(pull({ head: OTHER_HEAD }))]], []);
 		expect(out.code).toBe(STALE_HEAD);
 	});
 
@@ -147,11 +147,11 @@ describe("runNudge", () => {
 		const out = await run(
 			[
 				[once(PULL), served(pull())],
-				[PULL, served(pull({state: "closed"}))],
+				[PULL, served(pull({ state: "closed" }))],
 			],
 			[
 				...preconditionsMet,
-				[once(PATCH_PULL), {status: 200, body: "{}"}],
+				[once(PATCH_PULL), { status: 200, body: "{}" }],
 				[PATCH_PULL, badGateway],
 			],
 		);

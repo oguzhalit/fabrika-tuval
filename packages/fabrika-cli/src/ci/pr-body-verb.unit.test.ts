@@ -1,15 +1,15 @@
 /**
  * `ci pr-body` — the empty-output-means-no-work contract and the fd-0 taxonomy.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {StdinRead} from "../io/stdin.ts";
-import {EMPTY_STDIN, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {runPrBody} from "./pr-body-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { StdinRead } from "../io/stdin.ts";
+import { EMPTY_STDIN, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { runPrBody } from "./pr-body-verb.ts";
 
-const run = (read: StdinRead) => Effect.runPromise(runPrBody({stdin: () => read}));
+const run = (read: StdinRead) => Effect.runPromise(runPrBody({ stdin: () => read }));
 
-const piped = (text: string): StdinRead => ({_tag: "Text", text});
+const piped = (text: string): StdinRead => ({ _tag: "Text", text });
 
 const POISONED = [
 	"<details><summary>fabrika-cli: 0.3.0</summary>",
@@ -40,13 +40,13 @@ describe("runPrBody", () => {
 	});
 
 	it("refuses an unreadable pipe as UNKNOWN — never as an already-clean body", async () => {
-		const outcome = await run({_tag: "Failed", reason: "EAGAIN with no data for 30000ms"});
+		const outcome = await run({ _tag: "Failed", reason: "EAGAIN with no data for 30000ms" });
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stdout).toBe("");
 	});
 
 	it("refuses a TTY with the piping remedy", async () => {
-		const outcome = await run({_tag: "NoStdin", reason: "fd 0 is a TTY — nothing was piped in"});
+		const outcome = await run({ _tag: "NoStdin", reason: "fd 0 is a TTY — nothing was piped in" });
 		expect(outcome.code).toBe(EMPTY_STDIN);
 		expect(outcome.stderr.join("\n")).toContain("gh api");
 	});

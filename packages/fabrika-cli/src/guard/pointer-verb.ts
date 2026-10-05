@@ -12,14 +12,14 @@
  * report a tree-wide violation. Listing first means a broken `git` lands on UNKNOWN instead.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {execCapture} from "../io/exec.ts";
-import {exists, type ReadFailed, readFile} from "../io/fs.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {atLine} from "./annotate.ts";
-import {extractPathRefs, type StalePointer, stalePointersIn, staleReport} from "./pointer.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { execCapture } from "../io/exec.ts";
+import { exists, type ReadFailed, readFile } from "../io/fs.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { atLine } from "./annotate.ts";
+import { extractPathRefs, type StalePointer, stalePointersIn, staleReport } from "./pointer.ts";
 import {
 	annotationsOrNone,
 	clean,

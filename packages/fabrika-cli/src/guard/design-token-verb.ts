@@ -8,12 +8,12 @@
  * ceilings after a genuine cleanup leg, the way a snapshot test is updated.
  */
 
-import {Effect, FileSystem, Option, Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {type ReadFailed, readDir, readFile, type WriteFailed, writeFile} from "../io/fs.ts";
-import {parseJson} from "../io/json.ts";
-import {answer, type VerbOutcome} from "../verb.ts";
-import {atLine} from "./annotate.ts";
+import { Effect, FileSystem, Option, Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { type ReadFailed, readDir, readFile, type WriteFailed, writeFile } from "../io/fs.ts";
+import { parseJson } from "../io/json.ts";
+import { answer, type VerbOutcome } from "../verb.ts";
+import { atLine } from "./annotate.ts";
 import {
 	type CssFileFacts,
 	type DesignTokenConfig,
@@ -128,8 +128,8 @@ const gatherCssFacts = (
 
 /** The parsed allow-list config, or the named reason it is unusable. */
 type ConfigRead =
-	| {readonly _tag: "Config"; readonly config: DesignTokenConfig}
-	| {readonly _tag: "Malformed"; readonly report: string};
+	| { readonly _tag: "Config"; readonly config: DesignTokenConfig }
+	| { readonly _tag: "Malformed"; readonly report: string };
 
 const readConfig = (
 	root: string,
@@ -168,7 +168,7 @@ const judgeTree = (
 		const config = yield* readConfig(root);
 		if (config._tag === "Malformed") return zeroScope(config.report);
 		const files = yield* gatherCssFacts(root);
-		const verdict = judge({files, config: config.config});
+		const verdict = judge({ files, config: config.config });
 		const report = renderReport(verdict);
 		if (verdict.pass) return clean(report, verdict.filesChecked);
 		if (verdict.reason === "zero-scope") return zeroScope(report);

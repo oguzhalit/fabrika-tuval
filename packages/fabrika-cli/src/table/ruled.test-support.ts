@@ -1,6 +1,6 @@
-import type {CommentRecord} from "../io/issues.ts";
-import {emit, markedIssue, rulingUrl, scopeDigest} from "../wire/decision-ruling.ts";
-import {markerTime} from "../wire/grill-marker.ts";
+import type { CommentRecord } from "../io/issues.ts";
+import { emit, markedIssue, rulingUrl, scopeDigest } from "../wire/decision-ruling.ts";
+import { markerTime } from "../wire/grill-marker.ts";
 
 /** A conforming `decision-ruled` marker comment on `issue`, ruled at `at`, posted by `author`. */
 export const rulingComment = (
@@ -22,6 +22,6 @@ export const rulingComment = (
 		author,
 		createdAt: at,
 		updatedAt: at,
-		body: emit({issue: marked, digest, ruling, supersedes: null, at: stamp}),
+		body: emit({ issue: marked, digest, ruling, supersedes: null, at: stamp }),
 	};
 };

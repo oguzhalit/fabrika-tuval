@@ -2,15 +2,15 @@
  * `ui law` reads the typed prohibition registry and validates it whole-file.
  * See `ui law --help` for the refusal contract.
  */
-import {Effect, type FileSystem} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {readFile} from "../io/fs.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {BAD_SECTIONS, NO_MANIFEST, PRECONDITION_UNKNOWN, UNTYPED_LAW} from "./codes.ts";
-import {atRoot, MANIFEST_PATH, MANIFEST_REMEDY, REGISTRY_PATH} from "./conventions.ts";
-import {resolveRoot} from "./lane.ts";
-import {parseRegistry} from "./law.ts";
-import {probe} from "./manifest-verb.ts";
+import { Effect, type FileSystem } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { readFile } from "../io/fs.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { BAD_SECTIONS, NO_MANIFEST, PRECONDITION_UNKNOWN, UNTYPED_LAW } from "./codes.ts";
+import { atRoot, MANIFEST_PATH, MANIFEST_REMEDY, REGISTRY_PATH } from "./conventions.ts";
+import { resolveRoot } from "./lane.ts";
+import { parseRegistry } from "./law.ts";
+import { probe } from "./manifest-verb.ts";
 
 const VERB = "ui law";
 
@@ -67,7 +67,7 @@ export const runLaw = (): Effect.Effect<
 				`${VERB}: ${REGISTRY_PATH} exists but does not satisfy the registry schema: ${parsed.violation} — refusing the whole file; half a law is not a law.`,
 			);
 		}
-		return answer(JSON.stringify({lawSource: "registry", rows: parsed.rows}), [
+		return answer(JSON.stringify({ lawSource: "registry", rows: parsed.rows }), [
 			`${VERB}: validated ${parsed.rows.length} row${parsed.rows.length === 1 ? "" : "s"} against the registry schema.`,
 		]);
 	});

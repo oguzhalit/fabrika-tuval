@@ -163,7 +163,7 @@ export const inputFromEnv = (e: Record<string, string | undefined>): CiRequiredI
 			result: result(`${prefix}_RESULT`),
 		});
 	}
-	return {changesResult: result("CHANGES_RESULT"), jobs, scopeReasons};
+	return { changesResult: result("CHANGES_RESULT"), jobs, scopeReasons };
 };
 
 /**
@@ -189,5 +189,5 @@ export const judge = (input: CiRequiredInput): CiRequiredVerdict => {
 		changesReport === null &&
 		input.scopeReasons.length === 0 &&
 		jobs.every((j) => j.verdict !== "FAIL");
-	return {pass, jobs, changesReport, scopeReasons: input.scopeReasons};
+	return { pass, jobs, changesReport, scopeReasons: input.scopeReasons };
 };

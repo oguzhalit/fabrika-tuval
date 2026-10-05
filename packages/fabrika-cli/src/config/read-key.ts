@@ -17,17 +17,17 @@
  * any key is `./unusable.ts`, and it stays the write path's gate.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import {layerPath} from "./document.ts";
-import type {KeyGroup} from "./key-group.ts";
-import {type Load, resolve} from "./load.ts";
-import {loadRepoConfig} from "./working-root.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { layerPath } from "./document.ts";
+import type { KeyGroup } from "./key-group.ts";
+import { type Load, resolve } from "./load.ts";
+import { loadRepoConfig } from "./working-root.ts";
 
 export type Read<A> =
 	/** The value to use, and the sentence a verb prints about where it came from. */
-	| {readonly _tag: "Value"; readonly value: A; readonly note: string}
+	| { readonly _tag: "Value"; readonly value: A; readonly note: string }
 	/** No value may be used, and this is the reason, worded by the key that raised it. */
-	| {readonly _tag: "Refused"; readonly reason: string};
+	| { readonly _tag: "Refused"; readonly reason: string };
 
 export const readKey = <A>(
 	cwd: string,
@@ -41,7 +41,7 @@ export const readFromLoad = <A>(load: Load, group: KeyGroup<A>): Read<A> => {
 	switch (resolved._tag) {
 		case "Malformed":
 		case "Unknown":
-			return {_tag: "Refused", reason: resolved.reason};
+			return { _tag: "Refused", reason: resolved.reason };
 		case "Declared":
 			return {
 				_tag: "Value",

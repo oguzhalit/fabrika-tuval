@@ -12,22 +12,22 @@
  * **Every leaf is declared with `leafCommand`, never a bare `Command.make`** — the bare form
  * silently opts out of the excess-operand guard, which `../excess-operand.unit.test.ts` reds on.
  */
-import {fileURLToPath} from "node:url";
-import {Effect, type FileSystem, Option, type Path, Result} from "effect";
-import {Command, Flag} from "effect/unstable/cli";
-import {emit as emitOutcome} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readFile, writeFile} from "../io/fs.ts";
-import {readStdin, type StdinRead} from "../io/stdin.ts";
-import {runCheck} from "./check-verb.ts";
-import {runCodes} from "./codes-verb.ts";
-import {runDocSection} from "./doc-section-verb.ts";
-import {runEmit} from "./emit-verb.ts";
-import {runFormats} from "./formats-verb.ts";
-import {DOC_PATH} from "./index-doc.ts";
-import {type DocRead, type DocSave, runIndex} from "./index-verb.ts";
-import {runRead} from "./read-verb.ts";
-import {registeredFormats, registeredKeys} from "./registry.ts";
+import { fileURLToPath } from "node:url";
+import { Effect, type FileSystem, Option, type Path, Result } from "effect";
+import { Command, Flag } from "effect/unstable/cli";
+import { emit as emitOutcome } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readFile, writeFile } from "../io/fs.ts";
+import { readStdin, type StdinRead } from "../io/stdin.ts";
+import { runCheck } from "./check-verb.ts";
+import { runCodes } from "./codes-verb.ts";
+import { runDocSection } from "./doc-section-verb.ts";
+import { runEmit } from "./emit-verb.ts";
+import { runFormats } from "./formats-verb.ts";
+import { DOC_PATH } from "./index-doc.ts";
+import { type DocRead, type DocSave, runIndex } from "./index-verb.ts";
+import { runRead } from "./read-verb.ts";
+import { registeredFormats, registeredKeys } from "./registry.ts";
 
 const jsonFlag = Flag.boolean("json").pipe(
 	Flag.withDefault(false),
@@ -44,9 +44,9 @@ const formatFlag = Flag.string("format").pipe(
 
 const codes = leafCommand(
 	"codes",
-	{json: jsonFlag},
-	Effect.fn(function* ({json}) {
-		yield* emitOutcome(runCodes({json}));
+	{ json: jsonFlag },
+	Effect.fn(function* ({ json }) {
+		yield* emitOutcome(runCodes({ json }));
 	}),
 ).pipe(
 	Command.withShortDescription("Print the exit taxonomy this group allocates from."),
@@ -56,14 +56,14 @@ const codes = leafCommand(
 			"  Reads nothing and always succeeds.",
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika wire codes"}]),
+	Command.withExamples([{ command: "fabrika wire codes" }]),
 );
 
 const formats = leafCommand(
 	"formats",
-	{json: jsonFlag},
-	Effect.fn(function* ({json}) {
-		yield* emitOutcome(runFormats({json}));
+	{ json: jsonFlag },
+	Effect.fn(function* ({ json }) {
+		yield* emitOutcome(runFormats({ json }));
 	}),
 ).pipe(
 	Command.withShortDescription("List the registered wire formats, from the registry."),
@@ -74,14 +74,14 @@ const formats = leafCommand(
 			"  Derivation: claude-plugins/fabrika/docs/wire-formats.md",
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika wire formats"}]),
+	Command.withExamples([{ command: "fabrika wire formats" }]),
 );
 
 const emit = leafCommand(
 	"emit",
-	{format: formatFlag, json: jsonFlag},
-	Effect.fn(function* ({format, json}) {
-		yield* emitOutcome(yield* runEmit({format, json, stdin: Effect.sync(readStdin)}));
+	{ format: formatFlag, json: jsonFlag },
+	Effect.fn(function* ({ format, json }) {
+		yield* emitOutcome(yield* runEmit({ format, json, stdin: Effect.sync(readStdin) }));
 	}),
 ).pipe(
 	Command.withShortDescription("Compose a format's bytes from the fields on stdin."),
@@ -97,15 +97,15 @@ const emit = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika wire emit --format acceptance-criteria < criteria.txt"},
+		{ command: "fabrika wire emit --format acceptance-criteria < criteria.txt" },
 	]),
 );
 
 const read = leafCommand(
 	"read",
-	{format: formatFlag, json: jsonFlag},
-	Effect.fn(function* ({format, json}) {
-		yield* emitOutcome(yield* runRead({format, json, stdin: Effect.sync(readStdin)}));
+	{ format: formatFlag, json: jsonFlag },
+	Effect.fn(function* ({ format, json }) {
+		yield* emitOutcome(yield* runRead({ format, json, stdin: Effect.sync(readStdin) }));
 	}),
 ).pipe(
 	Command.withShortDescription("Read a format's block out of the artifact on stdin."),
@@ -121,15 +121,15 @@ const read = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika wire read --format acceptance-criteria < issue-body.md"},
+		{ command: "fabrika wire read --format acceptance-criteria < issue-body.md" },
 	]),
 );
 
 const check = leafCommand(
 	"check",
-	{format: formatFlag, json: jsonFlag},
-	Effect.fn(function* ({format, json}) {
-		yield* emitOutcome(yield* runCheck({format, json, stdin: Effect.sync(readStdin)}));
+	{ format: formatFlag, json: jsonFlag },
+	Effect.fn(function* ({ format, json }) {
+		yield* emitOutcome(yield* runCheck({ format, json, stdin: Effect.sync(readStdin) }));
 	}),
 ).pipe(
 	Command.withShortDescription("Whether the artifact on stdin carries a conforming block."),
@@ -146,7 +146,7 @@ const check = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika wire check --format acceptance-criteria < issue-body.md"},
+		{ command: "fabrika wire check --format acceptance-criteria < issue-body.md" },
 	]),
 );
 
@@ -154,8 +154,8 @@ const check = leafCommand(
 const readDocFile = (path: string): Effect.Effect<StdinRead, never, FileSystem.FileSystem> =>
 	Effect.map(Effect.result(readFile(path)), (read) =>
 		Result.isFailure(read)
-			? ({_tag: "Failed", reason: read.failure.reason} satisfies StdinRead)
-			: ({_tag: "Text", text: read.success} satisfies StdinRead),
+			? ({ _tag: "Failed", reason: read.failure.reason } satisfies StdinRead)
+			: ({ _tag: "Text", text: read.success } satisfies StdinRead),
 	);
 
 const docSection = leafCommand(
@@ -170,12 +170,12 @@ const docSection = leafCommand(
 		),
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({heading, file, json}) {
+	Effect.fn(function* ({ heading, file, json }) {
 		const source: Effect.Effect<StdinRead, never, FileSystem.FileSystem> = Option.match(file, {
 			onNone: () => Effect.sync(readStdin),
 			onSome: readDocFile,
 		});
-		yield* emitOutcome(yield* runDocSection({heading, json, source}));
+		yield* emitOutcome(yield* runDocSection({ heading, json, source }));
 	}),
 ).pipe(
 	Command.withShortDescription("Print one markdown section of a document by heading."),
@@ -190,7 +190,7 @@ const docSection = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: 'fabrika wire doc-section --heading "build claim" < contract.md'},
+		{ command: 'fabrika wire doc-section --heading "build claim" < contract.md' },
 	]),
 );
 
@@ -204,8 +204,8 @@ const indexDocFile = (): string =>
 const readIndexDoc: Effect.Effect<DocRead, never, FileSystem.FileSystem> = Effect.gen(function* () {
 	const read = yield* Effect.result(readFile(indexDocFile()));
 	return Result.isFailure(read)
-		? ({_tag: "Failed", reason: read.failure.reason} satisfies DocRead)
-		: ({_tag: "Text", text: read.success} satisfies DocRead);
+		? ({ _tag: "Failed", reason: read.failure.reason } satisfies DocRead)
+		: ({ _tag: "Text", text: read.success } satisfies DocRead);
 });
 
 const saveIndexDoc = (
@@ -214,8 +214,8 @@ const saveIndexDoc = (
 	Effect.gen(function* () {
 		const written = yield* Effect.result(writeFile(indexDocFile(), markdown));
 		return Result.isFailure(written)
-			? ({_tag: "Failed", reason: written.failure.reason} satisfies DocSave)
-			: ({_tag: "Saved"} satisfies DocSave);
+			? ({ _tag: "Failed", reason: written.failure.reason } satisfies DocSave)
+			: ({ _tag: "Saved" } satisfies DocSave);
 	});
 
 const index = leafCommand(
@@ -229,7 +229,7 @@ const index = leafCommand(
 		),
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({write, json}) {
+	Effect.fn(function* ({ write, json }) {
 		yield* emitOutcome(
 			yield* runIndex<FileSystem.FileSystem | Path.Path>({
 				write,
@@ -251,7 +251,7 @@ const index = leafCommand(
 			'  Derivation: claude-plugins/fabrika/docs/wire-formats.md, "Adding a format"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika wire index --write"}]),
+	Command.withExamples([{ command: "fabrika wire index --write" }]),
 );
 
 export const wireCommand = Command.make("wire").pipe(

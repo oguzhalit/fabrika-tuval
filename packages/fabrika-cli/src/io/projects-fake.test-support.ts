@@ -9,11 +9,11 @@
  * setup` writes nothing, which a fixed script of replies cannot.
  */
 
-import {Effect, Layer} from "effect";
+import { Effect, Layer } from "effect";
 import type * as HttpBody from "effect/unstable/http/HttpBody";
 import * as HttpClient from "effect/unstable/http/HttpClient";
 import * as HttpClientResponse from "effect/unstable/http/HttpClientResponse";
-import {isRecord} from "./json.ts";
+import { isRecord } from "./json.ts";
 
 export interface FakeOption {
 	id: string;
@@ -29,9 +29,9 @@ export interface FakeField {
 	name: string;
 	dataType: string;
 	options?: FakeOption[];
-	iteration?: {duration: number; startDay: number};
+	iteration?: { duration: number; startDay: number };
 	/** The iterations an iteration field still runs, as `configuration.iterations` answers them. */
-	iterations?: Array<{id: string; title: string; startDate: string; duration: number}>;
+	iterations?: Array<{ id: string; title: string; startDate: string; duration: number }>;
 }
 
 export interface FakeView {
@@ -114,24 +114,24 @@ const freshProject = (
 	shortDescription: null,
 	readme: null,
 	fields: [
-		{id: `${id}_F_title`, name: "Title", dataType: "TITLE"},
-		{id: `${id}_F_assignees`, name: "Assignees", dataType: "ASSIGNEES"},
+		{ id: `${id}_F_title`, name: "Title", dataType: "TITLE" },
+		{ id: `${id}_F_assignees`, name: "Assignees", dataType: "ASSIGNEES" },
 		{
 			id: `${id}_F_status`,
 			name: "Status",
 			dataType: "SINGLE_SELECT",
 			options: [
-				{id: "s1", name: "Todo", color: "GREEN", description: "This item hasn't been started"},
+				{ id: "s1", name: "Todo", color: "GREEN", description: "This item hasn't been started" },
 				{
 					id: "s2",
 					name: "In Progress",
 					color: "YELLOW",
 					description: "This is actively being worked on",
 				},
-				{id: "s3", name: "Done", color: "PURPLE", description: "This has been completed"},
+				{ id: "s3", name: "Done", color: "PURPLE", description: "This has been completed" },
 			],
 		},
-		{id: `${id}_F_labels`, name: "Labels", dataType: "LABELS"},
+		{ id: `${id}_F_labels`, name: "Labels", dataType: "LABELS" },
 	],
 	views: [
 		{
@@ -148,7 +148,7 @@ const freshProject = (
 });
 
 export const blankProject = (
-	overrides: Partial<FakeProject> & {number: number; title: string},
+	overrides: Partial<FakeProject> & { number: number; title: string },
 ): FakeProject => ({
 	...freshProject(
 		`PVT_${overrides.number}`,
@@ -210,19 +210,19 @@ const projectJson = (project: FakeProject): Record<string, unknown> => ({
 	url: `https://github.com/${project.ownerKind === "User" ? "users" : "orgs"}/${project.owner}/projects/${project.number}`,
 	title: project.title,
 	createdAt: "2026-01-01T00:00:00Z",
-	owner: {__typename: project.ownerKind ?? "Organization", login: project.owner},
+	owner: { __typename: project.ownerKind ?? "Organization", login: project.owner },
 	shortDescription: project.shortDescription,
 	readme: project.readme,
-	fields: {pageInfo: {hasNextPage: false}, nodes: project.fields.map(fieldJson)},
+	fields: { pageInfo: { hasNextPage: false }, nodes: project.fields.map(fieldJson) },
 	views: {
-		pageInfo: {hasNextPage: false},
+		pageInfo: { hasNextPage: false },
 		nodes: project.views.map((view) => ({
 			id: view.id,
 			number: view.number,
 			name: view.name,
 			layout: view.layout,
 			filter: view.filter,
-			fields: {pageInfo: {hasNextPage: false}, nodes: view.fieldIds.map((id) => ({id}))},
+			fields: { pageInfo: { hasNextPage: false }, nodes: view.fieldIds.map((id) => ({ id })) },
 		})),
 	},
 });
@@ -253,9 +253,9 @@ const valueJson = (
 	const field = project.fields.find((one) => one.id === fieldId);
 	if (field === undefined || !isRecord(raw)) return null;
 	const meta = {
-		creator: {login: setter},
+		creator: { login: setter },
 		updatedAt: SET_AT,
-		field: {id: field.id, name: field.name},
+		field: { id: field.id, name: field.name },
 	};
 	if (typeof raw.singleSelectOptionId === "string") {
 		const option = field.options?.find((one) => one.id === raw.singleSelectOptionId);
@@ -280,13 +280,13 @@ const valueJson = (
 				};
 	}
 	if (typeof raw.text === "string") {
-		return {__typename: "ProjectV2ItemFieldTextValue", text: raw.text, ...meta};
+		return { __typename: "ProjectV2ItemFieldTextValue", text: raw.text, ...meta };
 	}
 	if (typeof raw.number === "number") {
-		return {__typename: "ProjectV2ItemFieldNumberValue", number: raw.number, ...meta};
+		return { __typename: "ProjectV2ItemFieldNumberValue", number: raw.number, ...meta };
 	}
 	if (typeof raw.date === "string") {
-		return {__typename: "ProjectV2ItemFieldDateValue", date: raw.date, ...meta};
+		return { __typename: "ProjectV2ItemFieldDateValue", date: raw.date, ...meta };
 	}
 	return null;
 };
@@ -307,7 +307,7 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 	const answer = (
 		operation: string,
 		vars: Record<string, unknown>,
-	): {data: unknown; errors?: unknown[]} => {
+	): { data: unknown; errors?: unknown[] } => {
 		const input = isRecord(vars.input) ? vars.input : {};
 		switch (operation) {
 			case "TableRepository":
@@ -315,9 +315,9 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 					data: {
 						repository: {
 							id: "R_repo",
-							owner: {id: `O_${repoOwner}`, login: repoOwner},
+							owner: { id: `O_${repoOwner}`, login: repoOwner },
 							projectsV2: {
-								pageInfo: {hasNextPage: false, endCursor: null},
+								pageInfo: { hasNextPage: false, endCursor: null },
 								nodes: projects
 									.filter((project) => project.linked)
 									.map((project) => ({
@@ -336,7 +336,7 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 						repositoryOwner: {
 							id: `O_${String(vars.login)}`,
 							projectsV2: {
-								pageInfo: {hasNextPage: false, endCursor: null},
+								pageInfo: { hasNextPage: false, endCursor: null },
 								nodes: projects
 									.filter((project) => project.owner === vars.login)
 									.map((project) => ({
@@ -352,17 +352,18 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 			case "TableLinkProject": {
 				const project = byId(vars.projectId);
 				if (project === undefined)
-					return {data: null, errors: [{type: "NOT_FOUND", message: "no project"}]};
+					return { data: null, errors: [{ type: "NOT_FOUND", message: "no project" }] };
 				project.linked = true;
-				return {data: {linkProjectV2ToRepository: {repository: {id: vars.repositoryId}}}};
+				return { data: { linkProjectV2ToRepository: { repository: { id: vars.repositoryId } } } };
 			}
 			case "TableProjectByNumber": {
 				const found = projects.find(
 					(project) => project.owner === vars.login && project.number === vars.number,
 				);
-				if (found !== undefined) return {data: {repositoryOwner: {projectV2: projectJson(found)}}};
+				if (found !== undefined)
+					return { data: { repositoryOwner: { projectV2: projectJson(found) } } };
 				return {
-					data: {repositoryOwner: {projectV2: null}},
+					data: { repositoryOwner: { projectV2: null } },
 					errors: [
 						{
 							type: "NOT_FOUND",
@@ -374,7 +375,7 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 			}
 			case "TableProjectById": {
 				const found = byId(vars.id);
-				return {data: {node: found === undefined ? null : projectJson(found)}};
+				return { data: { node: found === undefined ? null : projectJson(found) } };
 			}
 			case "TableCreateProject": {
 				const number = Math.max(0, ...projects.map((project) => project.number)) + 1;
@@ -389,23 +390,25 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 				projects.push(project);
 				return {
 					data: {
-						createProjectV2: {projectV2: {id: project.id, number, url: projectJson(project).url}},
+						createProjectV2: {
+							projectV2: { id: project.id, number, url: projectJson(project).url },
+						},
 					},
 				};
 			}
 			case "TableUpdateProject": {
 				const project = byId(vars.projectId);
 				if (project === undefined)
-					return {data: null, errors: [{type: "NOT_FOUND", message: "no project"}]};
+					return { data: null, errors: [{ type: "NOT_FOUND", message: "no project" }] };
 				if (typeof vars.readme === "string") project.readme = vars.readme;
 				if (typeof vars.shortDescription === "string")
 					project.shortDescription = vars.shortDescription;
-				return {data: {updateProjectV2: {projectV2: {id: project.id}}}};
+				return { data: { updateProjectV2: { projectV2: { id: project.id } } } };
 			}
 			case "TableCreateField": {
 				const project = byId(input.projectId);
 				if (project === undefined)
-					return {data: null, errors: [{type: "NOT_FOUND", message: "no project"}]};
+					return { data: null, errors: [{ type: "NOT_FOUND", message: "no project" }] };
 				const field: FakeField = {
 					id: mint("PVTF"),
 					name: String(input.name),
@@ -438,7 +441,7 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 					});
 				}
 				project.fields.push(field);
-				return {data: {createProjectV2Field: {projectV2Field: {id: field.id}}}};
+				return { data: { createProjectV2Field: { projectV2Field: { id: field.id } } } };
 			}
 			case "TableUpdateField": {
 				const project = projects.find((one) =>
@@ -446,7 +449,7 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 				);
 				const field = project?.fields.find((one) => one.id === input.fieldId);
 				if (project === undefined || field === undefined)
-					return {data: null, errors: [{type: "NOT_FOUND", message: "no field"}]};
+					return { data: null, errors: [{ type: "NOT_FOUND", message: "no field" }] };
 				if (Array.isArray(input.singleSelectOptions)) {
 					// GitHub replaces the whole list: an option sent without its id is minted anew, and
 					// every item value naming an id the new list lacks is cleared.
@@ -467,47 +470,47 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 						}
 					}
 				}
-				return {data: {updateProjectV2Field: {projectV2Field: {id: field.id}}}};
+				return { data: { updateProjectV2Field: { projectV2Field: { id: field.id } } } };
 			}
 			case "TableUpdateView": {
 				const view = projects
 					.flatMap((project) => project.views)
 					.find((one) => one.id === input.viewId);
 				if (view === undefined)
-					return {data: null, errors: [{type: "NOT_FOUND", message: "no view"}]};
+					return { data: null, errors: [{ type: "NOT_FOUND", message: "no view" }] };
 				if (typeof input.layout === "string") view.layout = input.layout;
 				if (typeof input.filter === "string") view.filter = input.filter;
 				if (isRecord(input.configuration) && Array.isArray(input.configuration.visibleFieldIds)) {
 					view.fieldIds = input.configuration.visibleFieldIds.map(String);
 				}
-				return {data: {updateProjectV2View: {projectV2View: {id: view.id}}}};
+				return { data: { updateProjectV2View: { projectV2View: { id: view.id } } } };
 			}
 			case "TableAddItem": {
 				const project = byId(vars.projectId);
 				if (project === undefined)
-					return {data: null, errors: [{type: "NOT_FOUND", message: "no project"}]};
+					return { data: null, errors: [{ type: "NOT_FOUND", message: "no project" }] };
 				const standing = project.items.find((item) => item.contentId === vars.contentId);
 				const issue = ISSUE_NODE.exec(String(vars.contentId))?.[1];
 				const item = standing ?? {
 					id: mint("PVTI"),
 					contentId: String(vars.contentId),
-					...(issue === undefined ? {} : {number: Number(issue)}),
+					...(issue === undefined ? {} : { number: Number(issue) }),
 					values: {},
 				};
 				if (standing === undefined) project.items.push(item);
-				return {data: {addProjectV2ItemById: {item: {id: item.id}}}};
+				return { data: { addProjectV2ItemById: { item: { id: item.id } } } };
 			}
 			case "TableSetValue": {
 				const project = byId(input.projectId);
 				const item = project?.items.find((one) => one.id === input.itemId);
 				if (item === undefined)
-					return {data: null, errors: [{type: "NOT_FOUND", message: "no item"}]};
+					return { data: null, errors: [{ type: "NOT_FOUND", message: "no item" }] };
 				item.values[String(input.fieldId)] = input.value;
-				return {data: {updateProjectV2ItemFieldValue: {projectV2Item: {id: item.id}}}};
+				return { data: { updateProjectV2ItemFieldValue: { projectV2Item: { id: item.id } } } };
 			}
 			case "TableBoard": {
 				const project = byId(vars.id);
-				if (project === undefined) return {data: {node: null}};
+				if (project === undefined) return { data: { node: null } };
 				const named = (name: unknown) => project.fields.find((field) => field.name === name);
 				const cell = (values: Record<string, unknown>, name: unknown): unknown => {
 					const field = named(name);
@@ -515,23 +518,23 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 					if (!isRecord(raw)) return null;
 					if (typeof raw.singleSelectOptionId === "string") {
 						const option = field?.options?.find((one) => one.id === raw.singleSelectOptionId);
-						return option === undefined ? null : {name: option.name};
+						return option === undefined ? null : { name: option.name };
 					}
 					return typeof raw.date === "string" && field?.dataType === "DATE"
-						? {date: raw.date}
+						? { date: raw.date }
 						: null;
 				};
 				return {
 					data: {
 						node: {
 							items: {
-								pageInfo: {hasNextPage: false, endCursor: null},
+								pageInfo: { hasNextPage: false, endCursor: null },
 								nodes: project.items.map((item) => ({
 									isArchived: item.archived === true,
 									content:
 										item.number === undefined
-											? {__typename: "DraftIssue"}
-											: {__typename: "Issue", number: item.number},
+											? { __typename: "DraftIssue" }
+											: { __typename: "Issue", number: item.number },
 									stage: cell(item.values, vars.stage),
 									section: cell(item.values, vars.section),
 									tableDay: cell(item.values, vars.tableDay),
@@ -545,38 +548,38 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 				const project = byId(input.projectId);
 				const item = project?.items.find((one) => one.id === input.itemId);
 				if (item === undefined)
-					return {data: null, errors: [{type: "NOT_FOUND", message: "no item"}]};
+					return { data: null, errors: [{ type: "NOT_FOUND", message: "no item" }] };
 				delete item.values[String(input.fieldId)];
-				return {data: {clearProjectV2ItemFieldValue: {projectV2Item: {id: item.id}}}};
+				return { data: { clearProjectV2ItemFieldValue: { projectV2Item: { id: item.id } } } };
 			}
 			case "TableDeleteItem": {
 				const project = byId(vars.projectId);
 				const at = project?.items.findIndex((one) => one.id === vars.itemId) ?? -1;
 				if (project === undefined || at === -1)
-					return {data: null, errors: [{type: "NOT_FOUND", message: "no item"}]};
+					return { data: null, errors: [{ type: "NOT_FOUND", message: "no item" }] };
 				project.items.splice(at, 1);
-				return {data: {deleteProjectV2Item: {deletedItemId: vars.itemId}}};
+				return { data: { deleteProjectV2Item: { deletedItemId: vars.itemId } } };
 			}
 			case "TableItems": {
 				const project = byId(vars.id);
-				if (project === undefined) return {data: {node: null}};
+				if (project === undefined) return { data: { node: null } };
 				return {
 					data: {
 						node: {
 							items: {
-								pageInfo: {hasNextPage: false, endCursor: null},
+								pageInfo: { hasNextPage: false, endCursor: null },
 								nodes: project.items.map((item) => ({
 									id: item.id,
 									content:
 										item.number === undefined
-											? {__typename: "DraftIssue"}
+											? { __typename: "DraftIssue" }
 											: {
 													__typename: "Issue",
 													number: item.number,
-													repository: {nameWithOwner: repo},
+													repository: { nameWithOwner: repo },
 												},
 									fieldValues: {
-										pageInfo: {hasNextPage: false},
+										pageInfo: { hasNextPage: false },
 										nodes: Object.entries(item.values).flatMap(([fieldId, raw]) => {
 											const value = valueJson(project, fieldId, raw, repoOwner);
 											return value === null ? [] : [value];
@@ -590,7 +593,7 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 			}
 			case "TableWeek": {
 				const project = byId(vars.id);
-				if (project === undefined) return {data: {node: null}};
+				if (project === undefined) return { data: { node: null } };
 				const week = project.fields.find((field) => field.name === vars.week);
 				return {
 					data: {
@@ -606,19 +609,19 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 													completedIterations: [],
 												},
 											}
-										: {__typename: "ProjectV2Field"},
+										: { __typename: "ProjectV2Field" },
 						},
 					},
 				};
 			}
 			case "TableStatusUpdates": {
 				const project = byId(vars.id);
-				if (project === undefined) return {data: {node: null}};
+				if (project === undefined) return { data: { node: null } };
 				return {
 					data: {
 						node: {
 							statusUpdates: {
-								pageInfo: {hasNextPage: false, endCursor: null},
+								pageInfo: { hasNextPage: false, endCursor: null },
 								nodes: project.statusUpdates.map((update) => ({
 									id: update.id,
 									body: update.body,
@@ -632,13 +635,13 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 			case "TableStatusUpdate": {
 				const project = byId(input.projectId);
 				if (project === undefined)
-					return {data: null, errors: [{type: "NOT_FOUND", message: "no project"}]};
+					return { data: null, errors: [{ type: "NOT_FOUND", message: "no project" }] };
 				const id = mint("PVTSU");
-				project.statusUpdates.push({...input, id});
-				return {data: {createProjectV2StatusUpdate: {statusUpdate: {id}}}};
+				project.statusUpdates.push({ ...input, id });
+				return { data: { createProjectV2StatusUpdate: { statusUpdate: { id } } } };
 			}
 			default:
-				return {data: null, errors: [{message: `the fake does not answer ${operation}`}]};
+				return { data: null, errors: [{ message: `the fake does not answer ${operation}` }] };
 		}
 	};
 
@@ -646,7 +649,7 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 	const createViewRest = (
 		path: string,
 		body: Record<string, unknown>,
-	): {status: number; body: Record<string, unknown>} => {
+	): { status: number; body: Record<string, unknown> } => {
 		const match = /\/(orgs|users)\/([^/]+)\/projectsV2\/(\d+)\/views$/.exec(path);
 		const kind = match?.[1] === "users" ? "User" : "Organization";
 		const project = projects.find(
@@ -656,7 +659,7 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 				(one.ownerKind ?? "Organization") === kind &&
 				one.number === Number(match[3]),
 		);
-		if (project === undefined) return {status: 404, body: {message: "Not Found"}};
+		if (project === undefined) return { status: 404, body: { message: "Not Found" } };
 		const byNumber = (raw: unknown): string | undefined =>
 			project.fields.find((field) => fakeDatabaseId(field) === raw)?.id;
 		const ids = (raw: unknown): string[] =>
@@ -700,16 +703,16 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 				operations.push(`REST ${request.method} views`);
 				variables.push(isRecord(body) ? body : {});
 				requests.push(`${request.method} ${url.pathname}`);
-				const headers: Record<string, string> = {"content-type": "application/json"};
+				const headers: Record<string, string> = { "content-type": "application/json" };
 				if (options.scopes !== undefined) headers["x-oauth-scopes"] = options.scopes;
 				const answered =
 					request.method === "POST" && isRecord(body)
 						? createViewRest(url.pathname, body)
-						: {status: 404, body: {message: "Not Found"}};
+						: { status: 404, body: { message: "Not Found" } };
 				return Effect.succeed(
 					HttpClientResponse.fromWeb(
 						request,
-						new Response(JSON.stringify(answered.body), {status: answered.status, headers}),
+						new Response(JSON.stringify(answered.body), { status: answered.status, headers }),
 					),
 				);
 			}
@@ -720,7 +723,7 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 			operations.push(operation);
 			variables.push(vars);
 			requests.push(query);
-			const headers: Record<string, string> = {"content-type": "application/json"};
+			const headers: Record<string, string> = { "content-type": "application/json" };
 			if (options.scopes !== undefined) headers["x-oauth-scopes"] = options.scopes;
 			const scopeRefusal =
 				options.insufficientScopes === true ||
@@ -740,11 +743,11 @@ export const fakeProjects = (options: FakeProjectsOptions = {}): FakeProjects =>
 			return Effect.succeed(
 				HttpClientResponse.fromWeb(
 					request,
-					new Response(JSON.stringify(body), {status: 200, headers}),
+					new Response(JSON.stringify(body), { status: 200, headers }),
 				),
 			);
 		}),
 	);
 
-	return {layer, operations, variables, requests, projects};
+	return { layer, operations, variables, requests, projects };
 };

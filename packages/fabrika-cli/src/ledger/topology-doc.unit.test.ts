@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {readTopology} from "../build/dependencies.ts";
+import { describe, expect, it } from "vitest";
+import { readTopology } from "../build/dependencies.ts";
 import {
 	checkTopology,
 	type DeclaredLine,
@@ -20,7 +20,7 @@ const line = (
 
 describe("parseLine", () => {
 	it("reads a bare phase line", () => {
-		expect(parseLine("#4301 phase 1", 1)).toEqual({_tag: "Line", line: line(4301, 1)});
+		expect(parseLine("#4301 phase 1", 1)).toEqual({ _tag: "Line", line: line(4301, 1) });
 	});
 
 	it("reads a requires clause, single and comma-separated", () => {
@@ -44,8 +44,8 @@ describe("parseLine", () => {
 
 	/** A phase off its closed vocabulary is a semantic refusal (`10`), not a malformed-flag `4`. */
 	it("separates a non-integer phase from an unparseable line", () => {
-		expect(parseLine("#4301 phase two", 1)).toEqual({_tag: "OffVocabulary", phase: "two"});
-		expect(parseLine("#4301 phase 0", 1)).toEqual({_tag: "OffVocabulary", phase: "0"});
+		expect(parseLine("#4301 phase two", 1)).toEqual({ _tag: "OffVocabulary", phase: "two" });
+		expect(parseLine("#4301 phase 0", 1)).toEqual({ _tag: "OffVocabulary", phase: "0" });
 	});
 });
 
@@ -62,14 +62,14 @@ describe("renderDependencies", () => {
 	 */
 	it("round-trips through the shipped `readTopology`", () => {
 		const parsed = readTopology(renderDependencies([line(4301, 1), line(4303, 2, [4301])]));
-		expect(parsed).toMatchObject({_tag: "Parsed"});
+		expect(parsed).toMatchObject({ _tag: "Parsed" });
 		expect(parsed._tag === "Parsed" && parsed.edges).toEqual([
-			{_tag: "Phase", phase: 1, members: [{_tag: "Issue", number: 4301}]},
-			{_tag: "Phase", phase: 2, members: [{_tag: "Issue", number: 4303}]},
+			{ _tag: "Phase", phase: 1, members: [{ _tag: "Issue", number: 4301 }] },
+			{ _tag: "Phase", phase: 2, members: [{ _tag: "Issue", number: 4303 }] },
 			{
 				_tag: "Requires",
-				subject: {_tag: "Issue", number: 4303},
-				needs: [{_tag: "Issue", number: 4301}],
+				subject: { _tag: "Issue", number: 4303 },
+				needs: [{ _tag: "Issue", number: 4301 }],
 			},
 		]);
 	});
@@ -122,7 +122,7 @@ describe("checkTopology", () => {
 	it("dedupes and orders the external set across lines", () => {
 		expect(
 			checkTopology(4300, [line(4301, 1, [7513]), line(4303, 2, [7513, 7511])], [4301, 4303]),
-		).toMatchObject({_tag: "Ok", external: [7511, 7513]});
+		).toMatchObject({ _tag: "Ok", external: [7511, 7513] });
 	});
 
 	it("renders an external prerequisite in the block and round-trips it", () => {
@@ -163,7 +163,7 @@ describe("checkTopology", () => {
 	/** The refusal reaches the epic's own number and leaves the sanctioned cross-epic edge alone. */
 	it("still accepts a prerequisite naming another epic's issue alongside the refusal", () => {
 		expect(checkTopology(4300, [line(4301, 1), line(4303, 2, [7511])], [4301, 4303])).toMatchObject(
-			{_tag: "Ok", external: [7511]},
+			{ _tag: "Ok", external: [7511] },
 		);
 	});
 

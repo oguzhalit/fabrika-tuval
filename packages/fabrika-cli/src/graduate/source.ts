@@ -12,15 +12,15 @@
  * answer to a question already decided elsewhere, and the two could disagree.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {runRead as runGrillRead} from "../grill/read-verb.ts";
-import {SESSION_LABEL} from "../grill/session.ts";
-import {getIssue, type IssueRecord} from "../io/issues.ts";
-import {isRecord, parseJson} from "../io/json.ts";
-import {MAP_LABEL, readFrontier, readMap} from "../map/frontier.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {BAD_SECTIONS, NO_TARGET, PRECONDITION_UNKNOWN, SOURCE_UNRECOGNIZED} from "./codes.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { runRead as runGrillRead } from "../grill/read-verb.ts";
+import { SESSION_LABEL } from "../grill/session.ts";
+import { getIssue, type IssueRecord } from "../io/issues.ts";
+import { isRecord, parseJson } from "../io/json.ts";
+import { MAP_LABEL, readFrontier, readMap } from "../map/frontier.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { BAD_SECTIONS, NO_TARGET, PRECONDITION_UNKNOWN, SOURCE_UNRECOGNIZED } from "./codes.ts";
 import {
 	fromMap,
 	fromSession,
@@ -31,10 +31,10 @@ import {
 } from "./trail.ts";
 
 export type Guarded<A> =
-	| {readonly _tag: "Ok"; readonly value: A}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Ok"; readonly value: A }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
-const refused = (outcome: VerbOutcome): Guarded<never> => ({_tag: "Refused", outcome});
+const refused = (outcome: VerbOutcome): Guarded<never> => ({ _tag: "Refused", outcome });
 
 export interface Source {
 	readonly issue: IssueRecord;
@@ -88,7 +88,7 @@ export const requireSource = (
 				),
 			);
 		}
-		return {_tag: "Ok", value: {issue: found.value, kind: isSession ? "grilling" : "map"}};
+		return { _tag: "Ok", value: { issue: found.value, kind: isSession ? "grilling" : "map" } };
 	});
 
 /** What the dispatched resolver reported, for the scope line the readiness is only readable against. */
@@ -162,7 +162,7 @@ export const deriveTrail = (
 ): Effect.Effect<Guarded<Resolved>, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		if (kind === "grilling") {
-			const outcome = yield* runGrillRead({session: source, repo, env});
+			const outcome = yield* runGrillRead({ session: source, repo, env });
 			if (outcome.code !== 0) return refused(grillRefusal(verb, source, outcome));
 			const answer = readGrillAnswer(outcome.stdout);
 			if (answer === undefined) {
@@ -177,7 +177,7 @@ export const deriveTrail = (
 			return {
 				_tag: "Ok",
 				value: {
-					trail: trailOf({source, kind, ...normalized, outOfScope: []}),
+					trail: trailOf({ source, kind, ...normalized, outOfScope: [] }),
 					scope: `${verb}: #${source} is a grilling session; the resolver read ${answer.scanned.comments ?? 0} comment(s) over ${answer.scanned.rounds ?? 0} round(s) and reports frontier "${answer.frontier}".`,
 				},
 			};
@@ -218,7 +218,7 @@ export const deriveTrail = (
 		return {
 			_tag: "Ok",
 			value: {
-				trail: trailOf({source, kind, ...normalized, outOfScope: map.body.outOfScope}),
+				trail: trailOf({ source, kind, ...normalized, outOfScope: map.body.outOfScope }),
 				scope: `${verb}: #${source} is a wayfinding map; the resolver read ${frontier.value.scanned.children} child(ren) and ${frontier.value.scanned.comments} comment(s), and the body carries ${map.body.decisions.length} decision(s).`,
 			},
 		};

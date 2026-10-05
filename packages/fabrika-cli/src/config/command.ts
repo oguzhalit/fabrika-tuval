@@ -8,15 +8,15 @@
  * silently opts out of the excess-operand guard, which `../excess-operand.unit.test.ts` reds on.
  */
 
-import {Effect, type FileSystem, type Path, Result} from "effect";
-import {Command, Flag} from "effect/unstable/cli";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {exists, readFile, writeFile} from "../io/fs.ts";
-import {CONFIG_SCHEMA_FILE, LOCAL_CONFIG_SCHEMA_FILE} from "./json-schema.ts";
-import {KEY_GROUPS} from "./registry.ts";
-import {runSchema, type SchemaRead, type SchemaRoot, type SchemaSave} from "./schema-verb.ts";
+import { Effect, type FileSystem, type Path, Result } from "effect";
+import { Command, Flag } from "effect/unstable/cli";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { exists, readFile, writeFile } from "../io/fs.ts";
+import { CONFIG_SCHEMA_FILE, LOCAL_CONFIG_SCHEMA_FILE } from "./json-schema.ts";
+import { KEY_GROUPS } from "./registry.ts";
+import { runSchema, type SchemaRead, type SchemaRoot, type SchemaSave } from "./schema-verb.ts";
 
 const jsonFlag = Flag.boolean("json").pipe(
 	Flag.withDefault(false),
@@ -40,7 +40,7 @@ const schemaRoot: Effect.Effect<SchemaRoot, never, FileSystem.FileSystem | Path.
 					_tag: "Unlocated",
 					reason: `cannot resolve the repo root above ${cwd}: ${found.failure.reason}`,
 				}
-			: {_tag: "Root", root: found.success ?? cwd};
+			: { _tag: "Root", root: found.success ?? cwd };
 	},
 );
 
@@ -52,12 +52,12 @@ const readSchemaFile = (
 	Effect.gen(function* () {
 		const path = `${root}/${file}`;
 		const probe = yield* Effect.result(exists(path));
-		if (Result.isFailure(probe)) return {_tag: "Failed", reason: probe.failure.reason};
-		if (!probe.success) return {_tag: "Absent"};
+		if (Result.isFailure(probe)) return { _tag: "Failed", reason: probe.failure.reason };
+		if (!probe.success) return { _tag: "Absent" };
 		const text = yield* Effect.result(readFile(path));
 		return Result.isFailure(text)
-			? {_tag: "Failed", reason: text.failure.reason}
-			: {_tag: "Text", text: text.success};
+			? { _tag: "Failed", reason: text.failure.reason }
+			: { _tag: "Text", text: text.success };
 	});
 
 const saveSchemaFile = (
@@ -67,8 +67,8 @@ const saveSchemaFile = (
 ): Effect.Effect<SchemaSave, never, FileSystem.FileSystem | Path.Path> =>
 	Effect.map(Effect.result(writeFile(`${root}/${file}`, content)), (written) =>
 		Result.isFailure(written)
-			? ({_tag: "Failed", reason: written.failure.reason} satisfies SchemaSave)
-			: ({_tag: "Saved"} satisfies SchemaSave),
+			? ({ _tag: "Failed", reason: written.failure.reason } satisfies SchemaSave)
+			: ({ _tag: "Saved" } satisfies SchemaSave),
 	);
 
 const schema = leafCommand(
@@ -82,7 +82,7 @@ const schema = leafCommand(
 		),
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({write, json}) {
+	Effect.fn(function* ({ write, json }) {
 		yield* emit(
 			yield* runSchema<FileSystem.FileSystem | Path.Path>({
 				write,
@@ -109,7 +109,7 @@ const schema = leafCommand(
 			"  Derivation: packages/fabrika-cli/src/config/schema-verb.ts",
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika config schema --write"}]),
+	Command.withExamples([{ command: "fabrika config schema --write" }]),
 );
 
 export const configCommand = Command.make("config").pipe(

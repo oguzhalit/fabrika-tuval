@@ -18,8 +18,8 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/6469
  */
 
-import type {LabelUniverse} from "./label-universe.ts";
-import {clean, type GuardVerdict, unknown, violation, zeroScope} from "./verdict.ts";
+import type { LabelUniverse } from "./label-universe.ts";
+import { clean, type GuardVerdict, unknown, violation, zeroScope } from "./verdict.ts";
 
 export const VERB = "guard homing-guard check";
 
@@ -47,8 +47,8 @@ export interface TriagedIssue {
  * merely unchecked.
  */
 export type Scope =
-	| {readonly _tag: "backlog"}
-	| {readonly _tag: "issue"; readonly number: number; readonly universe: LabelUniverse};
+	| { readonly _tag: "backlog" }
+	| { readonly _tag: "issue"; readonly number: number; readonly universe: LabelUniverse };
 
 /** How one triaged issue resolves against home-xor-exempt. The two right-hand cases are defects. */
 export type Disposition = "homed" | "exempt" | "unhomed" | "double-marked";
@@ -60,7 +60,7 @@ export type Disposition = "homed" | "exempt" | "unhomed" | "double-marked";
  * renders each kind under its own remedy.
  */
 export type Violation =
-	| {readonly kind: "unhomed"; readonly number: number; readonly title: string}
+	| { readonly kind: "unhomed"; readonly number: number; readonly title: string }
 	| {
 			readonly kind: "double-marked";
 			readonly number: number;
@@ -84,7 +84,7 @@ export type HomingVerdict =
 			readonly exempt: number;
 	  }
 	/** No triaged issue in the whole backlog — fail closed, never a vacuous pass. */
-	| {readonly pass: false; readonly reason: "zero-scope"; readonly scope: Scope}
+	| { readonly pass: false; readonly reason: "zero-scope"; readonly scope: Scope }
 	/** The scoping label does not exist in the repo at all — an unmet prerequisite. */
 	| {
 			readonly pass: false;
@@ -108,7 +108,7 @@ export type HomingVerdict =
  * How one issue resolved: a clean outcome, or the {@link Violation} it is — one shape, so a defect
  * always arrives carrying the detail its remedy needs, and the rule is stated in one place.
  */
-export type Resolution = {readonly kind: "homed"} | {readonly kind: "exempt"} | Violation;
+export type Resolution = { readonly kind: "homed" } | { readonly kind: "exempt" } | Violation;
 
 /** The declared standing-lane labels this issue carries — exact names, no prefix matching. */
 export const standingLanes = (
@@ -123,13 +123,13 @@ export const standingLanes = (
  */
 export const resolve = (issue: TriagedIssue, lanes: ReadonlyArray<string>): Resolution => {
 	const carried = standingLanes(issue, lanes);
-	const {number, title} = issue;
+	const { number, title } = issue;
 	if (issue.milestone !== null) {
 		return carried.length > 0
-			? {kind: "double-marked", number, title, milestone: issue.milestone, lanes: carried}
-			: {kind: "homed"};
+			? { kind: "double-marked", number, title, milestone: issue.milestone, lanes: carried }
+			: { kind: "homed" };
 	}
-	return carried.length > 0 ? {kind: "exempt"} : {kind: "unhomed", number, title};
+	return carried.length > 0 ? { kind: "exempt" } : { kind: "unhomed", number, title };
 };
 
 /** The bare outcome of {@link resolve} — the four-way answer, without the offender detail. */
@@ -152,13 +152,13 @@ export const disposition = (issue: TriagedIssue, lanes: ReadonlyArray<string>): 
 export const judge = (
 	issues: ReadonlyArray<TriagedIssue>,
 	lanes: ReadonlyArray<string>,
-	scope: Scope = {_tag: "backlog"},
+	scope: Scope = { _tag: "backlog" },
 ): HomingVerdict => {
 	if (issues.length === 0) {
-		if (scope._tag === "backlog") return {pass: false, reason: "zero-scope", scope};
+		if (scope._tag === "backlog") return { pass: false, reason: "zero-scope", scope };
 		return scope.universe._tag === "absent"
-			? {pass: false, reason: "vocabulary-absent", scope, missing: scope.universe.missing}
-			: {pass: true, scope, scanned: 0, homed: 0, exempt: 0};
+			? { pass: false, reason: "vocabulary-absent", scope, missing: scope.universe.missing }
+			: { pass: true, scope, scanned: 0, homed: 0, exempt: 0 };
 	}
 
 	const violations: Array<Violation> = [];
@@ -191,7 +191,7 @@ export const judge = (
 			lanes,
 		};
 	}
-	return {pass: true, scope, scanned: issues.length, homed, exempt};
+	return { pass: true, scope, scanned: issues.length, homed, exempt };
 };
 
 const scopeLabel = (scope: Scope): string =>

@@ -6,9 +6,9 @@
  * `corpus`, `drift` and `anchor` answer what the repository already holds, `new` and `register`
  * write what it is about to.
  */
-import {Effect, type FileSystem, type Path, Result} from "effect";
-import {exists, readFile, writeFile} from "../io/fs.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, type FileSystem, type Path, Result } from "effect";
+import { exists, readFile, writeFile } from "../io/fs.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	DOC_ABSENT,
 	INDEX_UNPARSEABLE,
@@ -19,8 +19,8 @@ import {
 	SECTION_AMBIGUOUS,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {isKebabCase} from "./doc.ts";
-import {insertRow, readBackCarries} from "./register.ts";
+import { isKebabCase } from "./doc.ts";
+import { insertRow, readBackCarries } from "./register.ts";
 
 export interface RegisterOptions {
 	readonly slug: string;
@@ -35,7 +35,7 @@ export const runRegister = (
 	options: RegisterOptions,
 ): Effect.Effect<VerbOutcome, never, FileSystem.FileSystem | Path.Path> =>
 	Effect.gen(function* () {
-		const {slug, section, dir, json} = options;
+		const { slug, section, dir, json } = options;
 		if (!isKebabCase(slug)) {
 			return refuse(
 				FAILED,

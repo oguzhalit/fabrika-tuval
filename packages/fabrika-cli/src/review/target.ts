@@ -10,12 +10,12 @@
  * read reports what it saw on stderr, and a verdict driven by a silently truncated read is a verdict
  * over unknown scope.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {resolveRepo} from "../io/issues.ts";
-import {getPullRequest, type PullRecord} from "../io/pulls.ts";
-import {FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { resolveRepo } from "../io/issues.ts";
+import { getPullRequest, type PullRecord } from "../io/pulls.ts";
+import { FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
 
 /** `<verb>: scanned <n> <noun>(s) [in <repo>][; <note>].` — the count first, on every run. */
 export const scannedLine = (verb: string, scanned: number, noun: string, note?: string): string =>
@@ -24,8 +24,8 @@ export const scannedLine = (verb: string, scanned: number, noun: string, note?: 
 	}.`;
 
 export type Resolved =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Repo"; readonly repo: string};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Repo"; readonly repo: string };
 
 export const resolveTargetRepo = (
 	verb: string,
@@ -42,7 +42,7 @@ export const resolveTargetRepo = (
 						`${verb}: cannot resolve a target repo — set CLAUDE_PIPELINE_REPO, or run inside a checkout whose origin remote resolves.`,
 					),
 				}
-			: {_tag: "Repo" as const, repo: attempt.value};
+			: { _tag: "Repo" as const, repo: attempt.value };
 	});
 
 export interface TargetOptions {
@@ -65,8 +65,8 @@ export interface TargetOptions {
 }
 
 export type Target =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Pull"; readonly pull: PullRecord};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Pull"; readonly pull: PullRecord };
 
 export const openPull = (
 	verb: string,
@@ -112,7 +112,7 @@ export const openPull = (
 				),
 			};
 		}
-		return {_tag: "Pull" as const, pull: found.value};
+		return { _tag: "Pull" as const, pull: found.value };
 	});
 
 /** A positive integer, or the usage refusal — every verb's first check. */

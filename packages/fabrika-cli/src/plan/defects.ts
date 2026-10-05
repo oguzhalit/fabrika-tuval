@@ -32,10 +32,13 @@
  * The priority set is exactly `{p0, p1, p2}` — `p3` was ruled *retired*, not widened.
  */
 
-import type {RequiredEdge} from "../build/dependencies.ts";
-import {type ContainmentVocabulary, containmentGap} from "../config/keys/containment-vocabulary.ts";
-import type {LedgerScope} from "./digest.ts";
-import type {ChildLedger} from "./model.ts";
+import type { RequiredEdge } from "../build/dependencies.ts";
+import {
+	type ContainmentVocabulary,
+	containmentGap,
+} from "../config/keys/containment-vocabulary.ts";
+import type { LedgerScope } from "./digest.ts";
+import type { ChildLedger } from "./model.ts";
 
 /** The emission order, which is also the primary sort key. */
 export const DEFECT_TYPES = [
@@ -292,7 +295,7 @@ export const deriveFloor = ({
 		});
 	}
 
-	for (const {dependent, prerequisite} of edgesToEnforce(required, provenAbsent)) {
+	for (const { dependent, prerequisite } of edgesToEnforce(required, provenAbsent)) {
 		if (observed.get(dependent)?.has(prerequisite) === true) continue;
 		defects.push({
 			type: "UNENFORCED_DEP",

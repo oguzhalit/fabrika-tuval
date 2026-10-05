@@ -17,7 +17,7 @@
  * Pure + IO-free: this is the unit-tested selection logic; the impure capture/store
  * legs run over the surfaces it resolves (see `candidate-render.ts`).
  */
-import {parseSurfaceSpec, type Surface} from "./plan.ts";
+import { parseSurfaceSpec, type Surface } from "./plan.ts";
 
 /** A stable key for one priority surface — the three deliberate screens. */
 export type PrioritySurfaceKey = "global-shell-subnav" | "sozluk-term" | "pano-feed";
@@ -141,7 +141,7 @@ export const resolvePrioritySurfaces = (
 	});
 	// The term route names its param `:slug`; the priority-surface params supply
 	// it as `termSlug` (the one concrete datum the priority set needs).
-	const routeParams = {slug: params.termSlug};
+	const routeParams = { slug: params.termSlug };
 	const seen = new Set<string>();
 	return ordered.map((spec) => {
 		const route = substituteRouteParams(spec.route, routeParams);

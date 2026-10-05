@@ -18,14 +18,14 @@
  * that is what makes `spike dispose`'s `21` a detour rather than a trap.
  */
 
-import {Effect} from "effect";
-import {closeCompleted, createComment, getComment, getIssue, listComments} from "../io/issues.ts";
-import {permissionFor, viewerLogin} from "../io/pulls.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {readAuthored} from "../review/authored.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {captureComment, newestCapture} from "./bodies.ts";
+import { Effect } from "effect";
+import { closeCompleted, createComment, getComment, getIssue, listComments } from "../io/issues.ts";
+import { permissionFor, viewerLogin } from "../io/pulls.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { readAuthored } from "../review/authored.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { captureComment, newestCapture } from "./bodies.ts";
 import {
 	AUTHOR_UNAUTHORIZED,
 	NO_EVIDENCE,
@@ -43,7 +43,7 @@ import {
 	type SpikeEffect,
 	targetRepo,
 } from "./guards.ts";
-import {workspacePath} from "./workspace.ts";
+import { workspacePath } from "./workspace.ts";
 
 export interface CaptureOptions {
 	readonly spike: number;
@@ -196,7 +196,7 @@ export const runCapture = (options: CaptureOptions): SpikeEffect<VerbOutcome> =>
 		// The run table is masked at composition, so the only unmasked text left here is the decision
 		// — the one part a caller can actually rewrite and re-run.
 		const composed = leakFree(VERB, "decision, as it composes into the capture comment", body);
-		if (composed !== null) return {...composed, stderr: [scope, ...composed.stderr]};
+		if (composed !== null) return { ...composed, stderr: [scope, ...composed.stderr] };
 
 		const posted = yield* createComment(repo, options.spike, body);
 		if (posted._tag === "Failure") {

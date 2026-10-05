@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import type {CommentRecord} from "../io/issues.ts";
+import { describe, expect, it } from "vitest";
+import type { CommentRecord } from "../io/issues.ts";
 import {
 	criterionIndex,
 	emit,
@@ -7,9 +7,9 @@ import {
 	rulingUrl,
 	scopeDigest,
 } from "../wire/decision-ruling.ts";
-import {type MarkerTime, markerTime} from "../wire/grill-marker.ts";
-import {ISSUE, RULER, RULING_URL} from "./fixtures.test-support.ts";
-import {newestRulingAt, scanRulings} from "./ruling.ts";
+import { type MarkerTime, markerTime } from "../wire/grill-marker.ts";
+import { ISSUE, RULER, RULING_URL } from "./fixtures.test-support.ts";
+import { newestRulingAt, scanRulings } from "./ruling.ts";
 
 const ROSTER = new Set([RULER]);
 const DIGEST = "0123456789ab";
@@ -33,7 +33,7 @@ const marker = (
 		author,
 		createdAt: updatedAt,
 		updatedAt,
-		body: emit({issue, digest, ruling, supersedes: criterionIndex(1), at: stamp}),
+		body: emit({ issue, digest, ruling, supersedes: criterionIndex(1), at: stamp }),
 	};
 };
 
@@ -71,9 +71,9 @@ describe("newestRulingAt", () => {
 		if (standing === undefined) throw new Error("the fixture scanned no ruling");
 		const undatable = {
 			...standing,
-			ruling: {...standing.ruling, at: "whenever" as MarkerTime},
+			ruling: { ...standing.ruling, at: "whenever" as MarkerTime },
 		};
-		expect(newestRulingAt({...scan, all: [standing, undatable]})).toBe("whenever");
+		expect(newestRulingAt({ ...scan, all: [standing, undatable] })).toBe("whenever");
 	});
 
 	it("ignores a marker from an account off the control-plane roster", () => {

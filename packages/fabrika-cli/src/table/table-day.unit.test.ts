@@ -2,9 +2,9 @@
  * The date math every table week is read through, pinned at the instant the Week iteration got
  * wrong: a Saturday evening in California, which is already Sunday in UTC.
  */
-import {describe, expect, it} from "vitest";
-import {SHIPPED_TABLE, type TableSettings} from "../config/keys/table.ts";
-import {AGENDA_DAYS, VIEWS} from "./shape.ts";
+import { describe, expect, it } from "vitest";
+import { SHIPPED_TABLE, type TableSettings } from "../config/keys/table.ts";
+import { AGENDA_DAYS, VIEWS } from "./shape.ts";
 import {
 	agendaDays,
 	currentTableDay,
@@ -20,7 +20,7 @@ import {
 } from "./table-day.ts";
 
 const PACIFIC = "America/Los_Angeles";
-const SATURDAYS: TableSettings = {...SHIPPED_TABLE, day: "saturday", timeZone: PACIFIC};
+const SATURDAYS: TableSettings = { ...SHIPPED_TABLE, day: "saturday", timeZone: PACIFIC };
 const day = (text: string): TableDay => parseTableDay(text) as TableDay;
 
 /** Saturday Oct 3 2026, 18:30 in California: Sunday Oct 4, 01:30 in UTC. */
@@ -48,8 +48,8 @@ describe("a Saturday evening in California, already Sunday in UTC", () => {
 		const window = weekBefore(target, PACIFIC);
 		const agenda = agendaDays(SATURDAYS, SATURDAY_EVENING_PT);
 
-		expect(window).toEqual({start: "2026-09-26T07:00:00.000Z", end: "2026-10-03T07:00:00.000Z"});
-		expect(agenda).toEqual({from: "2026-10-03", to: "2026-10-09"});
+		expect(window).toEqual({ start: "2026-09-26T07:00:00.000Z", end: "2026-10-03T07:00:00.000Z" });
+		expect(agenda).toEqual({ from: "2026-10-03", to: "2026-10-09" });
 		expect(agenda.from <= target && target <= agenda.to).toBe(true);
 		expect(window.end).toBe(startOf(target, PACIFIC));
 		expect(VIEWS.find((view) => view.name === "Agenda")?.filter.startsWith(AGENDA_DAYS)).toBe(true);
@@ -57,7 +57,7 @@ describe("a Saturday evening in California, already Sunday in UTC", () => {
 	});
 
 	it("disagrees with the view when the table reads today in UTC, which is why the zone is set", () => {
-		const utc = {...SATURDAYS, timeZone: "UTC"};
+		const utc = { ...SATURDAYS, timeZone: "UTC" };
 		const agenda = agendaDays(SATURDAYS, SATURDAY_EVENING_PT);
 		const target = nextTableDay(utc, SATURDAY_EVENING_PT);
 

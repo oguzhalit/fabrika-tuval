@@ -28,12 +28,12 @@
  * UNKNOWN, never `none`.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type CommentRecord, listComments} from "../io/issues.ts";
-import {permissionFor} from "../io/pulls.ts";
-import type {HandoffPack} from "../wire/handoff-pack.ts";
-import {digestOf, type GroundState, parseGround} from "./ground.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type CommentRecord, listComments } from "../io/issues.ts";
+import { permissionFor } from "../io/pulls.ts";
+import type { HandoffPack } from "../wire/handoff-pack.ts";
+import { digestOf, type GroundState, parseGround } from "./ground.ts";
 import {
 	type ClaimMarker,
 	reachesForClaim,
@@ -84,9 +84,9 @@ export type PackResolution =
 			readonly comments: number;
 	  }
 	/** The latest pack exists and does not parse, or its digest disagrees with what it labels. */
-	| {readonly _tag: "Malformed"; readonly comment: number; readonly reason: string}
+	| { readonly _tag: "Malformed"; readonly comment: number; readonly reason: string }
 	/** A comment page or a permission read did not complete. The answer is UNKNOWN, never `none`. */
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /** One `permissionFor` per distinct login, or the proof that the lookup did not complete. */
 const authorizer = (repo: string) => {
@@ -94,7 +94,7 @@ const authorizer = (repo: string) => {
 	return (
 		login: string,
 	): Effect.Effect<
-		| {readonly _tag: "Resolved"; readonly permission: string | null}
+		| { readonly _tag: "Resolved"; readonly permission: string | null }
 		| {
 				readonly _tag: "Unknown";
 				readonly reason: string;
@@ -104,7 +104,7 @@ const authorizer = (repo: string) => {
 	> =>
 		Effect.gen(function* () {
 			const seen = cache.get(login);
-			if (seen !== undefined) return {_tag: "Resolved" as const, permission: seen};
+			if (seen !== undefined) return { _tag: "Resolved" as const, permission: seen };
 			const resolved = yield* permissionFor(repo, login);
 			if (resolved._tag === "Unknown") {
 				return {
@@ -114,7 +114,7 @@ const authorizer = (repo: string) => {
 			}
 			const permission = resolved._tag === "Present" ? resolved.value : null;
 			cache.set(login, permission);
-			return {_tag: "Resolved" as const, permission};
+			return { _tag: "Resolved" as const, permission };
 		});
 };
 
@@ -122,16 +122,16 @@ const authorizer = (repo: string) => {
 const readSealed = (
 	comment: CommentRecord,
 ):
-	| {readonly _tag: "Sealed"; readonly pack: HandoffPack; readonly ground: GroundState}
+	| { readonly _tag: "Sealed"; readonly pack: HandoffPack; readonly ground: GroundState }
 	| {
 			readonly _tag: "No";
 			readonly reason: string;
 	  } => {
 	const read = readPack(comment.body);
-	if (read._tag === "Absent") return {_tag: "No", reason: read.reason};
-	if (read._tag === "Malformed") return {_tag: "No", reason: read.reason};
+	if (read._tag === "Absent") return { _tag: "No", reason: read.reason };
+	if (read._tag === "Malformed") return { _tag: "No", reason: read.reason };
 	const ground = parseGround(read.value.groundJson);
-	if (ground._tag === "Unusable") return {_tag: "No", reason: ground.reason};
+	if (ground._tag === "Unusable") return { _tag: "No", reason: ground.reason };
 	const recomputed = digestOf(ground.value);
 	if (recomputed !== read.value.groundDigest || recomputed !== ground.value.groundDigest) {
 		return {
@@ -139,7 +139,7 @@ const readSealed = (
 			reason: `its groundDigest does not match the proven half it labels (marker ${read.value.groundDigest}, body ${ground.value.groundDigest}, recomputed ${recomputed})`,
 		};
 	}
-	return {_tag: "Sealed", pack: read.value, ground: ground.value};
+	return { _tag: "Sealed", pack: read.value, ground: ground.value };
 };
 
 /**
@@ -169,11 +169,11 @@ export const resolvePack = (
 		for (const comment of [...packComments].reverse()) {
 			const sealed = readSealed(comment);
 			if (sealed._tag === "No") {
-				return {_tag: "Malformed" as const, comment: comment.id, reason: sealed.reason};
+				return { _tag: "Malformed" as const, comment: comment.id, reason: sealed.reason };
 			}
 			const authority = yield* permissionOf(comment.author);
 			if (authority._tag === "Unknown") {
-				return {_tag: "Unknown" as const, reason: authority.reason};
+				return { _tag: "Unknown" as const, reason: authority.reason };
 			}
 			if (authority.permission === null || !AUTHORIZED.has(authority.permission)) {
 				disregarded.push({
@@ -194,7 +194,7 @@ export const resolvePack = (
 		}
 
 		if (honoured === null) {
-			return {_tag: "None" as const, disregarded, comments: comments.length};
+			return { _tag: "None" as const, disregarded, comments: comments.length };
 		}
 
 		let heldBy: HeldBy | null = null;
@@ -206,7 +206,7 @@ export const resolvePack = (
 			if (claim === null) continue;
 			const authority = yield* permissionOf(comment.author);
 			if (authority._tag === "Unknown") {
-				return {_tag: "Unknown" as const, reason: authority.reason};
+				return { _tag: "Unknown" as const, reason: authority.reason };
 			}
 			if (authority.permission === null || !AUTHORIZED.has(authority.permission)) {
 				disregarded.push({

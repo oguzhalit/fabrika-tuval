@@ -17,7 +17,7 @@
  * unreadable by the next verb that touched it.
  */
 
-import {createHash} from "node:crypto";
+import { createHash } from "node:crypto";
 
 /** The five headings, in the one order a map body may carry them. */
 export const SECTIONS = ["Destination", "Decisions", "Frontier", "Fog", "Out of scope"] as const;
@@ -42,8 +42,8 @@ export interface FrontierRow {
 export interface DecisionEntry {
 	readonly text: string;
 	readonly authority:
-		| {readonly _tag: "Ruled"; readonly session: number; readonly questionId: string}
-		| {readonly _tag: "Finding"; readonly ticket: number};
+		| { readonly _tag: "Ruled"; readonly session: number; readonly questionId: string }
+		| { readonly _tag: "Finding"; readonly ticket: number };
 }
 
 /** One `## Out of scope` entry. The section only ever grows, so these are never removed. */
@@ -75,8 +75,8 @@ export interface MapBody {
 }
 
 export type BodyRead =
-	| {readonly _tag: "Parsed"; readonly value: MapBody}
-	| {readonly _tag: "Malformed"; readonly reason: string};
+	| { readonly _tag: "Parsed"; readonly value: MapBody }
+	| { readonly _tag: "Malformed"; readonly reason: string };
 
 const HEADING = /^##[ \t]+(.+?)[ \t]*$/;
 
@@ -133,7 +133,7 @@ const parseDecision = (entry: string): DecisionEntry | null => {
 	if (finding === null) return null;
 	return {
 		text: (finding[1] ?? "").trim(),
-		authority: {_tag: "Finding", ticket: Number.parseInt(finding[2] ?? "0", 10)},
+		authority: { _tag: "Finding", ticket: Number.parseInt(finding[2] ?? "0", 10) },
 	};
 };
 
@@ -158,7 +158,7 @@ const parseOutOfScope = (entry: string): OutOfScopeEntry | null => {
 	const direction = (matched[1] ?? "").trim();
 	const reason = (matched[2] ?? "").trim();
 	if (direction === "" || reason === "") return null;
-	return {direction, reason, recordedAt: matched[3] ?? ""};
+	return { direction, reason, recordedAt: matched[3] ?? "" };
 };
 
 /**
@@ -194,7 +194,7 @@ export const bulletEntries = (section: string): ReadonlyArray<string> | null => 
 export const parseBody = (raw: string): BodyRead => {
 	const text = raw.replace(/\r\n/g, "\n");
 	const lines = text.split("\n");
-	const found: {name: string; bodyStart: number; headingStart: number}[] = [];
+	const found: { name: string; bodyStart: number; headingStart: number }[] = [];
 	let offset = 0;
 	for (const line of lines) {
 		const heading = HEADING.exec(line);
@@ -246,7 +246,10 @@ export const parseBody = (raw: string): BodyRead => {
 
 	const frontierRaw = bulletEntries(sections[2] ?? "");
 	if (frontierRaw === null) {
-		return {_tag: "Malformed", reason: "a `## Frontier` line is neither a row nor a continuation"};
+		return {
+			_tag: "Malformed",
+			reason: "a `## Frontier` line is neither a row nor a continuation",
+		};
 	}
 	const frontier: FrontierRow[] = [];
 	for (const entry of frontierRaw) {

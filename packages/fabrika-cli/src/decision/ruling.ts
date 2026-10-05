@@ -12,22 +12,22 @@
  * whole authority the marker is supposed to carry.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type CommentRecord, getIssue, type IssueRecord} from "../io/issues.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type CommentRecord, getIssue, type IssueRecord } from "../io/issues.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
 import {
 	type DecisionRuling,
 	read as readRuling,
 	rules,
 	rulingComment,
 } from "../wire/decision-ruling.ts";
-import {carriesMachineMarker} from "../wire/machine-marker.ts";
-import {NO_TARGET, PRECONDITION_UNKNOWN} from "./codes.ts";
+import { carriesMachineMarker } from "../wire/machine-marker.ts";
+import { NO_TARGET, PRECONDITION_UNKNOWN } from "./codes.ts";
 
 export type DecisionTarget =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Decision"; readonly issue: IssueRecord};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Decision"; readonly issue: IssueRecord };
 
 /**
  * The issue this group acts on, proven to be an issue before anything else runs.
@@ -72,7 +72,7 @@ export const requireRulable = (
 				outcome: refuse(NO_TARGET, `${verb}: ${repo}#${number} is a pull request, not an issue.`),
 			};
 		}
-		return {_tag: "Decision" as const, issue: found.value};
+		return { _tag: "Decision" as const, issue: found.value };
 	});
 
 /** The three states a decision's ruling resolves to. A fourth would have to be added here, in the open. */
@@ -145,9 +145,9 @@ export const scanRulings = (
 			unauthorized += 1;
 			continue;
 		}
-		all.push({ruling: found.value, by: comment.author, comment: comment.id});
+		all.push({ ruling: found.value, by: comment.author, comment: comment.id });
 	}
-	return {all, standing: all.at(-1) ?? null, disregarded, unauthorized};
+	return { all, standing: all.at(-1) ?? null, disregarded, unauthorized };
 };
 
 /**

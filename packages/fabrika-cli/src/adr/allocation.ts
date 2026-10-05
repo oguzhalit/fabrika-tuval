@@ -10,11 +10,11 @@
  * remote-tracking alike), then GitHub's open pull requests. The branch walk is what sees an epic child's mint before any pull request exists
  * (`branch-claims.ts`).
  */
-import {Effect} from "effect";
-import {originRepo, type Shell} from "../io/git.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {loadInFlight, loadMerged} from "./base-ref.ts";
-import {loadBranchClaims} from "./branch-claims.ts";
+import { Effect } from "effect";
+import { originRepo, type Shell } from "../io/git.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { loadInFlight, loadMerged } from "./base-ref.ts";
+import { loadBranchClaims } from "./branch-claims.ts";
 import {
 	BASE_UNFETCHABLE,
 	BRANCH_CLAIMS_UNKNOWN,
@@ -23,7 +23,7 @@ import {
 	ORIGIN_REPO_UNRESOLVABLE,
 	UNPARSEABLE_RECORD_ID,
 } from "./codes.ts";
-import {type Allocation, allocate} from "./next.ts";
+import { type Allocation, allocate } from "./next.ts";
 
 export interface AllocationRequest {
 	/** The verb name every refusal is prefixed with — `adr next`, `adr mint`. */
@@ -42,13 +42,13 @@ export interface AllocationFacts {
 }
 
 export type AllocationOutcome =
-	| {readonly _tag: "Ok"; readonly value: AllocationFacts}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Ok"; readonly value: AllocationFacts }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /** Allocate the next free id, refusing on any set that could not be read in full. */
 export const resolveAllocation = (request: AllocationRequest): Shell<AllocationOutcome> =>
 	Effect.gen(function* () {
-		const {verb, dir, base} = request;
+		const { verb, dir, base } = request;
 
 		let repo = request.repo;
 		if (repo === null) {

@@ -28,8 +28,8 @@ export interface ProvingStep {
 }
 
 export type ActingStep =
-	| {readonly verb: "click"; readonly locator: string}
-	| {readonly verb: "press"; readonly key: string};
+	| { readonly verb: "click"; readonly locator: string }
+	| { readonly verb: "press"; readonly key: string };
 
 export type InteractionStep = ProvingStep | ActingStep;
 
@@ -52,7 +52,7 @@ export interface InteractionOperand {
 }
 
 /** What the page is asked to match after a hover or a focus. */
-export const PSEUDO_CLASS = {hover: ":hover", focus: ":focus-visible"} as const;
+export const PSEUDO_CLASS = { hover: ":hover", focus: ":focus-visible" } as const;
 
 const LABEL = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** A label is a file-name segment, so it is bounded the way the route stem is. */
@@ -67,8 +67,8 @@ const isProvingVerb = (verb: string): verb is ProvingVerb =>
 const isProvingStep = (step: InteractionStep): step is ProvingStep => isProvingVerb(step.verb);
 
 type StepRead =
-	| {readonly _tag: "Step"; readonly step: InteractionStep}
-	| {readonly _tag: "Malformed"; readonly reason: string};
+	| { readonly _tag: "Step"; readonly step: InteractionStep }
+	| { readonly _tag: "Malformed"; readonly reason: string };
 
 const parseStep = (token: string): StepRead => {
 	const colon = token.indexOf(":");
@@ -86,14 +86,14 @@ const parseStep = (token: string): StepRead => {
 			reason: `step "${token}" names no ${verb === "press" ? "key" : "locator"}`,
 		};
 	}
-	if (verb === "press") return {_tag: "Step", step: {verb, key: operand}};
-	if (verb === "click") return {_tag: "Step", step: {verb, locator: operand}};
-	return {_tag: "Step", step: {verb: verb as ProvingVerb, locator: operand}};
+	if (verb === "press") return { _tag: "Step", step: { verb, key: operand } };
+	if (verb === "click") return { _tag: "Step", step: { verb, locator: operand } };
+	return { _tag: "Step", step: { verb: verb as ProvingVerb, locator: operand } };
 };
 
 type OperandRead =
-	| {readonly _tag: "Operand"; readonly operand: InteractionOperand}
-	| {readonly _tag: "Malformed"; readonly reason: string};
+	| { readonly _tag: "Operand"; readonly operand: InteractionOperand }
+	| { readonly _tag: "Malformed"; readonly reason: string };
 
 /**
  * `<surface>#<label>=<step>;<step>;…`. The surface is read up to the first `#` and the label up to
@@ -102,14 +102,14 @@ type OperandRead =
 const parseOperand = (raw: string): OperandRead => {
 	const hash = raw.indexOf("#");
 	if (hash === -1) {
-		return {_tag: "Malformed", reason: "it names no #<label>"};
+		return { _tag: "Malformed", reason: "it names no #<label>" };
 	}
 	const surface = raw.slice(0, hash);
-	if (surface.length === 0) return {_tag: "Malformed", reason: "it names no surface"};
+	if (surface.length === 0) return { _tag: "Malformed", reason: "it names no surface" };
 	const rest = raw.slice(hash + 1);
 	const equals = rest.indexOf("=");
 	const label = equals === -1 ? rest : rest.slice(0, equals);
-	if (label.length === 0) return {_tag: "Malformed", reason: "its label is empty"};
+	if (label.length === 0) return { _tag: "Malformed", reason: "its label is empty" };
 	if (!LABEL.test(label) || label.length > MAX_LABEL) {
 		return {
 			_tag: "Malformed",
@@ -118,7 +118,7 @@ const parseOperand = (raw: string): OperandRead => {
 	}
 	const tokens = equals === -1 ? [] : rest.slice(equals + 1).split(";");
 	if (tokens.every((token) => token.length === 0)) {
-		return {_tag: "Malformed", reason: "it names no steps"};
+		return { _tag: "Malformed", reason: "it names no steps" };
 	}
 	const steps: InteractionStep[] = [];
 	for (const token of tokens) {
@@ -137,7 +137,7 @@ const parseOperand = (raw: string): OperandRead => {
 		_tag: "Operand",
 		operand: {
 			surface,
-			interaction: {label, steps: [...steps.slice(0, -1), last]},
+			interaction: { label, steps: [...steps.slice(0, -1), last] },
 		},
 	};
 };
@@ -149,14 +149,14 @@ const parseOperand = (raw: string): OperandRead => {
  * one another's file and evidence.
  */
 export type InteractionOperandsRead =
-	| {readonly _tag: "None"}
+	| { readonly _tag: "None" }
 	| {
 			readonly _tag: "Requested";
 			readonly operands: readonly [InteractionOperand, ...InteractionOperand[]];
 	  }
-	| {readonly _tag: "Malformed"; readonly value: string; readonly reason: string}
-	| {readonly _tag: "UnknownSurface"; readonly value: string; readonly surface: string}
-	| {readonly _tag: "Collision"; readonly value: string; readonly other: string};
+	| { readonly _tag: "Malformed"; readonly value: string; readonly reason: string }
+	| { readonly _tag: "UnknownSurface"; readonly value: string; readonly surface: string }
+	| { readonly _tag: "Collision"; readonly value: string; readonly other: string };
 
 /**
  * @param surfaces the run's own `--surface` tokens — an operand must name one of them exactly.
@@ -168,20 +168,20 @@ export const parseInteractionOperands = (
 	surfaces: readonly string[],
 	fileNameOf: (operand: InteractionOperand) => string,
 ): InteractionOperandsRead => {
-	const parsed: Array<{readonly raw: string; readonly operand: InteractionOperand}> = [];
+	const parsed: Array<{ readonly raw: string; readonly operand: InteractionOperand }> = [];
 	for (const raw of operands) {
 		const read = parseOperand(raw);
-		if (read._tag === "Malformed") return {_tag: "Malformed", value: raw, reason: read.reason};
+		if (read._tag === "Malformed") return { _tag: "Malformed", value: raw, reason: read.reason };
 		if (!surfaces.includes(read.operand.surface)) {
-			return {_tag: "UnknownSurface", value: raw, surface: read.operand.surface};
+			return { _tag: "UnknownSurface", value: raw, surface: read.operand.surface };
 		}
 		const name = fileNameOf(read.operand);
 		const other = parsed.find((earlier) => fileNameOf(earlier.operand) === name);
-		if (other !== undefined) return {_tag: "Collision", value: raw, other: other.raw};
-		parsed.push({raw, operand: read.operand});
+		if (other !== undefined) return { _tag: "Collision", value: raw, other: other.raw };
+		parsed.push({ raw, operand: read.operand });
 	}
 	const [first, ...rest] = parsed.map((entry) => entry.operand);
-	return first === undefined ? {_tag: "None"} : {_tag: "Requested", operands: [first, ...rest]};
+	return first === undefined ? { _tag: "None" } : { _tag: "Requested", operands: [first, ...rest] };
 };
 
 /**
@@ -189,9 +189,9 @@ export const parseInteractionOperands = (
  * answers `Acted`, because it claims nothing.
  */
 export type StepProof =
-	| {readonly _tag: "Proven"; readonly statement: string}
-	| {readonly _tag: "Acted"}
-	| {readonly _tag: "Refused"; readonly reason: string};
+	| { readonly _tag: "Proven"; readonly statement: string }
+	| { readonly _tag: "Acted" }
+	| { readonly _tag: "Refused"; readonly reason: string };
 
 /** A locator step acts on exactly one element; zero or several is no element the step could name. */
 export const readMatchCount = (step: InteractionStep, count: number): StepProof | null => {
@@ -204,23 +204,23 @@ export const readMatchCount = (step: InteractionStep, count: number): StepProof 
 
 /** Whether the element a hover or focus step named reports its pseudo-class. */
 export const readPseudoProof = (
-	step: ProvingStep & {readonly verb: "hover" | "focus"},
+	step: ProvingStep & { readonly verb: "hover" | "focus" },
 	matched: unknown,
 ): StepProof => {
 	const pseudo = PSEUDO_CLASS[step.verb];
 	if (typeof matched !== "boolean") {
-		return {_tag: "Refused", reason: `${step.locator}'s ${pseudo} match did not read back`};
+		return { _tag: "Refused", reason: `${step.locator}'s ${pseudo} match did not read back` };
 	}
 	return matched
-		? {_tag: "Proven", statement: `${step.locator} matches ${pseudo}`}
-		: {_tag: "Refused", reason: `${step.locator} does not match ${pseudo}`};
+		? { _tag: "Proven", statement: `${step.locator} matches ${pseudo}` }
+		: { _tag: "Refused", reason: `${step.locator} does not match ${pseudo}` };
 };
 
 /** Whether the one element an expect step named is visible. */
 export const readVisibleProof = (step: ProvingStep, visible: unknown): StepProof =>
 	visible === true
-		? {_tag: "Proven", statement: `${step.locator} is exactly one visible element`}
-		: {_tag: "Refused", reason: `${step.locator} is not visible`};
+		? { _tag: "Proven", statement: `${step.locator} is exactly one visible element` }
+		: { _tag: "Refused", reason: `${step.locator} is not visible` };
 
 /**
  * A whole interaction's answer. `Refused` names the step that stopped it, and the shot is never
@@ -239,17 +239,17 @@ export type InteractionProof = InteractionProven | InteractionRefused;
 
 /** Fold the steps' answers, in order, stopping at the first refusal. */
 export const foldInteractionProof = (
-	answers: ReadonlyArray<{readonly step: InteractionStep; readonly proof: StepProof}>,
+	answers: ReadonlyArray<{ readonly step: InteractionStep; readonly proof: StepProof }>,
 ): InteractionProof => {
 	const proven: string[] = [];
-	for (const {step, proof} of answers) {
+	for (const { step, proof } of answers) {
 		if (proof._tag === "Refused") {
-			return {_tag: "Refused", step: stepToken(step), reason: proof.reason};
+			return { _tag: "Refused", step: stepToken(step), reason: proof.reason };
 		}
 		if (proof._tag === "Proven") proven.push(proof.statement);
 	}
 	const [first, ...rest] = proven;
 	return first === undefined
-		? {_tag: "Refused", step: "", reason: "no step proved anything"}
-		: {_tag: "Proven", proven: [first, ...rest]};
+		? { _tag: "Refused", step: "", reason: "no step proved anything" }
+		: { _tag: "Proven", proven: [first, ...rest] };
 };

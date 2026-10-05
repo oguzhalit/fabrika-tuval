@@ -1,15 +1,15 @@
-import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {NodeServices} from "@effect/platform-node";
-import {Effect} from "effect";
-import {afterEach, expect, it} from "vitest";
-import {collectCodex} from "./codex-collector.ts";
-import {readUsageLedger} from "./usage-ledger.ts";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
+import { afterEach, expect, it } from "vitest";
+import { collectCodex } from "./codex-collector.ts";
+import { readUsageLedger } from "./usage-ledger.ts";
 
 const dirs: string[] = [];
 afterEach(() => {
-	for (const dir of dirs.splice(0)) rmSync(dir, {recursive: true, force: true});
+	for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 const live = <A, E>(effect: Effect.Effect<A, E, NodeServices.NodeServices>) =>
 	Effect.runPromise(Effect.provide(effect, NodeServices.layer));
@@ -33,7 +33,7 @@ const meta = (id: string, parent: string | null = null, version = "0.154.0") => 
 });
 const context = (turn = "turn-1", model = "model-a") => ({
 	type: "turn_context",
-	payload: {turn_id: turn, model},
+	payload: { turn_id: turn, model },
 });
 const response = (thread = "root", id = "response-1", turn = "turn-1") => ({
 	type: "token_usage_record",
@@ -57,7 +57,7 @@ const fixture = () => {
 		sessions,
 		ledger: join(dir, "ledger.jsonl"),
 		rootThread: "root",
-		work: {repo: "o/r", issue: 8950, run: "lane:8892"},
+		work: { repo: "o/r", issue: 8950, run: "lane:8892" },
 	};
 };
 const save = (dir: string, name: string, rows: unknown[]) =>
@@ -74,17 +74,17 @@ it("records native response fields and distinct cumulative snapshots, idempotent
 	const measured = records.filter((row) => row.kind === "measurement");
 	expect(measured).toHaveLength(3);
 	expect(measured[0]).toMatchObject({
-		work: {issue: 8950, attempt: "root"},
-		agent: {session: "root", nativeSession: "root"},
+		work: { issue: 8950, attempt: "root" },
+		agent: { session: "root", nativeSession: "root" },
 		model: "model-a",
 		provider: "openai",
-		basis: {kind: "response"},
+		basis: { kind: "response" },
 	});
 	expect(
 		measured[0]?.counters.find((row) => row.field === "cache_write_input_tokens"),
-	).toMatchObject({value: {state: "measured", tokens: 5}});
+	).toMatchObject({ value: { state: "measured", tokens: 5 } });
 	expect(measured[0]?.counters.find((row) => row.field === "cached_output_tokens")).toMatchObject({
-		value: {state: "unsupported"},
+		value: { state: "unsupported" },
 	});
 	expect(records.find((row) => row.kind === "coverage")).toMatchObject({
 		state: "partial",
@@ -135,7 +135,7 @@ it("follows nested children, skips copied parent history, and keeps resumes and 
 	);
 });
 it("persists missing and unsupported participants, then recovers without duplicating usage", async () => {
-	const options = {...fixture(), expected: ["missing", "future"]};
+	const options = { ...fixture(), expected: ["missing", "future"] };
 	save(options.sessions, "root", [meta("root"), context(), response()]);
 	save(options.sessions, "future", [
 		meta("future", "root", "99.0.0"),
@@ -146,10 +146,10 @@ it("persists missing and unsupported participants, then recovers without duplica
 	expect(first.notices.join(" ")).toContain("Unsupported Codex schema");
 	let records = readUsageLedger(readFileSync(options.ledger, "utf8")).records;
 	expect(records).toContainEqual(
-		expect.objectContaining({kind: "participant", participant: "future", state: "unsupported"}),
+		expect.objectContaining({ kind: "participant", participant: "future", state: "unsupported" }),
 	);
 	expect(records).toContainEqual(
-		expect.objectContaining({kind: "participant", participant: "missing", state: "unreadable"}),
+		expect.objectContaining({ kind: "participant", participant: "missing", state: "unreadable" }),
 	);
 	save(options.sessions, "missing", [meta("missing", "root"), context(), response("missing")]);
 	await live(collectCodex(options));
@@ -179,33 +179,33 @@ it("keeps interrupted records visible and replays after repair, including archiv
 		records.filter((row) => row.kind === "measurement" && row.basis.kind === "response"),
 	).toHaveLength(2);
 	expect(records).toContainEqual(
-		expect.objectContaining({kind: "participant", participant: "child", state: "usage-missing"}),
+		expect.objectContaining({ kind: "participant", participant: "child", state: "usage-missing" }),
 	);
 });
 it("preserves absent provider/model/counters and measured zero without inferring values", async () => {
 	const options = fixture();
 	const header = meta("root");
-	delete (header.payload as {model_provider?: string}).model_provider;
+	delete (header.payload as { model_provider?: string }).model_provider;
 	const row = response();
-	delete (row.payload.usage as {cache_write_input_tokens?: number}).cache_write_input_tokens;
+	delete (row.payload.usage as { cache_write_input_tokens?: number }).cache_write_input_tokens;
 	row.payload.usage.reasoning_output_tokens = 0;
 	save(options.sessions, "root", [header, row]);
 	await live(collectCodex(options));
 	const record = readUsageLedger(readFileSync(options.ledger, "utf8")).records.find(
 		(row) => row.kind === "measurement",
 	);
-	expect(record).toMatchObject({model: null, provider: null});
+	expect(record).toMatchObject({ model: null, provider: null });
 	if (record?.kind !== "measurement") throw new Error("missing response");
 	expect(record.counters.find((row) => row.category === "cacheWrite")).toMatchObject({
-		value: {state: "absent"},
+		value: { state: "absent" },
 	});
 	expect(record.counters.find((row) => row.category === "reasoning")).toMatchObject({
-		value: {state: "measured", tokens: 0},
+		value: { state: "measured", tokens: 0 },
 	});
 });
 
 it("filters native root turns and never turns token_count snapshots into responses", async () => {
-	const options = {...fixture(), rootTurn: "turn-1"};
+	const options = { ...fixture(), rootTurn: "turn-1" };
 	const otherTurn = response("root", "other-response", "turn-2");
 	otherTurn.payload.root_turn_id = "turn-2";
 	save(options.sessions, "root", [
@@ -213,7 +213,7 @@ it("filters native root turns and never turns token_count snapshots into respons
 		context(),
 		response(),
 		otherTurn,
-		{type: "event_msg", payload: {type: "token_count", info: {last_token_usage: usage}}},
+		{ type: "event_msg", payload: { type: "token_count", info: { last_token_usage: usage } } },
 	]);
 	await live(collectCodex(options));
 	const measured = readUsageLedger(readFileSync(options.ledger, "utf8")).records.filter(
@@ -228,9 +228,9 @@ it("reports native identity and counter gaps without manufacturing response usag
 	const missingIdentity = response();
 	missingIdentity.payload.response_id = "";
 	const invalidCounts = response("root", "invalid");
-	invalidCounts.payload.usage = {...usage, input_tokens: -1};
+	invalidCounts.payload.usage = { ...usage, input_tokens: -1 };
 	const snapshotsOnly = response("root", "snapshots-only");
-	delete (snapshotsOnly.payload as {usage?: unknown}).usage;
+	delete (snapshotsOnly.payload as { usage?: unknown }).usage;
 	save(options.sessions, "root", [
 		meta("root"),
 		context(),

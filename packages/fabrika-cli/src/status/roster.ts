@@ -10,10 +10,10 @@
  * be read, or one `SKILL.md` inside it that could not be read, is UNKNOWN. A partial roster is not a
  * roster: a skill it could not read would render as a skill that does not exist.
  */
-import {Effect, type FileSystem, Path, Result} from "effect";
-import {ancestors} from "../delegate/root.ts";
-import {exists, isDirectory, readDir, readFile} from "../io/fs.ts";
-import {isRecord, parseJson} from "../io/json.ts";
+import { Effect, type FileSystem, Path, Result } from "effect";
+import { ancestors } from "../delegate/root.ts";
+import { exists, isDirectory, readDir, readFile } from "../io/fs.ts";
+import { isRecord, parseJson } from "../io/json.ts";
 
 /** Which of the six tiers served the roster. Printed, never assumed. */
 export type RosterTier = "explicit" | "env" | "plugin" | "repo" | "checkout" | "cache";
@@ -68,7 +68,7 @@ export type RosterRead =
 			readonly unreadableFrontmatter: number;
 	  }
 	/** An **explicitly passed** `--skills-dir` proven absent — a caller error, not a state of the world. */
-	| {readonly _tag: "AbsentExplicit"; readonly path: string; readonly display: string}
+	| { readonly _tag: "AbsentExplicit"; readonly path: string; readonly display: string }
 	/** The roster, or one `SKILL.md` inside it, could not be read. The declaration set is UNKNOWN. */
 	| {
 			readonly _tag: "Failed";
@@ -250,7 +250,7 @@ export const resolveRosterPath = (
 	Effect.gen(function* () {
 		const path = yield* Path.Path;
 		if (sources.explicit !== null) {
-			return {path: sources.explicit, display: sources.explicit, tier: "explicit" as const};
+			return { path: sources.explicit, display: sources.explicit, tier: "explicit" as const };
 		}
 		// The env rung is the harness's own answer and outranks every probe, but it cannot be the
 		// only one: `CLAUDE_PLUGIN_ROOT` is set for plugin hooks and plugin-provided commands and
@@ -327,7 +327,7 @@ export const readRoster = (
 		}
 		if (!present.success) {
 			return resolved.tier === "explicit"
-				? ({_tag: "AbsentExplicit", path: resolved.path, display: resolved.display} as const)
+				? ({ _tag: "AbsentExplicit", path: resolved.path, display: resolved.display } as const)
 				: ({
 						_tag: "Failed",
 						path: resolved.path,

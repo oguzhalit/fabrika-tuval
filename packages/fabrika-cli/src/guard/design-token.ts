@@ -83,9 +83,9 @@ export interface RawPxFailure {
 }
 
 export type DesignTokenVerdict =
-	| {readonly pass: true; readonly filesChecked: number; readonly varRefsChecked: number}
+	| { readonly pass: true; readonly filesChecked: number; readonly varRefsChecked: number }
 	/** No CSS files discovered — fail closed, never a vacuous pass. */
-	| {readonly pass: false; readonly reason: "zero-scope"}
+	| { readonly pass: false; readonly reason: "zero-scope" }
 	| {
 			readonly pass: false;
 			readonly reason: "violations";
@@ -99,8 +99,8 @@ export type DesignTokenVerdict =
  * once — so all three are collected and reported together rather than short-circuiting on the first.
  */
 export const judge = (facts: DesignTokenFacts): DesignTokenVerdict => {
-	const {files, config} = facts;
-	if (files.length === 0) return {pass: false, reason: "zero-scope"};
+	const { files, config } = facts;
+	if (files.length === 0) return { pass: false, reason: "zero-scope" };
 
 	// The cascade is corpus-wide, not per-file, so a ref resolves against every declaration
 	// anywhere — plus the runtime-injected and grandfathered names.
@@ -118,15 +118,15 @@ export const judge = (facts: DesignTokenFacts): DesignTokenVerdict => {
 		for (const ref of f.varRefs) {
 			varRefsChecked++;
 			if (!declaredUniverse.has(ref.name)) {
-				undefinedRefs.push({path: f.path, name: ref.name, line: ref.line});
+				undefinedRefs.push({ path: f.path, name: ref.name, line: ref.line });
 			}
 		}
 		if (f.isRawLayer) continue;
-		for (const h of f.hexLiterals) hex.push({path: f.path, value: h.value, line: h.line});
+		for (const h of f.hexLiterals) hex.push({ path: f.path, value: h.value, line: h.line });
 		const count = f.rawPx.length;
 		const ceiling = config.rawPxCeilings[f.path] ?? null;
 		if (count > (ceiling ?? 0)) {
-			rawPx.push({path: f.path, count, ceiling, samples: f.rawPx.slice(0, 3)});
+			rawPx.push({ path: f.path, count, ceiling, samples: f.rawPx.slice(0, 3) });
 		}
 	}
 
@@ -135,9 +135,9 @@ export const judge = (facts: DesignTokenFacts): DesignTokenVerdict => {
 	rawPx.sort((a, b) => a.path.localeCompare(b.path));
 
 	if (undefinedRefs.length > 0 || hex.length > 0 || rawPx.length > 0) {
-		return {pass: false, reason: "violations", undefinedRefs, hex, rawPx};
+		return { pass: false, reason: "violations", undefinedRefs, hex, rawPx };
 	}
-	return {pass: true, filesChecked: files.length, varRefsChecked};
+	return { pass: true, filesChecked: files.length, varRefsChecked };
 };
 
 const VERB = "guard design-token-guard check";
@@ -233,7 +233,7 @@ export const parseVarReferences = (src: string): ReadonlyArray<VarRef> => {
 	const re = /var\(\s*(--[a-zA-Z0-9-]+)/g;
 	for (const m of stripped.matchAll(re)) {
 		if (m[1] !== undefined && m.index !== undefined) {
-			out.push({name: m[1], line: lineOf(stripped, m.index)});
+			out.push({ name: m[1], line: lineOf(stripped, m.index) });
 		}
 	}
 	return out;
@@ -245,7 +245,7 @@ export const parseHexLiterals = (src: string): ReadonlyArray<RawLiteral> => {
 	const out: Array<RawLiteral> = [];
 	const re = /#([0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})\b/g;
 	for (const m of stripped.matchAll(re)) {
-		if (m.index !== undefined) out.push({value: m[0], line: lineOf(stripped, m.index)});
+		if (m.index !== undefined) out.push({ value: m[0], line: lineOf(stripped, m.index) });
 	}
 	return out;
 };
@@ -266,7 +266,7 @@ export const parseRawPxOverTwo = (src: string): ReadonlyArray<RawLiteral> => {
 		if (AT_RULE_RE.test(line)) continue;
 		for (const m of line.matchAll(re)) {
 			const value = Number.parseFloat(m[1] ?? "0");
-			if (value > 2) out.push({value: `${m[1]}px`, line: i + 1});
+			if (value > 2) out.push({ value: `${m[1]}px`, line: i + 1 });
 		}
 	}
 	return out;

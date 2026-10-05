@@ -298,8 +298,8 @@ export const KNOWN_PARKS: ReadonlyArray<ParkRecipe> = [
 export const isPark = (leaf: string): boolean => leaf === "blocked" || leaf.startsWith("human:");
 
 export type ParkClass =
-	| {readonly _tag: "NotParked"; readonly leaf: string}
-	| {readonly _tag: "Known"; readonly recipe: ParkRecipe}
+	| { readonly _tag: "NotParked"; readonly leaf: string }
+	| { readonly _tag: "Known"; readonly recipe: ParkRecipe }
 	| {
 			readonly _tag: "Novel";
 			readonly leaf: string;
@@ -326,11 +326,11 @@ export type ParkClass =
  * name still wins: a recorder that knows better says so, exactly as it does on a machinery lap.
  */
 export const classifyPark = (leaf: string, cause: string | null): ParkClass => {
-	if (!isPark(leaf)) return {_tag: "NotParked", leaf};
+	if (!isPark(leaf)) return { _tag: "NotParked", leaf };
 	const seated = cause ?? structuralParkCause(leaf);
 	const recipe = KNOWN_PARKS.find((row) => row.park === leaf && row.cause === seated);
-	if (recipe !== undefined) return {_tag: "Known", recipe};
-	return {_tag: "Novel", leaf, cause: seated, reason: novelReason(leaf, seated)};
+	if (recipe !== undefined) return { _tag: "Known", recipe };
+	return { _tag: "Novel", leaf, cause: seated, reason: novelReason(leaf, seated) };
 };
 
 const novelReason = (leaf: string, cause: string | null): string => {

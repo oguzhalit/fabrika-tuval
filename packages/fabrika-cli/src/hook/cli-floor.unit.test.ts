@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	belowFloorWarning,
 	CLI_PACKAGE,
@@ -10,23 +10,23 @@ import {
 
 const floorOf = (minimum: unknown): FloorSource => ({
 	_tag: "Text",
-	text: JSON.stringify({description: "d", minimum}),
+	text: JSON.stringify({ description: "d", minimum }),
 });
 
 describe("judgeCliFloor", () => {
 	it.each<[string, FloorSource]>([
-		["a floor file that could not be read", {_tag: "Unreadable", reason: "ENOENT"}],
-		["a floor file that is not JSON", {_tag: "Text", text: "minimum: 0.7.1"}],
-		["a floor file with no minimum", {_tag: "Text", text: "{}"}],
-		["a floor file that is a JSON array", {_tag: "Text", text: '["0.7.1"]'}],
+		["a floor file that could not be read", { _tag: "Unreadable", reason: "ENOENT" }],
+		["a floor file that is not JSON", { _tag: "Text", text: "minimum: 0.7.1" }],
+		["a floor file with no minimum", { _tag: "Text", text: "{}" }],
+		["a floor file that is a JSON array", { _tag: "Text", text: '["0.7.1"]' }],
 		["a minimum that is not a string", floorOf(7)],
 		["a minimum that is not semver", floorOf("latest")],
 	])("is UNKNOWN, never a pass, on %s", (_label, floor) => {
-		expect(judgeCliFloor({installed: "0.7.1", floor})._tag).toBe("Unknown");
+		expect(judgeCliFloor({ installed: "0.7.1", floor })._tag).toBe("Unknown");
 	});
 
 	it("is UNKNOWN when the running CLI's own version is not semver", () => {
-		expect(judgeCliFloor({installed: "dev", floor: floorOf("0.7.1")})._tag).toBe("Unknown");
+		expect(judgeCliFloor({ installed: "dev", floor: floorOf("0.7.1") })._tag).toBe("Unknown");
 	});
 });
 
@@ -65,7 +65,7 @@ describe("compareVersions", () => {
 
 describe("belowFloorWarning", () => {
 	it("names the installed version, the minimum, and the upgrade command", () => {
-		const warning = belowFloorWarning({installed: "0.5.0", minimum: "0.7.1"});
+		const warning = belowFloorWarning({ installed: "0.5.0", minimum: "0.7.1" });
 		expect(warning).toContain("v0.5.0");
 		expect(warning).toContain("v0.7.1");
 		expect(warning).toContain(`pnpm add --save-dev ${CLI_PACKAGE}@latest`);

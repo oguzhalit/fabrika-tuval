@@ -15,20 +15,20 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9852
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type CampaignRow, type CampaignState, parseCampaigns} from "../build/scope-admission.ts";
-import {authorKeyNotices} from "../config/deprecated-authors.ts";
-import {CONFIG_PATH} from "../config/document.ts";
-import {campaignAuthorsKey} from "../config/keys/campaign-authors.ts";
-import {readRoadmapFile} from "../config/paths.ts";
-import {loadRepoConfig} from "../config/working-root.ts";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {readFile} from "../io/fs.ts";
-import {getCommentRecord} from "../io/issues.ts";
-import {controlPlaneRoster} from "../ship/roster.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {aclOf} from "./authority.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type CampaignRow, type CampaignState, parseCampaigns } from "../build/scope-admission.ts";
+import { authorKeyNotices } from "../config/deprecated-authors.ts";
+import { CONFIG_PATH } from "../config/document.ts";
+import { campaignAuthorsKey } from "../config/keys/campaign-authors.ts";
+import { readRoadmapFile } from "../config/paths.ts";
+import { loadRepoConfig } from "../config/working-root.ts";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { readFile } from "../io/fs.ts";
+import { getCommentRecord } from "../io/issues.ts";
+import { controlPlaneRoster } from "../ship/roster.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { aclOf } from "./authority.ts";
 import {
 	AUTHOR_UNDECLARED,
 	AUTHORITY_UNKNOWN,
@@ -40,7 +40,7 @@ import {
 	PRECONDITION_UNKNOWN,
 	TABLE_UNREADABLE,
 } from "./codes.ts";
-import {bindingMiss, readMarker} from "./marker.ts";
+import { bindingMiss, readMarker } from "./marker.ts";
 
 /** What a verb that only touches the working tree needs — `campaign list` never reaches the board. */
 export type FileEffect<A> = Effect.Effect<A, never, FileSystem.FileSystem | Path.Path>;
@@ -59,8 +59,8 @@ export interface Located {
 }
 
 export type LocateRead =
-	| {readonly _tag: "File"; readonly located: Located}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "File"; readonly located: Located }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * Where the roadmap is: `--file` as typed, else the repo's declared `roadmapFile` under its root.
@@ -79,7 +79,7 @@ export const locateRoadmap = (
 		if (explicit !== null) {
 			return {
 				_tag: "File" as const,
-				located: {path: path.resolve(cwd, explicit), display: explicit},
+				located: { path: path.resolve(cwd, explicit), display: explicit },
 			};
 		}
 		const declared = yield* readRoadmapFile(cwd);
@@ -106,7 +106,7 @@ export const locateRoadmap = (
 		}
 		return {
 			_tag: "File" as const,
-			located: {path: path.join(root, declared.value), display: declared.value},
+			located: { path: path.join(root, declared.value), display: declared.value },
 		};
 	});
 
@@ -119,7 +119,7 @@ export type TableRead =
 			readonly text: string;
 			readonly rows: ReadonlyArray<CampaignRow>;
 	  }
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * The roadmap's bytes, with the table proven parseable — `11` unread, `12` unreadable.
@@ -144,7 +144,7 @@ export const readRoadmap = (
 							`${verb}: ${located.display}: ${parsed.reason} — the whole ## Campaigns table is unreadable.${tail}`,
 						),
 					}
-				: {_tag: "Text", text, rows: parsed.rows};
+				: { _tag: "Text", text, rows: parsed.rows };
 		}),
 		Effect.catchTag("fabrika-cli/ReadFailed", (failure) =>
 			Effect.succeed<TableRead>({
@@ -183,11 +183,11 @@ export type Trace =
 			/** Deprecation notices about a `campaignAuthors` the config still declares. */
 			readonly notices: ReadonlyArray<string>;
 	  }
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 export const runTrace = (request: TraceRequest): CampaignEffect<Trace> =>
 	Effect.gen(function* () {
-		const {verb, url} = request;
+		const { verb, url } = request;
 		const notices = authorKeyNotices(
 			verb,
 			yield* loadRepoConfig(request.cwd),
@@ -271,5 +271,5 @@ export const runTrace = (request: TraceRequest): CampaignEffect<Trace> =>
 				),
 			};
 		}
-		return {_tag: "Approved", login, level: acl.level, owners, notices};
+		return { _tag: "Approved", login, level: acl.level, owners, notices };
 	});

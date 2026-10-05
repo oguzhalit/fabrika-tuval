@@ -13,10 +13,10 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/8901
  */
-import {Effect} from "effect";
-import type {Shell} from "../io/git.ts";
-import {answer, type VerbOutcome} from "../verb.ts";
-import {resolveAllocation} from "./allocation.ts";
+import { Effect } from "effect";
+import type { Shell } from "../io/git.ts";
+import { answer, type VerbOutcome } from "../verb.ts";
+import { resolveAllocation } from "./allocation.ts";
 
 export interface NextOptions {
 	readonly dir: string;
@@ -27,11 +27,11 @@ export interface NextOptions {
 
 export const runNext = (options: NextOptions): Shell<VerbOutcome> =>
 	Effect.gen(function* () {
-		const {dir, base, repo, json} = options;
+		const { dir, base, repo, json } = options;
 
-		const resolved = yield* resolveAllocation({verb: "adr next", dir, base, repo});
+		const resolved = yield* resolveAllocation({ verb: "adr next", dir, base, repo });
 		if (resolved._tag === "Refused") return resolved.outcome;
-		const {allocation, baseSha, scope} = resolved.value;
+		const { allocation, baseSha, scope } = resolved.value;
 
 		return answer(
 			json

@@ -12,12 +12,12 @@
  * first-occurrence extractor. This verb attempts once; `ledger write --help` describes its results.
  */
 
-import {Effect, type FileSystem} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {scannedLine} from "../build/target.ts";
-import {getIssue, patchIssueBody} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, type FileSystem } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { scannedLine } from "../build/target.ts";
+import { getIssue, patchIssueBody } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	EPIC_MOVED,
 	NOT_STAGED,
@@ -26,11 +26,11 @@ import {
 	REGION_UNRESOLVABLE,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {BODY_DIGEST_RE, bodyDigest} from "./digest.ts";
-import {type LedgerMessages, type OpenOptions, openGround} from "./preconditions.ts";
-import {splicePlan} from "./region.ts";
-import {planPath, topologyPath} from "./run.ts";
-import {loadRun, loadStaged} from "./run-io.ts";
+import { BODY_DIGEST_RE, bodyDigest } from "./digest.ts";
+import { type LedgerMessages, type OpenOptions, openGround } from "./preconditions.ts";
+import { splicePlan } from "./region.ts";
+import { planPath, topologyPath } from "./run.ts";
+import { loadRun, loadStaged } from "./run-io.ts";
 
 const VERB = "ledger write";
 
@@ -61,7 +61,7 @@ export const runWrite = (
 
 		const ground = yield* openGround(MESSAGES, options);
 		if (ground._tag === "Refused") return ground.outcome;
-		const {repo, epic, dir, notes} = ground;
+		const { repo, epic, dir, notes } = ground;
 
 		const run = yield* loadRun(MESSAGES, dir, notes);
 		if (run._tag === "Refused") return run.outcome;

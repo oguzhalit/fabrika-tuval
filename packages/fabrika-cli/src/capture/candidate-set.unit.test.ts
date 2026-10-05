@@ -4,15 +4,15 @@
  * deterministically, and round-trips through parse; a partial/mismatched render fails
  * closed.
  */
-import {assert, describe, it} from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import {
 	assembleCandidateSet,
 	parseCandidateSet,
 	type RenderedCandidate,
 	serializeCandidateSet,
 } from "./candidate-set.ts";
-import {parseSurfaceSpec} from "./plan.ts";
-import type {ResolvedPrioritySurface} from "./priority-surfaces.ts";
+import { parseSurfaceSpec } from "./plan.ts";
+import type { ResolvedPrioritySurface } from "./priority-surfaces.ts";
 
 const SHA_A = "a".repeat(64);
 const SHA_B = "b".repeat(64);
@@ -56,7 +56,7 @@ describe("assembleCandidateSet", () => {
 		const set = assembleCandidateSet({
 			previewUrl: "https://pr-1.workers.dev",
 			viewport: "desktop",
-			forcedFlags: {"golden-screens": true},
+			forcedFlags: { "golden-screens": true },
 			surfaces,
 			rendered,
 		});
@@ -118,7 +118,7 @@ describe("assembleCandidateSet", () => {
 					forcedFlags: {},
 					surfaces: [surfaces[0] as ResolvedPrioritySurface],
 					rendered: [
-						{...(rendered[1] as RenderedCandidate), surfaceId: "/sozluk", sha256: `${SHA_A}.png`},
+						{ ...(rendered[1] as RenderedCandidate), surfaceId: "/sozluk", sha256: `${SHA_A}.png` },
 					],
 				}),
 			/64-hex sha256 stem/,
@@ -130,7 +130,7 @@ describe("serializeCandidateSet / parseCandidateSet", () => {
 	const set = assembleCandidateSet({
 		previewUrl: "https://pr-1.workers.dev",
 		viewport: "desktop",
-		forcedFlags: {"golden-screens": true, "zeta-draft": false},
+		forcedFlags: { "golden-screens": true, "zeta-draft": false },
 		surfaces,
 		rendered,
 	});

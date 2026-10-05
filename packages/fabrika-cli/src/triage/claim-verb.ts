@@ -24,8 +24,8 @@
  * §"Error handling" — the typed error channel is for faults a caller recovers from, and `io/exec.ts`
  * already folds the spawn fault in).
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	createComment,
 	deleteComment,
@@ -33,7 +33,7 @@ import {
 	listCommentsReconciled,
 	resolveRepo,
 } from "../io/issues.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	type AskedLane,
 	DEFAULT_TTL_MINUTES,
@@ -46,8 +46,8 @@ import {
 	requireSession,
 	resolveClaim,
 } from "./claim.ts";
-import {PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {scannedLine} from "./scope.ts";
+import { PRECONDITION_UNKNOWN, READBACK_MISMATCH, WRITE_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { scannedLine } from "./scope.ts";
 
 export interface ClaimOptions {
 	readonly issue: number;
@@ -73,7 +73,7 @@ const callerFrom = (
 	session: string,
 	token: string | null,
 	uuid: string,
-): AskedLane | {readonly refusal: VerbOutcome} => {
+): AskedLane | { readonly refusal: VerbOutcome } => {
 	const asked =
 		token === null ? mintCaller(VERB, session, uuid) : requireCallerToken(VERB, session, token);
 	return "refusal" in asked ? asked : asked.value;
@@ -83,7 +83,7 @@ export const runClaim = (
 	options: ClaimOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {issue, json} = options;
+		const { issue, json } = options;
 
 		if (!Number.isInteger(issue) || issue <= 0) {
 			return refuse(FAILED, `${VERB}: ${issue} is not an issue number.`);
@@ -95,7 +95,7 @@ export const runClaim = (
 
 		const asking = callerFrom(session, options.token, options.uuid);
 		if ("refusal" in asking) return asking.refusal;
-		const {caller, token: laneToken} = asking;
+		const { caller, token: laneToken } = asking;
 
 		const repoAttempt = yield* resolveRepo(options.repo, options.env);
 		if (repoAttempt._tag === "Failure") {

@@ -21,9 +21,9 @@
  * (`claude-plugins/fabrika/docs/cli-interface-convention.md` §2/§3): the reason on stderr, nothing
  * on stdout, exit `1`.
  */
-import {Effect} from "effect";
-import {Argument, Command, Param} from "effect/unstable/cli";
-import {FAILED} from "./verb.ts";
+import { Effect } from "effect";
+import { Argument, Command, Param } from "effect/unstable/cli";
+import { FAILED } from "./verb.ts";
 
 /**
  * The catch-all's config key and argument name, exported so the coverage test can assert every leaf
@@ -78,7 +78,7 @@ export const leafCommand = <
 
 	return Command.make(
 		name,
-		{...config, [EXCESS_OPERAND_NAME]: excessOperandArgument},
+		{ ...config, [EXCESS_OPERAND_NAME]: excessOperandArgument },
 		handle as never,
 	) as never;
 };

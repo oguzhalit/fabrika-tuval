@@ -18,12 +18,12 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9715#issuecomment-5792636866
  */
-import {createHash} from "node:crypto";
-import {Effect} from "effect";
+import { createHash } from "node:crypto";
+import { Effect } from "effect";
 import * as HttpClient from "effect/unstable/http/HttpClient";
 import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest";
-import {type RestCall, restCall} from "./gh-api.ts";
-import {isRecord} from "./json.ts";
+import { type RestCall, restCall } from "./gh-api.ts";
+import { isRecord } from "./json.ts";
 
 /** One uploaded capture: the URL the upload returned, and the local bytes it must serve. */
 export interface HostedCapture {
@@ -44,7 +44,7 @@ export interface DigestedCapture {
 export const renderCall = (hostedUrl: string, repo: string): RestCall => ({
 	method: "POST",
 	path: "markdown",
-	body: {text: `![evidence](${hostedUrl})`, mode: "gfm", context: repo},
+	body: { text: `![evidence](${hostedUrl})`, mode: "gfm", context: repo },
 	accept: "text/html",
 });
 
@@ -133,21 +133,21 @@ export const readBack = (
 export const renderedHtml = (
 	token: string,
 	call: RestCall,
-	read: (response: {readonly body: unknown; readonly text: string}) => string | null,
+	read: (response: { readonly body: unknown; readonly text: string }) => string | null,
 ): Effect.Effect<
-	{readonly html: string} | {readonly reason: string},
+	{ readonly html: string } | { readonly reason: string },
 	never,
 	HttpClient.HttpClient
 > =>
 	Effect.map(restCall(token, call), (outcome) => {
-		if (outcome._tag === "Unreachable") return {reason: outcome.reason};
+		if (outcome._tag === "Unreachable") return { reason: outcome.reason };
 		if (outcome.status !== 200) {
-			return {reason: `${call.method} ${call.path} answered HTTP ${outcome.status}`};
+			return { reason: `${call.method} ${call.path} answered HTTP ${outcome.status}` };
 		}
 		const html = read(outcome);
 		return html === null
-			? {reason: `${call.method} ${call.path} answered 200 with no rendered HTML`}
-			: {html};
+			? { reason: `${call.method} ${call.path} answered 200 with no rendered HTML` }
+			: { html };
 	});
 
 /**

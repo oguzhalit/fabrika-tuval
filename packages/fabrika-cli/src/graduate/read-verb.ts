@@ -17,13 +17,13 @@
  * against a trail is the caller's arithmetic, and doing it here would cost this verb its split test.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type CommentRecord, listComments, resolveRepo} from "../io/issues.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type CommentRecord, listComments, resolveRepo } from "../io/issues.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import * as graduateEmitted from "../wire/graduate-emitted.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {requireSource} from "./source.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { requireSource } from "./source.ts";
 
 export interface ReadOptions {
 	readonly source: number;
@@ -60,7 +60,7 @@ export const scanEmissions = (comments: ReadonlyArray<CommentRecord>): MarkerSca
 		const read = graduateEmitted.read(comment.body);
 		if (read._tag === "Absent") continue;
 		if (read._tag === "Malformed") {
-			disregarded.push({comment: comment.id, reason: "malformed", detail: read.reason});
+			disregarded.push({ comment: comment.id, reason: "malformed", detail: read.reason });
 			continue;
 		}
 		emissions.push({
@@ -71,7 +71,7 @@ export const scanEmissions = (comments: ReadonlyArray<CommentRecord>): MarkerSca
 			comment: comment.id,
 		});
 	}
-	return {emissions, disregarded};
+	return { emissions, disregarded };
 };
 
 const VERB = "graduate read";
@@ -80,7 +80,7 @@ export const runRead = (
 	options: ReadOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {source} = options;
+		const { source } = options;
 		if (!Number.isInteger(source) || source <= 0) {
 			return refuse(FAILED, `${VERB}: ${source} is not an issue number.`);
 		}
@@ -112,7 +112,7 @@ export const runRead = (
 				state: scan.emissions.length > 0 ? "graduated" : "ungraduated",
 				emissions: scan.emissions,
 				disregarded: scan.disregarded,
-				scanned: {comments: comments.value.length},
+				scanned: { comments: comments.value.length },
 			}),
 			[
 				`${VERB}: ${repo}#${source}, ${comments.value.length} comment(s) scanned, ${scan.emissions.length} emission(s) parsed, ${scan.disregarded.length} disregarded.`,

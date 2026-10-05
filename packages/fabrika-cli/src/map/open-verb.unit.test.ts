@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, once, type Scripted} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, once, type Scripted } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
 import {
 	ALREADY_DESCOPED,
 	BARE_AT_PATH,
@@ -14,8 +14,8 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {issueJson, MAP_BODY, MAP_BODY_WITH_REJECTION, REPO} from "./fixtures.test-support.ts";
-import {runOpen} from "./open-verb.ts";
+import { issueJson, MAP_BODY, MAP_BODY_WITH_REJECTION, REPO } from "./fixtures.test-support.ts";
+import { runOpen } from "./open-verb.ts";
 
 const LABELS = /repos\/o\/r\/labels/;
 const OPEN_MAPS = /issues\?state=open&labels=/;
@@ -25,21 +25,21 @@ const ADD_LABEL = /POST .*\/issues\/9140\/labels/;
 const NEW_MAP = /issues\/9140$/;
 const EXISTING_MAP = /issues\/9200$/;
 
-const served = (body: string) => ({status: 200, body}) as const;
+const served = (body: string) => ({ status: 200, body }) as const;
 
 /** The label list as `repos/<repo>/labels` really answers it: one object per label. */
 const labelList = (...names: ReadonlyArray<string>) =>
-	JSON.stringify(names.map((name) => ({name})));
+	JSON.stringify(names.map((name) => ({ name })));
 
 /** An `is:issue` search envelope — `search/issues` declares its count beside its items. */
-const searchHits = (...rows: ReadonlyArray<{readonly number: number; readonly title: string}>) =>
-	JSON.stringify({total_count: rows.length, items: rows});
+const searchHits = (...rows: ReadonlyArray<{ readonly number: number; readonly title: string }>) =>
+	JSON.stringify({ total_count: rows.length, items: rows });
 
 const QUESTIONS = "does a suspended account keep its weight?\nwhat clock does weight decay on?\n";
 
 const run = (
 	script: ReadonlyArray<Scripted>,
-	stdin: StdinRead = {_tag: "Text", text: QUESTIONS},
+	stdin: StdinRead = { _tag: "Text", text: QUESTIONS },
 	destination = "how moderation weight is earned",
 ) =>
 	Effect.runPromise(
@@ -47,7 +47,7 @@ const run = (
 			runOpen({
 				destination,
 				repo: null,
-				env: {CLAUDE_PIPELINE_REPO: REPO},
+				env: { CLAUDE_PIPELINE_REPO: REPO },
 				stdin: Effect.succeed(stdin),
 			}),
 			fakeSeams(script).layer,
@@ -57,31 +57,31 @@ const run = (
 const labelsOk: Scripted = [LABELS, served(labelList("wayfinding:map", "status:needs-triage"))];
 const noMaps: Scripted = [OPEN_MAPS, served("[]")];
 const noHits: Scripted = [SEARCH, served(searchHits())];
-const minted = issueJson({number: 9140, body: "", labels: ["wayfinding:map"]});
+const minted = issueJson({ number: 9140, body: "", labels: ["wayfinding:map"] });
 
 describe("runOpen — the checks before it mints", () => {
 	it("exits 3 with nothing on stdout when stdin held no question", async () => {
-		const out = await run([labelsOk], {_tag: "Text", text: "  \n\n"});
+		const out = await run([labelsOk], { _tag: "Text", text: "  \n\n" });
 		expect(out.code).toBe(EMPTY_STDIN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.join("\n")).toContain("is not fog");
 	});
 
 	it("exits 17 when nothing supplied is stated as a question — the checkable half of the fog test", async () => {
-		const out = await run([labelsOk], {_tag: "Text", text: "build the invite acceptance form\n"});
+		const out = await run([labelsOk], { _tag: "Text", text: "build the invite acceptance form\n" });
 		expect(out.code).toBe(NOT_FOG);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.join("\n")).toContain("belongs in intake");
 	});
 
 	it("exits 5 on a machine-local path, unconditionally — no map verb offers --redact", async () => {
-		const out = await run([labelsOk], {_tag: "Text", text: "does ~/notes/weight.md say?\n"});
+		const out = await run([labelsOk], { _tag: "Text", text: "does ~/notes/weight.md say?\n" });
 		expect(out.code).toBe(LEAKED_PATH);
 		expect(out.stdout).toBe("");
 	});
 
 	it("exits 6 on a bare @ reference, which is not redactable", async () => {
-		const out = await run([labelsOk], {_tag: "Text", text: "@notes/weight.md"});
+		const out = await run([labelsOk], { _tag: "Text", text: "@notes/weight.md" });
 		expect(out.code).toBe(BARE_AT_PATH);
 		expect(out.stdout).toBe("");
 	});
@@ -94,7 +94,7 @@ describe("runOpen — the checks before it mints", () => {
 	});
 
 	it("exits 11 when the map search fails — nothing was written and charting is UNKNOWN", async () => {
-		const out = await run([labelsOk, [OPEN_MAPS, {status: 502, body: "{}"}]]);
+		const out = await run([labelsOk, [OPEN_MAPS, { status: 502, body: "{}" }]]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 	});
@@ -103,15 +103,18 @@ describe("runOpen — the checks before it mints", () => {
 		const out = await run(
 			[
 				labelsOk,
-				[OPEN_MAPS, served(JSON.stringify([{number: 9200, title: "wayfinding: something else"}]))],
+				[
+					OPEN_MAPS,
+					served(JSON.stringify([{ number: 9200, title: "wayfinding: something else" }])),
+				],
 				[
 					EXISTING_MAP,
 					served(
-						issueJson({number: 9200, body: MAP_BODY_WITH_REJECTION, labels: ["wayfinding:map"]}),
+						issueJson({ number: 9200, body: MAP_BODY_WITH_REJECTION, labels: ["wayfinding:map"] }),
 					),
 				],
 			],
-			{_tag: "Text", text: QUESTIONS},
+			{ _tag: "Text", text: QUESTIONS },
 			"a per-topic weight multiplier",
 		);
 		expect(out.code).toBe(ALREADY_DESCOPED);
@@ -119,22 +122,22 @@ describe("runOpen — the checks before it mints", () => {
 	});
 
 	it("exits 16 when two open maps match, refusing to guess which", async () => {
-		const body = served(issueJson({number: 9200, body: MAP_BODY, labels: ["wayfinding:map"]}));
+		const body = served(issueJson({ number: 9200, body: MAP_BODY, labels: ["wayfinding:map"] }));
 		const out = await run([
 			labelsOk,
 			[
 				OPEN_MAPS,
 				served(
 					JSON.stringify([
-						{number: 9200, title: "wayfinding: a"},
-						{number: 9201, title: "wayfinding: b"},
+						{ number: 9200, title: "wayfinding: a" },
+						{ number: 9201, title: "wayfinding: b" },
 					]),
 				),
 			],
 			[/issues\/9200$/, body],
 			[
 				/issues\/9201$/,
-				served(issueJson({number: 9201, body: MAP_BODY, labels: ["wayfinding:map"]})),
+				served(issueJson({ number: 9201, body: MAP_BODY, labels: ["wayfinding:map"] })),
 			],
 		]);
 		expect(out.code).toBe(MAP_AMBIGUOUS);
@@ -150,7 +153,7 @@ describe("runOpen — minting and resuming", () => {
 			noHits,
 			[
 				CREATE,
-				{status: 201, body: '{"number":9140,"html_url":"https://forge.example/o/r/issues/9140"}'},
+				{ status: 201, body: '{"number":9140,"html_url":"https://forge.example/o/r/issues/9140"}' },
 			],
 			[ADD_LABEL, served("{}")],
 			[NEW_MAP, served(minted)],
@@ -181,16 +184,16 @@ describe("runOpen — minting and resuming", () => {
 			noHits,
 			[
 				CREATE,
-				{status: 201, body: '{"number":9140,"html_url":"https://forge.example/o/r/issues/9140"}'},
+				{ status: 201, body: '{"number":9140,"html_url":"https://forge.example/o/r/issues/9140"}' },
 			],
 			[ADD_LABEL, served("{}")],
-			[NEW_MAP, served(issueJson({number: 9140, body: composed, labels: ["wayfinding:map"]}))],
+			[NEW_MAP, served(issueJson({ number: 9140, body: composed, labels: ["wayfinding:map"] }))],
 		]);
 		expect(out.code).toBe(0);
 		const answer = JSON.parse(out.stdout);
-		expect(answer).toMatchObject({map: 9140, created: true, questions: 2});
+		expect(answer).toMatchObject({ map: 9140, created: true, questions: 2 });
 		expect(answer.digest).toMatch(/^[0-9a-f]{12}$/);
-		expect(answer.scanned).toEqual({maps: 0, candidates: 0});
+		expect(answer.scanned).toEqual({ maps: 0, candidates: 0 });
 	});
 
 	it("exits 8 naming the number when the label write does not land — the survivor is inert", async () => {
@@ -200,9 +203,9 @@ describe("runOpen — minting and resuming", () => {
 			noHits,
 			[
 				CREATE,
-				{status: 201, body: '{"number":9140,"html_url":"https://forge.example/o/r/issues/9140"}'},
+				{ status: 201, body: '{"number":9140,"html_url":"https://forge.example/o/r/issues/9140"}' },
 			],
-			[ADD_LABEL, {status: 502, body: "{}"}],
+			[ADD_LABEL, { status: 502, body: "{}" }],
 		]);
 		expect(out.code).toBe(WRITE_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -215,10 +218,13 @@ describe("runOpen — minting and resuming", () => {
 			[
 				OPEN_MAPS,
 				served(
-					JSON.stringify([{number: 9200, title: "wayfinding: how moderation weight is earned"}]),
+					JSON.stringify([{ number: 9200, title: "wayfinding: how moderation weight is earned" }]),
 				),
 			],
-			[EXISTING_MAP, served(issueJson({number: 9200, body: MAP_BODY, labels: ["wayfinding:map"]}))],
+			[
+				EXISTING_MAP,
+				served(issueJson({ number: 9200, body: MAP_BODY, labels: ["wayfinding:map"] })),
+			],
 			noHits,
 		]);
 		const out = await Effect.runPromise(
@@ -226,14 +232,14 @@ describe("runOpen — minting and resuming", () => {
 				runOpen({
 					destination: "how moderation weight is earned",
 					repo: null,
-					env: {CLAUDE_PIPELINE_REPO: REPO},
-					stdin: Effect.succeed({_tag: "Text", text: QUESTIONS} as StdinRead),
+					env: { CLAUDE_PIPELINE_REPO: REPO },
+					stdin: Effect.succeed({ _tag: "Text", text: QUESTIONS } as StdinRead),
 				}),
 				seams.layer,
 			),
 		);
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({map: 9200, created: false, questions: 2});
+		expect(JSON.parse(out.stdout)).toMatchObject({ map: 9200, created: false, questions: 2 });
 		expect(seams.requests.some((line) => line.startsWith("PATCH"))).toBe(false);
 	});
 
@@ -268,10 +274,10 @@ describe("runOpen — minting and resuming", () => {
 			[SEARCH, served(searchHits())],
 			[
 				CREATE,
-				{status: 201, body: '{"number":9140,"html_url":"https://forge.example/o/r/issues/9140"}'},
+				{ status: 201, body: '{"number":9140,"html_url":"https://forge.example/o/r/issues/9140"}' },
 			],
 			[ADD_LABEL, served("{}")],
-			[NEW_MAP, served(issueJson({number: 9140, body: composed, labels: ["wayfinding:map"]}))],
+			[NEW_MAP, served(issueJson({ number: 9140, body: composed, labels: ["wayfinding:map"] }))],
 		]);
 		expect(out.code).toBe(0);
 		const answer = JSON.parse(out.stdout);

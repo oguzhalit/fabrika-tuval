@@ -4,10 +4,10 @@
  * See `graduate compose --help` for the output and refusal contract.
  */
 
-import {Effect} from "effect";
-import type {StdinRead} from "../io/stdin.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { StdinRead } from "../io/stdin.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	BAD_SECTIONS,
 	BARE_AT_PATH,
@@ -27,12 +27,12 @@ import {
 	DECISIONS_SECTION,
 	unplacedContent,
 } from "./spec.ts";
-import {parseTrailDocument} from "./trail.ts";
+import { parseTrailDocument } from "./trail.ts";
 
 /** A document the adapter read off disk, as a value the verb branches on. */
 export type DocumentRead =
-	| {readonly _tag: "Text"; readonly text: string}
-	| {readonly _tag: "Failed"; readonly reason: string};
+	| { readonly _tag: "Text"; readonly text: string }
+	| { readonly _tag: "Failed"; readonly reason: string };
 
 export interface ComposeOptions<R = never> {
 	readonly trailPath: string;

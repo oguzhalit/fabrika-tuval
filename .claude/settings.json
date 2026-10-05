@@ -1,0 +1,27 @@
+{
+	"agentGuidance": true,
+	"hooks": {
+		"SessionStart": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "fabrika hook plugin-sync",
+						"timeout": 120
+					}
+				]
+			}
+		],
+		"WorktreeCreate": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "fabrika hook worktree-create",
+						"timeout": 600
+					}
+				]
+			}
+		]
+	}
+}

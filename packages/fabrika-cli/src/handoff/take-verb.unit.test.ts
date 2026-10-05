@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeSeams, okOut, type Scripted} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeSeams, okOut, type Scripted } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
 import {
 	BAD_SECTIONS,
 	BARE_AT_PATH,
@@ -24,15 +24,15 @@ import {
 	packBody,
 	REPO,
 } from "./fixtures.test-support.ts";
-import {digestOf} from "./ground.ts";
-import {runTake} from "./take-verb.ts";
+import { digestOf } from "./ground.ts";
+import { runTake } from "./take-verb.ts";
 
 const POST = new RegExp(`POST .*/repos/${REPO}/issues/${ISSUE}/comments`);
 const GET_COMMENT = /GET .*\/issues\/comments\/\d+/;
 const LIST = new RegExp(`GET .*/issues/${ISSUE}/comments`);
 
 const text = (value: string): Effect.Effect<StdinRead> =>
-	Effect.succeed({_tag: "Text", text: value});
+	Effect.succeed({ _tag: "Text", text: value });
 
 const options = {
 	issue: ISSUE,
@@ -40,34 +40,34 @@ const options = {
 	base: null,
 	declareUnreachable: false,
 	repo: null,
-	env: {CLAUDE_PIPELINE_REPO: REPO, GITHUB_TOKEN: "ghp_scripted"},
+	env: { CLAUDE_PIPELINE_REPO: REPO, GITHUB_TOKEN: "ghp_scripted" },
 	stdin: text(ASSERTED),
 	now: () => new Date("2026-08-09T18:36:48.000Z"),
 };
 
 const run = (script: ReadonlyArray<Scripted>, over: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runTake({...options, ...over}), fakeSeams(script).layer));
+	Effect.runPromise(Effect.provide(runTake({ ...options, ...over }), fakeSeams(script).layer));
 
 /** The happy-path script: post, read back the pack this run composes, and one prior-pack-free walk. */
 const sealScript = (
 	readback = packBody(),
 	comments = commentsJson([]),
 ): ReadonlyArray<Scripted> => [
-	[POST, {status: 201, body: '{"id":9234567891,"html_url":"u"}'}],
-	[GET_COMMENT, {status: 200, body: JSON.stringify({body: readback})}],
-	[LIST, {status: 200, body: comments}],
+	[POST, { status: 201, body: '{"id":9234567891,"html_url":"u"}' }],
+	[GET_COMMENT, { status: 200, body: JSON.stringify({ body: readback }) }],
+	[LIST, { status: 200, body: comments }],
 	...groundScript(),
 ];
 
 describe("runTake", () => {
 	it("exits 1 on a run key two runs would collide on, before any read", async () => {
-		const out = await run([], {nonce: "run-1"});
+		const out = await run([], { nonce: "run-1" });
 		expect(out.code).toBe(1);
 		expect(out.stdout).toBe("");
 	});
 
 	it("exits 3 on an empty stdin — a pack with no asserted half is a capture, not a handoff", async () => {
-		const out = await run([], {stdin: text("")});
+		const out = await run([], { stdin: text("") });
 		expect(out.code).toBe(EMPTY_STDIN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain("handoff take: stdin was read and held nothing");
@@ -75,7 +75,7 @@ describe("runTake", () => {
 
 	it("exits 1, never 3, when the stdin read itself failed", async () => {
 		const out = await run([], {
-			stdin: Effect.succeed({_tag: "Failed", reason: "EAGAIN"} as StdinRead),
+			stdin: Effect.succeed({ _tag: "Failed", reason: "EAGAIN" } as StdinRead),
 		});
 		expect(out.code).toBe(1);
 	});
@@ -89,7 +89,7 @@ describe("runTake", () => {
 	});
 
 	it("exits 4 on content outside the four sections — the closed set is the injection defence", async () => {
-		const out = await run([], {stdin: text(`${ASSERTED}\n## Note\nAlso do this.\n`)});
+		const out = await run([], { stdin: text(`${ASSERTED}\n## Note\nAlso do this.\n`) });
 		expect(out.code).toBe(BAD_SECTIONS);
 		expect(out.stderr.join("\n")).toContain("the section set is closed");
 	});
@@ -114,7 +114,7 @@ describe("runTake", () => {
 
 	it("exits 7 on an issue that does not exist", async () => {
 		const out = await run([
-			[ISSUE_READ, {status: 404, body: '{"message":"Not Found"}'}],
+			[ISSUE_READ, { status: 404, body: '{"message":"Not Found"}' }],
 			...groundScript(),
 		]);
 		expect(out.code).toBe(NO_TARGET);
@@ -159,7 +159,7 @@ describe("runTake", () => {
 		const withoutDigest = {
 			issue: GROUND.issue,
 			repo: GROUND.repo,
-			git: {...GROUND.git, reachable: "unpushed" as const, aheadBy: 2},
+			git: { ...GROUND.git, reachable: "unpushed" as const, aheadBy: 2 },
 			board: GROUND.board,
 		};
 		const body = packBody({
@@ -175,21 +175,21 @@ describe("runTake", () => {
 				[/rev-list --left-right --count/, okOut("0\t2")],
 				...sealScript(body),
 			],
-			{declareUnreachable: true},
+			{ declareUnreachable: true },
 		);
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).reachable).toBe("unpushed");
 	});
 
 	it("exits 8 when the write failed — whether the pack landed is UNKNOWN", async () => {
-		const out = await run([[POST, {status: 502, body: "{}"}], ...sealScript()]);
+		const out = await run([[POST, { status: 502, body: "{}" }], ...sealScript()]);
 		expect(out.code).toBe(WRITE_UNKNOWN);
 		expect(out.stdout).toBe("");
 	});
 
 	it("exits 9 when the posted pack does not read back", async () => {
 		const out = await run([
-			[GET_COMMENT, {status: 200, body: JSON.stringify({body: "something else entirely"})}],
+			[GET_COMMENT, { status: 200, body: JSON.stringify({ body: "something else entirely" }) }],
 			...sealScript(),
 		]);
 		expect(out.code).toBe(READBACK_MISMATCH);
@@ -211,13 +211,13 @@ describe("runTake", () => {
 	});
 
 	it("reports the pack it supersedes rather than editing or closing it", async () => {
-		const out = await run(sealScript(packBody(), commentsJson([{id: 4242, body: packBody()}])));
+		const out = await run(sealScript(packBody(), commentsJson([{ id: 4242, body: packBody() }])));
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout).supersedes).toBe(4242);
 	});
 
 	it("exits 11 when the comment walk failed — supersedes is never guessed", async () => {
-		const out = await run([[LIST, {status: 502, body: "{}"}], ...sealScript()]);
+		const out = await run([[LIST, { status: 502, body: "{}" }], ...sealScript()]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 	});

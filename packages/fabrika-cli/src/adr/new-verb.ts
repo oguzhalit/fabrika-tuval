@@ -8,12 +8,12 @@
  * {@link scaffold} is the write itself, exported so `adr mint` performs the same write rather than a
  * second one that could drift from it.
  */
-import {Effect, type FileSystem, type Path, Result} from "effect";
-import {exists, writeFile} from "../io/fs.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {ALREADY_EXISTS} from "./codes.ts";
-import {isFourDigitId, isKebabSlug} from "./records.ts";
-import {parseTags, recordFilename, renderTemplate, titleFromSlug} from "./template.ts";
+import { Effect, type FileSystem, type Path, Result } from "effect";
+import { exists, writeFile } from "../io/fs.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { ALREADY_EXISTS } from "./codes.ts";
+import { isFourDigitId, isKebabSlug } from "./records.ts";
+import { parseTags, recordFilename, renderTemplate, titleFromSlug } from "./template.ts";
 
 export interface NewOptions {
 	readonly id: string;
@@ -39,8 +39,8 @@ export const refuseUnlessKebabSlug = (slug: string, verb: string): VerbOutcome |
 			);
 
 export type ScaffoldOutcome =
-	| {readonly _tag: "Ok"; readonly path: string}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Ok"; readonly path: string }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * Validate the id and slug, then write the record — refusing over anything already at that path.
@@ -52,7 +52,7 @@ export const scaffold = (
 	verb: string,
 ): Effect.Effect<ScaffoldOutcome, never, FileSystem.FileSystem | Path.Path> =>
 	Effect.gen(function* () {
-		const {id, slug, dir, status, date} = options;
+		const { id, slug, dir, status, date } = options;
 		// A malformed id or slug is a usage error, so it exits 1 with the rest of them — `adr resolve`
 		// already refuses a non-four-digit id there, and one fact on two numbers is the defect the
 		// group table ends.
@@ -63,7 +63,7 @@ export const scaffold = (
 			};
 		}
 		const badSlug = refuseUnlessKebabSlug(slug, verb);
-		if (badSlug !== null) return {_tag: "Refused", outcome: badSlug};
+		if (badSlug !== null) return { _tag: "Refused", outcome: badSlug };
 
 		const path = `${dir.replace(/\/+$/, "")}/${recordFilename(id, slug)}`;
 		const present = yield* Effect.result(exists(path));
@@ -98,7 +98,7 @@ export const scaffold = (
 			};
 		}
 
-		return {_tag: "Ok", path};
+		return { _tag: "Ok", path };
 	});
 
 export const runNew = (
@@ -110,7 +110,7 @@ export const runNew = (
 
 		return answer(
 			options.json
-				? JSON.stringify({path: written.path, id: options.id, slug: options.slug})
+				? JSON.stringify({ path: written.path, id: options.id, slug: options.slug })
 				: written.path,
 		);
 	});

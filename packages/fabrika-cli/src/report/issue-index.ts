@@ -1,5 +1,5 @@
-import type {IssueDocument} from "../io/issue-document.ts";
-import {TOKEN_FLOOR, tokenize, tokensMatch} from "./dedup.ts";
+import type { IssueDocument } from "../io/issue-document.ts";
+import { TOKEN_FLOOR, tokenize, tokensMatch } from "./dedup.ts";
 
 export const DEFAULT_CLOSED_DAYS = 14;
 export const EXCERPT_LENGTH = 800;
@@ -87,7 +87,7 @@ export class DuplicateIndex {
 						score +=
 							(idf * tf * 2.2) / (tf + 1.2 * (0.25 + (0.75 * doc.length) / (averageLength || 1)));
 					}
-					return {number: issue.number, score};
+					return { number: issue.number, score };
 				})
 				.filter((row) => row.score > 0)
 				.sort((a, b) => b.score - a.score || b.number - a.number);

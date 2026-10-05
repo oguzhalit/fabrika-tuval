@@ -20,9 +20,9 @@
  * What gets written is not the template's bytes but {@link graftContext}'s — see there for why the
  * lane's own `machine.context` survives the swap and why a generated machine is left alone.
  */
-import {isRecord, parseJson} from "../io/json.ts";
-import {foldLog, type LogEntry} from "./fold.ts";
-import type {CompiledLane, TaskState} from "./machine.ts";
+import { isRecord, parseJson } from "../io/json.ts";
+import { foldLog, type LogEntry } from "./fold.ts";
+import type { CompiledLane, TaskState } from "./machine.ts";
 
 /**
  * The template's shape carrying the lane's own `machine.context`, as the text to write.
@@ -43,9 +43,9 @@ import type {CompiledLane, TaskState} from "./machine.ts";
  * `epic-<n>` and a booted one carries its template's id.
  */
 export type Graft =
-	| {readonly _tag: "Grafted"; readonly text: string}
-	| {readonly _tag: "Foreign"; readonly id: string}
-	| {readonly _tag: "Ungraftable"; readonly reason: string};
+	| { readonly _tag: "Grafted"; readonly text: string }
+	| { readonly _tag: "Foreign"; readonly id: string }
+	| { readonly _tag: "Ungraftable"; readonly reason: string };
 
 const documentId = (document: unknown): string | null =>
 	isRecord(document) && typeof document.id === "string" ? document.id : null;
@@ -53,7 +53,7 @@ const documentId = (document: unknown): string | null =>
 const contextOf = (document: unknown): Record<string, unknown> | null => {
 	if (!isRecord(document)) return null;
 	const machine = document.machine;
-	return isRecord(machine) && isRecord(machine.context) ? {...machine.context} : null;
+	return isRecord(machine) && isRecord(machine.context) ? { ...machine.context } : null;
 };
 
 /** Build the text a migration would write, or say why this lane is not one to write it to. */
@@ -63,22 +63,22 @@ export const graftContext = (templateText: string, laneText: string): Graft => {
 	const templateId = documentId(template);
 	const laneId = documentId(lane);
 	if (templateId === null)
-		return {_tag: "Ungraftable", reason: "the committed template has no `id`"};
-	if (laneId === null) return {_tag: "Ungraftable", reason: "this lane's document has no `id`"};
-	if (laneId !== templateId) return {_tag: "Foreign", id: laneId};
+		return { _tag: "Ungraftable", reason: "the committed template has no `id`" };
+	if (laneId === null) return { _tag: "Ungraftable", reason: "this lane's document has no `id`" };
+	if (laneId !== templateId) return { _tag: "Foreign", id: laneId };
 
 	const templateContext = contextOf(template);
 	const laneContext = contextOf(lane);
 	if (templateContext === null || laneContext === null) {
-		return {_tag: "Ungraftable", reason: "one of the two documents carries no `machine.context`"};
+		return { _tag: "Ungraftable", reason: "one of the two documents carries no `machine.context`" };
 	}
 	const grafted = Object.fromEntries(
 		Object.keys(templateContext).map((task) => [task, laneContext[task] ?? templateContext[task]]),
 	);
-	const machine = (template as {machine: Record<string, unknown>}).machine;
+	const machine = (template as { machine: Record<string, unknown> }).machine;
 	return {
 		_tag: "Grafted",
-		text: `${JSON.stringify({...(template as object), machine: {...machine, context: grafted}}, null, "\t")}\n`,
+		text: `${JSON.stringify({ ...(template as object), machine: { ...machine, context: grafted } }, null, "\t")}\n`,
 	};
 };
 
@@ -107,7 +107,7 @@ export interface Drift {
 
 export type MigrationVerdict =
 	/** The log replays through both machines to the same states — the swap changes no lane state. */
-	| {readonly _tag: "Preserved"; readonly states: Readonly<Record<string, TaskState>>}
+	| { readonly _tag: "Preserved"; readonly states: Readonly<Record<string, TaskState>> }
 	/** The log does not replay through one of the machines, and which one decides the remedy. */
 	| {
 			readonly _tag: "Unreplayable";
@@ -115,7 +115,7 @@ export type MigrationVerdict =
 			readonly defects: ReadonlyArray<string>;
 	  }
 	/** Both replay and disagree — the candidate would relocate the lane, not migrate it. */
-	| {readonly _tag: "Drifts"; readonly drifts: ReadonlyArray<Drift>};
+	| { readonly _tag: "Drifts"; readonly drifts: ReadonlyArray<Drift> };
 
 /**
  * Judge one swap. The candidate's task set may be a superset of the current one — a new task region
@@ -130,20 +130,22 @@ export const judgeMigration = (
 ): MigrationVerdict => {
 	const before = foldLog(current, entries);
 	if (before._tag !== "Folded") {
-		return {_tag: "Unreplayable", through: "current", defects: before.defects};
+		return { _tag: "Unreplayable", through: "current", defects: before.defects };
 	}
 	const after = foldLog(candidate, entries);
 	if (after._tag !== "Folded") {
-		return {_tag: "Unreplayable", through: "candidate", defects: after.defects};
+		return { _tag: "Unreplayable", through: "candidate", defects: after.defects };
 	}
 	const drifts: Drift[] = [];
 	for (const [task, state] of Object.entries(before.states)) {
 		const next = after.states[task];
 		if (next === undefined) {
-			drifts.push({task, from: state.type, to: "(no such task)"});
+			drifts.push({ task, from: state.type, to: "(no such task)" });
 			continue;
 		}
-		if (next.type !== state.type) drifts.push({task, from: state.type, to: next.type});
+		if (next.type !== state.type) drifts.push({ task, from: state.type, to: next.type });
 	}
-	return drifts.length > 0 ? {_tag: "Drifts", drifts} : {_tag: "Preserved", states: after.states};
+	return drifts.length > 0
+		? { _tag: "Drifts", drifts }
+		: { _tag: "Preserved", states: after.states };
 };

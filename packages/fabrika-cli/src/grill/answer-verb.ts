@@ -20,14 +20,14 @@
  * use; folding it into `QUESTION_UNKNOWN` would put two meanings on one code.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {createComment, getComment, listComments, resolveRepo} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { createComment, getComment, listComments, resolveRepo } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import * as grillAnswer from "../wire/grill-answer.ts";
-import {questionId, stampOf} from "../wire/grill-marker.ts";
+import { questionId, stampOf } from "../wire/grill-marker.ts";
 import {
 	BAD_SECTIONS,
 	BARE_AT_PATH,
@@ -41,13 +41,13 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {digestRound} from "./round.ts";
-import {questionIndex, resolveSession, retirements, scanMarkers, scanRounds} from "./session.ts";
+import { digestRound } from "./round.ts";
+import { questionIndex, resolveSession, retirements, scanMarkers, scanRounds } from "./session.ts";
 
 /** A file the adapter read for the verb, so the verb itself touches no filesystem. */
 export type DocumentRead =
-	| {readonly _tag: "Text"; readonly text: string}
-	| {readonly _tag: "Failed"; readonly reason: string};
+	| { readonly _tag: "Text"; readonly text: string }
+	| { readonly _tag: "Failed"; readonly reason: string };
 
 export interface AnswerOptions<R = never> {
 	readonly session: number;
@@ -64,7 +64,7 @@ export const runAnswer = <R = never>(
 	options: AnswerOptions<R>,
 ): Effect.Effect<VerbOutcome, never, R | ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {session, findingPath} = options;
+		const { session, findingPath } = options;
 		if (!Number.isInteger(session) || session <= 0) {
 			return refuse(FAILED, `grill answer: ${session} is not a session issue number.`);
 		}
@@ -183,7 +183,7 @@ export const runAnswer = <R = never>(
 			);
 		}
 
-		const body = `${grillAnswer.emit({question: id, digest: digested.digest, at})}\n${finding.trim()}\n`;
+		const body = `${grillAnswer.emit({ question: id, digest: digested.digest, at })}\n${finding.trim()}\n`;
 		const posted = yield* createComment(repo, session, body);
 		if (posted._tag === "Failure") {
 			return refuse(

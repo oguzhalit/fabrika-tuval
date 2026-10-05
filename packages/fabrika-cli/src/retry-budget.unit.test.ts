@@ -6,15 +6,15 @@
  * the committed bytes and the emitter's output back against the constant, so that edit reds here.
  * {@link MACHINERY_LAP_BUDGET} is held the same way and for the same reason.
  */
-import {describe, expect, it} from "vitest";
-import {readGoldenFixture} from "./golden-fixture.ts";
-import {emitMachine} from "./lane/emit.ts";
-import {coderTemplateText} from "./lane/fixtures.test-support.ts";
-import {applyEvent, foldLog, type LogEntry} from "./lane/fold.ts";
-import {compileText} from "./lane/machine.ts";
-import {causeForEvent, routeForCause} from "./lane/report.ts";
-import {classifyPark} from "./recipe/parks.ts";
-import {MACHINERY_LAP_BUDGET, RETRY_BUDGET} from "./retry-budget.ts";
+import { describe, expect, it } from "vitest";
+import { readGoldenFixture } from "./golden-fixture.ts";
+import { emitMachine } from "./lane/emit.ts";
+import { coderTemplateText } from "./lane/fixtures.test-support.ts";
+import { applyEvent, foldLog, type LogEntry } from "./lane/fold.ts";
+import { compileText } from "./lane/machine.ts";
+import { causeForEvent, routeForCause } from "./lane/report.ts";
+import { classifyPark } from "./recipe/parks.ts";
+import { MACHINERY_LAP_BUDGET, RETRY_BUDGET } from "./retry-budget.ts";
 
 const AT = "2026-09-10T00:00:00.000Z";
 
@@ -57,9 +57,9 @@ describe("the one retry budget", () => {
 
 	it("is the default a task context that declares no budget of its own compiles to", () => {
 		const noBudget = JSON.parse(coderTemplateText()) as {
-			machine: {context: Record<string, unknown>};
+			machine: { context: Record<string, unknown> };
 		};
-		noBudget.machine.context.issue = {retries: 0};
+		noBudget.machine.context.issue = { retries: 0 };
 
 		expect(compiledInitials(JSON.stringify(noBudget))).toEqual([RETRY_BUDGET]);
 	});
@@ -68,16 +68,16 @@ describe("the one retry budget", () => {
 	// reads the declaration over the constant — so raising the constant moves no lane already on disk.
 	it("is not what a lane emitted under the old budget folds under", () => {
 		const older = JSON.parse(coderTemplateText()) as {
-			machine: {context: {issue: Record<string, unknown>}};
+			machine: { context: { issue: Record<string, unknown> } };
 		};
-		older.machine.context.issue = {...older.machine.context.issue, maxRetries: RETRY_BUDGET - 1};
+		older.machine.context.issue = { ...older.machine.context.issue, maxRetries: RETRY_BUDGET - 1 };
 		const text = JSON.stringify(older);
 
 		expect(compiledInitials(text)).toEqual([RETRY_BUDGET - 1]);
 
 		const compiled = compileText(text);
 		if (compiled._tag !== "Compiled") throw new Error(compiled.defects.join("; "));
-		const spent = ["WIP", ...Array.from({length: RETRY_BUDGET}, () => ["DONE", "FAIL"]).flat()];
+		const spent = ["WIP", ...Array.from({ length: RETRY_BUDGET }, () => ["DONE", "FAIL"]).flat()];
 		const log: LogEntry[] = [];
 		for (const event of spent) {
 			const fold = foldLog(compiled.lane, log);
@@ -121,7 +121,7 @@ describe("the one machinery lap budget", () => {
 	});
 
 	it("is what an epic machine emitted with the axis on carries into every task", () => {
-		const emitted = emitMachine(EPIC, epicBody(), CHILDREN, {machinery: true});
+		const emitted = emitMachine(EPIC, epicBody(), CHILDREN, { machinery: true });
 		if (emitted._tag !== "Emitted") throw new Error(`expected Emitted, got ${emitted._tag}`);
 
 		expect(compiledLapBudgets(emitted.text)).toEqual(
@@ -131,9 +131,9 @@ describe("the one machinery lap budget", () => {
 
 	it("is the default a task context that declares no lap budget of its own compiles to", () => {
 		const noBudget = JSON.parse(coderTemplateText()) as {
-			machine: {context: Record<string, unknown>};
+			machine: { context: Record<string, unknown> };
 		};
-		noBudget.machine.context.issue = {retries: 0};
+		noBudget.machine.context.issue = { retries: 0 };
 
 		expect(compiledLapBudgets(JSON.stringify(noBudget))).toEqual([MACHINERY_LAP_BUDGET]);
 	});

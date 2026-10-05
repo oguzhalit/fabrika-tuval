@@ -1,11 +1,11 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {Scripted} from "../fakes.test-support.ts";
-import type {IssueRecord} from "../io/issues.ts";
-import {anySessionCaller, DEFAULT_TTL_MINUTES, laneCaller} from "./claim.ts";
-import {COMMENTS, claimPage, EXPIRED, guardedShell, LIVE} from "./claim-fixtures.test-support.ts";
-import {CLAIMED_ELSEWHERE, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {foreignMarkers, guardTarget} from "./target-guard.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { Scripted } from "../fakes.test-support.ts";
+import type { IssueRecord } from "../io/issues.ts";
+import { anySessionCaller, DEFAULT_TTL_MINUTES, laneCaller } from "./claim.ts";
+import { COMMENTS, claimPage, EXPIRED, guardedShell, LIVE } from "./claim-fixtures.test-support.ts";
+import { CLAIMED_ELSEWHERE, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { foreignMarkers, guardTarget } from "./target-guard.ts";
 
 const MINE = "session-mine";
 const THEIRS = "session-theirs";
@@ -26,11 +26,11 @@ const target = (over: Partial<IssueRecord> = {}): IssueRecord => ({
 	stateReason: null,
 	comments: 0,
 	isPullRequest: false,
-	parent: {_tag: "None"},
+	parent: { _tag: "None" },
 	...over,
 });
 
-const said = (outcome: {readonly stderr: ReadonlyArray<string>} | null): string =>
+const said = (outcome: { readonly stderr: ReadonlyArray<string> } | null): string =>
 	(outcome?.stderr ?? []).join("\n");
 
 const run = (
@@ -47,12 +47,12 @@ const run = (
 				verb: "triage enrich",
 				repo: "o/r",
 				issue: 4312,
-				target: target(over.state === undefined ? {} : {state: over.state}),
+				target: target(over.state === undefined ? {} : { state: over.state }),
 				token: over.token ?? null,
 				env:
 					over.session === undefined
-						? {CLAUDE_PIPELINE_REPO: "o/r"}
-						: {CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: over.session},
+						? { CLAUDE_PIPELINE_REPO: "o/r" }
+						: { CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: over.session },
 			}),
 			guardedShell(script).layer,
 		),
@@ -68,48 +68,48 @@ describe("foreignMarkers", () => {
 			readonly createdAt: string;
 		}>,
 		caller: Parameters<typeof foreignMarkers>[0]["caller"],
-	) => foreignMarkers({markers, caller, now, ttlMinutes: DEFAULT_TTL_MINUTES});
+	) => foreignMarkers({ markers, caller, now, ttlMinutes: DEFAULT_TTL_MINUTES });
 
 	const lane = laneCaller(MINE, LANE, TOKEN);
 	const tokenless = anySessionCaller(MINE);
 
 	it("counts a live marker of another session foreign", () => {
-		const scanned = scan([{id: 1, session: THEIRS, lane: LANE, createdAt: LIVE}], lane);
+		const scanned = scan([{ id: 1, session: THEIRS, lane: LANE, createdAt: LIVE }], lane);
 		expect(scanned._tag).toBe("Foreign");
 		expect(scanned._tag === "Foreign" && scanned.foreign.map((m) => m.session)).toEqual([THEIRS]);
 	});
 
 	it("counts this lane's own live marker as not foreign", () => {
-		const scanned = scan([{id: 1, session: MINE, lane: LANE, createdAt: LIVE}], lane);
+		const scanned = scan([{ id: 1, session: MINE, lane: LANE, createdAt: LIVE }], lane);
 		expect(scanned._tag === "Foreign" && scanned.foreign).toEqual([]);
 	});
 
 	it("counts a sibling lane's live marker of this same session foreign", () => {
-		const scanned = scan([{id: 1, session: MINE, lane: SIBLING, createdAt: LIVE}], lane);
+		const scanned = scan([{ id: 1, session: MINE, lane: SIBLING, createdAt: LIVE }], lane);
 		expect(scanned._tag === "Foreign" && scanned.foreign.map((m) => m.lane)).toEqual([SIBLING]);
 	});
 
 	// A claimant that named a session and nothing else is one no live lane can prove is its own.
 	it("counts a pre-#6132 session-only marker foreign to a lane caller", () => {
-		const scanned = scan([{id: 1, session: MINE, lane: null, createdAt: LIVE}], lane);
+		const scanned = scan([{ id: 1, session: MINE, lane: null, createdAt: LIVE }], lane);
 		expect(scanned._tag === "Foreign" && scanned.foreign).toHaveLength(1);
 	});
 
 	it("ages an expired sibling marker out", () => {
-		const scanned = scan([{id: 1, session: MINE, lane: SIBLING, createdAt: EXPIRED}], lane);
+		const scanned = scan([{ id: 1, session: MINE, lane: SIBLING, createdAt: EXPIRED }], lane);
 		expect(scanned._tag === "Foreign" && scanned.foreign).toEqual([]);
 	});
 
 	it("passes a tokenless caller over one lane of its own session", () => {
-		const scanned = scan([{id: 1, session: MINE, lane: LANE, createdAt: LIVE}], tokenless);
+		const scanned = scan([{ id: 1, session: MINE, lane: LANE, createdAt: LIVE }], tokenless);
 		expect(scanned._tag === "Foreign" && scanned.foreign).toEqual([]);
 	});
 
 	it("counts every marker foreign to a tokenless caller once two lanes of its session are live", () => {
 		const scanned = scan(
 			[
-				{id: 1, session: MINE, lane: LANE, createdAt: LIVE},
-				{id: 2, session: MINE, lane: SIBLING, createdAt: LIVE},
+				{ id: 1, session: MINE, lane: LANE, createdAt: LIVE },
+				{ id: 2, session: MINE, lane: SIBLING, createdAt: LIVE },
 			],
 			tokenless,
 		);
@@ -120,14 +120,14 @@ describe("foreignMarkers", () => {
 	// over a set full of live competitors — the one direction this may not fail.
 	it("counts every live marker foreign when this session cannot be attributed", () => {
 		const scanned = scan(
-			[{id: 1, session: MINE, lane: LANE, createdAt: LIVE}],
+			[{ id: 1, session: MINE, lane: LANE, createdAt: LIVE }],
 			anySessionCaller(""),
 		);
 		expect(scanned._tag === "Foreign" && scanned.foreign).toHaveLength(1);
 	});
 
 	it("refuses to resolve a marker whose ordering key will not parse", () => {
-		const scanned = scan([{id: 1, session: THEIRS, lane: LANE, createdAt: "whenever"}], lane);
+		const scanned = scan([{ id: 1, session: THEIRS, lane: LANE, createdAt: "whenever" }], lane);
 		expect(scanned._tag).toBe("Unresolvable");
 	});
 });
@@ -145,8 +145,8 @@ describe("guardTarget", () => {
 					verb: "triage enrich",
 					repo: "o/r",
 					issue: 4312,
-					target: target({state: "closed"}),
-					env: {CLAUDE_PIPELINE_REPO: "o/r"},
+					target: target({ state: "closed" }),
+					env: { CLAUDE_PIPELINE_REPO: "o/r" },
 				}),
 				shell.layer,
 			),
@@ -162,9 +162,9 @@ describe("guardTarget", () => {
 					verb: "triage split",
 					repo: "o/r",
 					issue: 4312,
-					target: target({state: "closed"}),
+					target: target({ state: "closed" }),
 					noun: "parent",
-					env: {CLAUDE_PIPELINE_REPO: "o/r"},
+					env: { CLAUDE_PIPELINE_REPO: "o/r" },
 				}),
 				guardedShell([]).layer,
 			),
@@ -173,7 +173,7 @@ describe("guardTarget", () => {
 	});
 
 	it("refuses a live foreign claim on 17, naming the holder", async () => {
-		const outcome = await run([[COMMENTS, claimPage({session: THEIRS, createdAt: LIVE})]], {
+		const outcome = await run([[COMMENTS, claimPage({ session: THEIRS, createdAt: LIVE })]], {
 			session: MINE,
 		});
 		expect(outcome?.code).toBe(CLAIMED_ELSEWHERE);
@@ -182,7 +182,7 @@ describe("guardTarget", () => {
 
 	it("passes when the live claim is this lane's own", async () => {
 		expect(
-			await run([[COMMENTS, claimPage({session: MINE, createdAt: LIVE, lane: LANE})]], {
+			await run([[COMMENTS, claimPage({ session: MINE, createdAt: LIVE, lane: LANE })]], {
 				session: MINE,
 				token: TOKEN,
 			}),
@@ -191,7 +191,7 @@ describe("guardTarget", () => {
 
 	it("refuses a sibling lane of this session on 17, before any write", async () => {
 		const outcome = await run(
-			[[COMMENTS, claimPage({session: MINE, createdAt: LIVE, lane: SIBLING})]],
+			[[COMMENTS, claimPage({ session: MINE, createdAt: LIVE, lane: SIBLING })]],
 			{
 				session: MINE,
 				token: TOKEN,
@@ -207,12 +207,12 @@ describe("guardTarget", () => {
 				[
 					COMMENTS,
 					claimPage(
-						{session: MINE, createdAt: LIVE, lane: LANE},
-						{session: MINE, createdAt: LIVE, lane: SIBLING},
+						{ session: MINE, createdAt: LIVE, lane: LANE },
+						{ session: MINE, createdAt: LIVE, lane: SIBLING },
 					),
 				],
 			],
-			{session: MINE},
+			{ session: MINE },
 		);
 		expect(outcome?.code).toBe(CLAIMED_ELSEWHERE);
 		expect(said(outcome)).toContain("this call names none");
@@ -220,31 +220,33 @@ describe("guardTarget", () => {
 
 	it("passes a tokenless call over one lane of its session — the uncontested call sites", async () => {
 		expect(
-			await run([[COMMENTS, claimPage({session: MINE, createdAt: LIVE, lane: LANE})]], {
+			await run([[COMMENTS, claimPage({ session: MINE, createdAt: LIVE, lane: LANE })]], {
 				session: MINE,
 			}),
 		).toBeNull();
 	});
 
 	it("refuses on 1 when --token names a session other than the one running", async () => {
-		const outcome = await run([], {session: MINE, token: `triage:${THEIRS}:aaaaaaaa-1-2-3-4`});
+		const outcome = await run([], { session: MINE, token: `triage:${THEIRS}:aaaaaaaa-1-2-3-4` });
 		expect(outcome?.code).toBe(1);
 		expect(said(outcome)).toContain("a lane names itself, never another");
 	});
 
 	it("passes an expired foreign claim — the TTL still ages markers out", async () => {
 		expect(
-			await run([[COMMENTS, claimPage({session: THEIRS, createdAt: EXPIRED})]], {session: MINE}),
+			await run([[COMMENTS, claimPage({ session: THEIRS, createdAt: EXPIRED })]], {
+				session: MINE,
+			}),
 		).toBeNull();
 	});
 
 	it("refuses on 11 when the comment read fails — never a pass", async () => {
-		const outcome = await run([[COMMENTS, {status: 502, body: "{}"}]], {session: MINE});
+		const outcome = await run([[COMMENTS, { status: 502, body: "{}" }]], { session: MINE });
 		expect(outcome?.code).toBe(PRECONDITION_UNKNOWN);
 	});
 
 	it("refuses on 11 when a marker's ordering key will not parse", async () => {
-		const outcome = await run([[COMMENTS, claimPage({session: THEIRS, createdAt: "whenever"})]], {
+		const outcome = await run([[COMMENTS, claimPage({ session: THEIRS, createdAt: "whenever" })]], {
 			session: MINE,
 		});
 		expect(outcome?.code).toBe(PRECONDITION_UNKNOWN);

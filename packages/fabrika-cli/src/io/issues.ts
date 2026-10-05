@@ -16,10 +16,10 @@
  * - **A shape that is not what was asked for is a failure, never an empty result.** Every read
  *   validates before anything interprets, because a 200 can carry something else entirely.
  */
-import {Effect, Schema} from "effect";
+import { Effect, Schema } from "effect";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import * as HttpClient from "effect/unstable/http/HttpClient";
-import {execCapture} from "./exec.ts";
+import { execCapture } from "./exec.ts";
 import {
 	type Api,
 	existenceOf,
@@ -32,19 +32,19 @@ import {
 	restRead,
 	restWrite,
 } from "./gh-api.ts";
-import {type Attempt, fail, ok, originRepo, type Shell} from "./git.ts";
-import {IssueDocument} from "./issue-document.ts";
-import {isRecord} from "./json.ts";
+import { type Attempt, fail, ok, originRepo, type Shell } from "./git.ts";
+import { IssueDocument } from "./issue-document.ts";
+import { isRecord } from "./json.ts";
 
 /** A three-way probe: proven present, proven absent, or unreadable — never two of those fused. */
 export type Existence<A> =
-	| {readonly _tag: "Present"; readonly value: A}
-	| {readonly _tag: "Absent"}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Present"; readonly value: A }
+	| { readonly _tag: "Absent" }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
-export const present = <A>(value: A): Existence<A> => ({_tag: "Present", value});
-export const absent = <A>(): Existence<A> => ({_tag: "Absent"});
-export const unknown = <A>(reason: string): Existence<A> => ({_tag: "Unknown", reason});
+export const present = <A>(value: A): Existence<A> => ({ _tag: "Present", value });
+export const absent = <A>(): Existence<A> => ({ _tag: "Absent" });
+export const unknown = <A>(reason: string): Existence<A> => ({ _tag: "Unknown", reason });
 
 /** One issue as the dedup ranking sees it. */
 export interface IssueRow {
@@ -164,7 +164,7 @@ const issueRows = (entries: ReadonlyArray<unknown>): Attempt<ReadonlyArray<Issue
 		if (!isRecord(entry) || typeof entry.number !== "number" || typeof entry.title !== "string") {
 			return fail(NOT_ISSUES);
 		}
-		rows.push({number: entry.number, title: entry.title});
+		rows.push({ number: entry.number, title: entry.title });
 	}
 	return ok(rows);
 };
@@ -244,8 +244,8 @@ export const openIssuesWithLabelDetailed = (
 export const issueDocuments = (
 	repo: string,
 	scope:
-		| {readonly state: "open"; readonly label?: string}
-		| {readonly state: "closed"; readonly since: string},
+		| { readonly state: "open"; readonly label?: string }
+		| { readonly state: "closed"; readonly since: string },
 ): Shell<Attempt<ReadonlyArray<IssueDocument>>> =>
 	withToken((token) =>
 		Effect.gen(function* () {
@@ -393,28 +393,38 @@ export interface IssueRecord {
  * over it, and only a caller that must *name* the parent loses anything.
  */
 export type ParentEdge =
-	| {readonly _tag: "None"}
-	| {readonly _tag: "Unnamed"}
-	| {readonly _tag: "Parent"; readonly number: number};
+	| { readonly _tag: "None" }
+	| { readonly _tag: "Unnamed" }
+	| { readonly _tag: "Parent"; readonly number: number };
 
 const ISSUE_URL_NUMBER = /\/issues\/(\d+)$/;
 
 const parentEdge = (value: Record<string, unknown>): ParentEdge => {
-	const {parent, parent_issue_url: url} = value;
+	const { parent, parent_issue_url: url } = value;
 	if (isRecord(parent) && typeof parent.number === "number") {
-		return {_tag: "Parent", number: parent.number};
+		return { _tag: "Parent", number: parent.number };
 	}
 	if (typeof url === "string") {
 		const match = ISSUE_URL_NUMBER.exec(url);
-		if (match !== null) return {_tag: "Parent", number: Number(match[1])};
+		if (match !== null) return { _tag: "Parent", number: Number(match[1]) };
 	}
 	const linked = (url !== undefined && url !== null) || (parent !== undefined && parent !== null);
-	return linked ? {_tag: "Unnamed"} : {_tag: "None"};
+	return linked ? { _tag: "Unnamed" } : { _tag: "None" };
 };
 
 const toIssueRecord = (value: unknown): IssueRecord | null => {
 	if (!isRecord(value)) return null;
-	const {number, title, body, state, labels, html_url: url, milestone, state_reason, user} = value;
+	const {
+		number,
+		title,
+		body,
+		state,
+		labels,
+		html_url: url,
+		milestone,
+		state_reason,
+		user,
+	} = value;
 	if (typeof number !== "number" || typeof title !== "string" || typeof url !== "string") {
 		return null;
 	}
@@ -468,7 +478,7 @@ export const issueNodeId = (repo: string, issue: number): Shell<Existence<string
 		);
 		const read = existenceOf(outcome, (body) =>
 			isRecord(body) && typeof body.node_id === "string"
-				? ok({nodeId: body.node_id, pullRequest: isRecord(body.pull_request)})
+				? ok({ nodeId: body.node_id, pullRequest: isRecord(body.pull_request) })
 				: fail("GitHub answered 200 but named no node id"),
 		);
 		if (read._tag !== "Present") return read;
@@ -482,7 +492,7 @@ export interface CreatedIssue {
 
 const createdIssue = (body: unknown): Attempt<CreatedIssue> =>
 	isRecord(body) && typeof body.number === "number" && typeof body.html_url === "string"
-		? ok({number: body.number, url: body.html_url})
+		? ok({ number: body.number, url: body.html_url })
 		: fail("GitHub answered 2xx but its body is not a created issue");
 
 /** Create the intake issue carrying exactly one label. */
@@ -494,7 +504,7 @@ export const createIssue = (
 ): Shell<Attempt<CreatedIssue>> =>
 	withToken((token) =>
 		Effect.map(
-			restWrite(token, "POST", `repos/${repo}/issues`, {title, body, labels: [label]}),
+			restWrite(token, "POST", `repos/${repo}/issues`, { title, body, labels: [label] }),
 			(outcome) => then(servedBody(outcome), createdIssue),
 		),
 	);
@@ -511,7 +521,7 @@ export const createUnlabelledIssue = (
 	body: string,
 ): Shell<Attempt<CreatedIssue>> =>
 	withToken((token) =>
-		Effect.map(restWrite(token, "POST", `repos/${repo}/issues`, {title, body}), (outcome) =>
+		Effect.map(restWrite(token, "POST", `repos/${repo}/issues`, { title, body }), (outcome) =>
 			then(servedBody(outcome), createdIssue),
 		),
 	);
@@ -528,7 +538,7 @@ export const createLabel = (
 			restWrite(token, "POST", `repos/${repo}/labels`, {
 				name,
 				description,
-				...(color === null ? {} : {color}),
+				...(color === null ? {} : { color }),
 			}),
 			accepted,
 		),
@@ -546,11 +556,11 @@ export const createComment = (
 ): Shell<Attempt<CreatedComment>> =>
 	withToken((token) =>
 		Effect.map(
-			restWrite(token, "POST", `repos/${repo}/issues/${issue}/comments`, {body}),
+			restWrite(token, "POST", `repos/${repo}/issues/${issue}/comments`, { body }),
 			(outcome) =>
 				then(servedBody(outcome), (served) =>
 					isRecord(served) && typeof served.id === "number" && typeof served.html_url === "string"
-						? ok({id: served.id, url: served.html_url})
+						? ok({ id: served.id, url: served.html_url })
 						: fail("GitHub answered 2xx but its body is not a created comment"),
 				),
 		),
@@ -631,7 +641,7 @@ export const listOpenMilestones = (repo: string): Shell<Attempt<ReadonlyArray<Mi
 					) {
 						return fail("GitHub answered 200 but its body is not a list of milestones");
 					}
-					milestones.push({number: entry.number, title: entry.title});
+					milestones.push({ number: entry.number, title: entry.title });
 				}
 				return ok(milestones);
 			}),
@@ -671,7 +681,7 @@ export const listMilestones = (repo: string): Shell<Attempt<ReadonlyArray<Milest
 					if (state !== "open" && state !== "closed") {
 						return fail(`GitHub answered 200 but a milestone's state is "${String(state)}"`);
 					}
-					milestones.push({number: entry.number, state, title: entry.title});
+					milestones.push({ number: entry.number, state, title: entry.title });
 				}
 				return ok(milestones);
 			}),
@@ -747,7 +757,7 @@ const positiveEnv = (name: string, fallback: number): number => {
 };
 
 /** How many list reads a comment reconciliation makes, and the first re-read's wait. */
-export const commentScanBounds = (): {readonly attempts: number; readonly delayMs: number} => ({
+export const commentScanBounds = (): { readonly attempts: number; readonly delayMs: number } => ({
 	attempts: Math.max(
 		1,
 		Math.trunc(positiveEnv("FABRIKA_COMMENT_SCAN_ATTEMPTS", DEFAULT_SCAN_ATTEMPTS)),
@@ -790,7 +800,7 @@ export const commentScanBounds = (): {readonly attempts: number; readonly delayM
  */
 export const listCommentsReconciled = (repo: string, issue: number): Shell<Attempt<CommentScan>> =>
 	Effect.gen(function* () {
-		const {attempts, delayMs} = commentScanBounds();
+		const { attempts, delayMs } = commentScanBounds();
 		let short = "";
 		for (let attempt = 1; attempt <= attempts; attempt++) {
 			const listed = yield* listComments(repo, issue);
@@ -800,7 +810,7 @@ export const listCommentsReconciled = (repo: string, issue: number): Shell<Attem
 			if (target._tag === "Unknown") return fail(target.reason);
 			const declared = target.value.comments;
 			if (listed.value.length >= declared) {
-				return ok({comments: listed.value, declared, reads: attempt});
+				return ok({ comments: listed.value, declared, reads: attempt });
 			}
 			short = `received ${listed.value.length} of ${declared} declared comment(s)`;
 			if (attempt < attempts) yield* Effect.sleep(delayMs * attempt);
@@ -819,7 +829,7 @@ export const deleteComment = (repo: string, id: number): Shell<Attempt<void>> =>
 /** Replace an issue's body. The caller re-reads and compares; this call's echo is not evidence. */
 export const patchIssueBody = (repo: string, issue: number, body: string): Shell<Attempt<void>> =>
 	withToken((token) =>
-		Effect.map(restWrite(token, "PATCH", `repos/${repo}/issues/${issue}`, {body}), accepted),
+		Effect.map(restWrite(token, "PATCH", `repos/${repo}/issues/${issue}`, { body }), accepted),
 	);
 
 /** Add labels to an issue, leaving every label already on it in place. */
@@ -832,7 +842,7 @@ export const addLabels = (
 		? Effect.succeed(ok(undefined))
 		: withToken((token) =>
 				Effect.map(
-					restWrite(token, "POST", `repos/${repo}/issues/${issue}/labels`, {labels: [...labels]}),
+					restWrite(token, "POST", `repos/${repo}/issues/${issue}/labels`, { labels: [...labels] }),
 					accepted,
 				),
 			);
@@ -866,7 +876,7 @@ export const setMilestone = (
 	milestone: number,
 ): Shell<Attempt<void>> =>
 	withToken((token) =>
-		Effect.map(restWrite(token, "PATCH", `repos/${repo}/issues/${issue}`, {milestone}), accepted),
+		Effect.map(restWrite(token, "PATCH", `repos/${repo}/issues/${issue}`, { milestone }), accepted),
 	);
 
 /**
@@ -878,7 +888,7 @@ export const setMilestone = (
 export const clearMilestone = (repo: string, issue: number): Shell<Attempt<void>> =>
 	withToken((token) =>
 		Effect.map(
-			restWrite(token, "PATCH", `repos/${repo}/issues/${issue}`, {milestone: null}),
+			restWrite(token, "PATCH", `repos/${repo}/issues/${issue}`, { milestone: null }),
 			accepted,
 		),
 	);
@@ -941,7 +951,7 @@ const queueRows = (
 		}
 		const kept = keep(entry);
 		if (kept._tag === "Failure") return kept;
-		if (kept.value) rows.push({number: entry.number, createdAt, title: entry.title});
+		if (kept.value) rows.push({ number: entry.number, createdAt, title: entry.title });
 	}
 	return ok(rows);
 };
@@ -1066,7 +1076,7 @@ export const closedIssuesWithLabel = (
 							typeof summary.total === "number" &&
 							typeof summary.completed === "number" &&
 							summary.completed >= summary.total;
-						out.push({number: value.number, mayHaveOpenChildren: !settled});
+						out.push({ number: value.number, mayHaveOpenChildren: !settled });
 					}
 					return ok(out);
 				}),
@@ -1220,7 +1230,7 @@ export const timelineFacts = (repo: string, issue: number): Shell<Attempt<Timeli
 					if (entry.event !== "cross-referenced") continue;
 					const source = isRecord(entry.source) ? entry.source.issue : undefined;
 					if (!isRecord(source)) return fail(TIMELINE_REFERENCE);
-					const {number, title, state, created_at: createdAt} = source;
+					const { number, title, state, created_at: createdAt } = source;
 					const labels = labelNames(source.labels ?? []);
 					if (
 						typeof number !== "number" ||
@@ -1243,7 +1253,7 @@ export const timelineFacts = (repo: string, issue: number): Shell<Attempt<Timeli
 						createdAt,
 					});
 				}
-				return ok({references, reopenedAt});
+				return ok({ references, reopenedAt });
 			}),
 		),
 	);

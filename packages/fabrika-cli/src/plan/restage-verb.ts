@@ -18,14 +18,14 @@
  * body digest a standing approval is bound to.
  */
 
-import {Effect, type FileSystem} from "effect";
+import { Effect, type FileSystem } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {requireCallerToken, requireClaim, requireSession} from "../build/claim.ts";
-import {badNumber, resolveTargetRepo, scannedLine} from "../build/target.ts";
-import {getIssue, patchIssueBody} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { requireCallerToken, requireClaim, requireSession } from "../build/claim.ts";
+import { badNumber, resolveTargetRepo, scannedLine } from "../build/target.ts";
+import { getIssue, patchIssueBody } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	BAD_SECTIONS,
 	PRECONDITION_UNKNOWN,
@@ -35,9 +35,9 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {listSubIssues} from "./github.ts";
-import {type PlanMessages, requireEpic, scannedChildren} from "./load.ts";
-import {restageBody} from "./restage.ts";
+import { listSubIssues } from "./github.ts";
+import { type PlanMessages, requireEpic, scannedChildren } from "./load.ts";
+import { restageBody } from "./restage.ts";
 
 const VERB = "plan restage";
 

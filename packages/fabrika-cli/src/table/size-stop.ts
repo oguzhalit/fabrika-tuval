@@ -19,22 +19,22 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10135
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {appetiteSizesKey} from "../config/keys/appetite-sizes.ts";
-import {readKey} from "../config/read-key.ts";
-import {withProjects} from "../io/projects.ts";
-import {type Excuse, failedRead, readAdoption} from "./adoption.ts";
-import {NO_TARGET, SCOPE_MISSING} from "./codes.ts";
-import {type OverSize, recOf, stopOf} from "./flags.ts";
-import {readHeads} from "./flags-read.ts";
-import {githubWave, locateTable, syncBoard, type TableBoard} from "./sync-verb.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { appetiteSizesKey } from "../config/keys/appetite-sizes.ts";
+import { readKey } from "../config/read-key.ts";
+import { withProjects } from "../io/projects.ts";
+import { type Excuse, failedRead, readAdoption } from "./adoption.ts";
+import { NO_TARGET, SCOPE_MISSING } from "./codes.ts";
+import { type OverSize, recOf, stopOf } from "./flags.ts";
+import { readHeads } from "./flags-read.ts";
+import { githubWave, locateTable, syncBoard, type TableBoard } from "./sync-verb.ts";
 
 export type SizeStop =
-	| {readonly _tag: "Clear"; readonly note: string}
-	| {readonly _tag: "Unchecked"; readonly reason: string; readonly excuse: Excuse}
-	| {readonly _tag: "Stopped"; readonly flag: OverSize; readonly rec: string}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Clear"; readonly note: string }
+	| { readonly _tag: "Unchecked"; readonly reason: string; readonly excuse: Excuse }
+	| { readonly _tag: "Stopped"; readonly flag: OverSize; readonly rec: string }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 export const readSizeStop = <R>(
 	board: TableBoard<R>,
@@ -47,26 +47,32 @@ export const readSizeStop = <R>(
 		const adoption = yield* readAdoption(cwd);
 		if (adoption._tag === "Unknown") return adoption;
 		const sizes = yield* readKey(cwd, appetiteSizesKey);
-		if (sizes._tag === "Refused") return {_tag: "Unknown", reason: sizes.reason};
-		const {settings} = adoption;
+		if (sizes._tag === "Refused") return { _tag: "Unknown", reason: sizes.reason };
+		const { settings } = adoption;
 		const heads = yield* readHeads(board, verb, repo, settings, [issue]);
 		if (heads._tag === "Refused") {
 			if (heads.code === NO_TARGET && settings.project.number === null) {
-				return {_tag: "Clear", note: `no table project, so #${issue} has no size to stop at`};
+				return { _tag: "Clear", note: `no table project, so #${issue} has no size to stop at` };
 			}
 			const reason = heads.reason.replace(/\.$/, "");
 			const failed = failedRead(
 				adoption,
-				heads.code === SCOPE_MISSING ? {_tag: "MissingScope", reason} : {_tag: "Failed", reason},
+				heads.code === SCOPE_MISSING
+					? { _tag: "MissingScope", reason }
+					: { _tag: "Failed", reason },
 			);
 			return failed._tag === "Unread"
-				? {_tag: "Unchecked", reason: failed.reason, excuse: failed.excuse}
+				? { _tag: "Unchecked", reason: failed.reason, excuse: failed.excuse }
 				: failed;
 		}
-		const read = stopOf(heads.rows, {settings, sizes: sizes.value, records: heads.records}, issue);
+		const read = stopOf(
+			heads.rows,
+			{ settings, sizes: sizes.value, records: heads.records },
+			issue,
+		);
 		switch (read._tag) {
 			case "Stopped":
-				return {_tag: "Stopped", flag: read.flag, rec: recOf(read.flag, settings)};
+				return { _tag: "Stopped", flag: read.flag, rec: recOf(read.flag, settings) };
 			case "Short":
 				return {
 					_tag: "Clear",

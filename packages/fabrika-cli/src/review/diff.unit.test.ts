@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {changedLines, filesInDiff, tierMHits} from "./diff.ts";
+import { describe, expect, it } from "vitest";
+import { changedLines, filesInDiff, tierMHits } from "./diff.ts";
 
 const DIFF = `diff --git a/src/cart.ts b/src/cart.ts
 index 0b1c2d3..a1b2c3d 100644
@@ -208,7 +208,7 @@ describe("tierMHits", () => {
 		for (const line of spellings) {
 			const diff = `diff --git a/a.test.ts b/a.test.ts\n@@ -1,2 +1,1 @@\n a\n-\t${line}\n`;
 			expect(tierMHits(diff)).toEqual([
-				{kind: "removed-assertion", file: "a.test.ts", line: 2, token: line},
+				{ kind: "removed-assertion", file: "a.test.ts", line: 2, token: line },
 			]);
 		}
 	});
@@ -217,7 +217,7 @@ describe("tierMHits", () => {
 		const line = 'assert.isTrue(isSelfExempt(".claude/skills/triage/SKILL.md"));';
 		const file = "packages/demo-cli/src/tools/leak-guard/leak-guard.unit.test.ts";
 		const diff = `diff --git a/${file} b/${file}\n@@ -268,2 +268,1 @@\n \tit("exempts a skill", () => {\n-\t\t${line}\n`;
-		expect(tierMHits(diff)).toEqual([{kind: "removed-assertion", file, line: 269, token: line}]);
+		expect(tierMHits(diff)).toEqual([{ kind: "removed-assertion", file, line: 269, token: line }]);
 	});
 
 	it("does not report a removed non-assertion line in a test file", () => {

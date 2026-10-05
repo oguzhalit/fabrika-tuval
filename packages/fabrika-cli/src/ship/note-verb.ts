@@ -9,14 +9,14 @@
  * posts a new comment rather than upserting one. A note on a closed or merged PR is legal for the
  * same reason: refusals happen at every lifecycle stage and the durable record is the point.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {createComment, getComment} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {readAuthored, type StdinSource} from "./authored.ts";
-import {READBACK_MISMATCH, WRITE_UNKNOWN} from "./codes.ts";
-import {badNumber, resolvePull, resolveTargetRepo} from "./target.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { createComment, getComment } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { readAuthored, type StdinSource } from "./authored.ts";
+import { READBACK_MISMATCH, WRITE_UNKNOWN } from "./codes.ts";
+import { badNumber, resolvePull, resolveTargetRepo } from "./target.ts";
 
 const VERB = "ship note";
 
@@ -32,7 +32,7 @@ export const runNote = (
 	options: NoteOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -78,6 +78,6 @@ export const runNote = (
 		}
 
 		return json
-			? answer(JSON.stringify({outcome: "noted", commentUrl: posted.value.url}), diagnostics)
+			? answer(JSON.stringify({ outcome: "noted", commentUrl: posted.value.url }), diagnostics)
 			: answer(`noted\t${posted.value.url}`, diagnostics);
 	});

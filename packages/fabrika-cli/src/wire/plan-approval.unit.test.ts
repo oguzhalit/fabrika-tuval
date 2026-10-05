@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import {markerTime} from "./grill-marker.ts";
-import {approvedEpic, approves, emit, parseFields, read, scopeDigest} from "./plan-approval.ts";
+import { describe, expect, it } from "vitest";
+import { markerTime } from "./grill-marker.ts";
+import { approvedEpic, approves, emit, parseFields, read, scopeDigest } from "./plan-approval.ts";
 
 const EPIC = approvedEpic(7);
 const DIGEST = scopeDigest("4d90e1bb27ac");
@@ -11,14 +11,14 @@ describe("read", () => {
 	it("finds the epic, the digest and the stamp", () => {
 		expect(read("plan-approved: #7 @ 4d90e1bb27ac · 2026-08-16T07:16:03Z\n")).toEqual({
 			_tag: "Found",
-			value: {epic: 7, digest: "4d90e1bb27ac", at: "2026-08-16T07:16:03Z"},
+			value: { epic: 7, digest: "4d90e1bb27ac", at: "2026-08-16T07:16:03Z" },
 		});
 	});
 
 	it("reads the marker under a skill's bold emphasis", () => {
 		expect(read("**plan-approved: #7 @ 4d90e1bb27ac · 2026-08-16T07:16:03Z**\n")).toMatchObject({
 			_tag: "Found",
-			value: {epic: 7},
+			value: { epic: 7 },
 		});
 	});
 
@@ -38,15 +38,15 @@ describe("read", () => {
 
 describe("emit", () => {
 	it("round-trips through read", () => {
-		expect(read(emit({epic: EPIC, digest: DIGEST, at: AT}))).toEqual({
+		expect(read(emit({ epic: EPIC, digest: DIGEST, at: AT }))).toEqual({
 			_tag: "Found",
-			value: {epic: 7, digest: "4d90e1bb27ac", at: "2026-08-16T07:16:03Z"},
+			value: { epic: 7, digest: "4d90e1bb27ac", at: "2026-08-16T07:16:03Z" },
 		});
 	});
 });
 
 describe("approves", () => {
-	const approval = {epic: EPIC, digest: DIGEST, at: AT};
+	const approval = { epic: EPIC, digest: DIGEST, at: AT };
 
 	it("holds for the epic it names at the digest it binds", () => {
 		expect(approves(approval, 7, "4d90e1bb27ac")).toBe(true);
@@ -65,13 +65,13 @@ describe("parseFields", () => {
 	it("takes the three fields in any order", () => {
 		expect(parseFields("at: 2026-08-16T07:16:03Z\nepic: 7\ndigest: 4d90e1bb27ac\n")).toEqual({
 			_tag: "Fields",
-			approval: {epic: 7, digest: "4d90e1bb27ac", at: "2026-08-16T07:16:03Z"},
+			approval: { epic: 7, digest: "4d90e1bb27ac", at: "2026-08-16T07:16:03Z" },
 		});
 	});
 
 	it("takes the epic with or without its #, so wire read's own answer pipes back in", () => {
 		expect(parseFields("epic\t#7\ndigest\t4d90e1bb27ac\nat\t2026-08-16T07:16:03Z\n")).toMatchObject(
-			{_tag: "Fields", approval: {epic: 7}},
+			{ _tag: "Fields", approval: { epic: 7 } },
 		);
 	});
 

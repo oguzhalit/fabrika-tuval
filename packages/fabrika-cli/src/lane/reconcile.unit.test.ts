@@ -4,12 +4,12 @@
  * The ledger fixture is the pre-guard shape — four events ending in the ship stage's `DONE`,
  * written before the `partial` field existed.
  */
-import {describe, expect, it} from "vitest";
-import {coderWorkflow} from "./fixtures.test-support.ts";
-import {applyCorrections, deriveStatus, foldLog, type LogEntry, parseLog} from "./fold.ts";
-import {type CompiledLane, compile} from "./machine.ts";
-import type {PullFact} from "./prove.ts";
-import {correctionEntry, findMisroute, provenClosure, pullNumberIn} from "./reconcile.ts";
+import { describe, expect, it } from "vitest";
+import { coderWorkflow } from "./fixtures.test-support.ts";
+import { applyCorrections, deriveStatus, foldLog, type LogEntry, parseLog } from "./fold.ts";
+import { type CompiledLane, compile } from "./machine.ts";
+import type { PullFact } from "./prove.ts";
+import { correctionEntry, findMisroute, provenClosure, pullNumberIn } from "./reconcile.ts";
 
 const lane = (): CompiledLane => {
 	const result = compile(coderWorkflow());
@@ -47,7 +47,7 @@ const stateOf = (entries: ReadonlyArray<LogEntry>): string => {
 describe("findMisroute", () => {
 	it("nominates the ship DONE a pre-guard ledger recorded with no closure answer", () => {
 		const pr = "https://forge.example/o/r/pull/7328";
-		const found = findMisroute(lane(), shipped({pr}));
+		const found = findMisroute(lane(), shipped({ pr }));
 		expect(found).toEqual({
 			_tag: "Correctable",
 			task: "issue",
@@ -59,11 +59,11 @@ describe("findMisroute", () => {
 	});
 
 	it("carries no PR where the line named none, rather than one from elsewhere in the log", () => {
-		expect(findMisroute(lane(), shipped())).toMatchObject({pr: null});
+		expect(findMisroute(lane(), shipped())).toMatchObject({ pr: null });
 	});
 
 	it("nominates nothing once that DONE carries its answer", () => {
-		expect(findMisroute(lane(), shipped({partial: true}))._tag).toBe("Settled");
+		expect(findMisroute(lane(), shipped({ partial: true }))._tag).toBe("Settled");
 	});
 
 	/**
@@ -73,11 +73,11 @@ describe("findMisroute", () => {
 	 * tells the two apart, never the timestamp. The correction is what settles it.
 	 */
 	it("nominates a `partial: false` the ship stage wrote before closures were read off the PR", () => {
-		expect(findMisroute(lane(), shipped({partial: false}))._tag).toBe("Correctable");
+		expect(findMisroute(lane(), shipped({ partial: false }))._tag).toBe("Correctable");
 	});
 
 	it("reads a `partial: false` naming the PRs it stood on as the line's own answer", () => {
-		const read = shipped({partial: false, landed: [7329]});
+		const read = shipped({ partial: false, landed: [7329] });
 		expect(findMisroute(lane(), read)._tag).toBe("Settled");
 	});
 
@@ -88,12 +88,12 @@ describe("findMisroute", () => {
 	 * issue with no sweep left to reach it.
 	 */
 	it("nominates a late `partial: false` the fixed ship stage did not write", () => {
-		const late = shipped({partial: false, at: "2026-12-01T00:00:00.000Z"});
+		const late = shipped({ partial: false, at: "2026-12-01T00:00:00.000Z" });
 		expect(findMisroute(lane(), late)._tag).toBe("Correctable");
 	});
 
 	it("nominates an unread `partial: false` once — a correction confirming it settles the line", () => {
-		const log = [...shipped({partial: false}), correctionEntry("issue", at(3), at(8), false)];
+		const log = [...shipped({ partial: false }), correctionEntry("issue", at(3), at(8), false)];
 		expect(findMisroute(lane(), log)._tag).toBe("Settled");
 	});
 
@@ -103,14 +103,14 @@ describe("findMisroute", () => {
 
 	it("nominates the latest such DONE, so a lane that already went round is not re-routed", () => {
 		const log = [
-			...shipped({partial: true}),
+			...shipped({ partial: true }),
 			entry("WIP", at(4)),
 			entry("DONE", at(5)),
 			entry("PASS", at(6)),
 			entry("DONE", at(7)),
 		];
 		const found = findMisroute(lane(), log);
-		expect(found).toMatchObject({_tag: "Correctable", at: at(7)});
+		expect(found).toMatchObject({ _tag: "Correctable", at: at(7) });
 	});
 
 	it("reads a correction already in the log, so a swept lane is not swept twice", () => {
@@ -124,13 +124,13 @@ describe("the correction line", () => {
 		const log = shipped();
 		expect(stateOf(log)).toBe("complete");
 		expect(stateOf([...log, correctionEntry("issue", at(3), at(8), true)])).toBe(
-			JSON.stringify({pipeline: {issue: "queued"}}),
+			JSON.stringify({ pipeline: { issue: "queued" } }),
 		);
 	});
 
 	it("leaves a lane whose merge closed its issue folding to complete", () => {
 		expect(stateOf(shipped())).toBe("complete");
-		expect(stateOf(shipped({partial: false}))).toBe("complete");
+		expect(stateOf(shipped({ partial: false }))).toBe("complete");
 	});
 
 	it("moves no task when it confirms a closing merge, and stops that lane nominating", () => {
@@ -149,7 +149,7 @@ describe("the correction line", () => {
 		const resolved = applyCorrections([...shipped(), correctionEntry("issue", at(3), at(8), true)]);
 		expect(resolved).toEqual({
 			_tag: "Corrected",
-			entries: [...shipped().slice(0, 3), entry("DONE", at(3), {partial: true})],
+			entries: [...shipped().slice(0, 3), entry("DONE", at(3), { partial: true })],
 		});
 	});
 
@@ -187,31 +187,31 @@ describe("provenClosure", () => {
 	it("proves the merge partial where a merged PR reaches the issue through `Part of`", () => {
 		expect(provenClosure(6980, [fact()])).toEqual({
 			_tag: "Read",
-			closure: {_tag: "Partial", prs: [7328]},
+			closure: { _tag: "Partial", prs: [7328] },
 			landed: [7328],
 		});
 	});
 
 	it("names the merged PRs it stood on, so the recorded line says which reader wrote it", () => {
-		expect(provenClosure(6980, [fact({linkKind: "fixes"})])).toMatchObject({
+		expect(provenClosure(6980, [fact({ linkKind: "fixes" })])).toMatchObject({
 			_tag: "Read",
-			closure: {_tag: "Closes"},
+			closure: { _tag: "Closes" },
 			landed: [7328],
 		});
 	});
 
 	it("reads an empty nomination as unknown, never as a closing merge", () => {
-		expect(provenClosure(6980, [])).toMatchObject({_tag: "Unknown"});
+		expect(provenClosure(6980, [])).toMatchObject({ _tag: "Unknown" });
 	});
 
 	it("reads a named PR that never merged as unknown", () => {
-		expect(provenClosure(6980, [fact({merged: false, open: true})])).toMatchObject({
+		expect(provenClosure(6980, [fact({ merged: false, open: true })])).toMatchObject({
 			_tag: "Unknown",
 		});
 	});
 
 	it("reads a body whose `fixes` refs drop this lane's issue as unknown", () => {
-		expect(provenClosure(6980, [fact({linkKind: "fixes", linkedIssues: [7000]})])).toMatchObject({
+		expect(provenClosure(6980, [fact({ linkKind: "fixes", linkedIssues: [7000] })])).toMatchObject({
 			_tag: "Unknown",
 		});
 	});
@@ -230,7 +230,7 @@ describe("provenClosure", () => {
 		});
 		expect(provenClosure(6980, [tail])).toEqual({
 			_tag: "Read",
-			closure: {_tag: "Partial", prs: [7861]},
+			closure: { _tag: "Partial", prs: [7861] },
 			landed: [7861],
 		});
 	});
@@ -260,17 +260,17 @@ describe("parseLog on a correction", () => {
 	});
 
 	it("refuses a correction naming no target", () => {
-		const result = parsed({task: "issue", event: "ISSUE.CORRECTED", at: at(8), partial: true});
+		const result = parsed({ task: "issue", event: "ISSUE.CORRECTED", at: at(8), partial: true });
 		expect(result._tag).toBe("Malformed");
 	});
 
 	it("refuses a correction carrying no payload to put on its target", () => {
-		const result = parsed({task: "issue", event: "ISSUE.CORRECTED", at: at(8), corrects: at(3)});
+		const result = parsed({ task: "issue", event: "ISSUE.CORRECTED", at: at(8), corrects: at(3) });
 		expect(result._tag).toBe("Malformed");
 	});
 
 	it("refuses `corrects` bolted onto an event that supersedes nothing", () => {
-		const result = parsed({task: "issue", event: "ISSUE.DONE", at: at(8), corrects: at(3)});
+		const result = parsed({ task: "issue", event: "ISSUE.DONE", at: at(8), corrects: at(3) });
 		expect(result._tag).toBe("Malformed");
 	});
 });

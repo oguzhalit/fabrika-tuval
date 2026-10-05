@@ -17,10 +17,10 @@
  * explicitly only because reading *bytes* out of a commit needs a name, where diffing a range does not.
  */
 
-import {type Attempt, type CommitRange, mergeBase, type Shell} from "../io/git.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {type HeadSha, headSha} from "../wire/verdict-marker.ts";
-import {OFF_VOCABULARY} from "./codes.ts";
+import { type Attempt, type CommitRange, mergeBase, type Shell } from "../io/git.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { type HeadSha, headSha } from "../wire/verdict-marker.ts";
+import { OFF_VOCABULARY } from "./codes.ts";
 
 /** The three flags whose combination picks the subject. A verb with no `--sha` passes `null`. */
 export interface RangeFlags {
@@ -30,9 +30,9 @@ export interface RangeFlags {
 }
 
 export type RangeRead =
-	| {readonly _tag: "Pull"}
-	| {readonly _tag: "Ranged"; readonly range: CommitRange<HeadSha>}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Pull" }
+	| { readonly _tag: "Ranged"; readonly range: CommitRange<HeadSha> }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * Which subject these flags name, or the refusal that says why they name none.
@@ -42,7 +42,7 @@ export type RangeRead =
  * it is what keeps that from being silently ignored.
  */
 export const readRangeFlags = (verb: string, flags: RangeFlags): RangeRead => {
-	if (flags.base === null && flags.tip === null) return {_tag: "Pull"};
+	if (flags.base === null && flags.tip === null) return { _tag: "Pull" };
 	if (flags.base === null || flags.tip === null) {
 		return {
 			_tag: "Refused",
@@ -73,7 +73,7 @@ export const readRangeFlags = (verb: string, flags: RangeFlags): RangeRead => {
 			),
 		};
 	}
-	return {_tag: "Ranged", range: {base, tip}};
+	return { _tag: "Ranged", range: { base, tip } };
 };
 
 /** The commit the range's own three-dot diff is taken from — see this module's docblock. */

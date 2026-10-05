@@ -38,9 +38,9 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9144#issuecomment-5687540528
  * @ruling https://github.com/kamp-us/phoenix/issues/9322#issuecomment-5703498377
  */
-import {Effect} from "effect";
-import type {Attempt, Shell} from "../io/git.ts";
-import {PULL_FILES_CAP} from "../io/pulls.ts";
+import { Effect } from "effect";
+import type { Attempt, Shell } from "../io/git.ts";
+import { PULL_FILES_CAP } from "../io/pulls.ts";
 
 /** What the read found, plus the disagreement line it owes the caller's diagnostics. */
 export interface LocalFileSet<A> {
@@ -59,8 +59,8 @@ export interface LocalFileSet<A> {
 }
 
 export type LocalFileSetRead<A> =
-	| {readonly _tag: "Unreadable"; readonly reason: string}
-	| {readonly _tag: "Read"; readonly set: LocalFileSet<A>};
+	| { readonly _tag: "Unreadable"; readonly reason: string }
+	| { readonly _tag: "Read"; readonly set: LocalFileSet<A> };
 
 /** The one wording every local-read caller prints, so a reader meets one sentence across the groups. */
 export const disagreementLine = (
@@ -127,7 +127,7 @@ export const platformFileSet = <A>(
 	listed: Attempt<ReadonlyArray<A>>,
 ): LocalFileSetRead<A> =>
 	listed._tag === "Failure"
-		? {_tag: "Unreadable", reason: listed.reason}
+		? { _tag: "Unreadable", reason: listed.reason }
 		: {
 				_tag: "Read",
 				set: {
@@ -150,14 +150,14 @@ export const platformFileSet = <A>(
 export const readLocalFileSet = <A>(
 	verb: string,
 	subject: string,
-	range: {readonly base: string; readonly tip: string},
+	range: { readonly base: string; readonly tip: string },
 	declared: number,
 	read: (base: string, tip: string) => Shell<Attempt<ReadonlyArray<A>>>,
 ): Shell<LocalFileSetRead<A>> =>
 	Effect.gen(function* () {
 		const listed = yield* read(range.base, range.tip);
 		if (listed._tag === "Failure") {
-			return {_tag: "Unreadable" as const, reason: listed.reason};
+			return { _tag: "Unreadable" as const, reason: listed.reason };
 		}
 		const files = listed.value;
 		return {

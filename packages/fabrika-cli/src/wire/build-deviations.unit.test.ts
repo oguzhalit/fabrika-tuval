@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {emit, parseFields, read} from "./build-deviations.ts";
+import { describe, expect, it } from "vitest";
+import { emit, parseFields, read } from "./build-deviations.ts";
 
 const entry =
 	"- **Scope narrowing** — **Said:** both surfaces. **Did:** the reader only. **Why:** the writer is the next child's range. **Disposition:** stated here.";
@@ -9,14 +9,14 @@ describe("read", () => {
 		const result = read(`build-deviations: #3\n\n## Deviations\n\n${entry}\n`);
 		expect(result).toMatchObject({
 			_tag: "Found",
-			value: {issue: 3, disclosure: {_tag: "Entries"}},
+			value: { issue: 3, disclosure: { _tag: "Entries" } },
 		});
 	});
 
 	it("finds the None. claim as NoneDeclared, not as an empty list", () => {
 		expect(read("build-deviations: #3\n\n## Deviations\n\nNone.\n")).toEqual({
 			_tag: "Found",
-			value: {issue: 3, disclosure: {_tag: "NoneDeclared"}},
+			value: { issue: 3, disclosure: { _tag: "NoneDeclared" } },
 		});
 	});
 
@@ -29,10 +29,10 @@ describe("read", () => {
 
 describe("emit", () => {
 	it("round-trips the None. claim through read", () => {
-		const composed = emit({issue: 3, disclosure: {_tag: "NoneDeclared"}});
+		const composed = emit({ issue: 3, disclosure: { _tag: "NoneDeclared" } });
 		expect(read(composed)).toMatchObject({
 			_tag: "Found",
-			value: {issue: 3, disclosure: {_tag: "NoneDeclared"}},
+			value: { issue: 3, disclosure: { _tag: "NoneDeclared" } },
 		});
 	});
 });
@@ -42,7 +42,7 @@ describe("parseFields", () => {
 		const parsed = parseFields("issue: 3\nNone.\n");
 		expect(parsed).toEqual({
 			_tag: "Fields",
-			value: {issue: 3, disclosure: {_tag: "NoneDeclared"}},
+			value: { issue: 3, disclosure: { _tag: "NoneDeclared" } },
 		});
 	});
 

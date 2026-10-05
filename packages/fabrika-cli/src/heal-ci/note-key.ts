@@ -23,7 +23,7 @@
  * refuse every first rerun.
  */
 
-import type {StallToken} from "./stall.ts";
+import type { StallToken } from "./stall.ts";
 
 export interface NoteKey {
 	readonly pr: number;
@@ -65,19 +65,19 @@ export const readKey = (body: string): NoteKey | null => {
 		if (matched?.[1] === undefined || matched[2] === undefined || matched[3] === undefined) {
 			continue;
 		}
-		return {pr: Number.parseInt(matched[1], 10), stallClass: matched[2], head: matched[3]};
+		return { pr: Number.parseInt(matched[1], 10), stallClass: matched[2], head: matched[3] };
 	}
 	return null;
 };
 
 /** The first comment already carrying exactly this key, or `null` when the whole history is clear. */
 export const keyBoundTo = (
-	bodies: ReadonlyArray<{readonly body: string; readonly id: number}>,
+	bodies: ReadonlyArray<{ readonly body: string; readonly id: number }>,
 	key: NoteKey,
-): {readonly id: number} | null => {
+): { readonly id: number } | null => {
 	for (const comment of bodies) {
 		const carried = readKey(comment.body);
-		if (carried !== null && sameKey(carried, key)) return {id: comment.id};
+		if (carried !== null && sameKey(carried, key)) return { id: comment.id };
 	}
 	return null;
 };

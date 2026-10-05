@@ -37,7 +37,7 @@
  * line-scoped; each finding carries the file, the 1-based line number, the matched
  * text, and a reason, so the report points at the exact offending line.
  */
-import {parseDocument} from "yaml";
+import { parseDocument } from "yaml";
 
 export interface Finding {
 	readonly file: string;
@@ -159,11 +159,11 @@ export const scanFile = (file: string, content: string): ReadonlyArray<Finding> 
 	const lines = content.split("\n");
 	for (let i = 0; i < lines.length; i++) {
 		const lineText = lines[i] ?? "";
-		for (const {pattern, reason} of LINT_PATTERNS) {
+		for (const { pattern, reason } of LINT_PATTERNS) {
 			// Reset lastIndex per line — these are `g`-flagged shared RegExp instances.
 			pattern.lastIndex = 0;
 			for (const match of lineText.matchAll(pattern)) {
-				findings.push({file, line: i + 1, matched: match[0], reason});
+				findings.push({ file, line: i + 1, matched: match[0], reason });
 			}
 		}
 	}
@@ -201,10 +201,10 @@ export const checkFrontmatter = (file: string, content: string): FrontmatterFind
 	const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
 	if (match === null) return null;
 	const block = match[1] ?? "";
-	const doc = parseDocument(block, {strict: true});
+	const doc = parseDocument(block, { strict: true });
 	if (doc.errors.length === 0) return null;
 	const reason = doc.errors.map((e) => e.message.split("\n")[0]).join("; ");
-	return {file, reason};
+	return { file, reason };
 };
 
 /**
@@ -352,7 +352,7 @@ export const lintCorpus = (files: ReadonlyArray<ScanFile>): LintResult => {
 	const barePushFindings: Finding[] = [];
 	const portabilityScanned: string[] = [];
 	const portabilityFindings: Finding[] = [];
-	for (const {file, content} of files) {
+	for (const { file, content } of files) {
 		if (isPortabilityScoped(file)) {
 			portabilityScanned.push(file);
 			portabilityFindings.push(...scanFencePortability(file, content));

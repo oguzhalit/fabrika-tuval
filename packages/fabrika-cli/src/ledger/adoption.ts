@@ -24,22 +24,22 @@ import {
 	containmentGap,
 	readContainment,
 } from "../config/keys/containment-vocabulary.ts";
-import {PLANNED, TRIAGED} from "../labels.ts";
-import {HELD_LABEL, missingLabelKinds, NEEDS_TRIAGE_LABEL} from "../plan/defects.ts";
-import {CONTAINMENT_FIELD, fieldLines, readChildStories, STORIES_FIELD} from "../plan/ledger.ts";
-import {EPIC_TYPE_LABEL} from "../triage/facets.ts";
-import {read as readAcceptanceCriteria} from "../wire/acceptance-criteria.ts";
-import {BAD_SECTIONS, OFF_VOCABULARY} from "./codes.ts";
-import type {CycleDoc} from "./run.ts";
+import { PLANNED, TRIAGED } from "../labels.ts";
+import { HELD_LABEL, missingLabelKinds, NEEDS_TRIAGE_LABEL } from "../plan/defects.ts";
+import { CONTAINMENT_FIELD, fieldLines, readChildStories, STORIES_FIELD } from "../plan/ledger.ts";
+import { EPIC_TYPE_LABEL } from "../triage/facets.ts";
+import { read as readAcceptanceCriteria } from "../wire/acceptance-criteria.ts";
+import { BAD_SECTIONS, OFF_VOCABULARY } from "./codes.ts";
+import type { CycleDoc } from "./run.ts";
 
 /** A planner-supplied `--stories` value, parsed through the gate's grammar before anything is read. */
 export type StoriesFlag =
-	| {readonly _tag: "Ids"; readonly ids: ReadonlyArray<number>}
-	| {readonly _tag: "NonConforming"; readonly value: string};
+	| { readonly _tag: "Ids"; readonly ids: ReadonlyArray<number> }
+	| { readonly _tag: "NonConforming"; readonly value: string };
 
 export const parseStoriesFlag = (value: string): StoriesFlag => {
 	const read = readChildStories(value);
-	return read._tag === "Ids" ? read : {_tag: "NonConforming", value: value.trim()};
+	return read._tag === "Ids" ? read : { _tag: "NonConforming", value: value.trim() };
 };
 
 const renderStories = (ids: ReadonlyArray<number>): string =>
@@ -54,7 +54,7 @@ export interface AdoptionInput {
 	readonly assignees: ReadonlyArray<string>;
 	readonly cycleDoc: CycleDoc;
 	readonly vocabulary: ContainmentVocabulary;
-	readonly stories: {readonly _tag: "Ids"; readonly ids: ReadonlyArray<number>} | null;
+	readonly stories: { readonly _tag: "Ids"; readonly ids: ReadonlyArray<number> } | null;
 	/** The raw `--containment` value; a trailing parenthetical is the planner's and is kept. */
 	readonly containment: string | null;
 }
@@ -171,7 +171,7 @@ export const judgeAdoption = (input: AdoptionInput): Adoption => {
 	}
 
 	if (input.cycleDoc !== "present") {
-		return {_tag: "Adoptable", fields, stories, containment: null, park};
+		return { _tag: "Adoptable", fields, stories, containment: null, park };
 	}
 
 	const declaredContainment = fieldLines(input.body, CONTAINMENT_FIELD)[0];
@@ -193,13 +193,13 @@ export const judgeAdoption = (input: AdoptionInput): Adoption => {
 				`it is a ${gap.type} whose **Containment:** "${declaredContainment}" is off ${input.vocabulary.values.join(" or ")} — ${NEVER_REWRITES}.`,
 			);
 		}
-		return {_tag: "Adoptable", fields, stories, containment: keyword, park};
+		return { _tag: "Adoptable", fields, stories, containment: keyword, park };
 	}
 
 	if (input.containment === null) {
 		const gap = containmentGap(input.vocabulary, input.labels, null);
 		return gap === null
-			? {_tag: "Adoptable", fields, stories, containment: null, park}
+			? { _tag: "Adoptable", fields, stories, containment: null, park }
 			: refused(
 					BAD_SECTIONS,
 					`it is a ${gap.type} with no **Containment:** line and the cycle doc is present — pass --containment ${input.vocabulary.values.join(" or ")}.`,
@@ -213,7 +213,7 @@ export const judgeAdoption = (input: AdoptionInput): Adoption => {
 		);
 	}
 	fields.push(`**${CONTAINMENT_FIELD}:** ${input.containment.trim()}`);
-	return {_tag: "Adoptable", fields, stories, containment: keyword, park};
+	return { _tag: "Adoptable", fields, stories, containment: keyword, park };
 };
 
 /** The amendment's section: one line naming the plan, then the owed field lines, consecutive. */

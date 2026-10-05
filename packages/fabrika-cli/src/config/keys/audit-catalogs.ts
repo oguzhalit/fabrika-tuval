@@ -17,12 +17,15 @@
  * two times and make the gate's row set disagree with the file that produced it.
  */
 
-import {trimmedStrings} from "../entries.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import { trimmedStrings } from "../entries.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const AUDIT_CATALOGS = "auditCatalogs";
 
-const malformed = (reason: string): Decoded<ReadonlyArray<string>> => ({_tag: "Malformed", reason});
+const malformed = (reason: string): Decoded<ReadonlyArray<string>> => ({
+	_tag: "Malformed",
+	reason,
+});
 
 const climbs = (path: string): boolean => path.split("/").includes("..");
 
@@ -61,7 +64,7 @@ const decode = (raw: unknown): Decoded<ReadonlyArray<string>> => {
 		seen.add(path);
 	}
 
-	return {_tag: "Value", value: paths};
+	return { _tag: "Value", value: paths };
 };
 
 export const auditCatalogsKey: KeyGroup<ReadonlyArray<string>> = {
@@ -72,6 +75,6 @@ export const auditCatalogsKey: KeyGroup<ReadonlyArray<string>> = {
 		type: "array",
 		description:
 			"Repo-relative markdown paths holding extra smell catalogs for `architecture-audit`'s coverage gate, in the same table shape the shipped catalog uses. Add-only: their rows are emitted after the shipped rows, and no entry can remove or replace a shipped smell. Empty (or absent) means the gate runs at its shipped coverage.",
-		items: {type: "string", minLength: 1, pattern: "\\.md$"},
+		items: { type: "string", minLength: 1, pattern: "\\.md$" },
 	},
 };

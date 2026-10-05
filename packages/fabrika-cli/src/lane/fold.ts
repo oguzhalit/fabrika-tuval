@@ -10,11 +10,11 @@
  * `noErrors` gate as a pure derivation, never a machine event. Everything here returns a
  * discriminated union rather than throwing, so a verb's refusal is data it seats on an exit code.
  */
-import {acceptsOf, applyCell, foldMsgs, msgKeysOf, NoCellError} from "@demlik/tea";
-import {type RoutedBasis, readRoutedBasis} from "../wire/routed-elsewhere.ts";
-import {ISSUE_CLOSES, type IssueClose, isIssueClose} from "./closing-merge.ts";
-import {type Deferral, deferredTasks, resolveDeferrals} from "./deferral.ts";
-import {type IntegrateFailure, isIntegrateFailure} from "./integrate-failure.ts";
+import { acceptsOf, applyCell, foldMsgs, msgKeysOf, NoCellError } from "@demlik/tea";
+import { type RoutedBasis, readRoutedBasis } from "../wire/routed-elsewhere.ts";
+import { ISSUE_CLOSES, type IssueClose, isIssueClose } from "./closing-merge.ts";
+import { type Deferral, deferredTasks, resolveDeferrals } from "./deferral.ts";
+import { type IntegrateFailure, isIntegrateFailure } from "./integrate-failure.ts";
 import {
 	AMENDED_EVENT,
 	BOARD_TERMINALS,
@@ -217,7 +217,11 @@ const isDeferralList = (value: unknown): value is ReadonlyArray<Deferral> => {
 	const tasks = new Set<string>();
 	for (const row of value) {
 		if (typeof row !== "object" || row === null) return false;
-		const {task, through, reason} = row as {task?: unknown; through?: unknown; reason?: unknown};
+		const { task, through, reason } = row as {
+			task?: unknown;
+			through?: unknown;
+			reason?: unknown;
+		};
 		if (typeof task !== "string" || task === "") return false;
 		if (typeof through !== "string" || through === "") return false;
 		if (typeof reason !== "string" || reason.trim() === "") return false;
@@ -228,8 +232,8 @@ const isDeferralList = (value: unknown): value is ReadonlyArray<Deferral> => {
 };
 
 export type ParseLogResult =
-	| {readonly _tag: "Parsed"; readonly entries: ReadonlyArray<LogEntry>}
-	| {readonly _tag: "Malformed"; readonly defects: ReadonlyArray<string>};
+	| { readonly _tag: "Parsed"; readonly entries: ReadonlyArray<LogEntry> }
+	| { readonly _tag: "Malformed"; readonly defects: ReadonlyArray<string> };
 
 /** Parse the log text. A line that does not parse is a defect, never a silently skipped event. */
 export const parseLog = (text: string): ParseLogResult => {
@@ -593,40 +597,42 @@ export const parseLog = (text: string): ParseLogResult => {
 			task: record.task,
 			event: record.event,
 			at: record.at,
-			...(record.pr === undefined ? {} : {pr: record.pr}),
-			...(record.comment === undefined ? {} : {comment: record.comment}),
-			...(record.cause === undefined ? {} : {cause: record.cause}),
-			...(record.rationale === undefined ? {} : {rationale: record.rationale as string}),
-			...(record.axisIssue === undefined ? {} : {axisIssue: record.axisIssue as number}),
-			...(record.rulingIssue === undefined ? {} : {rulingIssue: record.rulingIssue as number}),
-			...(record.founderAct === undefined ? {} : {founderAct: record.founderAct as string}),
-			...(record.round === undefined ? {} : {round: record.round as number}),
-			...(record.classes === undefined ? {} : {classes: record.classes as ReadonlyArray<string>}),
+			...(record.pr === undefined ? {} : { pr: record.pr }),
+			...(record.comment === undefined ? {} : { comment: record.comment }),
+			...(record.cause === undefined ? {} : { cause: record.cause }),
+			...(record.rationale === undefined ? {} : { rationale: record.rationale as string }),
+			...(record.axisIssue === undefined ? {} : { axisIssue: record.axisIssue as number }),
+			...(record.rulingIssue === undefined ? {} : { rulingIssue: record.rulingIssue as number }),
+			...(record.founderAct === undefined ? {} : { founderAct: record.founderAct as string }),
+			...(record.round === undefined ? {} : { round: record.round as number }),
+			...(record.classes === undefined ? {} : { classes: record.classes as ReadonlyArray<string> }),
 			...(record.deferred === undefined
 				? {}
-				: {deferred: record.deferred as ReadonlyArray<string>}),
-			...(record.routed === undefined ? {} : {routed: record.routed as ReadonlyArray<string>}),
-			...(routedBasis === undefined ? {} : {routedBasis}),
-			...(record.waitGrant === undefined ? {} : {waitGrant: record.waitGrant as number}),
-			...(record.partial === undefined ? {} : {partial: record.partial as boolean}),
-			...(record.landed === undefined ? {} : {landed: record.landed as ReadonlyArray<number>}),
-			...(record.issueClose === undefined ? {} : {issueClose: record.issueClose as IssueClose}),
-			...(record.diagnosis === undefined ? {} : {diagnosis: record.diagnosis as boolean}),
-			...(record.corrects === undefined ? {} : {corrects: record.corrects as string}),
-			...(record.tasks === undefined ? {} : {tasks: record.tasks as ReadonlyArray<string>}),
-			...(record.defers === undefined ? {} : {defers: record.defers as ReadonlyArray<Deferral>}),
-			...(record.outcome === undefined ? {} : {outcome: record.outcome as string}),
-			...(record.sha === undefined ? {} : {sha: record.sha as string}),
-			...(record.assertedBy === undefined ? {} : {assertedBy: record.assertedBy as string}),
-			...(record.integrate === undefined ? {} : {integrate: record.integrate as IntegrateFailure}),
+				: { deferred: record.deferred as ReadonlyArray<string> }),
+			...(record.routed === undefined ? {} : { routed: record.routed as ReadonlyArray<string> }),
+			...(routedBasis === undefined ? {} : { routedBasis }),
+			...(record.waitGrant === undefined ? {} : { waitGrant: record.waitGrant as number }),
+			...(record.partial === undefined ? {} : { partial: record.partial as boolean }),
+			...(record.landed === undefined ? {} : { landed: record.landed as ReadonlyArray<number> }),
+			...(record.issueClose === undefined ? {} : { issueClose: record.issueClose as IssueClose }),
+			...(record.diagnosis === undefined ? {} : { diagnosis: record.diagnosis as boolean }),
+			...(record.corrects === undefined ? {} : { corrects: record.corrects as string }),
+			...(record.tasks === undefined ? {} : { tasks: record.tasks as ReadonlyArray<string> }),
+			...(record.defers === undefined ? {} : { defers: record.defers as ReadonlyArray<Deferral> }),
+			...(record.outcome === undefined ? {} : { outcome: record.outcome as string }),
+			...(record.sha === undefined ? {} : { sha: record.sha as string }),
+			...(record.assertedBy === undefined ? {} : { assertedBy: record.assertedBy as string }),
+			...(record.integrate === undefined
+				? {}
+				: { integrate: record.integrate as IntegrateFailure }),
 		});
 	}
-	return defects.length > 0 ? {_tag: "Malformed", defects} : {_tag: "Parsed", entries};
+	return defects.length > 0 ? { _tag: "Malformed", defects } : { _tag: "Parsed", entries };
 };
 
 export type CorrectionResult =
-	| {readonly _tag: "Corrected"; readonly entries: ReadonlyArray<LogEntry>}
-	| {readonly _tag: "Undecidable"; readonly defects: ReadonlyArray<string>};
+	| { readonly _tag: "Corrected"; readonly entries: ReadonlyArray<LogEntry> }
+	| { readonly _tag: "Undecidable"; readonly defects: ReadonlyArray<string> };
 
 /**
  * Resolve every {@link CORRECTED_EVENT} line against the entry it names, producing the log the fold
@@ -645,14 +651,14 @@ export type CorrectionResult =
  */
 export const applyCorrections = (entries: ReadonlyArray<LogEntry>): CorrectionResult => {
 	const corrections = entries.filter((entry) => bareEvent(entry.event) === CORRECTED_EVENT);
-	if (corrections.length === 0) return {_tag: "Corrected", entries};
+	if (corrections.length === 0) return { _tag: "Corrected", entries };
 	const defects: string[] = [];
 	const corrected = entries.filter((entry) => bareEvent(entry.event) !== CORRECTED_EVENT);
 	const patched = [...corrected];
 	for (const correction of corrections) {
 		const targets = patched
-			.map((entry, index) => ({entry, index}))
-			.filter(({entry}) => entry.task === correction.task && entry.at === correction.corrects);
+			.map((entry, index) => ({ entry, index }))
+			.filter(({ entry }) => entry.task === correction.task && entry.at === correction.corrects);
 		const only = targets[0];
 		if (only === undefined || targets.length > 1) {
 			defects.push(
@@ -667,19 +673,19 @@ export const applyCorrections = (entries: ReadonlyArray<LogEntry>): CorrectionRe
 				);
 				continue;
 			}
-			patched[only.index] = {...only.entry, integrate: correction.integrate};
+			patched[only.index] = { ...only.entry, integrate: correction.integrate };
 			continue;
 		}
-		patched[only.index] = {...only.entry, partial: correction.partial === true};
+		patched[only.index] = { ...only.entry, partial: correction.partial === true };
 	}
 	return defects.length > 0
-		? {_tag: "Undecidable", defects}
-		: {_tag: "Corrected", entries: patched};
+		? { _tag: "Undecidable", defects }
+		: { _tag: "Corrected", entries: patched };
 };
 
 export type FoldResult =
-	| {readonly _tag: "Folded"; readonly states: Readonly<Record<string, TaskState>>}
-	| {readonly _tag: "Unreplayable"; readonly defects: ReadonlyArray<string>};
+	| { readonly _tag: "Folded"; readonly states: Readonly<Record<string, TaskState>> }
+	| { readonly _tag: "Unreplayable"; readonly defects: ReadonlyArray<string> };
 
 /**
  * The compiler admits a phase's task ids and the fold keys states by those same ids, so both
@@ -726,7 +732,7 @@ export const foldLog = (
 ): FoldResult => {
 	const resolvedDeferrals = resolveDeferrals(entries);
 	if (resolvedDeferrals._tag === "Undecidable") {
-		return {_tag: "Unreplayable", defects: resolvedDeferrals.defects};
+		return { _tag: "Unreplayable", defects: resolvedDeferrals.defects };
 	}
 	const deferred = new Set([...deferredTasks(resolvedDeferrals.deferrals), ...pending]);
 	const defects: string[] = [];
@@ -737,10 +743,10 @@ export const foldLog = (
 			defects.push(`log names task "${entry.task}", which is not in this lane's machine`);
 		}
 	}
-	if (defects.length > 0) return {_tag: "Unreplayable", defects};
+	if (defects.length > 0) return { _tag: "Unreplayable", defects };
 	const resolved = applyCorrections(entries);
 	if (resolved._tag === "Undecidable") {
-		return {_tag: "Unreplayable", defects: resolved.defects};
+		return { _tag: "Unreplayable", defects: resolved.defects };
 	}
 	const states: Record<string, TaskState> = {};
 	for (const [taskId, task] of Object.entries(lane.tasks)) {
@@ -748,12 +754,12 @@ export const foldLog = (
 			.filter((entry) => entry.task === taskId && bareEvent(entry.event) !== AMENDED_EVENT)
 			.map((entry) => ({
 				type: bareEvent(entry.event),
-				...(entry.round === undefined ? {} : {round: entry.round}),
-				...(entry.classes === undefined ? {} : {classes: entry.classes}),
-				...(entry.waitGrant === undefined ? {} : {waitGrant: entry.waitGrant}),
-				...(entry.partial === undefined ? {} : {partial: entry.partial}),
-				...(entry.diagnosis === undefined ? {} : {diagnosis: entry.diagnosis}),
-				...(entry.cause === undefined ? {} : {cause: entry.cause}),
+				...(entry.round === undefined ? {} : { round: entry.round }),
+				...(entry.classes === undefined ? {} : { classes: entry.classes }),
+				...(entry.waitGrant === undefined ? {} : { waitGrant: entry.waitGrant }),
+				...(entry.partial === undefined ? {} : { partial: entry.partial }),
+				...(entry.diagnosis === undefined ? {} : { diagnosis: entry.diagnosis }),
+				...(entry.cause === undefined ? {} : { cause: entry.cause }),
 			}));
 		try {
 			states[taskId] = foldMsgs(task.machine, task.initial, msgs);
@@ -767,7 +773,7 @@ export const foldLog = (
 			throw error;
 		}
 	}
-	return {_tag: "Folded", states};
+	return { _tag: "Folded", states };
 };
 
 /**
@@ -823,11 +829,11 @@ export const standingParkEvidence = (
 	const standing: Record<string, StandingParkEvidence> = {};
 	for (const [task, entry] of Object.entries(latestEntries(entries))) {
 		const evidence: StandingParkEvidence = {
-			...(entry.axisIssue === undefined ? {} : {axisIssue: entry.axisIssue}),
+			...(entry.axisIssue === undefined ? {} : { axisIssue: entry.axisIssue }),
 			...(entry.rulingIssue === undefined
 				? {}
-				: {rulingIssue: entry.rulingIssue, parkedAt: entry.at}),
-			...(entry.founderAct === undefined ? {} : {founderAct: entry.founderAct}),
+				: { rulingIssue: entry.rulingIssue, parkedAt: entry.at }),
+			...(entry.founderAct === undefined ? {} : { founderAct: entry.founderAct }),
 		};
 		if (Object.keys(evidence).length > 0) standing[task] = evidence;
 	}
@@ -881,7 +887,7 @@ export const deriveStatus = (
 		context[taskId] = {
 			retries: state.retries,
 			maxRetries: state.maxRetries,
-			...(state.cleared.length === 0 ? {} : {clearedRounds: state.cleared}),
+			...(state.cleared.length === 0 ? {} : { clearedRounds: state.cleared }),
 			waits: state.waits,
 			maxWaits: state.maxWaits,
 			// Absent on a machine that declares no lap-guarded cell — every lane emitted before the
@@ -889,13 +895,13 @@ export const deriveStatus = (
 			// byte-for-byte what it always was rather than gaining a counter nothing can spend.
 			...(taskIn(lane, taskId).lapStates.size === 0
 				? {}
-				: {laps: state.laps, maxLaps: state.maxLaps}),
+				: { laps: state.laps, maxLaps: state.maxLaps }),
 			// Absent rather than empty when unclassed, so an unclassed lane's status is what it always
 			// was; a driver relaying `--class` reads the standing set here.
-			...(state.classes.length === 0 ? {} : {classes: state.classes}),
+			...(state.classes.length === 0 ? {} : { classes: state.classes }),
 			...taskIn(lane, taskId).extras,
-			...(cause === undefined ? {} : {cause}),
-			...(rationale === undefined ? {} : {rationale}),
+			...(cause === undefined ? {} : { cause }),
+			...(rationale === undefined ? {} : { rationale }),
 			...parkEvidence[taskId],
 		};
 	}
@@ -918,7 +924,7 @@ export const deriveStatus = (
 			isBoardTerminalState(stateIn(states, taskId).type),
 		);
 		if (settled !== undefined) {
-			return {stateValue: stateIn(states, settled).type, status: "done", context};
+			return { stateValue: stateIn(states, settled).type, status: "done", context };
 		}
 		// Read for the same reason and never folded into `complete`: an investigation's `DONE` is
 		// proven off a diagnosis comment rather than a merge, so answering `complete` here would name
@@ -928,13 +934,13 @@ export const deriveStatus = (
 			taskIn(lane, taskId).diagnosisFinals.has(stateIn(states, taskId).type),
 		);
 		if (diagnosed !== undefined) {
-			return {stateValue: stateIn(states, diagnosed).type, status: "done", context};
+			return { stateValue: stateIn(states, diagnosed).type, status: "done", context };
 		}
 		if (phase.tasks.some((taskId) => errors.includes(taskId))) {
-			return {stateValue: lane.terminals.tripped, status: "done", context};
+			return { stateValue: lane.terminals.tripped, status: "done", context };
 		}
 	}
-	if (active === undefined) return {stateValue: lane.terminals.complete, status: "done", context};
+	if (active === undefined) return { stateValue: lane.terminals.complete, status: "done", context };
 
 	const stateValue: Record<string, Record<string, string> | string> = {
 		[active.name]: Object.fromEntries(
@@ -944,7 +950,7 @@ export const deriveStatus = (
 	for (const phase of lane.phases.slice(lane.phases.indexOf(active) + 1)) {
 		stateValue[phase.name] = "waiting";
 	}
-	return {stateValue, status: "active", context};
+	return { stateValue, status: "active", context };
 };
 
 /**
@@ -964,13 +970,13 @@ export const deriveStatus = (
  * alone. A machine that renames its events or its states answers both off itself.
  */
 export type Walk =
-	| {readonly _tag: "Walks"; readonly next: string}
+	| { readonly _tag: "Walks"; readonly next: string }
 	/** The task or its folded state could not be read — nothing here answers the walk question. */
-	| {readonly _tag: "Unreadable"; readonly why: string}
+	| { readonly _tag: "Unreadable"; readonly why: string }
 	/** No state of this task's machine holds a cell for the name — it is no event of this lane. */
-	| {readonly _tag: "Unknown"; readonly why: string}
+	| { readonly _tag: "Unknown"; readonly why: string }
 	/** The machine knows the event; the leaf the task stands in holds no cell for it. */
-	| {readonly _tag: "NoCell"; readonly why: string};
+	| { readonly _tag: "NoCell"; readonly why: string };
 
 const listed = (names: ReadonlyArray<string>): string =>
 	names.length === 0 ? "nothing" : [...names].sort().join("/");
@@ -1000,9 +1006,9 @@ export const walkOf = (
 	try {
 		const [next] = applyCell<TaskState, LaneMsg, never>(task.machine, from, {
 			type: event,
-			...(classes === null ? {} : {classes}),
+			...(classes === null ? {} : { classes }),
 		});
-		return {_tag: "Walks", next: next.type};
+		return { _tag: "Walks", next: next.type };
 	} catch (error) {
 		if (error instanceof NoCellError) {
 			return {
@@ -1042,8 +1048,8 @@ export const nextLeaf = (
 };
 
 export type TaskResolution =
-	| {readonly _tag: "Task"; readonly taskId: string}
-	| {readonly _tag: "Unresolved"; readonly reason: string};
+	| { readonly _tag: "Task"; readonly taskId: string }
+	| { readonly _tag: "Unresolved"; readonly reason: string };
 
 /** `--task` may be omitted exactly when the machine leaves no choice. */
 export const resolveTask = (lane: CompiledLane, requested: string | null): TaskResolution => {
@@ -1054,11 +1060,11 @@ export const resolveTask = (lane: CompiledLane, requested: string | null): TaskR
 					_tag: "Unresolved",
 					reason: `task "${requested}" is not in this lane's machine (tasks: ${known.join(", ")})`,
 				}
-			: {_tag: "Task", taskId: requested};
+			: { _tag: "Task", taskId: requested };
 	}
 	const only = known.length === 1 ? known[0] : undefined;
 	return only !== undefined
-		? {_tag: "Task", taskId: only}
+		? { _tag: "Task", taskId: only }
 		: {
 				_tag: "Unresolved",
 				reason: `--task is required on a lane with ${known.length} tasks (${known.join(", ")})`,
@@ -1092,7 +1098,7 @@ export type ApplyResult =
 			readonly kind: "event" | "unbudgeted-resume";
 	  };
 
-const refuseEvent = (reason: string): ApplyResult => ({_tag: "Refused", reason, kind: "event"});
+const refuseEvent = (reason: string): ApplyResult => ({ _tag: "Refused", reason, kind: "event" });
 
 /**
  * Validate and apply one operator event, producing the entry to append. Every refusal is decided
@@ -1184,11 +1190,11 @@ export const applyEvent = (
 	try {
 		[next] = applyCell<TaskState, LaneMsg, never>(task.machine, from, {
 			type: event,
-			...(classes === null ? {} : {classes}),
-			...(waitGrant === null ? {} : {waitGrant}),
-			...(partial === null ? {} : {partial}),
-			...(diagnosis === null ? {} : {diagnosis}),
-			...(cause === null ? {} : {cause}),
+			...(classes === null ? {} : { classes }),
+			...(waitGrant === null ? {} : { waitGrant }),
+			...(partial === null ? {} : { partial }),
+			...(diagnosis === null ? {} : { diagnosis }),
+			...(cause === null ? {} : { cause }),
 		});
 	} catch (error) {
 		if (error instanceof NoCellError) {
@@ -1229,14 +1235,14 @@ export const applyEvent = (
 		task: taskId,
 		event: `${taskId.toUpperCase()}.${event}`,
 		at,
-		...(classes === null ? {} : {classes}),
-		...(waitGrant === null ? {} : {waitGrant}),
-		...(partial === null ? {} : {partial}),
-		...(diagnosis === null ? {} : {diagnosis}),
+		...(classes === null ? {} : { classes }),
+		...(waitGrant === null ? {} : { waitGrant }),
+		...(partial === null ? {} : { partial }),
+		...(diagnosis === null ? {} : { diagnosis }),
 	};
-	const applied = {...states, [taskId]: next};
+	const applied = { ...states, [taskId]: next };
 	const current = deriveStatus(lane, applied);
-	return {_tag: "Applied", entry, previous, current, states: applied};
+	return { _tag: "Applied", entry, previous, current, states: applied };
 };
 
 export type SettlementResult =
@@ -1246,7 +1252,7 @@ export type SettlementResult =
 			readonly previous: LaneStatus;
 			readonly current: LaneStatus;
 	  }
-	| {readonly _tag: "Refused"; readonly reason: string};
+	| { readonly _tag: "Refused"; readonly reason: string };
 
 /** The evidence a board-proven terminal's line carries, beside the outcome the board stated. */
 export interface SettlementEvidence {
@@ -1310,10 +1316,10 @@ export const applyBoardTerminal = (
 	}
 	let next: TaskState;
 	try {
-		[next] = applyCell<TaskState, LaneMsg, never>(task.machine, from, {type: event});
+		[next] = applyCell<TaskState, LaneMsg, never>(task.machine, from, { type: event });
 	} catch (error) {
 		if (error instanceof NoCellError) {
-			return {_tag: "Refused", reason: `${error.name}: ${error.message}`};
+			return { _tag: "Refused", reason: `${error.name}: ${error.message}` };
 		}
 		throw error;
 	}
@@ -1324,20 +1330,20 @@ export const applyBoardTerminal = (
 			event: `${taskId.toUpperCase()}.${event}`,
 			at,
 			outcome: evidence.outcome,
-			...(evidence.landed === undefined ? {} : {landed: evidence.landed}),
-			...(evidence.sha === undefined ? {} : {sha: evidence.sha}),
-			...(evidence.assertedBy === undefined ? {} : {assertedBy: evidence.assertedBy}),
+			...(evidence.landed === undefined ? {} : { landed: evidence.landed }),
+			...(evidence.sha === undefined ? {} : { sha: evidence.sha }),
+			...(evidence.assertedBy === undefined ? {} : { assertedBy: evidence.assertedBy }),
 		},
 		previous,
-		current: deriveStatus(lane, {...states, [taskId]: next}),
+		current: deriveStatus(lane, { ...states, [taskId]: next }),
 	};
 };
 
 export type ClearanceResult =
-	| {readonly _tag: "Appendable"; readonly entry: LogEntry}
+	| { readonly _tag: "Appendable"; readonly entry: LogEntry }
 	/** The log already carries this round for this task — set semantics, so nothing to append. */
-	| {readonly _tag: "AlreadyHeld"; readonly round: number}
-	| {readonly _tag: "Refused"; readonly reason: string};
+	| { readonly _tag: "AlreadyHeld"; readonly round: number }
+	| { readonly _tag: "Refused"; readonly reason: string };
 
 /**
  * The entry a recorded clearance appends — the local half of the grant protocol, kept beside
@@ -1368,13 +1374,13 @@ export const applyClearance = (
 		};
 	}
 	if (!Number.isInteger(round)) {
-		return {_tag: "Refused", reason: `round ${round} is not a whole round to clear`};
+		return { _tag: "Refused", reason: `round ${round} is not a whole round to clear` };
 	}
 	const held = entries.some(
 		(entry) =>
 			entry.task === taskId && bareEvent(entry.event) === CLEARED_EVENT && entry.round === round,
 	);
-	if (held) return {_tag: "AlreadyHeld", round};
+	if (held) return { _tag: "AlreadyHeld", round };
 	return {
 		_tag: "Appendable",
 		entry: {
@@ -1382,7 +1388,7 @@ export const applyClearance = (
 			event: `${taskId.toUpperCase()}.${CLEARED_EVENT}`,
 			at,
 			round,
-			...(rationale === null ? {} : {rationale}),
+			...(rationale === null ? {} : { rationale }),
 		},
 	};
 };

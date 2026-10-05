@@ -1,9 +1,9 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeSeams, type Scripted} from "../fakes.test-support.ts";
-import {ANSWER, FAILED} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {runProvenance} from "./provenance-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeSeams, type Scripted } from "../fakes.test-support.ts";
+import { ANSWER, FAILED } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { runProvenance } from "./provenance-verb.ts";
 
 const ISSUE = /GET .*\/repos\/o\/r\/issues\/4312$/;
 
@@ -11,7 +11,7 @@ const options = {
 	issue: 4312,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 };
 
 /** A placeholder operator set — these tests measure the mechanism, never a real login. */
@@ -28,14 +28,14 @@ const issueJson = (body: string, author = "someone-else") =>
 		state: "open",
 		labels: [],
 		body,
-		user: {login: author},
+		user: { login: author },
 	});
 
-const served = (body: string) => ({status: 200, body});
+const served = (body: string) => ({ status: 200, body });
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
-		Effect.provide(runProvenance({...options, ...overrides}), fakeSeams(script).layer),
+		Effect.provide(runProvenance({ ...options, ...overrides }), fakeSeams(script).layer),
 	);
 
 const AGENT_BODY = "What I observed.\n\n---\n<sub>Filed by an agent · 2026-08-03T05:47:38Z</sub>\n";
@@ -61,21 +61,21 @@ describe("runProvenance", () => {
 	});
 
 	it("REFUSES an unreadable issue as UNKNOWN — never `human`, which a kill acts on", async () => {
-		const out = await run([[ISSUE, {status: 502, body: "{}"}]]);
+		const out = await run([[ISSUE, { status: 502, body: "{}" }]]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain("UNKNOWN");
 	});
 
 	it("refuses a PROVEN-absent issue on the zero-scope code, apart from the unknown one", async () => {
-		const out = await run([[ISSUE, {status: 404, body: '{"message":"Not Found"}'}]]);
+		const out = await run([[ISSUE, { status: 404, body: '{"message":"Not Found"}' }]]);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stdout).toBe("");
 	});
 
 	it("puts the --json payload on stdout with the marker and the reason", async () => {
-		const out = await run([[ISSUE, served(issueJson(AGENT_BODY))]], {json: true});
-		expect(JSON.parse(out.stdout)).toMatchObject({outcome: "agent", marker: true});
+		const out = await run([[ISSUE, served(issueJson(AGENT_BODY))]], { json: true });
+		expect(JSON.parse(out.stdout)).toMatchObject({ outcome: "agent", marker: true });
 		expect(out.stderr.join("")).not.toContain('"outcome"');
 	});
 
@@ -117,7 +117,7 @@ describe("runProvenance", () => {
 	});
 
 	it("refuses when no target repo resolves", async () => {
-		const out = await run([[/git remote get-url/, errOut("no origin")]], {env: {}});
+		const out = await run([[/git remote get-url/, errOut("no origin")]], { env: {} });
 		expect(out.code).toBe(FAILED);
 		expect(out.stderr.at(-1)).toContain("CLAUDE_PIPELINE_REPO");
 	});

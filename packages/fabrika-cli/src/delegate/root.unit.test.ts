@@ -1,6 +1,6 @@
-import {Effect, Path} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs} from "../fakes.test-support.ts";
+import { Effect, Path } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs } from "../fakes.test-support.ts";
 import {
 	chooseRoot,
 	discoverRepoRoot,
@@ -90,9 +90,9 @@ describe("chooseRoot", () => {
 	it("prefers the highest ancestor whose globs claim the closest package", () => {
 		expect(
 			rootOf([
-				{dir: "/repo/packages/fabrika-cli", globs: []},
-				{dir: "/repo", globs: ["packages/*"]},
-				{dir: "/", globs: []},
+				{ dir: "/repo/packages/fabrika-cli", globs: [] },
+				{ dir: "/repo", globs: ["packages/*"] },
+				{ dir: "/", globs: [] },
 			]),
 		).toBe("/repo");
 	});
@@ -100,8 +100,8 @@ describe("chooseRoot", () => {
 	it("falls back to the closest package when no ancestor claims it", () => {
 		expect(
 			rootOf([
-				{dir: "/elsewhere/thing", globs: []},
-				{dir: "/elsewhere", globs: ["packages/*"]},
+				{ dir: "/elsewhere/thing", globs: [] },
+				{ dir: "/elsewhere", globs: ["packages/*"] },
 			]),
 		).toBe("/elsewhere/thing");
 	});
@@ -127,13 +127,13 @@ describe("discoverRepoRoot", () => {
 	});
 
 	it("answers undefined outside any repo — that case is silent, deliberately", async () => {
-		const fs = fakeFs({files: {}});
+		const fs = fakeFs({ files: {} });
 		const root = await run(discoverRepoRoot("/tmp/nowhere").pipe(Effect.provide(fs.layer)));
 		expect(root).toBeUndefined();
 	});
 
 	it("distinguishes a repo root from an unreadable ancestor — a failed probe FAILS", async () => {
-		const fs = fakeFs({files: {}, unprobeable: ["/repo/deep/package.json"]});
+		const fs = fakeFs({ files: {}, unprobeable: ["/repo/deep/package.json"] });
 		const outcome = await run(
 			discoverRepoRoot("/repo/deep").pipe(Effect.provide(fs.layer), Effect.result),
 		);
@@ -160,15 +160,15 @@ describe("originOf", () => {
 	});
 
 	it("names the checkout a source copy belongs to", async () => {
-		const fs = fakeFs({files: checkout("/repo")});
+		const fs = fakeFs({ files: checkout("/repo") });
 		const origin = await run(originOf("/repo/packages/fabrika-cli").pipe(Effect.provide(fs.layer)));
-		expect(origin).toEqual({_tag: "checkout", root: "/repo"});
+		expect(origin).toEqual({ _tag: "checkout", root: "/repo" });
 	});
 
 	it("never reports a package as its OWN checkout — the walk starts above it", async () => {
-		const fs = fakeFs({files: {"/loose/thing/package.json": '{"name":"thing"}'}});
+		const fs = fakeFs({ files: { "/loose/thing/package.json": '{"name":"thing"}' } });
 		const origin = await run(originOf("/loose/thing").pipe(Effect.provide(fs.layer)));
-		expect(origin).toEqual({_tag: "no-checkout"});
+		expect(origin).toEqual({ _tag: "no-checkout" });
 	});
 
 	/**
@@ -188,11 +188,11 @@ describe("originOf", () => {
 				Effect.provide(fs.layer),
 			),
 		);
-		expect(origin).toEqual({_tag: "no-checkout"});
+		expect(origin).toEqual({ _tag: "no-checkout" });
 	});
 
 	it("FAILS rather than answering no-checkout when an ancestor cannot be probed", async () => {
-		const fs = fakeFs({files: {}, unprobeable: ["/repo/packages/package.json"]});
+		const fs = fakeFs({ files: {}, unprobeable: ["/repo/packages/package.json"] });
 		const outcome = await run(
 			originOf("/repo/packages/fabrika-cli").pipe(Effect.provide(fs.layer), Effect.result),
 		);

@@ -26,9 +26,9 @@
  * cannot be one the PR guard refuses.
  */
 
-import {classificationIn, closingTargets, proseOf} from "../build/pr-body.ts";
-import {conventionalTitleOf} from "../build/pr-title.ts";
-import {PITCH_FIELDS, pitchSection, SUCCESS_FIELD} from "../guard/pitch.ts";
+import { classificationIn, closingTargets, proseOf } from "../build/pr-body.ts";
+import { conventionalTitleOf } from "../build/pr-title.ts";
+import { PITCH_FIELDS, pitchSection, SUCCESS_FIELD } from "../guard/pitch.ts";
 
 /** The heading the epic reviewer and the founder both read the section under. */
 export const ABOUT_HEADING = "## About this epic";
@@ -176,11 +176,11 @@ const quoted = (text: string): string =>
 
 export type AboutRead =
 	/** The section, ready to interpolate. */
-	| {readonly _tag: "Section"; readonly text: string}
+	| { readonly _tag: "Section"; readonly text: string }
 	/** No `## Pitch`, or a pitch whose Problem paragraph is missing or empty. */
-	| {readonly _tag: "Unpitched"; readonly why: string}
+	| { readonly _tag: "Unpitched"; readonly why: string }
 	/** The assembled section is one the PR guard would refuse, and the reason is named. */
-	| {readonly _tag: "Unsafe"; readonly what: string};
+	| { readonly _tag: "Unsafe"; readonly what: string };
 
 /**
  * The epic's About section, or the one reason there is none.
@@ -208,12 +208,12 @@ export const aboutSection = (epic: number, body: string): AboutRead => {
 	// because `proseOf` would drop the block quote and with it the keyword being checked for.
 	const stray = closingTargets(lifted)[0];
 	if (stray !== undefined) {
-		return {_tag: "Unsafe", what: `a closing keyword aimed at #${stray}`};
+		return { _tag: "Unsafe", what: `a closing keyword aimed at #${stray}` };
 	}
 	// Over the assembled section, where everything lifted is quoted — so this reads whether the
 	// quoting held, not whether the epic's own sentence mentions a label.
 	const claim = classificationIn(proseOf(text));
 	return claim === null
-		? {_tag: "Section", text}
-		: {_tag: "Unsafe", what: `a ${claim} classification claim`};
+		? { _tag: "Section", text }
+		: { _tag: "Unsafe", what: `a ${claim} classification claim` };
 };

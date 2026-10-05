@@ -20,22 +20,22 @@
  * the second into the first is how an empty enumeration reads as "still running" forever.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import {isRepoAuthored} from "../review/gate-coverage.ts";
-import type {Resolution} from "./key-group.ts";
-import {type CiSurface, ciKey} from "./keys/ci.ts";
-import {resolve} from "./load.ts";
-import {loadRepoConfig} from "./working-root.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { isRepoAuthored } from "../review/gate-coverage.ts";
+import type { Resolution } from "./key-group.ts";
+import { type CiSurface, ciKey } from "./keys/ci.ts";
+import { resolve } from "./load.ts";
+import { loadRepoConfig } from "./working-root.ts";
 
 export type Producer =
 	/** At least one repo-authored workflow: the repo produces CI, whatever it has reported so far. */
-	| {readonly _tag: "Present"}
+	| { readonly _tag: "Present" }
 	/** No repo-authored workflow under the shipped default — no evidence is possible, so nothing is answered. */
-	| {readonly _tag: "Refused"; readonly reason: string}
+	| { readonly _tag: "Refused"; readonly reason: string }
 	/** No repo-authored workflow, and the repo declared `degrade`: the fact is reported, never as green. */
-	| {readonly _tag: "OptedOut"; readonly note: string}
+	| { readonly _tag: "OptedOut"; readonly note: string }
 	/** The config could not be read or did not decode — never a default, never a pass. */
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 /** `ci` as the checkout above `cwd` declares it. */
 export const resolveCi = (
@@ -60,7 +60,7 @@ export const producerFor = (
 			reason: `${verb}: cannot read \`ci\` from the repo config (${resolved.reason}) — whether ${repo} produces CI is UNKNOWN, never green.`,
 		};
 	}
-	if (producesCi(workflows)) return {_tag: "Present"};
+	if (producesCi(workflows)) return { _tag: "Present" };
 	return resolved.value.noProducer === "degrade"
 		? {
 				_tag: "OptedOut",

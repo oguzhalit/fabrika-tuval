@@ -18,11 +18,11 @@
  * The printed path is machine-local and must never reach a posted artifact — `heal-ci note` reds on
  * one (`5`), which is what makes the rule enforced rather than advisory.
  */
-import {Effect, FileSystem} from "effect";
-import {isKebabSlug} from "../build/lane.ts";
-import {sessionIdFrom, sessionIdUnset} from "../io/session-id.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {OFF_VOCABULARY} from "./codes.ts";
+import { Effect, FileSystem } from "effect";
+import { isKebabSlug } from "../build/lane.ts";
+import { sessionIdFrom, sessionIdUnset } from "../io/session-id.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { OFF_VOCABULARY } from "./codes.ts";
 
 const VERB = "heal-ci scratch";
 
@@ -45,7 +45,7 @@ export const runScratch = (
 	options: ScratchOptions,
 ): Effect.Effect<VerbOutcome, never, FileSystem.FileSystem> =>
 	Effect.gen(function* () {
-		const {pr, slug} = options;
+		const { pr, slug } = options;
 
 		if (!Number.isInteger(pr) || pr <= 0) {
 			return refuse(FAILED, `${VERB}: ${pr} is not a pull-request number.`);
@@ -73,7 +73,7 @@ export const runScratch = (
 
 		const dir = laneScratchDir(options.tmpRoot, session, pr);
 		const fs = yield* FileSystem.FileSystem;
-		const failure: string | null = yield* fs.makeDirectory(dir, {recursive: true}).pipe(
+		const failure: string | null = yield* fs.makeDirectory(dir, { recursive: true }).pipe(
 			Effect.as(null),
 			Effect.catchTag("PlatformError", (cause) => Effect.succeed(cause.message)),
 		);

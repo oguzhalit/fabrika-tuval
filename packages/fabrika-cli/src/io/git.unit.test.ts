@@ -1,7 +1,13 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, type FakeShell, fakeShell, faultingShell, okOut} from "../fakes.test-support.ts";
-import {fetchAndResolve, isObjectName, matchRemote, parseOwnerRepo, splitRemoteRef} from "./git.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, type FakeShell, fakeShell, faultingShell, okOut } from "../fakes.test-support.ts";
+import {
+	fetchAndResolve,
+	isObjectName,
+	matchRemote,
+	parseOwnerRepo,
+	splitRemoteRef,
+} from "./git.ts";
 
 const REMOTE_V = `origin\tgit@github.com:o/r.git (fetch)
 origin\tgit@github.com:o/r.git (push)
@@ -18,7 +24,7 @@ describe("isObjectName", () => {
 
 describe("splitRemoteRef", () => {
 	it("splits a configured remote's ref so the fetch names it", () => {
-		expect(splitRemoteRef("origin/main", ["origin"])).toEqual({remote: "origin", ref: "main"});
+		expect(splitRemoteRef("origin/main", ["origin"])).toEqual({ remote: "origin", ref: "main" });
 	});
 
 	it("is null for a ref naming no configured remote", () => {
@@ -77,7 +83,7 @@ describe("fetchAndResolve — fetched before it is read", () => {
 			shell([[/^git fetch/, errOut("couldn't find remote ref")]]),
 			"origin/nope",
 		);
-		expect(result).toEqual({_tag: "Failure", reason: "couldn't find remote ref"});
+		expect(result).toEqual({ _tag: "Failure", reason: "couldn't find remote ref" });
 	});
 
 	it("refuses when git answers with something that is not an object name", async () => {

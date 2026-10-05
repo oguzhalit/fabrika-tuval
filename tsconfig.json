@@ -1,0 +1,21 @@
+{
+	"compilerOptions": {
+		"target": "ES2020",
+		"module": "ESNext",
+		"lib": ["ES2025", "DOM", "DOM.Iterable"],
+		"jsx": "react-jsx",
+		"moduleResolution": "bundler",
+		"resolveJsonModule": true,
+		"allowJs": true,
+		"allowImportingTsExtensions": true,
+		"checkJs": false,
+		"strict": true,
+		"noEmit": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"skipDefaultLibCheck": true,
+		"noImplicitAny": false
+	},
+	"include": ["packages/**/*.ts", "packages/**/*.tsx", "apps/**/*.ts", "apps/**/*.tsx"],
+	"exclude": ["node_modules", "**/node_modules", "**/*.test.ts", "**/*.spec.ts"]
+}

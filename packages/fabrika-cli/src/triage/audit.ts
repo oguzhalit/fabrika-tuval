@@ -38,11 +38,11 @@ export type VerdictRow =
 	  };
 
 export type Parsed<A> =
-	| {readonly _tag: "Parsed"; readonly value: A}
-	| {readonly _tag: "Refused"; readonly reason: string};
+	| { readonly _tag: "Parsed"; readonly value: A }
+	| { readonly _tag: "Refused"; readonly reason: string };
 
-const parsed = <A>(value: A): Parsed<A> => ({_tag: "Parsed", value});
-const refused = <A>(reason: string): Parsed<A> => ({_tag: "Refused", reason});
+const parsed = <A>(value: A): Parsed<A> => ({ _tag: "Parsed", value });
+const refused = <A>(reason: string): Parsed<A> => ({ _tag: "Refused", reason });
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value);
@@ -65,7 +65,7 @@ export const parseVerdictRow = (raw: unknown): Parsed<VerdictRow> => {
 	if (unknownKey !== undefined) {
 		return refused(`a verdict row carries the unknown key \`${unknownKey}\``);
 	}
-	const {issue, verdict, clause, evidence} = raw;
+	const { issue, verdict, clause, evidence } = raw;
 	if (issue === undefined) return refused("a verdict row has no issue number");
 	if (!isIssueNumber(issue)) {
 		return refused(`a verdict row's issue is ${JSON.stringify(issue)}, not a positive integer`);
@@ -88,14 +88,14 @@ export const parseVerdictRow = (raw: unknown): Parsed<VerdictRow> => {
 				`#${issue}: ${JSON.stringify(clause)} is not a value-bar clause — one of ${VALUE_BAR_CLAUSES.join(", ")}`,
 			);
 		}
-		return parsed({issue, verdict, clause, evidence});
+		return parsed({ issue, verdict, clause, evidence });
 	}
 	if (clause !== undefined) {
 		return refused(
 			`#${issue}: a ${verdict} row names a value-bar clause, which only a KILL carries`,
 		);
 	}
-	return parsed({issue, verdict, evidence});
+	return parsed({ issue, verdict, evidence });
 };
 
 /** One reader batch: the rows it returned and the total it declared, which is the batch's checksum. */
@@ -112,7 +112,7 @@ export interface Chunk {
  */
 export const parseChunk = (name: string, raw: unknown): Parsed<Chunk> => {
 	if (!isRecord(raw)) return refused(`${name}: a chunk is not a JSON object`);
-	const {declared, rows} = raw;
+	const { declared, rows } = raw;
 	if (typeof declared !== "number" || !Number.isInteger(declared) || declared < 0) {
 		return refused(`${name}: \`declared\` is ${JSON.stringify(declared)}, not a row count`);
 	}
@@ -123,7 +123,7 @@ export const parseChunk = (name: string, raw: unknown): Parsed<Chunk> => {
 		if (one._tag === "Refused") return refused(`${name}: row ${index + 1}: ${one.reason}`);
 		decoded.push(one.value);
 	}
-	return parsed({name, declared, rows: decoded});
+	return parsed({ name, declared, rows: decoded });
 };
 
 /** One issue of the audited set. */
@@ -138,7 +138,7 @@ export interface AuditIssue {
  */
 export const parseAuditSet = (raw: unknown): Parsed<ReadonlyArray<AuditIssue>> => {
 	if (!isRecord(raw)) return refused("the input set is not a JSON object");
-	const {issues, scanned} = raw;
+	const { issues, scanned } = raw;
 	if (!Array.isArray(issues)) return refused("the input set's `issues` is not an array");
 	const decoded: AuditIssue[] = [];
 	const seen = new Set<number>();
@@ -148,7 +148,7 @@ export const parseAuditSet = (raw: unknown): Parsed<ReadonlyArray<AuditIssue>> =
 		}
 		if (seen.has(entry.number)) return refused(`the input set lists #${entry.number} twice`);
 		seen.add(entry.number);
-		decoded.push({number: entry.number, title: entry.title});
+		decoded.push({ number: entry.number, title: entry.title });
 	}
 	if (scanned !== decoded.length) {
 		return refused(
@@ -159,7 +159,7 @@ export const parseAuditSet = (raw: unknown): Parsed<ReadonlyArray<AuditIssue>> =
 };
 
 export type MergeOutcome =
-	| {readonly _tag: "Merged"; readonly rows: ReadonlyArray<VerdictRow>}
+	| { readonly _tag: "Merged"; readonly rows: ReadonlyArray<VerdictRow> }
 	| {
 			readonly _tag: "CountMismatch";
 			readonly chunks: ReadonlyArray<{
@@ -194,8 +194,8 @@ export const mergeChunks = (
 ): MergeOutcome => {
 	const miscounted = chunks
 		.filter((chunk) => chunk.rows.length !== chunk.declared)
-		.map((chunk) => ({name: chunk.name, declared: chunk.declared, actual: chunk.rows.length}));
-	if (miscounted.length > 0) return {_tag: "CountMismatch", chunks: miscounted};
+		.map((chunk) => ({ name: chunk.name, declared: chunk.declared, actual: chunk.rows.length }));
+	if (miscounted.length > 0) return { _tag: "CountMismatch", chunks: miscounted };
 
 	const seenIn = new Map<number, string[]>();
 	for (const chunk of chunks) {
@@ -204,14 +204,14 @@ export const mergeChunks = (
 	}
 	const duplicates = [...seenIn]
 		.filter(([, names]) => names.length > 1)
-		.map(([issue, names]) => ({issue, chunks: names}))
+		.map(([issue, names]) => ({ issue, chunks: names }))
 		.sort((a, b) => ascending(a.issue, b.issue));
-	if (duplicates.length > 0) return {_tag: "Duplicate", issues: duplicates};
+	if (duplicates.length > 0) return { _tag: "Duplicate", issues: duplicates };
 
 	const audited = new Set(input);
 	const missing = input.filter((issue) => !seenIn.has(issue)).sort(ascending);
 	const invented = [...seenIn.keys()].filter((issue) => !audited.has(issue)).sort(ascending);
-	if (missing.length > 0 || invented.length > 0) return {_tag: "SetMismatch", missing, invented};
+	if (missing.length > 0 || invented.length > 0) return { _tag: "SetMismatch", missing, invented };
 
 	return {
 		_tag: "Merged",
@@ -224,7 +224,7 @@ export const rowLine = (row: VerdictRow): string =>
 	[row.issue, row.verdict, row.verdict === "KILL" ? row.clause : "-", row.evidence].join("\t");
 
 export const verdictCounts = (rows: ReadonlyArray<VerdictRow>): Record<Verdict, number> => {
-	const counts: Record<Verdict, number> = {KILL: 0, DECIDE: 0, KEEP: 0};
+	const counts: Record<Verdict, number> = { KILL: 0, DECIDE: 0, KEEP: 0 };
 	for (const row of rows) counts[row.verdict] += 1;
 	return counts;
 };

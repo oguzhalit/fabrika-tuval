@@ -2,12 +2,12 @@
  * The creation lock's verdicts and its release, on a real filesystem in a temp dir. The one thing
  * injected is {@link LockHost}: which pids count as alive, and what time it is.
  */
-import {existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {NodeFileSystem} from "@effect/platform-node";
-import {Effect, FileSystem, Option} from "effect";
-import {afterAll, describe, expect, it} from "vitest";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { NodeFileSystem } from "@effect/platform-node";
+import { Effect, FileSystem, Option } from "effect";
+import { afterAll, describe, expect, it } from "vitest";
 import {
 	acquireCreationLock,
 	HOLD_HORIZON_MS,
@@ -25,7 +25,7 @@ import {
 
 const roots: string[] = [];
 afterAll(() => {
-	for (const root of roots) rmSync(root, {recursive: true, force: true});
+	for (const root of roots) rmSync(root, { recursive: true, force: true });
 });
 
 const freshLock = (): string => {
@@ -44,7 +44,7 @@ const host = (alive: ReadonlyArray<number>, now = NOW): LockHost => ({
 });
 
 const plant = (lockDir: string, holder: Holder): void => {
-	mkdirSync(lockDir, {recursive: true});
+	mkdirSync(lockDir, { recursive: true });
 	writeFileSync(join(lockDir, "holder"), stampOf(holder));
 };
 
@@ -70,14 +70,14 @@ describe("a holder's liveness", () => {
 	});
 
 	it("ends at the horizon even while its pid answers, since the harness ended that hook", () => {
-		const old = sibling({at: NOW - HOLD_HORIZON_MS - 1});
+		const old = sibling({ at: NOW - HOLD_HORIZON_MS - 1 });
 		expect(holderIsLive(old, host([777]))).toBe(false);
 	});
 
 	it("is judged by age alone on another host, whose pids name nothing here", () => {
-		expect(holderIsLive(sibling({host: "elsewhere"}), host([]))).toBe(true);
+		expect(holderIsLive(sibling({ host: "elsewhere" }), host([]))).toBe(true);
 		expect(
-			holderIsLive(sibling({host: "elsewhere", at: NOW - HOLD_HORIZON_MS - 1}), host([])),
+			holderIsLive(sibling({ host: "elsewhere", at: NOW - HOLD_HORIZON_MS - 1 }), host([])),
 		).toBe(false);
 	});
 
@@ -90,7 +90,7 @@ describe("a holder's liveness", () => {
 	it("parses only stamps this module wrote", () => {
 		expect(parseStamp(stampOf(sibling()))).toEqual(Option.some(sibling()));
 		expect(parseStamp("abc 123")).toEqual(Option.none());
-		expect(parseStamp(JSON.stringify({id: "x", pid: "7", host: "h", at: 1}))).toEqual(
+		expect(parseStamp(JSON.stringify({ id: "x", pid: "7", host: "h", at: 1 }))).toEqual(
 			Option.none(),
 		);
 	});
@@ -112,7 +112,7 @@ describe("taking the lock", () => {
 
 		const got = await withFs((fs) => acquireCreationLock(fs, lockDir, host([777]), 0));
 
-		expect(got).toEqual({_tag: "Busy", holder: Option.some(sibling())});
+		expect(got).toEqual({ _tag: "Busy", holder: Option.some(sibling()) });
 		expect(parseStamp(readFileSync(join(lockDir, "holder"), "utf8"))).toEqual(
 			Option.some(sibling()),
 		);
@@ -120,12 +120,12 @@ describe("taking the lock", () => {
 
 	it("leaves an unstamped lock alone inside the grace, and takes it after", async () => {
 		const young = freshLock();
-		mkdirSync(young, {recursive: true});
+		mkdirSync(young, { recursive: true });
 		const waited = await withFs((fs) => acquireCreationLock(fs, young, host([], Date.now()), 0));
 		expect(waited._tag).toBe("Busy");
 
 		const old = freshLock();
-		mkdirSync(old, {recursive: true});
+		mkdirSync(old, { recursive: true });
 		const later = host([], Date.now() + STAMP_GRACE_MS + 1_000);
 		const taken = await withFs((fs) => acquireCreationLock(fs, old, later, 0));
 		expect(taken._tag).toBe("Held");
@@ -148,7 +148,7 @@ describe("releasing the lock", () => {
 		plant(lockDir, sibling());
 
 		await withFs((fs) =>
-			releaseCreationLock(fs, lockDir, {id: "me", pid: 4242, host: "this-host", at: NOW}),
+			releaseCreationLock(fs, lockDir, { id: "me", pid: 4242, host: "this-host", at: NOW }),
 		);
 
 		expect(existsSync(lockDir)).toBe(true);
@@ -176,7 +176,7 @@ describe("releasing the lock", () => {
 				lockDir,
 				host([]),
 				Effect.sync(() => existsSync(lockDir)),
-				{onBusy: () => false, onUnplaceable: () => false},
+				{ onBusy: () => false, onUnplaceable: () => false },
 			),
 		);
 

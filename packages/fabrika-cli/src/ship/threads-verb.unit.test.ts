@@ -1,16 +1,16 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {ENV, pull, threadPage} from "./fixtures.test-support.ts";
-import {runThreads} from "./threads-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import { INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { ENV, pull, threadPage } from "./fixtures.test-support.ts";
+import { runThreads } from "./threads-verb.ts";
 
 const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4321$/;
 /** The thread enumeration is the GraphQL carve. */
 const GRAPHQL = /^POST https:\/\/api\.github\.com\/graphql$/;
 
 /** The PR read, served — the same canned payload the spawner era scripted. */
-const PR: HttpReply = {status: 200, body: pull().stdout};
+const PR: HttpReply = { status: 200, body: pull().stdout };
 
 /** One served thread page, as the endpoint answers it. */
 const threads = (declared: number, nodes: Parameters<typeof threadPage>[1]): HttpReply => ({
@@ -18,7 +18,7 @@ const threads = (declared: number, nodes: Parameters<typeof threadPage>[1]): Htt
 	body: threadPage(declared, nodes).stdout,
 });
 
-const options = {pr: 4321, repo: null, json: false, env: ENV};
+const options = { pr: 4321, repo: null, json: false, env: ENV };
 
 const run = (
 	script: ReadonlyArray<Scripted>,
@@ -26,11 +26,11 @@ const run = (
 	overrides: Partial<typeof options> = {},
 ) =>
 	Effect.runPromise(
-		Effect.provide(runThreads({...options, ...overrides}), fakeSeams([...script, ...http]).layer),
+		Effect.provide(runThreads({ ...options, ...overrides }), fakeSeams([...script, ...http]).layer),
 	);
 
-const bot = {login: "github-advanced-security", typename: "Bot"};
-const human = {login: "cansirin", typename: "User"};
+const bot = { login: "github-advanced-security", typename: "Bot" };
+const human = { login: "cansirin", typename: "User" };
 
 describe("runThreads", () => {
 	it("prints a proven zero rather than an empty answer", async () => {
@@ -50,7 +50,7 @@ describe("runThreads", () => {
 							id: "PRRT_kwDOLxx1",
 							path: "src/cart.ts",
 							line: 14,
-							comments: [{...bot, body: "Unused import: `Effect` is imported but never used."}],
+							comments: [{ ...bot, body: "Unused import: `Effect` is imported but never used." }],
 						},
 					]),
 				],
@@ -77,8 +77,8 @@ describe("runThreads", () => {
 							path: "src/cart.ts",
 							line: 14,
 							comments: [
-								{...bot, body: "unused import"},
-								{...human, body: "no, this matters"},
+								{ ...bot, body: "unused import" },
+								{ ...human, body: "no, this matters" },
 							],
 						},
 					]),
@@ -94,7 +94,9 @@ describe("runThreads", () => {
 			[
 				[
 					GRAPHQL,
-					threads(1, [{id: "T1", comments: [{login: "ghost", typename: "Mannequin", body: "x"}]}]),
+					threads(1, [
+						{ id: "T1", comments: [{ login: "ghost", typename: "Mannequin", body: "x" }] },
+					]),
 				],
 			],
 		);
@@ -108,8 +110,8 @@ describe("runThreads", () => {
 				[
 					GRAPHQL,
 					threads(2, [
-						{id: "T1", isResolved: true, comments: [{...bot, body: "x"}]},
-						{id: "T2", comments: [{...human, body: "y"}]},
+						{ id: "T1", isResolved: true, comments: [{ ...bot, body: "x" }] },
+						{ id: "T2", comments: [{ ...human, body: "y" }] },
 					]),
 				],
 			],
@@ -121,7 +123,7 @@ describe("runThreads", () => {
 	it("refuses a short thread enumeration on 13", async () => {
 		const out = await run(
 			[[PULL, PR]],
-			[[GRAPHQL, threads(9, [{id: "T1", comments: [{...bot, body: "x"}]}])]],
+			[[GRAPHQL, threads(9, [{ id: "T1", comments: [{ ...bot, body: "x" }] }])]],
 		);
 		expect(out.code).toBe(INCOMPLETE_SCAN);
 		expect(out.stdout).toBe("");
@@ -130,7 +132,12 @@ describe("runThreads", () => {
 	it("refuses a short COMMENT enumeration on 13 — the second pagination layer", async () => {
 		const out = await run(
 			[[PULL, PR]],
-			[[GRAPHQL, threads(1, [{id: "T1", declaredComments: 4, comments: [{...bot, body: "x"}]}])]],
+			[
+				[
+					GRAPHQL,
+					threads(1, [{ id: "T1", declaredComments: 4, comments: [{ ...bot, body: "x" }] }]),
+				],
+			],
 		);
 		expect(out.code).toBe(INCOMPLETE_SCAN);
 		expect(out.stderr.at(-1)).toContain("of 4 comments on thread T1");
@@ -139,7 +146,7 @@ describe("runThreads", () => {
 	it("refuses an unreadable payload on 11 — UNKNOWN, never zero", async () => {
 		const out = await run(
 			[[PULL, PR]],
-			[[GRAPHQL, {status: 502, body: '{"message":"Bad gateway"}'}]],
+			[[GRAPHQL, { status: 502, body: '{"message":"Bad gateway"}' }]],
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -147,7 +154,7 @@ describe("runThreads", () => {
 	});
 
 	it("refuses a PR proven absent on 7", async () => {
-		const out = await run([[PULL, {status: 404, body: '{"message":"Not Found"}'}]]);
+		const out = await run([[PULL, { status: 404, body: '{"message":"Not Found"}' }]]);
 		expect(out.code).toBe(ZERO_SCOPE);
 	});
 });

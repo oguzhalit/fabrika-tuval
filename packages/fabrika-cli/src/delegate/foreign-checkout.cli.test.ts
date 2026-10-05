@@ -7,14 +7,14 @@
  * plausible result. The unit tests decide the branch; only a spawn proves the copy on disk obeys it,
  * because the delegation's whole failure mode is that both copies print the same bytes.
  */
-import {execFileSync} from "node:child_process";
-import {mkdirSync, mkdtempSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {fileURLToPath} from "node:url";
-import {afterAll, beforeAll, describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
-import {NO_IMPLEMENTATION} from "../verb.ts";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
+import { NO_IMPLEMENTATION } from "../verb.ts";
 
 const BIN = fileURLToPath(new URL("../bin.ts", import.meta.url));
 
@@ -26,7 +26,7 @@ let consumer: string;
 beforeAll(() => {
 	consumer = mkdtempSync(join(tmpdir(), "fabrika-foreign-"));
 	const installed = join(consumer, "node_modules", "@kampus", "fabrika-cli");
-	mkdirSync(installed, {recursive: true});
+	mkdirSync(installed, { recursive: true });
 	writeFileSync(join(consumer, "package.json"), '{"name":"consumer","version":"0.0.0"}\n');
 	writeFileSync(join(installed, "bin.js"), `console.log(${JSON.stringify(IMPOSTER)});\n`);
 	writeFileSync(
@@ -35,7 +35,7 @@ beforeAll(() => {
 	);
 });
 
-afterAll(() => rmSync(consumer, {recursive: true, force: true}));
+afterAll(() => rmSync(consumer, { recursive: true, force: true }));
 
 const invokeFromConsumer = (...args: ReadonlyArray<string>) => {
 	try {
@@ -44,10 +44,14 @@ const invokeFromConsumer = (...args: ReadonlyArray<string>) => {
 			encoding: "utf8",
 			stdio: ["ignore", "pipe", "pipe"],
 		});
-		return {code: 0, stdout, stderr: ""};
+		return { code: 0, stdout, stderr: "" };
 	} catch (err) {
-		const failure = err as {status?: number; stdout?: string; stderr?: string};
-		return {code: failure.status ?? -1, stdout: failure.stdout ?? "", stderr: failure.stderr ?? ""};
+		const failure = err as { status?: number; stdout?: string; stderr?: string };
+		return {
+			code: failure.status ?? -1,
+			stdout: failure.stdout ?? "",
+			stderr: failure.stderr ?? "",
+		};
 	}
 };
 

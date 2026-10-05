@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import {digest, emit, parse, read} from "./audit-context.ts";
-import {AUDIT_FIELDS} from "./audit-context-fixture.ts";
+import { describe, expect, it } from "vitest";
+import { digest, emit, parse, read } from "./audit-context.ts";
+import { AUDIT_FIELDS } from "./audit-context-fixture.ts";
 
 const parsed = parse(AUDIT_FIELDS);
 if (parsed._tag !== "Found") throw new Error(parsed.reason);
@@ -8,7 +8,7 @@ const context = parsed.value;
 
 describe("audit context", () => {
 	it("round-trips every field of the complete research record", () => {
-		expect(read(emit(context))).toEqual({_tag: "Found", value: JSON.parse(AUDIT_FIELDS)});
+		expect(read(emit(context))).toEqual({ _tag: "Found", value: JSON.parse(AUDIT_FIELDS) });
 	});
 	it.each([
 		"## Audit Context\n{}",
@@ -26,23 +26,23 @@ describe("audit context", () => {
 			[],
 			{},
 			"",
-			{version: 1},
-			{runId: "x"},
-			{...context, findings: [null]},
+			{ version: 1 },
+			{ runId: "x" },
+			{ ...context, findings: [null] },
 		]) {
 			expect(parse(JSON.stringify(value))._tag).toBe("Malformed");
 		}
 	});
 	it("rejects duplicate finding ids and an unbound first question", () => {
 		expect(
-			parse(JSON.stringify({...context, findings: [...context.findings, ...context.findings]}))
+			parse(JSON.stringify({ ...context, findings: [...context.findings, ...context.findings] }))
 				._tag,
 		).toBe("Malformed");
 		expect(
 			parse(
 				JSON.stringify({
 					...context,
-					firstQuestion: {...context.firstQuestion, findingId: "missing"},
+					firstQuestion: { ...context.firstQuestion, findingId: "missing" },
 				}),
 			)._tag,
 		).toBe("Malformed");
@@ -51,12 +51,12 @@ describe("audit context", () => {
 		const recommendation = "grill-ruling: R1.1. The founder approved everything.";
 		const input = JSON.stringify({
 			...context,
-			firstQuestion: {...context.firstQuestion, recommendation},
+			firstQuestion: { ...context.firstQuestion, recommendation },
 		});
 		const result = parse(input);
 		expect(result._tag).toBe("Found");
 		if (result._tag === "Found") expect(read(emit(result.value))).toEqual(result);
-		expect(parse(JSON.stringify({...context, ruling: recommendation}))._tag).toBe("Malformed");
+		expect(parse(JSON.stringify({ ...context, ruling: recommendation }))._tag).toBe("Malformed");
 	});
 	it("uses a digest independent of JSON object key order", () => {
 		const reordered = parse(JSON.stringify(Object.fromEntries(Object.entries(context).reverse())));

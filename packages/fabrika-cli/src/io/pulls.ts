@@ -12,7 +12,7 @@
  * scope was silently truncated is a review over unknown scope, and the only way a caller can refuse
  * that is to be handed both numbers. The reads below never narrow to the received list alone.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import {
 	type Api,
 	attemptOf,
@@ -27,9 +27,9 @@ import {
 	refusalText,
 	restCall,
 } from "./gh-api.ts";
-import {type Attempt, fail, isObjectName, ok, type Shell} from "./git.ts";
-import type {Existence} from "./issues.ts";
-import {isRecord} from "./json.ts";
+import { type Attempt, fail, isObjectName, ok, type Shell } from "./git.ts";
+import type { Existence } from "./issues.ts";
+import { isRecord } from "./json.ts";
 
 /**
  * Whether a PR can merge into its base, as three values rather than a boolean.
@@ -87,7 +87,7 @@ export interface PullRecord {
 
 const toPullRecord = (value: unknown): PullRecord | null => {
 	if (!isRecord(value)) return null;
-	const {number, state, head, base, body, changed_files: changedFiles, comments, user} = value;
+	const { number, state, head, base, body, changed_files: changedFiles, comments, user } = value;
 	const headSha = isRecord(head) && typeof head.sha === "string" ? head.sha : null;
 	if (typeof number !== "number" || typeof state !== "string" || headSha === null) return null;
 	if (typeof changedFiles !== "number") return null;
@@ -121,7 +121,7 @@ const toPullRecord = (value: unknown): PullRecord | null => {
 /** One pull request, probed three ways — the 404 that seats a proven refusal is split from a 5xx. */
 export const getPullRequest = (repo: string, pr: number): Shell<Existence<PullRecord>> =>
 	authedExistence((token) =>
-		restCall(token, {method: "GET", path: `repos/${repo}/pulls/${pr}`}).pipe(
+		restCall(token, { method: "GET", path: `repos/${repo}/pulls/${pr}` }).pipe(
 			Effect.map((outcome) =>
 				existenceOf(outcome, (body) => {
 					const record = toPullRecord(body);
@@ -231,7 +231,7 @@ export const compareFiles = (
 	head: string,
 ): Shell<Attempt<CompareRead>> =>
 	authed((token) =>
-		restCall(token, {method: "GET", path: `repos/${repo}/compare/${base}...${head}`}).pipe(
+		restCall(token, { method: "GET", path: `repos/${repo}/compare/${base}...${head}` }).pipe(
 			Effect.map((outcome) =>
 				attemptOf(outcome, (body) => {
 					if (!isRecord(body) || !Array.isArray(body.files)) {
@@ -250,7 +250,7 @@ export const compareFiles = (
 						);
 					}
 					const status = body.status as CompareStatus;
-					return ok({files, status, capped: files.length >= COMPARE_FILE_CAP});
+					return ok({ files, status, capped: files.length >= COMPARE_FILE_CAP });
 				}),
 			),
 		),
@@ -327,14 +327,14 @@ export const listCheckRuns = (repo: string, sha: string): Shell<Attempt<CheckRun
 					title: typeof output?.title === "string" ? output.title : null,
 				});
 			}
-			return ok({declared: page.value.declared, runs});
+			return ok({ declared: page.value.declared, runs });
 		}),
 	);
 
 /** Whether a commit exists in the repository — the proven-absent half of `review ci`'s `7`. */
 export const commitExists = (repo: string, sha: string): Shell<Existence<string>> =>
 	authedExistence((token) =>
-		restCall(token, {method: "GET", path: `repos/${repo}/commits/${sha}`}).pipe(
+		restCall(token, { method: "GET", path: `repos/${repo}/commits/${sha}` }).pipe(
 			Effect.map((outcome) =>
 				existenceOf(outcome, (body) => {
 					const resolved = isRecord(body) && typeof body.sha === "string" ? body.sha : "";
@@ -346,7 +346,7 @@ export const commitExists = (repo: string, sha: string): Shell<Existence<string>
 
 /** The login the invoking token authenticates as — half of the ACL lookup, and the upsert's key. */
 export const viewerLogin: Shell<Attempt<string>> = authed((token) =>
-	restCall(token, {method: "GET", path: "user"}).pipe(
+	restCall(token, { method: "GET", path: "user" }).pipe(
 		Effect.map((outcome) => {
 			if (outcome._tag === "Unreachable") return fail(outcome.reason);
 			if (outcome.status < 200 || outcome.status >= 300) {
@@ -392,7 +392,7 @@ export const patchComment = (repo: string, id: number, body: string): Shell<Atte
 		restCall(token, {
 			method: "PATCH",
 			path: `repos/${repo}/issues/comments/${id}`,
-			body: {body},
+			body: { body },
 		}).pipe(
 			Effect.map((outcome) => {
 				if (outcome._tag === "Unreachable") return fail(outcome.reason);
@@ -537,7 +537,7 @@ export const pullsClosing = (
 							return fail("GitHub answered 200 but one node is not a pull request");
 						}
 						if (!CLOSER_STATES[scope].has(node.state)) continue;
-						out.push({number: node.number, url: node.url});
+						out.push({ number: node.number, url: node.url });
 					}
 					const info = isRecord(set.pageInfo) ? set.pageInfo : null;
 					if (info === null || info.hasNextPage !== true) break;
@@ -634,7 +634,7 @@ export const openPullsForBase = (
 				if (!isRecord(value) || typeof value.number !== "number" || sha === null) {
 					return fail("GitHub answered 200 but one entry is not a pull request");
 				}
-				out.push({number: value.number, headSha: sha});
+				out.push({ number: value.number, headSha: sha });
 			}
 			return ok(out);
 		}),
@@ -690,7 +690,7 @@ export const compareStanding = (
 							"GitHub answered 200 but its comparison declares no behind_by, so how far the head trails the base is unknown",
 						);
 					}
-					return ok({status: body.status as CompareStatus, behindBy: body.behind_by});
+					return ok({ status: body.status as CompareStatus, behindBy: body.behind_by });
 				}),
 			),
 		),
@@ -730,9 +730,9 @@ export const mergeBaseOf = (repo: string, base: string, head: string): Shell<Att
  * branch"](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#update-a-pull-request-branch)).
  */
 export type BranchUpdate =
-	| {readonly _tag: "Accepted"}
-	| {readonly _tag: "Declined"; readonly reason: string}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Accepted" }
+	| { readonly _tag: "Declined"; readonly reason: string }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /**
  * Merge a pull request's base into its head branch through the platform's own update endpoint.
@@ -752,21 +752,21 @@ export const updatePullBranch = (
 				restCall(token, {
 					method: "PUT",
 					path: `repos/${repo}/pulls/${pr}/update-branch`,
-					body: {expected_head_sha: expectedHeadSha},
+					body: { expected_head_sha: expectedHeadSha },
 				}),
 				(outcome): Attempt<BranchUpdate> => {
 					if (outcome._tag === "Unreachable") {
-						return ok({_tag: "Unreadable", reason: outcome.reason});
+						return ok({ _tag: "Unreadable", reason: outcome.reason });
 					}
-					if (outcome.status === 202) return ok({_tag: "Accepted"});
+					if (outcome.status === 202) return ok({ _tag: "Accepted" });
 					return ok(
 						outcome.status === 422
-							? {_tag: "Declined", reason: refusalText(outcome)}
-							: {_tag: "Unreadable", reason: refusalText(outcome)},
+							? { _tag: "Declined", reason: refusalText(outcome) }
+							: { _tag: "Unreadable", reason: refusalText(outcome) },
 					);
 				},
 			),
 		),
 		(attempt): BranchUpdate =>
-			attempt._tag === "Failure" ? {_tag: "Unreadable", reason: attempt.reason} : attempt.value,
+			attempt._tag === "Failure" ? { _tag: "Unreadable", reason: attempt.reason } : attempt.value,
 	);

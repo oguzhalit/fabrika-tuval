@@ -10,15 +10,15 @@
  * than no answer at all.
  */
 
-import {Effect} from "effect";
-import type {CampaignRow} from "../build/scope-admission.ts";
-import {writeFile} from "../io/fs.ts";
-import {resolveRepo} from "../io/issues.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {CITATION_GRAMMAR, readCitation} from "./citation.ts";
-import {AUTHORITY_UNKNOWN, DUPLICATE_ROW, READBACK_MISMATCH, WRITE_UNKNOWN} from "./codes.ts";
-import {type CampaignEffect, locateRoadmap, readRoadmap, runTrace} from "./guards.ts";
-import {appendRow, nameFitsCell, rowLine} from "./table.ts";
+import { Effect } from "effect";
+import type { CampaignRow } from "../build/scope-admission.ts";
+import { writeFile } from "../io/fs.ts";
+import { resolveRepo } from "../io/issues.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { CITATION_GRAMMAR, readCitation } from "./citation.ts";
+import { AUTHORITY_UNKNOWN, DUPLICATE_ROW, READBACK_MISMATCH, WRITE_UNKNOWN } from "./codes.ts";
+import { type CampaignEffect, locateRoadmap, readRoadmap, runTrace } from "./guards.ts";
+import { appendRow, nameFitsCell, rowLine } from "./table.ts";
 
 export interface OpenOptions {
 	readonly name: string;
@@ -36,7 +36,7 @@ const NOTHING = "NOTHING was written.";
 
 export const runOpen = (options: OpenOptions): CampaignEffect<VerbOutcome> =>
 	Effect.gen(function* () {
-		const {milestone} = options;
+		const { milestone } = options;
 		// Trimmed once, here, so the name the duplicate check compares is the name the row is written
 		// with and the name it reads back as — cells arrive trimmed from the parse, so an untrimmed
 		// one clears the check and appends a second row nothing can select afterwards.
@@ -73,7 +73,7 @@ export const runOpen = (options: OpenOptions): CampaignEffect<VerbOutcome> =>
 
 		const located = yield* locateRoadmap(VERB, options.cwd, options.file);
 		if (located._tag === "Refused") return located.outcome;
-		const {display, path} = located.located;
+		const { display, path } = located.located;
 
 		const read = yield* readRoadmap(VERB, located.located, "nothing was written");
 		if (read._tag === "Refused") return read.outcome;
@@ -134,4 +134,4 @@ export const runOpen = (options: OpenOptions): CampaignEffect<VerbOutcome> =>
 	});
 
 const rendered = (row: CampaignRow, file: string, json: boolean): string =>
-	json ? `${JSON.stringify({row, file})}\n` : `${rowLine(row)}\n`;
+	json ? `${JSON.stringify({ row, file })}\n` : `${rowLine(row)}\n`;

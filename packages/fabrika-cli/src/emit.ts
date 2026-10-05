@@ -12,8 +12,8 @@
  * process returns rather than whatever the runtime would have inferred. `process.exitCode` is set
  * ahead of the writes so a stream that never reports a flush still lands on that same code.
  */
-import {Effect} from "effect";
-import type {VerbOutcome} from "./verb.ts";
+import { Effect } from "effect";
+import type { VerbOutcome } from "./verb.ts";
 
 // Declared `void` rather than the `never` this actually is: an `Effect<never>` yielded without
 // `return` is what effect's `missingReturnYieldStar` rule reds on, and every adapter's tail is a

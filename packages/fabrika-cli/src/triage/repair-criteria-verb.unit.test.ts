@@ -1,6 +1,6 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
 import {
 	PRECONDITION_UNKNOWN,
 	READBACK_MISMATCH,
@@ -8,20 +8,23 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {runRepairCriteria} from "./repair-criteria-verb.ts";
+import { runRepairCriteria } from "./repair-criteria-verb.ts";
 
 const READ = /GET .*\/repos\/o\/r\/issues\/5726$/;
 const PATCH = /PATCH .*\/repos\/o\/r\/issues\/5726$/;
 const LIST = /GET .*\/repos\/o\/r\/issues\?state=open/;
 const COMMENT = /POST .*\/repos\/o\/r\/issues\/5726\/comments$/;
-const COMMENTED: HttpReply = {status: 201, body: '{"id":1,"html_url":"https://example.test/c/1"}'};
+const COMMENTED: HttpReply = {
+	status: 201,
+	body: '{"id":1,"html_url":"https://example.test/c/1"}',
+};
 
-const ACCEPTED: HttpReply = {status: 200, body: "{}"};
-const NOT_FOUND: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
-const UNREADABLE: HttpReply = {status: 502, body: "{}"};
-const WRITE_FAILED: HttpReply = {status: 500, body: "{}"};
+const ACCEPTED: HttpReply = { status: 200, body: "{}" };
+const NOT_FOUND: HttpReply = { status: 404, body: '{"message":"Not Found"}' };
+const UNREADABLE: HttpReply = { status: 502, body: "{}" };
+const WRITE_FAILED: HttpReply = { status: 500, body: "{}" };
 
-const served = (value: unknown): HttpReply => ({status: 200, body: JSON.stringify(value)});
+const served = (value: unknown): HttpReply => ({ status: 200, body: JSON.stringify(value) });
 
 /** What one matching request carried as its JSON body — where the text now travels. */
 const bodyFor = (seams: ReturnType<typeof fakeSeams>, pattern: RegExp): string => {
@@ -53,12 +56,12 @@ const options = {
 	dryRun: false,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 };
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
-		Effect.provide(runRepairCriteria({...options, ...overrides}), fakeSeams(script).layer),
+		Effect.provide(runRepairCriteria({ ...options, ...overrides }), fakeSeams(script).layer),
 	);
 
 describe("runRepairCriteria — one issue", () => {
@@ -128,8 +131,8 @@ describe("runRepairCriteria — one issue", () => {
 	});
 
 	it("emits the record on stdout with --json", async () => {
-		const outcome = await run([[READ, issue(REPAIRED)]], {json: true});
-		expect(JSON.parse(outcome.stdout)).toEqual({outcome: "conforming", number: 5726});
+		const outcome = await run([[READ, issue(REPAIRED)]], { json: true });
+		expect(JSON.parse(outcome.stdout)).toEqual({ outcome: "conforming", number: 5726 });
 	});
 
 	it("refuses an absent issue on 7, an unreadable one on 11", async () => {
@@ -138,10 +141,10 @@ describe("runRepairCriteria — one issue", () => {
 	});
 
 	it("refuses a pull request and a closed issue on 7 — neither carries a gradeable contract", async () => {
-		const pr = await run([[READ, issue(DRIFTED, {pull_request: {url: "x"}})]]);
+		const pr = await run([[READ, issue(DRIFTED, { pull_request: { url: "x" } })]]);
 		expect(pr.code).toBe(ZERO_SCOPE);
 		expect(pr.stderr.at(-1)).toContain("pull request");
-		const closed = await run([[READ, issue(DRIFTED, {state: "closed"})]]);
+		const closed = await run([[READ, issue(DRIFTED, { state: "closed" })]]);
 		expect(closed.code).toBe(ZERO_SCOPE);
 	});
 
@@ -174,7 +177,7 @@ describe("runRepairCriteria — one issue", () => {
 	it("answers would-repair under --dry-run: the plan on stdout, no PATCH and no comment", async () => {
 		const shell = fakeSeams([[READ, issue(DRIFTED)]]);
 		const outcome = await Effect.runPromise(
-			Effect.provide(runRepairCriteria({...options, dryRun: true}), shell.layer),
+			Effect.provide(runRepairCriteria({ ...options, dryRun: true }), shell.layer),
 		);
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toBe("would-repair\t5726\n");
@@ -183,8 +186,8 @@ describe("runRepairCriteria — one issue", () => {
 	});
 
 	it("refuses usage that names neither or both targets, before reading anything", async () => {
-		expect((await run([], {issue: null, sweep: false})).code).toBe(1);
-		expect((await run([], {issue: 5726, sweep: true})).code).toBe(1);
+		expect((await run([], { issue: null, sweep: false })).code).toBe(1);
+		expect((await run([], { issue: 5726, sweep: true })).code).toBe(1);
 	});
 });
 
@@ -194,7 +197,7 @@ describe("runRepairCriteria — the sweep", () => {
 		record(2, REPAIRED),
 		record(1, DRIFTED.replace("Intro.", "First.")),
 		record(4, `## Acceptance criterias\n\n${ITEMS}`),
-		record(9, DRIFTED, {pull_request: {url: "x"}}),
+		record(9, DRIFTED, { pull_request: { url: "x" } }),
 	]);
 	const PATCH_1 = /PATCH .*\/repos\/o\/r\/issues\/1$/;
 	const READ_1 = /GET .*\/repos\/o\/r\/issues\/1$/;
@@ -209,7 +212,7 @@ describe("runRepairCriteria — the sweep", () => {
 			[COMMENT_1, COMMENTED],
 		]);
 		const outcome = await Effect.runPromise(
-			Effect.provide(runRepairCriteria({...options, issue: null, sweep: true}), shell.layer),
+			Effect.provide(runRepairCriteria({ ...options, issue: null, sweep: true }), shell.layer),
 		);
 		expect(outcome.code).toBe(0);
 		const [summary, ...lines] = outcome.stdout.trimEnd().split("\n");
@@ -230,7 +233,7 @@ describe("runRepairCriteria — the sweep", () => {
 				[once(READ_1), served(record(1, DRIFTED.replace("Intro.", "First.")))],
 				[PATCH_1, WRITE_FAILED],
 			],
-			{issue: null, sweep: true},
+			{ issue: null, sweep: true },
 		);
 		expect(outcome.code).toBe(WRITE_UNKNOWN);
 		expect(outcome.stdout).toBe("");
@@ -242,7 +245,7 @@ describe("runRepairCriteria — the sweep", () => {
 			[READ_1, served(record(1, "somebody rewrote this body mid-sweep"))],
 		]);
 		const outcome = await Effect.runPromise(
-			Effect.provide(runRepairCriteria({...options, issue: null, sweep: true}), shell.layer),
+			Effect.provide(runRepairCriteria({ ...options, issue: null, sweep: true }), shell.layer),
 		);
 		expect(outcome.code).toBe(0);
 		expect(shell.requests.some((line) => PATCH_1.test(line))).toBe(false);
@@ -257,7 +260,7 @@ describe("runRepairCriteria — the sweep", () => {
 		const shell = fakeSeams([[LIST, board]]);
 		const outcome = await Effect.runPromise(
 			Effect.provide(
-				runRepairCriteria({...options, issue: null, sweep: true, dryRun: true}),
+				runRepairCriteria({ ...options, issue: null, sweep: true, dryRun: true }),
 				shell.layer,
 			),
 		);
@@ -278,7 +281,7 @@ describe("runRepairCriteria — the sweep", () => {
 			[READ_1, NOT_FOUND],
 		]);
 		const outcome = await Effect.runPromise(
-			Effect.provide(runRepairCriteria({...options, issue: null, sweep: true}), shell.layer),
+			Effect.provide(runRepairCriteria({ ...options, issue: null, sweep: true }), shell.layer),
 		);
 		expect(outcome.code).toBe(0);
 		expect(shell.requests.some((line) => PATCH_1.test(line))).toBe(false);
@@ -291,7 +294,7 @@ describe("runRepairCriteria — the sweep", () => {
 			[READ_1, UNREADABLE],
 		]);
 		const outcome = await Effect.runPromise(
-			Effect.provide(runRepairCriteria({...options, issue: null, sweep: true}), shell.layer),
+			Effect.provide(runRepairCriteria({ ...options, issue: null, sweep: true }), shell.layer),
 		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stdout).toBe("");

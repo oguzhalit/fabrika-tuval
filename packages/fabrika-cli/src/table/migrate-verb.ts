@@ -14,11 +14,11 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9989
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {tableKey} from "../config/keys/table.ts";
-import {readKey} from "../config/read-key.ts";
-import {resolveRepo} from "../io/issues.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { tableKey } from "../config/keys/table.ts";
+import { readKey } from "../config/read-key.ts";
+import { resolveRepo } from "../io/issues.ts";
 import {
 	type IterationHistory,
 	type ProjectItem,
@@ -26,7 +26,7 @@ import {
 	readIterationHistory,
 	withProjects,
 } from "../io/projects.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	CONFIG_MALFORMED,
 	NOT_SET_UP,
@@ -35,9 +35,9 @@ import {
 	SCOPE_MISSING,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {FIELD, LEGACY_WEEK, productBoard} from "./shape.ts";
-import {locateTable, type SyncBoard, syncBoard} from "./sync-verb.ts";
-import {parseTableDay, type TableDay} from "./table-day.ts";
+import { FIELD, LEGACY_WEEK, productBoard } from "./shape.ts";
+import { locateTable, type SyncBoard, syncBoard } from "./sync-verb.ts";
+import { parseTableDay, type TableDay } from "./table-day.ts";
 
 const VERB = "table migrate-week";
 
@@ -108,12 +108,12 @@ export const planMigration = (
 			});
 			continue;
 		}
-		dating.push({itemId: item.itemId, issue: item.contentNumber, tableDay: day});
+		dating.push({ itemId: item.itemId, issue: item.contentNumber, tableDay: day });
 	}
-	return {dating, unresolved};
+	return { dating, unresolved };
 };
 
-const itemName = (one: {readonly itemId: string; readonly issue: number | null}): string =>
+const itemName = (one: { readonly itemId: string; readonly issue: number | null }): string =>
 	one.issue === null ? `item ${one.itemId}` : `#${one.issue}`;
 
 export const runMigrate = <R>(
@@ -136,9 +136,9 @@ export const runMigrate = <R>(
 			);
 		}
 		const repo = resolved.value;
-		const {board} = options;
+		const { board } = options;
 		const failed = (
-			read: Exclude<ProjectsAnswer<unknown>, {_tag: "Ok"}>,
+			read: Exclude<ProjectsAnswer<unknown>, { _tag: "Ok" }>,
 			onFailure: number,
 			what: string,
 		): VerbOutcome =>
@@ -152,7 +152,7 @@ export const runMigrate = <R>(
 		if (located.value._tag === "Refused") {
 			return refuse(located.value.code, located.value.reason);
 		}
-		const {project} = located.value;
+		const { project } = located.value;
 		const dayField = project.fields.find((field) => field.name === FIELD.tableDay);
 		if (dayField?._tag !== "Plain" || dayField.dataType !== "DATE") {
 			return refuse(
@@ -167,7 +167,7 @@ export const runMigrate = <R>(
 		const where = `project #${project.number} "${project.title}" (${project.url})`;
 		if (history.value === null) {
 			return answer(
-				`${JSON.stringify({answer: "unchanged", repo, project: {number: project.number, title: project.title, url: project.url}, dated: [], unresolved: []})}\n`,
+				`${JSON.stringify({ answer: "unchanged", repo, project: { number: project.number, title: project.title, url: project.url }, dated: [], unresolved: [] })}\n`,
 				[
 					`${VERB}: ${where} has no ${LEGACY_WEEK} iteration field, so there is nothing to migrate.`,
 					`${VERB}: nothing was written.`,
@@ -178,13 +178,13 @@ export const runMigrate = <R>(
 
 		const items = yield* board.items(project.id);
 		if (items._tag !== "Ok") return failed(items, PRECONDITION_UNKNOWN, "cannot read the rows");
-		const {dating, unresolved} = planMigration(items.value, weeks);
+		const { dating, unresolved } = planMigration(items.value, weeks);
 
 		const landed: Dating[] = [];
 		for (const one of dating) {
 			const set = yield* board.set(
-				{projectId: project.id, itemId: one.itemId, fieldId: dayField.id},
-				{_tag: "Date", date: one.tableDay},
+				{ projectId: project.id, itemId: one.itemId, fieldId: dayField.id },
+				{ _tag: "Date", date: one.tableDay },
 			);
 			if (set._tag !== "Ok") {
 				const so = landed.length > 0 ? ` after dating ${landed.map(itemName).join(", ")}` : "";
@@ -219,9 +219,9 @@ export const runMigrate = <R>(
 			`${JSON.stringify({
 				answer: landed.length > 0 ? "migrated" : "unchanged",
 				repo,
-				project: {number: project.number, title: project.title, url: project.url},
-				dated: landed.map((one) => ({issue: one.issue, tableDay: one.tableDay})),
-				unresolved: unresolved.map((one) => ({issue: one.issue, iteration: one.iteration})),
+				project: { number: project.number, title: project.title, url: project.url },
+				dated: landed.map((one) => ({ issue: one.issue, tableDay: one.tableDay })),
+				unresolved: unresolved.map((one) => ({ issue: one.issue, iteration: one.iteration })),
 			})}\n`,
 			[
 				`${VERB}: read ${settings.note}.`,

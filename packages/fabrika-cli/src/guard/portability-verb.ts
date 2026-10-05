@@ -23,19 +23,19 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9531
  */
 
-import {Effect, FileSystem, Option, Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {portabilityKey} from "../config/keys/portability.ts";
-import {loadConfig} from "../config/load.ts";
-import {readFromLoad, readKey} from "../config/read-key.ts";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {type ReadFailed, readDir, readFile, realPath} from "../io/fs.ts";
-import {listTreePaths, readFileAt, resolveCommit} from "../io/git.ts";
-import {parseJson} from "../io/json.ts";
-import {configAtCommit} from "../review/class-config.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {type HeadSha, headSha} from "../wire/verdict-marker.ts";
-import {OFF_VOCABULARY} from "./codes.ts";
+import { Effect, FileSystem, Option, Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { portabilityKey } from "../config/keys/portability.ts";
+import { loadConfig } from "../config/load.ts";
+import { readFromLoad, readKey } from "../config/read-key.ts";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { type ReadFailed, readDir, readFile, realPath } from "../io/fs.ts";
+import { listTreePaths, readFileAt, resolveCommit } from "../io/git.ts";
+import { parseJson } from "../io/json.ts";
+import { configAtCommit } from "../review/class-config.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { type HeadSha, headSha } from "../wire/verdict-marker.ts";
+import { OFF_VOCABULARY } from "./codes.ts";
 import {
 	type Allowance,
 	annotationsFor,
@@ -112,8 +112,8 @@ const subdirectories = (
 
 /** The parsed allow-list, or the named reason it is unusable. */
 type ConfigRead =
-	| {readonly _tag: "Config"; readonly config: PortabilityConfig}
-	| {readonly _tag: "Malformed"; readonly report: string};
+	| { readonly _tag: "Config"; readonly config: PortabilityConfig }
+	| { readonly _tag: "Malformed"; readonly report: string };
 
 const isAllowance = (entry: unknown): entry is Allowance =>
 	entry !== null &&
@@ -148,7 +148,7 @@ const parseAllowList = (verb: string, text: string): ConfigRead => {
 			report: `${verb}: ${CONFIG_PATH} does not parse, or an entry is missing a numeric \`ceiling\`, a non-empty \`why\`, or (under \`unmigrated\`) a non-empty \`paths\` list — the allow-list the floor is judged against is broken, so the verdict is fail-closed.\n`,
 		};
 	}
-	return {_tag: "Config", config: {exempt: parsed.exempt, unmigrated: parsed.unmigrated}};
+	return { _tag: "Config", config: { exempt: parsed.exempt, unmigrated: parsed.unmigrated } };
 };
 
 const readConfig = (
@@ -175,7 +175,7 @@ const verdictOf = (
 	files: ReadonlyArray<FileScan>,
 	config: PortabilityConfig,
 ): GuardVerdict => {
-	const verdict = judge({files, config});
+	const verdict = judge({ files, config });
 	const report = renderReport(verb, verdict);
 	if (verdict._tag === "Clean") return clean(report.trimEnd(), verdict.filesScanned);
 	if (verdict._tag === "ZeroScope") return zeroScope(report);
@@ -189,7 +189,7 @@ const gather = (
 	root: string,
 	repoNames: ReadonlyArray<string>,
 ): Effect.Effect<
-	{readonly files: ReadonlyArray<FileScan>; readonly refusal: string | null},
+	{ readonly files: ReadonlyArray<FileScan>; readonly refusal: string | null },
 	ReadFailed,
 	FileSystem.FileSystem | Path.Path
 > =>
@@ -208,13 +208,13 @@ const gather = (
 			}
 			const found = yield* walk(fs, path, root, tree);
 			if (found.length === 0) {
-				return {files: [], refusal: `the walk of ${tree}/ matched ZERO readable text files`};
+				return { files: [], refusal: `the walk of ${tree}/ matched ZERO readable text files` };
 			}
 			paths.push(...found);
 		}
 		for (const group of GROUP_ROOTS) {
 			const missing = uncovered(yield* subdirectories(fs, path, root, group), paths);
-			if (missing.length > 0) return {files: [], refusal: coverageRefusal(missing)};
+			if (missing.length > 0) return { files: [], refusal: coverageRefusal(missing) };
 		}
 		const scans: Array<FileScan> = [];
 		for (const relative of paths) {
@@ -223,7 +223,7 @@ const gather = (
 				hits: scanFile(relative, yield* readFile(path.join(root, relative)), repoNames),
 			});
 		}
-		return {files: scans, refusal: null};
+		return { files: scans, refusal: null };
 	});
 
 const judgeTree = (
@@ -353,13 +353,13 @@ const judgeCommit = (
 
 		const reads = yield* Effect.forEach(
 			paths,
-			(relative) => Effect.map(readFileAt(at, relative), (read) => ({relative, read})),
-			{concurrency: READ_CONCURRENCY},
+			(relative) => Effect.map(readFileAt(at, relative), (read) => ({ relative, read })),
+			{ concurrency: READ_CONCURRENCY },
 		);
 		const files: Array<FileScan> = [];
-		for (const {relative, read} of reads) {
+		for (const { relative, read } of reads) {
 			if (read._tag === "Failure") return cannotRead(verb, relative, read.reason);
-			files.push({path: relative, hits: scanFile(relative, read.value, names.value.repoNames)});
+			files.push({ path: relative, hits: scanFile(relative, read.value, names.value.repoNames) });
 		}
 		return verdictOf(verb, files, config.config);
 	});
@@ -407,5 +407,5 @@ export const runPortabilityCheck = (
 			),
 		);
 	}
-	return runPortabilityGuardAt({sha, env: options.env});
+	return runPortabilityGuardAt({ sha, env: options.env });
 };

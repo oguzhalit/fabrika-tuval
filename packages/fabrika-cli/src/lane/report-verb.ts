@@ -59,14 +59,14 @@
  * remedies are `lane prove`'s, unchanged. The prover is a parameter so this verb's unit tier stays
  * offline; the CLI always hands it `runProve`, which is the only prover a shell ever invokes.
  */
-import {Effect, FileSystem, Path, Result} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {ParkCauseSurface} from "../config/keys/park-cause.ts";
-import type {Read} from "../config/read-key.ts";
-import {appendText} from "../io/fs.ts";
-import {closeCompleted, createComment, resolveRepo} from "../io/issues.ts";
-import {ANSWER, answer, refuse, type VerbOutcome} from "../verb.ts";
-import {lockedRefusal, withLedgerLock} from "./append-lock.ts";
+import { Effect, FileSystem, Path, Result } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { ParkCauseSurface } from "../config/keys/park-cause.ts";
+import type { Read } from "../config/read-key.ts";
+import { appendText } from "../io/fs.ts";
+import { closeCompleted, createComment, resolveRepo } from "../io/issues.ts";
+import { ANSWER, answer, refuse, type VerbOutcome } from "../verb.ts";
+import { lockedRefusal, withLedgerLock } from "./append-lock.ts";
 import {
 	type CloseAct,
 	closeComment,
@@ -87,13 +87,13 @@ import {
 	TOKEN_UNSERVED,
 	WAIT_TOO_SOON,
 } from "./codes.ts";
-import {applyEvent, foldLog, type LogEntry, resolveTask} from "./fold.ts";
-import {integrateEvidenceRefusal, readIntegrateEvidence} from "./integrate-failure.ts";
-import type {CompiledLane, OperatorEvent, TaskState} from "./machine.ts";
-import {parkCauseRefusal} from "./park-cause-rule.ts";
-import {gateOnProof} from "./proof-gate.ts";
-import type {ProofOutcome, ProveOptions} from "./prove-verb.ts";
-import {loadRefusal, replayRefusal} from "./refusals.ts";
+import { applyEvent, foldLog, type LogEntry, resolveTask } from "./fold.ts";
+import { integrateEvidenceRefusal, readIntegrateEvidence } from "./integrate-failure.ts";
+import type { CompiledLane, OperatorEvent, TaskState } from "./machine.ts";
+import { parkCauseRefusal } from "./park-cause-rule.ts";
+import { gateOnProof } from "./proof-gate.ts";
+import type { ProofOutcome, ProveOptions } from "./prove-verb.ts";
+import { loadRefusal, replayRefusal } from "./refusals.ts";
 import {
 	type ConditionalTerminal,
 	causeForEvent,
@@ -106,7 +106,7 @@ import {
 	serviceAt,
 	tokenCause,
 } from "./report.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane report";
 
@@ -183,7 +183,7 @@ export const issueCloser = (
 	return (open) =>
 		Effect.gen(function* () {
 			const target = yield* resolveRepo(repo, env);
-			if (target._tag === "Failure") return {_tag: "Failed", reason: target.reason};
+			if (target._tag === "Failure") return { _tag: "Failed", reason: target.reason };
 			const pulls = open.merged.map((pr) => `https://github.com/${target.value}/pull/${pr}`);
 			const commented = yield* createComment(
 				target.value,
@@ -191,18 +191,18 @@ export const issueCloser = (
 				closeComment(open.issue, pulls),
 			);
 			if (commented._tag === "Failure") {
-				return {_tag: "Failed", reason: `the pointer comment failed: ${commented.reason}`};
+				return { _tag: "Failed", reason: `the pointer comment failed: ${commented.reason}` };
 			}
 			const closed = yield* closeCompleted(target.value, open.issue);
 			return closed._tag === "Failure"
-				? {_tag: "Failed", reason: `the close failed: ${closed.reason}`}
-				: {_tag: "Closed"};
+				? { _tag: "Failed", reason: `the close failed: ${closed.reason}` }
+				: { _tag: "Closed" };
 		});
 };
 
 /** The leaf a folded task stands in — `""` where the fold holds no state for it. */
 const freshLeafOf = (
-	fold: Extract<ReturnType<typeof foldLog>, {readonly _tag: "Folded"}>,
+	fold: Extract<ReturnType<typeof foldLog>, { readonly _tag: "Folded" }>,
 	taskId: string,
 ): string => fold.states[taskId]?.type ?? "";
 
@@ -221,7 +221,7 @@ type Advance =
 			readonly proof: ProofOutcome;
 			readonly note: string;
 	  }
-	| {readonly _tag: "Parked"; readonly note: string};
+	| { readonly _tag: "Parked"; readonly note: string };
 
 interface AdvanceInput<R> {
 	readonly prove: (options: ProveOptions) => Effect.Effect<ProofOutcome, never, R>;
@@ -407,7 +407,7 @@ export const runReport = <R>(
 						proveOptions(event),
 						`the ${event} behind token ${resolved.token}`,
 					)
-				: ({_tag: "Proven", proof: advanced.proof} as const);
+				: ({ _tag: "Proven", proof: advanced.proof } as const);
 		if (gated._tag === "Refused") return gated.outcome;
 		const proved = gated.proof;
 		const conditionalNotes = attempt === null ? [] : [attempt.note];
@@ -423,7 +423,7 @@ export const runReport = <R>(
 		// against a state another writer is about to move under it. The pre-lock pass above
 		// only gated whether proving was worth its board read; this pass decides.
 		return yield* withLedgerLock(
-			{fs, path, dir: path.join(options.root, options.lane), verb: VERB},
+			{ fs, path, dir: path.join(options.root, options.lane), verb: VERB },
 			Effect.gen(function* () {
 				const fresh = yield* loadLane(options);
 				if (fresh._tag !== "Loaded") return loadRefusal(VERB, fresh);
@@ -509,16 +509,16 @@ export const runReport = <R>(
 
 				const entry: LogEntry = {
 					...reapplied.entry,
-					...(options.pr === null ? {} : {pr: options.pr}),
-					...(options.comment === null ? {} : {comment: options.comment}),
-					...(cause === null ? {} : {cause}),
+					...(options.pr === null ? {} : { pr: options.pr }),
+					...(options.comment === null ? {} : { comment: options.comment }),
+					...(cause === null ? {} : { cause }),
 					...parkEvidence,
-					...(proved.deferred.length === 0 ? {} : {deferred: proved.deferred}),
-					...(proved.routed.length === 0 ? {} : {routed: proved.routed}),
-					...(proved.routedBasis === undefined ? {} : {routedBasis: proved.routedBasis}),
-					...(proved.landed.length === 0 ? {} : {landed: proved.landed}),
-					...(settled === null ? {} : {issueClose: settled.close}),
-					...(integrate === null ? {} : {integrate}),
+					...(proved.deferred.length === 0 ? {} : { deferred: proved.deferred }),
+					...(proved.routed.length === 0 ? {} : { routed: proved.routed }),
+					...(proved.routedBasis === undefined ? {} : { routedBasis: proved.routedBasis }),
+					...(proved.landed.length === 0 ? {} : { landed: proved.landed }),
+					...(settled === null ? {} : { issueClose: settled.close }),
+					...(integrate === null ? {} : { integrate }),
 				};
 				const wrote = yield* Effect.result(appendText(fresh.logPath, `${JSON.stringify(entry)}\n`));
 				if (Result.isFailure(wrote)) {
@@ -535,18 +535,18 @@ export const runReport = <R>(
 							event: entry.event,
 							current: reapplied.current.stateValue,
 							taskAffected: freshTask.taskId,
-							...(options.pr === null ? {} : {pr: options.pr}),
-							...(options.comment === null ? {} : {comment: options.comment}),
-							...(cause === null ? {} : {cause}),
+							...(options.pr === null ? {} : { pr: options.pr }),
+							...(options.comment === null ? {} : { comment: options.comment }),
+							...(cause === null ? {} : { cause }),
 							...parkEvidence,
-							...(proved.deferred.length === 0 ? {} : {deferred: proved.deferred}),
-							...(proved.routed.length === 0 ? {} : {routed: proved.routed}),
-							...(proved.routedBasis === undefined ? {} : {routedBasis: proved.routedBasis}),
-							...(proved.partial === null ? {} : {partial: proved.partial}),
-							...(proved.diagnosis ? {diagnosis: true} : {}),
-							...(proved.landed.length === 0 ? {} : {landed: proved.landed}),
-							...(settled === null ? {} : {issueClose: settled.close}),
-							...(integrate === null ? {} : {integrate}),
+							...(proved.deferred.length === 0 ? {} : { deferred: proved.deferred }),
+							...(proved.routed.length === 0 ? {} : { routed: proved.routed }),
+							...(proved.routedBasis === undefined ? {} : { routedBasis: proved.routedBasis }),
+							...(proved.partial === null ? {} : { partial: proved.partial }),
+							...(proved.diagnosis ? { diagnosis: true } : {}),
+							...(proved.landed.length === 0 ? {} : { landed: proved.landed }),
+							...(settled === null ? {} : { issueClose: settled.close }),
+							...(integrate === null ? {} : { integrate }),
 						},
 						null,
 						2,
@@ -560,7 +560,7 @@ export const runReport = <R>(
 				);
 			}),
 			{
-				onAbsent: (dir) => loadRefusal(VERB, {_tag: "Absent", dir}),
+				onAbsent: (dir) => loadRefusal(VERB, { _tag: "Absent", dir }),
 				onLocked: (lockDir) => refuse(CONCURRENT_WRITE, lockedRefusal(VERB, lockDir)),
 			},
 		);

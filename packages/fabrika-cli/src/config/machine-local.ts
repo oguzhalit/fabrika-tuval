@@ -16,8 +16,8 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9020#issuecomment-5625285600
  */
 
-import {type DocumentState, LOCAL_CONFIG_PATH} from "./document.ts";
-import type {Registration} from "./key-group.ts";
+import { type DocumentState, LOCAL_CONFIG_PATH } from "./document.ts";
+import type { Registration } from "./key-group.ts";
 
 /**
  * The self-pointer binding the file to its schema — a property of the document, not a config key.

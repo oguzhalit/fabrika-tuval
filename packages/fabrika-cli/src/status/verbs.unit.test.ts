@@ -5,20 +5,20 @@
  * The property under test throughout is the three-state law: a proven negative is an exit-`0` token,
  * an unread source is `unknown`, and the two never collapse.
  */
-import {Effect, Layer} from "effect";
+import { Effect, Layer } from "effect";
 import * as HttpClient from "effect/unstable/http/HttpClient";
 import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest";
 import * as HttpClientResponse from "effect/unstable/http/HttpClientResponse";
-import {describe, expect, it} from "vitest";
-import type {BoardVocabulary} from "../config/board.ts";
-import {type ConfigSource, stripJsonComments} from "../config/document.ts";
-import {CI} from "../config/keys/ci.ts";
-import {CODE_VALIDATORS} from "../config/keys/code-validators.ts";
-import {DEPENDENCY_RECONCILER} from "../config/keys/dependency-reconciler.ts";
-import {reviewUiKey} from "../config/keys/review-ui.ts";
-import {UI_SURFACES} from "../config/keys/ui-surfaces.ts";
-import {type ConfigLayers, loadConfig} from "../config/load.ts";
-import {readFromLoad} from "../config/read-key.ts";
+import { describe, expect, it } from "vitest";
+import type { BoardVocabulary } from "../config/board.ts";
+import { type ConfigSource, stripJsonComments } from "../config/document.ts";
+import { CI } from "../config/keys/ci.ts";
+import { CODE_VALIDATORS } from "../config/keys/code-validators.ts";
+import { DEPENDENCY_RECONCILER } from "../config/keys/dependency-reconciler.ts";
+import { reviewUiKey } from "../config/keys/review-ui.ts";
+import { UI_SURFACES } from "../config/keys/ui-surfaces.ts";
+import { type ConfigLayers, loadConfig } from "../config/load.ts";
+import { readFromLoad } from "../config/read-key.ts";
 import * as report from "../exit-codes.ts";
 import {
 	fakeFs,
@@ -28,16 +28,16 @@ import {
 	type HttpReply,
 	type Scripted,
 } from "../fakes.test-support.ts";
-import {type Attempt, ok} from "../io/git.ts";
-import {latestPublishedVersion} from "../io/npm.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {AWAITING_RELEASE, DEFAULT_STATUS_NAMES, PLANNED, STATUSES} from "../labels.ts";
-import {coderTemplateText} from "../lane/fixtures.test-support.ts";
-import {runStale} from "../lane/stale-verb.ts";
-import {DEFAULT_CHORES_ROOT, DEFAULT_LANES_ROOT} from "../lane/store.ts";
-import {noPreviewMode} from "../review-ui/no-preview.ts";
-import {AUDIENCES, PRIORITIES, parkedFacets, TYPES, triagedFacets} from "../triage/facets.ts";
-import {ANSWER} from "../verb.ts";
+import { type Attempt, ok } from "../io/git.ts";
+import { latestPublishedVersion } from "../io/npm.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { AWAITING_RELEASE, DEFAULT_STATUS_NAMES, PLANNED, STATUSES } from "../labels.ts";
+import { coderTemplateText } from "../lane/fixtures.test-support.ts";
+import { runStale } from "../lane/stale-verb.ts";
+import { DEFAULT_CHORES_ROOT, DEFAULT_LANES_ROOT } from "../lane/store.ts";
+import { noPreviewMode } from "../review-ui/no-preview.ts";
+import { AUDIENCES, PRIORITIES, parkedFacets, TYPES, triagedFacets } from "../triage/facets.ts";
+import { ANSWER } from "../verb.ts";
 import {
 	absentLabels,
 	type BoardRead,
@@ -68,8 +68,8 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {noAsOf, oneLine, readNow} from "./fields.ts";
-import {runMenu} from "./menu-verb.ts";
+import { noAsOf, oneLine, readNow } from "./fields.ts";
+import { runMenu } from "./menu-verb.ts";
 import {
 	badFieldRefusal,
 	boardField,
@@ -79,7 +79,7 @@ import {
 	runOpen,
 	settingsField,
 } from "./open-verb.ts";
-import {ARTIFACT_TITLE, digestComment, issueNumberOf, runReadout} from "./readout-verb.ts";
+import { ARTIFACT_TITLE, digestComment, issueNumberOf, runReadout } from "./readout-verb.ts";
 import {
 	IN_REPO_ROSTER,
 	PLUGIN_MANIFEST,
@@ -91,7 +91,7 @@ import {
 	resolveRosterPath,
 	skillFrom,
 } from "./roster.ts";
-import {runSettings, type SettingRow, settingRows} from "./settings-verb.ts";
+import { runSettings, type SettingRow, settingRows } from "./settings-verb.ts";
 
 const AS_OF = readNow("2026-08-09T14:22:03Z");
 
@@ -141,7 +141,7 @@ describe("the roster's resolution ladder", () => {
 	const SKILL_TEXT = "---\nname: build\ndescription: d\n---\n";
 
 	const CACHE = "/home/dev/.claude/plugins/cache";
-	const manifest = (name: string) => JSON.stringify({name});
+	const manifest = (name: string) => JSON.stringify({ name });
 
 	const tree = (over: Parameters<typeof fakeFs>[0]) => fakeFs(over);
 
@@ -189,14 +189,14 @@ describe("the roster's resolution ladder", () => {
 	const checkoutRoster = `${CHECKOUT}/${IN_REPO_ROSTER}`;
 
 	it("resolves the CLI's own checkout when the cwd is a repo carrying no roster", async () => {
-		const resolved = await resolve(sources({}), tree({directories: [checkoutRoster]}));
+		const resolved = await resolve(sources({}), tree({ directories: [checkoutRoster] }));
 		expect(resolved?.tier).toBe("checkout");
 		expect(resolved?.path).toBe(checkoutRoster);
 	});
 
 	/** `display` is what a session transcript keeps; an absolute path there is a machine-local leak. */
 	it("prints the checkout rung as a repo-relative path, never the absolute one", async () => {
-		const resolved = await resolve(sources({}), tree({directories: [checkoutRoster]}));
+		const resolved = await resolve(sources({}), tree({ directories: [checkoutRoster] }));
 		expect(resolved?.display).toBe(IN_REPO_ROSTER);
 		expect(resolved?.display.startsWith("/")).toBe(false);
 	});
@@ -204,7 +204,7 @@ describe("the roster's resolution ladder", () => {
 	it("keeps the cwd's own roster ahead of the checkout's when both are there", async () => {
 		const resolved = await resolve(
 			sources({}),
-			tree({directories: [checkoutRoster, `${FOREIGN}/${IN_REPO_ROSTER}`]}),
+			tree({ directories: [checkoutRoster, `${FOREIGN}/${IN_REPO_ROSTER}`] }),
 		);
 		expect(resolved?.tier).toBe("repo");
 		expect(resolved?.path).toBe(`${FOREIGN}/${IN_REPO_ROSTER}`);
@@ -218,10 +218,10 @@ describe("the roster's resolution ladder", () => {
 	it("keeps a CLI bundled inside a plugin ahead of both implicit checkout rungs", async () => {
 		const installed = "/vendored/fabrika";
 		const resolved = await resolve(
-			sources({moduleDir: `${installed}/cli/src/status`}),
+			sources({ moduleDir: `${installed}/cli/src/status` }),
 			tree({
 				directories: [checkoutRoster],
-				files: {[`${installed}/${PLUGIN_MANIFEST}`]: manifest("fabrika")},
+				files: { [`${installed}/${PLUGIN_MANIFEST}`]: manifest("fabrika") },
 			}),
 		);
 		expect(resolved?.tier).toBe("plugin");
@@ -236,7 +236,7 @@ describe("the roster's resolution ladder", () => {
 	it("resolves the installed plugin out of Claude Code's cache when no walk can reach it", async () => {
 		const live = cached("602283e56c60", "fabrika");
 		const resolved = await resolve(
-			sources({pluginCache: CACHE}),
+			sources({ pluginCache: CACHE }),
 			cacheTree([cached("0dd9a537e17c", "fabrika", [".orphaned_at", ".in_use"]), live]),
 		);
 		expect(resolved?.tier).toBe("cache");
@@ -246,7 +246,7 @@ describe("the roster's resolution ladder", () => {
 	/** The cache path carries a content hash that changes on every update — never print one. */
 	it("prints the cache rung by the manifest's declared name, never the hashed path", async () => {
 		const resolved = await resolve(
-			sources({pluginCache: CACHE}),
+			sources({ pluginCache: CACHE }),
 			cacheTree([cached("602283e56c60", "fabrika")]),
 		);
 		expect(resolved?.display).toBe("fabrika/skills");
@@ -256,7 +256,7 @@ describe("the roster's resolution ladder", () => {
 	/** A cache holds every plugin the machine has installed; only fabrika's own roster is fabrika's. */
 	it("skips a cached plugin whose manifest declares another name", async () => {
 		const resolved = await resolve(
-			sources({pluginCache: CACHE}),
+			sources({ pluginCache: CACHE }),
 			cacheTree([cached("aaaaaaaaaaaa", "some-other-plugin")]),
 		);
 		expect(resolved).toBeNull();
@@ -269,7 +269,7 @@ describe("the roster's resolution ladder", () => {
 	 */
 	it("keeps the CLI's own checkout ahead of the installed plugin's cache", async () => {
 		const resolved = await resolve(
-			sources({pluginCache: CACHE}),
+			sources({ pluginCache: CACHE }),
 			cacheTree([cached("602283e56c60", "fabrika")], {
 				directories: [checkoutRoster, `${CACHE}/kampus/fabrika/602283e56c60/skills`],
 			}),
@@ -282,7 +282,7 @@ describe("the roster's resolution ladder", () => {
 	it("prefers a cached version a live session holds when two are unorphaned", async () => {
 		const held = cached("zzzzzzzzzzzz", "fabrika", [".in_use"]);
 		const resolved = await resolve(
-			sources({pluginCache: CACHE}),
+			sources({ pluginCache: CACHE }),
 			cacheTree([cached("aaaaaaaaaaaa", "fabrika"), held]),
 		);
 		expect(resolved?.path).toBe(`${held.root}/skills`);
@@ -291,8 +291,8 @@ describe("the roster's resolution ladder", () => {
 	/** A half-written cache entry is not a roster: it must not claim one and then fail the read. */
 	it("skips a cached version carrying no skills directory", async () => {
 		const resolved = await resolve(
-			sources({pluginCache: CACHE}),
-			cacheTree([{...cached("602283e56c60", "fabrika"), directories: []}]),
+			sources({ pluginCache: CACHE }),
+			cacheTree([{ ...cached("602283e56c60", "fabrika"), directories: [] }]),
 		);
 		expect(resolved).toBeNull();
 	});
@@ -301,9 +301,9 @@ describe("the roster's resolution ladder", () => {
 	it("takes $CLAUDE_PLUGIN_ROOT ahead of the cache when the harness set one", async () => {
 		const injected = "/plugins/fabrika-head";
 		const resolved = await resolve(
-			sources({pluginRootEnv: injected, pluginCache: CACHE}),
+			sources({ pluginRootEnv: injected, pluginCache: CACHE }),
 			cacheTree([cached("602283e56c60", "fabrika")], {
-				files: {[`${injected}/${PLUGIN_MANIFEST}`]: manifest("fabrika")},
+				files: { [`${injected}/${PLUGIN_MANIFEST}`]: manifest("fabrika") },
 			}),
 		);
 		expect(resolved?.tier).toBe("env");
@@ -314,7 +314,7 @@ describe("the roster's resolution ladder", () => {
 	it("falls through when $CLAUDE_PLUGIN_ROOT names a directory holding no plugin manifest", async () => {
 		const live = cached("602283e56c60", "fabrika");
 		const resolved = await resolve(
-			sources({pluginRootEnv: "/plugins/gone", pluginCache: CACHE}),
+			sources({ pluginRootEnv: "/plugins/gone", pluginCache: CACHE }),
 			cacheTree([live]),
 		);
 		expect(resolved?.tier).toBe("cache");
@@ -324,8 +324,8 @@ describe("the roster's resolution ladder", () => {
 	it("still keeps an explicitly-passed path ahead of the env rung", async () => {
 		const injected = "/plugins/fabrika-head";
 		const resolved = await resolve(
-			sources({explicit: "/mine/skills", pluginRootEnv: injected}),
-			tree({files: {[`${injected}/${PLUGIN_MANIFEST}`]: manifest("fabrika")}}),
+			sources({ explicit: "/mine/skills", pluginRootEnv: injected }),
+			tree({ files: { [`${injected}/${PLUGIN_MANIFEST}`]: manifest("fabrika") } }),
 		);
 		expect(resolved?.tier).toBe("explicit");
 		expect(resolved?.path).toBe("/mine/skills");
@@ -335,7 +335,7 @@ describe("the roster's resolution ladder", () => {
 	it("renders the marketplace shape's roster rather than an unknown", async () => {
 		const live = cached("602283e56c60", "fabrika");
 		const out = await read(
-			sources({pluginCache: CACHE}),
+			sources({ pluginCache: CACHE }),
 			cacheTree([live], {
 				dirs: {
 					[CACHE]: ["kampus"],
@@ -354,7 +354,7 @@ describe("the roster's resolution ladder", () => {
 		if (out._tag !== "Resolved") return;
 		expect(out.tier).toBe("cache");
 		expect(out.skills.map((s) => s.name)).toEqual(["build"]);
-		expect(runMenu({roster: out, asOf: AS_OF, json: false}).code).toBe(ANSWER);
+		expect(runMenu({ roster: out, asOf: AS_OF, json: false }).code).toBe(ANSWER);
 	});
 
 	it("reads the checkout roster's skills rather than reporting the target repo bare", async () => {
@@ -362,8 +362,8 @@ describe("the roster's resolution ladder", () => {
 			sources({}),
 			tree({
 				directories: [checkoutRoster, `${checkoutRoster}/build`],
-				dirs: {[checkoutRoster]: ["build"]},
-				files: {[`${checkoutRoster}/build/SKILL.md`]: SKILL_TEXT},
+				dirs: { [checkoutRoster]: ["build"] },
+				files: { [`${checkoutRoster}/build/SKILL.md`]: SKILL_TEXT },
 			}),
 		);
 		expect(out._tag).toBe("Resolved");
@@ -376,10 +376,10 @@ describe("the roster's resolution ladder", () => {
 	it("keeps a resolved-but-empty checkout roster `empty`, never unknown", async () => {
 		const out = await read(
 			sources({}),
-			tree({directories: [checkoutRoster], dirs: {[checkoutRoster]: []}}),
+			tree({ directories: [checkoutRoster], dirs: { [checkoutRoster]: [] } }),
 		);
 		expect(out._tag).toBe("Resolved");
-		const menu = runMenu({roster: out, asOf: AS_OF, json: false});
+		const menu = runMenu({ roster: out, asOf: AS_OF, json: false });
 		expect(menu.code).toBe(ANSWER);
 		expect(menu.stdout).toBe("menu\tempty\t0\t2026-08-09T14:22:03Z\n");
 	});
@@ -387,11 +387,11 @@ describe("the roster's resolution ladder", () => {
 	/** An explicit path is the caller's claim; no implicit rung may rescue it. */
 	it("still seats an explicitly-passed absent --skills-dir on AbsentExplicit", async () => {
 		const out = await read(
-			sources({explicit: "/nope"}),
-			tree({directories: [checkoutRoster], dirs: {[checkoutRoster]: ["build"]}}),
+			sources({ explicit: "/nope" }),
+			tree({ directories: [checkoutRoster], dirs: { [checkoutRoster]: ["build"] } }),
 		);
 		expect(out._tag).toBe("AbsentExplicit");
-		expect(runMenu({roster: out, asOf: AS_OF, json: false}).code).toBe(7);
+		expect(runMenu({ roster: out, asOf: AS_OF, json: false }).code).toBe(7);
 	});
 
 	it("still fails when no rung answers", async () => {
@@ -417,19 +417,19 @@ describe("status menu", () => {
 
 	/** An implicitly-resolved roster holding zero skills is a FACT, not a refusal. */
 	it("renders an empty roster as `empty` at exit 0, never silence", () => {
-		const out = runMenu({roster: resolvedRoster([]), asOf: AS_OF, json: false});
+		const out = runMenu({ roster: resolvedRoster([]), asOf: AS_OF, json: false });
 		expect(out.code).toBe(ANSWER);
 		expect(out.stdout).toBe("menu\tempty\t0\t2026-08-09T14:22:03Z\n");
 	});
 
 	it("seats an explicitly-passed absent path on 7 and an unreadable roster on 11 — never one code", () => {
 		const seven = runMenu({
-			roster: {_tag: "AbsentExplicit", path: "/nope", display: "/nope"},
+			roster: { _tag: "AbsentExplicit", path: "/nope", display: "/nope" },
 			asOf: AS_OF,
 			json: false,
 		});
 		const eleven = runMenu({
-			roster: {_tag: "Failed", path: "/x", display: "x", reason: "EACCES"},
+			roster: { _tag: "Failed", path: "/x", display: "x", reason: "EACCES" },
 			asOf: AS_OF,
 			json: false,
 		});
@@ -445,17 +445,17 @@ describe("status board", () => {
 	const counted = (name: string, count: number): Bucket => ({
 		name,
 		selector: `labels=${name}`,
-		reading: {_tag: "Counted", count, asOf: AS_OF},
+		reading: { _tag: "Counted", count, asOf: AS_OF },
 	});
 	const absentLabel = (name: string): Bucket => ({
 		name,
 		selector: `labels=${name}`,
-		reading: {_tag: "Absent", label: name, asOf: AS_OF},
+		reading: { _tag: "Absent", label: name, asOf: AS_OF },
 	});
 	const unreadLabel = (name: string): Bucket => ({
 		name,
 		selector: `labels=${name}`,
-		reading: {_tag: "Unknown", reason: "EAI_AGAIN — the label set is UNKNOWN"},
+		reading: { _tag: "Unknown", reason: "EAI_AGAIN — the label set is UNKNOWN" },
 	});
 
 	/** A zero count means the label exists and nothing carries it; an absent label is unaskable. */
@@ -466,7 +466,7 @@ describe("status board", () => {
 			buckets: [absentLabel("needs-triage"), counted("in-flight", 0)],
 		};
 		expect(boardState(read.buckets)).toBe("absent");
-		const out = runBoard({read, json: false});
+		const out = runBoard({ read, json: false });
 		expect(out.code).toBe(ANSWER);
 		expect(out.stdout.split("\n")[0]).toBe("board\tabsent\t2");
 		expect(out.stdout).toContain(
@@ -483,7 +483,7 @@ describe("status board", () => {
 
 	it("refuses on 11 when the repository could not be read at all", () => {
 		const out = runBoard({
-			read: {_tag: "Failed", repo: "acme/storefront", reason: "EAI_AGAIN"},
+			read: { _tag: "Failed", repo: "acme/storefront", reason: "EAI_AGAIN" },
 			json: false,
 		});
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
@@ -495,34 +495,34 @@ describe("status board", () => {
 		const LABELS = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/labels\?/;
 		const ISSUES = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\?state=open&labels=/;
 		const PULLS = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/pulls\?state=open/;
-		const served = (body: unknown): HttpReply => ({status: 200, body: JSON.stringify(body)});
+		const served = (body: unknown): HttpReply => ({ status: 200, body: JSON.stringify(body) });
 		const BUCKETS = labelBuckets(DEFAULT_STATUS_NAMES);
 		const BOARD_LABELS = BUCKETS.map((bucket) => bucket.label);
 
 		const observed = (labels: HttpReply, config?: Record<string, unknown>) => {
 			const seams = fakeSeams([
 				[LABELS, labels],
-				[ISSUES, served([{number: 1, title: "one"}])],
-				[PULLS, served([{number: 9}])],
+				[ISSUES, served([{ number: 1, title: "one" }])],
+				[PULLS, served([{ number: 9 }])],
 			]);
 			const fs = fakeFs({
-				files: config === undefined ? {} : {"/repo/.fabrika.jsonc": JSON.stringify(config)},
+				files: config === undefined ? {} : { "/repo/.fabrika.jsonc": JSON.stringify(config) },
 			});
 			return Effect.runPromise(
 				Effect.provide(
 					readBoard("o/r", "/repo", () => new Date("2026-08-09T14:22:03Z")),
 					Layer.merge(seams.layer, fs.layer),
 				),
-			).then((board) => ({board, requests: seams.requests}));
+			).then((board) => ({ board, requests: seams.requests }));
 		};
-		const read = (labels: HttpReply) => observed(labels).then(({board}) => board);
+		const read = (labels: HttpReply) => observed(labels).then(({ board }) => board);
 		const states = (board: BoardRead) =>
 			board._tag === "Read"
 				? Object.fromEntries(board.buckets.map((bucket) => [bucket.name, bucket.reading._tag]))
 				: board._tag;
 
 		it("reads a partly-labelled board as counted buckets beside absent ones", async () => {
-			const board = await read(served(["status:needs-triage", "p1"].map((name) => ({name}))));
+			const board = await read(served(["status:needs-triage", "p1"].map((name) => ({ name }))));
 			expect(states(board)).toEqual({
 				"needs-triage": "Counted",
 				triaged: "Absent",
@@ -535,29 +535,29 @@ describe("status board", () => {
 		});
 
 		it("counts the triaged bucket under the label a repo renamed it to, never the shipped name", async () => {
-			const {board, requests} = await observed(
-				served(["status:needs-triage", "status:triaged", "state:ready"].map((name) => ({name}))),
-				{boardVocabulary: {statuses: {triaged: "state:ready"}}},
+			const { board, requests } = await observed(
+				served(["status:needs-triage", "status:triaged", "state:ready"].map((name) => ({ name }))),
+				{ boardVocabulary: { statuses: { triaged: "state:ready" } } },
 			);
-			expect(states(board)).toMatchObject({"needs-triage": "Counted", triaged: "Counted"});
+			expect(states(board)).toMatchObject({ "needs-triage": "Counted", triaged: "Counted" });
 			expect(requests.some((line) => line.includes("labels=state%3Aready"))).toBe(true);
 			expect(requests.some((line) => line.includes("labels=status%3Atriaged"))).toBe(false);
 		});
 
 		it("fails the whole board on a config that gives no board, reading no label", async () => {
-			const {board, requests} = await observed(served([{name: "status:triaged"}]), {
-				boardVocabulary: {statuses: "triaged"},
+			const { board, requests } = await observed(served([{ name: "status:triaged" }]), {
+				boardVocabulary: { statuses: "triaged" },
 			});
 			expect(board._tag).toBe("Failed");
 			expect(board._tag === "Failed" && board.reason).toContain(
 				".fabrika.jsonc's board vocabulary is refused",
 			);
 			expect(requests).toEqual([]);
-			expect(runBoard({read: board, json: false}).code).toBe(PRECONDITION_UNKNOWN);
+			expect(runBoard({ read: board, json: false }).code).toBe(PRECONDITION_UNKNOWN);
 		});
 
 		it("reads a fully unlabelled board as absent, and names every missing label with the fix", async () => {
-			const board = await read(served([{name: "bug"}]));
+			const board = await read(served([{ name: "bug" }]));
 			expect(board._tag).toBe("Read");
 			if (board._tag !== "Read") return;
 			expect(absentLabels(board.buckets)).toEqual(BOARD_LABELS);
@@ -568,7 +568,7 @@ describe("status board", () => {
 		});
 
 		it("reads every label bucket as unknown when the label set could not be read", async () => {
-			const board = await read({status: 502, body: "{}"});
+			const board = await read({ status: 502, body: "{}" });
 			expect(board._tag).toBe("Read");
 			if (board._tag !== "Read") return;
 			const labelBuckets = board.buckets.filter((bucket) => bucket.name !== IN_FLIGHT.name);
@@ -583,15 +583,15 @@ describe("status board", () => {
 describe("status readout", () => {
 	it("takes the MOST RECENTLY UPDATED comment carrying the heading, so staleness cannot hide", () => {
 		const picked = digestComment([
-			{body: "## Governance readout\nold", updatedAt: "2026-08-01T00:00:00Z"},
-			{body: "## Governance readout\nnew", updatedAt: "2026-08-09T00:00:00Z"},
-			{body: "unrelated", updatedAt: "2026-08-10T00:00:00Z"},
+			{ body: "## Governance readout\nold", updatedAt: "2026-08-01T00:00:00Z" },
+			{ body: "## Governance readout\nnew", updatedAt: "2026-08-09T00:00:00Z" },
+			{ body: "unrelated", updatedAt: "2026-08-10T00:00:00Z" },
 		]);
 		expect(picked?.body).toContain("new");
 	});
 
 	it("resolves no digest comment to null rather than to an empty one", () => {
-		expect(digestComment([{body: "unrelated", updatedAt: "2026-08-10T00:00:00Z"}])).toBeNull();
+		expect(digestComment([{ body: "unrelated", updatedAt: "2026-08-10T00:00:00Z" }])).toBeNull();
 	});
 
 	it("reads only a positive integer as an issue number", () => {
@@ -603,7 +603,7 @@ describe("status readout", () => {
 
 	/** An unbuilt decoder is a failed read, not a proven-empty artifact. */
 	it("refuses on 11 with the unregistered-format reason, and never reports `absent`", () => {
-		const out = runReadout({read: {_tag: "NoFormat"}, json: false});
+		const out = runReadout({ read: { _tag: "NoFormat" }, json: false });
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.join("\n")).toContain("is not registered");
@@ -611,7 +611,7 @@ describe("status readout", () => {
 	});
 
 	it("renders a proven-absent artifact as `absent` at exit 0 — a fact the caller acts on", () => {
-		const out = runReadout({read: {_tag: "NoArtifact", repo: "acme/storefront"}, json: false});
+		const out = runReadout({ read: { _tag: "NoArtifact", repo: "acme/storefront" }, json: false });
 		expect(out.code).toBe(ANSWER);
 		expect(out.stdout).toBe("readout\tabsent\t0\tacme/storefront\tunknown\n");
 	});
@@ -627,9 +627,9 @@ describe("status bootstrap", () => {
 					path: null,
 					json: false,
 					repoRoot: "/repo",
-					configSource: {_tag: "Absent"},
+					configSource: { _tag: "Absent" },
 					repo: ok("o/r"),
-					stdin: Effect.succeed({_tag: "NoStdin"} as StdinRead),
+					stdin: Effect.succeed({ _tag: "NoStdin" } as StdinRead),
 				}),
 				Layer.mergeAll(fs.layer, fakeShell([]).layer),
 			),
@@ -672,7 +672,7 @@ describe("status bootstrap", () => {
 
 describe("the .fabrika/ gitignore row", () => {
 	const bootstrap = (files: Record<string, string | null>) => {
-		const fs = fakeFs({files});
+		const fs = fakeFs({ files });
 		return Effect.runPromise(
 			Effect.provide(
 				runBootstrap({
@@ -680,17 +680,17 @@ describe("the .fabrika/ gitignore row", () => {
 					path: null,
 					json: true,
 					repoRoot: "/repo",
-					configSource: {_tag: "Absent"},
+					configSource: { _tag: "Absent" },
 					repo: ok("o/r"),
-					stdin: Effect.succeed({_tag: "NoStdin"} as StdinRead),
+					stdin: Effect.succeed({ _tag: "NoStdin" } as StdinRead),
 				}),
 				Layer.mergeAll(fs.layer, fakeShell([]).layer),
 			),
-		).then((outcome) => ({outcome, written: fs.written}));
+		).then((outcome) => ({ outcome, written: fs.written }));
 	};
 
 	it("appends the row to an existing .gitignore and leaves every prior line intact", async () => {
-		const {outcome, written} = await bootstrap({"/repo/.gitignore": "node_modules\ndist\n"});
+		const { outcome, written } = await bootstrap({ "/repo/.gitignore": "node_modules\ndist\n" });
 		expect(outcome.code).toBe(ANSWER);
 		expect(JSON.parse(outcome.stdout)).toEqual({
 			outcome: "created",
@@ -704,21 +704,24 @@ describe("the .fabrika/ gitignore row", () => {
 	});
 
 	it("writes the row into a repo carrying no .gitignore at all", async () => {
-		const {outcome, written} = await bootstrap({});
+		const { outcome, written } = await bootstrap({});
 		expect(outcome.code).toBe(ANSWER);
 		expect(written.get("/repo/.gitignore")).toContain(FABRIKA_IGNORE_ROW);
 	});
 
 	// The collision guard is the row, not the file: a `.gitignore` is a file many tools contribute to.
 	it("is idempotent — a row already there is exists at exit 0 and nothing is written", async () => {
-		const {outcome, written} = await bootstrap({"/repo/.gitignore": "dist\n/.fabrika/\n"});
+		const { outcome, written } = await bootstrap({ "/repo/.gitignore": "dist\n/.fabrika/\n" });
 		expect(outcome.code).toBe(ANSWER);
 		expect(JSON.parse(outcome.stdout).outcome).toBe("exists");
 		expect(written.size).toBe(0);
 	});
 
 	it("never truncates a file it could not read — an unreadable target is UNKNOWN, not empty", async () => {
-		const fs = fakeFs({files: {"/repo/.gitignore": "dist\n"}, unreadable: ["/repo/.gitignore"]});
+		const fs = fakeFs({
+			files: { "/repo/.gitignore": "dist\n" },
+			unreadable: ["/repo/.gitignore"],
+		});
 		const outcome = await Effect.runPromise(
 			Effect.provide(
 				runBootstrap({
@@ -726,9 +729,9 @@ describe("the .fabrika/ gitignore row", () => {
 					path: null,
 					json: true,
 					repoRoot: "/repo",
-					configSource: {_tag: "Absent"},
+					configSource: { _tag: "Absent" },
 					repo: ok("o/r"),
-					stdin: Effect.succeed({_tag: "NoStdin"} as StdinRead),
+					stdin: Effect.succeed({ _tag: "NoStdin" } as StdinRead),
 				}),
 				Layer.mergeAll(fs.layer, fakeShell([]).layer),
 			),
@@ -745,7 +748,7 @@ describe("the .fabrika/ gitignore row", () => {
  */
 describe("the CLAUDE.md work-flows-through-fabrika section", () => {
 	const bootstrap = (files: Record<string, string | null>) => {
-		const fs = fakeFs({files});
+		const fs = fakeFs({ files });
 		return Effect.runPromise(
 			Effect.provide(
 				runBootstrap({
@@ -753,13 +756,13 @@ describe("the CLAUDE.md work-flows-through-fabrika section", () => {
 					path: null,
 					json: true,
 					repoRoot: "/repo",
-					configSource: {_tag: "Absent"},
+					configSource: { _tag: "Absent" },
 					repo: ok("o/r"),
-					stdin: Effect.succeed({_tag: "NoStdin"} as StdinRead),
+					stdin: Effect.succeed({ _tag: "NoStdin" } as StdinRead),
 				}),
 				Layer.mergeAll(fs.layer, fakeShell([]).layer),
 			),
-		).then((outcome) => ({outcome, written: fs.written}));
+		).then((outcome) => ({ outcome, written: fs.written }));
 	};
 
 	it("opens on the marker heading, so the collision guard can never drift off the template", () => {
@@ -768,7 +771,7 @@ describe("the CLAUDE.md work-flows-through-fabrika section", () => {
 
 	it("appends the section once to a present CLAUDE.md and leaves the prior bytes intact", async () => {
 		const before = "# acme\n\nHow this repo is built.\n";
-		const {outcome, written} = await bootstrap({"/repo/CLAUDE.md": before});
+		const { outcome, written } = await bootstrap({ "/repo/CLAUDE.md": before });
 		expect(outcome.code).toBe(ANSWER);
 		expect(JSON.parse(outcome.stdout)).toEqual({
 			outcome: "created",
@@ -782,13 +785,13 @@ describe("the CLAUDE.md work-flows-through-fabrika section", () => {
 	});
 
 	it("creates CLAUDE.md whole — exactly the canonical section — where none exists", async () => {
-		const {outcome, written} = await bootstrap({});
+		const { outcome, written } = await bootstrap({});
 		expect(outcome.code).toBe(ANSWER);
 		expect(written.get("/repo/CLAUDE.md")).toBe(`${CLAUDE_MD_SECTION}\n`);
 	});
 
 	it("is idempotent — a second invocation reports exists and writes nothing", async () => {
-		const {outcome, written} = await bootstrap({
+		const { outcome, written } = await bootstrap({
 			"/repo/CLAUDE.md": `# acme\n\n${CLAUDE_MD_SECTION}\n`,
 		});
 		expect(outcome.code).toBe(ANSWER);
@@ -798,7 +801,7 @@ describe("the CLAUDE.md work-flows-through-fabrika section", () => {
 
 	it("recognises a hand-adapted section by its heading alone and rewrites none of it", async () => {
 		const adapted = `# acme\n\n${CLAUDE_MD_MARKER}\n\nThis repo adopts no ADRs; decisions land as enforcement.\n`;
-		const {outcome, written} = await bootstrap({"/repo/CLAUDE.md": adapted});
+		const { outcome, written } = await bootstrap({ "/repo/CLAUDE.md": adapted });
 		expect(outcome.code).toBe(ANSWER);
 		expect(JSON.parse(outcome.stdout).outcome).toBe("exists");
 		expect(written.size).toBe(0);
@@ -818,7 +821,7 @@ describe("the settings-patch surface", () => {
 		files: Record<string, string | null>,
 		unreadable: ReadonlyArray<string> = [],
 	) => {
-		const fs = fakeFs({files, unreadable});
+		const fs = fakeFs({ files, unreadable });
 		return Effect.runPromise(
 			Effect.provide(
 				runBootstrap({
@@ -826,20 +829,20 @@ describe("the settings-patch surface", () => {
 					path: null,
 					json: true,
 					repoRoot: "/repo",
-					configSource: {_tag: "Absent"},
+					configSource: { _tag: "Absent" },
 					repo: ok("o/r"),
-					stdin: Effect.succeed({_tag: "NoStdin"} as StdinRead),
+					stdin: Effect.succeed({ _tag: "NoStdin" } as StdinRead),
 				}),
 				Layer.mergeAll(fs.layer, fakeShell([]).layer),
 			),
-		).then((outcome) => ({outcome, written: fs.written}));
+		).then((outcome) => ({ outcome, written: fs.written }));
 	};
 
 	it("merges both declared keys into a present file and preserves every unknown key", async () => {
-		const {outcome, written} = await bootstrapWith({
+		const { outcome, written } = await bootstrapWith({
 			[SETTINGS]: JSON.stringify({
-				hooks: {PreToolUse: [{matcher: "Bash"}]},
-				enabledPlugins: {"other@market": true},
+				hooks: { PreToolUse: [{ matcher: "Bash" }] },
+				enabledPlugins: { "other@market": true },
 			}),
 		});
 		expect(outcome.code).toBe(ANSWER);
@@ -848,8 +851,8 @@ describe("the settings-patch surface", () => {
 			target: ".claude/settings.json",
 		});
 		const merged = JSON.parse(written.get(SETTINGS) ?? "");
-		expect(merged.hooks).toEqual({PreToolUse: [{matcher: "Bash"}]});
-		expect(merged.enabledPlugins).toEqual({"other@market": true, "fabrika@kampus": true});
+		expect(merged.hooks).toEqual({ PreToolUse: [{ matcher: "Bash" }] });
+		expect(merged.enabledPlugins).toEqual({ "other@market": true, "fabrika@kampus": true });
 		expect(merged.extraKnownMarketplaces.kampus.source).toEqual({
 			source: "github",
 			repo: "kamp-us/phoenix",
@@ -857,8 +860,8 @@ describe("the settings-patch surface", () => {
 	});
 
 	it("flips a fabrika entry that is already present but switched off", async () => {
-		const {written} = await bootstrapWith({
-			[SETTINGS]: JSON.stringify({enabledPlugins: {"fabrika@kampus": false}}),
+		const { written } = await bootstrapWith({
+			[SETTINGS]: JSON.stringify({ enabledPlugins: { "fabrika@kampus": false } }),
 		});
 		expect(JSON.parse(written.get(SETTINGS) ?? "").enabledPlugins).toEqual({
 			"fabrika@kampus": true,
@@ -868,7 +871,7 @@ describe("the settings-patch surface", () => {
 	// The parse failure is the one fact that makes the refusal actionable — a bare exit 11 would send
 	// the caller hunting through the whole file for what JSON rejected.
 	it("refuses a target that does not parse as JSON, naming the file and the parse failure", async () => {
-		const {outcome, written} = await bootstrapWith({[SETTINGS]: "{not json"});
+		const { outcome, written } = await bootstrapWith({ [SETTINGS]: "{not json" });
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		const stderr = outcome.stderr.join("\n");
 		expect(stderr).toContain(".claude/settings.json does not parse as a JSON object");
@@ -879,7 +882,7 @@ describe("the settings-patch surface", () => {
 	});
 
 	it("refuses a target whose top level is not an object, writing nothing", async () => {
-		const {outcome, written} = await bootstrapWith({[SETTINGS]: "[1, 2]"});
+		const { outcome, written } = await bootstrapWith({ [SETTINGS]: "[1, 2]" });
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.join("\n")).toContain("an array, not a JSON object");
 		expect(written.size).toBe(0);
@@ -887,13 +890,13 @@ describe("the settings-patch surface", () => {
 
 	/** Idempotency is absolute: key-order differences are not a delta to rewrite. */
 	it("reads an adopted file as `exists`, whatever order its keys spell, and writes nothing", async () => {
-		const {outcome, written} = await bootstrapWith({
+		const { outcome, written } = await bootstrapWith({
 			[SETTINGS]: JSON.stringify({
-				enabledPlugins: {"fabrika@kampus": true},
+				enabledPlugins: { "fabrika@kampus": true },
 				extraKnownMarketplaces: {
-					kampus: {autoUpdate: true, source: {repo: "kamp-us/phoenix", source: "github"}},
+					kampus: { autoUpdate: true, source: { repo: "kamp-us/phoenix", source: "github" } },
 				},
-				permissions: {allow: ["Bash"]},
+				permissions: { allow: ["Bash"] },
 			}),
 		});
 		expect(outcome.code).toBe(ANSWER);
@@ -902,26 +905,26 @@ describe("the settings-patch surface", () => {
 	});
 
 	it("keeps a two-space settings file two-space-indented", async () => {
-		const before = `${JSON.stringify({permissions: {allow: ["Bash"]}}, null, 2)}\n`;
-		const {written} = await bootstrapWith({[SETTINGS]: before});
+		const before = `${JSON.stringify({ permissions: { allow: ["Bash"] } }, null, 2)}\n`;
+		const { written } = await bootstrapWith({ [SETTINGS]: before });
 		expect(written.get(SETTINGS)).toBe(
-			`${JSON.stringify({...JSON.parse(before), ...SETTINGS_PATCH}, null, 2)}\n`,
+			`${JSON.stringify({ ...JSON.parse(before), ...SETTINGS_PATCH }, null, 2)}\n`,
 		);
 	});
 
 	it("reads its own merged settings file back as exists on the second run", async () => {
 		const first = await bootstrapWith({
-			[SETTINGS]: `${JSON.stringify({permissions: {allow: ["Bash"]}}, null, 4)}\n`,
+			[SETTINGS]: `${JSON.stringify({ permissions: { allow: ["Bash"] } }, null, 4)}\n`,
 		});
 		const merged = first.written.get(SETTINGS) ?? "";
 		expect(merged).toContain('\n    "enabledPlugins": {\n        "fabrika@kampus": true\n    }\n');
-		const second = await bootstrapWith({[SETTINGS]: merged});
+		const second = await bootstrapWith({ [SETTINGS]: merged });
 		expect(JSON.parse(second.outcome.stdout).outcome).toBe("exists");
 		expect(second.written.size).toBe(0);
 	});
 
 	it("creates the file whole when it is absent", async () => {
-		const {outcome, written} = await bootstrapWith({});
+		const { outcome, written } = await bootstrapWith({});
 		expect(outcome.code).toBe(ANSWER);
 		expect(JSON.parse(outcome.stdout)).toEqual({
 			outcome: "created",
@@ -936,7 +939,7 @@ describe("the settings-patch surface", () => {
 	});
 
 	it("never writes over a file it could not read — an unreadable target is UNKNOWN, not absent", async () => {
-		const fs = fakeFs({files: {[SETTINGS]: "{}"}, unreadable: [SETTINGS]});
+		const fs = fakeFs({ files: { [SETTINGS]: "{}" }, unreadable: [SETTINGS] });
 		const outcome = await Effect.runPromise(
 			Effect.provide(
 				runBootstrap({
@@ -944,9 +947,9 @@ describe("the settings-patch surface", () => {
 					path: null,
 					json: true,
 					repoRoot: "/repo",
-					configSource: {_tag: "Absent"},
+					configSource: { _tag: "Absent" },
 					repo: ok("o/r"),
-					stdin: Effect.succeed({_tag: "NoStdin"} as StdinRead),
+					stdin: Effect.succeed({ _tag: "NoStdin" } as StdinRead),
 				}),
 				Layer.mergeAll(fs.layer, fakeShell([]).layer),
 			),
@@ -965,7 +968,7 @@ describe("the hand-check-rule surface", () => {
 	const SCREEN_FILES = ["src/app/page.tsx", "src/app/habits/row.tsx"];
 
 	const bootstrapWith = (files: Record<string, string | null>) => {
-		const fs = fakeFs({files});
+		const fs = fakeFs({ files });
 		return Effect.runPromise(
 			Effect.provide(
 				runBootstrap({
@@ -973,24 +976,24 @@ describe("the hand-check-rule surface", () => {
 					path: null,
 					json: true,
 					repoRoot: "/repo",
-					configSource: {_tag: "Absent"},
+					configSource: { _tag: "Absent" },
 					repo: ok("o/r"),
-					stdin: Effect.succeed({_tag: "NoStdin"} as StdinRead),
+					stdin: Effect.succeed({ _tag: "NoStdin" } as StdinRead),
 				}),
 				Layer.mergeAll(fs.layer, fakeShell([]).layer),
 			),
-		).then((outcome) => ({outcome, text: fs.written.get(CONFIG), written: fs.written}));
+		).then((outcome) => ({ outcome, text: fs.written.get(CONFIG), written: fs.written }));
 	};
 
 	/** The mode `review-ui route --no-preview` resolves over a config file's bytes. */
 	const routedMode = (text: string) => {
-		const rules = readFromLoad(loadConfig({_tag: "Text", text}), reviewUiKey);
+		const rules = readFromLoad(loadConfig({ _tag: "Text", text }), reviewUiKey);
 		if (rules._tag === "Refused") throw new Error(rules.reason);
 		return noPreviewMode(rules.value.whenNoPreview, SCREEN_FILES);
 	};
 
 	it("creates the file with one hand-check rule, which the no-preview route then resolves", async () => {
-		const {outcome, text} = await bootstrapWith({});
+		const { outcome, text } = await bootstrapWith({});
 		expect(outcome.code).toBe(ANSWER);
 		expect(JSON.parse(outcome.stdout)).toEqual({
 			outcome: "created",
@@ -1002,7 +1005,7 @@ describe("the hand-check-rule surface", () => {
 			"status bootstrap: created .fabrika.jsonc for hand-check-rule with one hand-check rule, read-back conformed.",
 		]);
 		expect(JSON.parse(text ?? "")).toEqual({
-			reviewUi: {whenNoPreview: [{paths: ["**"], mode: "hand-check"}]},
+			reviewUi: { whenNoPreview: [{ paths: ["**"], mode: "hand-check" }] },
 		});
 		expect(routedMode("{}")).toBe("require-render");
 		expect(routedMode(text ?? "")).toBe("hand-check");
@@ -1021,7 +1024,7 @@ describe("the hand-check-rule surface", () => {
 			"}",
 			"",
 		].join("\n");
-		const {outcome, text = ""} = await bootstrapWith({[CONFIG]: before});
+		const { outcome, text = "" } = await bootstrapWith({ [CONFIG]: before });
 		expect(outcome.code).toBe(ANSWER);
 		expect(outcome.stderr).toEqual([
 			"status bootstrap: added one hand-check rule to .fabrika.jsonc for hand-check-rule, read-back conformed.",
@@ -1037,18 +1040,21 @@ describe("the hand-check-rule surface", () => {
 		const [was, is] = [before, text].map(
 			(source) => JSON.parse(stripJsonComments(source)) as Record<string, unknown>,
 		);
-		expect(is).toEqual({...was, reviewUi: {whenNoPreview: [{paths: ["**"], mode: "hand-check"}]}});
+		expect(is).toEqual({
+			...was,
+			reviewUi: { whenNoPreview: [{ paths: ["**"], mode: "hand-check" }] },
+		});
 		expect(routedMode(text)).toBe("hand-check");
 	});
 
 	it("keeps a commented-out rule that sits inside the empty list", async () => {
 		const commentedOut = '// {"paths": ["apps/admin/**"], "mode": "hand-check"}';
 		const before = `{\n\t"reviewUi": {\n\t\t"whenNoPreview": [\n\t\t\t${commentedOut}\n\t\t]\n\t}\n}\n`;
-		const {outcome, text = ""} = await bootstrapWith({[CONFIG]: before});
+		const { outcome, text = "" } = await bootstrapWith({ [CONFIG]: before });
 		expect(outcome.code).toBe(ANSWER);
 		expect(text).toContain(`"whenNoPreview": [\n\t\t\t${commentedOut}\n\t\t\t{`);
 		expect(JSON.parse(stripJsonComments(text))).toEqual({
-			reviewUi: {whenNoPreview: [{paths: ["**"], mode: "hand-check"}]},
+			reviewUi: { whenNoPreview: [{ paths: ["**"], mode: "hand-check" }] },
 		});
 		expect(routedMode(text)).toBe("hand-check");
 	});
@@ -1056,23 +1062,26 @@ describe("the hand-check-rule surface", () => {
 	it.each([
 		["a stricter rule", "require-render"],
 		["a looser rule", "skip"],
-	])("writes nothing over %s the repo already declared, and says the rule exists", async (_, mode) => {
-		const {outcome, written} = await bootstrapWith({
-			[CONFIG]: `{\n\t"reviewUi": {"whenNoPreview": [{"paths": ["docs/**"], "mode": "${mode}"}]}\n}\n`,
-		});
-		expect(outcome.code).toBe(ANSWER);
-		expect(JSON.parse(outcome.stdout).outcome).toBe("exists");
-		expect(outcome.stderr).toEqual([
-			"status bootstrap: .fabrika.jsonc already carries a `reviewUi.whenNoPreview` rule — nothing written.",
-		]);
-		expect(written.size).toBe(0);
-	});
+	])(
+		"writes nothing over %s the repo already declared, and says the rule exists",
+		async (_, mode) => {
+			const { outcome, written } = await bootstrapWith({
+				[CONFIG]: `{\n\t"reviewUi": {"whenNoPreview": [{"paths": ["docs/**"], "mode": "${mode}"}]}\n}\n`,
+			});
+			expect(outcome.code).toBe(ANSWER);
+			expect(JSON.parse(outcome.stdout).outcome).toBe("exists");
+			expect(outcome.stderr).toEqual([
+				"status bootstrap: .fabrika.jsonc already carries a `reviewUi.whenNoPreview` rule — nothing written.",
+			]);
+			expect(written.size).toBe(0);
+		},
+	);
 
 	it.each([
 		["does not parse", '{"reviewUi": '],
 		["declares a `reviewUi` the key refuses", '{"reviewUi": {"whenNoPreview": "hand-check"}}'],
 	])("refuses a file that %s, writing nothing", async (_, text) => {
-		const {outcome, written} = await bootstrapWith({[CONFIG]: text});
+		const { outcome, written } = await bootstrapWith({ [CONFIG]: text });
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.join("\n")).toMatch(/[Nn]othing was written/);
 		expect(written.size).toBe(0);
@@ -1088,7 +1097,7 @@ describe("the fabrika-config surface", () => {
 	const STARTER_KEYS = [CODE_VALIDATORS, DEPENDENCY_RECONCILER, UI_SURFACES, CI];
 
 	const bootstrapWith = (surfaceId: string, files: Record<string, string | null>) => {
-		const fs = fakeFs({files});
+		const fs = fakeFs({ files });
 		return Effect.runPromise(
 			Effect.provide(
 				runBootstrap({
@@ -1096,18 +1105,18 @@ describe("the fabrika-config surface", () => {
 					path: null,
 					json: true,
 					repoRoot: "/repo",
-					configSource: {_tag: "Absent"},
+					configSource: { _tag: "Absent" },
 					repo: ok("o/r"),
-					stdin: Effect.succeed({_tag: "NoStdin"} as StdinRead),
+					stdin: Effect.succeed({ _tag: "NoStdin" } as StdinRead),
 				}),
 				Layer.mergeAll(fs.layer, fakeShell([]).layer),
 			),
-		).then((outcome) => ({outcome, text: fs.written.get(CONFIG), written: fs.written}));
+		).then((outcome) => ({ outcome, text: fs.written.get(CONFIG), written: fs.written }));
 	};
 
 	const layersOf = (source: ConfigSource): ConfigLayers => ({
 		tracked: source,
-		local: {_tag: "Absent"},
+		local: { _tag: "Absent" },
 	});
 
 	const settingValue = (rows: ReadonlyArray<SettingRow>, key: string): unknown => {
@@ -1116,7 +1125,7 @@ describe("the fabrika-config surface", () => {
 	};
 
 	it("writes a file `status settings` resolves whole, each named key declared at its shipped default", async () => {
-		const {outcome, text = ""} = await bootstrapWith("fabrika-config", {});
+		const { outcome, text = "" } = await bootstrapWith("fabrika-config", {});
 		expect(outcome.code).toBe(ANSWER);
 		expect(JSON.parse(outcome.stdout)).toEqual({
 			outcome: "created",
@@ -1128,21 +1137,21 @@ describe("the fabrika-config surface", () => {
 			"status bootstrap: created .fabrika.jsonc for fabrika-config, read-back conformed.",
 		]);
 
-		const layers = layersOf({_tag: "Text", text});
+		const layers = layersOf({ _tag: "Text", text });
 		const rows = settingRows(layers);
-		expect(runSettings({layers, rows, asOf: AS_OF, json: false}).code).toBe(ANSWER);
+		expect(runSettings({ layers, rows, asOf: AS_OF, json: false }).code).toBe(ANSWER);
 		expect(rows.filter((one) => one.provenance === "unknown")).toEqual([]);
 		const declared = rows.filter((one) => one.provenance === "declared").map((one) => one.key);
 		expect(declared.sort()).toEqual([...STARTER_KEYS].sort());
 
-		const undeclared = settingRows(layersOf({_tag: "Absent"}));
+		const undeclared = settingRows(layersOf({ _tag: "Absent" }));
 		for (const key of STARTER_KEYS) {
 			expect(settingValue(rows, key)).toEqual(settingValue(undeclared, key));
 		}
 	});
 
 	it("says exists over a file already there and leaves it untouched", async () => {
-		const {outcome, written} = await bootstrapWith("fabrika-config", {
+		const { outcome, written } = await bootstrapWith("fabrika-config", {
 			[CONFIG]: '{"codeValidators": [{"command": ["pnpm", "typecheck"]}]}\n',
 		});
 		expect(outcome.code).toBe(ANSWER);
@@ -1157,8 +1166,8 @@ describe("the fabrika-config surface", () => {
 
 	// The two surfaces share one file, and setup runs them in this order.
 	it("takes the hand-check rule afterwards with every starter comment kept", async () => {
-		const {text: starter = ""} = await bootstrapWith("fabrika-config", {});
-		const {outcome, text = ""} = await bootstrapWith("hand-check-rule", {[CONFIG]: starter});
+		const { text: starter = "" } = await bootstrapWith("fabrika-config", {});
+		const { outcome, text = "" } = await bootstrapWith("hand-check-rule", { [CONFIG]: starter });
 		expect(outcome.code).toBe(ANSWER);
 		expect(JSON.parse(outcome.stdout).outcome).toBe("created");
 		const comments = starter.split("\n").filter((line) => line.trim().startsWith("//"));
@@ -1166,7 +1175,7 @@ describe("the fabrika-config surface", () => {
 		for (const comment of comments) expect(text).toContain(comment);
 		expect(JSON.parse(stripJsonComments(text))).toEqual({
 			...(JSON.parse(stripJsonComments(starter)) as Record<string, unknown>),
-			reviewUi: {whenNoPreview: [{paths: ["**"], mode: "hand-check"}]},
+			reviewUi: { whenNoPreview: [{ paths: ["**"], mode: "hand-check" }] },
 		});
 	});
 });
@@ -1181,14 +1190,17 @@ describe("the dep-pin surface", () => {
 	const MANIFEST = "/repo/package.json";
 	/** `encodeURIComponent` spells the scoped name `%40kampus%2Ffabrika-cli`. */
 	const REGISTRY = /GET https:\/\/registry\.npmjs\.org\/%40kampus%2Ffabrika-cli\/latest/;
-	const RELEASE = (version: string): HttpReply => ({status: 200, body: JSON.stringify({version})});
+	const RELEASE = (version: string): HttpReply => ({
+		status: 200,
+		body: JSON.stringify({ version }),
+	});
 
 	const bootstrapWith = (
 		files: Record<string, string | null>,
 		script: ReadonlyArray<readonly [RegExp, HttpReply]> = [[REGISTRY, RELEASE("0.5.0")]],
 	) => {
 		const seams = fakeSeams(script);
-		const fs = fakeFs({files});
+		const fs = fakeFs({ files });
 		return Effect.runPromise(
 			Effect.provide(
 				runBootstrap({
@@ -1196,22 +1208,22 @@ describe("the dep-pin surface", () => {
 					path: null,
 					json: true,
 					repoRoot: "/repo",
-					configSource: {_tag: "Absent"},
+					configSource: { _tag: "Absent" },
 					repo: ok("o/r"),
-					stdin: Effect.succeed({_tag: "NoStdin"} as StdinRead),
+					stdin: Effect.succeed({ _tag: "NoStdin" } as StdinRead),
 				}),
 				Layer.mergeAll(seams.layer, fs.layer),
 			),
-		).then((outcome) => ({outcome, written: fs.written, seams}));
+		).then((outcome) => ({ outcome, written: fs.written, seams }));
 	};
 
 	it("pins the row at the registry's current release into a present manifest, preserving every other key", async () => {
-		const {outcome, written} = await bootstrapWith({
+		const { outcome, written } = await bootstrapWith({
 			[MANIFEST]: JSON.stringify({
 				name: "adopting-repo",
 				private: true,
-				scripts: {build: "tsc"},
-				dependencies: {express: "^4.21.0"},
+				scripts: { build: "tsc" },
+				dependencies: { express: "^4.21.0" },
 			}),
 		});
 		expect(outcome.code).toBe(ANSWER);
@@ -1222,16 +1234,16 @@ describe("the dep-pin surface", () => {
 			readback: "ok",
 		});
 		const merged = JSON.parse(written.get(MANIFEST) ?? "");
-		expect(merged.dependencies).toEqual({express: "^4.21.0"});
-		expect(merged.devDependencies).toEqual({"@kampus/fabrika-cli": "0.5.0"});
+		expect(merged.dependencies).toEqual({ express: "^4.21.0" });
+		expect(merged.devDependencies).toEqual({ "@kampus/fabrika-cli": "0.5.0" });
 		// Everything dep-pin did not declare survives the re-serialize verbatim.
 		expect(merged.name).toBe("adopting-repo");
 		expect(merged.private).toBe(true);
-		expect(merged.scripts).toEqual({build: "tsc"});
+		expect(merged.scripts).toEqual({ build: "tsc" });
 	});
 
 	it("prints the exact install command on the same notice channel — the lockfile handoff", async () => {
-		const {outcome} = await bootstrapWith({[MANIFEST]: '{"dependencies":{}}'});
+		const { outcome } = await bootstrapWith({ [MANIFEST]: '{"dependencies":{}}' });
 		expect(outcome.code).toBe(ANSWER);
 		expect(outcome.stderr).toContain(
 			"status bootstrap: the lockfile stays yours — install with: pnpm add -D --save-exact @kampus/fabrika-cli@0.5.0",
@@ -1239,7 +1251,7 @@ describe("the dep-pin surface", () => {
 	});
 
 	it("names the install footprint and the pnpm 10 approval step the browser setup needs", async () => {
-		const {outcome} = await bootstrapWith({[MANIFEST]: '{"dependencies":{}}'});
+		const { outcome } = await bootstrapWith({ [MANIFEST]: '{"dependencies":{}}' });
 		expect(outcome.code).toBe(ANSWER);
 		expect(outcome.stderr).toContain(
 			"status bootstrap: the install brings in Playwright (@playwright/test) and its postinstall downloads a headless Chromium (~130MB) — the browser `fabrika ui render` drives.",
@@ -1250,9 +1262,12 @@ describe("the dep-pin surface", () => {
 	});
 
 	it("creates the manifest whole when it is absent", async () => {
-		const {outcome, written} = await bootstrapWith({});
+		const { outcome, written } = await bootstrapWith({});
 		expect(outcome.code).toBe(ANSWER);
-		expect(JSON.parse(outcome.stdout)).toMatchObject({outcome: "created", target: "package.json"});
+		expect(JSON.parse(outcome.stdout)).toMatchObject({
+			outcome: "created",
+			target: "package.json",
+		});
 		expect(written.get(MANIFEST)).toBe(
 			'{\n\t"devDependencies": {\n\t\t"@kampus/fabrika-cli": "0.5.0"\n\t}\n}\n',
 		);
@@ -1261,15 +1276,15 @@ describe("the dep-pin surface", () => {
 	// An earlier dep-pin wrote the row under `dependencies`. The re-run moves it whole: one row, under
 	// `devDependencies`, never two and never one left behind.
 	it("moves a row found under dependencies to devDependencies, leaving one row", async () => {
-		const {outcome, written} = await bootstrapWith({
+		const { outcome, written } = await bootstrapWith({
 			[MANIFEST]: JSON.stringify({
-				dependencies: {express: "^4.21.0", "@kampus/fabrika-cli": "0.4.1"},
-				devDependencies: {typescript: "5.9.2"},
+				dependencies: { express: "^4.21.0", "@kampus/fabrika-cli": "0.4.1" },
+				devDependencies: { typescript: "5.9.2" },
 			}),
 		});
 		expect(JSON.parse(outcome.stdout).outcome).toBe("created");
 		const merged = JSON.parse(written.get(MANIFEST) ?? "");
-		expect(merged.dependencies).toEqual({express: "^4.21.0"});
+		expect(merged.dependencies).toEqual({ express: "^4.21.0" });
 		expect(merged.devDependencies).toEqual({
 			typescript: "5.9.2",
 			"@kampus/fabrika-cli": "0.5.0",
@@ -1277,26 +1292,26 @@ describe("the dep-pin surface", () => {
 	});
 
 	it("moves a current row too, and keeps an emptied dependencies section in place", async () => {
-		const {written} = await bootstrapWith({
-			[MANIFEST]: JSON.stringify({name: "a", dependencies: {"@kampus/fabrika-cli": "0.5.0"}}),
+		const { written } = await bootstrapWith({
+			[MANIFEST]: JSON.stringify({ name: "a", dependencies: { "@kampus/fabrika-cli": "0.5.0" } }),
 		});
 		expect(JSON.parse(written.get(MANIFEST) ?? "")).toEqual({
 			name: "a",
 			dependencies: {},
-			devDependencies: {"@kampus/fabrika-cli": "0.5.0"},
+			devDependencies: { "@kampus/fabrika-cli": "0.5.0" },
 		});
 	});
 
 	it("drops a stray dependencies row when devDependencies already holds the pin", async () => {
-		const {written} = await bootstrapWith({
+		const { written } = await bootstrapWith({
 			[MANIFEST]: JSON.stringify({
-				dependencies: {"@kampus/fabrika-cli": "0.4.1"},
-				devDependencies: {"@kampus/fabrika-cli": "0.5.0"},
+				dependencies: { "@kampus/fabrika-cli": "0.4.1" },
+				devDependencies: { "@kampus/fabrika-cli": "0.5.0" },
 			}),
 		});
 		expect(JSON.parse(written.get(MANIFEST) ?? "")).toEqual({
 			dependencies: {},
-			devDependencies: {"@kampus/fabrika-cli": "0.5.0"},
+			devDependencies: { "@kampus/fabrika-cli": "0.5.0" },
 		});
 	});
 
@@ -1304,11 +1319,11 @@ describe("the dep-pin surface", () => {
 	// file's own layout, so the only lines that change are the ones the row adds.
 	it("keeps a two-space manifest's indentation and final newline, adding only the new lines", async () => {
 		const before = `${JSON.stringify(
-			{name: "site", scripts: {build: "next build"}, devDependencies: {typescript: "5.9.2"}},
+			{ name: "site", scripts: { build: "next build" }, devDependencies: { typescript: "5.9.2" } },
 			null,
 			2,
 		)}\n`;
-		const {written} = await bootstrapWith({[MANIFEST]: before});
+		const { written } = await bootstrapWith({ [MANIFEST]: before });
 		const after = written.get(MANIFEST) ?? "";
 		const beforeLines = before.split("\n");
 		const afterLines = after.split("\n");
@@ -1323,8 +1338,8 @@ describe("the dep-pin surface", () => {
 	});
 
 	it("keeps a tab-indented manifest tab-indented", async () => {
-		const before = `${JSON.stringify({name: "site"}, null, "\t")}\n`;
-		const {written} = await bootstrapWith({[MANIFEST]: before});
+		const before = `${JSON.stringify({ name: "site" }, null, "\t")}\n`;
+		const { written } = await bootstrapWith({ [MANIFEST]: before });
 		expect(written.get(MANIFEST)).toBe(
 			'{\n\t"name": "site",\n\t"devDependencies": {\n\t\t"@kampus/fabrika-cli": "0.5.0"\n\t}\n}\n',
 		);
@@ -1332,11 +1347,11 @@ describe("the dep-pin surface", () => {
 
 	it("reads its own merged manifest back as exists and writes nothing on the second run", async () => {
 		const first = await bootstrapWith({
-			[MANIFEST]: `${JSON.stringify({name: "site", dependencies: {next: "15.0.0"}}, null, 2)}\n`,
+			[MANIFEST]: `${JSON.stringify({ name: "site", dependencies: { next: "15.0.0" } }, null, 2)}\n`,
 		});
 		const merged = first.written.get(MANIFEST) ?? "";
 		expect(merged).toContain('\n  "devDependencies": {\n    "@kampus/fabrika-cli": "0.5.0"\n  }\n');
-		const second = await bootstrapWith({[MANIFEST]: merged});
+		const second = await bootstrapWith({ [MANIFEST]: merged });
 		expect(JSON.parse(second.outcome.stdout).outcome).toBe("exists");
 		expect(second.written.size).toBe(0);
 	});
@@ -1353,7 +1368,7 @@ describe("the dep-pin surface", () => {
 			const http = Layer.succeed(HttpClient.HttpClient)(
 				HttpClient.make(() =>
 					Effect.succeed(
-						HttpClientResponse.fromWeb(request, new Response(new ReadableStream({start() {}}))),
+						HttpClientResponse.fromWeb(request, new Response(new ReadableStream({ start() {} }))),
 					),
 				),
 			);
@@ -1377,8 +1392,8 @@ describe("the dep-pin surface", () => {
 	// The version is never a constant here: a re-run reads the registry again, so a stale row moves
 	// forward to whatever npm publishes next rather than being declared already-adopted.
 	it("moves a stale pin forward to the current release", async () => {
-		const {outcome, written} = await bootstrapWith({
-			[MANIFEST]: JSON.stringify({devDependencies: {"@kampus/fabrika-cli": "0.4.1"}}),
+		const { outcome, written } = await bootstrapWith({
+			[MANIFEST]: JSON.stringify({ devDependencies: { "@kampus/fabrika-cli": "0.4.1" } }),
 		});
 		expect(JSON.parse(outcome.stdout).outcome).toBe("created");
 		expect(JSON.parse(written.get(MANIFEST) ?? "").devDependencies["@kampus/fabrika-cli"]).toBe(
@@ -1388,10 +1403,10 @@ describe("the dep-pin surface", () => {
 
 	/** Idempotency is absolute: a manifest already at the current release writes nothing. */
 	it("reports a present, current row as exists at exit 0 and writes nothing", async () => {
-		const {outcome, written} = await bootstrapWith({
+		const { outcome, written } = await bootstrapWith({
 			[MANIFEST]: JSON.stringify({
 				name: "adopting-repo",
-				devDependencies: {"@kampus/fabrika-cli": "0.5.0"},
+				devDependencies: { "@kampus/fabrika-cli": "0.5.0" },
 			}),
 		});
 		expect(outcome.code).toBe(ANSWER);
@@ -1402,7 +1417,7 @@ describe("the dep-pin surface", () => {
 	// The no-package-manager law: every shell call is a violation; the only request the
 	// verb may issue is the registry read; a lockfile in the tree must not even be touched.
 	it("spawns no package manager, touches no lockfile — the registry GET is its whole footprint", async () => {
-		const {written, seams} = await bootstrapWith({
+		const { written, seams } = await bootstrapWith({
 			[MANIFEST]: '{"dependencies":{}}',
 			"/repo/pnpm-lock.yaml": "lockfileVersion: '9.0'",
 		});
@@ -1412,14 +1427,14 @@ describe("the dep-pin surface", () => {
 	});
 
 	it("refuses a manifest that does not parse as JSON, writing nothing", async () => {
-		const {outcome, written} = await bootstrapWith({[MANIFEST]: "{not json"});
+		const { outcome, written } = await bootstrapWith({ [MANIFEST]: "{not json" });
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.join("\n")).toContain("package.json does not parse as a JSON object");
 		expect(written.size).toBe(0);
 	});
 
 	it("refuses a manifest whose top level is not an object, writing nothing", async () => {
-		const {outcome, written} = await bootstrapWith({[MANIFEST]: "[]"});
+		const { outcome, written } = await bootstrapWith({ [MANIFEST]: "[]" });
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.join("\n")).toContain("an array, not a JSON object");
 		expect(written.size).toBe(0);
@@ -1428,7 +1443,7 @@ describe("the dep-pin surface", () => {
 	it("refuses loudly when the registry cannot be reached — never pins a guessed version", async () => {
 		const seams = fakeSeams([]);
 		const http = fakeHttp([], undefined, [/registry\.npmjs\.org/]);
-		const fs = fakeFs({files: {[MANIFEST]: "{}"}});
+		const fs = fakeFs({ files: { [MANIFEST]: "{}" } });
 		const outcome = await Effect.runPromise(
 			Effect.provide(
 				runBootstrap({
@@ -1436,9 +1451,9 @@ describe("the dep-pin surface", () => {
 					path: null,
 					json: true,
 					repoRoot: "/repo",
-					configSource: {_tag: "Absent"},
+					configSource: { _tag: "Absent" },
 					repo: ok("o/r"),
-					stdin: Effect.succeed({_tag: "NoStdin"} as StdinRead),
+					stdin: Effect.succeed({ _tag: "NoStdin" } as StdinRead),
 				}),
 				Layer.mergeAll(seams.layer, http.layer, fs.layer),
 			),
@@ -1452,8 +1467,8 @@ describe("the dep-pin surface", () => {
 	});
 
 	it("refuses when the registry answers non-200, naming the status", async () => {
-		const {outcome, written} = await bootstrapWith({[MANIFEST]: "{}"}, [
-			[REGISTRY, {status: 404, body: '{"error":"Not Found"}'}],
+		const { outcome, written } = await bootstrapWith({ [MANIFEST]: "{}" }, [
+			[REGISTRY, { status: 404, body: '{"error":"Not Found"}' }],
 		]);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.join("\n")).toContain("answered 404");
@@ -1461,8 +1476,8 @@ describe("the dep-pin surface", () => {
 	});
 
 	it("refuses a 200 body that names no version", async () => {
-		const {outcome, written} = await bootstrapWith({[MANIFEST]: "{}"}, [
-			[REGISTRY, {status: 200, body: '{"name":"@kampus/fabrika-cli"}'}],
+		const { outcome, written } = await bootstrapWith({ [MANIFEST]: "{}" }, [
+			[REGISTRY, { status: 200, body: '{"name":"@kampus/fabrika-cli"}' }],
 		]);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.join("\n")).toContain("names no version");
@@ -1474,7 +1489,7 @@ const MILESTONES = /GET .*\/repos\/o\/r\/milestones\?state=open/;
 
 const openMilestones = (...numbers: ReadonlyArray<number>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(numbers.map((number) => ({number, title: `M${number}`}))),
+	body: JSON.stringify(numbers.map((number) => ({ number, title: `M${number}` }))),
 });
 
 const writeRoadmap = (
@@ -1483,7 +1498,7 @@ const writeRoadmap = (
 	surfaceId = "roadmap-focus",
 	repo: Attempt<string> = ok("o/r"),
 ) => {
-	const fs = fakeFs({files: {}});
+	const fs = fakeFs({ files: {} });
 	const seams = fakeSeams(script);
 	return Effect.runPromise(
 		Effect.provide(
@@ -1492,13 +1507,13 @@ const writeRoadmap = (
 				path: null,
 				json: true,
 				repoRoot: "/repo",
-				configSource: {_tag: "Absent"},
+				configSource: { _tag: "Absent" },
 				repo,
-				stdin: Effect.succeed({_tag: "Text", text: content} as StdinRead),
+				stdin: Effect.succeed({ _tag: "Text", text: content } as StdinRead),
 			}),
 			Layer.mergeAll(fs.layer, seams.layer),
 		),
-	).then((outcome) => ({outcome, requests: seams.requests}));
+	).then((outcome) => ({ outcome, requests: seams.requests }));
 };
 
 /**
@@ -1510,7 +1525,7 @@ const writeRoadmap = (
 describe("the roadmap-focus row count", () => {
 	const write = (content: string, surfaceId = "roadmap-focus") =>
 		writeRoadmap(content, [[MILESTONES, openMilestones(46, 47)]], surfaceId).then(
-			({outcome}) => outcome,
+			({ outcome }) => outcome,
 		);
 
 	const PARSING = [
@@ -1561,7 +1576,7 @@ describe("the roadmap-focus row count", () => {
 
 	it("counts the rows a parsing roadmap joins, singular at one", async () => {
 		const outcome = await write(PARSING);
-		expect(JSON.parse(outcome.stdout)).toMatchObject({arcs: 2, campaigns: 1});
+		expect(JSON.parse(outcome.stdout)).toMatchObject({ arcs: 2, campaigns: 1 });
 		expect(outcome.stderr[0]).toBe(
 			"status bootstrap: created ROADMAP.md for roadmap-focus, read-back conformed — 2 arcs, 1 campaign.",
 		);
@@ -1572,7 +1587,7 @@ describe("the roadmap-focus row count", () => {
 	// getting `ROADMAP.md` written ends up with two files, one of them inert and unremarked.
 	it("scaffolds at the path `roadmapFile` names", async () => {
 		const fs = fakeFs({
-			files: {"/repo/.fabrika.jsonc": JSON.stringify({roadmapFile: "docs/PLAN.md"})},
+			files: { "/repo/.fabrika.jsonc": JSON.stringify({ roadmapFile: "docs/PLAN.md" }) },
 		});
 		const outcome = await Effect.runPromise(
 			Effect.provide(
@@ -1581,14 +1596,14 @@ describe("the roadmap-focus row count", () => {
 					path: null,
 					json: true,
 					repoRoot: "/repo",
-					configSource: {_tag: "Absent"},
+					configSource: { _tag: "Absent" },
 					repo: ok("o/r"),
-					stdin: Effect.succeed({_tag: "Text", text: PARSING} as StdinRead),
+					stdin: Effect.succeed({ _tag: "Text", text: PARSING } as StdinRead),
 				}),
 				Layer.mergeAll(fs.layer, fakeShell([]).layer),
 			),
 		);
-		expect(JSON.parse(outcome.stdout)).toMatchObject({target: "docs/PLAN.md"});
+		expect(JSON.parse(outcome.stdout)).toMatchObject({ target: "docs/PLAN.md" });
 		expect([...fs.written.keys()]).toEqual(["/repo/docs/PLAN.md"]);
 	});
 
@@ -1629,7 +1644,7 @@ describe("the roadmap-focus pin check", () => {
 	].join("\n");
 
 	it("confirms every arc pin that is an open milestone", async () => {
-		const {outcome} = await writeRoadmap(ROADMAP, [[MILESTONES, openMilestones(46, 47, 50)]]);
+		const { outcome } = await writeRoadmap(ROADMAP, [[MILESTONES, openMilestones(46, 47, 50)]]);
 		expect(outcome.code).toBe(ANSWER);
 		expect(outcome.stderr.slice(1)).toEqual([
 			"status bootstrap: pin check — every arc pin is an open milestone in o/r (scanned 3 open milestones).",
@@ -1637,16 +1652,16 @@ describe("the roadmap-focus pin check", () => {
 	});
 
 	it("warns naming each arc pin that is not an open milestone, and still exits 0", async () => {
-		const {outcome} = await writeRoadmap(ROADMAP, [[MILESTONES, openMilestones(47)]]);
+		const { outcome } = await writeRoadmap(ROADMAP, [[MILESTONES, openMilestones(47)]]);
 		expect(outcome.code).toBe(ANSWER);
-		expect(JSON.parse(outcome.stdout)).toMatchObject({outcome: "created", arcs: 2});
+		expect(JSON.parse(outcome.stdout)).toMatchObject({ outcome: "created", arcs: 2 });
 		expect(outcome.stderr.slice(1)).toEqual([
 			"status bootstrap: warning — an arc pins a milestone that is not open in o/r: #46 (Search). `triage homes` offers only open milestones; open it or fix the pin.",
 		]);
 	});
 
 	it("names every unopened arc pin in one warning, over a repo with no milestones", async () => {
-		const {outcome} = await writeRoadmap(ROADMAP, [[MILESTONES, openMilestones()]]);
+		const { outcome } = await writeRoadmap(ROADMAP, [[MILESTONES, openMilestones()]]);
 		expect(outcome.code).toBe(ANSWER);
 		expect(outcome.stderr.slice(1)).toEqual([
 			"status bootstrap: warning — arcs pin milestones that are not open in o/r: #46 (Search), #47 (Editor). `triage homes` offers only open milestones; open them or fix the pin.",
@@ -1654,7 +1669,7 @@ describe("the roadmap-focus pin check", () => {
 	});
 
 	it("says the check is unknown when the milestone read fails, never that the pins are fine", async () => {
-		const {outcome} = await writeRoadmap(ROADMAP, [[MILESTONES, {status: 502, body: "{}"}]]);
+		const { outcome } = await writeRoadmap(ROADMAP, [[MILESTONES, { status: 502, body: "{}" }]]);
 		expect(outcome.code).toBe(ANSWER);
 		expect(outcome.stderr).toHaveLength(2);
 		expect(outcome.stderr[1]).toMatch(
@@ -1663,7 +1678,7 @@ describe("the roadmap-focus pin check", () => {
 	});
 
 	it("says the check is unknown when no target repo resolved", async () => {
-		const {outcome, requests} = await writeRoadmap(ROADMAP, [], "roadmap-focus", {
+		const { outcome, requests } = await writeRoadmap(ROADMAP, [], "roadmap-focus", {
 			_tag: "Failure",
 			reason: "no origin remote",
 		});
@@ -1675,7 +1690,7 @@ describe("the roadmap-focus pin check", () => {
 	});
 
 	it("reads no milestones for a roadmap with no arc rows", async () => {
-		const {outcome, requests} = await writeRoadmap("## Arcs\n\n| Arc | Milestone |\n|---|---|\n");
+		const { outcome, requests } = await writeRoadmap("## Arcs\n\n| Arc | Milestone |\n|---|---|\n");
 		expect(outcome.stderr).toHaveLength(1);
 		expect(requests).toHaveLength(0);
 	});
@@ -1692,7 +1707,7 @@ describe("the readout-artifact read-back reads the created issue by number", () 
 	const READBACK = /GET .*\/repos\/o\/r\/issues\/3$/;
 	const CREATED: HttpReply = {
 		status: 201,
-		body: JSON.stringify({number: 3, html_url: "https://github.com/o/r/issues/3"}),
+		body: JSON.stringify({ number: 3, html_url: "https://github.com/o/r/issues/3" }),
 	};
 
 	const artifact = (overrides: Readonly<Record<string, unknown>> = {}): HttpReply => ({
@@ -1710,11 +1725,11 @@ describe("the readout-artifact read-back reads the created issue by number", () 
 
 	const run = (readback: HttpReply) => {
 		const seams = fakeSeams([
-			[LIST, {status: 200, body: "[]"}],
+			[LIST, { status: 200, body: "[]" }],
 			[CREATE, CREATED],
 			[READBACK, readback],
 		]);
-		const fs = fakeFs({files: {}});
+		const fs = fakeFs({ files: {} });
 		return Effect.runPromise(
 			Effect.provide(
 				runBootstrap({
@@ -1722,17 +1737,17 @@ describe("the readout-artifact read-back reads the created issue by number", () 
 					path: null,
 					json: true,
 					repoRoot: "/repo",
-					configSource: {_tag: "Absent"},
+					configSource: { _tag: "Absent" },
 					repo: ok("o/r"),
-					stdin: Effect.succeed({_tag: "NoStdin"} as StdinRead),
+					stdin: Effect.succeed({ _tag: "NoStdin" } as StdinRead),
 				}),
 				Layer.mergeAll(seams.layer, fs.layer),
 			),
-		).then((outcome) => ({outcome, calls: seams.requests}));
+		).then((outcome) => ({ outcome, calls: seams.requests }));
 	};
 
 	it("reports created off the issue's own resource, never a second list read", async () => {
-		const {outcome, calls} = await run(artifact());
+		const { outcome, calls } = await run(artifact());
 		expect(outcome.code).toBe(ANSWER);
 		expect(JSON.parse(outcome.stdout)).toEqual({
 			outcome: "created",
@@ -1745,19 +1760,19 @@ describe("the readout-artifact read-back reads the created issue by number", () 
 	});
 
 	it("spends READBACK_MISMATCH only on a proven 404", async () => {
-		const {outcome} = await run({status: 404, body: '{"message":"Not Found"}'});
+		const { outcome } = await run({ status: 404, body: '{"message":"Not Found"}' });
 		expect(outcome.code).toBe(READBACK_MISMATCH);
 	});
 
 	it("reads an unreadable re-read as WRITE_UNKNOWN, never as a mismatch", async () => {
-		const {outcome} = await run({status: 502, body: "{}"});
+		const { outcome } = await run({ status: 502, body: "{}" });
 		expect(outcome.code).toBe(WRITE_UNKNOWN);
 	});
 
 	it("proves the artifact, not merely that the number resolves", async () => {
-		const wrongTitle = await run(artifact({title: "Something else"}));
+		const wrongTitle = await run(artifact({ title: "Something else" }));
 		expect(wrongTitle.outcome.code).toBe(READBACK_MISMATCH);
-		const closed = await run(artifact({state: "closed"}));
+		const closed = await run(artifact({ state: "closed" }));
 		expect(closed.outcome.code).toBe(READBACK_MISMATCH);
 	});
 });
@@ -1780,7 +1795,7 @@ describe("the bootstrap taxonomy is derived from the vocabularies the verbs writ
 				PRIORITIES.flatMap((priority) =>
 					AUDIENCES.flatMap((readyFor) =>
 						[null, ...LANES].map((lane) =>
-							triagedFacets({type, priority, readyFor, lane, classes: []}),
+							triagedFacets({ type, priority, readyFor, lane, classes: [] }),
 						),
 					),
 				),
@@ -1854,21 +1869,21 @@ describe("the bootstrap taxonomy is derived from the vocabularies the verbs writ
 describe("status open is TOTAL — every unreadable source is a field state, never a refusal", () => {
 	it("renders five fields at exit 0 when EVERY source failed", () => {
 		const fields = [
-			menuField({_tag: "Failed", path: "/x", display: "x", reason: "EACCES"}, AS_OF),
+			menuField({ _tag: "Failed", path: "/x", display: "x", reason: "EACCES" }, AS_OF),
 			settingsField(
-				[{key: "governedRoots", provenance: "unknown", detail: "EACCES"}],
+				[{ key: "governedRoots", provenance: "unknown", detail: "EACCES" }],
 				".fabrika.jsonc",
 				AS_OF,
 			),
-			boardField({_tag: "Failed", repo: "acme/storefront", reason: "EAI_AGAIN"}),
-			readoutField({_tag: "NoFormat"}),
+			boardField({ _tag: "Failed", repo: "acme/storefront", reason: "EAI_AGAIN" }),
+			readoutField({ _tag: "NoFormat" }),
 			lanesField(
-				{code: 11, stdout: "", stderr: ["fabrika lane stale: cannot list .fabrika/lanes"]},
+				{ code: 11, stdout: "", stderr: ["fabrika lane stale: cannot list .fabrika/lanes"] },
 				[DEFAULT_LANES_ROOT, DEFAULT_CHORES_ROOT],
 				AS_OF,
 			),
 		];
-		const out = runOpen({fields, json: false, scope: "roster x; repo acme/storefront"});
+		const out = runOpen({ fields, json: false, scope: "roster x; repo acme/storefront" });
 		expect(out.code).toBe(ANSWER);
 		expect(out.stdout.split("\n")[0]).toBe("open\t5");
 		expect(out.stdout.split("\n").filter((l) => l.startsWith("field\t"))).toHaveLength(5);
@@ -1902,17 +1917,17 @@ describe("the lanes field renders `lane stale`'s sweep, never a second staleness
 	const ROOTS = [DEFAULT_LANES_ROOT, DEFAULT_CHORES_ROOT];
 	const minutesAgo = (n: number): string => new Date(Date.parse(NOW) - n * 60_000).toISOString();
 	const logLine = (at: string): string =>
-		`${JSON.stringify({task: "issue", event: "ISSUE.WIP", at})}\n`;
+		`${JSON.stringify({ task: "issue", event: "ISSUE.WIP", at })}\n`;
 
-	const laneTree = (lanes: ReadonlyArray<{lane: string; log?: string; workflow?: string}>) => {
+	const laneTree = (lanes: ReadonlyArray<{ lane: string; log?: string; workflow?: string }>) => {
 		const files: Record<string, string> = {};
-		for (const {lane, log, workflow} of lanes) {
+		for (const { lane, log, workflow } of lanes) {
 			files[`${DEFAULT_LANES_ROOT}/${lane}/workflow.json`] = workflow ?? coderTemplateText();
 			if (log !== undefined) files[`${DEFAULT_LANES_ROOT}/${lane}/events.jsonl`] = log;
 		}
 		return fakeFs({
 			files,
-			dirs: {[DEFAULT_LANES_ROOT]: lanes.map((entry) => entry.lane)},
+			dirs: { [DEFAULT_LANES_ROOT]: lanes.map((entry) => entry.lane) },
 			directories: [DEFAULT_LANES_ROOT],
 		});
 	};
@@ -1920,7 +1935,7 @@ describe("the lanes field renders `lane stale`'s sweep, never a second staleness
 	const sweep = (fs: ReturnType<typeof fakeFs>) =>
 		Effect.runPromise(
 			Effect.provide(
-				runStale({roots: ROOTS, olderThanMinutes: null, now: NOW, claims: null}),
+				runStale({ roots: ROOTS, olderThanMinutes: null, now: NOW, claims: null }),
 				fs.layer,
 			),
 		);
@@ -1934,7 +1949,7 @@ describe("the lanes field renders `lane stale`'s sweep, never a second staleness
 
 	it("renders zero stale lanes over live ones as `empty`, echoing the verb's own threshold", async () => {
 		const field = lanesField(
-			await sweep(laneTree([{lane: "5908", log: logLine(minutesAgo(5))}])),
+			await sweep(laneTree([{ lane: "5908", log: logLine(minutesAgo(5)) }])),
 			ROOTS,
 			AS_OF,
 		);
@@ -1944,7 +1959,7 @@ describe("the lanes field renders `lane stale`'s sweep, never a second staleness
 
 	it("renders a silent lane as `stale`, naming the lane and its age", async () => {
 		const field = lanesField(
-			await sweep(laneTree([{lane: "5908", log: logLine(minutesAgo(76))}])),
+			await sweep(laneTree([{ lane: "5908", log: logLine(minutesAgo(76)) }])),
 			ROOTS,
 			AS_OF,
 		);
@@ -1955,7 +1970,7 @@ describe("the lanes field renders `lane stale`'s sweep, never a second staleness
 
 	it("renders an unreadable lane record as `unknown` with its reason, never flattened to clean", async () => {
 		const field = lanesField(
-			await sweep(laneTree([{lane: "5908", workflow: "not json", log: logLine(minutesAgo(5))}])),
+			await sweep(laneTree([{ lane: "5908", workflow: "not json", log: logLine(minutesAgo(5)) }])),
 			ROOTS,
 			AS_OF,
 		);
@@ -1966,7 +1981,7 @@ describe("the lanes field renders `lane stale`'s sweep, never a second staleness
 
 	it("renders the sweep's refusal — an unlistable root — as `unknown` with the refusal's reason", async () => {
 		const fs = fakeFs({
-			dirs: {[DEFAULT_LANES_ROOT]: null},
+			dirs: { [DEFAULT_LANES_ROOT]: null },
 			directories: [DEFAULT_LANES_ROOT],
 		});
 		const outcome = await sweep(fs);
@@ -1977,7 +1992,7 @@ describe("the lanes field renders `lane stale`'s sweep, never a second staleness
 	});
 
 	it("renders an answer that is not the documented object as `unknown`, never zero lanes", () => {
-		const field = lanesField({code: ANSWER, stdout: "not json\n", stderr: []}, ROOTS, AS_OF);
+		const field = lanesField({ code: ANSWER, stdout: "not json\n", stderr: [] }, ROOTS, AS_OF);
 		expect(field.state).toBe("unknown");
 		expect(field.detail).toContain("a failed read, not zero lanes");
 	});

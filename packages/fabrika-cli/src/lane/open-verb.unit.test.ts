@@ -1,9 +1,9 @@
 /** `lane open` — the template boot, and the refusals that leave the disk untouched. */
-import {Effect, type FileSystem, type Path} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs} from "../fakes.test-support.ts";
-import type {VerbOutcome} from "../verb.ts";
-import type {BoardRecord, BoardRecorder, BoardSeat, BoardSeatReader} from "./board-seat.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs } from "../fakes.test-support.ts";
+import type { VerbOutcome } from "../verb.ts";
+import type { BoardRecord, BoardRecorder, BoardSeat, BoardSeatReader } from "./board-seat.ts";
 import {
 	APPEND_UNKNOWN,
 	CLASS_UNRECOGNISED,
@@ -14,14 +14,14 @@ import {
 	PRIOR_LANE,
 	SHAPE_MISMATCH,
 } from "./codes.ts";
-import {emitMachine} from "./emit.ts";
-import type {ExpectationRead} from "./expectation.ts";
-import {choreTemplateText, coderTemplateText} from "./fixtures.test-support.ts";
-import {runOpen} from "./open-verb.ts";
-import {runPrint} from "./print-verb.ts";
-import type {PriorLane} from "./prior-lane.ts";
-import {runStatus} from "./status-verb.ts";
-import {DEFAULT_CHORES_ROOT} from "./store.ts";
+import { emitMachine } from "./emit.ts";
+import type { ExpectationRead } from "./expectation.ts";
+import { choreTemplateText, coderTemplateText } from "./fixtures.test-support.ts";
+import { runOpen } from "./open-verb.ts";
+import { runPrint } from "./print-verb.ts";
+import type { PriorLane } from "./prior-lane.ts";
+import { runStatus } from "./status-verb.ts";
+import { DEFAULT_CHORES_ROOT } from "./store.ts";
 
 const ROOT = ".fabrika/lanes";
 const DIR = `${ROOT}/42`;
@@ -29,14 +29,14 @@ const WORKFLOW = `${DIR}/workflow.json`;
 const TEMPLATE = "/pkg/src/lane/templates/coder.workflow.json";
 
 const reads = (read: ExpectationRead) => () => Effect.succeed(read);
-const childless = reads({_tag: "Read", expectation: {_tag: "Single"}, classes: []});
+const childless = reads({ _tag: "Read", expectation: { _tag: "Single" }, classes: [] });
 
 const PARENT = 4304;
 const PARENT_DIR = `${ROOT}/${PARENT}`;
 const PARENT_WORKFLOW = `${PARENT_DIR}/workflow.json`;
 
 const childOf = (parent: number | null) =>
-	reads({_tag: "Read", expectation: {_tag: "Child", parent}, classes: []});
+	reads({ _tag: "Read", expectation: { _tag: "Child", parent }, classes: [] });
 
 /**
  * The parent epic's lane as `lane emit` would have written it — the real emitter, so the task ids
@@ -46,7 +46,7 @@ const parentMachine = (...children: ReadonlyArray<number>): string => {
 	const emitted = emitMachine(
 		PARENT,
 		["## Dependencies", "", `- phase 1: ${children.map((n) => `#${n}`).join(", ")}`].join("\n"),
-		children.map((number) => ({number, state: "open" as const, stateReason: null, classes: []})),
+		children.map((number) => ({ number, state: "open" as const, stateReason: null, classes: [] })),
 	);
 	if (emitted._tag !== "Emitted") throw new Error(`fixture did not emit: ${emitted._tag}`);
 	return emitted.text;
@@ -54,10 +54,10 @@ const parentMachine = (...children: ReadonlyArray<number>): string => {
 
 const drove = (read: PriorLane) => () => Effect.succeed(read);
 /** The board hangs no pull request off the issue — the lane it never had. */
-const undriven = drove({_tag: "Fresh"});
+const undriven = drove({ _tag: "Fresh" });
 
 /** No cap declared — the cap's own arms live in [`concurrency.unit.test.ts`](concurrency.unit.test.ts). */
-const UNCAPPED = {_tag: "Value", value: null, note: "test"} as const;
+const UNCAPPED = { _tag: "Value", value: null, note: "test" } as const;
 
 const OPTIONS = {
 	root: ROOT,
@@ -70,7 +70,7 @@ const OPTIONS = {
 	boardSeat: null,
 	record: null,
 	cap: UNCAPPED,
-	claimed: () => Effect.succeed({_tag: "Unclaimed"} as const),
+	claimed: () => Effect.succeed({ _tag: "Unclaimed" } as const),
 };
 
 const run = (
@@ -80,57 +80,59 @@ const run = (
 
 describe("lane open", () => {
 	it("boots the lane with a byte-identical copy of the committed template", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 		const out = await run(fs, runOpen(OPTIONS));
 
 		expect(out.code).toBe(0);
 		expect(fs.written.get(WORKFLOW)).toBe(coderTemplateText());
-		expect(JSON.parse(out.stdout)).toMatchObject({answer: "opened", lane: "42"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ answer: "opened", lane: "42" });
 	});
 
 	it("records the lane's origin as its first fact, a driver pick unless told otherwise", async () => {
-		const plain = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
-		const bet = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+		const plain = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
+		const bet = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 
 		const defaulted = await run(plain, runOpen(OPTIONS));
-		const named = await run(bet, runOpen({...OPTIONS, origin: "bet"}));
+		const named = await run(bet, runOpen({ ...OPTIONS, origin: "bet" }));
 
-		expect(JSON.parse(defaulted.stdout)).toMatchObject({origin: "driver-pick"});
+		expect(JSON.parse(defaulted.stdout)).toMatchObject({ origin: "driver-pick" });
 		expect(JSON.parse(plain.written.get(`${DIR}/facts.jsonl`) ?? "")).toMatchObject({
 			kind: "origin",
 			origin: "driver-pick",
 		});
-		expect(JSON.parse(named.stdout)).toMatchObject({origin: "bet"});
-		expect(JSON.parse(bet.written.get(`${DIR}/facts.jsonl`) ?? "")).toMatchObject({origin: "bet"});
+		expect(JSON.parse(named.stdout)).toMatchObject({ origin: "bet" });
+		expect(JSON.parse(bet.written.get(`${DIR}/facts.jsonl`) ?? "")).toMatchObject({
+			origin: "bet",
+		});
 	});
 
 	it("refuses an origin outside the closed set before anything is written", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 
-		const out = await run(fs, runOpen({...OPTIONS, origin: "whim"}));
+		const out = await run(fs, runOpen({ ...OPTIONS, origin: "whim" }));
 
 		expect(out.code).toBe(FACT_REFUSED);
 		expect(fs.written.size).toBe(0);
 	});
 
 	it("seeds the placed document's context from the issue's class label", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
-		const classed = reads({_tag: "Read", expectation: {_tag: "Single"}, classes: ["ui"]});
-		const out = await run(fs, runOpen({...OPTIONS, expectation: classed}));
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
+		const classed = reads({ _tag: "Read", expectation: { _tag: "Single" }, classes: ["ui"] });
+		const out = await run(fs, runOpen({ ...OPTIONS, expectation: classed }));
 
 		expect(out.code).toBe(0);
 		const placed = JSON.parse(fs.written.get(WORKFLOW) ?? "") as {
-			machine: {context: {issue: {classes: ReadonlyArray<string>}}};
+			machine: { context: { issue: { classes: ReadonlyArray<string> } } };
 		};
 		expect(placed.machine.context.issue.classes).toEqual(["ui"]);
-		expect(JSON.parse(out.stdout)).toMatchObject({classes: ["ui"]});
+		expect(JSON.parse(out.stdout)).toMatchObject({ classes: ["ui"] });
 		expect(out.stderr.join("\n")).toContain("seeded class:ui");
 	});
 
 	it("refuses an off-set class label before placement, leaving the disk untouched", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
-		const misspelt = reads({_tag: "Read", expectation: {_tag: "Single"}, classes: ["UI"]});
-		const out = await run(fs, runOpen({...OPTIONS, expectation: misspelt}));
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
+		const misspelt = reads({ _tag: "Read", expectation: { _tag: "Single" }, classes: ["UI"] });
+		const out = await run(fs, runOpen({ ...OPTIONS, expectation: misspelt }));
 
 		expect(out.code).toBe(CLASS_UNRECOGNISED);
 		expect(fs.written.size).toBe(0);
@@ -138,13 +140,13 @@ describe("lane open", () => {
 	});
 
 	it("folds the freshly opened lane to its initial state through `lane status`", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 		await run(fs, runOpen(OPTIONS));
-		const out = await run(fs, runStatus({root: ROOT, lane: "42"}));
+		const out = await run(fs, runStatus({ root: ROOT, lane: "42" }));
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
-			stateValue: {pipeline: {issue: "queued"}},
+			stateValue: { pipeline: { issue: "queued" } },
 			status: "active",
 		});
 	});
@@ -161,11 +163,11 @@ describe("lane open", () => {
 			boardSeat: null,
 			record: null,
 			cap: UNCAPPED,
-			claimed: () => Effect.succeed({_tag: "Unclaimed"} as const),
+			claimed: () => Effect.succeed({ _tag: "Unclaimed" } as const),
 		};
-		const fs = fakeFs({files: {[chore.templatePath]: choreTemplateText()}});
+		const fs = fakeFs({ files: { [chore.templatePath]: choreTemplateText() } });
 		const opened = await run(fs, runOpen(chore));
-		const folded = await run(fs, runStatus({root: chore.root, lane: chore.lane}));
+		const folded = await run(fs, runStatus({ root: chore.root, lane: chore.lane }));
 
 		expect(opened.code).toBe(0);
 		expect(fs.written.get(`${DEFAULT_CHORES_ROOT}/park-sweep/workflow.json`)).toBe(
@@ -173,13 +175,13 @@ describe("lane open", () => {
 		);
 		expect(folded.code).toBe(0);
 		expect(JSON.parse(folded.stdout)).toMatchObject({
-			stateValue: {sweep: {park_sweep: "queued"}},
+			stateValue: { sweep: { park_sweep: "queued" } },
 			status: "active",
 		});
 	});
 
 	it("refuses an existing lane dir with its own code and writes nothing", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}, directories: [DIR]});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() }, directories: [DIR] });
 		const out = await run(fs, runOpen(OPTIONS));
 
 		expect(out.code).toBe(LANE_EXISTS);
@@ -189,7 +191,7 @@ describe("lane open", () => {
 	});
 
 	it("sends an existing lane's driver at the lane, never at removing the directory", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}, directories: [DIR]});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() }, directories: [DIR] });
 		const out = await run(fs, runOpen(OPTIONS));
 		const stderr = out.stderr.join("\n");
 
@@ -200,7 +202,7 @@ describe("lane open", () => {
 	});
 
 	it("refuses when the lane dir's existence cannot be established — UNKNOWN, never a boot", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}, unprobeable: [DIR]});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() }, unprobeable: [DIR] });
 		const out = await run(fs, runOpen(OPTIONS));
 
 		expect(out.code).toBe(LANE_UNREADABLE);
@@ -208,7 +210,7 @@ describe("lane open", () => {
 	});
 
 	it("refuses an unreadable template, naming it", async () => {
-		const fs = fakeFs({files: {}});
+		const fs = fakeFs({ files: {} });
 		const out = await run(fs, runOpen(OPTIONS));
 
 		expect(out.code).toBe(LANE_UNREADABLE);
@@ -217,7 +219,7 @@ describe("lane open", () => {
 	});
 
 	it("refuses a write that did not land — the lane is never reported opened", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}, unwritable: [WORKFLOW]});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() }, unwritable: [WORKFLOW] });
 		const out = await run(fs, runOpen(OPTIONS));
 
 		expect(out.code).toBe(APPEND_UNKNOWN);
@@ -225,12 +227,16 @@ describe("lane open", () => {
 	});
 
 	it("refuses an issue carrying sub-issue links before writing, naming `lane emit`", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 		const out = await run(
 			fs,
 			runOpen({
 				...OPTIONS,
-				expectation: reads({_tag: "Read", expectation: {_tag: "Epic", children: 3}, classes: []}),
+				expectation: reads({
+					_tag: "Read",
+					expectation: { _tag: "Epic", children: 3 },
+					classes: [],
+				}),
 			}),
 		);
 
@@ -241,12 +247,16 @@ describe("lane open", () => {
 	});
 
 	it("refuses a `type:epic` issue that has no children yet — the pre-plan window", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 		const out = await run(
 			fs,
 			runOpen({
 				...OPTIONS,
-				expectation: reads({_tag: "Read", expectation: {_tag: "Epic", children: 0}, classes: []}),
+				expectation: reads({
+					_tag: "Read",
+					expectation: { _tag: "Epic", children: 0 },
+					classes: [],
+				}),
 			}),
 		);
 
@@ -258,9 +268,9 @@ describe("lane open", () => {
 
 	it("refuses a child its parent's machine holds, naming the parent's lane as the one to drive", async () => {
 		const fs = fakeFs({
-			files: {[TEMPLATE]: coderTemplateText(), [PARENT_WORKFLOW]: parentMachine(42, 43)},
+			files: { [TEMPLATE]: coderTemplateText(), [PARENT_WORKFLOW]: parentMachine(42, 43) },
 		});
-		const out = await run(fs, runOpen({...OPTIONS, expectation: childOf(PARENT)}));
+		const out = await run(fs, runOpen({ ...OPTIONS, expectation: childOf(PARENT) }));
 
 		expect(out.code).toBe(LANE_IS_CHILD);
 		expect(fs.written.size).toBe(0);
@@ -273,9 +283,9 @@ describe("lane open", () => {
 
 	it("names the amend route for a child linked after its parent's lane was emitted", async () => {
 		const fs = fakeFs({
-			files: {[TEMPLATE]: coderTemplateText(), [PARENT_WORKFLOW]: parentMachine(43, 44)},
+			files: { [TEMPLATE]: coderTemplateText(), [PARENT_WORKFLOW]: parentMachine(43, 44) },
 		});
-		const out = await run(fs, runOpen({...OPTIONS, expectation: childOf(PARENT)}));
+		const out = await run(fs, runOpen({ ...OPTIONS, expectation: childOf(PARENT) }));
 
 		expect(out.code).toBe(LANE_IS_CHILD);
 		expect(fs.written.size).toBe(0);
@@ -287,8 +297,8 @@ describe("lane open", () => {
 	});
 
 	it("refuses fail-closed when the parent lane is not on disk — UNKNOWN, never proven absence", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
-		const out = await run(fs, runOpen({...OPTIONS, expectation: childOf(PARENT)}));
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
+		const out = await run(fs, runOpen({ ...OPTIONS, expectation: childOf(PARENT) }));
 
 		expect(out.code).toBe(LANE_IS_CHILD);
 		expect(fs.written.size).toBe(0);
@@ -301,10 +311,10 @@ describe("lane open", () => {
 
 	it("reads an unreadable parent machine as UNKNOWN, naming the path", async () => {
 		const fs = fakeFs({
-			files: {[TEMPLATE]: coderTemplateText(), [PARENT_WORKFLOW]: parentMachine(42)},
+			files: { [TEMPLATE]: coderTemplateText(), [PARENT_WORKFLOW]: parentMachine(42) },
 			unreadable: [PARENT_WORKFLOW],
 		});
-		const out = await run(fs, runOpen({...OPTIONS, expectation: childOf(PARENT)}));
+		const out = await run(fs, runOpen({ ...OPTIONS, expectation: childOf(PARENT) }));
 
 		expect(out.code).toBe(LANE_IS_CHILD);
 		expect(fs.written.size).toBe(0);
@@ -313,8 +323,8 @@ describe("lane open", () => {
 	});
 
 	it("reads a malformed parent machine as UNKNOWN rather than as an empty task set", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText(), [PARENT_WORKFLOW]: "{"}});
-		const out = await run(fs, runOpen({...OPTIONS, expectation: childOf(PARENT)}));
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText(), [PARENT_WORKFLOW]: "{" } });
+		const out = await run(fs, runOpen({ ...OPTIONS, expectation: childOf(PARENT) }));
 
 		expect(out.code).toBe(LANE_IS_CHILD);
 		expect(fs.written.size).toBe(0);
@@ -323,8 +333,8 @@ describe("lane open", () => {
 	});
 
 	it("refuses a child whose parent number the board did not carry, with no lane to look in", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
-		const out = await run(fs, runOpen({...OPTIONS, expectation: childOf(null)}));
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
+		const out = await run(fs, runOpen({ ...OPTIONS, expectation: childOf(null) }));
 
 		expect(out.code).toBe(LANE_IS_CHILD);
 		expect(fs.written.size).toBe(0);
@@ -335,7 +345,7 @@ describe("lane open", () => {
 	});
 
 	it("boots a parentless issue, unchanged by the child guard", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 		const out = await run(fs, runOpen(OPTIONS));
 
 		expect(out.code).toBe(0);
@@ -343,10 +353,13 @@ describe("lane open", () => {
 	});
 
 	it("refuses an unreadable child list — UNKNOWN, never a boot", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 		const out = await run(
 			fs,
-			runOpen({...OPTIONS, expectation: reads({_tag: "Unknown", reason: "the API answered 502"})}),
+			runOpen({
+				...OPTIONS,
+				expectation: reads({ _tag: "Unknown", reason: "the API answered 502" }),
+			}),
 		);
 
 		expect(out.code).toBe(LANE_UNREADABLE);
@@ -355,18 +368,18 @@ describe("lane open", () => {
 	});
 
 	it("boots offline when no reader is passed, asking the board nothing", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
-		const out = await run(fs, runOpen({...OPTIONS, expectation: null, priorLane: null}));
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
+		const out = await run(fs, runOpen({ ...OPTIONS, expectation: null, priorLane: null }));
 
 		expect(out.code).toBe(0);
 		expect(fs.written.get(WORKFLOW)).toBe(coderTemplateText());
 	});
 
 	it("refuses an issue the board says already had a lane, naming the PRs and the granted round", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 		const out = await run(
 			fs,
-			runOpen({...OPTIONS, priorLane: drove({_tag: "Prior", pulls: [7991]})}),
+			runOpen({ ...OPTIONS, priorLane: drove({ _tag: "Prior", pulls: [7991] }) }),
 		);
 
 		expect(out.code).toBe(PRIOR_LANE);
@@ -380,17 +393,18 @@ describe("lane open", () => {
 	});
 
 	it("names --from-board in that refusal, beside the two grants", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 		const out = await run(
 			fs,
-			runOpen({...OPTIONS, priorLane: drove({_tag: "Prior", pulls: [7991]})}),
+			runOpen({ ...OPTIONS, priorLane: drove({ _tag: "Prior", pulls: [7991] }) }),
 		);
 
 		expect(out.stderr.join("\n")).toContain("fabrika lane open 42 --from-board");
 	});
 
 	describe("--from-board", () => {
-		const drivenBy = (...pulls: ReadonlyArray<number>) => drove({_tag: "Prior", pulls: [...pulls]});
+		const drivenBy = (...pulls: ReadonlyArray<number>) =>
+			drove({ _tag: "Prior", pulls: [...pulls] });
 		const seats =
 			(seat: BoardSeat): BoardSeatReader<never> =>
 			() =>
@@ -405,7 +419,7 @@ describe("lane open", () => {
 		const recorder =
 			(
 				posted: string[],
-				outcome: BoardRecord = {_tag: "Recorded", url: "https://example.invalid/c/1"},
+				outcome: BoardRecord = { _tag: "Recorded", url: "https://example.invalid/c/1" },
 			): BoardRecorder<never> =>
 			(_issue, body) => {
 				posted.push(body);
@@ -413,7 +427,7 @@ describe("lane open", () => {
 			};
 
 		it("seats the lane the board verifies, with its repair budget declared spent", async () => {
-			const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+			const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 			const posted: string[] = [];
 			const out = await run(
 				fs,
@@ -425,20 +439,20 @@ describe("lane open", () => {
 					record: recorder(posted),
 				}),
 			);
-			const printed = await run(fs, runPrint({root: ROOT, lane: "42"}));
+			const printed = await run(fs, runPrint({ root: ROOT, lane: "42" }));
 
 			expect(out.code).toBe(0);
 			expect(JSON.parse(out.stdout)).toMatchObject({
 				answer: "opened",
-				fromBoard: {pr: 7991, head: "77aa05b", maxRetries: 0},
+				fromBoard: { pr: 7991, head: "77aa05b", maxRetries: 0 },
 			});
-			expect(JSON.parse(printed.stdout)).toMatchObject({tasks: {issue: {maxRetries: 0}}});
+			expect(JSON.parse(printed.stdout)).toMatchObject({ tasks: { issue: { maxRetries: 0 } } });
 			expect(posted).toHaveLength(1);
 			expect(posted[0]).toContain("#7991");
 		});
 
 		it("records the adoption on the board before anything lands on disk", async () => {
-			const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+			const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 			const posted: string[] = [];
 			const out = await run(
 				fs,
@@ -447,7 +461,7 @@ describe("lane open", () => {
 					priorLane: drivenBy(7991),
 					fromBoard: true,
 					boardSeat: verified,
-					record: recorder(posted, {_tag: "Unrecorded", reason: "the API answered 502"}),
+					record: recorder(posted, { _tag: "Unrecorded", reason: "the API answered 502" }),
 				}),
 			);
 
@@ -457,7 +471,7 @@ describe("lane open", () => {
 		});
 
 		it("refuses at 63 when the board does not prove the work — the flag reads, it does not assert", async () => {
-			const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+			const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 			const posted: string[] = [];
 			const out = await run(
 				fs,
@@ -465,7 +479,7 @@ describe("lane open", () => {
 					...OPTIONS,
 					priorLane: drivenBy(7991),
 					fromBoard: true,
-					boardSeat: seats({_tag: "Unproven", why: "#7991 holds a FAIL that still binds"}),
+					boardSeat: seats({ _tag: "Unproven", why: "#7991 holds a FAIL that still binds" }),
 					record: recorder(posted),
 				}),
 			);
@@ -477,7 +491,7 @@ describe("lane open", () => {
 		});
 
 		it("refuses an unreadable seat as UNKNOWN, never as a verified one", async () => {
-			const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+			const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 			const posted: string[] = [];
 			const out = await run(
 				fs,
@@ -485,7 +499,7 @@ describe("lane open", () => {
 					...OPTIONS,
 					priorLane: drivenBy(7991),
 					fromBoard: true,
-					boardSeat: seats({_tag: "Unknown", reason: "the API answered 502"}),
+					boardSeat: seats({ _tag: "Unknown", reason: "the API answered 502" }),
 					record: recorder(posted),
 				}),
 			);
@@ -496,7 +510,7 @@ describe("lane open", () => {
 		});
 
 		it("names the record it stranded when the placement write does not land", async () => {
-			const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}, unwritable: [WORKFLOW]});
+			const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() }, unwritable: [WORKFLOW] });
 			const posted: string[] = [];
 			const out = await run(
 				fs,
@@ -518,7 +532,7 @@ describe("lane open", () => {
 		});
 
 		it("leaves an ordinary placement refusal naming no record, because it stranded none", async () => {
-			const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}, unwritable: [WORKFLOW]});
+			const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() }, unwritable: [WORKFLOW] });
 			const out = await run(fs, runOpen(OPTIONS));
 
 			expect(out.code).toBe(APPEND_UNKNOWN);
@@ -526,7 +540,7 @@ describe("lane open", () => {
 		});
 
 		it("changes nothing about a boot the prior-lane read never refused", async () => {
-			const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+			const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 			const posted: string[] = [];
 			const out = await run(
 				fs,
@@ -545,18 +559,21 @@ describe("lane open", () => {
 	});
 
 	it("boots a lane retired for the wrong template — the sanctioned retire, which opened no PR", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
-		const out = await run(fs, runOpen({...OPTIONS, priorLane: undriven}));
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
+		const out = await run(fs, runOpen({ ...OPTIONS, priorLane: undriven }));
 
 		expect(out.code).toBe(0);
 		expect(fs.written.get(WORKFLOW)).toBe(coderTemplateText());
 	});
 
 	it("refuses when the prior-lane fact cannot be established — UNKNOWN, never a fresh lane", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() } });
 		const out = await run(
 			fs,
-			runOpen({...OPTIONS, priorLane: drove({_tag: "Unknown", reason: "the API answered 502"})}),
+			runOpen({
+				...OPTIONS,
+				priorLane: drove({ _tag: "Unknown", reason: "the API answered 502" }),
+			}),
 		);
 
 		expect(out.code).toBe(LANE_UNREADABLE);
@@ -565,7 +582,7 @@ describe("lane open", () => {
 	});
 
 	it("leaves an existing lane dir answering its own code, without asking the board at all", async () => {
-		const fs = fakeFs({files: {[TEMPLATE]: coderTemplateText()}, directories: [DIR]});
+		const fs = fakeFs({ files: { [TEMPLATE]: coderTemplateText() }, directories: [DIR] });
 		let asked = 0;
 		const out = await run(
 			fs,
@@ -573,7 +590,7 @@ describe("lane open", () => {
 				...OPTIONS,
 				priorLane: () => {
 					asked += 1;
-					return Effect.succeed({_tag: "Prior", pulls: [7991]} as const);
+					return Effect.succeed({ _tag: "Prior", pulls: [7991] } as const);
 				},
 			}),
 		);

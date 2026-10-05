@@ -37,9 +37,9 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/8901
  */
-import {Effect} from "effect";
-import {pathsOffBase, type Shell} from "../io/git.ts";
-import {claimedIdOf} from "../io/github.ts";
+import { Effect } from "effect";
+import { pathsOffBase, type Shell } from "../io/git.ts";
+import { claimedIdOf } from "../io/github.ts";
 
 /** One id a branch ref claims: the record it names, and the path it was read from. */
 export interface BranchClaim {
@@ -48,8 +48,8 @@ export interface BranchClaim {
 }
 
 export type BranchClaimsOutcome =
-	| {readonly _tag: "Ok"; readonly value: ReadonlyArray<BranchClaim>}
-	| {readonly _tag: "Err"; readonly reason: string};
+	| { readonly _tag: "Ok"; readonly value: ReadonlyArray<BranchClaim> }
+	| { readonly _tag: "Err"; readonly reason: string };
 
 /**
  * Every record id claimed on a branch ref this clone carries — local or remote-tracking — that
@@ -62,11 +62,11 @@ export type BranchClaimsOutcome =
 export const loadBranchClaims = (baseSha: string, dir: string): Shell<BranchClaimsOutcome> =>
 	Effect.gen(function* () {
 		const paths = yield* pathsOffBase(baseSha, dir);
-		if (paths._tag === "Failure") return {_tag: "Err", reason: paths.reason};
+		if (paths._tag === "Failure") return { _tag: "Err", reason: paths.reason };
 		const claims = new Map<string, BranchClaim>();
 		for (const path of paths.value) {
 			const hit = claimedIdOf(path, dir);
-			if (hit !== null) claims.set(hit.id, {id: hit.id, file: hit.file});
+			if (hit !== null) claims.set(hit.id, { id: hit.id, file: hit.file });
 		}
-		return {_tag: "Ok", value: [...claims.values()]};
+		return { _tag: "Ok", value: [...claims.values()] };
 	});

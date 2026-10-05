@@ -6,18 +6,18 @@
  * and then compose a message that drifts from the code it seats.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {getIssue, type IssueRecord, resolveRepo} from "../io/issues.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
-import {FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {BARE_AT_PATH, LEAKED_PATH, NO_TARGET, PRECONDITION_UNKNOWN} from "./codes.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { getIssue, type IssueRecord, resolveRepo } from "../io/issues.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
+import { FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { BARE_AT_PATH, LEAKED_PATH, NO_TARGET, PRECONDITION_UNKNOWN } from "./codes.ts";
 
 export type Guarded<A> =
-	| {readonly _tag: "Ok"; readonly value: A}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Ok"; readonly value: A }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
-const refused = (outcome: VerbOutcome): Guarded<never> => ({_tag: "Refused", outcome});
+const refused = (outcome: VerbOutcome): Guarded<never> => ({ _tag: "Refused", outcome });
 
 /** The target repository, or the usage refusal that names both ways to supply it. */
 export const targetRepo = (
@@ -28,7 +28,7 @@ export const targetRepo = (
 	Effect.gen(function* () {
 		const attempt = yield* resolveRepo(explicit, env);
 		return attempt._tag === "Ok"
-			? {_tag: "Ok" as const, value: attempt.value}
+			? { _tag: "Ok" as const, value: attempt.value }
 			: refused(
 					refuse(
 						FAILED,
@@ -61,7 +61,7 @@ export const requireIssue = (
 				),
 			);
 		}
-		return {_tag: "Ok" as const, value: found.value};
+		return { _tag: "Ok" as const, value: found.value };
 	});
 
 /**

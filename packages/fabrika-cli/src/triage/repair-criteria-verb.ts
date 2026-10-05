@@ -12,8 +12,8 @@
  * gets an outcome line — a sweep that only named what it changed would make "never looked" and
  * "looked and conforming" one claim.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	createComment,
 	getIssue,
@@ -22,8 +22,8 @@ import {
 	patchIssueBody,
 	resolveRepo,
 } from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	PRECONDITION_UNKNOWN,
 	READBACK_MISMATCH,
@@ -31,14 +31,14 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {legacyPreserved} from "./enrich-legacy.ts";
+import { legacyPreserved } from "./enrich-legacy.ts";
 import {
 	type CriteriaRepairPlan,
 	describeRepair,
 	disclosureComment,
 	planRepair,
 } from "./repair-criteria.ts";
-import {scannedLine} from "./scope.ts";
+import { scannedLine } from "./scope.ts";
 
 export interface RepairCriteriaOptions {
 	/** The one issue to repair, or `null` with `--sweep` for the whole open board. */
@@ -187,7 +187,7 @@ const runSingle = (
 			}
 		}
 		return json
-			? answer(JSON.stringify({outcome, number: issue}), diagnostics)
+			? answer(JSON.stringify({ outcome, number: issue }), diagnostics)
 			: answer(`${outcome}\t${issue}`, diagnostics);
 	});
 
@@ -208,7 +208,7 @@ const runSweep = (
 		const scanned = scannedLine("triage repair-criteria", repo, issues.length, "open issue");
 
 		const lines: string[] = [];
-		const rows: Array<{number: number; outcome: SweepOutcome; reason?: string}> = [];
+		const rows: Array<{ number: number; outcome: SweepOutcome; reason?: string }> = [];
 		const counts: Record<SweepOutcome, number> = {
 			repaired: 0,
 			conforming: 0,
@@ -267,13 +267,15 @@ const runSweep = (
 				reason === null ? `${outcome}\t${issue.number}` : `${outcome}\t${issue.number}\t${reason}`,
 			);
 			rows.push(
-				reason === null ? {number: issue.number, outcome} : {number: issue.number, outcome, reason},
+				reason === null
+					? { number: issue.number, outcome }
+					: { number: issue.number, outcome, reason },
 			);
 		}
 
 		const summary = `swept\t${counts.repaired}\t${counts.conforming}\t${counts["no-block"]}\t${counts.refused}\t${counts.moved}\t${counts["would-repair"]}`;
 		return json
-			? answer(JSON.stringify({outcome: "swept", scanned: issues.length, counts, issues: rows}), [
+			? answer(JSON.stringify({ outcome: "swept", scanned: issues.length, counts, issues: rows }), [
 					scanned,
 				])
 			: answer([summary, ...lines].join("\n"), [scanned]);
@@ -283,7 +285,7 @@ export const runRepairCriteria = (
 	options: RepairCriteriaOptions,
 ): Effect.Effect<VerbOutcome, never, Shell> =>
 	Effect.gen(function* () {
-		const {issue, sweep, json, dryRun} = options;
+		const { issue, sweep, json, dryRun } = options;
 		if ((issue === null && !sweep) || (issue !== null && sweep)) {
 			return refuse(
 				FAILED,

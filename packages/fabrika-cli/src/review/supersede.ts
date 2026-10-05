@@ -38,8 +38,8 @@ export interface Regions {
 export const split = (body: string): Regions => {
 	const at = body.indexOf(FENCE);
 	return at === -1
-		? {live: body, archive: ""}
-		: {live: body.slice(0, at), archive: body.slice(at + FENCE.length).trim()};
+		? { live: body, archive: "" }
+		: { live: body.slice(0, at), archive: body.slice(at + FENCE.length).trim() };
 };
 
 /**
@@ -49,7 +49,7 @@ export const split = (body: string): Regions => {
  * N sections under one fence instead of N nested envelopes.
  */
 export const compose = (prior: string, fresh: string, on: Date): string => {
-	const {live, archive} = split(prior);
+	const { live, archive } = split(prior);
 	const retired = live.replace(/\s+$/, "");
 	const sections = [retired === "" ? "" : `${heading(on)}\n\n${retired}`, archive].filter(
 		(section) => section !== "",
@@ -66,7 +66,7 @@ export const compose = (prior: string, fresh: string, on: Date): string => {
  * archived verdict's own first line, or it reads as a comment carrying no marker.
  */
 export const archived = (body: string): ReadonlyArray<string> => {
-	const {archive} = split(body);
+	const { archive } = split(body);
 	if (archive === "") return [];
 	return archive
 		.split(HEADING_LINE)

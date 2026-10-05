@@ -12,8 +12,8 @@
  * implementation happened to serialize it" cannot answer either question twice the same way.
  */
 
-import {createHash} from "node:crypto";
-import {join, sep} from "node:path";
+import { createHash } from "node:crypto";
+import { join, sep } from "node:path";
 
 /** The one directory segment under the OS temp root that every workspace sits beneath. */
 export const WORKSPACE_ROOT = "fabrika-spike";
@@ -80,11 +80,11 @@ export const MANIFEST_KEYS: ReadonlyArray<keyof Manifest> = [
 ];
 
 export type Parsed<A> =
-	| {readonly _tag: "Parsed"; readonly value: A}
-	| {readonly _tag: "Malformed"; readonly reason: string};
+	| { readonly _tag: "Parsed"; readonly value: A }
+	| { readonly _tag: "Malformed"; readonly reason: string };
 
-const malformed = <A>(reason: string): Parsed<A> => ({_tag: "Malformed", reason});
-const parsed = <A>(value: A): Parsed<A> => ({_tag: "Parsed", value});
+const malformed = <A>(reason: string): Parsed<A> => ({ _tag: "Malformed", reason });
+const parsed = <A>(value: A): Parsed<A> => ({ _tag: "Parsed", value });
 
 const DIGEST_RE = /^[0-9a-f]{64}$/;
 
@@ -110,7 +110,7 @@ export const parseManifest = (text: string): Parsed<Manifest> => {
 		(key) => !(MANIFEST_KEYS as ReadonlyArray<string>).includes(key),
 	);
 	if (extra !== undefined) return malformed(`it carries an unexpected key "${extra}"`);
-	const {spike, nonce, kind, question, repo, ticket, treeDigest, treeRoot} = record;
+	const { spike, nonce, kind, question, repo, ticket, treeDigest, treeRoot } = record;
 	if (spike !== null && !Number.isInteger(spike))
 		return malformed('"spike" is not an integer or null');
 	if (typeof nonce !== "string" || !isNonce(nonce)) {
@@ -182,8 +182,17 @@ const parseEvidenceRecord = (value: Record<string, unknown>): Parsed<EvidenceRec
 	for (const key of EVIDENCE_KEYS) {
 		if (!Object.hasOwn(value, key)) return malformed(`the key "${key}" is missing`);
 	}
-	const {seq, command, commandExit, timedOut, outBytes, errBytes, truncated, outSha256, errSha256} =
-		value;
+	const {
+		seq,
+		command,
+		commandExit,
+		timedOut,
+		outBytes,
+		errBytes,
+		truncated,
+		outSha256,
+		errSha256,
+	} = value;
 	if (!Number.isInteger(seq) || (seq as number) < 1)
 		return malformed('"seq" is not a positive integer');
 	if (!Array.isArray(command) || command.some((part) => typeof part !== "string")) {

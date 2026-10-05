@@ -27,14 +27,14 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9322#issuecomment-5703498377
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {addLabels, getIssue, listLabels} from "../io/issues.ts";
-import {getPullDiff, listPullFiles} from "../io/pulls.ts";
-import {linkedIssueOf} from "../review/classes.ts";
-import {platformCapLine, platformFileSet} from "../review/local-file-set.ts";
-import {BOARD_SUBJECT, readBoard, refusalReason} from "../status/repo-board.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { addLabels, getIssue, listLabels } from "../io/issues.ts";
+import { getPullDiff, listPullFiles } from "../io/pulls.ts";
+import { linkedIssueOf } from "../review/classes.ts";
+import { platformCapLine, platformFileSet } from "../review/local-file-set.ts";
+import { BOARD_SUBJECT, readBoard, refusalReason } from "../status/repo-board.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	INCOMPLETE_SCAN,
 	LABEL_ABSENT,
@@ -43,9 +43,9 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {detect, FLAG_REGISTRY} from "./dark-ship.ts";
-import {readFileAtRef} from "./github.ts";
-import {badNumber, NULL_TOKEN, resolvePull, resolveTargetRepo, scannedLine} from "./target.ts";
+import { detect, FLAG_REGISTRY } from "./dark-ship.ts";
+import { readFileAtRef } from "./github.ts";
+import { badNumber, NULL_TOKEN, resolvePull, resolveTargetRepo, scannedLine } from "./target.ts";
 
 const VERB = "ship release";
 
@@ -66,7 +66,7 @@ export const runRelease = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -81,7 +81,7 @@ export const runRelease = (
 		if (board._tag === "Refused") {
 			return refuse(PRECONDITION_UNKNOWN, unreadable(BOARD_SUBJECT, refusalReason(board)));
 		}
-		const {awaitingRelease} = board.resolved.board.statuses;
+		const { awaitingRelease } = board.resolved.board.statuses;
 
 		const target = yield* resolvePull(VERB, repo, pr, {
 			unknownMessage: (reason) => unreadable(`PR #${pr}`, reason),
@@ -146,7 +146,7 @@ export const runRelease = (
 		const shipped = detect(diff.value, pull.body, declaredIn);
 		const emit = (outcome: string, key: string | null, issue: number | null): VerbOutcome =>
 			json
-				? answer(JSON.stringify({outcome, flagKey: key, issue}), diagnostics)
+				? answer(JSON.stringify({ outcome, flagKey: key, issue }), diagnostics)
 				: answer(`release\t${outcome}\t${key ?? NULL_TOKEN}`, diagnostics);
 
 		if (!shipped.dark) return emit("n/a", null, null);

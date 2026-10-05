@@ -7,8 +7,8 @@
  * silently stops predicting a CI gate, which is the failure the record exists to close.
  */
 
-import {describe, expect, it} from "vitest";
-import {localTreeGuards} from "./command.ts";
+import { describe, expect, it } from "vitest";
+import { localTreeGuards } from "./command.ts";
 
 const names = localTreeGuards.map((guard) => guard.name);
 

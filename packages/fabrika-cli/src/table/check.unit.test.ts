@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import {SHIPPED_TABLE} from "../config/keys/table.ts";
-import type {TimelineFacts, TimelineReference} from "../io/issues.ts";
-import type {Instant, LaneRecord} from "../wire/lane-record.ts";
+import { describe, expect, it } from "vitest";
+import { SHIPPED_TABLE } from "../config/keys/table.ts";
+import type { TimelineFacts, TimelineReference } from "../io/issues.ts";
+import type { Instant, LaneRecord } from "../wire/lane-record.ts";
 import {
 	checkRec,
 	dueChecks,
@@ -13,7 +13,7 @@ import {
 	signalsOf,
 	sourceResultOf,
 } from "./check.ts";
-import type {HeadRow} from "./flags.ts";
+import type { HeadRow } from "./flags.ts";
 
 const NOW = new Date("2026-10-01T00:00:00.000Z");
 const DAY = 86_400_000;
@@ -25,8 +25,8 @@ const head = (
 	setAt = ago(20),
 	origin: string | null = "bet",
 ): HeadRow => ({
-	group: {_tag: "Single", head: issue},
-	stage: stage === null ? null : {name: stage, setter: "someone", setAt},
+	group: { _tag: "Single", head: issue },
+	stage: stage === null ? null : { name: stage, setter: "someone", setAt },
 	size: "S",
 	children: 0,
 	memberStages: [],
@@ -68,7 +68,7 @@ describe("dueChecks", () => {
 	});
 });
 
-const ref = (over: Partial<TimelineReference> & {number: number}): TimelineReference => ({
+const ref = (over: Partial<TimelineReference> & { number: number }): TimelineReference => ({
 	title: `Issue ${over.number}`,
 	isPullRequest: false,
 	open: true,
@@ -79,11 +79,11 @@ const ref = (over: Partial<TimelineReference> & {number: number}): TimelineRefer
 });
 
 const facts = (references: ReadonlyArray<TimelineReference>, reopenedAt: string[] = []) =>
-	({references, reopenedAt}) satisfies TimelineFacts;
+	({ references, reopenedAt }) satisfies TimelineFacts;
 
 describe("signalsOf", () => {
 	const check = {
-		group: {_tag: "Epic", head: 10, members: [11]} as const,
+		group: { _tag: "Epic", head: 10, members: [11] } as const,
 		shippedAt: ago(14),
 	};
 
@@ -95,14 +95,14 @@ describe("signalsOf", () => {
 				[
 					100,
 					facts([
-						ref({number: 20, labels: ["bug"]}),
-						ref({number: 21, createdAt: ago(20)}),
-						ref({number: 11}),
-						ref({number: 30, title: "Revert #100", isPullRequest: true}),
-						ref({number: 31, title: "Follow-up fix", isPullRequest: true}),
+						ref({ number: 20, labels: ["bug"] }),
+						ref({ number: 21, createdAt: ago(20) }),
+						ref({ number: 11 }),
+						ref({ number: 30, title: "Revert #100", isPullRequest: true }),
+						ref({ number: 31, title: "Follow-up fix", isPullRequest: true }),
 					]),
 				],
-				[101, facts([ref({number: 20, labels: ["bug"]}), ref({number: 22, open: false})])],
+				[101, facts([ref({ number: 20, labels: ["bug"] }), ref({ number: 22, open: false })])],
 			]),
 			issueTimelines: new Map([
 				[10, facts([], [ago(20)])],
@@ -114,10 +114,10 @@ describe("signalsOf", () => {
 		expect(signals).toEqual({
 			prs: [100, 101],
 			mentions: [
-				{number: 20, title: "Issue 20", bug: true, open: true},
-				{number: 22, title: "Issue 22", bug: false, open: false},
+				{ number: 20, title: "Issue 20", bug: true, open: true },
+				{ number: 22, title: "Issue 22", bug: false, open: false },
 			],
-			reverts: [{number: 30, title: "Revert #100", merged: false}],
+			reverts: [{ number: 30, title: "Revert #100", merged: false }],
 			reopened: [11],
 			followUps: [11],
 		} satisfies Signals);
@@ -134,9 +134,10 @@ const lane = (terminalDaysAgo: number, outcome: string, usd: number | null): Lan
 		builds: 1,
 		reviews: 1,
 		parks: [],
-		spent: usd === null ? {_tag: "Unmeasured", reason: "no rate card"} : {_tag: "Measured", usd},
+		spent:
+			usd === null ? { _tag: "Unmeasured", reason: "no rate card" } : { _tag: "Measured", usd },
 		origin: "bet",
-		waiting: {_tag: "None"},
+		waiting: { _tag: "None" },
 		prs: [],
 		log: [],
 	} as LaneRecord;
@@ -152,10 +153,10 @@ describe("fabrika's numbers", () => {
 
 		expect(numbers).toEqual({
 			days: 14,
-			before: {lanes: 2, landed: 1, spentUsd: 40, unmeasured: 0},
-			since: {lanes: 2, landed: 2, spentUsd: 16, unmeasured: 0},
+			before: { lanes: 2, landed: 1, spentUsd: 40, unmeasured: 0 },
+			since: { lanes: 2, landed: 2, spentUsd: 16, unmeasured: 0 },
 		});
-		const body = renderCheck({...EVIDENCE, fabrika: numbers});
+		const body = renderCheck({ ...EVIDENCE, fabrika: numbers });
 		expect(body).toContain(
 			"- Land rate: 50% (1 of 2 lanes) in the 14 days before it shipped, 100% (2 of 2 lanes) since, up 50 points.",
 		);
@@ -166,7 +167,7 @@ describe("fabrika's numbers", () => {
 
 	it("names spend it could not measure instead of a per-lane figure", () => {
 		const numbers = fabrikaNumbersOf(new Map([[1, [lane(3, "complete", null)]]]), ago(14), 14, NOW);
-		const body = renderCheck({...EVIDENCE, fabrika: numbers});
+		const body = renderCheck({ ...EVIDENCE, fabrika: numbers });
 
 		expect(body).toContain(
 			"- Spend: no lane ended before, $0 measured, 1 lane not measured since.",
@@ -176,7 +177,7 @@ describe("fabrika's numbers", () => {
 	it("is fabrika work only when a declared label is on the issue", () => {
 		const settings = {
 			...SHIPPED_TABLE,
-			fabrikaShare: {...SHIPPED_TABLE.fabrikaShare, labels: ["fab"]},
+			fabrikaShare: { ...SHIPPED_TABLE.fabrikaShare, labels: ["fab"] },
 		};
 
 		expect(isFabrikaWork(["fab", "p1"], settings)).toBe(true);
@@ -186,7 +187,7 @@ describe("fabrika's numbers", () => {
 });
 
 const bytes = (text: string) => new TextEncoder().encode(text);
-const SOURCE = {name: "metrics", command: ["./m"] as const, timeoutSeconds: 9};
+const SOURCE = { name: "metrics", command: ["./m"] as const, timeoutSeconds: 9 };
 
 describe("sourceResultOf", () => {
 	it("keeps the output of a source that exited 0, and says when it was cut", () => {
@@ -199,11 +200,11 @@ describe("sourceResultOf", () => {
 				stderr: bytes(""),
 				truncated: true,
 			}),
-		).toEqual({_tag: "Output", name: "metrics", text: "p95 1.2s", truncated: true});
+		).toEqual({ _tag: "Output", name: "metrics", text: "p95 1.2s", truncated: true });
 	});
 
 	it("reports a non-zero exit, a timeout and a source that would not start", () => {
-		const ran = {stdout: bytes(""), truncated: false} as const;
+		const ran = { stdout: bytes(""), truncated: false } as const;
 		expect(
 			sourceResultOf(SOURCE, {
 				_tag: "Ran",
@@ -212,7 +213,7 @@ describe("sourceResultOf", () => {
 				stderr: bytes("\nboom\nmore"),
 				...ran,
 			}),
-		).toEqual({_tag: "Failed", name: "metrics", reason: "exited 3: boom"});
+		).toEqual({ _tag: "Failed", name: "metrics", reason: "exited 3: boom" });
 		expect(
 			sourceResultOf(SOURCE, {
 				_tag: "Ran",
@@ -221,8 +222,8 @@ describe("sourceResultOf", () => {
 				stderr: bytes(""),
 				...ran,
 			}),
-		).toEqual({_tag: "Failed", name: "metrics", reason: "timed out after 9s"});
-		expect(sourceResultOf(SOURCE, {_tag: "Unstartable", reason: "ENOENT"})).toEqual({
+		).toEqual({ _tag: "Failed", name: "metrics", reason: "timed out after 9s" });
+		expect(sourceResultOf(SOURCE, { _tag: "Unstartable", reason: "ENOENT" })).toEqual({
 			_tag: "Failed",
 			name: "metrics",
 			reason: "could not start: ENOENT",
@@ -234,7 +235,7 @@ const EVIDENCE: Evidence = {
 	issue: 10,
 	shippedAt: "2026-09-17T08:00:00.000Z",
 	success: "exports finish under 2s",
-	signals: {prs: [], mentions: [], reverts: [], reopened: [], followUps: []},
+	signals: { prs: [], mentions: [], reverts: [], reopened: [], followUps: [] },
 	fabrika: null,
 	sources: [],
 };
@@ -252,7 +253,7 @@ describe("renderCheck", () => {
 	it("fences source output longer than any backtick run inside it", () => {
 		const body = renderCheck({
 			...EVIDENCE,
-			sources: [{_tag: "Output", name: "log", text: "a ``` b", truncated: false}],
+			sources: [{ _tag: "Output", name: "log", text: "a ``` b", truncated: false }],
 		});
 
 		expect(body).toContain("````\na ``` b\n````");
@@ -261,7 +262,7 @@ describe("renderCheck", () => {
 
 describe("checkRec", () => {
 	it("keeps a long Success line short", () => {
-		const rec = checkRec({...EVIDENCE, success: "x".repeat(300)});
+		const rec = checkRec({ ...EVIDENCE, success: "x".repeat(300) });
 
 		expect(rec.length).toBeLessThan(260);
 		expect(rec).toContain("…");

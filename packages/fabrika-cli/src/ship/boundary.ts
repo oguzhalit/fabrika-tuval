@@ -11,16 +11,16 @@
  * `unknown` → `not-control-plane` is the recurring fail-open defect, and `unknown` is the state
  * that holds the PR.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type OwnerRow, parseCodeowners} from "./codeowners.ts";
-import {readFileAtRef} from "./github.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type OwnerRow, parseCodeowners } from "./codeowners.ts";
+import { readFileAtRef } from "./github.ts";
 
 export const CODEOWNERS_PATH = ".github/CODEOWNERS";
 
 export type BoundaryRead =
-	| {readonly _tag: "Unreadable"; readonly reason: string}
-	| {readonly _tag: "Rows"; readonly rows: ReadonlyArray<OwnerRow>};
+	| { readonly _tag: "Unreadable"; readonly reason: string }
+	| { readonly _tag: "Rows"; readonly rows: ReadonlyArray<OwnerRow> };
 
 export const readBoundary = (
 	repo: string,
@@ -28,7 +28,7 @@ export const readBoundary = (
 ): Effect.Effect<BoundaryRead, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
 		const found = yield* readFileAtRef(repo, CODEOWNERS_PATH, ref);
-		if (found._tag === "Unknown") return {_tag: "Unreadable" as const, reason: found.reason};
+		if (found._tag === "Unknown") return { _tag: "Unreadable" as const, reason: found.reason };
 		return {
 			_tag: "Rows" as const,
 			rows: found._tag === "Absent" ? [] : parseCodeowners(found.value),

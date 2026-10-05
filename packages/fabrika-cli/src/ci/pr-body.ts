@@ -40,13 +40,13 @@ interface LineRepair {
 }
 
 const repairLine = (line: string): LineRepair => {
-	if (SECTION_OPEN.test(line) || SECTION_CLOSE.test(line)) return {line, stripped: []};
+	if (SECTION_OPEN.test(line) || SECTION_CLOSE.test(line)) return { line, stripped: [] };
 	const stripped: Array<string> = [];
 	const repaired = line.replace(HTML_TAG, (tag, name: string) => {
 		stripped.push(tag);
 		return name;
 	});
-	return {line: repaired, stripped};
+	return { line: repaired, stripped };
 };
 
 /** A body's repair: the text release-please can parse, and every tag that had to lose its brackets. */

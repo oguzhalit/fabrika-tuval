@@ -24,18 +24,18 @@
  * as a field rather than being recomputed, and a disagreement is a finding the group raises.
  */
 
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
 
 declare const PACK_NONCE: unique symbol;
 declare const INSTANT: unique symbol;
 declare const GROUND_DIGEST: unique symbol;
 
 /** A run's key: exactly eight lowercase hex characters, authored by the caller. */
-export type PackNonce = string & {readonly [PACK_NONCE]: true};
+export type PackNonce = string & { readonly [PACK_NONCE]: true };
 /** An ISO-8601 UTC instant with a trailing `Z`. Branded so `Found` cannot carry `"yesterday"`. */
-export type Instant = string & {readonly [INSTANT]: true};
+export type Instant = string & { readonly [INSTANT]: true };
 /** Exactly twelve lowercase hex — `bodyDigest`'s width. */
-export type GroundDigest = string & {readonly [GROUND_DIGEST]: true};
+export type GroundDigest = string & { readonly [GROUND_DIGEST]: true };
 
 const NONCE_RE = /^[0-9a-f]{8}$/;
 const INSTANT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
@@ -138,12 +138,12 @@ interface Scan {
 }
 
 const sectionsOf = (lines: ReadonlyArray<string>): Scan => {
-	const sections: {name: string; lines: string[]}[] = [];
+	const sections: { name: string; lines: string[] }[] = [];
 	let stray: string | null = null;
 	for (const raw of lines) {
 		const heading = HEADING.exec(raw);
 		if (heading?.[1] !== undefined) {
-			sections.push({name: heading[1], lines: []});
+			sections.push({ name: heading[1], lines: [] });
 			continue;
 		}
 		const current = sections.at(-1);
@@ -153,7 +153,7 @@ const sectionsOf = (lines: ReadonlyArray<string>): Scan => {
 		}
 		current.lines.push(raw);
 	}
-	return {sections, stray};
+	return { sections, stray };
 };
 
 const body = (section: Section): string => section.lines.join("\n").trim();
@@ -167,18 +167,18 @@ const body = (section: Section): string => section.lines.join("\n").trim();
 export const groundJsonOf = (
 	section: string,
 ):
-	| {readonly _tag: "Json"; readonly text: string}
-	| {readonly _tag: "No"; readonly reason: string} => {
+	| { readonly _tag: "Json"; readonly text: string }
+	| { readonly _tag: "No"; readonly reason: string } => {
 	const lines = section.split("\n");
 	const open = lines.findIndex((line) => line.trim().startsWith("```"));
-	if (open === -1) return {_tag: "No", reason: "the proven half carries no fenced JSON block"};
+	if (open === -1) return { _tag: "No", reason: "the proven half carries no fenced JSON block" };
 	if (lines.slice(0, open).some((line) => line.trim() !== "")) {
-		return {_tag: "No", reason: "the proven half carries prose before its fence"};
+		return { _tag: "No", reason: "the proven half carries prose before its fence" };
 	}
 	const close = lines.findIndex((line, index) => index > open && line.trim() === "```");
-	if (close === -1) return {_tag: "No", reason: "the proven half's fence is never closed"};
+	if (close === -1) return { _tag: "No", reason: "the proven half's fence is never closed" };
 	if (lines.slice(close + 1).some((line) => line.trim() !== "")) {
-		return {_tag: "No", reason: "the proven half carries text after its fence"};
+		return { _tag: "No", reason: "the proven half carries text after its fence" };
 	}
 	const text = lines
 		.slice(open + 1, close)
@@ -188,12 +188,12 @@ export const groundJsonOf = (
 	try {
 		parsed = JSON.parse(text);
 	} catch {
-		return {_tag: "No", reason: "the proven half's fence does not hold JSON"};
+		return { _tag: "No", reason: "the proven half's fence does not hold JSON" };
 	}
 	if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-		return {_tag: "No", reason: "the proven half's JSON is not one object"};
+		return { _tag: "No", reason: "the proven half's JSON is not one object" };
 	}
-	return {_tag: "Json", text};
+	return { _tag: "Json", text };
 };
 
 export const read = (artifact: string): HandoffPackRead => {
@@ -234,7 +234,7 @@ export const read = (artifact: string): HandoffPackRead => {
 
 	const afterMarker = artifact.split("\n");
 	const markerAt = afterMarker.findIndex((raw) => raw.trim() === line.trim());
-	const {sections, stray} = sectionsOf(afterMarker.slice(markerAt + 1));
+	const { sections, stray } = sectionsOf(afterMarker.slice(markerAt + 1));
 	if (stray !== null) {
 		return malformed(
 			"the pack carries text outside its five sections — the section set is closed so a successor can tell the format's words from someone else's",
@@ -308,8 +308,8 @@ export const renderPack = (pack: HandoffPack): NonEmptyReadonlyArray<string> => 
 ];
 
 export type HandoffPackFields =
-	| {readonly _tag: "Fields"; readonly pack: HandoffPack}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly pack: HandoffPack }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 const FIELD = /^([a-zA-Z]+):\s*(.*)$/;
 
@@ -333,7 +333,7 @@ export const parseFields = (fields: string): HandoffPackFields => {
 		if (line === "") continue;
 		const field = FIELD.exec(line);
 		if (field?.[1] === undefined) {
-			return {_tag: "Unusable", reason: `line ${index + 1} is not a "<field>: <value>" line`};
+			return { _tag: "Unusable", reason: `line ${index + 1} is not a "<field>: <value>" line` };
 		}
 		if (field[1] === "asserted") {
 			inAsserted = true;
@@ -343,15 +343,15 @@ export const parseFields = (fields: string): HandoffPackFields => {
 	}
 
 	const nonce = packNonce(values.get("nonce") ?? "");
-	if (nonce === null) return {_tag: "Unusable", reason: "no eight-lowercase-hex nonce"};
+	if (nonce === null) return { _tag: "Unusable", reason: "no eight-lowercase-hex nonce" };
 	const sealedAt = instant(values.get("sealedAt") ?? "");
-	if (sealedAt === null) return {_tag: "Unusable", reason: "no ISO-8601 UTC sealedAt"};
+	if (sealedAt === null) return { _tag: "Unusable", reason: "no ISO-8601 UTC sealedAt" };
 	const digest = groundDigest(values.get("groundDigest") ?? "");
-	if (digest === null) return {_tag: "Unusable", reason: "no 12-lowercase-hex groundDigest"};
+	if (digest === null) return { _tag: "Unusable", reason: "no 12-lowercase-hex groundDigest" };
 	const json = groundJsonOf(["```json", (values.get("ground") ?? "").trim(), "```"].join("\n"));
-	if (json._tag === "No") return {_tag: "Unusable", reason: `ground: ${json.reason}`};
+	if (json._tag === "No") return { _tag: "Unusable", reason: `ground: ${json.reason}` };
 
-	const {sections, stray} = sectionsOf(asserted);
+	const { sections, stray } = sectionsOf(asserted);
 	if (stray !== null) {
 		return {
 			_tag: "Unusable",
@@ -373,11 +373,11 @@ export const parseFields = (fields: string): HandoffPackFields => {
 		unsure === undefined
 	) {
 		// Unreachable: the order check above proved all four are present.
-		return {_tag: "Unusable", reason: "the asserted half is incomplete"};
+		return { _tag: "Unusable", reason: "the asserted half is incomplete" };
 	}
 	for (const section of sections) {
 		if (body(section) === "") {
-			return {_tag: "Unusable", reason: `"## ${section.name}" is empty`};
+			return { _tag: "Unusable", reason: `"## ${section.name}" is empty` };
 		}
 	}
 	return {
@@ -399,12 +399,12 @@ export const parseFields = (fields: string): HandoffPackFields => {
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.pack)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.pack) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderPack(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderPack(result.value) } : result;
 };

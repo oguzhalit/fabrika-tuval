@@ -18,8 +18,8 @@
  * neither.
  */
 
-import type {CandidateScreen, CandidateSet} from "./candidate-set.ts";
-import {blessSurface, type GoldenPointer} from "./golden-pointer.ts";
+import type { CandidateScreen, CandidateSet } from "./candidate-set.ts";
+import { blessSurface, type GoldenPointer } from "./golden-pointer.ts";
 
 /** The operator's per-surface verdict: bless it into the golden set, or leave it out. */
 export type BlessVerdict = "approve" | "redline";
@@ -97,7 +97,7 @@ export const renderBlessingGallery = (set: CandidateSet): string => {
 	].join("\n");
 };
 
-const VERDICTS: Readonly<Record<string, BlessVerdict>> = {approve: "approve", redline: "redline"};
+const VERDICTS: Readonly<Record<string, BlessVerdict>> = { approve: "approve", redline: "redline" };
 
 /**
  * Parse a decisions block (the filled-in gallery template) into decisions.
@@ -125,7 +125,7 @@ export const parseBlessDecisions = (text: string): readonly BlessDecision[] => {
 				`blessing-surface: verdict for "${surfaceId}" must be approve|redline, got: "${rawVerdict}"`,
 			);
 		}
-		decisions.push({surfaceId, verdict});
+		decisions.push({ surfaceId, verdict });
 	}
 	return decisions;
 };
@@ -191,11 +191,11 @@ export const applyBlessing = (input: ApplyBlessingInput): BlessingResult => {
 				blessedDate: input.blessedDate,
 				intent: screen.intent,
 			});
-			blessed.push({surfaceId: screen.surfaceId, sha256: screen.sha256});
+			blessed.push({ surfaceId: screen.surfaceId, sha256: screen.sha256 });
 		} else {
 			redlined.push(screen.surfaceId);
 		}
 	}
 
-	return {pointer, blessed, redlined};
+	return { pointer, blessed, redlined };
 };

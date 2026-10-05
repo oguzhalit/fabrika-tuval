@@ -17,11 +17,16 @@
  * The whole decision lives in `./homing.ts`; this file resolves the repo, reads, and emits.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {Read} from "../config/read-key.ts";
-import {getIssue, type IssueRecord, openIssuesWithLabelRecords, resolveRepo} from "../io/issues.ts";
-import {FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { Read } from "../config/read-key.ts";
+import {
+	getIssue,
+	type IssueRecord,
+	openIssuesWithLabelRecords,
+	resolveRepo,
+} from "../io/issues.ts";
+import { FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	judge,
 	type Scope,
@@ -30,8 +35,8 @@ import {
 	toGuardVerdict,
 	VERB,
 } from "./homing.ts";
-import {PRESENT, universeOf} from "./label-universe.ts";
-import {emitVerdict, type GuardVerdict, unknown} from "./verdict.ts";
+import { PRESENT, universeOf } from "./label-universe.ts";
+import { emitVerdict, type GuardVerdict, unknown } from "./verdict.ts";
 
 export interface HomingGuardOptions {
 	/** One issue to scope the scan to, or `null` for the whole open `status:triaged` backlog. */
@@ -44,10 +49,14 @@ export interface HomingGuardOptions {
 
 /** What a scan produced: the set to judge with its scope, or the verdict the read already is. */
 type Scan =
-	| {readonly _tag: "Scanned"; readonly issues: ReadonlyArray<TriagedIssue>; readonly scope: Scope}
-	| {readonly _tag: "Refused"; readonly verdict: GuardVerdict};
+	| {
+			readonly _tag: "Scanned";
+			readonly issues: ReadonlyArray<TriagedIssue>;
+			readonly scope: Scope;
+	  }
+	| { readonly _tag: "Refused"; readonly verdict: GuardVerdict };
 
-const refused = (report: string): Scan => ({_tag: "Refused", verdict: unknown(report)});
+const refused = (report: string): Scan => ({ _tag: "Refused", verdict: unknown(report) });
 
 /** One read issue as the decision reads it — shared with `triage sweep-homes`, so both judge one shape. */
 export const toTriaged = (record: IssueRecord): TriagedIssue => ({
@@ -69,7 +78,7 @@ const backlogScan = (
 			: {
 					_tag: "Scanned",
 					issues: attempt.value.map(toTriaged),
-					scope: {_tag: "backlog"},
+					scope: { _tag: "backlog" },
 				};
 	});
 
@@ -98,7 +107,11 @@ const issueScan = (
 		}
 		const one = toTriaged(found.value);
 		if (one.labels.includes(TRIAGED_LABEL)) {
-			return {_tag: "Scanned", issues: [one], scope: {_tag: "issue", number, universe: PRESENT}};
+			return {
+				_tag: "Scanned",
+				issues: [one],
+				scope: { _tag: "issue", number, universe: PRESENT },
+			};
 		}
 		// Read only here: this is the one fork where an empty scope is ambiguous.
 		const universe = yield* universeOf(repo, [TRIAGED_LABEL]);
@@ -106,7 +119,7 @@ const issueScan = (
 			? refused(
 					`${VERB}: issue #${number} is not ${TRIAGED_LABEL}, and the label set of ${repo} could not be read to tell that from a repo that never defined it — the verdict is UNKNOWN, never clean.`,
 				)
-			: {_tag: "Scanned", issues: [], scope: {_tag: "issue", number, universe}};
+			: { _tag: "Scanned", issues: [], scope: { _tag: "issue", number, universe } };
 	});
 
 export const runHomingGuard = (

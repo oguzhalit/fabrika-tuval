@@ -1,4 +1,4 @@
-import {assert, describe, it} from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import {
 	type CiRequiredInput,
 	envPrefix,
@@ -33,37 +33,37 @@ const env = (over: Record<string, string>): Record<string, string> => ({
 
 describe("judgeJob — per-job verdict (required ⇒ must succeed; not-required skip is legit)", () => {
 	it("required + success → required-pass", () => {
-		const r = judgeJob({name: "integration", required: true, result: "success"});
+		const r = judgeJob({ name: "integration", required: true, result: "success" });
 		assert.strictEqual(r.verdict, "required-pass");
 	});
 
 	it("required + skipped → FAIL (the should-have-run silent no-op)", () => {
-		const r = judgeJob({name: "integration", required: true, result: "skipped"});
+		const r = judgeJob({ name: "integration", required: true, result: "skipped" });
 		assert.strictEqual(r.verdict, "FAIL");
 	});
 
 	it("required + failure → FAIL (a real failure is never masked)", () => {
-		const r = judgeJob({name: "check", required: true, result: "failure"});
+		const r = judgeJob({ name: "check", required: true, result: "failure" });
 		assert.strictEqual(r.verdict, "FAIL");
 	});
 
 	it("required + empty result → FAIL (fail-closed on an untrustworthy/empty conclusion)", () => {
-		const r = judgeJob({name: "e2e", required: true, result: "" as JobResult});
+		const r = judgeJob({ name: "e2e", required: true, result: "" as JobResult });
 		assert.strictEqual(r.verdict, "FAIL");
 	});
 
 	it("not-required + skipped → legit-skip (legitimate not-applicable PASS)", () => {
-		const r = judgeJob({name: "e2e", required: false, result: "skipped"});
+		const r = judgeJob({ name: "e2e", required: false, result: "skipped" });
 		assert.strictEqual(r.verdict, "legit-skip");
 	});
 
 	it("not-required + success → legit-skip (a non-required job that ran+passed is fine)", () => {
-		const r = judgeJob({name: "unit", required: false, result: "success"});
+		const r = judgeJob({ name: "unit", required: false, result: "success" });
 		assert.strictEqual(r.verdict, "legit-skip");
 	});
 
 	it("not-required + failure → FAIL (a non-required job that actually FAILED is not waved through)", () => {
-		const r = judgeJob({name: "integration", required: false, result: "failure"});
+		const r = judgeJob({ name: "integration", required: false, result: "failure" });
 		assert.strictEqual(r.verdict, "FAIL");
 	});
 });
@@ -78,11 +78,12 @@ describe("judge — required-ness through the env adapter (#782/#786)", () => {
 	it("Scenario 1: backend-changed push to main → integration required; ran+passed PASS, but a SKIP FAILs", () => {
 		// ran + passed
 		assert.isTrue(
-			judge(inputFromEnv(env({INTEGRATION_REQUIRED: "true", INTEGRATION_RESULT: "success"}))).pass,
+			judge(inputFromEnv(env({ INTEGRATION_REQUIRED: "true", INTEGRATION_RESULT: "success" })))
+				.pass,
 		);
 		// the silent-no-op: required but skipped ⇒ FAIL
 		const skipped = judge(
-			inputFromEnv(env({INTEGRATION_REQUIRED: "true", INTEGRATION_RESULT: "skipped"})),
+			inputFromEnv(env({ INTEGRATION_REQUIRED: "true", INTEGRATION_RESULT: "skipped" })),
 		);
 		assert.isFalse(skipped.pass);
 		assert.strictEqual(skipped.jobs.find((j) => j.name === "integration")?.verdict, "FAIL");
@@ -130,7 +131,7 @@ describe("judge — the changes source job itself failed → fail closed", () =>
 	});
 
 	it("changes was itself skipped (unmet upstream) → fail closed", () => {
-		const v = judge(inputFromEnv(env({CHANGES_RESULT: "skipped"})));
+		const v = judge(inputFromEnv(env({ CHANGES_RESULT: "skipped" })));
 		assert.isFalse(v.pass);
 		assert.isNotNull(v.changesReport);
 	});
@@ -174,7 +175,7 @@ describe("inputFromEnv — the job set is derived from CI_REQUIRED_JOBS, one row
 	});
 
 	it("check and unit read their own keys, both wired to the one changes output", () => {
-		const input = inputFromEnv(env({CHECK_REQUIRED: "true", UNIT_REQUIRED: "true"}));
+		const input = inputFromEnv(env({ CHECK_REQUIRED: "true", UNIT_REQUIRED: "true" }));
 		assert.isTrue(input.jobs.find((j) => j.name === "check")?.required);
 		assert.isTrue(input.jobs.find((j) => j.name === "unit")?.required);
 	});
@@ -184,19 +185,19 @@ describe("inputFromEnv — the job set is derived from CI_REQUIRED_JOBS, one row
 	});
 
 	it("packages-tests reads its own PACKAGES_TESTS_REQUIRED (not check_required)", () => {
-		const input = inputFromEnv(env({CHECK_REQUIRED: "false", PACKAGES_TESTS_REQUIRED: "true"}));
+		const input = inputFromEnv(env({ CHECK_REQUIRED: "false", PACKAGES_TESTS_REQUIRED: "true" }));
 		assert.isTrue(input.jobs.find((j) => j.name === "packages-tests")?.required);
 		assert.isFalse(input.jobs.find((j) => j.name === "check")?.required);
 	});
 
 	it("actionlint reads its own ACTIONLINT_REQUIRED (not check_required)", () => {
-		const input = inputFromEnv(env({CHECK_REQUIRED: "false", ACTIONLINT_REQUIRED: "true"}));
+		const input = inputFromEnv(env({ CHECK_REQUIRED: "false", ACTIONLINT_REQUIRED: "true" }));
 		assert.isTrue(input.jobs.find((j) => j.name === "actionlint")?.required);
 		assert.isFalse(input.jobs.find((j) => j.name === "check")?.required);
 	});
 
 	it("only the literal 'true' is required; 'TRUE'/'1'/'' are false (fail-closed default)", () => {
-		const input = inputFromEnv(env({INTEGRATION_REQUIRED: "TRUE", E2E_REQUIRED: "1"}));
+		const input = inputFromEnv(env({ INTEGRATION_REQUIRED: "TRUE", E2E_REQUIRED: "1" }));
 		assert.isFalse(input.jobs.find((j) => j.name === "integration")?.required);
 		assert.isFalse(input.jobs.find((j) => j.name === "e2e")?.required);
 		assert.isFalse(input.jobs.find((j) => j.name === "check")?.required);
@@ -209,7 +210,7 @@ describe("inputFromEnv — the job set is derived from CI_REQUIRED_JOBS, one row
 
 describe("inputFromEnv — an unreadable job scope fails closed, never passes over what it found", () => {
 	it("no CI_REQUIRED_JOBS at all ⇒ zero rows and a scope reason", () => {
-		const input = inputFromEnv({CHANGES_RESULT: "success"});
+		const input = inputFromEnv({ CHANGES_RESULT: "success" });
 		assert.deepStrictEqual(input.jobs, []);
 		assert.strictEqual(input.scopeReasons.length, 1);
 		assert.isFalse(judge(input).pass);

@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import {emit, markedIssue, rulingUrl, scopeDigest} from "./decision-ruling.ts";
-import {markerTime} from "./grill-marker.ts";
-import {carriesMachineMarker} from "./machine-marker.ts";
+import { describe, expect, it } from "vitest";
+import { emit, markedIssue, rulingUrl, scopeDigest } from "./decision-ruling.ts";
+import { markerTime } from "./grill-marker.ts";
+import { carriesMachineMarker } from "./machine-marker.ts";
 
 const REPO = "o/r";
 

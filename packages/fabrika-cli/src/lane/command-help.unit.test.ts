@@ -3,13 +3,13 @@
  * the derivation and refusal semantics in ground.ts rather than preserving the old cwd-relative
  * story on commands that happen not to exercise that branch in their verb unit tests.
  */
-import {readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
-import type {CommandNode} from "../unknown-subcommand.ts";
-import {laneCommand} from "./command.ts";
-import {LANE_CONTRACT, ROOT_EXITS} from "./help.ts";
-import {PARK_CAUSE_TOKENS} from "./report.ts";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import type { CommandNode } from "../unknown-subcommand.ts";
+import { laneCommand } from "./command.ts";
+import { LANE_CONTRACT, ROOT_EXITS } from "./help.ts";
+import { PARK_CAUSE_TOKENS } from "./report.ts";
 
 /** A flag as this test reads it: a combinator chain over a `Single` carrying the help text. */
 interface FlagNode {
@@ -19,8 +19,8 @@ interface FlagNode {
 
 interface DescribedCommand extends Omit<CommandNode, "subcommands"> {
 	readonly description: string | undefined;
-	readonly config?: {readonly flags?: ReadonlyArray<FlagNode>} | undefined;
-	readonly subcommands: ReadonlyArray<{readonly commands: ReadonlyArray<DescribedCommand>}>;
+	readonly config?: { readonly flags?: ReadonlyArray<FlagNode> } | undefined;
+	readonly subcommands: ReadonlyArray<{ readonly commands: ReadonlyArray<DescribedCommand> }>;
 }
 
 const group: DescribedCommand = laneCommand;
@@ -79,23 +79,25 @@ const flagHelp = (leaf: DescribedCommand): string => {
 };
 
 describe("the lane group's repository-root help contract", () => {
-	it.each(
-		MIGRATED_ROOTED_VERBS,
-	)("lane %s names both lanes-root refusals on its own exit lines", (name) => {
-		const lines = (leafNamed(name).description ?? "").split("\n");
+	it.each(MIGRATED_ROOTED_VERBS)(
+		"lane %s names both lanes-root refusals on its own exit lines",
+		(name) => {
+			const lines = (leafNamed(name).description ?? "").split("\n");
 
-		expect(lines).toContain(`  39: ${ROOT_EXITS[39]}`);
-		expect(lines).toContain(`  65: ${ROOT_EXITS[65]}`);
-	});
+			expect(lines).toContain(`  39: ${ROOT_EXITS[39]}`);
+			expect(lines).toContain(`  65: ${ROOT_EXITS[65]}`);
+		},
+	);
 
-	it.each(
-		MIGRATED_ROOTED_VERBS,
-	)("lane %s advertises the shared repository-owned --root default", (name) => {
-		const help = flagHelp(leafNamed(name));
+	it.each(MIGRATED_ROOTED_VERBS)(
+		"lane %s advertises the shared repository-owned --root default",
+		(name) => {
+			const help = flagHelp(leafNamed(name));
 
-		expect(help).toContain("the owning repository's .fabrika/lanes");
-		expect(help).toContain("derived off the primary checkout");
-	});
+			expect(help).toContain("the owning repository's .fabrika/lanes");
+			expect(help).toContain("derived off the primary checkout");
+		},
+	);
 });
 
 describe("the operate contract the migrated lane help points at", () => {
@@ -121,26 +123,26 @@ describe("the closed park-cause set --cause advertises", () => {
 		expect(flagHelp(leafNamed("transition"))).toContain(token);
 	});
 
-	it.each([
-		"transition",
-		"report",
-	])("lane %s offers --axis-issue for the render-axis park", (leaf) => {
-		expect(flagHelp(leafNamed(leaf))).toMatch(
-			/open issue tracking the render axis[^"]*required with --cause render-axis-missing/,
-		);
-	});
+	it.each(["transition", "report"])(
+		"lane %s offers --axis-issue for the render-axis park",
+		(leaf) => {
+			expect(flagHelp(leafNamed(leaf))).toMatch(
+				/open issue tracking the render axis[^"]*required with --cause render-axis-missing/,
+			);
+		},
+	);
 
-	it.each([
-		"transition",
-		"report",
-	])("lane %s offers a flag for each of the two parks that wait on the founder", (leaf) => {
-		const help = flagHelp(leafNamed(leaf));
+	it.each(["transition", "report"])(
+		"lane %s offers a flag for each of the two parks that wait on the founder",
+		(leaf) => {
+			const help = flagHelp(leafNamed(leaf));
 
-		expect(help).toMatch(/issue the ruling[^"]*required with --cause ruling-owed/);
-		expect(help).toMatch(
-			/step only the founder may take[^"]*required with --cause founder-act-owed/,
-		);
-	});
+			expect(help).toMatch(/issue the ruling[^"]*required with --cause ruling-owed/);
+			expect(help).toMatch(
+				/step only the founder may take[^"]*required with --cause founder-act-owed/,
+			);
+		},
+	);
 
 	it("offers the two spent-budget parks, the two base machinery causes, the queue ejection, the red head, the rendered gate's five, the unlanded write, the builder's two mechanical stops, the owner-approval wait, the verdict the head owes, the size stop and the two waits on the founder beside the six that predate them", () => {
 		expect([...PARK_CAUSE_TOKENS]).toEqual([

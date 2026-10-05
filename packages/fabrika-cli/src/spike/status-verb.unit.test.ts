@@ -1,5 +1,5 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	errOut,
 	type FakeFsOptions,
@@ -8,8 +8,8 @@ import {
 	okOut,
 	type Scripted,
 } from "../fakes.test-support.ts";
-import {captureMarker} from "./bodies.ts";
-import {MALFORMED_RECORD, OFF_VOCABULARY, READ_OR_EXEC_UNKNOWN} from "./codes.ts";
+import { captureMarker } from "./bodies.ts";
+import { MALFORMED_RECORD, OFF_VOCABULARY, READ_OR_EXEC_UNKNOWN } from "./codes.ts";
 import {
 	COMMENTS,
 	commentsPayload,
@@ -28,19 +28,19 @@ import {
 	TMP_ROOT,
 	WORKSPACE,
 } from "./fixtures.test-support.ts";
-import {runStatus} from "./status-verb.ts";
+import { runStatus } from "./status-verb.ts";
 
 const resident: FakeFsOptions = {
 	directories: [WORKSPACE],
-	files: {[MANIFEST]: manifestText(), [EVIDENCE]: ONE_RUN},
+	files: { [MANIFEST]: manifestText(), [EVIDENCE]: ONE_RUN },
 };
 
-const options = {nonce: NONCE, repo: null as string | null, env: ENV, tmpRoot: TMP_ROOT};
+const options = { nonce: NONCE, repo: null as string | null, env: ENV, tmpRoot: TMP_ROOT };
 
 const happy: ReadonlyArray<Scripted> = [
 	[STATUS, okOut("")],
-	[ISSUE, {status: 200, body: issuePayload()}],
-	[COMMENTS, {status: 200, body: commentsPayload([])}],
+	[ISSUE, { status: 200, body: issuePayload() }],
+	[COMMENTS, { status: 200, body: commentsPayload([]) }],
 ];
 
 const run = (
@@ -50,7 +50,7 @@ const run = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runStatus({...options, ...overrides}),
+			runStatus({ ...options, ...overrides }),
 			Layer.merge(fakeFs(fs).layer, fakeSeams(script).layer),
 		),
 	);
@@ -96,7 +96,7 @@ describe("runStatus reports per-field state inside exit 0", () => {
 		const outcome = await run(
 			happy,
 			{},
-			{directories: [WORKSPACE], files: {[MANIFEST]: manifestText()}},
+			{ directories: [WORKSPACE], files: { [MANIFEST]: manifestText() } },
 		);
 		expect(JSON.parse(outcome.stdout)).toMatchObject({
 			runs: 0,
@@ -108,20 +108,23 @@ describe("runStatus reports per-field state inside exit 0", () => {
 	it("reports a captured spike", async () => {
 		const outcome = await run([
 			[STATUS, okOut("")],
-			[ISSUE, {status: 200, body: issuePayload({state: "closed"})}],
+			[ISSUE, { status: 200, body: issuePayload({ state: "closed" }) }],
 			[
 				COMMENTS,
-				{status: 200, body: commentsPayload([{id: 1, body: captureMarker(NONCE, ONE_RUN_DIGEST)}])},
+				{
+					status: 200,
+					body: commentsPayload([{ id: 1, body: captureMarker(NONCE, ONE_RUN_DIGEST) }]),
+				},
 			],
 		]);
-		expect(JSON.parse(outcome.stdout)).toMatchObject({spikeState: "closed", captured: true});
+		expect(JSON.parse(outcome.stdout)).toMatchObject({ spikeState: "closed", captured: true });
 	});
 
 	it("reports treeMatched as information, never as a verdict", async () => {
 		const outcome = await run([
 			[STATUS, okOut("?? probe.ts\n")],
-			[ISSUE, {status: 200, body: issuePayload()}],
-			[COMMENTS, {status: 200, body: commentsPayload([])}],
+			[ISSUE, { status: 200, body: issuePayload() }],
+			[COMMENTS, { status: 200, body: commentsPayload([]) }],
 		]);
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout).treeMatched).toBe(false);
@@ -133,17 +136,21 @@ describe("runStatus reports per-field state inside exit 0", () => {
 			{},
 			{
 				directories: [WORKSPACE],
-				files: {[MANIFEST]: manifestText({spike: null}), [EVIDENCE]: ONE_RUN},
+				files: { [MANIFEST]: manifestText({ spike: null }), [EVIDENCE]: ONE_RUN },
 			},
 		);
 		expect(outcome.code).toBe(0);
-		expect(JSON.parse(outcome.stdout)).toMatchObject({spike: null, spikeState: null});
+		expect(JSON.parse(outcome.stdout)).toMatchObject({ spike: null, spikeState: null });
 	});
 });
 
 describe("the near-totality is bounded — an unreadable state still refuses", () => {
 	it("refuses a manifest that does not parse on 4 — that is not `absent`", async () => {
-		const outcome = await run(happy, {}, {directories: [WORKSPACE], files: {[MANIFEST]: "{}\n"}});
+		const outcome = await run(
+			happy,
+			{},
+			{ directories: [WORKSPACE], files: { [MANIFEST]: "{}\n" } },
+		);
 		expect(outcome.code).toBe(MALFORMED_RECORD);
 		expect(outcome.stdout).toBe("");
 	});
@@ -152,7 +159,7 @@ describe("the near-totality is bounded — an unreadable state still refuses", (
 		const outcome = await run(
 			happy,
 			{},
-			{...resident, files: {...resident.files, [EVIDENCE]: "nope\n"}},
+			{ ...resident, files: { ...resident.files, [EVIDENCE]: "nope\n" } },
 		);
 		expect(outcome.code).toBe(MALFORMED_RECORD);
 	});
@@ -160,7 +167,7 @@ describe("the near-totality is bounded — an unreadable state still refuses", (
 	it("refuses an unreadable spike state on 11 rather than reporting a default", async () => {
 		const outcome = await run([
 			[STATUS, okOut("")],
-			[ISSUE, {status: 502, body: "{}"}],
+			[ISSUE, { status: 502, body: "{}" }],
 		]);
 		expect(outcome.code).toBe(READ_OR_EXEC_UNKNOWN);
 		expect(outcome.stdout).toBe("");
@@ -172,7 +179,7 @@ describe("the near-totality is bounded — an unreadable state still refuses", (
 	});
 
 	it("refuses an off-grammar nonce on 10", async () => {
-		const outcome = await run(happy, {nonce: "run-1"});
+		const outcome = await run(happy, { nonce: "run-1" });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stdout).toBe("");
 		expect(outcome.stderr.at(-1)).toContain(
@@ -185,7 +192,7 @@ describe("a proven-absent spike is reported, never fused with an unreadable one"
 	it("names it on stderr and leaves the state null at exit 0", async () => {
 		const outcome = await run([
 			[STATUS, okOut("")],
-			[ISSUE, {status: 404, body: '{"message":"Not Found"}'}],
+			[ISSUE, { status: 404, body: '{"message":"Not Found"}' }],
 		]);
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout).spikeState).toBeNull();

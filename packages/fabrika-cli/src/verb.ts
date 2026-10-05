@@ -64,4 +64,4 @@ export const refuse = (
 	code: number,
 	reason: string,
 	extra: ReadonlyArray<string> = [],
-): VerbOutcome => ({code, stdout: "", stderr: [...extra, reason]});
+): VerbOutcome => ({ code, stdout: "", stderr: [...extra, reason] });

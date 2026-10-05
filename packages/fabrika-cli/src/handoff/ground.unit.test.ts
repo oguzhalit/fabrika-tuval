@@ -1,8 +1,8 @@
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeSeams, okOut, type Scripted} from "../fakes.test-support.ts";
-import {GROUND, groundScript} from "./fixtures.test-support.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeSeams, okOut, type Scripted } from "../fakes.test-support.ts";
+import { GROUND, groundScript } from "./fixtures.test-support.ts";
 import {
 	COMPARED_FIELDS,
 	comparableOf,
@@ -32,11 +32,11 @@ const WORKED = {
 		reachable: "pushed" as const,
 		aheadBy: 0,
 		behindBy: 0,
-		base: {branch: "main", head: "11223344556677889900aabbccddeeff00112233"},
-		tree: {state: "clean" as const, trackedModified: 0, untracked: 0},
+		base: { branch: "main", head: "11223344556677889900aabbccddeeff00112233" },
+		tree: { state: "clean" as const, trackedModified: 0, untracked: 0 },
 	},
 	board: {
-		issue: {state: "open", labels: ["p2", "type:chore"]},
+		issue: { state: "open", labels: ["p2", "type:chore"] },
 		pull: {
 			number: 5290,
 			state: "open",
@@ -79,7 +79,7 @@ describe("the digest pre-image", () => {
 	});
 
 	it("carries null on all four board.pull rows together when there is no pull request", () => {
-		const none = {...WORKED, board: {...WORKED.board, pull: null}};
+		const none = { ...WORKED, board: { ...WORKED.board, pull: null } };
 		for (const field of ["number", "state", "head", "checks"]) {
 			expect(fieldAt(none, `board.pull.${field}`)).toBeNull();
 		}
@@ -94,7 +94,7 @@ describe("the digest pre-image", () => {
 
 	it("is twelve lowercase hex, and moves when a digested field moves", () => {
 		expect(digestOf(WORKED)).toMatch(/^[0-9a-f]{12}$/);
-		expect(digestOf({...WORKED, issue: 5022})).not.toBe(digestOf(WORKED));
+		expect(digestOf({ ...WORKED, issue: 5022 })).not.toBe(digestOf(WORKED));
 	});
 });
 
@@ -110,7 +110,7 @@ describe("compareGround", () => {
 	it("reports the moved field and nothing else", () => {
 		const moved = compareGround(packed, {
 			...packed,
-			git: {...packed.git, head: "7ab3419e0c25d8f6041a2b3c4d5e6f7089abcdef"},
+			git: { ...packed.git, head: "7ab3419e0c25d8f6041a2b3c4d5e6f7089abcdef" },
 		});
 		expect(driftState(moved)).toBe("moved");
 		expect(moved.filter((row) => row.state !== "same").map((row) => row.field)).toEqual([
@@ -119,7 +119,7 @@ describe("compareGround", () => {
 	});
 
 	it("reports rows 3-10 as moved with a null live value when the packed branch is gone", () => {
-		const gone = compareGround(packed, {...packed, git: null});
+		const gone = compareGround(packed, { ...packed, git: null });
 		const git = gone.filter((row) => row.field.startsWith("git."));
 		expect(git.every((row) => row.state === "moved" && row.live === null)).toBe(true);
 		expect(
@@ -147,7 +147,7 @@ describe("parseGround", () => {
 
 describe("parseAheadBehind", () => {
 	it("reads the left count as behind and the right as ahead", () => {
-		expect(parseAheadBehind("3\t7")).toEqual({behindBy: 3, aheadBy: 7});
+		expect(parseAheadBehind("3\t7")).toEqual({ behindBy: 3, aheadBy: 7 });
 	});
 
 	it("refuses anything that is not two counts, rather than answering zero", () => {
@@ -161,25 +161,25 @@ describe("the derivations", () => {
 		const dirty = await run(deriveTree, [
 			[/status --porcelain/, okOut(" M worker/a.ts\n?? scratch.md\n")],
 		]);
-		expect(dirty).toMatchObject({value: {state: "dirty", trackedModified: 1, untracked: 1}});
+		expect(dirty).toMatchObject({ value: { state: "dirty", trackedModified: 1, untracked: 1 } });
 		const failed = await run(deriveTree, [[/status --porcelain/, errOut("not a git repository")]]);
 		expect(failed._tag).toBe("Failure");
 	});
 
 	it("reads an unset upstream as the FACT unknown, with both counts null", async () => {
-		const core = await run(deriveGitCore({ref: null, base: "main"}), [
+		const core = await run(deriveGitCore({ ref: null, base: "main" }), [
 			[/rev-parse --abbrev-ref --symbolic-full-name/, errOut("no upstream configured")],
 			[/rev-parse --abbrev-ref HEAD$/, okOut("umut/fanout-helper")],
 			[/rev-parse --verify --quiet main\^/, okOut("11223344556677889900aabbccddeeff00112233")],
 			[/rev-parse --verify --quiet/, okOut("4f1c8a2b9d3e5607182934abcdef5566778899aa")],
 		]);
 		expect(core).toMatchObject({
-			value: {reachable: "unknown", upstream: null, aheadBy: null, behindBy: null},
+			value: { reachable: "unknown", upstream: null, aheadBy: null, behindBy: null },
 		});
 	});
 
 	it("reads a head that is not an ancestor of its upstream as unpushed", async () => {
-		const core = await run(deriveGitCore({ref: null, base: "main"}), [
+		const core = await run(deriveGitCore({ ref: null, base: "main" }), [
 			[/rev-parse --abbrev-ref --symbolic-full-name/, okOut("origin/umut/fanout-helper")],
 			[/rev-parse --abbrev-ref HEAD$/, okOut("umut/fanout-helper")],
 			[/rev-parse --verify --quiet main\^/, okOut("11223344556677889900aabbccddeeff00112233")],
@@ -187,18 +187,18 @@ describe("the derivations", () => {
 			[/merge-base --is-ancestor/, errOut("")],
 			[/rev-list --left-right --count/, okOut("0\t2")],
 		]);
-		expect(core).toMatchObject({value: {reachable: "unpushed", aheadBy: 2}});
+		expect(core).toMatchObject({ value: { reachable: "unpushed", aheadBy: 2 } });
 	});
 
 	it("reports checks as none only over a rollup it read, never over one it could not", async () => {
 		expect(
 			await run(deriveChecks("o/r", "abc"), [
-				[/check-runs/, {status: 200, body: '{"total_count":0,"check_runs":[]}'}],
+				[/check-runs/, { status: 200, body: '{"total_count":0,"check_runs":[]}' }],
 			]),
-		).toMatchObject({value: "none"});
+		).toMatchObject({ value: "none" });
 		expect(
-			await run(deriveChecks("o/r", "abc"), [[/check-runs/, {status: 502, body: "{}"}]]),
-		).toMatchObject({_tag: "Failure"});
+			await run(deriveChecks("o/r", "abc"), [[/check-runs/, { status: 502, body: "{}" }]]),
+		).toMatchObject({ _tag: "Failure" });
 	});
 
 	it("calls a branch gone only once the repository itself reads, never on a broken checkout", async () => {
@@ -223,7 +223,7 @@ describe("the derivations", () => {
 				issue: 5021,
 				ref: null,
 				base: "main",
-				board: {state: "open", labels: ["type:chore", "p2"]},
+				board: { state: "open", labels: ["type:chore", "p2"] },
 				now: () => new Date("2026-08-09T18:36:48.000Z"),
 			}),
 			groundScript(),
@@ -239,11 +239,11 @@ describe("the derivations", () => {
 				issue: 5021,
 				ref: null,
 				base: "main",
-				board: {state: "open", labels: []},
+				board: { state: "open", labels: [] },
 				now: () => new Date("2026-08-09T18:36:48.000Z"),
 			}),
 			[[/status --porcelain/, errOut("not a git repository")], ...groundScript()],
 		);
-		expect(blind).toMatchObject({_tag: "Failed", failure: {kind: "git"}});
+		expect(blind).toMatchObject({ _tag: "Failed", failure: { kind: "git" } });
 	});
 });

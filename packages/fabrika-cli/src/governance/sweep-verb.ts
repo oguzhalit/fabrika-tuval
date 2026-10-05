@@ -13,17 +13,17 @@
  * The local three-dot file set is authoritative; GitHub caches its count at the last push.
  * @ruling https://github.com/kamp-us/phoenix/issues/9322#issuecomment-5703498377
  */
-import {Effect, type FileSystem, Result} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {idFromFile, isFourDigitId, partitionRecordNames} from "../adr/records.ts";
-import {renderEntry, type SweepCandidate, sweep} from "../adr/sweep.ts";
-import {readDir, readFile} from "../io/fs.ts";
-import {diffRangeStatuses, readFileAt} from "../io/git.ts";
-import {readLocalFileSet} from "../review/local-file-set.ts";
-import {badNumber, openPull, resolveTargetRepo} from "../review/target.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {bindGovernanceHead, boundLine} from "./head.ts";
+import { Effect, type FileSystem, Result } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { idFromFile, isFourDigitId, partitionRecordNames } from "../adr/records.ts";
+import { renderEntry, type SweepCandidate, sweep } from "../adr/sweep.ts";
+import { readDir, readFile } from "../io/fs.ts";
+import { diffRangeStatuses, readFileAt } from "../io/git.ts";
+import { readLocalFileSet } from "../review/local-file-set.ts";
+import { badNumber, openPull, resolveTargetRepo } from "../review/target.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { OFF_VOCABULARY, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { bindGovernanceHead, boundLine } from "./head.ts";
 
 const VERB = "governance sweep";
 
@@ -44,8 +44,8 @@ export interface SweepOptions {
 
 /** Every record in the corpus, or the refusal its unreadability seats. */
 type Corpus =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Corpus"; readonly records: ReadonlyArray<SweepCandidate>};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Corpus"; readonly records: ReadonlyArray<SweepCandidate> };
 
 const readCorpus = (dir: string): Effect.Effect<Corpus, never, FileSystem.FileSystem> =>
 	Effect.gen(function* () {
@@ -60,7 +60,7 @@ const readCorpus = (dir: string): Effect.Effect<Corpus, never, FileSystem.FileSy
 				),
 			};
 		}
-		const {records} = partitionRecordNames(listing.success);
+		const { records } = partitionRecordNames(listing.success);
 		if (records.length === 0) {
 			return {
 				_tag: "Refused" as const,
@@ -84,9 +84,9 @@ const readCorpus = (dir: string): Effect.Effect<Corpus, never, FileSystem.FileSy
 					),
 				};
 			}
-			corpus.push({id: idFromFile(file) ?? file, file, text: text.success});
+			corpus.push({ id: idFromFile(file) ?? file, file, text: text.success });
 		}
-		return {_tag: "Corpus" as const, records: corpus};
+		return { _tag: "Corpus" as const, records: corpus };
 	});
 
 export const runSweep = (
@@ -97,7 +97,7 @@ export const runSweep = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem
 > =>
 	Effect.gen(function* () {
-		const {pr, landed, json} = options;
+		const { pr, landed, json } = options;
 		if ((pr === null) === (landed === null)) {
 			return refuse(OFF_VOCABULARY, `${VERB}: pass a PR with --record, or --landed, never both.`);
 		}
@@ -164,7 +164,7 @@ export const runSweep = (
 			const listed = yield* readLocalFileSet(
 				VERB,
 				`#${pr}`,
-				{base: head.mergeBase, tip: head.sha},
+				{ base: head.mergeBase, tip: head.sha },
 				target.pull.changedFiles,
 				diffRangeStatuses,
 			);
@@ -206,7 +206,7 @@ export const runSweep = (
 			subjectText = bytes.value;
 		}
 
-		const result = sweep({id: subjectId, text: subjectText}, corpus.records, options.limit);
+		const result = sweep({ id: subjectId, text: subjectText }, corpus.records, options.limit);
 		diagnostics.push(
 			`${VERB}: ranked ${result.inScope} uncited live-accepted records of ${result.scanned} in scope.`,
 		);

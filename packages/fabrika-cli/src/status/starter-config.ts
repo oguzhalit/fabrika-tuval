@@ -11,16 +11,16 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/10041#issuecomment-5983080892
  */
-import type {KeyGroup} from "../config/key-group.ts";
-import {CI, SHIPPED_CI} from "../config/keys/ci.ts";
-import {codeValidatorsKey} from "../config/keys/code-validators.ts";
-import {dependencyReconcilerKey} from "../config/keys/dependency-reconciler.ts";
-import {uiSurfacesKey} from "../config/keys/ui-surfaces.ts";
+import type { KeyGroup } from "../config/key-group.ts";
+import { CI, SHIPPED_CI } from "../config/keys/ci.ts";
+import { codeValidatorsKey } from "../config/keys/code-validators.ts";
+import { dependencyReconcilerKey } from "../config/keys/dependency-reconciler.ts";
+import { uiSurfacesKey } from "../config/keys/ui-surfaces.ts";
 
 const row = (key: string, value: unknown): string => `"${key}": ${JSON.stringify(value)}`;
 
 /** One key at its shipped default, in the shape the file spells it rather than the decoded one. */
-const shipped = <A>({key, shippedDefault, render}: KeyGroup<A>): string =>
+const shipped = <A>({ key, shippedDefault, render }: KeyGroup<A>): string =>
 	row(key, render === undefined ? shippedDefault : render(shippedDefault));
 
 export const STARTER_CONFIG = `// fabrika's config for this repo. Every key is optional: one you leave out takes its shipped default.

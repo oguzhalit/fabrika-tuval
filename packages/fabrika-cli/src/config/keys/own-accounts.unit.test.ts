@@ -1,23 +1,23 @@
-import {describe, expect, it} from "vitest";
-import {loadConfig, resolve} from "../load.ts";
-import {OWN_ACCOUNTS, ownAccountsKey} from "./own-accounts.ts";
+import { describe, expect, it } from "vitest";
+import { loadConfig, resolve } from "../load.ts";
+import { OWN_ACCOUNTS, ownAccountsKey } from "./own-accounts.ts";
 
 const declared = (value: unknown) =>
 	resolve(
-		loadConfig({_tag: "Text", text: JSON.stringify({[OWN_ACCOUNTS]: value})}),
+		loadConfig({ _tag: "Text", text: JSON.stringify({ [OWN_ACCOUNTS]: value }) }),
 		ownAccountsKey,
 	);
 
 describe("ownAccounts", () => {
 	it("decodes to the empty set when the file is absent", () => {
-		expect(resolve(loadConfig({_tag: "Absent"}), ownAccountsKey)).toMatchObject({
+		expect(resolve(loadConfig({ _tag: "Absent" }), ownAccountsKey)).toMatchObject({
 			_tag: "Default",
 			value: [],
 		});
 	});
 
 	it("decodes a declared empty array as the empty set", () => {
-		expect(declared([])).toEqual({_tag: "Declared", layer: "tracked", value: []});
+		expect(declared([])).toEqual({ _tag: "Declared", layer: "tracked", value: [] });
 	});
 
 	it("decodes a populated set of users and teams", () => {
@@ -25,8 +25,8 @@ describe("ownAccounts", () => {
 			_tag: "Declared",
 			layer: "tracked",
 			value: [
-				{_tag: "User", login: "ada-bot"},
-				{_tag: "Team", org: "acme", team: "drivers"},
+				{ _tag: "User", login: "ada-bot" },
+				{ _tag: "Team", org: "acme", team: "drivers" },
 			],
 		});
 	});

@@ -11,18 +11,18 @@
  * already refuses to make, and it is worth more here: this verb's whole output is an authority claim.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {badNumber, resolveTargetRepo} from "../build/target.ts";
-import {cycleDocOr} from "../config/paths.ts";
-import {createComment, getComment} from "../io/issues.ts";
-import {viewerLogin} from "../io/pulls.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {stampOf} from "../wire/grill-marker.ts";
-import {approvedEpic, emit, scopeDigest} from "../wire/plan-approval.ts";
-import {controlPlaneRoster} from "./approval.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { badNumber, resolveTargetRepo } from "../build/target.ts";
+import { cycleDocOr } from "../config/paths.ts";
+import { createComment, getComment } from "../io/issues.ts";
+import { viewerLogin } from "../io/pulls.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { stampOf } from "../wire/grill-marker.ts";
+import { approvedEpic, emit, scopeDigest } from "../wire/plan-approval.ts";
+import { controlPlaneRoster } from "./approval.ts";
 import {
 	APPROVAL_UNAUTHORIZED,
 	PRECONDITION_UNKNOWN,
@@ -159,7 +159,7 @@ export const runApprove = (
 			);
 		}
 
-		const body = emit({epic, digest, at});
+		const body = emit({ epic, digest, at });
 		const posted = yield* createComment(repo, options.number, body);
 		if (posted._tag === "Failure") {
 			return refuse(

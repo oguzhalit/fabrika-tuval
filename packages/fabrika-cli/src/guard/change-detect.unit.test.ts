@@ -4,8 +4,8 @@
  * The absent-`token:` case is the one that matters most and reads as the least alarming: dorny
  * DEFAULTS the input, so "no token" and "the API token" are the same thing to the action.
  */
-import {describe, expect, it} from "vitest";
-import {judge, renderReport} from "./change-detect.ts";
+import { describe, expect, it } from "vitest";
+import { judge, renderReport } from "./change-detect.ts";
 
 const ci = (step: string): string => `
 name: ci
@@ -23,7 +23,7 @@ const dorny = (withBlock: string): string =>
 describe("judge", () => {
 	it("reds an explicitly set token", () => {
 		const verdict = judge(ci(dorny("          token: abc123\n          filters: 'a: x'")));
-		expect(verdict).toMatchObject({pass: false, reason: "api-mode"});
+		expect(verdict).toMatchObject({ pass: false, reason: "api-mode" });
 	});
 
 	// `@actions/core` getInput trims, so this is the value dorny's `if (token)` branch actually sees.
@@ -47,7 +47,7 @@ describe("judge", () => {
 		["no dorny step", ci("      - run: echo hi")],
 		["a dorny step with no with block", ci("      - uses: dorny/paths-filter@v3.0.2")],
 	])("fails closed on zero scope: %s", (_name, text) => {
-		expect(judge(text)).toMatchObject({pass: false, reason: "zero-scope"});
+		expect(judge(text)).toMatchObject({ pass: false, reason: "zero-scope" });
 	});
 });
 

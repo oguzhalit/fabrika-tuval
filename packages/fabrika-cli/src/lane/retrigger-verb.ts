@@ -38,10 +38,10 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/8880
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {badNumber, resolveTargetRepo} from "../build/target.ts";
-import type {Shell} from "../io/git.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { badNumber, resolveTargetRepo } from "../build/target.ts";
+import type { Shell } from "../io/git.ts";
 import {
 	type BasePull,
 	compareStanding,
@@ -49,10 +49,10 @@ import {
 	openPullsForBase,
 	updatePullBranch,
 } from "../io/pulls.ts";
-import {pollWaits} from "../ship/mergeability.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {epicBranch} from "../wire/lane-brief.ts";
-import {APPEND_UNKNOWN, LANE_UNREADABLE, MERGE_CONFLICT} from "./codes.ts";
+import { pollWaits } from "../ship/mergeability.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { epicBranch } from "../wire/lane-brief.ts";
+import { APPEND_UNKNOWN, LANE_UNREADABLE, MERGE_CONFLICT } from "./codes.ts";
 
 const VERB = "fabrika lane retrigger";
 
@@ -77,7 +77,7 @@ const short = (sha: string): string => sha.slice(0, SHORT);
  * head was already moved is not the untouched sweep exit `11` promises.
  */
 type Outcome =
-	| {readonly _tag: "Current"; readonly pr: number}
+	| { readonly _tag: "Current"; readonly pr: number }
 	| {
 			readonly _tag: "Moved";
 			readonly pr: number;
@@ -87,7 +87,7 @@ type Outcome =
 			readonly behindBy: number;
 			readonly wrote: boolean;
 	  }
-	| {readonly _tag: "Conflicted"; readonly pr: number; readonly reason: string}
+	| { readonly _tag: "Conflicted"; readonly pr: number; readonly reason: string }
 	| {
 			readonly _tag: "Unknown";
 			readonly pr: number;
@@ -130,9 +130,9 @@ const awaitMovedHead = (
 				};
 			}
 			if (read._tag === "Unknown")
-				return {_tag: "Unknown" as const, pr, reason: read.reason, wrote: true};
+				return { _tag: "Unknown" as const, pr, reason: read.reason, wrote: true };
 			if (read.value.headSha !== from) {
-				return {_tag: "Moved" as const, pr, from, to: read.value.headSha, behindBy, wrote: true};
+				return { _tag: "Moved" as const, pr, from, to: read.value.headSha, behindBy, wrote: true };
 			}
 		}
 		return {
@@ -160,15 +160,15 @@ const retriggerOne = (
 	Effect.gen(function* () {
 		const standing = yield* compareStanding(repo, base, child.headSha);
 		if (standing._tag === "Failure") {
-			return {_tag: "Unknown" as const, pr: child.number, reason: standing.reason, wrote: false};
+			return { _tag: "Unknown" as const, pr: child.number, reason: standing.reason, wrote: false };
 		}
 		if (standing.value.status === "identical" || standing.value.status === "ahead") {
-			return {_tag: "Current" as const, pr: child.number};
+			return { _tag: "Current" as const, pr: child.number };
 		}
 
 		const update = yield* updatePullBranch(repo, child.number, child.headSha);
 		if (update._tag === "Unreadable") {
-			return {_tag: "Unknown" as const, pr: child.number, reason: update.reason, wrote: true};
+			return { _tag: "Unknown" as const, pr: child.number, reason: update.reason, wrote: true };
 		}
 		if (update._tag === "Declined") {
 			const read = yield* getPullRequest(repo, child.number);
@@ -181,7 +181,7 @@ const retriggerOne = (
 				};
 			}
 			return read.value.headSha === child.headSha
-				? {_tag: "Conflicted" as const, pr: child.number, reason: update.reason}
+				? { _tag: "Conflicted" as const, pr: child.number, reason: update.reason }
 				: {
 						_tag: "Moved" as const,
 						pr: child.number,

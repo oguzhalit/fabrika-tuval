@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import {compareBytes, phrasesOf, rankCandidates, survivesFilter, tokenize} from "./candidates.ts";
+import { describe, expect, it } from "vitest";
+import { compareBytes, phrasesOf, rankCandidates, survivesFilter, tokenize } from "./candidates.ts";
 
-const commit = (sha: string, subject: string, body = "") => ({sha, subject, body});
+const commit = (sha: string, subject: string, body = "") => ({ sha, subject, body });
 
 describe("tokenize", () => {
 	// v1's tokenizer was `/\b[a-z][a-z-]+\b/g`, so every non-ASCII product noun was invisible.

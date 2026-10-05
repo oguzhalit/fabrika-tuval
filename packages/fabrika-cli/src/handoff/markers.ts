@@ -17,7 +17,7 @@
  * would read as unclaimed.
  */
 
-import {type Instant, instant, type PackNonce, packNonce} from "../wire/handoff-pack.ts";
+import { type Instant, instant, type PackNonce, packNonce } from "../wire/handoff-pack.ts";
 
 export {
 	composeMarker as composePackMarker,
@@ -57,7 +57,7 @@ export const readClaimMarker = (body: string): ClaimMarker | null => {
 	const nonce = packNonce(matched[1] ?? "");
 	const claimedAt = instant(matched[3] ?? "");
 	if (nonce === null || claimedAt === null) return null;
-	return {nonce, packComment: Number.parseInt(matched[2] ?? "0", 10), claimedAt};
+	return { nonce, packComment: Number.parseInt(matched[2] ?? "0", 10), claimedAt };
 };
 
 /** The wall clock as this group stamps it: ISO-8601 UTC, seconds, trailing `Z`. */

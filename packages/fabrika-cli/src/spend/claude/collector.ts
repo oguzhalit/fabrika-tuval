@@ -1,12 +1,12 @@
-import {Effect, Path, Result} from "effect";
-import {execCapture} from "../../io/exec.ts";
-import {parseOwnerRepo} from "../../io/git.ts";
-import type {StdinRead} from "../../io/stdin.ts";
-import {answer} from "../../verb.ts";
-import {recordUsage} from "../usage-ledger.ts";
-import type {UsageRecord} from "../usage-record.ts";
-import {discover} from "./discovery.ts";
-import {inventory} from "./inventory.ts";
+import { Effect, Path, Result } from "effect";
+import { execCapture } from "../../io/exec.ts";
+import { parseOwnerRepo } from "../../io/git.ts";
+import type { StdinRead } from "../../io/stdin.ts";
+import { answer } from "../../verb.ts";
+import { recordUsage } from "../usage-ledger.ts";
+import type { UsageRecord } from "../usage-record.ts";
+import { discover } from "./discovery.ts";
+import { inventory } from "./inventory.ts";
 import {
 	type Binding,
 	common,
@@ -19,7 +19,7 @@ import {
 } from "./native.ts";
 
 const report = (notices: readonly string[]) =>
-	answer(JSON.stringify({systemMessage: notices.join("\n").slice(0, 9000)}), notices);
+	answer(JSON.stringify({ systemMessage: notices.join("\n").slice(0, 9000) }), notices);
 
 export const runClaudeSpend = Effect.fn("spend.claude.collect")(
 	function* (options: {
@@ -94,10 +94,10 @@ export const runClaudeSpend = Effect.fn("spend.claude.collect")(
 						session: null,
 						nativeSession: null,
 						rootSession: session.binding.root,
-						parent: {kind: "known" as const, session: owner},
+						parent: { kind: "known" as const, session: owner },
 					},
 				};
-				records.push({...fields, recordId: digest(fields)});
+				records.push({ ...fields, recordId: digest(fields) });
 				notices.push(
 					`Claude usage incomplete: native Agent call ${tool} has no matched child transcript.`,
 				);
@@ -111,7 +111,10 @@ export const runClaudeSpend = Effect.fn("spend.claude.collect")(
 					.map((item) => sessionKey(session.binding.root, item.child))
 					.sort(),
 			};
-			records.push({...coverage, recordId: digest([coverage, records.map((row) => row.recordId)])});
+			records.push({
+				...coverage,
+				recordId: digest([coverage, records.map((row) => row.recordId)]),
+			});
 			for (const record of records) {
 				const result = yield* recordUsage(
 					path.join(directory, ".fabrika/spend-ledger.jsonl"),

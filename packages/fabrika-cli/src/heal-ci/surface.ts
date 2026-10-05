@@ -14,10 +14,10 @@
  * Collapsing `unprobeable` into `no-requirements` would tell an adopter their repo gates nothing
  * when it may gate everything.
  */
-import {isInformational} from "../review/rollup.ts";
-import type {ShipCheckRun} from "../ship/github.ts";
+import { isInformational } from "../review/rollup.ts";
+import type { ShipCheckRun } from "../ship/github.ts";
 
-export {type DeclaredRead, readDeclared} from "../review/blocking.ts";
+export { type DeclaredRead, readDeclared } from "../review/blocking.ts";
 
 export type SurfaceToken = "covered" | "gap" | "no-requirements" | "unprobeable";
 
@@ -43,11 +43,11 @@ export const compare = (
 	const produced = new Set(gating);
 	const declaredSet = new Set(declared);
 	const required = [...declaredSet].map(
-		(name): RequiredRow => ({name, state: produced.has(name) ? "producing" : "absent"}),
+		(name): RequiredRow => ({ name, state: produced.has(name) ? "producing" : "absent" }),
 	);
 	const extra = [...produced].filter((name) => !declaredSet.has(name));
 	const producing = required.filter((row) => row.state === "producing").length;
 	const token: SurfaceToken =
 		declaredSet.size === 0 ? "no-requirements" : producing < declaredSet.size ? "gap" : "covered";
-	return {token, required, extra, producing};
+	return { token, required, extra, producing };
 };

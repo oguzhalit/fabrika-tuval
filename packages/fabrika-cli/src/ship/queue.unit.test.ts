@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import {ADDED, landedOnBase, MERGED, queueStateOf, REMOVED, reopensSince} from "./queue.ts";
+import { describe, expect, it } from "vitest";
+import { ADDED, landedOnBase, MERGED, queueStateOf, REMOVED, reopensSince } from "./queue.ts";
 
-const at = (event: string, createdAt: string) => ({event, createdAt});
+const at = (event: string, createdAt: string) => ({ event, createdAt });
 
 describe("queueStateOf", () => {
 	it("is queued while the newest event is an addition", () => {

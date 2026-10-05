@@ -11,15 +11,15 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9989
  */
 
-import type {AppetiteSizes} from "../config/keys/appetite-sizes.ts";
+import type { AppetiteSizes } from "../config/keys/appetite-sizes.ts";
 import {
 	type Cadence,
 	OUTSIDE_THE_BETS,
 	type ProjectTarget,
 	type TableSettings,
 } from "../config/keys/table.ts";
-import type {FieldSpec, OptionColor} from "../io/projects.ts";
-import type {ReadmeSection} from "./readme-section.ts";
+import type { FieldSpec, OptionColor } from "../io/projects.ts";
+import type { ReadmeSection } from "./readme-section.ts";
 
 export const FIELD = {
 	title: "Title",
@@ -47,28 +47,28 @@ interface Choice {
 }
 
 export const STAGES: ReadonlyArray<Choice> = [
-	{name: "proposed", description: "On the agenda, waiting for a yes or no."},
-	{name: "bet", description: "Said yes at the table. Agents pick these first."},
-	{name: "not now", description: "Said no this time. Stays an issue."},
-	{name: "in lane", description: "An agent is working on it."},
-	{name: "shipped", description: "Merged."},
-	{name: "check", description: "Back at the table to ask: did it work?"},
+	{ name: "proposed", description: "On the agenda, waiting for a yes or no." },
+	{ name: "bet", description: "Said yes at the table. Agents pick these first." },
+	{ name: "not now", description: "Said no this time. Stays an issue." },
+	{ name: "in lane", description: "An agent is working on it." },
+	{ name: "shipped", description: "Merged." },
+	{ name: "check", description: "Back at the table to ask: did it work?" },
 ];
 
 export const ORIGINS: ReadonlyArray<Choice> = [
-	{name: "bet", description: "Picked at a table."},
-	{name: "customer", description: "Reported by someone using the product."},
-	{name: "hand-start", description: "A person started it by hand."},
-	{name: "driver pick", description: "The driving agent picked it without a bet."},
-	{name: "found mid-lane", description: "Found while doing other work."},
-	{name: "experiment", description: "A try-it-and-see."},
+	{ name: "bet", description: "Picked at a table." },
+	{ name: "customer", description: "Reported by someone using the product." },
+	{ name: "hand-start", description: "A person started it by hand." },
+	{ name: "driver pick", description: "The driving agent picked it without a bet." },
+	{ name: "found mid-lane", description: "Found while doing other work." },
+	{ name: "experiment", description: "A try-it-and-see." },
 ];
 
 /** A person's answer to a check. Prep and sync never write it, so the answer stands once given. */
 export const OUTCOMES: ReadonlyArray<Choice> = [
-	{name: "worked", description: "It did what its Success line said."},
-	{name: "didn't", description: "It did not do what its Success line said."},
-	{name: "can't tell", description: "The evidence does not say either way."},
+	{ name: "worked", description: "It did what its Success line said." },
+	{ name: "didn't", description: "It did not do what its Success line said." },
+	{ name: "can't tell", description: "The evidence does not say either way." },
 ];
 
 const KNOWN_SECTIONS: Readonly<Record<string, string>> = {
@@ -97,9 +97,9 @@ const options = (choices: ReadonlyArray<Choice>) =>
  * grouping. Set when setup creates the view — a view that already stands keeps its own.
  */
 export type ViewGrouping =
-	| {readonly _tag: "None"}
-	| {readonly _tag: "Rows"; readonly field: string}
-	| {readonly _tag: "Columns"; readonly field: string};
+	| { readonly _tag: "None" }
+	| { readonly _tag: "Rows"; readonly field: string }
+	| { readonly _tag: "Columns"; readonly field: string };
 
 export type ViewShape =
 	| {
@@ -108,14 +108,14 @@ export type ViewShape =
 			readonly filter: string;
 			/** Field names, in display order. */
 			readonly fields: ReadonlyArray<string>;
-			readonly grouping: Exclude<ViewGrouping, {_tag: "Columns"}>;
+			readonly grouping: Exclude<ViewGrouping, { _tag: "Columns" }>;
 	  }
 	| {
 			readonly name: string;
 			readonly layout: "BOARD_LAYOUT";
 			readonly filter: string;
 			readonly fields: ReadonlyArray<string>;
-			readonly grouping: Exclude<ViewGrouping, {_tag: "Rows"}>;
+			readonly grouping: Exclude<ViewGrouping, { _tag: "Rows" }>;
 	  };
 
 export interface TableShape {
@@ -166,7 +166,7 @@ export const VIEWS: ReadonlyArray<ViewShape> = [
 		name: "Agenda",
 		layout: "TABLE_LAYOUT",
 		filter: `${AGENDA_DAYS} has:${filterKey(FIELD.section)} -${filterKey(FIELD.section)}:${quote(OUTSIDE_THE_BETS)} has:${filterKey(FIELD.rec)}`,
-		grouping: {_tag: "Rows", field: FIELD.section},
+		grouping: { _tag: "Rows", field: FIELD.section },
 		fields: [
 			FIELD.title,
 			FIELD.stage,
@@ -183,28 +183,28 @@ export const VIEWS: ReadonlyArray<ViewShape> = [
 		layout: "TABLE_LAYOUT",
 		filter: `${filterKey(FIELD.section)}:${quote(OUTSIDE_THE_BETS)}`,
 		fields: WIDE_FIELDS,
-		grouping: {_tag: "None"},
+		grouping: { _tag: "None" },
 	},
 	{
 		name: "Lanes",
 		layout: "BOARD_LAYOUT",
 		filter: `has:${filterKey(FIELD.section)} ${filterKey(FIELD.stage)}:${LANE_STAGES.map(quote).join(",")}`,
 		fields: WIDE_FIELDS,
-		grouping: {_tag: "Columns", field: FIELD.stage},
+		grouping: { _tag: "Columns", field: FIELD.stage },
 	},
 	{
 		name: "Group members",
 		layout: "TABLE_LAYOUT",
 		filter: `no:${filterKey(FIELD.section)} has:label`,
 		fields: [FIELD.title, FIELD.stage, FIELD.spent, FIELD.asks],
-		grouping: {_tag: "None"},
+		grouping: { _tag: "None" },
 	},
 	{
 		name: "Inbox",
 		layout: "TABLE_LAYOUT",
 		filter: INBOX_VIEW_FILTER,
 		fields: [FIELD.title],
-		grouping: {_tag: "None"},
+		grouping: { _tag: "None" },
 	},
 ];
 
@@ -327,32 +327,32 @@ export const tableShape = (
 	return {
 		title,
 		shortDescription: `The betting table for ${repo}: what gets bet on, and whether it worked.`,
-		readme: {name: "table", body: renderReadme(settings, sizes, repo)},
+		readme: { name: "table", body: renderReadme(settings, sizes, repo) },
 		fields: [
-			{_tag: "SingleSelect", name: FIELD.stage, options: options(STAGES)},
+			{ _tag: "SingleSelect", name: FIELD.stage, options: options(STAGES) },
 			{
 				_tag: "SingleSelect",
 				name: FIELD.section,
 				options: options(
-					settings.sections.map((name) => ({name, description: sectionDescription(name)})),
+					settings.sections.map((name) => ({ name, description: sectionDescription(name) })),
 				),
 			},
 			{
 				_tag: "SingleSelect",
 				name: FIELD.size,
 				options: options([
-					{name: "S", description: `About ${dollars(sizes.S)}.`},
-					{name: "M", description: `About ${dollars(sizes.M)}.`},
-					{name: "L", description: `About ${dollars(sizes.L)} per epic child.`},
+					{ name: "S", description: `About ${dollars(sizes.S)}.` },
+					{ name: "M", description: `About ${dollars(sizes.M)}.` },
+					{ name: "L", description: `About ${dollars(sizes.L)} per epic child.` },
 				]),
 			},
-			{_tag: "Number", name: FIELD.spent},
-			{_tag: "Number", name: FIELD.asks},
-			{_tag: "SingleSelect", name: FIELD.origin, options: options(ORIGINS)},
-			{_tag: "Text", name: FIELD.rec},
-			{_tag: "Text", name: FIELD.plainWords},
-			{_tag: "SingleSelect", name: FIELD.outcome, options: options(OUTCOMES)},
-			{_tag: "Date", name: FIELD.tableDay},
+			{ _tag: "Number", name: FIELD.spent },
+			{ _tag: "Number", name: FIELD.asks },
+			{ _tag: "SingleSelect", name: FIELD.origin, options: options(ORIGINS) },
+			{ _tag: "Text", name: FIELD.rec },
+			{ _tag: "Text", name: FIELD.plainWords },
+			{ _tag: "SingleSelect", name: FIELD.outcome, options: options(OUTCOMES) },
+			{ _tag: "Date", name: FIELD.tableDay },
 		],
 		views: VIEWS,
 		legacy: [LEGACY_WEEK],

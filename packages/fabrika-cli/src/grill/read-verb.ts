@@ -19,15 +19,15 @@
  * it; nothing edits or deletes an old one, so the log is also the audit trail.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type CommentRecord, listComments, resolveRepo} from "../io/issues.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type CommentRecord, listComments, resolveRepo } from "../io/issues.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import * as auditContext from "../wire/audit-context.ts";
-import {read as readCameFrom, ticketOf} from "../wire/came-from.ts";
-import type {MarkerTime, QuestionId, RoundDigest} from "../wire/grill-marker.ts";
-import {NO_TARGET, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {digestRound, type Kind} from "./round.ts";
+import { read as readCameFrom, ticketOf } from "../wire/came-from.ts";
+import type { MarkerTime, QuestionId, RoundDigest } from "../wire/grill-marker.ts";
+import { NO_TARGET, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { digestRound, type Kind } from "./round.ts";
 import {
 	type Disregarded,
 	ISO_DATE,
@@ -121,7 +121,7 @@ export const runRead = (
 	options: ReadOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {session} = options;
+		const { session } = options;
 		if (!Number.isInteger(session) || session <= 0) {
 			return refuse(FAILED, `grill read: ${session} is not a session issue number.`);
 		}
@@ -201,7 +201,7 @@ export const runRead = (
 				});
 				continue;
 			}
-			rows.set(row.id, {...row, state: "answered"});
+			rows.set(row.id, { ...row, state: "answered" });
 		}
 
 		for (const marker of markers.scan.rulings) {
@@ -241,7 +241,7 @@ export const runRead = (
 					reason: "unattested",
 					detail: `the marker on ${row.id} carries no adjacent dated authorization — a bare stamp is void`,
 				});
-				rows.set(row.id, {...row, state: "unattested"});
+				rows.set(row.id, { ...row, state: "unattested" });
 				continue;
 			}
 			rows.set(row.id, {
@@ -256,7 +256,7 @@ export const runRead = (
 		for (const [id, round] of retirements(markers.scan)) {
 			const row = rows.get(id);
 			if (row === undefined) continue;
-			rows.set(id, {...row, state: "superseded", supersededBy: round});
+			rows.set(id, { ...row, state: "superseded", supersededBy: round });
 		}
 
 		const questions = [...rows.values()];

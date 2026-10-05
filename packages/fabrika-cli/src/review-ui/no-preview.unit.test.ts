@@ -1,8 +1,8 @@
-import {describe, expect, it} from "vitest";
-import {fileMode, filesAtMode, type NoPreviewRule, noPreviewMode} from "./no-preview.ts";
+import { describe, expect, it } from "vitest";
+import { fileMode, filesAtMode, type NoPreviewRule, noPreviewMode } from "./no-preview.ts";
 
-const ADMIN: NoPreviewRule = {paths: ["apps/admin/**"], mode: "hand-check"};
-const DOCS: NoPreviewRule = {paths: ["apps/site/src/docs/**"], mode: "skip"};
+const ADMIN: NoPreviewRule = { paths: ["apps/admin/**"], mode: "hand-check" };
+const DOCS: NoPreviewRule = { paths: ["apps/site/src/docs/**"], mode: "skip" };
 
 describe("noPreviewMode", () => {
 	it("is require-render for a repo that declares no rules", () => {
@@ -19,13 +19,13 @@ describe("noPreviewMode", () => {
 	});
 
 	it("lets the first matching rule win for a file", () => {
-		const first: NoPreviewRule = {paths: ["apps/**"], mode: "skip"};
+		const first: NoPreviewRule = { paths: ["apps/**"], mode: "skip" };
 		expect(fileMode([first, ADMIN], "apps/admin/src/a.tsx")).toBe("skip");
 		expect(fileMode([ADMIN, first], "apps/admin/src/a.tsx")).toBe("hand-check");
 	});
 
 	it("matches any of a rule's globs", () => {
-		const rule: NoPreviewRule = {paths: ["docs/**", "site/*.css"], mode: "skip"};
+		const rule: NoPreviewRule = { paths: ["docs/**", "site/*.css"], mode: "skip" };
 		expect(fileMode([rule], "site/theme.css")).toBe("skip");
 		expect(fileMode([rule], "site/nested/theme.css")).toBe("require-render");
 	});

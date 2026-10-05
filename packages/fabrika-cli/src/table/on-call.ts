@@ -12,13 +12,13 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9914
  */
 
-import {typeLabel} from "../config/board.ts";
-import type {OnCallBoard, ResponseTarget, ResponseTargets, Route} from "../config/keys/boards.ts";
-import {type BoardTarget, FIELD, type TableShape, type ViewShape} from "./shape.ts";
+import { typeLabel } from "../config/board.ts";
+import type { OnCallBoard, ResponseTarget, ResponseTargets, Route } from "../config/keys/boards.ts";
+import { type BoardTarget, FIELD, type TableShape, type ViewShape } from "./shape.ts";
 
 export type BoardName = "product" | "on-call";
 
-export const ON_CALL_FIELD = {responseTarget: "Response target"} as const;
+export const ON_CALL_FIELD = { responseTarget: "Response target" } as const;
 
 /** What routing reads off one issue. */
 export interface RouteFacts {
@@ -40,7 +40,7 @@ export const boardOf = (facts: RouteFacts, route: Route): BoardName => {
 
 /** Every target, in the order they are matched: the labeled ones, then the fallback. */
 export const targetsOf = (targets: ResponseTargets): ReadonlyArray<ResponseTarget> => [
-	...targets.byLabel.map(({name, hours}) => ({name, hours})),
+	...targets.byLabel.map(({ name, hours }) => ({ name, hours })),
 	targets.otherwise,
 ];
 
@@ -52,7 +52,7 @@ export const responseTargetOf = (
 	const matched = targets.byLabel.find((target) =>
 		target.labels.some((label) => labels.includes(label)),
 	);
-	return matched === undefined ? targets.otherwise : {name: matched.name, hours: matched.hours};
+	return matched === undefined ? targets.otherwise : { name: matched.name, hours: matched.hours };
 };
 
 export const onCallTitle = (repo: string): string => `${repo.split("/")[1] ?? repo} on-call`;
@@ -74,12 +74,12 @@ export const ON_CALL_VIEWS: ReadonlyArray<ViewShape> = [
 		layout: "TABLE_LAYOUT",
 		filter: "is:open",
 		fields: [FIELD.title, ON_CALL_FIELD.responseTarget, FIELD.plainWords],
-		grouping: {_tag: "None"},
+		grouping: { _tag: "None" },
 	},
 ];
 
 export const renderOnCallReadme = (settings: OnCallBoard): string => {
-	const {route} = settings;
+	const { route } = settings;
 	const lines = [
 		"# How to use the on-call board",
 		"",
@@ -119,7 +119,7 @@ export const renderOnCallReadme = (settings: OnCallBoard): string => {
 export const onCallShape = (settings: OnCallBoard, repo: string, title: string): TableShape => ({
 	title,
 	shortDescription: `The on-call board for ${repo}: continuous work, each item with a response target.`,
-	readme: {name: "on-call", body: renderOnCallReadme(settings)},
+	readme: { name: "on-call", body: renderOnCallReadme(settings) },
 	fields: [
 		{
 			_tag: "SingleSelect",
@@ -130,7 +130,7 @@ export const onCallShape = (settings: OnCallBoard, repo: string, title: string):
 				description: `Answer within ${hoursWords(target.hours)}.`,
 			})),
 		},
-		{_tag: "Text", name: FIELD.plainWords},
+		{ _tag: "Text", name: FIELD.plainWords },
 	],
 	views: ON_CALL_VIEWS,
 	legacy: [],

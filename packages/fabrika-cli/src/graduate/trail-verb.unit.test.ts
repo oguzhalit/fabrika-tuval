@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import {BAD_SECTIONS, NO_TARGET, PRECONDITION_UNKNOWN, SOURCE_UNRECOGNIZED} from "./codes.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import { BAD_SECTIONS, NO_TARGET, PRECONDITION_UNKNOWN, SOURCE_UNRECOGNIZED } from "./codes.ts";
 import {
 	CLEARED_DECISIONS,
 	CLEARED_SESSION,
@@ -13,8 +13,8 @@ import {
 	ROUND,
 	SESSION,
 } from "./fixtures.test-support.ts";
-import {digestOfDecisions} from "./trail.ts";
-import {runTrail} from "./trail-verb.ts";
+import { digestOfDecisions } from "./trail.ts";
+import { runTrail } from "./trail-verb.ts";
 
 const SESSION_ISSUE = /^GET .*\/repos\/o\/r\/issues\/9412$/;
 const SESSION_COMMENTS = /^GET .*\/repos\/o\/r\/issues\/9412\/comments\?/;
@@ -27,25 +27,25 @@ const BLOCKED_BY = /issues\/9142\/dependencies\/blocked_by/;
 const BLOCKING = /issues\/9142\/dependencies\/blocking/;
 
 /** A served 200 — every read below asks for JSON and gets a whole single page. */
-const served = (body: string): HttpReply => ({status: 200, body});
+const served = (body: string): HttpReply => ({ status: 200, body });
 
 const run = (source: number, script: ReadonlyArray<Scripted>) =>
 	Effect.runPromise(
 		Effect.provide(
-			runTrail({source, repo: null, env: {CLAUDE_PIPELINE_REPO: REPO}}),
+			runTrail({ source, repo: null, env: { CLAUDE_PIPELINE_REPO: REPO } }),
 			fakeSeams(script).layer,
 		),
 	);
 
 const session = (labels: ReadonlyArray<string> = ["grilling:session"]) =>
-	[SESSION_ISSUE, served(issueJson({number: SESSION, labels}))] as const;
+	[SESSION_ISSUE, served(issueJson({ number: SESSION, labels }))] as const;
 
 describe("a grilling source resolves through the grill reader", () => {
 	it("answers `ready` at exit 0 with both provenance words and the trail digest", async () => {
 		const out = await run(SESSION, [
 			session(),
 			[SESSION_COMMENTS, served(commentsPayload([...CLEARED_SESSION]))],
-			[PERMISSION, served(JSON.stringify({permission: "write"}))],
+			[PERMISSION, served(JSON.stringify({ permission: "write" }))],
 		]);
 		expect(out.code).toBe(0);
 		const answer = JSON.parse(out.stdout);
@@ -54,7 +54,7 @@ describe("a grilling source resolves through the grill reader", () => {
 			kind: "grilling",
 			readiness: "ready",
 			outOfScope: [],
-			counts: {ruled: 1, established: 1, unresolved: 0},
+			counts: { ruled: 1, established: 1, unresolved: 0 },
 		});
 		expect(answer.decisions).toEqual(CLEARED_DECISIONS);
 		expect(answer.trailDigest).toBe(digestOfDecisions(CLEARED_DECISIONS));
@@ -64,21 +64,21 @@ describe("a grilling source resolves through the grill reader", () => {
 		const out = await run(SESSION, [
 			session(),
 			[SESSION_COMMENTS, served(commentsPayload([ROUND]))],
-			[PERMISSION, served(JSON.stringify({permission: "write"}))],
+			[PERMISSION, served(JSON.stringify({ permission: "write" }))],
 		]);
 		expect(out.code).toBe(0);
 		const answer = JSON.parse(out.stdout);
 		expect(answer.readiness).toBe("blocked");
 		expect(answer.unresolved).toEqual([
-			{ref: "R1.1", state: "open"},
-			{ref: "R1.2", state: "open"},
+			{ ref: "R1.1", state: "open" },
+			{ ref: "R1.2", state: "open" },
 		]);
 	});
 
 	it("answers `empty` at exit 0 on a session with nothing on it — zero decisions is a fact", async () => {
 		const out = await run(SESSION, [session(), [SESSION_COMMENTS, served("[]")]]);
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({readiness: "empty", decisions: [], counts: {}});
+		expect(JSON.parse(out.stdout)).toMatchObject({ readiness: "empty", decisions: [], counts: {} });
 	});
 });
 
@@ -89,7 +89,7 @@ describe("the digest is neutral to every write this group makes", () => {
 				await run(SESSION, [
 					session(),
 					[SESSION_COMMENTS, served(commentsPayload([...CLEARED_SESSION]))],
-					[PERMISSION, served(JSON.stringify({permission: "write"}))],
+					[PERMISSION, served(JSON.stringify({ permission: "write" }))],
 				])
 			).stdout,
 		);
@@ -110,7 +110,7 @@ describe("the digest is neutral to every write this group makes", () => {
 							]),
 						),
 					],
-					[PERMISSION, served(JSON.stringify({permission: "write"}))],
+					[PERMISSION, served(JSON.stringify({ permission: "write" }))],
 				])
 			).stdout,
 		);
@@ -121,9 +121,9 @@ describe("the digest is neutral to every write this group makes", () => {
 
 describe("a map source resolves through the map module, not through `map read`'s stdout", () => {
 	const mapHealthy = [
-		[MAP_ISSUE, served(issueJson({number: MAP, body: MAP_BODY, labels: ["wayfinding:map"]}))],
+		[MAP_ISSUE, served(issueJson({ number: MAP, body: MAP_BODY, labels: ["wayfinding:map"] }))],
 		[CHILDREN, served('[{"number":9142}]')],
-		[TICKET_ISSUE, served(issueJson({number: 9142, body: "which table carries it?"}))],
+		[TICKET_ISSUE, served(issueJson({ number: 9142, body: "which table carries it?" }))],
 		[
 			TICKET_COMMENTS,
 			served(
@@ -132,7 +132,7 @@ describe("a map source resolves through the map module, not through `map read`'s
 		],
 		[BLOCKED_BY, served("[]")],
 		[BLOCKING, served("[]")],
-		[PERMISSION, served(JSON.stringify({permission: "write"}))],
+		[PERMISSION, served(JSON.stringify({ permission: "write" }))],
 	] as const;
 
 	it("takes its decisions from the body's `## Decisions` section, with the citations as refs", async () => {
@@ -157,7 +157,7 @@ describe("a map source resolves through the map module, not through `map read`'s
 	it("reads an open ticket as unresolved, so the trail is blocked", async () => {
 		const answer = JSON.parse((await run(MAP, [...mapHealthy])).stdout);
 		expect(answer.readiness).toBe("blocked");
-		expect(answer.unresolved).toEqual([{ref: "#9142", state: "open"}]);
+		expect(answer.unresolved).toEqual([{ ref: "#9142", state: "open" }]);
 	});
 
 	it("carries the map's out-of-scope entries through", async () => {
@@ -175,7 +175,7 @@ describe("a map source resolves through the map module, not through `map read`'s
 		const out = await run(MAP, [
 			[
 				MAP_ISSUE,
-				served(issueJson({number: MAP, body: "## Fog\nnothing", labels: ["wayfinding:map"]})),
+				served(issueJson({ number: MAP, body: "## Fog\nnothing", labels: ["wayfinding:map"] })),
 			],
 		]);
 		expect(out.code).toBe(BAD_SECTIONS);
@@ -198,7 +198,7 @@ describe("the dispatch refuses rather than guesses", () => {
 
 	it("refuses a source that does not exist", async () => {
 		const out = await run(SESSION, [
-			[SESSION_ISSUE, {status: 404, body: '{"message":"Not Found"}'}],
+			[SESSION_ISSUE, { status: 404, body: '{"message":"Not Found"}' }],
 		]);
 		expect(out.code).toBe(NO_TARGET);
 		expect(out.stdout).toBe("");
@@ -207,7 +207,7 @@ describe("the dispatch refuses rather than guesses", () => {
 
 describe("a read that could not complete is UNKNOWN, never an empty trail", () => {
 	it("seats a failed comment read on 11 with nothing on stdout", async () => {
-		const out = await run(SESSION, [session(), [SESSION_COMMENTS, {status: 502, body: "{}"}]]);
+		const out = await run(SESSION, [session(), [SESSION_COMMENTS, { status: 502, body: "{}" }]]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.join("\n")).toContain("never empty and never ready");
@@ -217,7 +217,7 @@ describe("a read that could not complete is UNKNOWN, never an empty trail", () =
 		const out = await run(SESSION, [
 			session(),
 			[SESSION_COMMENTS, served(commentsPayload([...CLEARED_SESSION]))],
-			[PERMISSION, {status: 502, body: "{}"}],
+			[PERMISSION, { status: 502, body: "{}" }],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stderr.join("\n")).toContain("UNKNOWN, never granted");

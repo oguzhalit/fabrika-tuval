@@ -146,7 +146,7 @@ export interface RankInput {
  * body**, so it is kept regardless of its title score. `both` is the strongest duplicate signal.
  */
 export const rank = (input: RankInput): RankResult => {
-	const {tokens, limit, label} = input;
+	const { tokens, limit, label } = input;
 	const excluded = input.exclude ?? null;
 	const keep = (rows: ReadonlyArray<Row>) =>
 		excluded === null ? rows : rows.filter((row) => row.number !== excluded);
@@ -162,10 +162,13 @@ export const rank = (input: RankInput): RankResult => {
 		};
 	}
 
-	const merged = new Map<number, {title: string; score: number; queue: boolean; search: boolean}>();
+	const merged = new Map<
+		number,
+		{ title: string; score: number; queue: boolean; search: boolean }
+	>();
 	for (const row of queue) {
 		const score = scoreTitle(tokens, row.title);
-		if (score > 0) merged.set(row.number, {title: row.title, score, queue: true, search: false});
+		if (score > 0) merged.set(row.number, { title: row.title, score, queue: true, search: false });
 	}
 	for (const row of search) {
 		const existing = merged.get(row.number);
@@ -177,7 +180,7 @@ export const rank = (input: RankInput): RankResult => {
 				search: true,
 			});
 		} else {
-			merged.set(row.number, {...existing, search: true});
+			merged.set(row.number, { ...existing, search: true });
 		}
 	}
 
@@ -185,7 +188,7 @@ export const rank = (input: RankInput): RankResult => {
 		.map(([number, entry]): Candidate => {
 			const source: Source =
 				entry.queue && entry.search ? "both" : entry.queue ? "queue" : "search";
-			return {number, source, score: entry.score, title: entry.title};
+			return { number, source, score: entry.score, title: entry.title };
 		})
 		.sort((a, b) => (b.score !== a.score ? b.score - a.score : b.number - a.number));
 

@@ -3,7 +3,7 @@
  * refuses to count, and how the two allowance buckets ratchet. Scope resolution and the fail-closed
  * floor are covered in `i18n-literal-verb.unit.test.ts`.
  */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	type FileScan,
 	type I18nGuardConfig,
@@ -79,7 +79,7 @@ describe("isInScope", () => {
 
 const scan = (path: string, count: number): FileScan => ({
 	path,
-	hits: Array.from({length: count}, (_, i) => ({
+	hits: Array.from({ length: count }, (_, i) => ({
 		line: i + 1,
 		kind: "string" as const,
 		excerpt: "giriş",
@@ -94,15 +94,15 @@ const config = (over: Partial<I18nGuardConfig> = {}): I18nGuardConfig => ({
 
 describe("judge", () => {
 	it("passes a file at its ceiling and reds it one literal later", () => {
-		const allowance = {ceiling: 2, why: "the wire tier value"};
+		const allowance = { ceiling: 2, why: "the wire tier value" };
 		const files = [scan(`${SCAN_ROOT}/App.tsx`, 2)];
 		expect(
-			judge({files, config: config({exempt: {[`${SCAN_ROOT}/App.tsx`]: allowance}})}),
-		).toMatchObject({_tag: "Clean", allowed: 1});
+			judge({ files, config: config({ exempt: { [`${SCAN_ROOT}/App.tsx`]: allowance } }) }),
+		).toMatchObject({ _tag: "Clean", allowed: 1 });
 		expect(
 			judge({
 				files: [scan(`${SCAN_ROOT}/App.tsx`, 3)],
-				config: config({exempt: {[`${SCAN_ROOT}/App.tsx`]: allowance}}),
+				config: config({ exempt: { [`${SCAN_ROOT}/App.tsx`]: allowance } }),
 			})._tag,
 		).toBe("Violation");
 	});
@@ -110,14 +110,14 @@ describe("judge", () => {
 	it("reds an allowance naming a file the scan never saw", () => {
 		const verdict = judge({
 			files: [scan(`${SCAN_ROOT}/App.tsx`, 0)],
-			config: config({unmigrated: {[`${SCAN_ROOT}/Gone.tsx`]: {ceiling: 1, why: "stale"}}}),
+			config: config({ unmigrated: { [`${SCAN_ROOT}/Gone.tsx`]: { ceiling: 1, why: "stale" } } }),
 		});
 		expect(verdict._tag).toBe("Violation");
 		expect(renderReport(verdict)).toContain("a `unmigrated` allowance names a file");
 	});
 
 	it("reds an empty corpus rather than passing vacuously", () => {
-		const verdict = judge({files: [], config: config()});
+		const verdict = judge({ files: [], config: config() });
 		expect(verdict._tag).toBe("ZeroScope");
 		expect(renderReport(verdict)).toContain("scope resolved empty");
 	});

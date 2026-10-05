@@ -1,8 +1,8 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import type {StdinRead} from "../io/stdin.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import type { StdinRead } from "../io/stdin.ts";
 import {
 	BARE_AT_PATH,
 	EMPTY_STDIN,
@@ -12,8 +12,8 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {ENV, pull, threadPage} from "./fixtures.test-support.ts";
-import {runResolve} from "./resolve-verb.ts";
+import { ENV, pull, threadPage } from "./fixtures.test-support.ts";
+import { runResolve } from "./resolve-verb.ts";
 
 /** The pull read is `../io/pulls.ts`'s, served over HTTP. */
 const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4321$/;
@@ -24,11 +24,11 @@ const PULL = /^GET \S+\/repos\/o\/r\/pulls\/4321$/;
  */
 const graphql = (): RegExp => once(/^POST \S+\/graphql$/);
 
-const bot = {login: "github-advanced-security", typename: "Bot"};
+const bot = { login: "github-advanced-security", typename: "Bot" };
 const RATIONALE = "Resolving: the unused import this flags was removed at this head.";
 const URL = "https://github.com/o/r/pull/4321#discussion_r5154991";
 
-const served = (result: ExecResult): HttpReply => ({status: 200, body: result.stdout});
+const served = (result: ExecResult): HttpReply => ({ status: 200, body: result.stdout });
 
 const openBotThread = served(
 	threadPage(1, [
@@ -36,7 +36,7 @@ const openBotThread = served(
 			id: "PRRT_kwDOLxx1",
 			path: "src/cart.ts",
 			line: 14,
-			comments: [{...bot, body: "unused import"}],
+			comments: [{ ...bot, body: "unused import" }],
 		},
 	]),
 );
@@ -48,8 +48,8 @@ const resolvedWithRationale = served(
 			path: "src/cart.ts",
 			line: 14,
 			comments: [
-				{...bot, body: "unused import"},
-				{login: "usirin", typename: "User", body: RATIONALE},
+				{ ...bot, body: "unused import" },
+				{ login: "usirin", typename: "User", body: RATIONALE },
 			],
 		},
 	]),
@@ -57,15 +57,15 @@ const resolvedWithRationale = served(
 
 const replied: HttpReply = {
 	status: 200,
-	body: JSON.stringify({data: {addPullRequestReviewThreadReply: {comment: {url: URL}}}}),
+	body: JSON.stringify({ data: { addPullRequestReviewThreadReply: { comment: { url: URL } } } }),
 };
 const resolvedOk: HttpReply = {
 	status: 200,
 	body: JSON.stringify({
-		data: {resolveReviewThread: {thread: {id: "PRRT_kwDOLxx1", isResolved: true}}},
+		data: { resolveReviewThread: { thread: { id: "PRRT_kwDOLxx1", isResolved: true } } },
 	}),
 };
-const badGateway: HttpReply = {status: 502, body: '{"message":"Bad gateway"}'};
+const badGateway: HttpReply = { status: 502, body: '{"message":"Bad gateway"}' };
 
 const options = {
 	pr: 4321,
@@ -73,7 +73,7 @@ const options = {
 	repo: null,
 	json: false,
 	env: ENV,
-	stdin: Effect.succeed({_tag: "Text", text: RATIONALE} as StdinRead),
+	stdin: Effect.succeed({ _tag: "Text", text: RATIONALE } as StdinRead),
 };
 
 const both = (
@@ -84,7 +84,9 @@ const both = (
 	const seams = fakeSeams([...rows, ...http]);
 	return {
 		seams,
-		outcome: Effect.runPromise(Effect.provide(runResolve({...options, ...overrides}), seams.layer)),
+		outcome: Effect.runPromise(
+			Effect.provide(runResolve({ ...options, ...overrides }), seams.layer),
+		),
 	};
 };
 
@@ -122,7 +124,7 @@ describe("runResolve", () => {
 						threadPage(1, [
 							{
 								id: "PRRT_kwDOLxx1",
-								comments: [{login: "cansirin", typename: "User", body: "no"}],
+								comments: [{ login: "cansirin", typename: "User", body: "no" }],
 							},
 						]),
 					),
@@ -141,7 +143,7 @@ describe("runResolve", () => {
 					graphql(),
 					served(
 						threadPage(1, [
-							{id: "PRRT_kwDOLxx1", isResolved: true, comments: [{...bot, body: "x"}]},
+							{ id: "PRRT_kwDOLxx1", isResolved: true, comments: [{ ...bot, body: "x" }] },
 						]),
 					),
 				],
@@ -158,7 +160,7 @@ describe("runResolve", () => {
 
 	it("refuses an empty rationale on 3 — a silent resolve is unauditable", async () => {
 		const out = await run([[PULL, served(pull())]], [], {
-			stdin: Effect.succeed({_tag: "Text", text: "   "} as StdinRead),
+			stdin: Effect.succeed({ _tag: "Text", text: "   " } as StdinRead),
 		});
 		expect(out.code).toBe(EMPTY_STDIN);
 		expect(out.stderr.at(-1)).toContain("write why");
@@ -166,7 +168,7 @@ describe("runResolve", () => {
 
 	it("refuses a machine-local path in the rationale on 5", async () => {
 		const out = await run([[PULL, served(pull())]], [], {
-			stdin: Effect.succeed({_tag: "Text", text: "see /Users/someone/notes.md"} as StdinRead),
+			stdin: Effect.succeed({ _tag: "Text", text: "see /Users/someone/notes.md" } as StdinRead),
 		});
 		expect(out.code).toBe(LEAKED_PATH);
 		expect(out.stderr.at(-1)).toContain("cite it repo-relative");
@@ -174,7 +176,7 @@ describe("runResolve", () => {
 
 	it("refuses a bare @ reference on 6 — the bytes never arrived", async () => {
 		const out = await run([[PULL, served(pull())]], [], {
-			stdin: Effect.succeed({_tag: "Text", text: "@notes/rationale.md"} as StdinRead),
+			stdin: Effect.succeed({ _tag: "Text", text: "@notes/rationale.md" } as StdinRead),
 		});
 		expect(out.code).toBe(BARE_AT_PATH);
 	});

@@ -19,7 +19,7 @@
  * uses, so a repo never learns two dialects).
  */
 
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const REVIEW_SUBSYSTEMS = "reviewSubsystems";
 
@@ -56,11 +56,11 @@ const decode = (raw: unknown): Decoded<ReadonlyArray<ReviewSubsystem>> => {
 			};
 		}
 		const record = entry as Record<string, unknown>;
-		const values: Record<Field, string> = {pattern: "", subsystem: "", constraint: ""};
+		const values: Record<Field, string> = { pattern: "", subsystem: "", constraint: "" };
 		for (const name of FIELDS) {
 			const given = record[name];
 			if (typeof given !== "string" || given.trim() === "") {
-				return {_tag: "Malformed", reason: fieldRefusal(index, name)};
+				return { _tag: "Malformed", reason: fieldRefusal(index, name) };
 			}
 			values[name] = given.trim();
 		}
@@ -79,7 +79,7 @@ const decode = (raw: unknown): Decoded<ReadonlyArray<ReviewSubsystem>> => {
 			constraint: values.constraint,
 		});
 	}
-	return {_tag: "Value", value: rows};
+	return { _tag: "Value", value: rows };
 };
 
 const rowSchema = {

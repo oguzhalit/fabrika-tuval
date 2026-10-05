@@ -18,8 +18,8 @@
  * half-filled set a bless would mis-read.
  */
 
-import {isSha256Hex} from "./golden-pointer.ts";
-import type {ResolvedPrioritySurface} from "./priority-surfaces.ts";
+import { isSha256Hex } from "./golden-pointer.ts";
+import type { ResolvedPrioritySurface } from "./priority-surfaces.ts";
 
 /** One rendered-and-stored candidate screen — a blessing-gallery entry. */
 export interface CandidateScreen {
@@ -136,7 +136,7 @@ export const serializeCandidateSet = (set: CandidateSet): string => {
 	for (const key of Object.keys(set.forcedFlags).sort()) {
 		forcedFlags[key] = set.forcedFlags[key] as boolean;
 	}
-	return `${JSON.stringify({...set, forcedFlags}, null, "\t")}\n`;
+	return `${JSON.stringify({ ...set, forcedFlags }, null, "\t")}\n`;
 };
 
 interface RawCandidateSet {

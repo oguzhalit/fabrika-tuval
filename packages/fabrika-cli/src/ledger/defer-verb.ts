@@ -18,13 +18,13 @@
  * the state it is for.
  */
 
-import {Effect, type FileSystem} from "effect";
+import { Effect, type FileSystem } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {scannedLine} from "../build/target.ts";
-import {createComment} from "../io/issues.ts";
-import {isBareAtReference} from "../report/leaks.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { scannedLine } from "../build/target.ts";
+import { createComment } from "../io/issues.ts";
+import { isBareAtReference } from "../report/leaks.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	BARE_AT_PATH,
 	OFF_VOCABULARY,
@@ -33,9 +33,9 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {listSubIssueEntries, readChildBack, unlinkSubIssue} from "./github.ts";
-import {type LedgerMessages, type OpenOptions, openGround} from "./preconditions.ts";
-import {maskedLeakRefusal} from "./run-io.ts";
+import { listSubIssueEntries, readChildBack, unlinkSubIssue } from "./github.ts";
+import { type LedgerMessages, type OpenOptions, openGround } from "./preconditions.ts";
+import { maskedLeakRefusal } from "./run-io.ts";
 
 const VERB = "ledger defer";
 
@@ -75,7 +75,7 @@ export const runDefer = (
 
 		const ground = yield* openGround(MESSAGES, options);
 		if (ground._tag === "Refused") return ground.outcome;
-		const {repo, epic, notes} = ground;
+		const { repo, epic, notes } = ground;
 
 		const children = yield* listSubIssueEntries(options.env, repo, epic.number);
 		if (children._tag === "Failure") {

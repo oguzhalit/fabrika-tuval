@@ -25,9 +25,9 @@ import {
 	triageStatuses,
 	typeLabel,
 } from "../config/board.ts";
-import {type FacetVocabulary, ownsLabel} from "../config/containment.ts";
-import {DEFAULT_STATUS_NAMES} from "../labels.ts";
-import {SHIP_CLASS_NAMES} from "../review/classes.ts";
+import { type FacetVocabulary, ownsLabel } from "../config/containment.ts";
+import { DEFAULT_STATUS_NAMES } from "../labels.ts";
+import { SHIP_CLASS_NAMES } from "../review/classes.ts";
 
 /**
  * The shipped default `--type` vocabulary, and the default of `boardVocabulary`'s `types`.
@@ -44,7 +44,7 @@ export const TYPES: ReadonlyArray<string> = [
 	"epic",
 ];
 
-export {audienceLabel, classLabel, typeLabel};
+export { audienceLabel, classLabel, typeLabel };
 
 /**
  * The `--class` vocabulary: the artifact classes a lane routes its shells off, as bare stems.
@@ -131,16 +131,16 @@ export const TRIAGE_STATUSES: ReadonlyArray<string> = triageStatuses(DEFAULT_STA
  * The invariant itself lives at `../config/containment.ts`, which runs it at load.
  */
 export const FACET_VOCABULARY: ReadonlyArray<FacetVocabulary> = [
-	{name: "type", owns: {_tag: "Pattern", source: "^type:"}, values: TYPES.map(typeLabel)},
-	{name: "priority", owns: {_tag: "Pattern", source: "^p\\d+$"}, values: [...PRIORITIES]},
-	{name: "status", owns: {_tag: "Set", labels: TRIAGE_STATUSES}, values: TRIAGE_STATUSES},
+	{ name: "type", owns: { _tag: "Pattern", source: "^type:" }, values: TYPES.map(typeLabel) },
+	{ name: "priority", owns: { _tag: "Pattern", source: "^p\\d+$" }, values: [...PRIORITIES] },
+	{ name: "status", owns: { _tag: "Set", labels: TRIAGE_STATUSES }, values: TRIAGE_STATUSES },
 	{
 		name: "audience",
-		owns: {_tag: "Pattern", source: "^ready-for:"},
+		owns: { _tag: "Pattern", source: "^ready-for:" },
 		values: AUDIENCES.map(audienceLabel),
 	},
-	{name: "lane", owns: {_tag: "Set", labels: []}, values: []},
-	{name: "class", owns: {_tag: "Pattern", source: "^class:"}, values: CLASSES.map(classLabel)},
+	{ name: "lane", owns: { _tag: "Set", labels: [] }, values: [] },
+	{ name: "class", owns: { _tag: "Pattern", source: "^class:" }, values: CLASSES.map(classLabel) },
 ];
 
 /**
@@ -206,8 +206,8 @@ export const triagedFacets = (
 	},
 	resolved: ResolvedBoard = DEFAULT_BOARD,
 ): ReadonlyArray<Facet> => [
-	{name: "type", owns: ownsIn(resolved.facets, "type"), keep: [typeLabel(input.type)]},
-	{name: "priority", owns: ownsIn(resolved.facets, "priority"), keep: [input.priority]},
+	{ name: "type", owns: ownsIn(resolved.facets, "type"), keep: [typeLabel(input.type)] },
+	{ name: "priority", owns: ownsIn(resolved.facets, "priority"), keep: [input.priority] },
 	{
 		name: "status",
 		owns: ownsIn(resolved.facets, "status"),
@@ -239,16 +239,16 @@ export const triagedFacets = (
  * which corrupts every queue read downstream.
  */
 export const parkedFacets = (resolved: ResolvedBoard = DEFAULT_BOARD): ReadonlyArray<Facet> => [
-	{name: "type", owns: ownsIn(resolved.facets, "type"), keep: []},
-	{name: "priority", owns: ownsIn(resolved.facets, "priority"), keep: []},
+	{ name: "type", owns: ownsIn(resolved.facets, "type"), keep: [] },
+	{ name: "priority", owns: ownsIn(resolved.facets, "priority"), keep: [] },
 	{
 		name: "status",
 		owns: ownsIn(resolved.facets, "status"),
 		keep: [resolved.board.statuses.needsInfo],
 	},
-	{name: "audience", owns: ownsIn(resolved.facets, "audience"), keep: []},
-	{name: "lane", owns: ownsIn(resolved.facets, "lane"), keep: []},
-	{name: "class", owns: ownsIn(resolved.facets, "class"), keep: []},
+	{ name: "audience", owns: ownsIn(resolved.facets, "audience"), keep: [] },
+	{ name: "lane", owns: ownsIn(resolved.facets, "lane"), keep: [] },
+	{ name: "class", owns: ownsIn(resolved.facets, "class"), keep: [] },
 ];
 
 /**
@@ -270,15 +270,15 @@ export const parkedFacets = (resolved: ResolvedBoard = DEFAULT_BOARD): ReadonlyA
  * demanded.
  */
 export const killedFacets = (resolved: ResolvedBoard = DEFAULT_BOARD): ReadonlyArray<Facet> => [
-	{name: "status", owns: ownsIn(resolved.facets, "status"), keep: []},
+	{ name: "status", owns: ownsIn(resolved.facets, "status"), keep: [] },
 ];
 
 /** One atomic write the plan will issue. `AddLabels` is one change because it is one API call. */
 export type Change =
-	| {readonly _tag: "SetMilestone"; readonly milestone: number}
-	| {readonly _tag: "ClearMilestone"}
-	| {readonly _tag: "RemoveLabel"; readonly label: string}
-	| {readonly _tag: "AddLabels"; readonly labels: ReadonlyArray<string>};
+	| { readonly _tag: "SetMilestone"; readonly milestone: number }
+	| { readonly _tag: "ClearMilestone" }
+	| { readonly _tag: "RemoveLabel"; readonly label: string }
+	| { readonly _tag: "AddLabels"; readonly labels: ReadonlyArray<string> };
 
 /** An issue's facet-bearing state, as read and as read back. */
 export interface Shape {
@@ -319,14 +319,14 @@ export const planReconcile = (
 		home === observed.milestone
 			? []
 			: home === null
-				? [{_tag: "ClearMilestone"}]
-				: [{_tag: "SetMilestone", milestone: home}];
+				? [{ _tag: "ClearMilestone" }]
+				: [{ _tag: "SetMilestone", milestone: home }];
 
 	return {
 		changes: [
 			...milestone,
-			...removed.map((label): Change => ({_tag: "RemoveLabel", label})),
-			...(added.length === 0 ? [] : [{_tag: "AddLabels", labels: added} as const]),
+			...removed.map((label): Change => ({ _tag: "RemoveLabel", label })),
+			...(added.length === 0 ? [] : [{ _tag: "AddLabels", labels: added } as const]),
 		],
 		removed,
 		added,

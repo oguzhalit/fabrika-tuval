@@ -39,10 +39,10 @@
  * fixed-at-emission rule — a class stamped after the emit reaches this machine only through an
  * event.
  */
-import {findCycle, readDeclared} from "../ledger/topology-doc.ts";
-import type {SubIssueLink} from "../plan/github.ts";
-import {MACHINERY_LAP_BUDGET, RETRY_BUDGET} from "../retry-budget.ts";
-import {classStands, MIXED_CLASS} from "./routing-class.ts";
+import { findCycle, readDeclared } from "../ledger/topology-doc.ts";
+import type { SubIssueLink } from "../plan/github.ts";
+import { MACHINERY_LAP_BUDGET, RETRY_BUDGET } from "../retry-budget.ts";
+import { classStands, MIXED_CLASS } from "./routing-class.ts";
 
 export type EmitResult =
 	| {
@@ -54,14 +54,14 @@ export type EmitResult =
 			/** The refs `dropForeign` took out of the topology, in the order the block names them. */
 			readonly dropped: ReadonlyArray<string>;
 	  }
-	| {readonly _tag: "NoTopology"}
-	| {readonly _tag: "Unparseable"; readonly line: number; readonly text: string}
-	| {readonly _tag: "Foreign"; readonly ref: string}
-	| {readonly _tag: "Duplicate"; readonly child: number}
-	| {readonly _tag: "Unplaced"; readonly child: number}
+	| { readonly _tag: "NoTopology" }
+	| { readonly _tag: "Unparseable"; readonly line: number; readonly text: string }
+	| { readonly _tag: "Foreign"; readonly ref: string }
+	| { readonly _tag: "Duplicate"; readonly child: number }
+	| { readonly _tag: "Unplaced"; readonly child: number }
 	/** `dropForeign` emptied the topology — every ref it placed is a non-child. */
-	| {readonly _tag: "Emptied"; readonly dropped: ReadonlyArray<string>}
-	| {readonly _tag: "Cycle"; readonly path: ReadonlyArray<number>};
+	| { readonly _tag: "Emptied"; readonly dropped: ReadonlyArray<string> }
+	| { readonly _tag: "Cycle"; readonly path: ReadonlyArray<number> };
 
 /**
  * Where a child's region boots. Only a `completed` close asserts the work landed, so only it earns
@@ -107,11 +107,11 @@ const UI_GUARD = `class:${UI_CLASS}`;
  */
 const classedBuilds = (
 	classes: ReadonlyArray<string>,
-): ReadonlyArray<{readonly target: string; readonly guard: string}> => [
+): ReadonlyArray<{ readonly target: string; readonly guard: string }> => [
 	...(classStands(classes, MIXED_CLASS)
-		? [{target: `build:${MIXED_CLASS}`, guard: `class:${MIXED_CLASS}`}]
+		? [{ target: `build:${MIXED_CLASS}`, guard: `class:${MIXED_CLASS}` }]
 		: []),
-	...(classes.includes(UI_CLASS) ? [{target: "build:ui", guard: UI_GUARD}] : []),
+	...(classes.includes(UI_CLASS) ? [{ target: "build:ui", guard: UI_GUARD }] : []),
 ];
 
 /**
@@ -136,9 +136,9 @@ const lapArm = (
 	target: string,
 	routes: Readonly<Record<string, string>> = {},
 ): ReadonlyArray<Record<string, unknown>> => [
-	...Object.entries(routes).map(([cause, to]) => ({target: to, guard: `lap:${cause}`})),
-	{target, guard: "lapsRemaining", actions: "incrementLaps"},
-	{target: "human:machinery-stall"},
+	...Object.entries(routes).map(([cause, to]) => ({ target: to, guard: `lap:${cause}` })),
+	{ target, guard: "lapsRemaining", actions: "incrementLaps" },
+	{ target: "human:machinery-stall" },
 ];
 
 /**
@@ -146,7 +146,7 @@ const lapArm = (
  * re-review that comes with it — a builder's round, not a re-dispatch of the shipper that just
  * refused. Every other lap reaching `ship` self-targets, exactly as it did before this route existed.
  */
-const SHIP_LAP_ROUTES: Readonly<Record<string, string>> = {"base-conflicted": "build"};
+const SHIP_LAP_ROUTES: Readonly<Record<string, string>> = { "base-conflicted": "build" };
 
 /**
  * A child's repair arm: go round again while retries remain, else park on `human:budget-spent`, with
@@ -166,8 +166,8 @@ const repairArm = (
 	builds: ReadonlyArray<Record<string, unknown>>,
 ): ReadonlyArray<Record<string, unknown>> => [
 	...builds,
-	{target: "build", guard: "retriesRemaining", actions: "incrementRetries"},
-	{target: "human:budget-spent"},
+	{ target: "build", guard: "retriesRemaining", actions: "incrementRetries" },
+	{ target: "human:budget-spent" },
 ];
 
 /**
@@ -232,7 +232,7 @@ const region = (
 		states: {
 			queued: {
 				on: {
-					[`${ns}.WIP`]: builds.length > 0 ? [...builds, {target: "build"}] : "build",
+					[`${ns}.WIP`]: builds.length > 0 ? [...builds, { target: "build" }] : "build",
 					[`${ns}.BLOCKED`]: "blocked",
 				},
 			},
@@ -240,17 +240,17 @@ const region = (
 				on: {
 					[`${ns}.DONE`]: "review",
 					[`${ns}.BLOCKED`]: "blocked",
-					...(machinery ? {[`${ns}.LAP`]: lapArm("build")} : {}),
+					...(machinery ? { [`${ns}.LAP`]: lapArm("build") } : {}),
 				},
 			},
 			...Object.fromEntries(
-				builds.map(({target}) => [
+				builds.map(({ target }) => [
 					target,
 					{
 						on: {
 							[`${ns}.DONE`]: "review",
 							[`${ns}.BLOCKED`]: "blocked",
-							...(machinery ? {[`${ns}.LAP`]: lapArm(target)} : {}),
+							...(machinery ? { [`${ns}.LAP`]: lapArm(target) } : {}),
 						},
 					},
 				]),
@@ -260,28 +260,28 @@ const region = (
 					[`${ns}.PASS`]: "integrate",
 					[`${ns}.BLOCKED`]: "blocked",
 					[`${ns}.FAIL`]: repairArm(builds),
-					...(machinery ? {[`${ns}.LAP`]: lapArm("review")} : {}),
+					...(machinery ? { [`${ns}.LAP`]: lapArm("review") } : {}),
 				},
 			},
 			integrate: {
 				on: {
 					[`${ns}.DONE`]: "landed",
 					[`${ns}.WIP`]: [
-						{target: "review", guard: "waitsRemaining", actions: "incrementWaits"},
-						{target: "human:replay-stall"},
+						{ target: "review", guard: "waitsRemaining", actions: "incrementWaits" },
+						{ target: "human:replay-stall" },
 					],
 					[`${ns}.BLOCKED`]: "blocked",
 					[`${ns}.FAIL`]: repairArm(builds),
-					...(machinery ? {[`${ns}.LAP`]: lapArm("review")} : {}),
+					...(machinery ? { [`${ns}.LAP`]: lapArm("review") } : {}),
 				},
 			},
-			blocked: {on: {[`${ns}.UNBLOCKED`]: "hist"}},
-			"human:replay-stall": {on: {[`${ns}.UNBLOCKED`]: "hist"}},
-			"human:budget-spent": {type: "final", on: {[`${ns}.UNBLOCKED`]: "hist"}},
-			...(machinery ? {"human:machinery-stall": {on: {[`${ns}.UNBLOCKED`]: "hist"}}} : {}),
-			hist: {type: "history"},
-			landed: {type: "final"},
-			frozen: {type: "final", on: {[`${ns}.UNBLOCKED`]: "hist"}},
+			blocked: { on: { [`${ns}.UNBLOCKED`]: "hist" } },
+			"human:replay-stall": { on: { [`${ns}.UNBLOCKED`]: "hist" } },
+			"human:budget-spent": { type: "final", on: { [`${ns}.UNBLOCKED`]: "hist" } },
+			...(machinery ? { "human:machinery-stall": { on: { [`${ns}.UNBLOCKED`]: "hist" } } } : {}),
+			hist: { type: "history" },
+			landed: { type: "final" },
+			frozen: { type: "final", on: { [`${ns}.UNBLOCKED`]: "hist" } },
 		},
 	};
 };
@@ -346,18 +346,18 @@ const epicRegion = (ns: string, machinery: boolean): Record<string, unknown> => 
 			on: {
 				[`${ns}.DONE`]: "review",
 				[`${ns}.BLOCKED`]: "blocked",
-				...(machinery ? {[`${ns}.LAP`]: lapArm("build")} : {}),
+				...(machinery ? { [`${ns}.LAP`]: lapArm("build") } : {}),
 			},
 		},
 		review: {
 			on: {
-				[`${ns}.PASS`]: [{target: "review:ui", guard: UI_GUARD}, {target: "ship"}],
+				[`${ns}.PASS`]: [{ target: "review:ui", guard: UI_GUARD }, { target: "ship" }],
 				[`${ns}.BLOCKED`]: "blocked",
 				[`${ns}.FAIL`]: [
-					{target: "build", guard: "retriesRemaining", actions: "incrementRetries"},
-					{target: "human:budget-spent"},
+					{ target: "build", guard: "retriesRemaining", actions: "incrementRetries" },
+					{ target: "human:budget-spent" },
 				],
-				...(machinery ? {[`${ns}.LAP`]: lapArm("review")} : {}),
+				...(machinery ? { [`${ns}.LAP`]: lapArm("review") } : {}),
 			},
 		},
 		"review:ui": {
@@ -365,10 +365,10 @@ const epicRegion = (ns: string, machinery: boolean): Record<string, unknown> => 
 				[`${ns}.PASS`]: "ship",
 				[`${ns}.BLOCKED`]: "blocked",
 				[`${ns}.FAIL`]: [
-					{target: "build", guard: "retriesRemaining", actions: "incrementRetries"},
-					{target: "human:budget-spent"},
+					{ target: "build", guard: "retriesRemaining", actions: "incrementRetries" },
+					{ target: "human:budget-spent" },
 				],
-				...(machinery ? {[`${ns}.LAP`]: lapArm("review:ui")} : {}),
+				...(machinery ? { [`${ns}.LAP`]: lapArm("review:ui") } : {}),
 			},
 		},
 		ship: {
@@ -377,10 +377,10 @@ const epicRegion = (ns: string, machinery: boolean): Record<string, unknown> => 
 				[`${ns}.WIP`]: "ship:queued",
 				[`${ns}.BLOCKED`]: "human:cp-approval",
 				[`${ns}.FAIL`]: [
-					{target: "review", guard: "retriesRemaining", actions: "incrementRetries"},
-					{target: "human:budget-spent"},
+					{ target: "review", guard: "retriesRemaining", actions: "incrementRetries" },
+					{ target: "human:budget-spent" },
 				],
-				...(machinery ? {[`${ns}.LAP`]: lapArm("ship", SHIP_LAP_ROUTES)} : {}),
+				...(machinery ? { [`${ns}.LAP`]: lapArm("ship", SHIP_LAP_ROUTES) } : {}),
 			},
 		},
 		"ship:queued": {
@@ -388,32 +388,32 @@ const epicRegion = (ns: string, machinery: boolean): Record<string, unknown> => 
 				[`${ns}.DONE`]: "shipped",
 				[`${ns}.BLOCKED`]: "human:cp-approval",
 				[`${ns}.WIP`]: [
-					{target: "ship:queued", guard: "waitsRemaining", actions: "incrementWaits"},
-					{target: "human:queue-stall"},
+					{ target: "ship:queued", guard: "waitsRemaining", actions: "incrementWaits" },
+					{ target: "human:queue-stall" },
 				],
 				[`${ns}.FAIL`]: [
-					{target: "review", guard: "retriesRemaining", actions: "incrementRetries"},
-					{target: "human:budget-spent"},
+					{ target: "review", guard: "retriesRemaining", actions: "incrementRetries" },
+					{ target: "human:budget-spent" },
 				],
-				...(machinery ? {[`${ns}.LAP`]: lapArm("ship")} : {}),
+				...(machinery ? { [`${ns}.LAP`]: lapArm("ship") } : {}),
 			},
 		},
-		blocked: {on: {[`${ns}.UNBLOCKED`]: "hist"}},
+		blocked: { on: { [`${ns}.UNBLOCKED`]: "hist" } },
 		"human:cp-approval": {
 			on: {
 				[`${ns}.UNBLOCKED`]: "hist",
 				[`${ns}.WIP`]: "review",
 				[`${ns}.FAIL`]: [
-					{target: "build", guard: "retriesRemaining", actions: "incrementRetries"},
-					{target: "human:budget-spent"},
+					{ target: "build", guard: "retriesRemaining", actions: "incrementRetries" },
+					{ target: "human:budget-spent" },
 				],
 			},
 		},
-		"human:queue-stall": {on: {[`${ns}.UNBLOCKED`]: "hist"}},
-		...(machinery ? {"human:machinery-stall": {on: {[`${ns}.UNBLOCKED`]: "hist"}}} : {}),
-		hist: {type: "history"},
-		shipped: {type: "final"},
-		"human:budget-spent": {type: "final", on: {[`${ns}.UNBLOCKED`]: "hist"}},
+		"human:queue-stall": { on: { [`${ns}.UNBLOCKED`]: "hist" } },
+		...(machinery ? { "human:machinery-stall": { on: { [`${ns}.UNBLOCKED`]: "hist" } } } : {}),
+		hist: { type: "history" },
+		shipped: { type: "final" },
+		"human:budget-spent": { type: "final", on: { [`${ns}.UNBLOCKED`]: "hist" } },
 	},
 });
 
@@ -454,8 +454,8 @@ const taskContext = (
 ): Record<string, unknown> => ({
 	retries: 0,
 	maxRetries: RETRY_BUDGET,
-	...(machinery ? {laps: 0, maxLaps: MACHINERY_LAP_BUDGET} : {}),
-	...(classes.length === 0 ? {} : {classes: [...classes]}),
+	...(machinery ? { laps: 0, maxLaps: MACHINERY_LAP_BUDGET } : {}),
+	...(classes.length === 0 ? {} : { classes: [...classes] }),
 });
 
 /** The tail phase's name and its one task id. Neither can collide with a `phase<N>`/`issue_<n>`. */
@@ -489,13 +489,13 @@ export const emitMachine = (
 	// Childlessness is read before the body, because an issue with no sub-issue links is not an epic
 	// whatever its prose says — parsing first let a plain issue's `## Dependencies` heading refuse as
 	// a malformed epic record and dead-end the boot.
-	if (children.length === 0) return {_tag: "NoTopology"};
+	if (children.length === 0) return { _tag: "NoTopology" };
 
 	const initials = new Map(children.map((link) => [link.number, initialFor(link)]));
 	const classes = new Map(children.map((link) => [link.number, link.classes]));
 	const classesOf = (child: number): ReadonlyArray<string> => classes.get(child) ?? [];
 	const declared = readDeclared(body, new Set(initials.keys()), axes.dropForeign === true);
-	if (declared._tag === "Absent") return {_tag: "NoTopology"};
+	if (declared._tag === "Absent") return { _tag: "NoTopology" };
 	if (declared._tag !== "Declared") return declared;
 
 	// Every line's child came out of the child set `readDeclared` restricted to, so the lookup holds
@@ -508,7 +508,7 @@ export const emitMachine = (
 	};
 
 	const cycle = findCycle(declared.lines);
-	if (cycle !== null) return {_tag: "Cycle", path: cycle};
+	if (cycle !== null) return { _tag: "Cycle", path: cycle };
 
 	const phases = new Map<number, number[]>();
 	for (const line of declared.lines) {
@@ -533,19 +533,19 @@ export const emitMachine = (
 				]),
 			),
 			onDone: [
-				{target: next === undefined ? EPIC_PHASE : phaseName(next), guard: "noErrors"},
-				{target: "tripped"},
+				{ target: next === undefined ? EPIC_PHASE : phaseName(next), guard: "noErrors" },
+				{ target: "tripped" },
 			],
 		};
 	}
 	context[epicTaskId(epic)] = taskContext(machinery);
 	states[EPIC_PHASE] = {
 		type: "parallel",
-		states: {[epicTaskId(epic)]: epicRegion(epicTaskId(epic).toUpperCase(), machinery)},
-		onDone: [{target: "complete", guard: "noErrors"}, {target: "tripped"}],
+		states: { [epicTaskId(epic)]: epicRegion(epicTaskId(epic).toUpperCase(), machinery) },
+		onDone: [{ target: "complete", guard: "noErrors" }, { target: "tripped" }],
 	};
-	states.complete = {type: "final"};
-	states.tripped = {type: "final"};
+	states.complete = { type: "final" };
+	states.tripped = { type: "final" };
 
 	const first = order[0];
 	const doc = {

@@ -6,18 +6,18 @@
  * each one is asserted here rather than trusted: a symlinked corpus root, an empty walk, and a
  * plugin dir the walk never reached.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFsOptions, fakeFs} from "../fakes.test-support.ts";
-import {PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE} from "./codes.ts";
-import {runSkillLint} from "./skill-lint-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFsOptions, fakeFs } from "../fakes.test-support.ts";
+import { PRECONDITION_UNKNOWN, VIOLATION, ZERO_SCOPE } from "./codes.ts";
+import { runSkillLint } from "./skill-lint-verb.ts";
 
 const ROOT = "/repo";
 const CORPUS = `${ROOT}/claude-plugins`;
 
 const run = (options: FakeFsOptions, env: Record<string, string | undefined> = {}) =>
 	Effect.runPromise(
-		Effect.provide(runSkillLint({root: ROOT, cwd: ROOT, env}), fakeFs(options).layer),
+		Effect.provide(runSkillLint({ root: ROOT, cwd: ROOT, env }), fakeFs(options).layer),
 	);
 
 /** A skill file that satisfies every scope axis: frontmatter, a fence, and clean text. */
@@ -44,19 +44,19 @@ const corpus = (
 		dirs[dir] = Object.keys(held);
 		for (const [name, content] of Object.entries(held)) files[`${dir}/${name}`] = content;
 	}
-	return {dirs, files, directories};
+	return { dirs, files, directories };
 };
 
 describe("runSkillLint", () => {
 	it("passes a clean corpus, naming what it walked", async () => {
-		const outcome = await run(corpus({fabrika: {"SKILL.md": skill("fabrika build push")}}));
+		const outcome = await run(corpus({ fabrika: { "SKILL.md": skill("fabrika build push") } }));
 		expect(outcome.code).toBe(0);
 		expect(outcome.stdout).toContain("clean — 1 file(s)");
 		expect(outcome.stderr).toEqual([]);
 	});
 
 	it("reds a GraphQL-path gh call on the violation seat, with nothing on stdout", async () => {
-		const outcome = await run(corpus({fabrika: {"SKILL.md": skill("gh pr edit 5 --body x")}}));
+		const outcome = await run(corpus({ fabrika: { "SKILL.md": skill("gh pr edit 5 --body x") } }));
 		expect(outcome.code).toBe(VIOLATION);
 		expect(outcome.stdout).toBe("");
 		expect(outcome.stderr.join("\n")).toContain("GraphQL-path gh call");
@@ -64,7 +64,9 @@ describe("runSkillLint", () => {
 	});
 
 	it("reds a bare `git push` in a fence and names the sanctioned verb", async () => {
-		const outcome = await run(corpus({fabrika: {"SKILL.md": skill("git push -u origin main")}}));
+		const outcome = await run(
+			corpus({ fabrika: { "SKILL.md": skill("git push -u origin main") } }),
+		);
 		expect(outcome.code).toBe(VIOLATION);
 		expect(outcome.stderr.join("\n")).toContain("fabrika build push");
 	});
@@ -74,17 +76,20 @@ describe("runSkillLint", () => {
 			"\n",
 		);
 		const outcome = await run(
-			corpus({fabrika: {"SKILL.md": skill(), "agents/x.md": broken}, other: {"SKILL.md": skill()}}),
+			corpus({
+				fabrika: { "SKILL.md": skill(), "agents/x.md": broken },
+				other: { "SKILL.md": skill() },
+			}),
 		);
 		expect(outcome.code).toBe(VIOLATION);
 		expect(outcome.stderr.join("\n")).toContain("invalid YAML frontmatter");
 	});
 
 	it("emits one ::error per finding under Actions, and none outside it", async () => {
-		const dirty = corpus({fabrika: {"SKILL.md": skill("gh project list --owner x")}});
-		const annotated = await run(dirty, {GITHUB_ACTIONS: "true"});
+		const dirty = corpus({ fabrika: { "SKILL.md": skill("gh project list --owner x") } });
+		const annotated = await run(dirty, { GITHUB_ACTIONS: "true" });
 		expect(annotated.stderr.some((line) => line.startsWith("::error file="))).toBe(true);
-		const plain = await run(dirty, {GITHUB_ACTIONS: "false"});
+		const plain = await run(dirty, { GITHUB_ACTIONS: "false" });
 		expect(plain.stderr.some((line) => line.startsWith("::error"))).toBe(false);
 	});
 
@@ -96,10 +101,10 @@ describe("runSkillLint", () => {
 	});
 
 	it("reds a plugin dir the walk never reached", async () => {
-		const scoped = corpus({fabrika: {"SKILL.md": skill()}});
+		const scoped = corpus({ fabrika: { "SKILL.md": skill() } });
 		const outcome = await run({
 			...scoped,
-			dirs: {...scoped.dirs, [CORPUS]: ["fabrika", "uncovered"], [`${CORPUS}/uncovered`]: []},
+			dirs: { ...scoped.dirs, [CORPUS]: ["fabrika", "uncovered"], [`${CORPUS}/uncovered`]: [] },
 			directories: [...(scoped.directories ?? []), `${CORPUS}/uncovered`],
 		});
 		expect(outcome.code).toBe(ZERO_SCOPE);
@@ -108,8 +113,8 @@ describe("runSkillLint", () => {
 
 	it("reds a corpus root that physically resolves somewhere else", async () => {
 		const outcome = await run({
-			...corpus({fabrika: {"SKILL.md": skill()}}),
-			real: {[CORPUS]: "/elsewhere/claude-plugins"},
+			...corpus({ fabrika: { "SKILL.md": skill() } }),
+			real: { [CORPUS]: "/elsewhere/claude-plugins" },
 		});
 		expect(outcome.code).toBe(ZERO_SCOPE);
 		expect(outcome.stderr.join("\n")).toContain("another tree");
@@ -119,14 +124,14 @@ describe("runSkillLint", () => {
 		// A plain doc is scanned by every other check but carries no frontmatter, so the frontmatter
 		// axis is the only one left empty. A shell-only corpus would also empty the markdown-only
 		// portability axis, and the red would stand without the frontmatter clause.
-		const outcome = await run(corpus({fabrika: {"notes.md": "# notes\n\nplain prose\n"}}));
+		const outcome = await run(corpus({ fabrika: { "notes.md": "# notes\n\nplain prose\n" } }));
 		expect(outcome.code).toBe(ZERO_SCOPE);
 		expect(outcome.stderr.join("\n")).toContain("guard skill-lint check: frontmatter scan(s)");
 	});
 
 	it("answers UNKNOWN when a corpus file cannot be read, never clean", async () => {
 		const outcome = await run({
-			...corpus({fabrika: {"SKILL.md": skill()}}),
+			...corpus({ fabrika: { "SKILL.md": skill() } }),
 			unreadable: [`${CORPUS}/fabrika/SKILL.md`],
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
@@ -136,7 +141,7 @@ describe("runSkillLint", () => {
 
 	it("answers UNKNOWN when no repo root can be discovered", async () => {
 		const outcome = await Effect.runPromise(
-			Effect.provide(runSkillLint({root: null, cwd: "/nowhere", env: {}}), fakeFs({}).layer),
+			Effect.provide(runSkillLint({ root: null, cwd: "/nowhere", env: {} }), fakeFs({}).layer),
 		);
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 	});

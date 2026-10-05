@@ -2,21 +2,21 @@
  * The ground guard: a drifted cwd refuses on its own code, a lanes root inside a linked worktree
  * refuses on another, and a repo with no such lane still boots.
  */
-import {Effect, Path} from "effect";
-import {describe, expect, it} from "vitest";
-import {laneConcurrencyCapKey} from "../config/keys/lane-concurrency-cap.ts";
-import {parkCauseKey} from "../config/keys/park-cause.ts";
-import {readKey} from "../config/read-key.ts";
-import {fakeFs} from "../fakes.test-support.ts";
-import {LANE_ABSENT, LANE_UNREADABLE, NOT_A_REPO, ROOT_NOT_OWNED} from "./codes.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
-import {configRootOrRefuse, deriveRepoRoot, onGround} from "./ground.ts";
-import {runStatus} from "./status-verb.ts";
-import {DEFAULT_LANES_ROOT} from "./store.ts";
+import { Effect, Path } from "effect";
+import { describe, expect, it } from "vitest";
+import { laneConcurrencyCapKey } from "../config/keys/lane-concurrency-cap.ts";
+import { parkCauseKey } from "../config/keys/park-cause.ts";
+import { readKey } from "../config/read-key.ts";
+import { fakeFs } from "../fakes.test-support.ts";
+import { LANE_ABSENT, LANE_UNREADABLE, NOT_A_REPO, ROOT_NOT_OWNED } from "./codes.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
+import { configRootOrRefuse, deriveRepoRoot, onGround } from "./ground.ts";
+import { runStatus } from "./status-verb.ts";
+import { DEFAULT_LANES_ROOT } from "./store.ts";
 
 const REPO = "/work/repo";
 const DRIFTED = "/work/repo/scratchpad";
-const REF = {root: DEFAULT_LANES_ROOT, lane: "42"};
+const REF = { root: DEFAULT_LANES_ROOT, lane: "42" };
 
 /** `lane status` behind the guard, exactly as the adapter composes it. */
 const status = (fs: ReturnType<typeof fakeFs>, cwd: string) =>
@@ -29,14 +29,14 @@ const status = (fs: ReturnType<typeof fakeFs>, cwd: string) =>
 
 describe("the ground under a lane verb's root", () => {
 	it("proves a lane absent as before when the cwd IS a repo — a genuine boot is unaffected", async () => {
-		const out = await status(fakeFs({files: {}, directories: [`${REPO}/.git`]}), REPO);
+		const out = await status(fakeFs({ files: {}, directories: [`${REPO}/.git`] }), REPO);
 
 		expect(out.code).toBe(LANE_ABSENT);
 		expect(out.stderr.join("\n")).toContain("copy a workflow template");
 	});
 
 	it("refuses a cwd holding neither marker on its own code, never the lane's absence", async () => {
-		const out = await status(fakeFs({files: {}}), DRIFTED);
+		const out = await status(fakeFs({ files: {} }), DRIFTED);
 
 		expect(out.code).toBe(NOT_A_REPO);
 		expect(out.stdout).toBe("");
@@ -46,7 +46,7 @@ describe("the ground under a lane verb's root", () => {
 
 	it("takes `.fabrika` alone as a repo — a checkout with lanes and no git dir of its own", async () => {
 		const fs = fakeFs({
-			files: {[`${DEFAULT_LANES_ROOT}/42/workflow.json`]: coderTemplateText()},
+			files: { [`${DEFAULT_LANES_ROOT}/42/workflow.json`]: coderTemplateText() },
 			directories: [`${REPO}/.fabrika`],
 		});
 		const out = await status(fs, REPO);
@@ -55,7 +55,7 @@ describe("the ground under a lane verb's root", () => {
 	});
 
 	it("grounds an absolute root under no working tree at all — a relocated root duplicates nothing", async () => {
-		const fs = fakeFs({files: {}});
+		const fs = fakeFs({ files: {} });
 		const out = await Effect.runPromise(
 			Effect.provide(
 				onGround("status", ["/elsewhere/.fabrika/lanes"], DRIFTED, () => runStatus(REF)),
@@ -67,7 +67,7 @@ describe("the ground under a lane verb's root", () => {
 	});
 
 	it("keeps an unprobeable marker UNKNOWN rather than reading it as a repo or as drift", async () => {
-		const fs = fakeFs({files: {}, unprobeable: [`${REPO}/.fabrika`]});
+		const fs = fakeFs({ files: {}, unprobeable: [`${REPO}/.fabrika`] });
 		const out = await status(fs, REPO);
 
 		expect(out.code).toBe(LANE_UNREADABLE);
@@ -101,8 +101,8 @@ describe("deriveRepoRoot — the default root resolves off the owning repository
 		const fromPrimary = await Effect.runPromise(
 			Effect.provide(deriveRepoRoot(`${PRIMARY}/packages/cli`), fs.layer),
 		);
-		expect(fromWorktree).toEqual({_tag: "Derived", repoRoot: PRIMARY, workingTree: WORKTREE});
-		expect(fromPrimary).toEqual({_tag: "Derived", repoRoot: PRIMARY, workingTree: PRIMARY});
+		expect(fromWorktree).toEqual({ _tag: "Derived", repoRoot: PRIMARY, workingTree: WORKTREE });
+		expect(fromPrimary).toEqual({ _tag: "Derived", repoRoot: PRIMARY, workingTree: PRIMARY });
 	});
 
 	it("loads the primary ledger's same lane through status from either checkout cwd", async () => {
@@ -126,10 +126,10 @@ describe("deriveRepoRoot — the default root resolves off the owning repository
 		const fromPrimary = await statusFrom(`${PRIMARY}/packages/cli`);
 		const fromWorktree = await statusFrom(`${WORKTREE}/packages/app`);
 
-		expect(fromPrimary).toMatchObject({code: 0});
+		expect(fromPrimary).toMatchObject({ code: 0 });
 		expect(fromWorktree).toEqual(fromPrimary);
 		expect("stdout" in fromWorktree && JSON.parse(fromWorktree.stdout)).toMatchObject({
-			stateValue: {pipeline: {issue: "queued"}},
+			stateValue: { pipeline: { issue: "queued" } },
 		});
 	});
 
@@ -139,20 +139,20 @@ describe("deriveRepoRoot — the default root resolves off the owning repository
 			Effect.provide(deriveRepoRoot(`${WORKTREE}/pkg`), fs.layer),
 		);
 
-		expect(out).toEqual({_tag: "Derived", repoRoot: PRIMARY, workingTree: WORKTREE});
+		expect(out).toEqual({ _tag: "Derived", repoRoot: PRIMARY, workingTree: WORKTREE });
 	});
 
 	it("a cwd with no .git ancestor is NotARepo — never a cwd-relative fallback", async () => {
-		const fs = fakeFs({directories: ["/scratch/sub"]});
+		const fs = fakeFs({ directories: ["/scratch/sub"] });
 		const out = await Effect.runPromise(
 			Effect.provide(deriveRepoRoot("/scratch/sub/deep"), fs.layer),
 		);
-		expect(out).toEqual({_tag: "NotARepo", cwd: "/scratch/sub/deep"});
+		expect(out).toEqual({ _tag: "NotARepo", cwd: "/scratch/sub/deep" });
 	});
 
 	it("a .git entry that names no readable repository is Unestablished — UNKNOWN, never absent", async () => {
 		const fs = fakeFs({
-			files: {"/wt/.git": "gitdir: /primary/.git/worktrees/gone"},
+			files: { "/wt/.git": "gitdir: /primary/.git/worktrees/gone" },
 		});
 		const out = await Effect.runPromise(Effect.provide(deriveRepoRoot("/wt"), fs.layer));
 		expect(out._tag).toBe("Unestablished");
@@ -189,7 +189,7 @@ describe("a lanes root that stands in a working tree which does not own it", () 
 	const statusAt = (fs: ReturnType<typeof fakeFs>, root: string, cwd: string) =>
 		Effect.runPromise(
 			Effect.provide(
-				onGround("status", [root], cwd, () => runStatus({root, lane: "42"})),
+				onGround("status", [root], cwd, () => runStatus({ root, lane: "42" })),
 				fs.layer,
 			),
 		);
@@ -226,7 +226,7 @@ describe("a lanes root that stands in a working tree which does not own it", () 
 	it("passes a relocated absolute root that lies outside every working tree", async () => {
 		const fs = fakeFs({
 			directories: [`${PRIMARY}/.git`],
-			files: {"/elsewhere/lanes/42/workflow.json": coderTemplateText()},
+			files: { "/elsewhere/lanes/42/workflow.json": coderTemplateText() },
 		});
 		const out = await statusAt(fs, "/elsewhere/lanes", WORKTREE_CWD);
 
@@ -277,27 +277,27 @@ describe("the config root a seat-counting verb reads its cap from", () => {
 		);
 
 		expect(root).toBe(PRIMARY);
-		expect(await capFrom(fs, WORKTREE)).toMatchObject({_tag: "Value", value: 10});
+		expect(await capFrom(fs, WORKTREE)).toMatchObject({ _tag: "Value", value: 10 });
 	});
 
 	it("resolves the same way from a subdirectory of the worktree", async () => {
-		expect(await capFrom(bothConfigs(), WORKTREE_CWD)).toMatchObject({_tag: "Value", value: 10});
+		expect(await capFrom(bothConfigs(), WORKTREE_CWD)).toMatchObject({ _tag: "Value", value: 10 });
 	});
 
 	it("reads that same value from the primary checkout — the unchanged path", async () => {
-		expect(await capFrom(bothConfigs(), PRIMARY)).toMatchObject({_tag: "Value", value: 10});
+		expect(await capFrom(bothConfigs(), PRIMARY)).toMatchObject({ _tag: "Value", value: 10 });
 	});
 
 	it("keeps reading at a cwd that belongs to no repository — there is no owner to prefer", async () => {
-		const fs = fakeFs({files: {"/loose/.fabrika.jsonc": '{"laneConcurrencyCap": 3}'}});
+		const fs = fakeFs({ files: { "/loose/.fabrika.jsonc": '{"laneConcurrencyCap": 3}' } });
 
-		expect(await capFrom(fs, "/loose")).toMatchObject({_tag: "Value", value: 3});
+		expect(await capFrom(fs, "/loose")).toMatchObject({ _tag: "Value", value: 3 });
 	});
 
 	it("refuses a cwd whose repository cannot be read rather than falling back to it", async () => {
-		const fs = fakeFs({files: {}, unprobeable: [`${PRIMARY}/.git`]});
+		const fs = fakeFs({ files: {}, unprobeable: [`${PRIMARY}/.git`] });
 
-		expect(await capFrom(fs, PRIMARY)).toMatchObject({code: LANE_UNREADABLE});
+		expect(await capFrom(fs, PRIMARY)).toMatchObject({ code: LANE_UNREADABLE });
 	});
 });
 
@@ -338,33 +338,32 @@ describe("the config root a park-recording verb reads its rule from", () => {
 			),
 		);
 
-	it.each([
-		"fabrika lane transition",
-		"fabrika lane report",
-		"fabrika recipe unpark",
-	])("%s reads the owning checkout's strictness from a worktree cwd, not the worktree's own", async (verb) => {
-		expect(await ruleFrom(verb, bothConfigs(), WORKTREE)).toMatchObject({
-			_tag: "Value",
-			value: {uncaused: "refuse"},
-		});
-	});
+	it.each(["fabrika lane transition", "fabrika lane report", "fabrika recipe unpark"])(
+		"%s reads the owning checkout's strictness from a worktree cwd, not the worktree's own",
+		async (verb) => {
+			expect(await ruleFrom(verb, bothConfigs(), WORKTREE)).toMatchObject({
+				_tag: "Value",
+				value: { uncaused: "refuse" },
+			});
+		},
+	);
 
 	it("resolves the same way from a subdirectory of the worktree", async () => {
 		expect(await ruleFrom("fabrika lane transition", bothConfigs(), WORKTREE_CWD)).toMatchObject({
 			_tag: "Value",
-			value: {uncaused: "refuse"},
+			value: { uncaused: "refuse" },
 		});
 	});
 
 	it("reads that same value from the primary checkout — the unchanged path", async () => {
 		expect(await ruleFrom("fabrika lane report", bothConfigs(), PRIMARY)).toMatchObject({
 			_tag: "Value",
-			value: {uncaused: "refuse"},
+			value: { uncaused: "refuse" },
 		});
 	});
 
 	it("refuses a cwd whose repository cannot be read rather than falling back to it", async () => {
-		const fs = fakeFs({files: {}, unprobeable: [`${PRIMARY}/.git`]});
+		const fs = fakeFs({ files: {}, unprobeable: [`${PRIMARY}/.git`] });
 
 		expect(await ruleFrom("fabrika recipe unpark", fs, PRIMARY)).toMatchObject({
 			code: LANE_UNREADABLE,

@@ -17,9 +17,9 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10309#issuecomment-5974136525
  */
 
-import {KEY as RULING_KEY, read as readRuling} from "./decision-ruling.ts";
-import {read as readRangeVerdict} from "./range-verdict-marker.ts";
-import {read as readVerdict} from "./verdict-marker.ts";
+import { KEY as RULING_KEY, read as readRuling } from "./decision-ruling.ts";
+import { read as readRangeVerdict } from "./range-verdict-marker.ts";
+import { read as readVerdict } from "./verdict-marker.ts";
 
 const HTML_MARKER = /^\s*<!--\s*(?:fabrika[:-]|ac:)/m;
 

@@ -3,11 +3,11 @@
  * See `ci pr-body --help` for the output and exit behavior.
  */
 
-import {Effect} from "effect";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {EMPTY_STDIN, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {sanitizeReleaseBody} from "./pr-body.ts";
+import { Effect } from "effect";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { EMPTY_STDIN, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { sanitizeReleaseBody } from "./pr-body.ts";
 
 const VERB = "ci pr-body";
 
@@ -34,7 +34,7 @@ export const runPrBody = (options: PrBodyOptions): Effect.Effect<VerbOutcome> =>
 		if (read.text === "") {
 			return refuse(EMPTY_STDIN, `${VERB}: the piped body is empty — there is nothing to repair.`);
 		}
-		const {body, stripped} = sanitizeReleaseBody(read.text);
+		const { body, stripped } = sanitizeReleaseBody(read.text);
 		if (stripped.length === 0) {
 			return answer("", [`${VERB}: no stray HTML tag in the body — nothing to write.`]);
 		}

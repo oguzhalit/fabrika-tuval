@@ -30,11 +30,11 @@
  * the re-review is genuinely owed. This verb moves no branch — rebasing the head is the builder's,
  * on a re-reviewed round.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {listComments} from "../io/issues.ts";
-import {ownershipGate} from "../ownership/gate.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { listComments } from "../io/issues.ts";
+import { ownershipGate } from "../ownership/gate.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	BASE_CONFLICTED,
 	PR_NOT_OURS,
@@ -43,10 +43,10 @@ import {
 	STALE_HEAD,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {armAutoMerge, pullTimeline} from "./github.ts";
-import {isBaseConflict, readDefiniteMergeability} from "./mergeability.ts";
-import {queueStateOf} from "./queue.ts";
-import {badNumber, inspectedSha, prefixMatch, resolvePull, resolveTargetRepo} from "./target.ts";
+import { armAutoMerge, pullTimeline } from "./github.ts";
+import { isBaseConflict, readDefiniteMergeability } from "./mergeability.ts";
+import { queueStateOf } from "./queue.ts";
+import { badNumber, inspectedSha, prefixMatch, resolvePull, resolveTargetRepo } from "./target.ts";
 
 const VERB = "ship enqueue";
 
@@ -64,7 +64,7 @@ export const runEnqueue = (
 	options: EnqueueOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 		const bound = inspectedSha(VERB, options.sha);
@@ -94,9 +94,9 @@ export const runEnqueue = (
 		const owned = yield* ownershipGate(
 			VERB,
 			repo,
-			{number: pr, author: target.pull.authorLogin, baseRef: target.pull.baseRef},
+			{ number: pr, author: target.pull.authorLogin, baseRef: target.pull.baseRef },
 			listComments(repo, pr),
-			{notOurs: PR_NOT_OURS, unknown: PRECONDITION_UNKNOWN},
+			{ notOurs: PR_NOT_OURS, unknown: PRECONDITION_UNKNOWN },
 			"nothing was armed.",
 		);
 		if (owned._tag === "Refused") return owned.outcome;
@@ -159,6 +159,6 @@ export const runEnqueue = (
 		}
 		const entry = proven ? "queued" : "settling";
 		return json
-			? answer(JSON.stringify({outcome: "enqueued", sha: bound, entry}), diagnostics)
+			? answer(JSON.stringify({ outcome: "enqueued", sha: bound, entry }), diagnostics)
 			: answer(`enqueued\t${bound}\t${entry}`, diagnostics);
 	});

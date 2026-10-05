@@ -8,7 +8,7 @@
  * body records the head that was actually inspected. The carrier is PASS-only — a §CP
  * FAIL posts the ordinary FAIL marker — which `review post` enforces on `10`.
  */
-import {CLAUSE_SEPARATOR, type HeadSha, headSha} from "../wire/verdict-marker.ts";
+import { CLAUSE_SEPARATOR, type HeadSha, headSha } from "../wire/verdict-marker.ts";
 
 /** The advisory first line: the namespace, the fixed `advisory` token, and the human clause. */
 export const emitAdvisory = (namespace: string, clause: string): string =>
@@ -41,7 +41,7 @@ export const readAdvisory = (body: string): AdvisoryCarrier | null => {
 	if (first?.[1] === undefined) return null;
 	const bound = REVIEWED_HEAD.exec(body);
 	const sha = bound?.[1] === undefined ? null : headSha(bound[1]);
-	return sha === null ? null : {namespace: first[1].toLowerCase(), sha};
+	return sha === null ? null : { namespace: first[1].toLowerCase(), sha };
 };
 
 const FAIL_ROW = /\[FAIL\]/;

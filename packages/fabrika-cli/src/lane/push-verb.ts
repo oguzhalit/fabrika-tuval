@@ -24,8 +24,8 @@
  * assumed: a push from the primary checkout is refused on `33` before anything is fetched, read back
  * or sent.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	commitsDropped,
 	ensureCommitPresent,
@@ -34,12 +34,12 @@ import {
 	remoteSha,
 	upstreamOf,
 } from "../build/git.ts";
-import {execCapture} from "../io/exec.ts";
-import {isAncestor} from "../io/git.ts";
-import {currentBranch} from "../io/issues.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {epicBranch} from "../wire/lane-brief.ts";
-import {standingInLinkedWorktree} from "./assembly.ts";
+import { execCapture } from "../io/exec.ts";
+import { isAncestor } from "../io/git.ts";
+import { currentBranch } from "../io/issues.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { epicBranch } from "../wire/lane-brief.ts";
+import { standingInLinkedWorktree } from "./assembly.ts";
 import {
 	APPEND_UNKNOWN,
 	LANE_UNREADABLE,
@@ -49,8 +49,8 @@ import {
 	UNSAFE_PUSH,
 	WRONG_BRANCH,
 } from "./codes.ts";
-import {loadRefusal} from "./refusals.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { loadRefusal } from "./refusals.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 const VERB = "fabrika lane push";
 

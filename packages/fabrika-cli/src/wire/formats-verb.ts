@@ -6,9 +6,9 @@
  * can drift. An empty registry refuses: printing an empty list would be a proven
  * negative from a verb that resolved nothing.
  */
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {ZERO_SCOPE} from "./codes.ts";
-import {registeredFormats} from "./registry.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { ZERO_SCOPE } from "./codes.ts";
+import { registeredFormats } from "./registry.ts";
 
 const VERB = "wire formats";
 
@@ -16,18 +16,18 @@ export interface FormatsInput {
 	readonly json: boolean;
 }
 
-export const runFormats = ({json}: FormatsInput): VerbOutcome => {
+export const runFormats = ({ json }: FormatsInput): VerbOutcome => {
 	if (registeredFormats.length === 0) {
 		return refuse(ZERO_SCOPE, `${VERB}: no wire format is registered — the registry holds no rows`);
 	}
-	const rows = registeredFormats.map(({key, purpose, producers, consumers}) => ({
+	const rows = registeredFormats.map(({ key, purpose, producers, consumers }) => ({
 		key,
 		purpose,
 		producers,
 		consumers,
 	}));
 	const stdout = json
-		? `${JSON.stringify({formats: rows})}\n`
+		? `${JSON.stringify({ formats: rows })}\n`
 		: `formats\t${rows.length}\n${rows
 				.map(
 					(row) =>

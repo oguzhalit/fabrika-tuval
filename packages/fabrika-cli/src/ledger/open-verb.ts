@@ -14,24 +14,24 @@
  * replaced would lose authored work with no refusal to notice.
  */
 
-import {Effect, FileSystem, Path} from "effect";
+import { Effect, FileSystem, Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {scannedLine} from "../build/target.ts";
-import {readTree} from "../build/tree.ts";
-import {cycleDocOr} from "../config/paths.ts";
-import {searchOpenIssues} from "../io/issues.ts";
-import {resolveTrunk, trunkUnresolved} from "../io/trunk.ts";
-import {probeCycleDoc} from "../plan/github.ts";
-import {sectionCount} from "../plan/ledger.ts";
-import {rank, searchTokens, tokenize} from "../report/dedup.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, REGION_UNRESOLVABLE, STALE_GROUND} from "./codes.ts";
-import {bodyDigest} from "./digest.ts";
-import {listSubIssueEntries, openBacklog} from "./github.ts";
-import {commitsBehind} from "./ground.ts";
-import {PLAN_HEADING} from "./plan-block.ts";
-import {type LedgerMessages, type OpenOptions, openGround} from "./preconditions.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { scannedLine } from "../build/target.ts";
+import { readTree } from "../build/tree.ts";
+import { cycleDocOr } from "../config/paths.ts";
+import { searchOpenIssues } from "../io/issues.ts";
+import { resolveTrunk, trunkUnresolved } from "../io/trunk.ts";
+import { probeCycleDoc } from "../plan/github.ts";
+import { sectionCount } from "../plan/ledger.ts";
+import { rank, searchTokens, tokenize } from "../report/dedup.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, REGION_UNRESOLVABLE, STALE_GROUND } from "./codes.ts";
+import { bodyDigest } from "./digest.ts";
+import { listSubIssueEntries, openBacklog } from "./github.ts";
+import { commitsBehind } from "./ground.ts";
+import { PLAN_HEADING } from "./plan-block.ts";
+import { type LedgerMessages, type OpenOptions, openGround } from "./preconditions.ts";
 import {
 	type ChildRecord,
 	EXCLUDE_ENTRY,
@@ -66,7 +66,7 @@ export const runOpen = (
 	Effect.gen(function* () {
 		const ground = yield* openGround(MESSAGES, options);
 		if (ground._tag === "Refused") return ground.outcome;
-		const {repo, epic, dir, notes} = ground;
+		const { repo, epic, dir, notes } = ground;
 
 		const planAnchors = sectionCount(epic.body, "Plan (plan-epic)");
 		if (planAnchors > 1) {
@@ -245,7 +245,7 @@ const writeAll = (
 	Effect.gen(function* () {
 		const path = yield* Path.Path;
 		for (const [target, text] of files) {
-			const failed = yield* fs.makeDirectory(path.dirname(target), {recursive: true}).pipe(
+			const failed = yield* fs.makeDirectory(path.dirname(target), { recursive: true }).pipe(
 				Effect.andThen(fs.writeFileString(target, text)),
 				Effect.as(null),
 				Effect.catchTag("PlatformError", (cause) => Effect.succeed(cause.message)),
@@ -272,7 +272,7 @@ const registerExclude = (
 			.pipe(Effect.catchTag("PlatformError", () => Effect.succeed("")));
 		if (current.split("\n").some((line) => line.trim() === EXCLUDE_ENTRY)) return null;
 		const next = current === "" || current.endsWith("\n") ? current : `${current}\n`;
-		return yield* fs.makeDirectory(`${tree.value.gitDir}/info`, {recursive: true}).pipe(
+		return yield* fs.makeDirectory(`${tree.value.gitDir}/info`, { recursive: true }).pipe(
 			Effect.andThen(fs.writeFileString(path, `${next}${EXCLUDE_ENTRY}\n`)),
 			Effect.as(null),
 			Effect.catchTag("PlatformError", (cause) => Effect.succeed(cause.message)),

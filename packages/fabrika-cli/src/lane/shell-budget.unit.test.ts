@@ -1,9 +1,9 @@
-import {describe, expect, it} from "vitest";
-import {readGoldenFixture} from "../golden-fixture.ts";
-import {SHELL_STATES, shellOf} from "../wire/lane-brief.ts";
-import {emitMachine} from "./emit.ts";
-import {coderWorkflow} from "./fixtures.test-support.ts";
-import {eventForToken} from "./report.ts";
+import { describe, expect, it } from "vitest";
+import { readGoldenFixture } from "../golden-fixture.ts";
+import { SHELL_STATES, shellOf } from "../wire/lane-brief.ts";
+import { emitMachine } from "./emit.ts";
+import { coderWorkflow } from "./fixtures.test-support.ts";
+import { eventForToken } from "./report.ts";
 import {
 	BUILD_CLAIM_BUDGET_MINUTES,
 	budgetMinutesFor,
@@ -66,13 +66,13 @@ describe("livenessOf", () => {
 	it("is Dead once the age reaches the budget", () => {
 		expect(
 			livenessOf("2026-09-09T00:00:00.000Z", at("2026-09-09T00:40:00.000Z"), 40),
-		).toMatchObject({_tag: "Dead", ageMinutes: 40, budgetMinutes: 40});
+		).toMatchObject({ _tag: "Dead", ageMinutes: 40, budgetMinutes: 40 });
 	});
 
 	it("is Live one minute short of it", () => {
 		expect(
 			livenessOf("2026-09-09T00:00:00.000Z", at("2026-09-09T00:39:00.000Z"), 40),
-		).toMatchObject({_tag: "Live", ageMinutes: 39});
+		).toMatchObject({ _tag: "Live", ageMinutes: 39 });
 	});
 
 	// A clock that ran backwards floors at zero and reads Live: waiting costs a lap, a wrong eviction
@@ -80,7 +80,7 @@ describe("livenessOf", () => {
 	it("is Live when the clock ran backwards", () => {
 		expect(
 			livenessOf("2026-09-09T01:00:00.000Z", at("2026-09-09T00:00:00.000Z"), 40),
-		).toMatchObject({_tag: "Live", ageMinutes: 0});
+		).toMatchObject({ _tag: "Live", ageMinutes: 0 });
 	});
 
 	it("is Unreadable on an instant that does not parse — never Dead, never Live", () => {
@@ -94,7 +94,7 @@ interface CoderShape {
 			readonly pipeline: {
 				readonly states: {
 					readonly issue: {
-						readonly states: Record<string, {readonly on?: Record<string, unknown>}>;
+						readonly states: Record<string, { readonly on?: Record<string, unknown> }>;
 					};
 				};
 			};
@@ -112,7 +112,7 @@ describe("every budgeted state can record the death its budget detects", () => {
 		];
 
 	it("maps SHELL-DEAD to the machine's LAP", () => {
-		expect(eventForToken("SHELL-DEAD")).toMatchObject({_tag: "Mapped", event: "LAP"});
+		expect(eventForToken("SHELL-DEAD")).toMatchObject({ _tag: "Mapped", event: "LAP" });
 	});
 
 	it("gives the coder machine an ISSUE.LAP edge in every state that carries a budget", () => {
@@ -150,12 +150,12 @@ describe("every budgeted state of the GENERATED epic machine can record the same
 			machine: {
 				states: Record<
 					string,
-					{states?: Record<string, {states: Record<string, {on?: Record<string, unknown>}>}>}
+					{ states?: Record<string, { states: Record<string, { on?: Record<string, unknown> }> }> }
 				>;
 			};
 		};
 		return Object.values(document.machine.states).flatMap((phase) =>
-			Object.entries(phase.states ?? {}).map(([task, region]) => ({task, states: region.states})),
+			Object.entries(phase.states ?? {}).map(([task, region]) => ({ task, states: region.states })),
 		);
 	};
 
@@ -163,7 +163,7 @@ describe("every budgeted state of the GENERATED epic machine can record the same
 	const lapKey = (task: string): string => `${task.toUpperCase()}.LAP`;
 
 	const shellCells = (machinery: boolean, classes: ReadonlyArray<string> = []) =>
-		regionsOf(machinery, classes).flatMap(({task, states}) =>
+		regionsOf(machinery, classes).flatMap(({ task, states }) =>
 			SHELL_STATES.filter((state) => states[state] !== undefined).map((state) => ({
 				where: `${task}.${state}`,
 				lap: states[state]?.on?.[lapKey(task)],

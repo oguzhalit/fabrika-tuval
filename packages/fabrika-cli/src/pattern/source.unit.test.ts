@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeShell, okOut} from "../fakes.test-support.ts";
-import {canonicalOriginUrl, inspectSourceRepository, sourceEvidenceLine} from "./source.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeShell, okOut } from "../fakes.test-support.ts";
+import { canonicalOriginUrl, inspectSourceRepository, sourceEvidenceLine } from "./source.ts";
 
 const SHA = "b1b99e9773040e25bd6099762491ab23d8ea6910";
 const FILES = [

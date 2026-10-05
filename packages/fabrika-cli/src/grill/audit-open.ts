@@ -1,6 +1,6 @@
 /** Audit create/recovery. Recovery never creates; an interleaved first create can still race. */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import {
 	addLabels,
 	createUnlabelledIssue,
@@ -10,8 +10,8 @@ import {
 	listLabels,
 	resolveRepo,
 } from "../io/issues.ts";
-import {scanBody} from "../report/leaks.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { scanBody } from "../report/leaks.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import * as audit from "../wire/audit-context.ts";
 import {
 	AUDIT_CLOSED,
@@ -25,11 +25,11 @@ import {
 	SESSION_AMBIGUOUS,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {SESSION_LABEL} from "./session.ts";
+import { SESSION_LABEL } from "./session.ts";
 
 export type AuditAttempt =
-	| {readonly _tag: "Create"}
-	| {readonly _tag: "Recover"; readonly session: number | null};
+	| { readonly _tag: "Create" }
+	| { readonly _tag: "Recover"; readonly session: number | null };
 
 export interface AuditOpenOptions {
 	readonly text: string;
@@ -149,7 +149,7 @@ export const runAuditOpen = Effect.fn("grill.auditOpen")(function* (
 
 	const matches = (
 		rows: ReadonlyArray<IssueRecord>,
-	): {readonly rows: ReadonlyArray<IssueRecord>} | VerbOutcome => {
+	): { readonly rows: ReadonlyArray<IssueRecord> } | VerbOutcome => {
 		const selected: IssueRecord[] = [];
 		for (const row of rows) {
 			const value = audit.read(row.body);
@@ -160,7 +160,7 @@ export const runAuditOpen = Effect.fn("grill.auditOpen")(function* (
 				);
 			if (value._tag === "Found" && value.value.runId === context.runId) selected.push(row);
 		}
-		return {rows: selected};
+		return { rows: selected };
 	};
 	const readMatches = Effect.fn("grill.auditMatches")(function* () {
 		const rows = yield* listAllIssueRecords(repo);

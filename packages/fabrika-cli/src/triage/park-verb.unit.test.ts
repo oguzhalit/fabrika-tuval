@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type HttpReply, once, type Scripted} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type HttpReply, once, type Scripted } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
 import {
 	COMMENTS,
 	CWD,
@@ -22,7 +22,7 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {runPark} from "./park-verb.ts";
+import { runPark } from "./park-verb.ts";
 
 const ISSUE = /GET .*\/repos\/o\/r\/issues\/4290$/;
 const LABELS = /GET .*\/repos\/o\/r\/labels\?/;
@@ -31,15 +31,15 @@ const PATCH = /PATCH .*\/repos\/o\/r\/issues\/4290$/;
 const REMOVE = /DELETE .*\/repos\/o\/r\/issues\/4290\/labels\//;
 const ADD = /POST .*\/repos\/o\/r\/issues\/4290\/labels$/;
 
-const UNREADABLE: HttpReply = {status: 502, body: "{}"};
-const NOT_FOUND: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
-const WRITE_FAILED: HttpReply = {status: 500, body: "{}"};
-const ACCEPTED: HttpReply = {status: 200, body: "{}"};
-const LABELLED: HttpReply = {status: 200, body: "[]"};
+const UNREADABLE: HttpReply = { status: 502, body: "{}" };
+const NOT_FOUND: HttpReply = { status: 404, body: '{"message":"Not Found"}' };
+const WRITE_FAILED: HttpReply = { status: 500, body: "{}" };
+const ACCEPTED: HttpReply = { status: 200, body: "{}" };
+const LABELLED: HttpReply = { status: 200, body: "[]" };
 
 const labelSet = (...names: ReadonlyArray<string>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(names.map((name) => ({name}))),
+	body: JSON.stringify(names.map((name) => ({ name }))),
 });
 
 const QUESTIONS = "Which of the two sozluk surfaces does this cover?";
@@ -51,9 +51,9 @@ const issue = (labels: ReadonlyArray<string>, milestone: number | null): HttpRep
 		title: "t",
 		body: "b",
 		state: "open",
-		labels: labels.map((name) => ({name})),
+		labels: labels.map((name) => ({ name })),
 		html_url: "https://example.test/issues/4290",
-		milestone: milestone === null ? null : {number: milestone},
+		milestone: milestone === null ? null : { number: milestone },
 	}),
 });
 
@@ -78,8 +78,8 @@ const options = {
 	token: null as string | null,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
-	stdin: Effect.succeed<StdinRead>({_tag: "Text", text: QUESTIONS}),
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
+	stdin: Effect.succeed<StdinRead>({ _tag: "Text", text: QUESTIONS }),
 	cwd: CWD,
 };
 
@@ -96,13 +96,13 @@ const happy = (): ReadonlyArray<Scripted> => [
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
-		Effect.provide(runPark({...options, ...overrides}), triageContext(guardedShell(script))),
+		Effect.provide(runPark({ ...options, ...overrides }), triageContext(guardedShell(script))),
 	);
 
 /** A standing-lane facet owning a label no declared value produces — pure delete authority. */
 const VIOLATING_CONFIG = JSON.stringify({
 	triageFacets: [
-		{name: "lane", ownsLabels: ["wayfinder:backlog", "axis:dead"], values: ["wayfinder:backlog"]},
+		{ name: "lane", ownsLabels: ["wayfinder:backlog", "axis:dead"], values: ["wayfinder:backlog"] },
 	],
 });
 
@@ -126,7 +126,7 @@ describe("runPark under a refused config", () => {
 
 	/** The same three non-decoding arms `apply` refuses — one guard, so one set of cases. */
 	it.each([
-		["a file that is there and denied", {unreadable: true} as const, "could not be read"],
+		["a file that is there and denied", { unreadable: true } as const, "could not be read"],
 		["a document that is not a JSON object", "[1, 2]", "not a JSON object"],
 		["a key no decoder accepted", '{"triageFacets": "garbage"}', "`triageFacets` is not an array"],
 	])("refuses %s, and posts nothing", async (_case, config, expected) => {
@@ -150,7 +150,7 @@ describe("runPark", () => {
 	});
 
 	it("emits the record on STDOUT with --json", async () => {
-		const out = await run(happy(), {json: true});
+		const out = await run(happy(), { json: true });
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			outcome: "parked",
 			number: 4290,
@@ -168,9 +168,9 @@ describe("runPark", () => {
 		const shell = guardedShell(happy());
 		await Effect.runPromise(Effect.provide(runPark(options), triageContext(shell)));
 		const writes = shell.requests
-			.map((line, at) => ({line, body: shell.bodies[at] ?? ""}))
+			.map((line, at) => ({ line, body: shell.bodies[at] ?? "" }))
 			.filter(
-				({line}) => COMMENT.test(line) || PATCH.test(line) || REMOVE.test(line) || ADD.test(line),
+				({ line }) => COMMENT.test(line) || PATCH.test(line) || REMOVE.test(line) || ADD.test(line),
 			);
 		expect(writes[0]?.line).toContain("/comments");
 		expect(writes[0]?.body).toContain(`"body":${JSON.stringify(QUESTIONS)}`);
@@ -208,7 +208,7 @@ describe("runPark", () => {
 
 	it("refuses empty-but-READ questions on 3, and says how many bytes it read", async () => {
 		const out = await run(happy(), {
-			stdin: Effect.succeed({_tag: "Text", text: "   \n"} satisfies StdinRead),
+			stdin: Effect.succeed({ _tag: "Text", text: "   \n" } satisfies StdinRead),
 		});
 		expect(out.code).toBe(EMPTY_STDIN);
 		expect(out.stderr.at(-1)).toBe(
@@ -248,7 +248,7 @@ describe("runPark", () => {
 			Effect.provide(
 				runPark({
 					...options,
-					stdin: Effect.succeed({_tag: "Text", text: ""} satisfies StdinRead),
+					stdin: Effect.succeed({ _tag: "Text", text: "" } satisfies StdinRead),
 				}),
 				triageContext(shell),
 			),
@@ -373,13 +373,13 @@ describe("runPark", () => {
 	});
 
 	it("refuses a non-issue number", async () => {
-		const out = await run(happy(), {issue: -1});
+		const out = await run(happy(), { issue: -1 });
 		expect(out.code).toBe(1);
 	});
 
 	it("refuses an unresolvable repo rather than guessing one", async () => {
 		const out = await Effect.runPromise(
-			Effect.provide(runPark({...options, env: {}}), triageContext(guardedShell([]))),
+			Effect.provide(runPark({ ...options, env: {} }), triageContext(guardedShell([]))),
 		);
 		expect(out.code).toBe(1);
 		expect(out.stderr.at(-1)).toContain("cannot resolve a target repo");
@@ -390,31 +390,31 @@ describe("runPark", () => {
 describe("runPark — the target guard", () => {
 	const MINE = "session-mine";
 	const THEIRS = "session-theirs";
-	const mine = {CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: MINE} as Record<
+	const mine = { CLAUDE_PIPELINE_REPO: "o/r", CLAUDE_CODE_SESSION_ID: MINE } as Record<
 		string,
 		string | undefined
 	>;
 	const guard = async (script: ReadonlyArray<Scripted>) => {
 		const shell = guardedShell(script);
 		const out = await Effect.runPromise(
-			Effect.provide(runPark({...options, env: mine}), triageContext(shell)),
+			Effect.provide(runPark({ ...options, env: mine }), triageContext(shell)),
 		);
-		return {out, wrote: shell.requests.some((line) => COMMENT.test(line) || ADD.test(line))};
+		return { out, wrote: shell.requests.some((line) => COMMENT.test(line) || ADD.test(line)) };
 	};
 
 	it("refuses a live claim held by another session on 17 and writes nothing", async () => {
-		const {out, wrote} = await guard([
+		const { out, wrote } = await guard([
 			...happy(),
-			[COMMENTS, claimPage({session: THEIRS, createdAt: LIVE})],
+			[COMMENTS, claimPage({ session: THEIRS, createdAt: LIVE })],
 		]);
 		expect(out.code).toBe(CLAIMED_ELSEWHERE);
 		expect(wrote).toBe(false);
 	});
 
 	it("parks when the live claim is this session's own", async () => {
-		const {out} = await guard([
+		const { out } = await guard([
 			...happy(),
-			[COMMENTS, claimPage({session: MINE, createdAt: LIVE})],
+			[COMMENTS, claimPage({ session: MINE, createdAt: LIVE })],
 		]);
 		expect(out.code).toBe(0);
 	});

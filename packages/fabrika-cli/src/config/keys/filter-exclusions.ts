@@ -20,9 +20,9 @@
  * before the keys existed.
  */
 
-import {DEFAULT_EXCLUSIONS} from "../../review/filter-spike.ts";
-import {trimmedStrings} from "../entries.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import { DEFAULT_EXCLUSIONS } from "../../review/filter-spike.ts";
+import { trimmedStrings } from "../entries.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const REVIEW_FILTER_EXCLUSIONS = "reviewFilterExclusions";
 export const REVIEW_FILTER_UNEXCLUDE = "reviewFilterUnexclude";
@@ -37,7 +37,7 @@ const decodeGlobs = (
 ): ((raw: unknown) => Decoded<ReadonlyArray<string>>) => {
 	return (raw) => {
 		if (!Array.isArray(raw)) {
-			return {_tag: "Malformed", reason: `\`${key}\` is not an array of pattern strings`};
+			return { _tag: "Malformed", reason: `\`${key}\` is not an array of pattern strings` };
 		}
 		const values = trimmedStrings(raw);
 		return values === null
@@ -45,7 +45,7 @@ const decodeGlobs = (
 					_tag: "Malformed",
 					reason: `\`${key}\` holds an entry that is not a non-empty string — ${expected}`,
 				}
-			: {_tag: "Value", value: values};
+			: { _tag: "Value", value: values };
 	};
 };
 
@@ -57,7 +57,7 @@ export const reviewFilterExclusionsKey: KeyGroup<ReadonlyArray<string>> = {
 		type: "array",
 		description:
 			"The glob patterns added to the review diff filter's exclusion set, on top of the shipped defaults. Empty (or absent) changes nothing.",
-		items: {type: "string", minLength: 1},
+		items: { type: "string", minLength: 1 },
 	},
 };
 
@@ -70,7 +70,7 @@ export const reviewFilterUnexcludeKey: KeyGroup<ReadonlyArray<string>> = {
 			"expected a shipped default exclusion pattern",
 		)(raw);
 		if (decoded._tag === "Malformed") return decoded;
-		const defaults = new Set(DEFAULT_EXCLUSIONS.map(({pattern}) => pattern));
+		const defaults = new Set(DEFAULT_EXCLUSIONS.map(({ pattern }) => pattern));
 		for (const entry of decoded.value) {
 			if (defaults.has(entry)) continue;
 			return {
@@ -84,6 +84,6 @@ export const reviewFilterUnexcludeKey: KeyGroup<ReadonlyArray<string>> = {
 		type: "array",
 		description:
 			"The shipped default exclusion patterns removed from the review diff filter's exclusion set. Each entry must equal a shipped default's pattern exactly; every removal that nothing re-adds is enumerated in the verbs' output. Empty (or absent) changes nothing.",
-		items: {type: "string", minLength: 1},
+		items: { type: "string", minLength: 1 },
 	},
 };

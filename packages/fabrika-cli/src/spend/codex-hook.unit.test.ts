@@ -1,15 +1,15 @@
-import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {NodeServices} from "@effect/platform-node";
-import {Effect} from "effect";
-import {afterEach, expect, it} from "vitest";
-import {runCodexHook} from "./codex-hook-verb.ts";
-import {readUsageLedger} from "./usage-ledger.ts";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
+import { afterEach, expect, it } from "vitest";
+import { runCodexHook } from "./codex-hook-verb.ts";
+import { readUsageLedger } from "./usage-ledger.ts";
 
 const dirs: string[] = [];
 afterEach(() => {
-	for (const dir of dirs.splice(0)) rmSync(dir, {recursive: true, force: true});
+	for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 const live = <A, E>(effect: Effect.Effect<A, E, NodeServices.NodeServices>) =>
 	Effect.runPromise(Effect.provide(effect, NodeServices.layer));
@@ -31,7 +31,7 @@ it("binds interactive work at the native tool callback and collects again at Sto
 				model_provider: "openai",
 			},
 		},
-		{type: "turn_context", payload: {turn_id: "turn", model: "m"}},
+		{ type: "turn_context", payload: { turn_id: "turn", model: "m" } },
 	];
 	writeFileSync(transcript, `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`);
 	const event = {
@@ -41,9 +41,9 @@ it("binds interactive work at the native tool callback and collects again at Sto
 		transcript_path: transcript,
 		hook_event_name: "PreToolUse",
 		tool_name: "exec_command",
-		tool_input: {cmd: "node packages/fabrika-cli/src/bin.ts build claim 8950"},
+		tool_input: { cmd: "node packages/fabrika-cli/src/bin.ts build claim 8950" },
 	};
-	const options = {input: JSON.stringify(event), sessions, state, ledger, repo: "o/r"};
+	const options = { input: JSON.stringify(event), sessions, state, ledger, repo: "o/r" };
 	const started = await live(runCodexHook(options));
 	expect(started.code).toBe(0);
 	const usage = {
@@ -76,27 +76,27 @@ it("binds interactive work at the native tool callback and collects again at Sto
 	const stopped = await live(
 		runCodexHook({
 			...options,
-			input: JSON.stringify({...event, hook_event_name: "Stop", tool_input: undefined}),
+			input: JSON.stringify({ ...event, hook_event_name: "Stop", tool_input: undefined }),
 		}),
 	);
 	expect(stopped.code).toBe(0);
 	expect(JSON.parse(stopped.stdout)).not.toHaveProperty("decision");
 	await live(
-		runCodexHook({...options, input: JSON.stringify({...event, hook_event_name: "Stop"})}),
+		runCodexHook({ ...options, input: JSON.stringify({ ...event, hook_event_name: "Stop" }) }),
 	);
 	const records = readUsageLedger(readFileSync(ledger, "utf8")).records.filter(
 		(row) => row.kind === "measurement",
 	);
 	expect(records).toHaveLength(3);
 	expect(records[0]).toMatchObject({
-		work: {issue: 8950, run: "codex:native:turn", attempt: "native"},
+		work: { issue: 8950, run: "codex:native:turn", attempt: "native" },
 	});
 	writeFileSync(
 		transcript,
 		`${rows
 			.concat([
 				response,
-				{type: "turn_context", payload: {turn_id: "next-turn", model: "m2"}},
+				{ type: "turn_context", payload: { turn_id: "next-turn", model: "m2" } },
 				{
 					...response,
 					payload: {
@@ -136,7 +136,7 @@ it("keeps an unresolved issue warning when the native callback has no turn ID", 
 			input: JSON.stringify({
 				session_id: "native",
 				hook_event_name: "PreToolUse",
-				tool_input: {command: "fabrika review criteria $ISSUE"},
+				tool_input: { command: "fabrika review criteria $ISSUE" },
 			}),
 			sessions: join(dir, "sessions"),
 			state: join(dir, "state"),

@@ -13,7 +13,7 @@
  * beside it, exactly as `grill-ruled` means the four clauses `grill read` applies and not the bytes.
  */
 
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
 import {
 	absent,
 	FIELD_SEPARATOR,
@@ -25,7 +25,7 @@ import {
 	reachesFor,
 } from "./grill-marker.ts";
 
-export type {MarkerTime} from "./grill-marker.ts";
+export type { MarkerTime } from "./grill-marker.ts";
 
 /** The key that names these bytes. Never widened — a second meaning would need a second format. */
 export const KEY = "cap-cleared";
@@ -36,7 +36,7 @@ const ROUND_PREFIX = "round";
 declare const CLEARED_ROUND: unique symbol;
 
 /** The round a clearance clears: a positive integer. No other inhabitant exists. */
-export type ClearedRound = number & {readonly [CLEARED_ROUND]: true};
+export type ClearedRound = number & { readonly [CLEARED_ROUND]: true };
 
 export const clearedRound = (raw: number): ClearedRound | null =>
 	Number.isInteger(raw) && raw > 0 ? (raw as ClearedRound) : null;
@@ -87,11 +87,11 @@ export const read = (artifact: string): CapClearanceRead => {
 			evidence,
 		);
 	}
-	return {_tag: "Found", value: {round, at}};
+	return { _tag: "Found", value: { round, at } };
 };
 
 /** Compose the marker's first line. Round-trips through {@link read}. */
-export const emit = ({round, at}: CapClearance): string =>
+export const emit = ({ round, at }: CapClearance): string =>
 	`${KEY}: ${ROUND_PREFIX} ${round} ${FIELD_SEPARATOR} ${at}\n`;
 
 export const renderClearance = (clearance: CapClearance): NonEmptyReadonlyArray<string> => [
@@ -100,8 +100,8 @@ export const renderClearance = (clearance: CapClearance): NonEmptyReadonlyArray<
 ];
 
 export type CapClearanceFields =
-	| {readonly _tag: "Fields"; readonly clearance: CapClearance}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly clearance: CapClearance }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 /** `<key>: <value>` or `<key><TAB><value>`, so `wire read`'s own output pipes back into `wire emit`. */
 const FIELD_LINE = /^([A-Za-z-]+)[ \t]*[:\t][ \t]*(.*)$/;
@@ -136,7 +136,7 @@ export const parseFields = (fields: string): CapClearanceFields => {
 	const raw = (seen.get("round") ?? "").trim();
 	const round = /^[0-9]+$/.test(raw) ? clearedRound(Number(raw)) : null;
 	if (round === null) {
-		return {_tag: "Unusable", reason: `"${raw}" is not a round — expected a positive integer`};
+		return { _tag: "Unusable", reason: `"${raw}" is not a round — expected a positive integer` };
 	}
 	const at = markerTime(seen.get("at") ?? "");
 	if (at === null) {
@@ -145,19 +145,19 @@ export const parseFields = (fields: string): CapClearanceFields => {
 			reason: `"${seen.get("at") ?? ""}" is not an ISO-8601 UTC timestamp — expected a Z-suffixed instant`,
 		};
 	}
-	return {_tag: "Fields", clearance: {round, at}};
+	return { _tag: "Fields", clearance: { round, at } };
 };
 
 /** The registry row's byte-level `emit`, bound to this module's typed core. */
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.clearance)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.clearance) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderClearance(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderClearance(result.value) } : result;
 };

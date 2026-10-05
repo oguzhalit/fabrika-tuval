@@ -8,8 +8,8 @@
  * declares an anchor I could not parse"*, which is true and actionable — the same discipline
  * `./drift.ts` applies to an unresolved path.
  */
-import {isMap, isScalar, parseDocument} from "yaml";
-import {ANCHOR_DECLARATION, ANCHOR_PREFIX, splitAnchorToken} from "./doc.ts";
+import { isMap, isScalar, parseDocument } from "yaml";
+import { ANCHOR_DECLARATION, ANCHOR_PREFIX, splitAnchorToken } from "./doc.ts";
 
 export type DeclarationState = "matched" | "moved" | "unpinned" | "malformed";
 
@@ -37,15 +37,15 @@ export const declarationLinesIn = (text: string): ReadonlyArray<string> =>
 	text.split("\n").filter((line) => line.startsWith(ANCHOR_PREFIX));
 
 export type CatalogRead =
-	| {readonly _tag: "Ok"; readonly catalog: Readonly<Record<string, string>> | null}
-	| {readonly _tag: "Unparseable"; readonly reason: string};
+	| { readonly _tag: "Ok"; readonly catalog: Readonly<Record<string, string>> | null }
+	| { readonly _tag: "Unparseable"; readonly reason: string };
 
 /** Read all catalog maps; only a declared dependency's conflicting pins prevent its answer. */
 export const parseCatalog = (
 	text: string,
 	declarations: ReadonlyArray<string> = [],
 ): CatalogRead => {
-	const doc = parseDocument(text, {strict: true});
+	const doc = parseDocument(text, { strict: true });
 	if (doc.errors.length > 0) {
 		return {
 			_tag: "Unparseable",
@@ -53,7 +53,7 @@ export const parseCatalog = (
 		};
 	}
 	if (!isMap(doc.contents))
-		return {_tag: "Unparseable", reason: "workspace manifest must be a map"};
+		return { _tag: "Unparseable", reason: "workspace manifest must be a map" };
 	const pins = new Map<string, Set<string>>();
 	const readMap = (value: unknown, name: string): string | null => {
 		if (!isMap(value)) return `${name} must be a map of package names to string pins`;
@@ -78,12 +78,12 @@ export const parseCatalog = (
 	const hasNamed = doc.contents.has("catalogs");
 	if (hasDefault) {
 		const reason = readMap(doc.contents.get("catalog", true), "catalog");
-		if (reason !== null) return {_tag: "Unparseable", reason};
+		if (reason !== null) return { _tag: "Unparseable", reason };
 	}
 	if (hasNamed) {
 		const named = doc.contents.get("catalogs", true);
 		if (!isMap(named))
-			return {_tag: "Unparseable", reason: "catalogs must be a map of named catalogs"};
+			return { _tag: "Unparseable", reason: "catalogs must be a map of named catalogs" };
 		for (const pair of named.items) {
 			if (!isScalar(pair.key) || typeof pair.key.value !== "string" || pair.key.value === "") {
 				return {
@@ -92,7 +92,7 @@ export const parseCatalog = (
 				};
 			}
 			const reason = readMap(pair.value, `catalogs.${pair.key.value}`);
-			if (reason !== null) return {_tag: "Unparseable", reason};
+			if (reason !== null) return { _tag: "Unparseable", reason };
 		}
 	}
 	for (const line of declarations) {
@@ -116,7 +116,7 @@ export const parseCatalog = (
 			versions.size === 1 ? [...versions].map((version) => [pkg, version]) : [],
 		),
 	);
-	return {_tag: "Ok", catalog: hasDefault || hasNamed ? catalog : null};
+	return { _tag: "Ok", catalog: hasDefault || hasNamed ? catalog : null };
 };
 
 /**

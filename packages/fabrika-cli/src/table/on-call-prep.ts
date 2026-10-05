@@ -17,20 +17,20 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10302
  */
 
-import {Effect} from "effect";
-import type {Boards, OnCallBoard} from "../config/keys/boards.ts";
-import type {ListedIssue} from "../io/issues.ts";
-import type {FieldValue, ProjectField, ProjectSnapshot} from "../io/projects.ts";
-import {isCustomer, optionOf, type PrepWrite, plainWordsOf, textOf} from "./agenda.ts";
-import {BET_STAGE} from "./bets.ts";
-import type {DueCheck} from "./check.ts";
-import type {HeadRow, OnCallItem} from "./flags.ts";
-import {stopOn} from "./flags-read.ts";
-import {issuesOf} from "./group.ts";
-import {boardOf, ON_CALL_FIELD, onCallBoard, responseTargetOf} from "./on-call.ts";
-import {FIELD} from "./shape.ts";
-import type {Row} from "./sync.ts";
-import {type Refusal, rowsOf, type TableBoard} from "./sync-verb.ts";
+import { Effect } from "effect";
+import type { Boards, OnCallBoard } from "../config/keys/boards.ts";
+import type { ListedIssue } from "../io/issues.ts";
+import type { FieldValue, ProjectField, ProjectSnapshot } from "../io/projects.ts";
+import { isCustomer, optionOf, type PrepWrite, plainWordsOf, textOf } from "./agenda.ts";
+import { BET_STAGE } from "./bets.ts";
+import type { DueCheck } from "./check.ts";
+import type { HeadRow, OnCallItem } from "./flags.ts";
+import { stopOn } from "./flags-read.ts";
+import { issuesOf } from "./group.ts";
+import { boardOf, ON_CALL_FIELD, onCallBoard, responseTargetOf } from "./on-call.ts";
+import { FIELD } from "./shape.ts";
+import type { Row } from "./sync.ts";
+import { type Refusal, rowsOf, type TableBoard } from "./sync-verb.ts";
 
 /** Table Stages that are a person's answer, or a check: an issue holding one stays on the table. */
 const HELD: ReadonlySet<string> = new Set([BET_STAGE, "not now", "check"]);
@@ -89,7 +89,7 @@ export const onCallIssuesOf = (
 			(issue) =>
 				!held.has(issue.number) &&
 				boardOf(
-					{origins: originsFor(issue, table.get(issue.number)), labels: issue.labels},
+					{ origins: originsFor(issue, table.get(issue.number)), labels: issue.labels },
 					settings.route,
 				) === "on-call",
 		)
@@ -108,8 +108,8 @@ export interface OnCallFields {
 }
 
 export type OnCallResolved =
-	| {readonly _tag: "Resolved"; readonly fields: OnCallFields}
-	| {readonly _tag: "Missing"; readonly what: ReadonlyArray<string>};
+	| { readonly _tag: "Resolved"; readonly fields: OnCallFields }
+	| { readonly _tag: "Missing"; readonly what: ReadonlyArray<string> };
 
 export const onCallFields = (project: ProjectSnapshot, settings: OnCallBoard): OnCallResolved => {
 	const find = (name: string): ProjectField | undefined =>
@@ -141,11 +141,11 @@ export const onCallFields = (project: ProjectSnapshot, settings: OnCallBoard): O
 		options === null ||
 		plain?._tag !== "Plain"
 	) {
-		return {_tag: "Missing", what: lacking};
+		return { _tag: "Missing", what: lacking };
 	}
 	return {
 		_tag: "Resolved",
-		fields: {responseTarget: {id: target.id, options}, plainWords: plain.id},
+		fields: { responseTarget: { id: target.id, options }, plainWords: plain.id },
 	};
 };
 
@@ -163,12 +163,12 @@ export interface OnCallPlanInput {
  * then the Response target its labels pick now and its In plain words line.
  */
 export const planOnCall = (input: OnCallPlanInput): ReadonlyArray<PrepWrite> => {
-	const {fields, rows} = input;
+	const { fields, rows } = input;
 	const writes: PrepWrite[] = [];
 	for (const issue of input.issues) {
 		const row = rows.get(issue.number);
 		if (row === undefined) {
-			writes.push({_tag: "Add", issue: issue.number});
+			writes.push({ _tag: "Add", issue: issue.number });
 			continue;
 		}
 		const set = (field: string, fieldId: string, value: FieldValue, shown: string) =>
@@ -186,13 +186,13 @@ export const planOnCall = (input: OnCallPlanInput): ReadonlyArray<PrepWrite> => 
 			set(
 				ON_CALL_FIELD.responseTarget,
 				fields.responseTarget.id,
-				{_tag: "Option", optionId: fields.responseTarget.options.get(target.name) as string},
+				{ _tag: "Option", optionId: fields.responseTarget.options.get(target.name) as string },
 				target.name,
 			);
 		}
 		const words = plainWordsOf(issue);
 		if (textOf(row, FIELD.plainWords) !== words) {
-			set(FIELD.plainWords, fields.plainWords, {_tag: "Text", text: words}, `"${words}"`);
+			set(FIELD.plainWords, fields.plainWords, { _tag: "Text", text: words }, `"${words}"`);
 		}
 	}
 	return writes;
@@ -224,7 +224,7 @@ export const onCallItemsOf = (
 
 /** The on-call board, read; `One` when no `boards` block splits the work. */
 export type OnCallBoardRead =
-	| {readonly _tag: "One"}
+	| { readonly _tag: "One" }
 	| {
 			readonly _tag: "Split";
 			readonly settings: OnCallBoard;
@@ -239,7 +239,7 @@ export const readOnCall = <R>(
 	boards: Boards,
 ): Effect.Effect<OnCallBoardRead | Refusal, never, R> =>
 	Effect.gen(function* () {
-		if (boards._tag === "One") return {_tag: "One"} as const;
+		if (boards._tag === "One") return { _tag: "One" } as const;
 		const settings = boards.onCall;
 		const located = yield* board.locate(repo, onCallBoard(repo, settings));
 		if (located._tag !== "Ok") return stopOn(verb, located, "cannot find the on-call board");
@@ -249,10 +249,10 @@ export const readOnCall = <R>(
 				reason: located.value.reason.replace(`${verb}: `, `${verb}: the on-call board: `),
 			};
 		}
-		const {project} = located.value;
+		const { project } = located.value;
 		const items = yield* board.items(project.id);
 		if (items._tag !== "Ok") {
 			return stopOn(verb, items, `cannot read the on-call board #${project.number}'s items`);
 		}
-		return {_tag: "Split", settings, project, rows: rowsOf(items.value, repo)};
+		return { _tag: "Split", settings, project, rows: rowsOf(items.value, repo) };
 	});

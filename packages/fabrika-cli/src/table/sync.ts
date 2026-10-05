@@ -24,12 +24,12 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9972#issuecomment-5974135601
  */
 
-import {OUTSIDE_THE_BETS} from "../config/keys/table.ts";
-import type {FieldValue, ItemFieldValue, ProjectField, ProjectSnapshot} from "../io/projects.ts";
-import type {LaneRecord, Origin} from "../wire/lane-record.ts";
-import {type Bets, type Group, groupOf, type IssueNode, issuesOf, membersOf} from "./group.ts";
-import {FIELD} from "./shape.ts";
-import {addTallies, EMPTY_TALLY, latestRecord, type Tally, tally} from "./tally.ts";
+import { OUTSIDE_THE_BETS } from "../config/keys/table.ts";
+import type { FieldValue, ItemFieldValue, ProjectField, ProjectSnapshot } from "../io/projects.ts";
+import type { LaneRecord, Origin } from "../wire/lane-record.ts";
+import { type Bets, type Group, groupOf, type IssueNode, issuesOf, membersOf } from "./group.ts";
+import { FIELD } from "./shape.ts";
+import { addTallies, EMPTY_TALLY, latestRecord, type Tally, tally } from "./tally.ts";
 
 /** A graph node with the edges pointing up from it, which sync walks to find the rows above. */
 export interface SyncNode extends IssueNode {
@@ -43,7 +43,7 @@ export interface Row {
 }
 
 export type Scope =
-	| {readonly _tag: "Incomplete"; readonly missing: ReadonlyArray<number>}
+	| { readonly _tag: "Incomplete"; readonly missing: ReadonlyArray<number> }
 	| {
 			readonly _tag: "Scoped";
 			/** Every group row the run keeps, by its head. */
@@ -85,7 +85,7 @@ export const scope = (
 		}
 		queue.push(...node.blocking);
 	}
-	if (missing.size > 0) return {_tag: "Incomplete", missing: [...missing].sort((a, b) => a - b)};
+	if (missing.size > 0) return { _tag: "Incomplete", missing: [...missing].sort((a, b) => a - b) };
 
 	const candidates = [...reached]
 		.filter(
@@ -104,9 +104,9 @@ export const scope = (
 		}
 		groups.push(membership.group);
 	}
-	if (missing.size > 0) return {_tag: "Incomplete", missing: [...missing].sort((a, b) => a - b)};
+	if (missing.size > 0) return { _tag: "Incomplete", missing: [...missing].sort((a, b) => a - b) };
 	const members = new Set(groups.flatMap(membersOf));
-	return {_tag: "Scoped", heads: groups.filter((group) => !members.has(group.head)), members};
+	return { _tag: "Scoped", heads: groups.filter((group) => !members.has(group.head)), members };
 };
 
 interface Select {
@@ -143,8 +143,8 @@ export const ORIGIN_OPTION: Readonly<Record<Origin, string>> = {
 };
 
 export type Resolved =
-	| {readonly _tag: "Resolved"; readonly fields: TableFields}
-	| {readonly _tag: "Missing"; readonly what: ReadonlyArray<string>};
+	| { readonly _tag: "Resolved"; readonly fields: TableFields }
+	| { readonly _tag: "Missing"; readonly what: ReadonlyArray<string> };
 
 /** The fields and options sync writes, or everything the project lacks of them. */
 export const tableFields = (project: ProjectSnapshot): Resolved => {
@@ -161,7 +161,7 @@ export const tableFields = (project: ProjectSnapshot): Resolved => {
 		for (const option of needs) {
 			if (!options.has(option)) lacking.push(`the ${name} option "${option}"`);
 		}
-		return {id: field.id, options};
+		return { id: field.id, options };
 	};
 	const number = (name: string): string | null => {
 		const field = find(name);
@@ -177,15 +177,15 @@ export const tableFields = (project: ProjectSnapshot): Resolved => {
 	const spent = number(FIELD.spent);
 	const asks = number(FIELD.asks);
 	if (stage === null || section === null || origin === null || spent === null || asks === null) {
-		return {_tag: "Missing", what: lacking};
+		return { _tag: "Missing", what: lacking };
 	}
 	return lacking.length > 0
-		? {_tag: "Missing", what: lacking}
-		: {_tag: "Resolved", fields: {stage, section, origin, spent, asks}};
+		? { _tag: "Missing", what: lacking }
+		: { _tag: "Resolved", fields: { stage, section, origin, spent, asks } };
 };
 
 export type Write =
-	| {readonly _tag: "Add"; readonly issue: number}
+	| { readonly _tag: "Add"; readonly issue: number }
 	| {
 			readonly _tag: "Set";
 			readonly issue: number;
@@ -215,7 +215,7 @@ export interface SyncPlan {
 }
 
 export interface SyncInput {
-	readonly scope: Extract<Scope, {_tag: "Scoped"}>;
+	readonly scope: Extract<Scope, { _tag: "Scoped" }>;
 	readonly rows: ReadonlyMap<number, Row>;
 	readonly graph: ReadonlyMap<number, SyncNode>;
 	/** Every lane record standing on each touched issue. */
@@ -276,14 +276,22 @@ const laneStage = (
 
 const planRow = (
 	row: Row,
-	role: {readonly _tag: "Head"; readonly group: Group} | {readonly _tag: "Member"},
+	role: { readonly _tag: "Head"; readonly group: Group } | { readonly _tag: "Member" },
 	input: SyncInput,
 ): ReadonlyArray<Write> => {
-	const {fields, records} = input;
+	const { fields, records } = input;
 	const writes: Write[] = [];
 	const own = records.get(row.issue) ?? [];
 	const set = (field: string, fieldId: string, value: FieldValue, shown: string) =>
-		writes.push({_tag: "Set", issue: row.issue, itemId: row.itemId, field, fieldId, value, shown});
+		writes.push({
+			_tag: "Set",
+			issue: row.issue,
+			itemId: row.itemId,
+			field,
+			fieldId,
+			value,
+			shown,
+		});
 
 	const currentStage = optionName(row, FIELD.stage);
 	const wantedStage = laneStage(own, input.merged);
@@ -294,7 +302,7 @@ const planRow = (
 		(currentStage === null || SYNC_OWNED.has(currentStage))
 	) {
 		const optionId = fields.stage.options.get(wantedStage) as string;
-		set(FIELD.stage, fields.stage.id, {_tag: "Option", optionId}, wantedStage);
+		set(FIELD.stage, fields.stage.id, { _tag: "Option", optionId }, wantedStage);
 		stage = wantedStage;
 	}
 
@@ -320,7 +328,7 @@ const planRow = (
 		(stage === null || SYNC_OWNED.has(stage))
 	) {
 		const optionId = fields.section.options.get(OUTSIDE_THE_BETS) as string;
-		set(FIELD.section, fields.section.id, {_tag: "Option", optionId}, OUTSIDE_THE_BETS);
+		set(FIELD.section, fields.section.id, { _tag: "Option", optionId }, OUTSIDE_THE_BETS);
 	}
 
 	if (isBet || counted.lanes > 0) {
@@ -329,7 +337,7 @@ const planRow = (
 			set(
 				FIELD.spent,
 				fields.spent,
-				{_tag: "Number", number: counted.spend.usd},
+				{ _tag: "Number", number: counted.spend.usd },
 				`$${counted.spend.usd}`,
 			);
 		}
@@ -343,7 +351,7 @@ const planRow = (
 			});
 		}
 		if (numberOf(row, FIELD.asks) !== counted.asks) {
-			set(FIELD.asks, fields.asks, {_tag: "Number", number: counted.asks}, String(counted.asks));
+			set(FIELD.asks, fields.asks, { _tag: "Number", number: counted.asks }, String(counted.asks));
 		}
 	}
 
@@ -352,7 +360,7 @@ const planRow = (
 		const wanted = ORIGIN_OPTION[latest.origin];
 		if (optionName(row, FIELD.origin) !== wanted) {
 			const optionId = fields.origin.options.get(wanted) as string;
-			set(FIELD.origin, fields.origin.id, {_tag: "Option", optionId}, wanted);
+			set(FIELD.origin, fields.origin.id, { _tag: "Option", optionId }, wanted);
 		}
 	}
 	return writes;
@@ -372,14 +380,14 @@ export const planSync = (input: SyncInput): SyncPlan => {
 			writes.push(...planRow(row, role, input));
 			return;
 		}
-		if (input.graph.get(issue)?.open === true) writes.push({_tag: "Add", issue});
-		else skipped.push({issue, reason: "closed and not on the table, so it is not added"});
+		if (input.graph.get(issue)?.open === true) writes.push({ _tag: "Add", issue });
+		else skipped.push({ issue, reason: "closed and not on the table, so it is not added" });
 	};
-	for (const group of input.scope.heads) touch(group.head, {_tag: "Head", group});
+	for (const group of input.scope.heads) touch(group.head, { _tag: "Head", group });
 	for (const member of [...input.scope.members].sort((a, b) => a - b)) {
-		touch(member, {_tag: "Member"});
+		touch(member, { _tag: "Member" });
 	}
-	return {writes, skipped};
+	return { writes, skipped };
 };
 
 export const describeWrite = (write: Write): string => {

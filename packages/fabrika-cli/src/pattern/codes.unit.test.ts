@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {allocatedCodes} from "../exit-code-alignment.ts";
+import { describe, expect, it } from "vitest";
+import { allocatedCodes } from "../exit-code-alignment.ts";
 import * as codes from "./codes.ts";
 
 /**

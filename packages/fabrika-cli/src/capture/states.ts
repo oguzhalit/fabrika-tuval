@@ -20,7 +20,7 @@
  * `auth` keeps naming the top-tier identity it named when it shipped, so every invocation already
  * written against it still means what it said.
  */
-import {parseSurfaceSpec} from "./plan.ts";
+import { parseSurfaceSpec } from "./plan.ts";
 
 /**
  * The authorship tiers a capture identity can render at — `preview-seed`'s `PREVIEW_TIERS`, which
@@ -41,9 +41,9 @@ export interface CaptureAudience {
  * audience each renders as. The two lists move together.
  */
 export const CAPTURE_IDENTITIES = {
-	yazar: {tier: "yazar", emailVerified: true},
-	çaylak: {tier: "çaylak", emailVerified: true},
-	"çaylak-unverified": {tier: "çaylak", emailVerified: false},
+	yazar: { tier: "yazar", emailVerified: true },
+	çaylak: { tier: "çaylak", emailVerified: true },
+	"çaylak-unverified": { tier: "çaylak", emailVerified: false },
 } as const satisfies Readonly<Record<string, CaptureAudience>>;
 export type CaptureIdentity = keyof typeof CAPTURE_IDENTITIES;
 

@@ -10,15 +10,15 @@
 
 /** A parse that landed, or the engine's own reason when the bytes were not JSON at all. */
 export type JsonParse =
-	| {readonly _tag: "Parsed"; readonly value: unknown}
-	| {readonly _tag: "Failed"; readonly reason: string};
+	| { readonly _tag: "Parsed"; readonly value: unknown }
+	| { readonly _tag: "Failed"; readonly reason: string };
 
 /** The parsed value, or why the bytes were not JSON — for a caller that reports the reason. */
 export const parseJsonOrReason = (text: string): JsonParse => {
 	try {
-		return {_tag: "Parsed", value: JSON.parse(text) as unknown};
+		return { _tag: "Parsed", value: JSON.parse(text) as unknown };
 	} catch (err) {
-		return {_tag: "Failed", reason: (err as Error).message};
+		return { _tag: "Failed", reason: (err as Error).message };
 	}
 };
 

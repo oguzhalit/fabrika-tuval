@@ -11,10 +11,10 @@
  * opened at all.
  */
 
-import {type ReadingValidator, readingValidators, renderReadingValidators} from "../entries.ts";
-import type {KeyGroup} from "../key-group.ts";
+import { type ReadingValidator, readingValidators, renderReadingValidators } from "../entries.ts";
+import type { KeyGroup } from "../key-group.ts";
 
-export type {Argv} from "../entries.ts";
+export type { Argv } from "../entries.ts";
 
 export const WORKFLOW_VALIDATORS = "workflowValidators";
 
@@ -38,14 +38,14 @@ export const workflowValidatorsKey: KeyGroup<ReadonlyArray<WorkflowValidator>> =
 				command: {
 					type: "array",
 					description: 'The argv to spawn — e.g. ["node", "tools/lint-workflows.js"].',
-					items: {type: "string"},
+					items: { type: "string" },
 					minItems: 1,
 				},
 				reads: {
 					type: "array",
 					description:
 						"The exact workflow files this command opens — what makes a passing run checkable per file.",
-					items: {type: "string", minLength: 1},
+					items: { type: "string", minLength: 1 },
 					minItems: 1,
 				},
 			},

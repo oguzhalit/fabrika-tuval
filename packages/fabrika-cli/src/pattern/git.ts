@@ -13,9 +13,9 @@
  * present path answers empty and reads as the *fact* of absence. It implies `--full-name`,
  * so the printed names stay root-relative and comparable to the paths asked about.
  */
-import {Effect} from "effect";
-import {execCapture} from "../io/exec.ts";
-import {type Attempt, fail, ok, type Shell} from "../io/git.ts";
+import { Effect } from "effect";
+import { execCapture } from "../io/exec.ts";
+import { type Attempt, fail, ok, type Shell } from "../io/git.ts";
 
 /** One commit, as this group reports it: the full object name and the author date. */
 export interface Commit {
@@ -31,7 +31,7 @@ const parseCommits = (stdout: string): ReadonlyArray<Commit> =>
 		.filter((line) => line !== "")
 		.flatMap((line) => {
 			const [sha, date] = line.split("\t");
-			return sha === undefined || date === undefined ? [] : [{sha, date}];
+			return sha === undefined || date === undefined ? [] : [{ sha, date }];
 		});
 
 /** The subset of `paths` present in the tree at `sha`. An empty input spawns nothing. */

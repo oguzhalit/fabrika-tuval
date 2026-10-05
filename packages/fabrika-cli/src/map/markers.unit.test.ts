@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	composeFindingMarker,
 	composeForkMarker,
@@ -36,33 +36,37 @@ describe("the outcome vocabulary", () => {
 describe.each([
 	[
 		"ticket",
-		composeTicketMarker({map: 9140, kind: "research", nonce: "7f3a9c21"}),
+		composeTicketMarker({ map: 9140, kind: "research", nonce: "7f3a9c21" }),
 		(body: string) => readTicketMarker(body),
-		{map: 9140, kind: "research", nonce: "7f3a9c21"},
+		{ map: 9140, kind: "research", nonce: "7f3a9c21" },
 	],
 	[
 		"lane",
-		composeLaneMarker({map: 9140, ticket: 9143, nonce: "7f3a9c21"}),
+		composeLaneMarker({ map: 9140, ticket: 9143, nonce: "7f3a9c21" }),
 		(body: string) => readLaneMarker(body),
-		{map: 9140, ticket: 9143, nonce: "7f3a9c21"},
+		{ map: 9140, ticket: 9143, nonce: "7f3a9c21" },
 	],
 	[
 		"finding",
-		composeFindingMarker({map: 9140, ticket: 9143, outcome: "no-evidence", nonce: "7f3a9c21"}),
+		composeFindingMarker({ map: 9140, ticket: 9143, outcome: "no-evidence", nonce: "7f3a9c21" }),
 		(body: string) => readFindingMarker(body),
-		{map: 9140, ticket: 9143, outcome: "no-evidence", nonce: "7f3a9c21"},
+		{ map: 9140, ticket: 9143, outcome: "no-evidence", nonce: "7f3a9c21" },
 	],
 	[
 		"fork",
-		composeForkMarker({map: 9140, ticket: 9144, route: "session", issue: 9301}),
+		composeForkMarker({ map: 9140, ticket: 9144, route: "session", issue: 9301 }),
 		(body: string) => readForkMarker(body),
-		{map: 9140, ticket: 9144, route: "session", issue: 9301},
+		{ map: 9140, ticket: 9144, route: "session", issue: 9301 },
 	],
 	[
 		"retired",
-		composeRetiredMarker({map: 9140, ticket: 9147, direction: "a decay curve nobody can predict"}),
+		composeRetiredMarker({
+			map: 9140,
+			ticket: 9147,
+			direction: "a decay curve nobody can predict",
+		}),
 		(body: string) => readRetiredMarker(body),
-		{map: 9140, ticket: 9147, direction: "a decay curve nobody can predict"},
+		{ map: 9140, ticket: 9147, direction: "a decay curve nobody can predict" },
 	],
 ])("the %s marker", (_name, composed, read, expected) => {
 	it("round-trips composed bytes back to its fields", () => {
@@ -95,7 +99,7 @@ describe("readTicketMarker", () => {
 
 describe("composeTicketMarker", () => {
 	it("throws rather than emitting bytes its own reader would refuse", () => {
-		expect(() => composeTicketMarker({map: 9140, kind: "research", nonce: "run-1"})).toThrow();
+		expect(() => composeTicketMarker({ map: 9140, kind: "research", nonce: "run-1" })).toThrow();
 	});
 });
 

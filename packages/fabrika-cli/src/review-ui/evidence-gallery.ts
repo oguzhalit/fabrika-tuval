@@ -12,7 +12,7 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9725#issuecomment-5800916149
  */
-import {split} from "../review/supersede.ts";
+import { split } from "../review/supersede.ts";
 
 export const HEADING = "## Evidence";
 
@@ -35,9 +35,9 @@ export interface Evidence {
 }
 
 export type GalleryRead =
-	| {readonly _tag: "Found"; readonly evidence: readonly [Evidence, ...Evidence[]]}
+	| { readonly _tag: "Found"; readonly evidence: readonly [Evidence, ...Evidence[]] }
 	/** Nothing a reader could open can be proven from these bytes. */
-	| {readonly _tag: "Unprovable"; readonly reason: string};
+	| { readonly _tag: "Unprovable"; readonly reason: string };
 
 const digestLine = (sha256: string): string => `<!-- fabrika:evidence sha256=${sha256} -->`;
 
@@ -71,7 +71,7 @@ export const read = (body: string): GalleryRead => {
 	const lines = split(body).live.replaceAll("\r\n", "\n").split("\n");
 	const start = lines.lastIndexOf(HEADING);
 	if (start === -1) {
-		return {_tag: "Unprovable", reason: "the verdict carries no evidence gallery"};
+		return { _tag: "Unprovable", reason: "the verdict carries no evidence gallery" };
 	}
 	const evidence: Evidence[] = [];
 	const section = lines.slice(start + 1);
@@ -86,10 +86,10 @@ export const read = (body: string): GalleryRead => {
 				reason: `${url} carries no sha256 line, so it cannot be held to the judged bytes`,
 			};
 		}
-		evidence.push({url, sha256: digest[1] ?? ""});
+		evidence.push({ url, sha256: digest[1] ?? "" });
 	}
 	const [first, ...rest] = evidence;
 	return first === undefined
-		? {_tag: "Unprovable", reason: "the evidence gallery embeds no hosted capture"}
-		: {_tag: "Found", evidence: [first, ...rest]};
+		? { _tag: "Unprovable", reason: "the evidence gallery embeds no hosted capture" }
+		: { _tag: "Found", evidence: [first, ...rest] };
 };

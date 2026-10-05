@@ -12,8 +12,8 @@
  * repos it does not control, so no name ships as a default.
  */
 
-import {trimmedStrings} from "../entries.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import { trimmedStrings } from "../entries.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const LEAK_NAMES = "leakNames";
 
@@ -24,7 +24,7 @@ export interface LeakNames {
 	readonly identifiers: ReadonlyArray<string>;
 }
 
-export const NO_LEAK_NAMES: LeakNames = {privateRepos: [], identifiers: []};
+export const NO_LEAK_NAMES: LeakNames = { privateRepos: [], identifiers: [] };
 
 /** One GitHub `owner/repo` slug: an owner login, one slash, a repository name that is not a dot path. */
 const SLUG = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\/(?!\.\.?$)[A-Za-z0-9._-]+$/;
@@ -44,19 +44,19 @@ const decodeList = (
 	expected: string,
 ): Decoded<ReadonlyArray<string>> => {
 	const raw = record[key];
-	if (raw === undefined) return {_tag: "Value", value: []};
+	if (raw === undefined) return { _tag: "Value", value: [] };
 	const values = trimmedStrings(raw);
 	return values === null
 		? {
 				_tag: "Malformed",
 				reason: `${named(key)} is not an array of non-empty strings — expected ${expected}`,
 			}
-		: {_tag: "Value", value: values};
+		: { _tag: "Value", value: values };
 };
 
 const decode = (raw: unknown): Decoded<LeakNames> => {
 	const record = asRecord(raw);
-	if (record === null) return {_tag: "Malformed", reason: `\`${LEAK_NAMES}\` is not an object`};
+	if (record === null) return { _tag: "Malformed", reason: `\`${LEAK_NAMES}\` is not an object` };
 	const stray = Object.keys(record).find((key) => !(KNOWN as ReadonlyArray<string>).includes(key));
 	if (stray !== undefined) {
 		return {
@@ -78,7 +78,10 @@ const decode = (raw: unknown): Decoded<LeakNames> => {
 	const identifiers = decodeList(record, "identifiers", "the strings to refuse");
 	if (identifiers._tag === "Malformed") return identifiers;
 
-	return {_tag: "Value", value: {privateRepos: privateRepos.value, identifiers: identifiers.value}};
+	return {
+		_tag: "Value",
+		value: { privateRepos: privateRepos.value, identifiers: identifiers.value },
+	};
 };
 
 export const leakNamesKey: KeyGroup<LeakNames> = {
@@ -94,13 +97,13 @@ export const leakNamesKey: KeyGroup<LeakNames> = {
 				type: "array",
 				description:
 					"`owner/repo` slugs of private repositories. The bare name may appear; a github.com link to the repo or an `owner/repo#N` reference refuses.",
-				items: {type: "string", pattern: SLUG.source},
+				items: { type: "string", pattern: SLUG.source },
 			},
 			identifiers: {
 				type: "array",
 				description:
 					"Other names — a handle, a person's name — whose every occurrence refuses, matched case-insensitively.",
-				items: {type: "string", minLength: 1},
+				items: { type: "string", minLength: 1 },
 			},
 		},
 		additionalProperties: false,

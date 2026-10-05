@@ -48,8 +48,8 @@ export interface ComponentEntry {
  * no phantom empty list a caller could misread as "clean, nothing to document".
  */
 export type InventoryResult =
-	| {readonly pass: true; readonly entries: ReadonlyArray<ComponentEntry>}
-	| {readonly pass: false; readonly reason: "zero-scope"};
+	| { readonly pass: true; readonly entries: ReadonlyArray<ComponentEntry> }
+	| { readonly pass: false; readonly reason: "zero-scope" };
 
 const normalizeWhitespace = (text: string): string => text.replace(/\s+/g, " ").trim();
 
@@ -85,25 +85,25 @@ export const extractJsdocBlocks = (content: string): ReadonlyArray<string> => {
  * subsequent non-`@` lines fold into it; a prose lead-in before the first tag is dropped.
  */
 const parseTags = (block: string): ReadonlyArray<JsdocTag> => {
-	const tags: Array<{tag: string; parts: Array<string>}> = [];
-	let current: {tag: string; parts: Array<string>} | undefined;
+	const tags: Array<{ tag: string; parts: Array<string> }> = [];
+	let current: { tag: string; parts: Array<string> } | undefined;
 	for (const line of block.split("\n")) {
 		const opener = /^@(\w+)\s*(.*)$/.exec(line);
 		if (opener) {
-			current = {tag: opener[1] ?? "", parts: [opener[2] ?? ""]};
+			current = { tag: opener[1] ?? "", parts: [opener[2] ?? ""] };
 			tags.push(current);
 			continue;
 		}
 		if (current) current.parts.push(line);
 	}
-	return tags.map((t) => ({tag: t.tag, value: t.parts.join("\n")}));
+	return tags.map((t) => ({ tag: t.tag, value: t.parts.join("\n") }));
 };
 
 /** Split a `@slot` value into its leading name token and the remaining description. */
 const parseSlot = (value: string): ComponentSlot => {
 	const trimmed = value.trim();
 	const space = trimmed.search(/\s/);
-	if (space === -1) return {name: trimmed, description: ""};
+	if (space === -1) return { name: trimmed, description: "" };
 	return {
 		name: trimmed.slice(0, space),
 		description: normalizeWhitespace(trimmed.slice(space + 1)),
@@ -146,8 +146,8 @@ export const buildInventory = (files: ReadonlyArray<SourceFile>): InventoryResul
 		.flatMap(extractFromFile)
 		.slice()
 		.sort((a, b) => a.component.localeCompare(b.component) || a.source.localeCompare(b.source));
-	if (entries.length === 0) return {pass: false, reason: "zero-scope"};
-	return {pass: true, entries};
+	if (entries.length === 0) return { pass: false, reason: "zero-scope" };
+	return { pass: true, entries };
 };
 
 const normalizeRelPath = (relPath: string): string =>

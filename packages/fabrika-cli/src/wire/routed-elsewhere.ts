@@ -39,8 +39,8 @@
  * other.
  */
 
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
-import {absent, firstNonBlankLine, malformed, payloadOf, reachesFor} from "./grill-marker.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
+import { absent, firstNonBlankLine, malformed, payloadOf, reachesFor } from "./grill-marker.ts";
 import {
 	CLAUSE_SEPARATOR,
 	type Clause,
@@ -55,8 +55,8 @@ import {
 	takeToken,
 } from "./marker-line.ts";
 
-export type {Clause, HeadSha} from "./marker-line.ts";
-export {clause, headSha} from "./marker-line.ts";
+export type { Clause, HeadSha } from "./marker-line.ts";
+export { clause, headSha } from "./marker-line.ts";
 
 /** The key that names these bytes. Never widened — a second meaning would need a second format. */
 export const KEY = "routed-elsewhere";
@@ -124,7 +124,7 @@ export const read = (artifact: string): RoutedElsewhereRead => {
 	const evidence = `first line: "${line}"`;
 	const payload = payloadOf(line, KEY);
 
-	const {token: namespaceToken, after: afterNamespace} = takeToken(payload);
+	const { token: namespaceToken, after: afterNamespace } = takeToken(payload);
 	if (namespaceToken === "") {
 		return malformed(`"${KEY}:" names no namespace — a record resolves one gate`, evidence);
 	}
@@ -140,7 +140,7 @@ export const read = (artifact: string): RoutedElsewhereRead => {
 			evidence,
 		);
 	}
-	const {token: shaToken, after: afterSha} = takeToken(bound.slice(1));
+	const { token: shaToken, after: afterSha } = takeToken(bound.slice(1));
 	const sha = shaToken === "" ? null : headSha(shaToken);
 	if (sha === null) {
 		return malformed(
@@ -149,7 +149,7 @@ export const read = (artifact: string): RoutedElsewhereRead => {
 		);
 	}
 
-	const {token: basisToken, after: afterBasis} = takeToken(afterSha);
+	const { token: basisToken, after: afterBasis } = takeToken(afterSha);
 	let basis: RouteBasis | undefined;
 	let rest = afterSha;
 	if (basisToken.toLowerCase().startsWith(BASIS_PREFIX)) {
@@ -175,7 +175,9 @@ export const read = (artifact: string): RoutedElsewhereRead => {
 	return {
 		_tag: "Found",
 		value:
-			basis === undefined ? {namespace, sha, clause: text} : {namespace, sha, clause: text, basis},
+			basis === undefined
+				? { namespace, sha, clause: text }
+				: { namespace, sha, clause: text, basis },
 	};
 };
 
@@ -194,7 +196,7 @@ export const readNamespaced = (artifact: string, namespace: string): RoutedElsew
 };
 
 /** Compose the record's first line. Round-trips through {@link read}. */
-export const emit = ({namespace, sha, clause: text, basis}: RoutedElsewhere): string =>
+export const emit = ({ namespace, sha, clause: text, basis }: RoutedElsewhere): string =>
 	`${KEY}: ${namespace} @ ${sha}${basis === undefined ? "" : ` ${BASIS_PREFIX}${basis}`} ${CLAUSE_SEPARATOR} ${text}\n`;
 
 export const renderRecord = (record: RoutedElsewhere): NonEmptyReadonlyArray<string> => [
@@ -205,8 +207,8 @@ export const renderRecord = (record: RoutedElsewhere): NonEmptyReadonlyArray<str
 ];
 
 export type RoutedElsewhereFields =
-	| {readonly _tag: "Fields"; readonly record: RoutedElsewhere}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly record: RoutedElsewhere }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 /** `<key>: <value>` or `<key><TAB><value>`, so `wire read`'s own output pipes back into `wire emit`. */
 const FIELD_LINE = /^([A-Za-z-]+)[ \t]*[:\t][ \t]*(.*)$/;
@@ -240,7 +242,7 @@ export const parseFields = (fields: string): RoutedElsewhereFields => {
 
 	const namespace = (seen.get("namespace") ?? "").trim().toLowerCase();
 	if (!isGateNamespace(namespace)) {
-		return {_tag: "Unusable", reason: `"${namespace}" is not a ${NAMESPACE_PHRASE} namespace`};
+		return { _tag: "Unusable", reason: `"${namespace}" is not a ${NAMESPACE_PHRASE} namespace` };
 	}
 	const sha = headSha(seen.get("sha") ?? "");
 	if (sha === null) {
@@ -251,10 +253,10 @@ export const parseFields = (fields: string): RoutedElsewhereFields => {
 	}
 	const text = clause(seen.get("clause") ?? "");
 	if (text === null) {
-		return {_tag: "Unusable", reason: "the trailing clause is blank"};
+		return { _tag: "Unusable", reason: "the trailing clause is blank" };
 	}
 	const declared = seen.get("basis");
-	if (declared === undefined) return {_tag: "Fields", record: {namespace, sha, clause: text}};
+	if (declared === undefined) return { _tag: "Fields", record: { namespace, sha, clause: text } };
 	const basis = routeBasis(declared.trim().toLowerCase());
 	if (basis === null) {
 		return {
@@ -262,19 +264,19 @@ export const parseFields = (fields: string): RoutedElsewhereFields => {
 			reason: `"${declared}" is not a basis — expected ${ROUTE_BASES.join(" or ")}`,
 		};
 	}
-	return {_tag: "Fields", record: {namespace, sha, clause: text, basis}};
+	return { _tag: "Fields", record: { namespace, sha, clause: text, basis } };
 };
 
 /** The registry row's byte-level `emit`, bound to this module's typed core. */
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.record)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.record) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderRecord(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderRecord(result.value) } : result;
 };

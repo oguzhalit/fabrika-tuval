@@ -1,6 +1,6 @@
-import type {LaneShell} from "../wire/lane-brief.ts";
-import type {LogEntry} from "./fold.ts";
-import {bareEvent} from "./machine.ts";
+import type { LaneShell } from "../wire/lane-brief.ts";
+import type { LogEntry } from "./fold.ts";
+import { bareEvent } from "./machine.ts";
 
 export const CODEX_ROLE_SKILLS: Readonly<Record<LaneShell, ReadonlyArray<string>>> = {
 	builder: ["build"],

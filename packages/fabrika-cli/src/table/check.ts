@@ -19,17 +19,17 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9821
  */
 
-import {type EvidenceSource, OUTSIDE_THE_BETS, type TableSettings} from "../config/keys/table.ts";
-import {readPitch} from "../guard/pitch.ts";
-import type {ChildOutcome} from "../io/exec.ts";
-import type {TimelineFacts} from "../io/issues.ts";
-import {typeLabel} from "../triage/facets.ts";
-import type {LaneRecord} from "../wire/lane-record.ts";
-import {type CheckRow, plainWordsOf} from "./agenda.ts";
-import {type HeadRow, weekLanes} from "./flags.ts";
-import {type Group, issuesOf} from "./group.ts";
-import {isLanded} from "./health.ts";
-import {ORIGIN_OPTION} from "./sync.ts";
+import { type EvidenceSource, OUTSIDE_THE_BETS, type TableSettings } from "../config/keys/table.ts";
+import { readPitch } from "../guard/pitch.ts";
+import type { ChildOutcome } from "../io/exec.ts";
+import type { TimelineFacts } from "../io/issues.ts";
+import { typeLabel } from "../triage/facets.ts";
+import type { LaneRecord } from "../wire/lane-record.ts";
+import { type CheckRow, plainWordsOf } from "./agenda.ts";
+import { type HeadRow, weekLanes } from "./flags.ts";
+import { type Group, issuesOf } from "./group.ts";
+import { isLanded } from "./health.ts";
+import { ORIGIN_OPTION } from "./sync.ts";
 
 export const SHIPPED_STAGE = "shipped";
 
@@ -56,7 +56,7 @@ export const dueChecks = (
 			if (stage?.name !== SHIPPED_STAGE || !isBet(row)) return [];
 			const shipped = Date.parse(stage.setAt);
 			return shipped + delayDays * DAY_MS <= now.getTime()
-				? [{group: row.group, shippedAt: stage.setAt}]
+				? [{ group: row.group, shippedAt: stage.setAt }]
 				: [];
 		})
 		.sort((a, b) => a.group.head - b.group.head);
@@ -124,7 +124,7 @@ export const signalsOf = (input: SignalsInput): Signals => {
 		for (const ref of input.prTimelines.get(pr)?.references ?? []) {
 			if (ref.isPullRequest) {
 				if (REVERT_TITLE.test(ref.title)) {
-					reverts.set(ref.number, {number: ref.number, title: ref.title, merged: ref.merged});
+					reverts.set(ref.number, { number: ref.number, title: ref.title, merged: ref.merged });
 				}
 				continue;
 			}
@@ -140,7 +140,7 @@ export const signalsOf = (input: SignalsInput): Signals => {
 	const reopened = [...own].filter((issue) =>
 		(input.issueTimelines.get(issue)?.reopenedAt ?? []).some((at) => Date.parse(at) >= since),
 	);
-	const ascending = <A extends {readonly number: number}>(entries: Iterable<A>) =>
+	const ascending = <A extends { readonly number: number }>(entries: Iterable<A>) =>
 		[...entries].sort((a, b) => a.number - b.number);
 	return {
 		prs: input.prs,
@@ -221,7 +221,7 @@ export type SourceResult =
 			readonly text: string;
 			readonly truncated: boolean;
 	  }
-	| {readonly _tag: "Failed"; readonly name: string; readonly reason: string};
+	| { readonly _tag: "Failed"; readonly name: string; readonly reason: string };
 
 /** The bytes of stdout and of stderr prep keeps from one source. */
 export const SOURCE_CAPTURE_BYTES = 4000;
@@ -235,12 +235,12 @@ const firstLine = (text: string): string =>
 		?.trim() ?? "";
 
 export const sourceResultOf = (source: EvidenceSource, outcome: ChildOutcome): SourceResult => {
-	const {name} = source;
+	const { name } = source;
 	if (outcome._tag === "Unstartable") {
-		return {_tag: "Failed", name, reason: `could not start: ${outcome.reason}`};
+		return { _tag: "Failed", name, reason: `could not start: ${outcome.reason}` };
 	}
 	if (outcome.timedOut) {
-		return {_tag: "Failed", name, reason: `timed out after ${source.timeoutSeconds}s`};
+		return { _tag: "Failed", name, reason: `timed out after ${source.timeoutSeconds}s` };
 	}
 	if (outcome.exitCode !== 0) {
 		const said = firstLine(decoded(outcome.stderr));
@@ -250,7 +250,7 @@ export const sourceResultOf = (source: EvidenceSource, outcome: ChildOutcome): S
 			reason: `exited ${outcome.exitCode}${said === "" ? "" : `: ${said}`}`,
 		};
 	}
-	return {_tag: "Output", name, text: decoded(outcome.stdout), truncated: outcome.truncated};
+	return { _tag: "Output", name, text: decoded(outcome.stdout), truncated: outcome.truncated };
 };
 
 /** The environment variables a source is told which check it is running for. */
@@ -403,7 +403,7 @@ const clipped = (text: string, most: number): string =>
 
 /** The Rec a check row reads: the question, the Success line, and the signals as counts. */
 export const checkRec = (evidence: Evidence): string => {
-	const {signals} = evidence;
+	const { signals } = evidence;
 	const bugs = signals.mentions.filter((one) => one.bug).length;
 	const counts = [
 		`${plural(signals.mentions.length, "new issue")}${bugs > 0 ? ` (${bugs} bug${bugs === 1 ? "" : "s"})` : ""}`,
@@ -421,7 +421,7 @@ export const checkRec = (evidence: Evidence): string => {
 /** The cells prep writes on a check row. */
 export const checkRowOf = (
 	evidence: Evidence,
-	issue: {readonly title: string; readonly body: string},
+	issue: { readonly title: string; readonly body: string },
 	settings: TableSettings,
 ): CheckRow => ({
 	issue: evidence.issue,

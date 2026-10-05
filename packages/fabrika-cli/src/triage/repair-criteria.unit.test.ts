@@ -1,8 +1,8 @@
-import {describe, expect, it} from "vitest";
-import {read} from "../wire/acceptance-criteria.ts";
-import {renderMarker, SUMMARY_LINE} from "./enrich.ts";
-import {legacyPreserved} from "./enrich-legacy.ts";
-import {disclosureComment, planRepair, splitAuthored} from "./repair-criteria.ts";
+import { describe, expect, it } from "vitest";
+import { read } from "../wire/acceptance-criteria.ts";
+import { renderMarker, SUMMARY_LINE } from "./enrich.ts";
+import { legacyPreserved } from "./enrich-legacy.ts";
+import { disclosureComment, planRepair, splitAuthored } from "./repair-criteria.ts";
 
 const ITEMS = "- [ ] The verb repairs one issue\n- [x] The reader stays at level 3";
 
@@ -20,7 +20,7 @@ describe("planRepair — the mechanical repair", () => {
 		expect(result._tag).toBe("Repaired");
 		if (result._tag !== "Repaired") return;
 		expect(result.body).toBe(enveloped(`Intro.\n\n### Acceptance criteria\n\n${ITEMS}`));
-		expect(result.repairs).toEqual([{_tag: "HeadingLevel", line: 3, fromLevel: 2}]);
+		expect(result.repairs).toEqual([{ _tag: "HeadingLevel", line: 3, fromLevel: 2 }]);
 	});
 
 	it("leaves the preserved original's `##` heading and the marker byte for byte", () => {
@@ -41,7 +41,7 @@ describe("planRepair — the mechanical repair", () => {
 		const back = read(result.body);
 		expect(back._tag).toBe("Found");
 		if (back._tag !== "Found") return;
-		expect(back.value.map(({text, checked}) => [text, checked])).toEqual([
+		expect(back.value.map(({ text, checked }) => [text, checked])).toEqual([
 			["The verb repairs one issue", false],
 			["The reader stays at level 3", true],
 		]);
@@ -52,7 +52,7 @@ describe("planRepair — the mechanical repair", () => {
 		const result = plan(enveloped(`#### Acceptance criteria\n\n${ITEMS}`));
 		expect(result._tag).toBe("Repaired");
 		if (result._tag !== "Repaired") return;
-		expect(result.repairs).toEqual([{_tag: "HeadingLevel", line: 1, fromLevel: 4}]);
+		expect(result.repairs).toEqual([{ _tag: "HeadingLevel", line: 1, fromLevel: 4 }]);
 	});
 
 	it("answers AlreadyConforming on a level-3 body, touching nothing", () => {
@@ -121,7 +121,7 @@ describe("planRepair — the bullet conversion (#6001)", () => {
 		expect(result._tag).toBe("Repaired");
 		if (result._tag !== "Repaired") return;
 		expect(result.body).toBe(enveloped(`Intro.\n\n### Acceptance criteria\n\n${CHECKED}`));
-		expect(result.repairs).toEqual([{_tag: "BulletItems", lines: [5, 6], family: "bullet"}]);
+		expect(result.repairs).toEqual([{ _tag: "BulletItems", lines: [5, 6], family: "bullet" }]);
 	});
 
 	it("leaves each item's text byte for byte — only the marker is added", () => {
@@ -138,7 +138,7 @@ describe("planRepair — the bullet conversion (#6001)", () => {
 		expect(result._tag).toBe("Repaired");
 		if (result._tag !== "Repaired") return;
 		expect(result.body).toContain("- [ ] The verb repairs\n  one wrapped criterion");
-		expect(result.criteria.map(({text}) => text)).toEqual([
+		expect(result.criteria.map(({ text }) => text)).toEqual([
 			"The verb repairs one wrapped criterion",
 		]);
 	});
@@ -148,7 +148,7 @@ describe("planRepair — the bullet conversion (#6001)", () => {
 		expect(result._tag).toBe("Repaired");
 		if (result._tag !== "Repaired") return;
 		expect(result.body).toBe(enveloped(`### Acceptance criteria\n\n${CHECKED}`));
-		expect(result.repairs.map(({_tag}) => _tag)).toEqual(["HeadingLevel", "BulletItems"]);
+		expect(result.repairs.map(({ _tag }) => _tag)).toEqual(["HeadingLevel", "BulletItems"]);
 	});
 
 	it("round-trips through `read`: every bullet becomes an open criterion, none checked", () => {
@@ -159,8 +159,8 @@ describe("planRepair — the bullet conversion (#6001)", () => {
 		expect(back._tag).toBe("Found");
 		if (back._tag !== "Found") return;
 		expect(back.value).toEqual([
-			{text: "The verb repairs one issue", checked: false, evidence: null},
-			{text: "The reader stays at level 3", checked: false, evidence: null},
+			{ text: "The verb repairs one issue", checked: false, evidence: null },
+			{ text: "The reader stays at level 3", checked: false, evidence: null },
 		]);
 		expect(back.value).toEqual(result.criteria);
 	});
@@ -178,7 +178,7 @@ describe("planRepair — the bullet conversion (#6001)", () => {
 		const result = plan(enveloped("## Acceptance criteria\n\n- a bullet\n- [ ] a real one"));
 		expect(result._tag).toBe("Repaired");
 		if (result._tag !== "Repaired") return;
-		expect(result.repairs.map(({_tag}) => _tag)).toEqual(["HeadingLevel"]);
+		expect(result.repairs.map(({ _tag }) => _tag)).toEqual(["HeadingLevel"]);
 		expect(result.body).toContain("- a bullet\n- [ ] a real one");
 	});
 
@@ -244,7 +244,7 @@ describe("planRepair — the bullet conversion (#6001)", () => {
 		);
 		expect(result._tag).toBe("Repaired");
 		if (result._tag !== "Repaired") return;
-		expect(result.criteria.map(({text}) => text)).toEqual(["one item wrapped on", "a third"]);
+		expect(result.criteria.map(({ text }) => text)).toEqual(["one item wrapped on", "a third"]);
 	});
 
 	it("refuses a mixed-marker block: the `+` item converts and the reader counts no criterion there", () => {
@@ -271,7 +271,11 @@ describe("planRepair — the bullet conversion (#6001)", () => {
 		);
 		expect(result._tag).toBe("Repaired");
 		if (result._tag !== "Repaired") return;
-		expect(result.criteria.map(({text}) => text)).toEqual(["top item", "nested detail", "second"]);
+		expect(result.criteria.map(({ text }) => text)).toEqual([
+			"top item",
+			"nested detail",
+			"second",
+		]);
 	});
 
 	it("still refuses a drifted heading TEXT over plain bullets — the widening swallows nothing", () => {
@@ -302,7 +306,7 @@ describe("planRepair — the ordered-item conversion (#5981)", () => {
 		expect(result.body).toContain("- [ ] `review-ui post` keys the upsert on the head,");
 		expect(result.body).toContain("- [ ] Both carriers are keyed on the head.");
 		expect(result.body).not.toContain("\n1. ");
-		expect(result.repairs).toEqual([{_tag: "BulletItems", lines: [3, 5, 6], family: "ordered"}]);
+		expect(result.repairs).toEqual([{ _tag: "BulletItems", lines: [3, 5, 6], family: "ordered" }]);
 		expect(result.criteria.map((c) => c.text)).toEqual([
 			"`review-ui post` keys the upsert on the head, compared prefix-tolerantly.",
 			"Both carriers are keyed on the head.",
@@ -322,8 +326,8 @@ describe("planRepair — the ordered-item conversion (#5981)", () => {
 		expect(result._tag).toBe("Repaired");
 		if (result._tag !== "Repaired") return;
 		expect(result.repairs).toEqual([
-			{_tag: "HeadingLevel", line: 1, fromLevel: 2},
-			{_tag: "BulletItems", lines: [3, 4], family: "ordered"},
+			{ _tag: "HeadingLevel", line: 1, fromLevel: 2 },
+			{ _tag: "BulletItems", lines: [3, 4], family: "ordered" },
 		]);
 		expect(read(result.body)._tag).toBe("Found");
 	});
@@ -352,21 +356,21 @@ describe("disclosureComment — the only record an in-place body edit leaves", (
 describe("splitAuthored — the boundary is the marker `triage enrich` writes", () => {
 	it("splits at this issue's marker, marker included in the preserved half", () => {
 		const body = enveloped("authored");
-		const {authored, preserved} = splitAuthored(body, 5744, legacyPreserved);
+		const { authored, preserved } = splitAuthored(body, 5744, legacyPreserved);
 		expect(authored + preserved).toBe(body);
 		expect(preserved.startsWith(renderMarker(5744, "rewrite"))).toBe(true);
 	});
 
 	it("reads a marker bound to ANOTHER issue as authored end to end — a paste, not an envelope", () => {
 		const body = enveloped("authored", 4290);
-		const {authored, preserved} = splitAuthored(body, 5744, legacyPreserved);
+		const { authored, preserved } = splitAuthored(body, 5744, legacyPreserved);
 		expect(authored).toBe(body);
 		expect(preserved).toBe("");
 	});
 
 	it("recognises a pre-marker v1 envelope through the injected legacy recogniser", () => {
 		const body = `authored\n\n---\n\n${preservedBlock}`;
-		const {authored, preserved} = splitAuthored(body, 5744, legacyPreserved);
+		const { authored, preserved } = splitAuthored(body, 5744, legacyPreserved);
 		expect(preserved).toBe(preservedBlock);
 		expect(authored + preserved).toBe(body);
 	});

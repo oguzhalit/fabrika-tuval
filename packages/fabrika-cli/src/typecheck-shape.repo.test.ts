@@ -10,9 +10,9 @@
  *
  * It reads the live manifests rather than a fixture: the invariant is about the files that ship.
  */
-import {readdirSync, readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
+import { readdirSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 
@@ -36,7 +36,7 @@ interface Manifest {
 const readManifests = (): ReadonlyArray<Manifest> => {
 	const found: Manifest[] = [];
 	for (const root of MEMBER_ROOTS) {
-		for (const entry of readdirSync(`${REPO_ROOT}${root}`, {withFileTypes: true})) {
+		for (const entry of readdirSync(`${REPO_ROOT}${root}`, { withFileTypes: true })) {
 			if (!entry.isDirectory()) continue;
 			const rel = `${root}/${entry.name}/package.json`;
 			let text: string;
@@ -65,7 +65,7 @@ interface Typechecker extends Manifest {
 const typecheckers = (): ReadonlyArray<Typechecker> =>
 	readManifests().flatMap((m) => {
 		const typecheck = m.scripts.typecheck;
-		return typeof typecheck === "string" ? [{...m, typecheck}] : [];
+		return typeof typecheck === "string" ? [{ ...m, typecheck }] : [];
 	});
 
 describe("every workspace package's typecheck runs the Effect diagnostics step", () => {

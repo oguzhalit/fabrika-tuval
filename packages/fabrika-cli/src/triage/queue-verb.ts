@@ -15,8 +15,8 @@
  * set, which is `./provenance.ts`'s job. `triage provenance` answers the question that field
  * pretends to.
  */
-import {Effect} from "effect";
-import type {BoardRead} from "../config/resolve-board.ts";
+import { Effect } from "effect";
+import type { BoardRead } from "../config/resolve-board.ts";
 import {
 	listLabels,
 	openQueueIssues,
@@ -24,10 +24,10 @@ import {
 	type QueueIssue,
 	resolveRepo,
 } from "../io/issues.ts";
-import {missingLabelRemedy} from "../status/label-remedy.ts";
-import {answer, FAILED, refuse} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {scannedLine} from "./scope.ts";
+import { missingLabelRemedy } from "../status/label-remedy.ts";
+import { answer, FAILED, refuse } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { scannedLine } from "./scope.ts";
 
 export const DEFAULT_QUEUE_LABEL = "status:needs-triage";
 export const DEFAULT_QUEUE_LIMIT = 100;
@@ -103,7 +103,7 @@ export const labelPrecondition = Effect.fn("labelPrecondition")(function* (
 });
 
 export const runQueue = Effect.fn("runQueue")(function* (options: QueueOptions) {
-	const {label, limit, json} = options;
+	const { label, limit, json } = options;
 
 	if (limit < 1) return refuse(FAILED, "triage queue: --limit must be 1 or greater.");
 

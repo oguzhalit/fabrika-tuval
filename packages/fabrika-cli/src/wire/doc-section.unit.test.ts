@@ -5,13 +5,13 @@
  * end-of-document section closing without a terminator. The adapter tier below asserts the codes
  * those answers are seated on, distinct from an artifact that was never seen (`./codes.ts`).
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {StdinRead} from "../io/stdin.ts";
-import {ANSWER} from "../verb.ts";
-import {ABSENT, ARTIFACT_UNKNOWN, EMPTY_ARTIFACT, MALFORMED} from "./codes.ts";
-import {extractSection} from "./doc-section.ts";
-import {runDocSection} from "./doc-section-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { StdinRead } from "../io/stdin.ts";
+import { ANSWER } from "../verb.ts";
+import { ABSENT, ARTIFACT_UNKNOWN, EMPTY_ARTIFACT, MALFORMED } from "./codes.ts";
+import { extractSection } from "./doc-section.ts";
+import { runDocSection } from "./doc-section-verb.ts";
 
 const DOC = [
 	"# contract",
@@ -37,7 +37,7 @@ describe("extractSection", () => {
 		expect(result).toEqual({
 			_tag: "Found",
 			body: "`won` prints your token.\n\n### exit codes\n\n20 means out of focus.",
-			heading: {level: 2, line: 5},
+			heading: { level: 2, line: 5 },
 		});
 	});
 
@@ -53,7 +53,7 @@ describe("extractSection", () => {
 		expect(result).toEqual({
 			_tag: "Found",
 			body: "re-confirm before every mutation.",
-			heading: {level: 2, line: 13},
+			heading: { level: 2, line: 13 },
 		});
 	});
 
@@ -109,9 +109,9 @@ describe("extractSection", () => {
 	});
 });
 
-const piped = (text: string): Effect.Effect<StdinRead> => Effect.succeed({_tag: "Text", text});
+const piped = (text: string): Effect.Effect<StdinRead> => Effect.succeed({ _tag: "Text", text });
 const run = (source: Effect.Effect<StdinRead>, heading = "build claim", json = false) =>
-	Effect.runPromise(runDocSection({heading, json, source}));
+	Effect.runPromise(runDocSection({ heading, json, source }));
 
 describe("wire doc-section", () => {
 	it("answers the section body on stdout, exit 0", async () => {
@@ -138,7 +138,7 @@ describe("wire doc-section", () => {
 		const duplicated = await run(piped("## twice\n\none.\n\n## twice\n\ntwo.\n"), "twice");
 		const empty = await run(piped("   \n"));
 		const unseen = await run(
-			Effect.succeed({_tag: "Failed", reason: "EAGAIN with no data for 30000ms"}),
+			Effect.succeed({ _tag: "Failed", reason: "EAGAIN with no data for 30000ms" }),
 		);
 		expect(absent.code).toBe(ABSENT);
 		expect(duplicated.code).toBe(MALFORMED);

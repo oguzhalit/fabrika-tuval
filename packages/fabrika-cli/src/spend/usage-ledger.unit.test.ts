@@ -1,20 +1,20 @@
-import {mkdtempSync, readFileSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
-import {NodeServices} from "@effect/platform-node";
-import {Effect, Result} from "effect";
-import {afterEach, expect, it} from "vitest";
-import {encodeSpendRows} from "./ledger.ts";
-import {readUsageLedger, recordUsage} from "./usage-ledger.ts";
-import type {Measurement, UsageRecord} from "./usage-record.ts";
-import {parseUsageRecord} from "./usage-record.ts";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { Effect, Result } from "effect";
+import { afterEach, expect, it } from "vitest";
+import { encodeSpendRows } from "./ledger.ts";
+import { readUsageLedger, recordUsage } from "./usage-ledger.ts";
+import type { Measurement, UsageRecord } from "./usage-record.ts";
+import { parseUsageRecord } from "./usage-record.ts";
 
 const fixture: typeof Measurement.Type = JSON.parse(
 	readFileSync(new URL("./fixtures/attributed/codex.json", import.meta.url), "utf8"),
 );
 const dirs: string[] = [];
 afterEach(() => {
-	for (const dir of dirs.splice(0)) rmSync(dir, {recursive: true, force: true});
+	for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 const ledger = () => {
 	const dir = mkdtempSync(join(tmpdir(), "usage-ledger-"));
@@ -28,22 +28,22 @@ it("serializes competing recorders and heals an interrupted append without losin
 	const path = ledger();
 	writeFileSync(path, '{"v":2,"kind":');
 	const results = await Promise.all(
-		Array.from({length: 20}, () => live(recordUsage(path, fixture))),
+		Array.from({ length: 20 }, () => live(recordUsage(path, fixture))),
 	);
 	expect(results.filter((row) => row.status === "recorded")).toHaveLength(1);
 	expect(results.filter((row) => row.status === "duplicate")).toHaveLength(19);
 	const read = readUsageLedger(readFileSync(path, "utf8"));
 	expect(read.records).toEqual([fixture]);
 	expect(read.diagnostics.malformed).toBe(1);
-	expect(await live(recordUsage(path, fixture))).toEqual({status: "duplicate"});
+	expect(await live(recordUsage(path, fixture))).toEqual({ status: "duplicate" });
 });
 
 it("deduplicates copied history and keeps a genuine attempt separate", async () => {
 	const path = ledger();
 	expect((await live(recordUsage(path, fixture))).status).toBe("recorded");
-	const copy = {...fixture, recordId: "copied-parent-history"};
+	const copy = { ...fixture, recordId: "copied-parent-history" };
 	expect((await live(recordUsage(path, copy))).status).toBe("duplicate");
-	const retry = {...fixture, work: {...fixture.work, attempt: "attempt-2"}};
+	const retry = { ...fixture, work: { ...fixture.work, attempt: "attempt-2" } };
 	expect((await live(recordUsage(path, retry))).status).toBe("recorded");
 	expect(readUsageLedger(readFileSync(path, "utf8")).records).toHaveLength(2);
 });
@@ -53,9 +53,9 @@ it("preserves cumulative counters separately from response deltas and model chan
 	const cumulative: UsageRecord = {
 		...fixture,
 		recordId: "snapshot",
-		basis: {kind: "cumulative", snapshot: "snapshot-1", scope: "session"},
+		basis: { kind: "cumulative", snapshot: "snapshot-1", scope: "session" },
 	};
-	const changed: UsageRecord = {...fixture, response: "resp-2", model: "another-model"};
+	const changed: UsageRecord = { ...fixture, response: "resp-2", model: "another-model" };
 	for (const row of [fixture, cumulative, changed])
 		expect((await live(recordUsage(path, row))).status).toBe("recorded");
 	expect(readUsageLedger(readFileSync(path, "utf8")).records).toEqual([
@@ -69,11 +69,11 @@ it("treats reordered snapshot fields as the same record", async () => {
 	const path = ledger();
 	const first: UsageRecord = {
 		...fixture,
-		basis: {kind: "cumulative", snapshot: "snap-1", scope: "turn"},
+		basis: { kind: "cumulative", snapshot: "snap-1", scope: "turn" },
 	};
 	const reordered: UsageRecord = {
 		...fixture,
-		basis: {scope: "turn", snapshot: "snap-1", kind: "cumulative"},
+		basis: { scope: "turn", snapshot: "snap-1", kind: "cumulative" },
 	};
 	expect((await live(recordUsage(path, first))).status).toBe("recorded");
 	expect((await live(recordUsage(path, reordered))).status).toBe("duplicate");
@@ -84,10 +84,10 @@ it("keeps unknown identities at their known run without claiming cross-record de
 	const unknown: UsageRecord = {
 		...fixture,
 		response: null,
-		work: {...fixture.work, issue: null, attempt: null},
-		agent: {...fixture.agent, session: null, parent: {kind: "unknown"}},
+		work: { ...fixture.work, issue: null, attempt: null },
+		agent: { ...fixture.agent, session: null, parent: { kind: "unknown" } },
 	};
-	for (const row of [unknown, {...unknown, recordId: "unknown-2"}])
+	for (const row of [unknown, { ...unknown, recordId: "unknown-2" }])
 		expect((await live(recordUsage(path, row))).status).toBe("recorded");
 	expect((await live(recordUsage(path, unknown))).status).toBe("duplicate");
 	const records = readUsageLedger(readFileSync(path, "utf8")).records;
@@ -98,7 +98,7 @@ it("keeps unknown identities at their known run without claiming cross-record de
 it("refuses a conflicting repeated identity without replacing the earlier measurement", async () => {
 	const path = ledger();
 	await live(recordUsage(path, fixture));
-	expect((await live(recordUsage(path, {...fixture, model: "conflicting-model"}))).status).toBe(
+	expect((await live(recordUsage(path, { ...fixture, model: "conflicting-model" }))).status).toBe(
 		"failed",
 	);
 	expect(readUsageLedger(readFileSync(path, "utf8")).records).toEqual([fixture]);
@@ -114,13 +114,13 @@ it("reads legacy rows beside attributed records and distinguishes corruption fro
 		sessionId: "old-session",
 		cliVersion: null,
 		recordedAt: "2026-08-01T00:00:00Z",
-		spend: {_tag: "TranscriptMissing" as const},
+		spend: { _tag: "TranscriptMissing" as const },
 	};
-	const text = `${encodeSpendRows([legacy])}${JSON.stringify(fixture)}\n${JSON.stringify({...fixture, v: 3})}\n{"v":2}\ntruncated`;
+	const text = `${encodeSpendRows([legacy])}${JSON.stringify(fixture)}\n${JSON.stringify({ ...fixture, v: 3 })}\n{"v":2}\ntruncated`;
 	const read = readUsageLedger(text);
 	expect(read.legacy).toEqual([legacy]);
 	expect(read.records).toEqual([fixture]);
-	expect(read.diagnostics).toMatchObject({malformed: 2, newerVersion: 1});
+	expect(read.diagnostics).toMatchObject({ malformed: 2, newerVersion: 1 });
 });
 
 it("makes write failures visible without changing the caller's task result, and can retry", async () => {
@@ -134,17 +134,19 @@ it("makes write failures visible without changing the caller's task result, and 
 });
 
 it("retains conflicting measurements without silently choosing a count on read", () => {
-	const changed = {...fixture, model: "different-model"};
+	const changed = { ...fixture, model: "different-model" };
 	const read = readUsageLedger(
-		[fixture, {...fixture, recordId: "copy"}, changed].map((row) => JSON.stringify(row)).join("\n"),
+		[fixture, { ...fixture, recordId: "copy" }, changed]
+			.map((row) => JSON.stringify(row))
+			.join("\n"),
 	);
 	expect(read.records).toHaveLength(2);
-	expect(read.diagnostics).toMatchObject({duplicates: 1, conflicts: 1});
+	expect(read.diagnostics).toMatchObject({ duplicates: 1, conflicts: 1 });
 });
 
 it("retains expected and missing participants and refuses complete coverage without descendant discovery", async () => {
 	const path = ledger();
-	const common = {v: 2, source: fixture.source, work: fixture.work, agent: fixture.agent};
+	const common = { v: 2, source: fixture.source, work: fixture.work, agent: fixture.agent };
 	for (const [id, state] of [
 		["launch-child", "expected"],
 		["missing-child", "unreadable"],
@@ -180,7 +182,7 @@ it("retains expected and missing participants and refuses complete coverage with
 
 it("refines only an unknown issue while retaining the original append and replay identity", async () => {
 	const path = ledger();
-	const unknown = {...fixture, work: {...fixture.work, issue: null}};
+	const unknown = { ...fixture, work: { ...fixture.work, issue: null } };
 	expect((await live(recordUsage(path, unknown))).status).toBe("recorded");
 	expect(readUsageLedger(readFileSync(path, "utf8")).records).toEqual([unknown]);
 	expect((await live(recordUsage(path, fixture))).status).toBe("recorded");
@@ -192,14 +194,14 @@ it("refines only an unknown issue while retaining the original append and replay
 	expect(read.records).toEqual([fixture]);
 	expect(read.diagnostics.conflicts).toBe(0);
 	expect(
-		(await live(recordUsage(path, {...fixture, work: {...fixture.work, issue: 999}}))).status,
+		(await live(recordUsage(path, { ...fixture, work: { ...fixture.work, issue: 999 } }))).status,
 	).toBe("failed");
-	expect((await live(recordUsage(path, {...unknown, model: "changed"}))).status).toBe("failed");
+	expect((await live(recordUsage(path, { ...unknown, model: "changed" }))).status).toBe("failed");
 });
 
 it("keeps differing known issues conflicting even beside an unknown issue", () => {
-	const unknown = {...fixture, work: {...fixture.work, issue: null}};
-	const other = {...fixture, work: {...fixture.work, issue: 999}};
+	const unknown = { ...fixture, work: { ...fixture.work, issue: null } };
+	const other = { ...fixture, work: { ...fixture.work, issue: 999 } };
 	for (const rows of [
 		[unknown, fixture, other],
 		[fixture, unknown, other],

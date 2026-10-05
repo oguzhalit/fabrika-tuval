@@ -15,13 +15,13 @@
  * this boundary.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {exists, type ReadFailed, readFile} from "../io/fs.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {atFile} from "./annotate.ts";
-import {cpPaths, findUncovered, parseCodeownersPatterns, renderReport} from "./codeowners-cp.ts";
-import {CONTROL_PLANE_RE} from "./control-plane-re.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { exists, type ReadFailed, readFile } from "../io/fs.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { atFile } from "./annotate.ts";
+import { cpPaths, findUncovered, parseCodeownersPatterns, renderReport } from "./codeowners-cp.ts";
+import { CONTROL_PLANE_RE } from "./control-plane-re.ts";
 import {
 	annotationsOrNone,
 	clean,

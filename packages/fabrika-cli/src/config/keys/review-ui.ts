@@ -12,7 +12,7 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10038#issuecomment-5860347862
  */
 
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const REVIEW_UI = "reviewUi";
 export const WHEN_NO_PREVIEW = "whenNoPreview";
@@ -38,9 +38,9 @@ export interface ReviewUi {
 	readonly whenNoPreview: ReadonlyArray<NoPreviewRule>;
 }
 
-export const SHIPPED_REVIEW_UI: ReviewUi = {whenNoPreview: []};
+export const SHIPPED_REVIEW_UI: ReviewUi = { whenNoPreview: [] };
 
-const malformed = (reason: string): Decoded<never> => ({_tag: "Malformed", reason});
+const malformed = (reason: string): Decoded<never> => ({ _tag: "Malformed", reason });
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value);
@@ -65,7 +65,7 @@ const decodeRule = (entry: unknown, index: number): Decoded<NoPreviewRule> => {
 	if (unknown !== undefined) {
 		return malformed(`"${at}.${unknown}" is not a known field — a rule carries paths and mode`);
 	}
-	const {paths, mode} = entry;
+	const { paths, mode } = entry;
 	if (!Array.isArray(paths) || paths.length === 0) {
 		return malformed(`"${at}.paths" is missing or not a non-empty list of globs`);
 	}
@@ -78,7 +78,7 @@ const decodeRule = (entry: unknown, index: number): Decoded<NoPreviewRule> => {
 			`"${at}.mode" is ${JSON.stringify(mode) ?? "missing"}, not one of ${NO_PREVIEW_MODES.join(", ")}`,
 		);
 	}
-	return {_tag: "Value", value: {paths: paths as ReadonlyArray<string>, mode}};
+	return { _tag: "Value", value: { paths: paths as ReadonlyArray<string>, mode } };
 };
 
 const decode = (raw: unknown): Decoded<ReviewUi> => {
@@ -90,7 +90,7 @@ const decode = (raw: unknown): Decoded<ReviewUi> => {
 		);
 	}
 	const declared = raw[WHEN_NO_PREVIEW];
-	if (declared === undefined) return {_tag: "Value", value: SHIPPED_REVIEW_UI};
+	if (declared === undefined) return { _tag: "Value", value: SHIPPED_REVIEW_UI };
 	if (!Array.isArray(declared)) return malformed(`"${RULES}" is not a list of {paths, mode} rules`);
 	const rules: NoPreviewRule[] = [];
 	for (const [index, entry] of declared.entries()) {
@@ -98,7 +98,7 @@ const decode = (raw: unknown): Decoded<ReviewUi> => {
 		if (rule._tag === "Malformed") return rule;
 		rules.push(rule.value);
 	}
-	return {_tag: "Value", value: {whenNoPreview: rules}};
+	return { _tag: "Value", value: { whenNoPreview: rules } };
 };
 
 export const reviewUiKey: KeyGroup<ReviewUi> = {

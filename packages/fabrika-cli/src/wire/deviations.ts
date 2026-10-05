@@ -23,8 +23,8 @@
  * classes, the M/R/D tiers — and was read as prior art, never called.
  */
 
-import {isClosingLine} from "./closing-keyword.ts";
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
+import { isClosingLine } from "./closing-keyword.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
 
 declare const FIELD_TEXT: unique symbol;
 
@@ -34,7 +34,7 @@ declare const FIELD_TEXT: unique symbol;
  * Branded for the reason `CriterionText` is: `**Said:**` with nothing after it is not a disclosure,
  * and a `Found` carrying one would be a well-formed answer that discloses nothing.
  */
-export type FieldText = string & {readonly [FIELD_TEXT]: true};
+export type FieldText = string & { readonly [FIELD_TEXT]: true };
 
 /**
  * A field's value as the answer carries it: interior whitespace runs — including the newlines a
@@ -81,8 +81,8 @@ export interface DeviationEntry {
  * tag here rather than an entries array of length zero.
  */
 export type DeviationsDisclosure =
-	| {readonly _tag: "NoneDeclared"}
-	| {readonly _tag: "Entries"; readonly entries: NonEmptyReadonlyArray<DeviationEntry>};
+	| { readonly _tag: "NoneDeclared" }
+	| { readonly _tag: "Entries"; readonly entries: NonEmptyReadonlyArray<DeviationEntry> };
 
 export type DeviationsRead = WireRead<DeviationsDisclosure>;
 
@@ -123,7 +123,7 @@ const scanHeadings = (lines: ReadonlyArray<string>): ReadonlyArray<Heading> => {
 		if (openFence !== null) continue;
 		const heading = ATX_HEADING.exec(line);
 		if (heading === null) continue;
-		headings.push({level: (heading[1] ?? "").length, text: heading[2] ?? "", line: index + 1});
+		headings.push({ level: (heading[1] ?? "").length, text: heading[2] ?? "", line: index + 1 });
 	}
 	return headings;
 };
@@ -185,10 +185,10 @@ const sectionOf = (lines: ReadonlyArray<string>, heading: Heading): ReadonlyArra
 const trailingAfterNone = (
 	section: ReadonlyArray<string>,
 	heading: Heading,
-): {readonly line: number; readonly text: string} | null => {
+): { readonly line: number; readonly text: string } | null => {
 	const nonBlank = section
-		.map((text, index) => ({line: heading.line + 1 + index, text: text.trim()}))
-		.filter(({text}) => text !== "");
+		.map((text, index) => ({ line: heading.line + 1 + index, text: text.trim() }))
+		.filter(({ text }) => text !== "");
 	const [first, next] = nonBlank;
 	return first !== undefined && NONE_RE.test(first.text) && next !== undefined ? next : null;
 };
@@ -230,11 +230,11 @@ const labelOf = (lead: string): string | null => {
  * the closer at the head of every value it read.
  */
 const slicesOf = (bullet: string): ReadonlyMap<FieldKey, string> => {
-	const marks: Array<{readonly key: FieldKey; readonly from: number; readonly at: number}> = [];
+	const marks: Array<{ readonly key: FieldKey; readonly from: number; readonly at: number }> = [];
 	FIELD_MARKER.lastIndex = 0;
 	for (const match of bullet.matchAll(FIELD_MARKER)) {
 		const key = (match[1] ?? "").toLowerCase() as FieldKey;
-		marks.push({key, at: match.index, from: match.index + match[0].length});
+		marks.push({ key, at: match.index, from: match.index + match[0].length });
 	}
 	const slices = new Map<FieldKey, string>();
 	for (const [index, mark] of marks.entries()) {
@@ -255,8 +255,8 @@ const malformed = (reason: string, evidence: string): DeviationsRead => ({
 const entryOf = (
 	bullet: string,
 ):
-	| {readonly _tag: "Entry"; readonly entry: DeviationEntry}
-	| {readonly _tag: "Bad"; readonly reason: string} => {
+	| { readonly _tag: "Entry"; readonly entry: DeviationEntry }
+	| { readonly _tag: "Bad"; readonly reason: string } => {
 	const slices = slicesOf(bullet);
 	const values = new Map<FieldKey, FieldText>();
 	const missing: string[] = [];
@@ -273,11 +273,11 @@ const entryOf = (
 	}
 	const [said, did, why, disposition] = FIELDS.map((key) => values.get(key));
 	if (said === undefined || did === undefined || why === undefined || disposition === undefined) {
-		return {_tag: "Bad", reason: "an entry lost a field between reading it and building it"};
+		return { _tag: "Bad", reason: "an entry lost a field between reading it and building it" };
 	}
 	return {
 		_tag: "Entry",
-		entry: {label: labelOf(leadOf(bullet)), said, did, why, disposition},
+		entry: { label: labelOf(leadOf(bullet)), said, did, why, disposition },
 	};
 };
 
@@ -313,7 +313,7 @@ export const read = (body: string): DeviationsRead => {
 			`line ${heading.line}`,
 		);
 	}
-	if (NONE_RE.test(text)) return {_tag: "Found", value: {_tag: "NoneDeclared"}};
+	if (NONE_RE.test(text)) return { _tag: "Found", value: { _tag: "NoneDeclared" } };
 	const trailing = trailingAfterNone(section, heading);
 	if (trailing !== null) {
 		return malformed(
@@ -338,7 +338,7 @@ export const read = (body: string): DeviationsRead => {
 			`line ${heading.line}`,
 		);
 	}
-	return {_tag: "Found", value: {_tag: "Entries", entries: [head, ...rest]}};
+	return { _tag: "Found", value: { _tag: "Entries", entries: [head, ...rest] } };
 };
 
 const entryLine = (entry: DeviationEntry): string => {
@@ -379,8 +379,8 @@ export const droppedEntries = (
 };
 
 export type DeviationsFields =
-	| {readonly _tag: "Fields"; readonly disclosure: DeviationsDisclosure}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly disclosure: DeviationsDisclosure }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 /** The null label on stdin and in the answer — the same token `review verdicts` uses. */
 export const NULL_LABEL = "-";
@@ -394,7 +394,7 @@ export const NULL_LABEL = "-";
  */
 export const parseFields = (fields: string): DeviationsFields => {
 	if (NONE_RE.test(fields.trim())) {
-		return {_tag: "Fields", disclosure: {_tag: "NoneDeclared"}};
+		return { _tag: "Fields", disclosure: { _tag: "NoneDeclared" } };
 	}
 	const entries: DeviationEntry[] = [];
 	for (const [index, raw] of fields.split("\n").entries()) {
@@ -410,7 +410,7 @@ export const parseFields = (fields: string): DeviationsFields => {
 		const values = FIELDS.map((key, at) => [key, fieldText(columns[at + 1] ?? "")] as const);
 		const blank = values.filter(([, value]) => value === null).map(([key]) => key);
 		if (blank.length > 0) {
-			return {_tag: "Unusable", reason: `line ${index + 1} carries no ${blank.join(", ")}`};
+			return { _tag: "Unusable", reason: `line ${index + 1} carries no ${blank.join(", ")}` };
 		}
 		const [said, did, why, disposition] = values.map(([, value]) => value);
 		if (
@@ -423,7 +423,7 @@ export const parseFields = (fields: string): DeviationsFields => {
 			disposition === undefined ||
 			disposition === null
 		) {
-			return {_tag: "Unusable", reason: `line ${index + 1} lost a field after it was read`};
+			return { _tag: "Unusable", reason: `line ${index + 1} lost a field after it was read` };
 		}
 		const label = (columns[0] ?? "").trim();
 		entries.push({
@@ -441,7 +441,7 @@ export const parseFields = (fields: string): DeviationsFields => {
 			reason: `no entry lines — an empty section is malformed; state "${NONE_TEXT}" to declare nothing`,
 		};
 	}
-	return {_tag: "Fields", disclosure: {_tag: "Entries", entries: [head, ...rest]}};
+	return { _tag: "Fields", disclosure: { _tag: "Entries", entries: [head, ...rest] } };
 };
 
 /** The `wire read` answer for this format: `none-declared`, or one line per entry. */
@@ -459,12 +459,14 @@ export const renderDisclosure = (
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.disclosure)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.disclosure) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderDisclosure(result.value)} : result;
+	return result._tag === "Found"
+		? { _tag: "Found", value: renderDisclosure(result.value) }
+		: result;
 };

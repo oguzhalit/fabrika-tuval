@@ -8,13 +8,18 @@
  * own English error text onto the same stream, interleaved with the log — so a caller
  * pattern-matching for failure signatures matched heal-ci's own prose as if it were CI output.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {commitExists} from "../io/pulls.ts";
-import {authorityNote, readBlockingSet, reportedLine, unreadableCause} from "../review/blocking.ts";
-import {statusOf} from "../review/rollup.ts";
-import {latestPerContext, listRunsAtHead, listShipCheckRuns} from "../ship/github.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { commitExists } from "../io/pulls.ts";
+import {
+	authorityNote,
+	readBlockingSet,
+	reportedLine,
+	unreadableCause,
+} from "../review/blocking.ts";
+import { statusOf } from "../review/rollup.ts";
+import { latestPerContext, listRunsAtHead, listShipCheckRuns } from "../ship/github.ts";
 import {
 	badNumber,
 	inspectedSha,
@@ -23,10 +28,10 @@ import {
 	resolvePull,
 	resolveTargetRepo,
 } from "../ship/target.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {INCOMPLETE_SCAN, LOGS_EXPIRED, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {type LogFrame, renderFrame} from "./frames.ts";
-import {fetchJobLog, listRunJobs} from "./github.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { INCOMPLETE_SCAN, LOGS_EXPIRED, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { type LogFrame, renderFrame } from "./frames.ts";
+import { fetchJobLog, listRunJobs } from "./github.ts";
 
 const VERB = "heal-ci logs";
 
@@ -45,11 +50,11 @@ export interface LogsOptions {
 export const tailBytes = (
 	text: string,
 	bound: number,
-): {readonly text: string; readonly bytes: number; readonly truncated: boolean} => {
+): { readonly text: string; readonly bytes: number; readonly truncated: boolean } => {
 	const encoded = new TextEncoder().encode(text);
-	if (encoded.length <= bound) return {text, bytes: encoded.length, truncated: false};
+	if (encoded.length <= bound) return { text, bytes: encoded.length, truncated: false };
 	const kept = encoded.subarray(encoded.length - bound);
-	return {text: new TextDecoder("utf-8").decode(kept), bytes: kept.length, truncated: true};
+	return { text: new TextDecoder("utf-8").decode(kept), bytes: kept.length, truncated: true };
 };
 
 export const runLogs = (
@@ -167,7 +172,7 @@ export const runLogs = (
 
 		const frames: LogFrame[] = [];
 		for (const check of selected) {
-			let job: {readonly id: number; readonly name: string} | null = null;
+			let job: { readonly id: number; readonly name: string } | null = null;
 			for (const run of runs.value.runs) {
 				const jobs = yield* listRunJobs(repo, run.id);
 				if (jobs._tag === "Failure") {

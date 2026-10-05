@@ -17,10 +17,10 @@
  * The printed path is machine-local and must never reach a posted artifact: `report file`,
  * `report note` and `report amend` red on it (`5`).
  */
-import {Effect, FileSystem} from "effect";
-import {isKebabSlug} from "../build/lane.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {SLUG_MALFORMED} from "./codes.ts";
+import { Effect, FileSystem } from "effect";
+import { isKebabSlug } from "../build/lane.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { SLUG_MALFORMED } from "./codes.ts";
 
 const VERB = "report scratch";
 
@@ -39,7 +39,7 @@ export const runScratch = (
 	options: ScratchOptions,
 ): Effect.Effect<VerbOutcome, never, FileSystem.FileSystem> =>
 	Effect.gen(function* () {
-		const {slug} = options;
+		const { slug } = options;
 		if (slug.includes("/") || slug.includes("\\") || !isKebabSlug(slug)) {
 			return refuse(
 				SLUG_MALFORMED,
@@ -48,7 +48,7 @@ export const runScratch = (
 		}
 		const dir = allocationDir(options.tmpRoot, options.allocation);
 		const fs = yield* FileSystem.FileSystem;
-		const made: string | null = yield* fs.makeDirectory(dir, {recursive: true}).pipe(
+		const made: string | null = yield* fs.makeDirectory(dir, { recursive: true }).pipe(
 			Effect.as(null),
 			Effect.catchTag("PlatformError", (cause) => Effect.succeed(cause.message)),
 		);

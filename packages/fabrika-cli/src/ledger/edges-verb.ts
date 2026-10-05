@@ -21,13 +21,13 @@
  * cannot be confirmed".
  */
 
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type RequiredEdge, readTopology, requiredEdges} from "../build/dependencies.ts";
-import {scannedLine} from "../build/target.ts";
-import {addBlockedBy, blockedBy, internalId} from "../io/edges.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type RequiredEdge, readTopology, requiredEdges } from "../build/dependencies.ts";
+import { scannedLine } from "../build/target.ts";
+import { addBlockedBy, blockedBy, internalId } from "../io/edges.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	BAD_SECTIONS,
 	PRECONDITION_UNKNOWN,
@@ -36,7 +36,7 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {type LedgerMessages, type OpenOptions, openGround} from "./preconditions.ts";
+import { type LedgerMessages, type OpenOptions, openGround } from "./preconditions.ts";
 
 const VERB = "ledger edges";
 
@@ -51,8 +51,8 @@ export const MESSAGES: LedgerMessages = {
 
 /** Each dependent's `blocked_by` list, or the refusal the unread one owes. */
 type Graph =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Graph"; readonly edges: ReadonlyMap<number, ReadonlySet<number>>};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Graph"; readonly edges: ReadonlyMap<number, ReadonlySet<number>> };
 
 const readGraph = (
 	repo: string,
@@ -64,7 +64,7 @@ const readGraph = (
 		const read = yield* Effect.forEach(
 			dependents,
 			(number) => blockedBy(repo, number).pipe(Effect.map((found) => [number, found] as const)),
-			{concurrency: FAN_OUT},
+			{ concurrency: FAN_OUT },
 		);
 		const edges = new Map<number, ReadonlySet<number>>();
 		for (const [number, found] of read) {
@@ -81,7 +81,7 @@ const readGraph = (
 			}
 			edges.set(number, new Set(found.value));
 		}
-		return {_tag: "Graph" as const, edges};
+		return { _tag: "Graph" as const, edges };
 	});
 
 const reconciled = (epic: number, required: number, written: number): string =>
@@ -110,7 +110,7 @@ export const runEdges = (
 	Effect.gen(function* () {
 		const ground = yield* openGround(MESSAGES, options);
 		if (ground._tag === "Refused") return ground.outcome;
-		const {repo, epic, notes} = ground;
+		const { repo, epic, notes } = ground;
 
 		const topology = readTopology(epic.body);
 		if (topology._tag === "Unparseable") {
@@ -150,7 +150,7 @@ export const runEdges = (
 		const resolved = yield* Effect.forEach(
 			prerequisites,
 			(number) => internalId(repo, number).pipe(Effect.map((found) => [number, found] as const)),
-			{concurrency: FAN_OUT},
+			{ concurrency: FAN_OUT },
 		);
 		const ids = new Map<number, number>();
 		for (const [number, found] of resolved) {

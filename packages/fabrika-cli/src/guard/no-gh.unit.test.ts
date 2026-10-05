@@ -6,8 +6,8 @@
  * every port docblock says what it replaced — so a matcher that flagged those would be turned off
  * within a week.
  */
-import {describe, expect, it} from "vitest";
-import {codeOf, isSelfExempt, isZeroScope, scanFile, scanPackage} from "./no-gh.ts";
+import { describe, expect, it } from "vitest";
+import { codeOf, isSelfExempt, isZeroScope, scanFile, scanPackage } from "./no-gh.ts";
 
 const FILE = "packages/fabrika-cli/src/io/pulls.ts";
 
@@ -153,8 +153,8 @@ describe("the sanctioned leg and the self-exemptions", () => {
 describe("scanPackage states the scope its verdict rests on", () => {
 	it("counts every scanned file and drops the self-exempt ones from the scope", () => {
 		const result = scanPackage([
-			{file: FILE, content: "const x = 1;\n"},
-			{file: "packages/fabrika-cli/src/guard/no-gh.ts", content: 'execCapture("gh", []);\n'},
+			{ file: FILE, content: "const x = 1;\n" },
+			{ file: "packages/fabrika-cli/src/guard/no-gh.ts", content: 'execCapture("gh", []);\n' },
 		]);
 		expect(result.scanned).toEqual([FILE]);
 		expect(result.findings).toEqual([]);

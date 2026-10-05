@@ -14,7 +14,7 @@
  * never touches disk and never decides what a scan covered.
  */
 
-import {type Annotation, atLine} from "./annotate.ts";
+import { type Annotation, atLine } from "./annotate.ts";
 
 /**
  * The six Turkish letters ASCII does not carry, in both cases. `İ` and `ı` are the dotted/dotless
@@ -150,7 +150,7 @@ export const scanSource = (src: string): ReadonlyArray<TurkishHit> => {
 	const hits: Array<TurkishHit> = [];
 	const push = (index: number, kind: HitKind, text: string): void => {
 		if (!TURKISH.test(text)) return;
-		hits.push({line: lineAt(src, index), kind, excerpt: excerptOf(text)});
+		hits.push({ line: lineAt(src, index), kind, excerpt: excerptOf(text) });
 	};
 	const n = src.length;
 	let i = 0;
@@ -304,8 +304,8 @@ export interface DeadAllowance {
 }
 
 export type I18nVerdict =
-	| {readonly _tag: "Clean"; readonly filesScanned: number; readonly allowed: number}
-	| {readonly _tag: "ZeroScope"}
+	| { readonly _tag: "Clean"; readonly filesScanned: number; readonly allowed: number }
+	| { readonly _tag: "ZeroScope" }
 	| {
 			readonly _tag: "Violation";
 			readonly filesScanned: number;
@@ -320,8 +320,8 @@ export const judge = (input: {
 	readonly files: ReadonlyArray<FileScan>;
 	readonly config: I18nGuardConfig;
 }): I18nVerdict => {
-	const {files, config} = input;
-	if (files.length === 0) return {_tag: "ZeroScope"};
+	const { files, config } = input;
+	if (files.length === 0) return { _tag: "ZeroScope" };
 	const seen = new Set(files.map((f) => f.path));
 	const over: Array<OverCeiling> = [];
 	let allowed = 0;
@@ -329,19 +329,19 @@ export const judge = (input: {
 		const allowance = allowanceFor(config, file.path);
 		const ceiling = allowance?.ceiling ?? 0;
 		if (allowance !== undefined && file.hits.length > 0) allowed += 1;
-		if (file.hits.length > ceiling) over.push({path: file.path, ceiling, hits: file.hits});
+		if (file.hits.length > ceiling) over.push({ path: file.path, ceiling, hits: file.hits });
 	}
 	const dead: Array<DeadAllowance> = [
 		...Object.keys(config.exempt)
 			.filter((p) => !seen.has(p))
-			.map((path): DeadAllowance => ({bucket: "exempt", path})),
+			.map((path): DeadAllowance => ({ bucket: "exempt", path })),
 		...Object.keys(config.unmigrated)
 			.filter((p) => !seen.has(p))
-			.map((path): DeadAllowance => ({bucket: "unmigrated", path})),
+			.map((path): DeadAllowance => ({ bucket: "unmigrated", path })),
 	];
 	if (over.length === 0 && dead.length === 0)
-		return {_tag: "Clean", filesScanned: files.length, allowed};
-	return {_tag: "Violation", filesScanned: files.length, over, dead};
+		return { _tag: "Clean", filesScanned: files.length, allowed };
+	return { _tag: "Violation", filesScanned: files.length, over, dead };
 };
 
 const VERB = "guard i18n-guard check";

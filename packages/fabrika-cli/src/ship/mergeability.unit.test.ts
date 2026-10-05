@@ -1,9 +1,13 @@
-import {describe, expect, it} from "@effect/vitest";
-import {Effect, Fiber, Layer} from "effect";
-import {TestClock} from "effect/testing";
-import {fakeHttp, fakeShell, type HttpReply, once} from "../fakes.test-support.ts";
-import {pull} from "./fixtures.test-support.ts";
-import {MERGEABILITY_WINDOW_SECONDS, pollWaits, readDefiniteMergeability} from "./mergeability.ts";
+import { describe, expect, it } from "@effect/vitest";
+import { Effect, Fiber, Layer } from "effect";
+import { TestClock } from "effect/testing";
+import { fakeHttp, fakeShell, type HttpReply, once } from "../fakes.test-support.ts";
+import { pull } from "./fixtures.test-support.ts";
+import {
+	MERGEABILITY_WINDOW_SECONDS,
+	pollWaits,
+	readDefiniteMergeability,
+} from "./mergeability.ts";
 
 describe("pollWaits", () => {
 	it("backs off from 2s, doubling to a cap of 8s", () => {
@@ -41,8 +45,8 @@ describe("readDefiniteMergeability", () => {
 		status: 200,
 		body: pull(shape).stdout,
 	});
-	const INDEFINITE = reply({mergeable: null, mergeableState: "unknown"});
-	const DIRTY = reply({mergeable: false, mergeableState: "dirty"});
+	const INDEFINITE = reply({ mergeable: null, mergeableState: "unknown" });
+	const DIRTY = reply({ mergeable: false, mergeableState: "dirty" });
 
 	/** Runs the read over a scripted endpoint, advancing the clock past the whole window. */
 	const settle = (script: ReadonlyArray<readonly [RegExp, HttpReply]>, windowSeconds: number) => {
@@ -50,29 +54,29 @@ describe("readDefiniteMergeability", () => {
 		return Effect.gen(function* () {
 			const fiber = yield* Effect.forkChild(readDefiniteMergeability("o/r", 4321, windowSeconds));
 			yield* TestClock.adjust(`${windowSeconds} seconds`);
-			return {read: yield* Fiber.join(fiber), calls: http.calls};
+			return { read: yield* Fiber.join(fiber), calls: http.calls };
 		}).pipe(Effect.provide(Layer.merge(fakeShell([], undefined, [/^gh /]).layer, http.layer)));
 	};
 
 	// @ruling https://github.com/kamp-us/phoenix/issues/9032
 	it.effect("re-reads past an indefinite value and lands the value a later read carries", () =>
 		Effect.gen(function* () {
-			const {read, calls} = yield* settle(
+			const { read, calls } = yield* settle(
 				[
 					[once(PULL), INDEFINITE],
 					[PULL, DIRTY],
 				],
 				4,
 			);
-			expect(read).toEqual({_tag: "Definite", value: {mergeable: false, state: "dirty"}});
+			expect(read).toEqual({ _tag: "Definite", value: { mergeable: false, state: "dirty" } });
 			expect(calls).toHaveLength(2);
 		}),
 	);
 
 	it.effect("answers Indefinite, naming the polls and seconds it spent, when nothing settles", () =>
 		Effect.gen(function* () {
-			const {read, calls} = yield* settle([[PULL, INDEFINITE]], 4);
-			expect(read).toEqual({_tag: "Indefinite", polls: 2, seconds: 4});
+			const { read, calls } = yield* settle([[PULL, INDEFINITE]], 4);
+			expect(read).toEqual({ _tag: "Indefinite", polls: 2, seconds: 4 });
 			expect(calls).toHaveLength(3);
 		}),
 	);

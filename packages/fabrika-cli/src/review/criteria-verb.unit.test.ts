@@ -1,12 +1,12 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {emit, markedIssue, rulingUrl, scopeDigest} from "../wire/decision-ruling.ts";
-import {markerTime} from "../wire/grill-marker.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {runCriteria} from "./criteria-verb.ts";
-import {issue} from "./fixtures.test-support.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { emit, markedIssue, rulingUrl, scopeDigest } from "../wire/decision-ruling.ts";
+import { markerTime } from "../wire/grill-marker.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { runCriteria } from "./criteria-verb.ts";
+import { issue } from "./fixtures.test-support.ts";
 
 const ISSUE = /GET .*\/repos\/o\/r\/issues\/4287(\?|$)/;
 const COMMENTS = /GET .*\/repos\/o\/r\/issues\/4287\/comments\?/;
@@ -20,14 +20,14 @@ const REPO = "o/r";
 const RULING_URL = `https://github.com/${REPO}/issues/4287#issuecomment-${RULING_COMMENT}`;
 
 /** A canned payload as the platform serves it — the fixtures speak `ExecResult`, the seam HTTP. */
-const served = (result: ExecResult, status = 200): HttpReply => ({status, body: result.stdout});
-const json = (body: unknown): HttpReply => ({status: 200, body: JSON.stringify(body)});
+const served = (result: ExecResult, status = 200): HttpReply => ({ status, body: result.stdout });
+const json = (body: unknown): HttpReply => ({ status: 200, body: JSON.stringify(body) });
 
 /** The three reads `controlPlaneRoster` makes, resolving to a one-account control plane. */
 const ROSTER: ReadonlyArray<Scripted> = [
-	[TRUNK, json({default_branch: "main"})],
-	[CODEOWNERS, {status: 200, body: "/packages/fabrika-cli/ @o/control-plane\n"}],
-	[MEMBERS, json([{login: RULER}])],
+	[TRUNK, json({ default_branch: "main" })],
+	[CODEOWNERS, { status: 200, body: "/packages/fabrika-cli/ @o/control-plane\n" }],
+	[MEMBERS, json([{ login: RULER }])],
 ];
 
 /** One page of comments, each `[id, author, body, written?]` — written an hour before the marker's stamp unless the case says otherwise. */
@@ -35,7 +35,7 @@ const comments = (...rows: ReadonlyArray<readonly [number, string, string, strin
 	json(
 		rows.map(([id, author, body, written = "2026-09-20T05:00:00Z"]) => ({
 			id,
-			user: {login: author},
+			user: { login: author },
 			created_at: written,
 			updated_at: written,
 			body,
@@ -65,12 +65,12 @@ const options = {
 	issue: 4287,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 };
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
-		Effect.provide(runCriteria({...options, ...overrides}), fakeSeams(script).layer),
+		Effect.provide(runCriteria({ ...options, ...overrides }), fakeSeams(script).layer),
 	);
 
 /** The ordinary board: the issue, its comments, and the roster the author gate resolves. */
@@ -134,7 +134,7 @@ describe("runCriteria", () => {
 				[ISSUE, served(issue())],
 				[COMMENTS, comments([900001, RULER, "build-claim: build:s:n · 2026-09-20T05:00:00Z"])],
 			],
-			{json: true},
+			{ json: true },
 		);
 		expect(out.code).toBe(0);
 		expect(out.stderr.join("\n")).toContain("the control-plane roster was not resolved");
@@ -153,7 +153,7 @@ describe("runCriteria", () => {
 			expect(out.code).toBe(0);
 			expect(JSON.parse(out.stdout)).toMatchObject({
 				rulings: 0,
-				unmarked: {state: "counted", count: 1, comments: [commentUrl(900010)]},
+				unmarked: { state: "counted", count: 1, comments: [commentUrl(900010)] },
 			});
 			expect(out.stderr.join("\n")).toContain(
 				`1 comment(s) by a control-plane account on #4287 carry no ruling marker: ${commentUrl(900010)}`,
@@ -169,12 +169,12 @@ describe("runCriteria", () => {
 						[900010, RULER, "Changed my mind: `base * 3`.", AFTER_RULING],
 					),
 				),
-				{json: true},
+				{ json: true },
 			);
 			expect(out.code).toBe(0);
 			expect(JSON.parse(out.stdout)).toMatchObject({
 				rulings: 1,
-				unmarked: {state: "counted", count: 1, comments: [commentUrl(900010)]},
+				unmarked: { state: "counted", count: 1, comments: [commentUrl(900010)] },
 			});
 			expect(out.stderr.join("\n")).toContain(
 				"are newer than the newest standing ruling and carry no ruling marker",
@@ -193,10 +193,10 @@ describe("runCriteria", () => {
 						[900002, RULER, marker(), AFTER_RULING],
 					),
 				),
-				{json: true},
+				{ json: true },
 			);
 			expect(out.code).toBe(0);
-			expect(JSON.parse(out.stdout)).toMatchObject({rulings: 1});
+			expect(JSON.parse(out.stdout)).toMatchObject({ rulings: 1 });
 			expect(JSON.parse(out.stdout)).not.toHaveProperty("unmarked");
 			expect(out.stderr.join("\n")).not.toContain("carry no ruling marker");
 		});
@@ -212,12 +212,12 @@ describe("runCriteria", () => {
 						[900015, RULER, drifted, AFTER_RULING],
 					),
 				),
-				{json: true},
+				{ json: true },
 			);
 			expect(out.code).toBe(0);
 			expect(JSON.parse(out.stdout)).toMatchObject({
 				rulings: 1,
-				unmarked: {state: "counted", count: 1, comments: [commentUrl(900015)]},
+				unmarked: { state: "counted", count: 1, comments: [commentUrl(900015)] },
 			});
 		});
 
@@ -230,7 +230,7 @@ describe("runCriteria", () => {
 						[900002, RULER, marker()],
 					),
 				),
-				{json: true},
+				{ json: true },
 			);
 			expect(out.code).toBe(0);
 			expect(JSON.parse(out.stdout)).not.toHaveProperty("unmarked");
@@ -249,7 +249,7 @@ describe("runCriteria", () => {
 						[900014, "some-agent", "I think the delay should be longer.", AFTER_RULING],
 					),
 				),
-				{json: true},
+				{ json: true },
 			);
 			expect(out.code).toBe(0);
 			expect(JSON.parse(out.stdout)).not.toHaveProperty("unmarked");
@@ -261,12 +261,12 @@ describe("runCriteria", () => {
 				[
 					[ISSUE, served(issue())],
 					[COMMENTS, comments([900010, RULER, "Use `base * 3` instead."])],
-					[TRUNK, {status: 502, body: "{}"}],
+					[TRUNK, { status: 502, body: "{}" }],
 				],
-				{json: true},
+				{ json: true },
 			);
 			expect(out.code).toBe(0);
-			expect(JSON.parse(out.stdout)).toMatchObject({rulings: 0, unmarked: {state: "unknown"}});
+			expect(JSON.parse(out.stdout)).toMatchObject({ rulings: 0, unmarked: { state: "unknown" } });
 			expect(out.stderr.join("\n")).toContain("is UNKNOWN, never zero");
 		});
 	});
@@ -301,7 +301,7 @@ describe("runCriteria", () => {
 	});
 
 	it("emits the record with --json", async () => {
-		const out = await run(board(RULING_COMMENTS), {json: true});
+		const out = await run(board(RULING_COMMENTS), { json: true });
 		expect(JSON.parse(out.stdout)).toMatchObject({
 			outcome: "criteria",
 			issue: 4287,
@@ -325,7 +325,7 @@ describe("runCriteria", () => {
 	});
 
 	it("refuses an issue proven absent on 7", async () => {
-		const out = await run([[ISSUE, {status: 404, body: '{"message":"Not Found"}'}]]);
+		const out = await run([[ISSUE, { status: 404, body: '{"message":"Not Found"}' }]]);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-1)).toBe("review criteria: issue #4287 not found in o/r.");
 	});
@@ -352,7 +352,7 @@ describe("runCriteria", () => {
 	});
 
 	it("refuses an unreadable issue on 11 — whether a block exists is UNKNOWN", async () => {
-		const out = await run([[ISSUE, {status: 502, body: "{}"}]]);
+		const out = await run([[ISSUE, { status: 502, body: "{}" }]]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain("whether a block exists is UNKNOWN");
@@ -366,7 +366,7 @@ describe("runCriteria", () => {
 		const out = await run([
 			[ISSUE, served(issue())],
 			[COMMENTS, RULING_COMMENTS],
-			[TRUNK, {status: 502, body: "{}"}],
+			[TRUNK, { status: 502, body: "{}" }],
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -376,7 +376,7 @@ describe("runCriteria", () => {
 	it("refuses on 11 when the comments do not read", async () => {
 		const out = await run([
 			[ISSUE, served(issue())],
-			[COMMENTS, {status: 502, body: "{}"}],
+			[COMMENTS, { status: 502, body: "{}" }],
 			...ROSTER,
 		]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);

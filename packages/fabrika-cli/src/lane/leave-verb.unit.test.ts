@@ -1,10 +1,10 @@
 /** `lane leave` — the tree a shell stands in goes, and one that holds work stays and is named. */
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeFs, fakeSeams, okOut, once, type Scripted} from "../fakes.test-support.ts";
-import {type Attempt, fail, ok} from "../io/git.ts";
-import {APPEND_UNKNOWN, LANE_UNREADABLE, TREES_KEPT} from "./codes.ts";
-import {runLeave} from "./leave-verb.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeFs, fakeSeams, okOut, once, type Scripted } from "../fakes.test-support.ts";
+import { type Attempt, fail, ok } from "../io/git.ts";
+import { APPEND_UNKNOWN, LANE_UNREADABLE, TREES_KEPT } from "./codes.ts";
+import { runLeave } from "./leave-verb.ts";
 
 const MAIN = "/checkout/repo";
 const TREE = `${MAIN}/.claude/worktrees/agent-operator`;
@@ -44,8 +44,8 @@ const run = (script: ReadonlyArray<Scripted>, scene: Scene = {}) => {
 		directories: scene.stands === true ? [MAIN, TREE] : [MAIN],
 	});
 	return Effect.runPromise(
-		Effect.provide(runLeave({tree: scene.tree ?? ok(TREE)}), Layer.merge(shell.layer, fs.layer)),
-	).then((outcome) => ({outcome, calls: shell.calls}));
+		Effect.provide(runLeave({ tree: scene.tree ?? ok(TREE) }), Layer.merge(shell.layer, fs.layer)),
+	).then((outcome) => ({ outcome, calls: shell.calls }));
 };
 
 const mutations = (calls: ReadonlyArray<string>) =>
@@ -53,7 +53,7 @@ const mutations = (calls: ReadonlyArray<string>) =>
 
 describe("runLeave", () => {
 	it("removes a clean tree whose commits are published, with a plain removal addressed at the main tree", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, listing(TREE)],
 			...CLEAN,
 			[REMOVE, okOut("")],
@@ -61,13 +61,13 @@ describe("runLeave", () => {
 		]);
 
 		expect(outcome.code).toBe(0);
-		expect(JSON.parse(outcome.stdout)).toEqual({answer: "removed", worktree: TREE});
+		expect(JSON.parse(outcome.stdout)).toEqual({ answer: "removed", worktree: TREE });
 		expect(mutations(calls)).toEqual([`git -C ${MAIN} worktree remove ${TREE}`]);
 		expect(calls.some((line) => line.includes("--force"))).toBe(false);
 	});
 
 	it("keeps a tree with uncommitted paths and names its path and the reason", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, listing(TREE)],
 			[STATUS, okOut(" M src/a.ts\n?? notes.md\n")],
 		]);
@@ -81,7 +81,7 @@ describe("runLeave", () => {
 	});
 
 	it("keeps a tree with commits on no remote ref, since no lane's pull request can carry them", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, listing(TREE)],
 			[STATUS, okOut("")],
 			[AHEAD, okOut("2\n")],
@@ -96,7 +96,7 @@ describe("runLeave", () => {
 	});
 
 	it("keeps a tree whose status cannot be read", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, listing(TREE)],
 			[STATUS, errOut("fatal: not a work tree")],
 		]);
@@ -107,7 +107,7 @@ describe("runLeave", () => {
 	});
 
 	it("keeps a tree whose commits cannot be counted against the remote refs", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, listing(TREE)],
 			[STATUS, okOut("")],
 			[AHEAD, errOut("fatal: bad revision")],
@@ -119,7 +119,7 @@ describe("runLeave", () => {
 	});
 
 	it("keeps a tree git holds no live registration for, without reading inside it", async () => {
-		const {outcome, calls} = await run([
+		const { outcome, calls } = await run([
 			[LIST, okOut([block(MAIN), block(TREE, true)].join("\n"))],
 		]);
 
@@ -129,15 +129,15 @@ describe("runLeave", () => {
 	});
 
 	it("answers main in the main working tree and runs no removal", async () => {
-		const {outcome, calls} = await run([[LIST, listing(TREE)]], {tree: ok(MAIN)});
+		const { outcome, calls } = await run([[LIST, listing(TREE)]], { tree: ok(MAIN) });
 
 		expect(outcome.code).toBe(0);
-		expect(JSON.parse(outcome.stdout)).toEqual({answer: "main", worktree: MAIN});
+		expect(JSON.parse(outcome.stdout)).toEqual({ answer: "main", worktree: MAIN });
 		expect(calls).toEqual(["git worktree list --porcelain"]);
 	});
 
 	it("refuses as UNKNOWN when the tree it runs in or the working trees cannot be read", async () => {
-		const unread = await run([], {tree: fail("not a git repository")});
+		const unread = await run([], { tree: fail("not a git repository") });
 		expect(unread.outcome.code).toBe(LANE_UNREADABLE);
 		expect(unread.calls).toEqual([]);
 
@@ -147,14 +147,14 @@ describe("runLeave", () => {
 	});
 
 	it("reports a tree git declined to remove as kept, with git's own reason", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			[
 				[LIST, listing(TREE)],
 				...CLEAN,
 				[REMOVE, errOut("fatal: working trees containing submodules cannot be removed")],
 				[RELIST, listing(TREE)],
 			],
-			{stands: true},
+			{ stands: true },
 		);
 
 		expect(outcome.code).toBe(TREES_KEPT);
@@ -165,7 +165,7 @@ describe("runLeave", () => {
 	});
 
 	it("is UNKNOWN when the removal ran and the working trees cannot be listed again", async () => {
-		const {outcome} = await run([
+		const { outcome } = await run([
 			[once(LIST), listing(TREE)],
 			...CLEAN,
 			[REMOVE, okOut("")],

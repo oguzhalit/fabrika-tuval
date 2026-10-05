@@ -14,7 +14,7 @@
  * proving it right now — so the answer is "wait", not "pass". A `failure` stays red at every level
  * of supersession, and a cancel with no newer run of its workflow at that head stays red too.
  */
-import type {ShipCheckRun, WorkflowRun} from "./github.ts";
+import type { ShipCheckRun, WorkflowRun } from "./github.ts";
 
 /**
  * The suites whose workflow run a later run of the same workflow replaced at this head.

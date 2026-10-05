@@ -24,11 +24,11 @@
  * claim therefore go through `listCommentsReconciled`, so a read that cannot be proven whole refuses
  * on `11` instead of passing this gate.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {type IssueRecord, listCommentsReconciled} from "../io/issues.ts";
-import {sessionIdFrom} from "../io/session-id.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { type IssueRecord, listCommentsReconciled } from "../io/issues.ts";
+import { sessionIdFrom } from "../io/session-id.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
 import {
 	type Asked,
 	anySessionCaller,
@@ -42,7 +42,7 @@ import {
 	requireCallerToken,
 	requireSession,
 } from "./claim.ts";
-import {CLAIMED_ELSEWHERE, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import { CLAIMED_ELSEWHERE, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
 
 /**
  * The live markers that do not name `caller`, or the reason the set is unreadable.
@@ -68,18 +68,18 @@ export const foreignMarkers = ({
 	readonly now: number;
 	readonly ttlMinutes: number;
 }):
-	| {readonly _tag: "Foreign"; readonly foreign: ReadonlyArray<Marker>}
+	| { readonly _tag: "Foreign"; readonly foreign: ReadonlyArray<Marker> }
 	| {
 			readonly _tag: "Unresolvable";
 			readonly reason: string;
 	  } => {
-	const scanned = liveMarkers({markers, now, ttlMinutes});
+	const scanned = liveMarkers({ markers, now, ttlMinutes });
 	if (scanned._tag === "Unresolvable") return scanned;
 	if (!isStampableSession(caller.session)) {
-		return {_tag: "Foreign", foreign: scanned.live};
+		return { _tag: "Foreign", foreign: scanned.live };
 	}
 	if (caller._tag === "Lane") {
-		return {_tag: "Foreign", foreign: scanned.live.filter((m) => !namesCaller(m, caller))};
+		return { _tag: "Foreign", foreign: scanned.live.filter((m) => !namesCaller(m, caller)) };
 	}
 	const lanes = new Set(
 		scanned.live.filter((m) => m.session === caller.session).map((m) => m.lane),
@@ -118,7 +118,7 @@ const askCaller = (
 ): Asked<Caller> => {
 	const trimmed = (token ?? "").trim();
 	if (trimmed === "") {
-		return {_tag: "Asked", value: anySessionCaller(sessionIdFrom(env) ?? "")};
+		return { _tag: "Asked", value: anySessionCaller(sessionIdFrom(env) ?? "") };
 	}
 	const session = requireSession(
 		verb,
@@ -127,7 +127,7 @@ const askCaller = (
 	);
 	if (!("_tag" in session)) return session;
 	const lane = requireCallerToken(verb, session.value, trimmed);
-	return "_tag" in lane ? {_tag: "Asked", value: lane.value.caller} : lane;
+	return "_tag" in lane ? { _tag: "Asked", value: lane.value.caller } : lane;
 };
 
 /**
@@ -159,7 +159,7 @@ export const guardTarget = (
 	options: GuardOptions,
 ): Effect.Effect<VerbOutcome | null, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {verb, repo, issue, target} = options;
+		const { verb, repo, issue, target } = options;
 		const noun = options.noun ?? "issue";
 
 		if (target.state === "closed") {

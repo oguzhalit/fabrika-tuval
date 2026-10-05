@@ -104,7 +104,7 @@ interface Sanctioned {
  * plus the single-use rule is what the docblock always claimed and the unit test always pinned.
  */
 const SANCTIONED: ReadonlyArray<Sanctioned> = [
-	{file: "/src/io/gh-api.ts", symbol: "resolveToken", matched: '"gh"'},
+	{ file: "/src/io/gh-api.ts", symbol: "resolveToken", matched: '"gh"' },
 ];
 
 /**
@@ -240,7 +240,7 @@ export const scanFile = (file: string, content: string): ReadonlyArray<Finding> 
 					spent.add(sanction);
 					continue;
 				}
-				findings.push({file, line: i + 1, matched, reason: SPAWNED});
+				findings.push({ file, line: i + 1, matched, reason: SPAWNED });
 			}
 		}
 	}

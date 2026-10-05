@@ -29,23 +29,23 @@
  * the same harness-touching rule is asked of the range's own changed paths. That path appends and
  * refuses the same way, keyed on the range rather than a head it does not have.
  */
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {diffRangePaths} from "../io/git.ts";
-import {createComment, getComment, listComments} from "../io/issues.ts";
-import {patchComment, viewerLogin} from "../io/pulls.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {type ClassRefs, classConfigAtCommits} from "../review/class-config.ts";
-import {touchesGovernanceRoot} from "../review/classes.ts";
-import {contentDigestAt} from "../review/content-binding.ts";
-import {readRangeFlags} from "../review/range-flags.ts";
-import {runRangePost} from "../review/range-post.ts";
-import {compose as supersedeWith} from "../review/supersede.ts";
-import {badNumber, openPull, resolveTargetRepo, scannedLine} from "../review/target.ts";
-import {latestByWriteRecency} from "../review/write-recency.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { diffRangePaths } from "../io/git.ts";
+import { createComment, getComment, listComments } from "../io/issues.ts";
+import { patchComment, viewerLogin } from "../io/pulls.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { type ClassRefs, classConfigAtCommits } from "../review/class-config.ts";
+import { touchesGovernanceRoot } from "../review/classes.ts";
+import { contentDigestAt } from "../review/content-binding.ts";
+import { readRangeFlags } from "../review/range-flags.ts";
+import { runRangePost } from "../review/range-post.ts";
+import { compose as supersedeWith } from "../review/supersede.ts";
+import { badNumber, openPull, resolveTargetRepo, scannedLine } from "../review/target.ts";
+import { latestByWriteRecency } from "../review/write-recency.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	contentDigest,
 	emit as emitMarker,
@@ -56,7 +56,7 @@ import {
 	sameHead,
 	clause as toClause,
 } from "../wire/verdict-marker.ts";
-import {type AuthoredSurface, leakRefusal, readAuthored} from "./authored.ts";
+import { type AuthoredSurface, leakRefusal, readAuthored } from "./authored.ts";
 import {
 	NOT_HARNESS_TOUCHING,
 	OFF_VOCABULARY,
@@ -66,8 +66,8 @@ import {
 	SUPERSEDES_VERDICT,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {assertFloorAt, floorLine, floorToken} from "./floor-assert.ts";
-import {bindGovernanceHead, boundLine} from "./head.ts";
+import { assertFloorAt, floorLine, floorToken } from "./floor-assert.ts";
+import { bindGovernanceHead, boundLine } from "./head.ts";
 
 const VERB = "governance post";
 
@@ -183,8 +183,8 @@ const unreadable = (what: string, pr: number, reason: string): VerbOutcome =>
 const governedRootsAt = (
 	refs: ClassRefs,
 ): Effect.Effect<
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Roots"; readonly roots: ReadonlyArray<string>},
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Roots"; readonly roots: ReadonlyArray<string> },
 	never,
 	ChildProcessSpawner.ChildProcessSpawner
 > =>
@@ -196,8 +196,8 @@ const governedRootsAt = (
 		),
 		(read) =>
 			read._tag === "Refused"
-				? {_tag: "Refused" as const, outcome: refuse(PRECONDITION_UNKNOWN, read.message)}
-				: {_tag: "Roots" as const, roots: read.config.governedRoots},
+				? { _tag: "Refused" as const, outcome: refuse(PRECONDITION_UNKNOWN, read.message) }
+				: { _tag: "Roots" as const, roots: read.config.governedRoots },
 	);
 
 export const runPost = (
@@ -211,7 +211,7 @@ export const runPost = (
 	| Path.Path
 > =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 
@@ -233,7 +233,7 @@ export const runPost = (
 		// Range mode: the positional is the child issue, and content is the only binding, so
 		// --sha — a head-scoped idea — is refused rather than ignored. The shape is read through the
 		// module the two range-taking read verbs share, so all three agree on what a range is.
-		const flags = readRangeFlags(VERB, {base: options.base, tip: options.tip, sha: options.sha});
+		const flags = readRangeFlags(VERB, { base: options.base, tip: options.tip, sha: options.sha });
 		if (flags._tag === "Refused") return flags.outcome;
 		if (flags._tag === "Pull" && options.sha === null) {
 			return refuse(
@@ -250,8 +250,8 @@ export const runPost = (
 		if (authored._tag === "Refused") return authored.outcome;
 
 		if (flags._tag === "Ranged") {
-			const {base, tip} = flags.range;
-			const governed = yield* governedRootsAt({head: tip, base});
+			const { base, tip } = flags.range;
+			const governed = yield* governedRootsAt({ head: tip, base });
 			if (governed._tag === "Refused") return governed.outcome;
 			const governedRoots = governed.roots;
 			return yield* runRangePost(
@@ -271,7 +271,7 @@ export const runPost = (
 					issue: pr,
 					namespace: NAMESPACE,
 					polarity: polarity as Polarity,
-					range: {base, tip},
+					range: { base, tip },
 					clause,
 					body: authored.text,
 					repo,
@@ -320,7 +320,7 @@ export const runPost = (
 		);
 		if (bound._tag === "Refused") return bound.outcome;
 		const head = bound.head;
-		const governed = yield* governedRootsAt({head: head.sha, base: head.mergeBase});
+		const governed = yield* governedRootsAt({ head: head.sha, base: head.mergeBase });
 		if (governed._tag === "Refused") return governed.outcome;
 		const governedRoots = governed.roots;
 		const listed = yield* diffRangePaths(head.mergeBase, head.sha);
@@ -385,16 +385,16 @@ export const runPost = (
 				? composed
 				: supersedeWith(mine.body, composed, new Date(yield* options.now));
 
-		let landed: {readonly id: number; readonly url: string} | null = null;
+		let landed: { readonly id: number; readonly url: string } | null = null;
 		let failure: string | null = null;
 		if (mine === undefined) {
 			const created = yield* createComment(repo, pr, envelope);
 			if (created._tag === "Failure") failure = created.reason;
-			else landed = {id: created.value.id, url: created.value.url};
+			else landed = { id: created.value.id, url: created.value.url };
 		} else {
 			const edited = yield* patchComment(repo, mine.id, envelope);
 			if (edited._tag === "Failure") failure = edited.reason;
-			else landed = {id: mine.id, url: edited.value};
+			else landed = { id: mine.id, url: edited.value };
 		}
 		if (landed === null) {
 			return refuse(
@@ -415,7 +415,7 @@ export const runPost = (
 				? back.reason
 				: mismatchOf(
 						back.value,
-						{polarity, sha: inspected, content: content.value, clause},
+						{ polarity, sha: inspected, content: content.value, clause },
 						envelope,
 					);
 		if (mismatch !== null) {

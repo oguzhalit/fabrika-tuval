@@ -17,7 +17,7 @@
  * exists to be unknown about, and one it refuses is `Unreplayable` through `current`. Asking for a
  * candidate first would answer neither.
  */
-import {deriveStatus, foldLog, type LogEntry} from "./fold.ts";
+import { deriveStatus, foldLog, type LogEntry } from "./fold.ts";
 import {
 	bareEvent,
 	CLEARED_EVENT,
@@ -25,7 +25,7 @@ import {
 	compileText,
 	type TaskState,
 } from "./machine.ts";
-import {graftContext, judgeMigration} from "./migrate.ts";
+import { graftContext, judgeMigration } from "./migrate.ts";
 
 export type ArchiveVerdict =
 	/** The log does not replay, and `through` names which machine refused it. */
@@ -35,9 +35,9 @@ export type ArchiveVerdict =
 			readonly defects: ReadonlyArray<string>;
 	  }
 	/** The log replays through every machine that exists for the lane — nothing to archive. */
-	| {readonly _tag: "Replays"}
+	| { readonly _tag: "Replays" }
 	/** A candidate was offered and could not be built, so its verdict is UNKNOWN, never proven. */
-	| {readonly _tag: "Unjudgeable"; readonly reason: string};
+	| { readonly _tag: "Unjudgeable"; readonly reason: string };
 
 /**
  * Judge one lane for archiving. `templateTexts` are the committed templates the lane's root binds;
@@ -51,18 +51,18 @@ export const judgeArchive = (
 ): ArchiveVerdict => {
 	const own = foldLog(current, entries);
 	if (own._tag !== "Folded") {
-		return {_tag: "Unreplayable", through: "current", defects: own.defects};
+		return { _tag: "Unreplayable", through: "current", defects: own.defects };
 	}
 
 	const grafts = templateTexts.map((text) => graftContext(text, laneText));
 	const ungraftable = grafts.find((candidate) => candidate._tag === "Ungraftable");
-	if (ungraftable !== undefined) return {_tag: "Unjudgeable", reason: ungraftable.reason};
+	if (ungraftable !== undefined) return { _tag: "Unjudgeable", reason: ungraftable.reason };
 	const graft = grafts.find((candidate) => candidate._tag === "Grafted");
 	if (graft === undefined) {
 		// A `Foreign` answer is a proven fact, not a gap: this machine was generated, so the fold
 		// above ran the only machine the lane has and there is no second one to be unknown about.
-		if (grafts.some((candidate) => candidate._tag === "Foreign")) return {_tag: "Replays"};
-		return {_tag: "Unjudgeable", reason: "no committed template was offered for this root"};
+		if (grafts.some((candidate) => candidate._tag === "Foreign")) return { _tag: "Replays" };
+		return { _tag: "Unjudgeable", reason: "no committed template was offered for this root" };
 	}
 	const candidate = compileText(graft.text);
 	if (candidate._tag === "Malformed") {
@@ -74,8 +74,8 @@ export const judgeArchive = (
 
 	const judged = judgeMigration(current, candidate.lane, entries);
 	return judged._tag === "Unreplayable"
-		? {_tag: "Unreplayable", through: judged.through, defects: judged.defects}
-		: {_tag: "Replays"};
+		? { _tag: "Unreplayable", through: judged.through, defects: judged.defects }
+		: { _tag: "Replays" };
 };
 
 /**
@@ -96,15 +96,15 @@ export const judgeArchive = (
  * @ruling https://github.com/kamp-us/phoenix/issues/10190
  */
 export type RetriageVerdict =
-	| {readonly _tag: "Diagnosed"; readonly state: string}
+	| { readonly _tag: "Diagnosed"; readonly state: string }
 	/** The lane's own machine cannot fold the log — the unreplayable route's lane, not this one's. */
-	| {readonly _tag: "Unreplayable"; readonly defects: ReadonlyArray<string>}
+	| { readonly _tag: "Unreplayable"; readonly defects: ReadonlyArray<string> }
 	/** The fold ended on some other final, or has not ended at all. */
-	| {readonly _tag: "NotDiagnosed"; readonly state: string}
+	| { readonly _tag: "NotDiagnosed"; readonly state: string }
 	/** It folds to a diagnosis final, and a line of its log names a pull request. */
-	| {readonly _tag: "Published"; readonly pulls: ReadonlyArray<string>}
+	| { readonly _tag: "Published"; readonly pulls: ReadonlyArray<string> }
 	/** It folds to a diagnosis final, and the log shows a review round or repair budget spent. */
-	| {readonly _tag: "Spent"; readonly spend: ReadonlyArray<string>};
+	| { readonly _tag: "Spent"; readonly spend: ReadonlyArray<string> };
 
 /** The review verdicts and grants whose presence on a log says a round was reviewed or granted. */
 const ROUND_EVENTS: ReadonlySet<string> = new Set(["PASS", "FAIL", CLEARED_EVENT]);
@@ -135,19 +135,19 @@ export const judgeRetriage = (
 	entries: ReadonlyArray<LogEntry>,
 ): RetriageVerdict => {
 	const folded = foldLog(current, entries);
-	if (folded._tag !== "Folded") return {_tag: "Unreplayable", defects: folded.defects};
-	const {status, stateValue} = deriveStatus(current, folded.states);
+	if (folded._tag !== "Folded") return { _tag: "Unreplayable", defects: folded.defects };
+	const { status, stateValue } = deriveStatus(current, folded.states);
 	if (typeof stateValue !== "string") {
-		return {_tag: "NotDiagnosed", state: JSON.stringify(stateValue)};
+		return { _tag: "NotDiagnosed", state: JSON.stringify(stateValue) };
 	}
 	const diagnosed =
 		status === "done" &&
 		Object.values(current.tasks).some((task) => task.diagnosisFinals.has(stateValue));
-	if (!diagnosed) return {_tag: "NotDiagnosed", state: stateValue};
+	if (!diagnosed) return { _tag: "NotDiagnosed", state: stateValue };
 	const pulls = [
 		...new Set(entries.flatMap((entry) => (entry.pr === undefined ? [] : [entry.pr]))),
 	];
-	if (pulls.length > 0) return {_tag: "Published", pulls};
+	if (pulls.length > 0) return { _tag: "Published", pulls };
 	const spend = spendIn(folded.states, entries);
-	return spend.length > 0 ? {_tag: "Spent", spend} : {_tag: "Diagnosed", state: stateValue};
+	return spend.length > 0 ? { _tag: "Spent", spend } : { _tag: "Diagnosed", state: stateValue };
 };

@@ -11,10 +11,10 @@
  * titled "one merge authority" can be filed as `ship-it-merge-actor` — so a guessed slug is a dead
  * link.
  */
-import {Effect} from "effect";
-import {originRepo, type Shell} from "../io/git.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {loadInFlight, loadMerged, readMergedRecord} from "./base-ref.ts";
+import { Effect } from "effect";
+import { originRepo, type Shell } from "../io/git.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { loadInFlight, loadMerged, readMergedRecord } from "./base-ref.ts";
 import {
 	BASE_UNFETCHABLE,
 	DIR_UNREADABLE,
@@ -23,7 +23,7 @@ import {
 	ORIGIN_REPO_UNRESOLVABLE,
 	UNPARSEABLE_RECORD_ID,
 } from "./codes.ts";
-import {isFourDigitId} from "./records.ts";
+import { isFourDigitId } from "./records.ts";
 import {
 	indexInFlight,
 	indexMerged,
@@ -42,7 +42,7 @@ export interface ResolveOptions {
 
 export const runResolve = (options: ResolveOptions): Shell<VerbOutcome> =>
 	Effect.gen(function* () {
-		const {ids, dir, base, json} = options;
+		const { ids, dir, base, json } = options;
 
 		for (const id of ids) {
 			if (!isFourDigitId(id)) {
@@ -88,11 +88,11 @@ export const runResolve = (options: ResolveOptions): Shell<VerbOutcome> =>
 		// makes every later answer arbitrary, so it is resolved as a refusal rather than by picking one.
 		const named: MergedRecord[] = mergedSet.files.flatMap((file, i) => {
 			const id = mergedSet.ids[i];
-			return id === undefined ? [] : [{id, file, status: ""}];
+			return id === undefined ? [] : [{ id, file, status: "" }];
 		});
 		const duplicates = indexMerged(named);
 		if ("duplicate" in duplicates) {
-			const {id, files} = duplicates.duplicate;
+			const { id, files } = duplicates.duplicate;
 			return refuse(
 				DUPLICATE_ID,
 				`adr resolve: ${dir} at ${base} holds two records for id ${id}: ${files[0]}, ${files[1]}`,
@@ -102,9 +102,9 @@ export const runResolve = (options: ResolveOptions): Shell<VerbOutcome> =>
 		// Only the requested ids need their status read. A read that fails is a refusal, never a record
 		// silently dropped — a dropped record would answer `absent` for an id that is right there.
 		const records: MergedRecord[] = [];
-		for (const {id, file} of named) {
+		for (const { id, file } of named) {
 			if (!ids.includes(id)) {
-				records.push({id, file, status: ""});
+				records.push({ id, file, status: "" });
 				continue;
 			}
 			const record = yield* readMergedRecord(mergedSet.sha, dir, file, id);
@@ -119,7 +119,7 @@ export const runResolve = (options: ResolveOptions): Shell<VerbOutcome> =>
 
 		const indexed = indexMerged(records);
 		if ("duplicate" in indexed) {
-			const {id, files} = indexed.duplicate;
+			const { id, files } = indexed.duplicate;
 			return refuse(
 				DUPLICATE_ID,
 				`adr resolve: ${dir} at ${base} holds two records for id ${id}: ${files[0]}, ${files[1]}`,

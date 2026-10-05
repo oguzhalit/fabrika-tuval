@@ -63,11 +63,11 @@
  * worktree, the first spawn's, whose own add had already failed — is consistent with that inference
  * without proving it.
  */
-import {execFile} from "node:child_process";
-import {mkdirSync, writeFileSync} from "node:fs";
-import {join} from "node:path";
-import {promisify} from "node:util";
-import {afterAll, describe, expect, it} from "vitest";
+import { execFile } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { promisify } from "node:util";
+import { afterAll, describe, expect, it } from "vitest";
 import {
 	GIT_ENV,
 	gitSync,
@@ -107,7 +107,7 @@ const NULL_OID = "0".repeat(40);
 const after = (ms: number): Promise<void> => new Promise((resume) => setTimeout(resume, ms));
 
 const stderrOf = (cause: unknown): string =>
-	String((cause as {stderr?: string}).stderr ?? (cause as Error).message).trim();
+	String((cause as { stderr?: string }).stderr ?? (cause as Error).message).trim();
 
 /**
  * The administrative directory a `git worktree add` leaves behind when it dies after registering the
@@ -118,7 +118,7 @@ const stderrOf = (cause: unknown): string =>
  */
 const plantDeadSibling = (clone: string, name: string): void => {
 	const admin = join(clone, ".git", "worktrees", name);
-	mkdirSync(admin, {recursive: true});
+	mkdirSync(admin, { recursive: true });
 	writeFileSync(join(admin, "HEAD"), `${NULL_OID}\n`);
 	writeFileSync(join(admin, "commondir"), "../..\n");
 	writeFileSync(join(admin, "gitdir"), `${join(clone, "..", "gone", name)}/.git\n`);
@@ -147,7 +147,7 @@ const provision = async (
 ): Promise<Spawn> => {
 	const ref = baseRefFor(name, "0123456789ab");
 	const failures: string[] = [];
-	const git = (args: ReadonlyArray<string>) => run("git", [...args], {cwd: clone, env: GIT_ENV});
+	const git = (args: ReadonlyArray<string>) => run("git", [...args], { cwd: clone, env: GIT_ENV });
 
 	const recovered = async (args: ReadonlyArray<string>): Promise<string | null> => {
 		for (let attempt = 1; ; attempt++) {
@@ -163,7 +163,7 @@ const provision = async (
 		}
 	};
 
-	const lost = {base: "", created: false, failures};
+	const lost = { base: "", created: false, failures };
 	if ((await recovered(fetchBaseArgs("main", ref))) === null) return lost;
 	// Plain, not `recovered`: the verb does not wrap the resolve either, because `rev-parse` reads
 	// one ref by name and walks no worktree entry. A recovery only the model has would hide a lost
@@ -179,7 +179,7 @@ const provision = async (
 	if (base === "") return lost;
 
 	const added = await recovered(["worktree", "add", "--detach", join(scratch, name), base]);
-	return {base, created: added !== null, failures};
+	return { base, created: added !== null, failures };
 };
 
 const fan = async (
@@ -192,7 +192,7 @@ const fan = async (
 	for (let round = 0; round < ROUNDS; round++) {
 		spawns.push(
 			...(await Promise.all(
-				Array.from({length: SPAWNS}, (_, i) =>
+				Array.from({ length: SPAWNS }, (_, i) =>
 					after(i * STAGGER_MS).then(() =>
 						provision(clone, scratch, `${label}-${round}-${i}`, attempts),
 					),
@@ -218,7 +218,7 @@ afterAll(removeClones);
 
 describe("a dead sibling's leftover administrative directory", () => {
 	it("fails the pre-fix sequence — the fault fires with no race to wait for", async () => {
-		const {clone, scratch} = openClone();
+		const { clone, scratch } = openClone();
 		plantDeadSibling(clone, "wt-0-0");
 
 		const spawn = await provision(clone, scratch, "pre", 1);
@@ -233,7 +233,7 @@ describe("a dead sibling's leftover administrative directory", () => {
 	 * failing, git 2.55.0 heals — and asserting nothing would let an unmeasured third through.
 	 */
 	it("keeps failing a bare re-run, or heals it, according to this machine's git", async () => {
-		const {clone, scratch} = openClone();
+		const { clone, scratch } = openClone();
 		plantDeadSibling(clone, "wt-0-0");
 		expect((await provision(clone, scratch, "pre", 1)).created).toBe(false);
 
@@ -251,7 +251,7 @@ describe("a dead sibling's leftover administrative directory", () => {
 	}, 120_000);
 
 	it("is cleared by the recovery, so the same spawn provisions on a later attempt", async () => {
-		const {clone, scratch, tip} = openClone();
+		const { clone, scratch, tip } = openClone();
 		plantDeadSibling(clone, "wt-0-0");
 
 		const spawn = await provision(clone, scratch, "fixed", RECOVERY_ATTEMPTS);
@@ -263,8 +263,8 @@ describe("a dead sibling's leftover administrative directory", () => {
 	}, 120_000);
 
 	it("is dropped by the prune, while a worktree whose directory exists is left registered", async () => {
-		const {clone, scratch, tip} = openClone();
-		mkdirSync(scratch, {recursive: true});
+		const { clone, scratch, tip } = openClone();
+		mkdirSync(scratch, { recursive: true });
 		gitSync(clone, "worktree", "add", "--quiet", "--detach", join(scratch, "live"), tip);
 		plantDeadSibling(clone, "wt-0-0");
 
@@ -278,7 +278,7 @@ describe("a dead sibling's leftover administrative directory", () => {
 
 describe("provisioning a worktree under parallel spawns", () => {
 	it("loses none of them, with every spawn on the freshly fetched tip", async () => {
-		const {clone, scratch, tip} = openClone();
+		const { clone, scratch, tip } = openClone();
 		const spawns = await fan(clone, scratch, RECOVERY_ATTEMPTS, "fan");
 
 		expect(spawns).toHaveLength(SPAWNS * ROUNDS);
@@ -320,7 +320,7 @@ describe("classifying a git diagnostic as one of the two named arms", () => {
 
 describe("the recovery's bounds", () => {
 	it("doubles the wait and then caps it, so one command waits at most 3s", () => {
-		const waits = Array.from({length: RECOVERY_ATTEMPTS - 1}, (_, i) => recoveryBackoffMs(i + 1));
+		const waits = Array.from({ length: RECOVERY_ATTEMPTS - 1 }, (_, i) => recoveryBackoffMs(i + 1));
 		expect(waits).toEqual([200, 400, 800, 1600]);
 		// Per wrapped command, and the verb wraps two — so a spawn losing at both waits up to 6s of
 		// its 600s budget, not 3s.

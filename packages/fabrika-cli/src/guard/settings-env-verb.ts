@@ -8,13 +8,13 @@
  * See `guard settings-env-guard check --help` for results and exit codes.
  */
 
-import {Effect, type FileSystem, Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {exists, type ReadFailed, readFile} from "../io/fs.ts";
-import {parseJson} from "../io/json.ts";
-import type {VerbOutcome} from "../verb.ts";
-import {atFile} from "./annotate.ts";
-import {envEntries, expansionReport, literalExpansions} from "./settings-env.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { exists, type ReadFailed, readFile } from "../io/fs.ts";
+import { parseJson } from "../io/json.ts";
+import type { VerbOutcome } from "../verb.ts";
+import { atFile } from "./annotate.ts";
+import { envEntries, expansionReport, literalExpansions } from "./settings-env.ts";
 import {
 	annotationsOrNone,
 	clean,

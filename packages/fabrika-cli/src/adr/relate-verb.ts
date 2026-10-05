@@ -5,12 +5,12 @@
  * value resolves `--by`'s slug **off disk**, and refuses when `--by` has no record, because a
  * guessed slug is the recurring dead-link failure.
  */
-import {Effect, type FileSystem, type Path, Result} from "effect";
-import {readDir, readFile, writeFile} from "../io/fs.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {ALREADY_SUPERSEDED, MULTI_LINE_DIFF, NO_BY, NO_STATUS_LINE, NO_SUBJECT} from "./codes.ts";
-import {idFromFile, partitionRecordNames} from "./records.ts";
-import {type Relationship, rewriteStatus} from "./status-line.ts";
+import { Effect, type FileSystem, type Path, Result } from "effect";
+import { readDir, readFile, writeFile } from "../io/fs.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { ALREADY_SUPERSEDED, MULTI_LINE_DIFF, NO_BY, NO_STATUS_LINE, NO_SUBJECT } from "./codes.ts";
+import { idFromFile, partitionRecordNames } from "./records.ts";
+import { type Relationship, rewriteStatus } from "./status-line.ts";
 
 export interface RelateOptions {
 	readonly relationship: Relationship;
@@ -36,7 +36,7 @@ export const runRelate = (
 	options: RelateOptions,
 ): Effect.Effect<VerbOutcome, never, FileSystem.FileSystem | Path.Path> =>
 	Effect.gen(function* () {
-		const {relationship, id, by, dir, json} = options;
+		const { relationship, id, by, dir, json } = options;
 		const verb = verbName(relationship);
 		const root = dir.replace(/\/+$/, "");
 
@@ -62,7 +62,7 @@ export const runRelate = (
 			return refuse(FAILED, `${verb}: cannot read ${path}: ${read.failure.reason}`);
 		const before = read.success;
 
-		const outcome = rewriteStatus(relationship, before, {id: by, file: byFile});
+		const outcome = rewriteStatus(relationship, before, { id: by, file: byFile });
 		if (outcome._tag === "NoSingleStatusLine") {
 			return refuse(
 				NO_STATUS_LINE,
@@ -94,7 +94,7 @@ export const runRelate = (
 
 		return answer(
 			json
-				? JSON.stringify({path, id, by, statusBefore, statusAfter: outcome.statusAfter})
+				? JSON.stringify({ path, id, by, statusBefore, statusAfter: outcome.statusAfter })
 				: `${path}\t${outcome.statusAfter}`,
 		);
 	});

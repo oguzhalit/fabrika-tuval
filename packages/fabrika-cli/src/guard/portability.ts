@@ -20,7 +20,7 @@
  * this module never touches disk and never decides what a scan covered.
  */
 
-import {type Annotation, atLine} from "./annotate.ts";
+import { type Annotation, atLine } from "./annotate.ts";
 
 /** Which of the five rules a hit broke — the report groups on it and a test names it. */
 export type PatternId = "issue" | "decision-number" | "decision-link" | "url" | "repo-name";
@@ -260,7 +260,7 @@ export const scanFile = (
 				const index = match.index ?? 0;
 				if (within(cited, index, match[0].length)) continue;
 				if (pattern === "issue" && isTicketData(path, text, index, match[0].length)) continue;
-				hits.push({line: i + 1, pattern, matched: match[0]});
+				hits.push({ line: i + 1, pattern, matched: match[0] });
 			}
 		}
 	}
@@ -277,8 +277,8 @@ export interface RowVerdict {
 }
 
 export type Verdict =
-	| {readonly _tag: "Clean"; readonly filesScanned: number; readonly allowed: number}
-	| {readonly _tag: "ZeroScope"; readonly reason: string}
+	| { readonly _tag: "Clean"; readonly filesScanned: number; readonly allowed: number }
+	| { readonly _tag: "ZeroScope"; readonly reason: string }
 	| {
 			readonly _tag: "Violation";
 			readonly filesScanned: number;
@@ -319,7 +319,7 @@ export interface JudgeInput {
  * ceiling has to *equal* the count — a ceiling left above what the tree carries is a tolerance the
  * next lane could spend, which is how a ratchet stops ratcheting.
  */
-export const judge = ({files, config}: JudgeInput): Verdict => {
+export const judge = ({ files, config }: JudgeInput): Verdict => {
 	if (files.length === 0) {
 		return {
 			_tag: "ZeroScope",
@@ -330,7 +330,7 @@ export const judge = ({files, config}: JudgeInput): Verdict => {
 	const row = (key: string, bucket: "exempt" | "unmigrated", ceiling: number): RowVerdict => {
 		const existing = rows.get(key);
 		if (existing !== undefined) return existing;
-		const fresh: RowVerdict = {key, bucket, ceiling, count: 0, files: []};
+		const fresh: RowVerdict = { key, bucket, ceiling, count: 0, files: [] };
 		rows.set(key, fresh);
 		return fresh;
 	};
@@ -368,7 +368,7 @@ export const judge = ({files, config}: JudgeInput): Verdict => {
 			allowed: judged.reduce((sum, r) => sum + r.count, 0),
 		};
 	}
-	return {_tag: "Violation", filesScanned: files.length, unlisted, over, stale};
+	return { _tag: "Violation", filesScanned: files.length, unlisted, over, stale };
 };
 
 const HIT_CAP = 20;

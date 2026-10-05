@@ -2,7 +2,7 @@
  * The `design-token-guard` rule and its CSS parsers — the `design-token-guard.unit.test.ts` cases
  * from the v1 CLI.
  */
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	type CssFileFacts,
 	type DesignTokenConfig,
@@ -21,7 +21,7 @@ const emptyConfig: DesignTokenConfig = {
 	rawPxCeilings: {},
 };
 
-const file = (over: Partial<CssFileFacts> & {path: string}): CssFileFacts => ({
+const file = (over: Partial<CssFileFacts> & { path: string }): CssFileFacts => ({
 	isRawLayer: false,
 	declared: [],
 	varRefs: [],
@@ -33,57 +33,63 @@ const file = (over: Partial<CssFileFacts> & {path: string}): CssFileFacts => ({
 describe("judge", () => {
 	it("passes a file whose refs all resolve", () => {
 		const facts = {
-			files: [file({path: "a.css", declared: ["--x"], varRefs: [{name: "--x", line: 1}]})],
+			files: [file({ path: "a.css", declared: ["--x"], varRefs: [{ name: "--x", line: 1 }] })],
 			config: emptyConfig,
 		};
-		expect(judge(facts)).toEqual({pass: true, filesChecked: 1, varRefsChecked: 1});
+		expect(judge(facts)).toEqual({ pass: true, filesChecked: 1, varRefsChecked: 1 });
 	});
 
 	it("reds a dead ref — the #2167 class", () => {
 		expect(
 			judge({
-				files: [file({path: "a.css", varRefs: [{name: "--gone", line: 4}]})],
+				files: [file({ path: "a.css", varRefs: [{ name: "--gone", line: 4 }] })],
 				config: emptyConfig,
 			}),
 		).toMatchObject({
 			pass: false,
 			reason: "violations",
-			undefinedRefs: [{path: "a.css", name: "--gone", line: 4}],
+			undefinedRefs: [{ path: "a.css", name: "--gone", line: 4 }],
 		});
 	});
 
 	it.each([
-		["externalProperties", {...emptyConfig, externalProperties: ["--injected"]}],
-		["grandfatheredMissingTokens", {...emptyConfig, grandfatheredMissingTokens: ["--injected"]}],
+		["externalProperties", { ...emptyConfig, externalProperties: ["--injected"] }],
+		["grandfatheredMissingTokens", { ...emptyConfig, grandfatheredMissingTokens: ["--injected"] }],
 	])("admits a ref named in %s", (_name, config) => {
 		expect(
-			judge({files: [file({path: "a.css", varRefs: [{name: "--injected", line: 1}]})], config}),
-		).toMatchObject({pass: true});
+			judge({
+				files: [file({ path: "a.css", varRefs: [{ name: "--injected", line: 1 }] })],
+				config,
+			}),
+		).toMatchObject({ pass: true });
 	});
 
 	it("reds a hex outside the raw layer and allows one inside it", () => {
 		expect(
 			judge({
 				files: [
-					file({path: "a.css", hexLiterals: [{value: "#fff", line: 2}]}),
-					file({path: "tokens.css", isRawLayer: true, hexLiterals: [{value: "#000", line: 1}]}),
+					file({ path: "a.css", hexLiterals: [{ value: "#fff", line: 2 }] }),
+					file({ path: "tokens.css", isRawLayer: true, hexLiterals: [{ value: "#000", line: 1 }] }),
 				],
 				config: emptyConfig,
 			}),
-		).toMatchObject({pass: false, hex: [{path: "a.css", value: "#fff", line: 2}]});
+		).toMatchObject({ pass: false, hex: [{ path: "a.css", value: "#fff", line: 2 }] });
 	});
 
 	it("reds a file over its ceiling and passes one at it", () => {
 		const px = [
-			{value: "8px", line: 1},
-			{value: "12px", line: 2},
+			{ value: "8px", line: 1 },
+			{ value: "12px", line: 2 },
 		];
-		const config = {...emptyConfig, rawPxCeilings: {"a.css": 2, "b.css": 1}};
+		const config = { ...emptyConfig, rawPxCeilings: { "a.css": 2, "b.css": 1 } };
 		const verdict = judge({
-			files: [file({path: "a.css", rawPx: px}), file({path: "b.css", rawPx: px})],
+			files: [file({ path: "a.css", rawPx: px }), file({ path: "b.css", rawPx: px })],
 			config,
 		});
-		expect(verdict).toMatchObject({pass: false, rawPx: [{path: "b.css", count: 2, ceiling: 1}]});
+		expect(verdict).toMatchObject({
+			pass: false,
+			rawPx: [{ path: "b.css", count: 2, ceiling: 1 }],
+		});
 	});
 
 	// No ceiling entry means the file must be clean — the ratchet's whole point is that new debt
@@ -91,10 +97,10 @@ describe("judge", () => {
 	it("treats a missing ceiling entry as a ceiling of zero", () => {
 		expect(
 			judge({
-				files: [file({path: "new.css", rawPx: [{value: "8px", line: 1}]})],
+				files: [file({ path: "new.css", rawPx: [{ value: "8px", line: 1 }] })],
 				config: emptyConfig,
 			}),
-		).toMatchObject({pass: false, rawPx: [{path: "new.css", count: 1, ceiling: null}]});
+		).toMatchObject({ pass: false, rawPx: [{ path: "new.css", count: 1, ceiling: null }] });
 	});
 });
 
@@ -108,7 +114,7 @@ describe("the CSS parsers", () => {
 	});
 
 	it("reads references with their line numbers", () => {
-		expect(parseVarReferences("a {\n  color: var(--b);\n}")).toEqual([{name: "--b", line: 2}]);
+		expect(parseVarReferences("a {\n  color: var(--b);\n}")).toEqual([{ name: "--b", line: 2 }]);
 	});
 
 	it("ignores a declaration or reference inside a comment", () => {
@@ -117,17 +123,17 @@ describe("the CSS parsers", () => {
 	});
 
 	it.each(["#fff", "#ffff", "#ffffff", "#ffffffff"])("reads the hex literal %s", (hex) => {
-		expect(parseHexLiterals(`a { color: ${hex}; }`)).toEqual([{value: hex, line: 1}]);
+		expect(parseHexLiterals(`a { color: ${hex}; }`)).toEqual([{ value: hex, line: 1 }]);
 	});
 
 	// 1px and 2px are the grid's sanctioned hairline/nudge values.
 	it("returns only px values over 2px", () => {
-		expect(parseRawPxOverTwo("a { a: 1px; b: 2px; c: 3px; }")).toEqual([{value: "3px", line: 1}]);
+		expect(parseRawPxOverTwo("a { a: 1px; b: 2px; c: 3px; }")).toEqual([{ value: "3px", line: 1 }]);
 	});
 
 	it("skips an at-rule line, where a px is a breakpoint", () => {
 		expect(parseRawPxOverTwo("@media (min-width: 900px) {\n  a { b: 4px; }\n}")).toEqual([
-			{value: "4px", line: 2},
+			{ value: "4px", line: 2 },
 		]);
 	});
 });
@@ -139,9 +145,9 @@ describe("renderReport", () => {
 				files: [
 					file({
 						path: "a.css",
-						varRefs: [{name: "--gone", line: 1}],
-						hexLiterals: [{value: "#fff", line: 2}],
-						rawPx: [{value: "8px", line: 3}],
+						varRefs: [{ name: "--gone", line: 1 }],
+						hexLiterals: [{ value: "#fff", line: 2 }],
+						rawPx: [{ value: "8px", line: 3 }],
 					}),
 				],
 				config: emptyConfig,

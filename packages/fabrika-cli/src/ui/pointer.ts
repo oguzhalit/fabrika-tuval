@@ -11,7 +11,7 @@
  * pointer that names surfaces without a `store` is malformed: the bytes are unreachable,
  * and answering "blessed" for a golden nothing can fetch would be worse than refusing.
  */
-import {isSha256Hex} from "../capture/golden-pointer.ts";
+import { isSha256Hex } from "../capture/golden-pointer.ts";
 
 export interface UiGoldenPointer {
 	readonly store: string | null;
@@ -19,8 +19,8 @@ export interface UiGoldenPointer {
 }
 
 export type PointerParse =
-	| {readonly _tag: "Pointer"; readonly pointer: UiGoldenPointer}
-	| {readonly _tag: "Violation"; readonly violation: string};
+	| { readonly _tag: "Pointer"; readonly pointer: UiGoldenPointer }
+	| { readonly _tag: "Violation"; readonly violation: string };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value);
@@ -30,15 +30,16 @@ export const parsePointer = (text: string): PointerParse => {
 	try {
 		parsed = JSON.parse(text);
 	} catch (err) {
-		return {_tag: "Violation", violation: `the file is not JSON (${(err as Error).message})`};
+		return { _tag: "Violation", violation: `the file is not JSON (${(err as Error).message})` };
 	}
-	if (!isRecord(parsed)) return {_tag: "Violation", violation: "the top level is not an object"};
+	if (!isRecord(parsed)) return { _tag: "Violation", violation: "the top level is not an object" };
 	const rawSurfaces = parsed.surfaces ?? {};
-	if (!isRecord(rawSurfaces)) return {_tag: "Violation", violation: '"surfaces" is not an object'};
+	if (!isRecord(rawSurfaces))
+		return { _tag: "Violation", violation: '"surfaces" is not an object' };
 	const surfaces: Record<string, string> = {};
 	for (const [id, entry] of Object.entries(rawSurfaces)) {
 		if (!isRecord(entry) || typeof entry.sha256 !== "string") {
-			return {_tag: "Violation", violation: `surfaces["${id}"] carries no string sha256`};
+			return { _tag: "Violation", violation: `surfaces["${id}"] carries no string sha256` };
 		}
 		if (!isSha256Hex(entry.sha256)) {
 			return {
@@ -50,7 +51,7 @@ export const parsePointer = (text: string): PointerParse => {
 	}
 	const store = parsed.store;
 	if (store !== undefined && typeof store !== "string") {
-		return {_tag: "Violation", violation: '"store" is not a string'};
+		return { _tag: "Violation", violation: '"store" is not a string' };
 	}
 	if (store === undefined && Object.keys(surfaces).length > 0) {
 		return {
@@ -60,7 +61,7 @@ export const parsePointer = (text: string): PointerParse => {
 	}
 	return {
 		_tag: "Pointer",
-		pointer: {store: store === undefined ? null : store.replace(/\/+$/, ""), surfaces},
+		pointer: { store: store === undefined ? null : store.replace(/\/+$/, ""), surfaces },
 	};
 };
 

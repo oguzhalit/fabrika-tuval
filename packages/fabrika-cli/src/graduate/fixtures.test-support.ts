@@ -15,8 +15,8 @@ import {
 	roundDigestOf,
 	rulingComment,
 } from "../grill/fixtures.test-support.ts";
-import {composeSpec} from "./spec.ts";
-import type {DecisionRow} from "./trail.ts";
+import { composeSpec } from "./spec.ts";
+import type { DecisionRow } from "./trail.ts";
 
 export const REPO = "o/r";
 export const SESSION = 9412;
@@ -26,14 +26,14 @@ export const MAP = 9140;
 export const BOUND = roundDigestOf(1);
 
 /** Round 1 as the session carries it: one fact question, one decision question. */
-export const ROUND: FakeComment = {id: 1, author: "acme-founder", body: roundComment(1)};
+export const ROUND: FakeComment = { id: 1, author: "acme-founder", body: roundComment(1) };
 
 /** A session with the fact answered and the decision ruled — the trail reads `ready`. */
 export const CLEARED_SESSION: ReadonlyArray<FakeComment> = [
 	ROUND,
-	{id: 2, author: "acme-founder", body: answerComment("R1.1", BOUND)},
-	{id: 3, author: "acme-founder", body: AUTHORIZATION},
-	{id: 4, author: "acme-founder", body: rulingComment("R1.2", BOUND)},
+	{ id: 2, author: "acme-founder", body: answerComment("R1.1", BOUND) },
+	{ id: 3, author: "acme-founder", body: AUTHORIZATION },
+	{ id: 4, author: "acme-founder", body: rulingComment("R1.2", BOUND) },
 ];
 
 /** The two decisions a cleared fixture session normalizes into, in trail order. */
@@ -50,7 +50,7 @@ export const CLEARED_DECISIONS: ReadonlyArray<DecisionRow> = [
 	},
 ];
 
-export {commentsPayload};
+export { commentsPayload };
 
 export const issueJson = (input: {
 	readonly number: number;
@@ -63,9 +63,9 @@ export const issueJson = (input: {
 		title: input.title ?? `issue ${input.number}`,
 		body: input.body ?? "",
 		state: "open",
-		labels: (input.labels ?? []).map((name) => ({name})),
+		labels: (input.labels ?? []).map((name) => ({ name })),
 		html_url: `https://github.com/${REPO}/issues/${input.number}`,
-		user: {login: "acme-founder"},
+		user: { login: "acme-founder" },
 		milestone: null,
 		state_reason: null,
 	});

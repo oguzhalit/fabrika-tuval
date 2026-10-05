@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {parseRoadmap, roadmapRowFor} from "./roadmap.ts";
+import { describe, expect, it } from "vitest";
+import { parseRoadmap, roadmapRowFor } from "./roadmap.ts";
 
 /** The milestone each fixture row pins, named so no row carries a bare number. */
 const PILLARS = 17;
@@ -38,13 +38,13 @@ describe("parseRoadmap", () => {
 	it("reads the ## Arcs and ## Campaigns rows as name → milestone pairs", () => {
 		const rows = parseRoadmap(ROADMAP);
 		expect(rows.arcs).toEqual([
-			{name: "Four Pillars", milestone: 17},
-			{name: "Geçit", milestone: 24},
-			{name: "Mecmua v2", milestone: 25},
+			{ name: "Four Pillars", milestone: 17 },
+			{ name: "Geçit", milestone: 24 },
+			{ name: "Mecmua v2", milestone: 25 },
 		]);
 		expect(rows.campaigns).toEqual([
-			{name: "Mentor Audit", milestone: 27},
-			{name: "fabrika campaign", milestone: 44},
+			{ name: "Mentor Audit", milestone: 27 },
+			{ name: "fabrika campaign", milestone: 44 },
 		]);
 	});
 
@@ -69,7 +69,7 @@ describe("parseRoadmap", () => {
 |-----|-----------|
 | Retired | #2 |
 `);
-		expect(rows.arcs).toEqual([{name: "Live", milestone: 1}]);
+		expect(rows.arcs).toEqual([{ name: "Live", milestone: 1 }]);
 	});
 
 	it("drops the header and `|---|` separator rows without matching on their text", () => {
@@ -89,7 +89,7 @@ describe("parseRoadmap", () => {
 	});
 
 	it("reads an absent section as no rows, not as a failure", () => {
-		expect(parseRoadmap("# Roadmap\n\nNo tables here.\n")).toEqual({arcs: [], campaigns: []});
+		expect(parseRoadmap("# Roadmap\n\nNo tables here.\n")).toEqual({ arcs: [], campaigns: [] });
 	});
 });
 

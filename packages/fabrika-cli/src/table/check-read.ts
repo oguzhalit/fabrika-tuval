@@ -9,14 +9,14 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9821
  */
 
-import {Effect} from "effect";
-import type {TableSettings} from "../config/keys/table.ts";
-import type {ChildOutcome, ChildRequest} from "../io/exec.ts";
-import type {Attempt} from "../io/git.ts";
-import type {Existence, IssueRecord, TimelineFacts} from "../io/issues.ts";
-import {PASSED_THROUGH} from "../spike/run-verb.ts";
-import type {LaneRecord} from "../wire/lane-record.ts";
-import type {CheckRow} from "./agenda.ts";
+import { Effect } from "effect";
+import type { TableSettings } from "../config/keys/table.ts";
+import type { ChildOutcome, ChildRequest } from "../io/exec.ts";
+import type { Attempt } from "../io/git.ts";
+import type { Existence, IssueRecord, TimelineFacts } from "../io/issues.ts";
+import { PASSED_THROUGH } from "../spike/run-verb.ts";
+import type { LaneRecord } from "../wire/lane-record.ts";
+import type { CheckRow } from "./agenda.ts";
 import {
 	checkRowOf,
 	type DueCheck,
@@ -33,9 +33,9 @@ import {
 	sourceResultOf,
 	successOf,
 } from "./check.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {issuesOf} from "./group.ts";
-import type {Refusal} from "./sync-verb.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { issuesOf } from "./group.ts";
+import type { Refusal } from "./sync-verb.ts";
 
 /** The reads and the one run a check needs, passed in so prep stays provable offline. */
 export interface CheckBoard<R> {
@@ -77,7 +77,7 @@ export interface GatherInput {
 	readonly records: ReadonlyMap<number, ReadonlyArray<LaneRecord>>;
 }
 
-const refused = (code: number, reason: string): Refusal => ({_tag: "Refused", code, reason});
+const refused = (code: number, reason: string): Refusal => ({ _tag: "Refused", code, reason });
 
 interface Timelines {
 	readonly _tag: "Timelines";
@@ -98,7 +98,7 @@ export const gatherChecks = <R>(
 	input: GatherInput,
 ): Effect.Effect<Gathered | Refusal, never, R> =>
 	Effect.gen(function* () {
-		const {verb, repo, settings} = input;
+		const { verb, repo, settings } = input;
 		const unread = (what: string, reason: string) =>
 			refused(
 				PRECONDITION_UNKNOWN,
@@ -114,7 +114,7 @@ export const gatherChecks = <R>(
 					if (read._tag === "Failure") return unread(`#${number}'s timeline`, read.reason);
 					facts.set(number, read.value);
 				}
-				return {_tag: "Timelines", facts};
+				return { _tag: "Timelines", facts };
 			});
 
 		const checks: GatheredCheck[] = [];
@@ -142,7 +142,7 @@ export const gatherChecks = <R>(
 					file,
 					args,
 					cwd: input.cwd,
-					env: {...inherited(input.env), ...sourceEnv(repo, check, prs)},
+					env: { ...inherited(input.env), ...sourceEnv(repo, check, prs) },
 					timeoutSeconds: source.timeoutSeconds,
 					captureBytes: SOURCE_CAPTURE_BYTES,
 				});
@@ -171,5 +171,5 @@ export const gatherChecks = <R>(
 				row: checkRowOf(evidence, issue.value, settings),
 			});
 		}
-		return {_tag: "Gathered", checks, vanished};
+		return { _tag: "Gathered", checks, vanished };
 	});

@@ -61,9 +61,9 @@ export const expandBranch = (branch: string): ReadonlyArray<CpPath> => {
 		// `[^/]+` and gitignore's `*` both mean "one or more non-slash", so a within-segment regex
 		// wildcard becomes a real glob a CODEOWNERS row can own.
 		if (base.includes("[^/]+")) {
-			return {path: base.replace(/\[\^\/\]\+/g, "*"), kind: "glob"};
+			return { path: base.replace(/\[\^\/\]\+/g, "*"), kind: "glob" };
 		}
-		return {path: base, kind: base.endsWith("/") ? "dir" : "file"};
+		return { path: base, kind: base.endsWith("/") ? "dir" : "file" };
 	};
 	let forms: string[] = [anyDepth];
 	const groupRe = /\(([^()]*)\)/;
@@ -106,7 +106,7 @@ export const parseCodeownersPatterns = (codeownersText: string): ReadonlyArray<O
 		if (line === "") continue;
 		const [pattern, ...owners] = line.split(/\s+/);
 		if (pattern === undefined || owners.length === 0) continue;
-		out.push({pattern: pattern.replace(/^\//, ""), owners});
+		out.push({ pattern: pattern.replace(/^\//, ""), owners });
 	}
 	return out;
 };

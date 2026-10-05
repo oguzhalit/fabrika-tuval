@@ -11,18 +11,18 @@
  * `ui manifest`, `ui law` and `ui golden` are pure reads and take no lane precondition — they call
  * {@link resolveRoot} and nothing here.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {laneNumber, nonceOf, parseLaneBranch} from "../build/lane.ts";
-import {requireLane} from "../build/lane-guard.ts";
-import {readTree} from "../build/tree.ts";
-import {currentBranch} from "../io/issues.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {LANE_NOT_MINE, PRECONDITION_UNKNOWN} from "./codes.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { laneNumber, nonceOf, parseLaneBranch } from "../build/lane.ts";
+import { requireLane } from "../build/lane-guard.ts";
+import { readTree } from "../build/tree.ts";
+import { currentBranch } from "../io/issues.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { LANE_NOT_MINE, PRECONDITION_UNKNOWN } from "./codes.ts";
 
 export type Root =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Root"; readonly root: string};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Root"; readonly root: string };
 
 /** The repo root every convention path resolves against — never the cwd, never a web URL. */
 export const resolveRoot = (
@@ -38,11 +38,11 @@ export const resolveRoot = (
 						`${verb}: cannot resolve the repo root: ${tree.reason} — every convention path is UNKNOWN.`,
 					),
 				}
-			: {_tag: "Root" as const, root: tree.value.root};
+			: { _tag: "Root" as const, root: tree.value.root };
 	});
 
 export type UiLane =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
 	| {
 			readonly _tag: "Lane";
 			readonly root: string;
@@ -71,8 +71,8 @@ export const requireUiLane = (
 	Effect.gen(function* () {
 		const lane = yield* requireLane(verb, repo, session, null);
 		if (lane._tag === "Refused") {
-			const {outcome} = lane;
-			if (outcome.code === PRECONDITION_UNKNOWN) return {_tag: "Refused" as const, outcome};
+			const { outcome } = lane;
+			if (outcome.code === PRECONDITION_UNKNOWN) return { _tag: "Refused" as const, outcome };
 			const detail = outcome.stderr.at(-1) ?? "no detail";
 			const branch = yield* currentBranch;
 			const parsed = branch === null ? null : parseLaneBranch(branch);

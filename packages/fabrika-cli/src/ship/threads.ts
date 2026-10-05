@@ -9,7 +9,7 @@
  *
  * `human` unlocks nothing. Only a positive `bot` reaches the skill's nit judgment.
  */
-import type {ReviewThread} from "./github.ts";
+import type { ReviewThread } from "./github.ts";
 
 export type ThreadClass = "bot" | "human";
 
@@ -24,11 +24,11 @@ export const classOfThread = (thread: ReviewThread): ThreadClass =>
 /** The first non-`Bot` participant, which the `16` refusal names so the caller can route it. */
 export const firstHumanOf = (
 	thread: ReviewThread,
-): {readonly login: string; readonly typename: string} | null => {
+): { readonly login: string; readonly typename: string } | null => {
 	const found = thread.comments.find((comment) => comment.authorType !== BOT);
 	return found === undefined
 		? null
-		: {login: found.author, typename: found.authorType || "unknown"};
+		: { login: found.author, typename: found.authorType || "unknown" };
 };
 
 export const siteOf = (thread: ReviewThread): string =>

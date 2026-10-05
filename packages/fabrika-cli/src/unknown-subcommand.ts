@@ -28,7 +28,7 @@ export interface CommandNode {
 	readonly name: string;
 	readonly alias: string | undefined;
 	readonly unlisted: boolean;
-	readonly subcommands: ReadonlyArray<{readonly commands: ReadonlyArray<CommandNode>}>;
+	readonly subcommands: ReadonlyArray<{ readonly commands: ReadonlyArray<CommandNode> }>;
 }
 
 /** A token that named no subcommand of the node it sat under. */
@@ -91,7 +91,7 @@ export const findUnknownSubcommand = (
 		const index = subcommandIndex(node);
 		if (index.size === 0) return undefined;
 		const next = index.get(token);
-		if (next === undefined) return {token, path: [...path], known: offered(node)};
+		if (next === undefined) return { token, path: [...path], known: offered(node) };
 		node = next;
 		path.push(next.name);
 	}

@@ -17,12 +17,12 @@ import {
 	SIZES,
 	type Size,
 } from "../config/keys/appetite-sizes.ts";
-import type {RulingScan} from "../decision/ruling.ts";
-import {type RulingUrl, rulingComment, rulingIssue, rulingRepo} from "../wire/decision-ruling.ts";
-import type {NonEmptyReadonlyArray} from "../wire/format.ts";
-import {POINTER_GRAMMAR, KEY as POINTER_KEY, read as readPointer} from "../wire/pitch-ruling.ts";
-import type {LabelUniverse} from "./label-universe.ts";
-import {clean, type GuardVerdict, unknown, violation, zeroScope} from "./verdict.ts";
+import type { RulingScan } from "../decision/ruling.ts";
+import { type RulingUrl, rulingComment, rulingIssue, rulingRepo } from "../wire/decision-ruling.ts";
+import type { NonEmptyReadonlyArray } from "../wire/format.ts";
+import { POINTER_GRAMMAR, KEY as POINTER_KEY, read as readPointer } from "../wire/pitch-ruling.ts";
+import type { LabelUniverse } from "./label-universe.ts";
+import { clean, type GuardVerdict, unknown, violation, zeroScope } from "./verdict.ts";
 
 export const VERB = "guard pitch-guard check";
 
@@ -82,11 +82,11 @@ export interface Candidate {
  * no read: the pointer already fails on its own bytes.
  */
 export type RulingPointer =
-	| {readonly _tag: "malformed"; readonly reason: string}
-	| {readonly _tag: "misnumbered"; readonly names: number}
-	| {readonly _tag: "foreign"; readonly url: RulingUrl}
+	| { readonly _tag: "malformed"; readonly reason: string }
+	| { readonly _tag: "misnumbered"; readonly names: number }
+	| { readonly _tag: "foreign"; readonly url: RulingUrl }
 	/** The ruling is a comment on the feature's own issue: a desk ruling, with a marker beside it. */
-	| {readonly _tag: "own"; readonly url: RulingUrl}
+	| { readonly _tag: "own"; readonly url: RulingUrl }
 	/** The ruling is a comment on another issue of this repository. */
 	| {
 			readonly _tag: "other";
@@ -98,8 +98,8 @@ export type RulingPointer =
 /** What stands behind a pointer at the feature's own issue. */
 export type OwnRulingRead =
 	/** `standingRulings`' scan of the feature: every marker whose author the roster resolved. */
-	| {readonly _tag: "scanned"; readonly scan: RulingScan}
-	| {readonly _tag: "unread"; readonly reason: string};
+	| { readonly _tag: "scanned"; readonly scan: RulingScan }
+	| { readonly _tag: "unread"; readonly reason: string };
 
 /** What stands behind a pointer at a comment on another issue. */
 export type OtherRulingRead =
@@ -109,15 +109,15 @@ export type OtherRulingRead =
 			readonly authorized: boolean;
 			readonly body: string;
 			/** The milestone the linked issue is homed on, and whether it is open. */
-			readonly milestone: {readonly number: number; readonly open: boolean} | null;
+			readonly milestone: { readonly number: number; readonly open: boolean } | null;
 	  }
 	/** The linked issue carries no comment with the id the URL names. */
-	| {readonly _tag: "missing"}
-	| {readonly _tag: "unread"; readonly reason: string};
+	| { readonly _tag: "missing" }
+	| { readonly _tag: "unread"; readonly reason: string };
 
 export type PointedRuling =
-	| Exclude<RulingPointer, {readonly _tag: "own" | "other"}>
-	| {readonly _tag: "own"; readonly url: RulingUrl; readonly read: OwnRulingRead}
+	| Exclude<RulingPointer, { readonly _tag: "own" | "other" }>
+	| { readonly _tag: "own"; readonly url: RulingUrl; readonly read: OwnRulingRead }
 	| {
 			readonly _tag: "other";
 			readonly url: RulingUrl;
@@ -141,18 +141,18 @@ export const rulingPointers = (
 		const found = readPointer(comment.body);
 		if (found._tag === "Absent") continue;
 		if (found._tag === "Malformed") {
-			pointers.push({_tag: "malformed", reason: found.reason});
+			pointers.push({ _tag: "malformed", reason: found.reason });
 			continue;
 		}
-		const {issue, ruling: url} = found.value;
+		const { issue, ruling: url } = found.value;
 		if (issue !== number) {
-			pointers.push({_tag: "misnumbered", names: issue});
+			pointers.push({ _tag: "misnumbered", names: issue });
 		} else if (rulingRepo(url).toLowerCase() !== repo.toLowerCase()) {
-			pointers.push({_tag: "foreign", url});
+			pointers.push({ _tag: "foreign", url });
 		} else if (rulingIssue(url) === number) {
-			pointers.push({_tag: "own", url});
+			pointers.push({ _tag: "own", url });
 		} else {
-			pointers.push({_tag: "other", url, issue: rulingIssue(url), comment: rulingComment(url)});
+			pointers.push({ _tag: "other", url, issue: rulingIssue(url), comment: rulingComment(url) });
 		}
 	}
 	return pointers;
@@ -167,8 +167,8 @@ export const rulingPointers = (
  * only the label universe separates them.
  */
 export type Scope =
-	| {readonly _tag: "backlog"}
-	| {readonly _tag: "issue"; readonly number: number; readonly universe: LabelUniverse};
+	| { readonly _tag: "backlog" }
+	| { readonly _tag: "issue"; readonly number: number; readonly universe: LabelUniverse };
 
 const heading = /^\s{0,3}#{2,6}\s*pitch\s*$/i;
 const anyHeading = /^\s{0,3}#{1,6}\s/;
@@ -214,8 +214,8 @@ export const readField = (section: string, field: ReadableField): string | null 
  * @ruling https://github.com/kamp-us/phoenix/issues/9821
  */
 export type Appetite =
-	| {readonly _tag: "size"; readonly size: Size}
-	| {readonly _tag: "cycles"; readonly cycles: number};
+	| { readonly _tag: "size"; readonly size: Size }
+	| { readonly _tag: "cycles"; readonly cycles: number };
 
 /** The legacy arm: a whole positive number of 2-week cycles. */
 export const parseAppetiteCycles = (value: string): number | null => {
@@ -230,9 +230,9 @@ const SIZE_LEAD = /^([SML])(?![\w-])/;
 
 export const parseAppetite = (value: string): Appetite | null => {
 	const size = SIZE_LEAD.exec(value.trim())?.[1] as Size | undefined;
-	if (size !== undefined) return {_tag: "size", size};
+	if (size !== undefined) return { _tag: "size", size };
 	const cycles = parseAppetiteCycles(value);
-	return cycles === null ? null : {_tag: "cycles", cycles};
+	return cycles === null ? null : { _tag: "cycles", cycles };
 };
 
 export const sameAppetite = (a: Appetite, b: Appetite): boolean =>
@@ -245,8 +245,8 @@ export const describeAppetite = (appetite: Appetite): string =>
 	appetite._tag === "size" ? appetite.size : `${appetite.cycles} cycles`;
 
 export type PitchRead =
-	| {readonly _tag: "absent"}
-	| {readonly _tag: "malformed"; readonly missing: ReadonlyArray<string>}
+	| { readonly _tag: "absent" }
+	| { readonly _tag: "malformed"; readonly missing: ReadonlyArray<string> }
 	| {
 			readonly _tag: "present";
 			readonly appetite: Appetite;
@@ -256,7 +256,7 @@ export type PitchRead =
 
 export const readPitch = (body: string): PitchRead => {
 	const section = pitchSection(body);
-	if (section === null) return {_tag: "absent"};
+	if (section === null) return { _tag: "absent" };
 
 	const missing: Array<string> = [];
 	let appetite: Appetite | null = null;
@@ -273,8 +273,8 @@ export const readPitch = (body: string): PitchRead => {
 			}
 		}
 	}
-	if (missing.length > 0 || appetite === null) return {_tag: "malformed", missing};
-	return {_tag: "present", appetite, success: readField(section, SUCCESS_FIELD)};
+	if (missing.length > 0 || appetite === null) return { _tag: "malformed", missing };
+	return { _tag: "present", appetite, success: readField(section, SUCCESS_FIELD) };
 };
 
 /** The approval marker: emphasis-tolerant, appetite-capturing. */
@@ -300,11 +300,11 @@ export const isAgentStamped = (body: string): boolean =>
 	AGENT_STAMP_RES.some((stamp) => stamp.test(body));
 
 export type Approval =
-	| {readonly _tag: "approved"; readonly appetite: Appetite}
-	| {readonly _tag: "none"}
-	| {readonly _tag: "unauthorized"}
-	| {readonly _tag: "agent-authored"}
-	| {readonly _tag: "malformed-marker"}
+	| { readonly _tag: "approved"; readonly appetite: Appetite }
+	| { readonly _tag: "none" }
+	| { readonly _tag: "unauthorized" }
+	| { readonly _tag: "agent-authored" }
+	| { readonly _tag: "malformed-marker" }
 	| {
 			readonly _tag: "appetite-mismatch";
 			readonly approved: Appetite;
@@ -319,11 +319,11 @@ const markerAppetite = (rest: string): Appetite | null => {
 	// The flag is there for the legacy `Cycles`; a size is upper-case only, exactly as the body reads it.
 	if (size !== undefined) {
 		return (SIZES as ReadonlyArray<string>).includes(size)
-			? {_tag: "size", size: size as Size}
+			? { _tag: "size", size: size as Size }
 			: null;
 	}
 	const count = Number.parseInt(cycles ?? "", 10);
-	return count > 0 ? {_tag: "cycles", cycles: count} : null;
+	return count > 0 ? { _tag: "cycles", cycles: count } : null;
 };
 
 /**
@@ -333,7 +333,7 @@ const markerAppetite = (rest: string): Appetite | null => {
  */
 export const resolveApproval = (comments: ReadonlyArray<Comment>, declared: Appetite): Approval => {
 	const markers = comments.filter((comment) => APPROVAL_RE.test(comment.body));
-	if (markers.length === 0) return {_tag: "none"};
+	if (markers.length === 0) return { _tag: "none" };
 
 	let sawUnauthorized = false;
 	let sawAgent = false;
@@ -358,13 +358,13 @@ export const resolveApproval = (comments: ReadonlyArray<Comment>, declared: Appe
 			mismatch = approved;
 			continue;
 		}
-		return {_tag: "approved", appetite: approved};
+		return { _tag: "approved", appetite: approved };
 	}
-	if (mismatch !== null) return {_tag: "appetite-mismatch", approved: mismatch, declared};
-	if (sawMalformed) return {_tag: "malformed-marker"};
-	if (sawAgent) return {_tag: "agent-authored"};
-	if (sawUnauthorized) return {_tag: "unauthorized"};
-	return {_tag: "none"};
+	if (mismatch !== null) return { _tag: "appetite-mismatch", approved: mismatch, declared };
+	if (sawMalformed) return { _tag: "malformed-marker" };
+	if (sawAgent) return { _tag: "agent-authored" };
+	if (sawUnauthorized) return { _tag: "unauthorized" };
+	return { _tag: "none" };
 };
 
 /**
@@ -372,15 +372,17 @@ export const resolveApproval = (comments: ReadonlyArray<Comment>, declared: Appe
  * members only through this: the Size must equal an appetite a pitch body wrote.
  */
 export type HeadAppetite =
-	| {readonly _tag: "stated"; readonly appetite: Appetite}
+	| { readonly _tag: "stated"; readonly appetite: Appetite }
 	/** The head carries no well-formed pitch, so no written appetite backs the row's Size. */
-	| {readonly _tag: "unstated"}
-	| {readonly _tag: "unread"; readonly reason: string};
+	| { readonly _tag: "unstated" }
+	| { readonly _tag: "unread"; readonly reason: string };
 
 /** What a head body's pitch states. */
 export const headAppetiteOf = (body: string): HeadAppetite => {
 	const read = readPitch(body);
-	return read._tag === "present" ? {_tag: "stated", appetite: read.appetite} : {_tag: "unstated"};
+	return read._tag === "present"
+		? { _tag: "stated", appetite: read.appetite }
+		: { _tag: "unstated" };
 };
 
 /**
@@ -411,20 +413,20 @@ export interface BetRow {
 
 /** The table as the bet arm read it. An unread table approves nothing; comments alone decide. */
 export type BetTable =
-	| {readonly _tag: "read"; readonly source: string; readonly rows: ReadonlyArray<BetRow>}
-	| {readonly _tag: "unread"; readonly reason: string};
+	| { readonly _tag: "read"; readonly source: string; readonly rows: ReadonlyArray<BetRow> }
+	| { readonly _tag: "unread"; readonly reason: string };
 
-export const TABLE_NOT_CONSULTED: BetTable = {_tag: "unread", reason: "no table was consulted"};
+export const TABLE_NOT_CONSULTED: BetTable = { _tag: "unread", reason: "no table was consulted" };
 
 export type BetApproval =
-	| {readonly _tag: "approved"; readonly row: BetRow}
-	| {readonly _tag: "unread"}
-	| {readonly _tag: "none"}
-	| {readonly _tag: "cycles-pitch"; readonly head: number}
-	| {readonly _tag: "unauthorized"; readonly head: number; readonly setter: string | null}
-	| {readonly _tag: "no-size"; readonly head: number}
+	| { readonly _tag: "approved"; readonly row: BetRow }
+	| { readonly _tag: "unread" }
+	| { readonly _tag: "none" }
+	| { readonly _tag: "cycles-pitch"; readonly head: number }
+	| { readonly _tag: "unauthorized"; readonly head: number; readonly setter: string | null }
+	| { readonly _tag: "no-size"; readonly head: number }
 	/** The member's group row has a Size that no appetite written on its head backs. */
-	| {readonly _tag: "group-unbacked"; readonly head: number; readonly why: string}
+	| { readonly _tag: "group-unbacked"; readonly head: number; readonly why: string }
 	| {
 			readonly _tag: "size-mismatch";
 			readonly head: number;
@@ -468,15 +470,16 @@ export const resolveBetApproval = (
 	table: BetTable,
 	declared: Appetite,
 ): BetApproval => {
-	if (table._tag === "unread") return {_tag: "unread"};
+	if (table._tag === "unread") return { _tag: "unread" };
 	const rows = table.rows.filter((row) => row.covers.includes(issue));
-	if (rows.length === 0) return {_tag: "none"};
+	if (rows.length === 0) return { _tag: "none" };
 
 	let unauthorized: BetRow | null = null;
 	let unsized: BetRow | null = null;
 	let legacy: BetRow | null = null;
-	let unbacked: {readonly row: BetRow; readonly why: string} | null = null;
-	let mismatch: {readonly row: BetRow; readonly size: Size; readonly declared: Size} | null = null;
+	let unbacked: { readonly row: BetRow; readonly why: string } | null = null;
+	let mismatch: { readonly row: BetRow; readonly size: Size; readonly declared: Size } | null =
+		null;
 	for (const row of rows) {
 		if (!row.authorized) {
 			unauthorized ??= row;
@@ -489,8 +492,8 @@ export const resolveBetApproval = (
 		}
 		if (row.head !== issue) {
 			const why = unbackedBy(row, size);
-			if (why === null) return {_tag: "approved", row};
-			unbacked ??= {row, why};
+			if (why === null) return { _tag: "approved", row };
+			unbacked ??= { row, why };
 			continue;
 		}
 		if (declared._tag === "cycles") {
@@ -498,10 +501,10 @@ export const resolveBetApproval = (
 			continue;
 		}
 		if (size !== declared.size) {
-			mismatch ??= {row, size, declared: declared.size};
+			mismatch ??= { row, size, declared: declared.size };
 			continue;
 		}
-		return {_tag: "approved", row};
+		return { _tag: "approved", row };
 	}
 	if (mismatch !== null) {
 		return {
@@ -512,18 +515,18 @@ export const resolveBetApproval = (
 		};
 	}
 	if (unbacked !== null) {
-		return {_tag: "group-unbacked", head: unbacked.row.head, why: unbacked.why};
+		return { _tag: "group-unbacked", head: unbacked.row.head, why: unbacked.why };
 	}
-	if (legacy !== null) return {_tag: "cycles-pitch", head: legacy.head};
-	if (unsized !== null) return {_tag: "no-size", head: unsized.head};
+	if (legacy !== null) return { _tag: "cycles-pitch", head: legacy.head };
+	if (unsized !== null) return { _tag: "no-size", head: unsized.head };
 	if (unauthorized !== null) {
-		return {_tag: "unauthorized", head: unauthorized.head, setter: unauthorized.setter};
+		return { _tag: "unauthorized", head: unauthorized.head, setter: unauthorized.setter };
 	}
-	return {_tag: "none"};
+	return { _tag: "none" };
 };
 
 /** Why the bet arm did not approve, or `null` when the table was unread (the run names that once). */
-const betDetail = (approval: Exclude<BetApproval, {_tag: "approved"}>): string | null => {
+const betDetail = (approval: Exclude<BetApproval, { _tag: "approved" }>): string | null => {
 	switch (approval._tag) {
 		case "unread":
 			return null;
@@ -566,12 +569,12 @@ export const takesPitchRuling = (candidate: Pick<Candidate, "labels" | "hasParen
 	!candidate.hasParent;
 
 export type PitchRulingRoute =
-	| {readonly _tag: "ruled"; readonly ruling: RulingUrl}
+	| { readonly _tag: "ruled"; readonly ruling: RulingUrl }
 	/** No comment reaches for the pointer, so the pitch is judged exactly as without this route. */
-	| {readonly _tag: "none"}
+	| { readonly _tag: "none" }
 	/** A pointer links a ruling that could not be read: neither a pass nor a missing pitch. */
-	| {readonly _tag: "unread"; readonly detail: string}
-	| {readonly _tag: "missed"; readonly detail: string};
+	| { readonly _tag: "unread"; readonly detail: string }
+	| { readonly _tag: "missed"; readonly detail: string };
 
 /**
  * `#<n>` as a whole number: a longer number that starts with these digits names another issue, and
@@ -585,8 +588,8 @@ const POINTER = `\`${POINTER_KEY}:\` comment`;
 const judgeRuling = (
 	candidate: Candidate,
 	pointed: PointedRuling,
-): Exclude<PitchRulingRoute, {_tag: "none"}> => {
-	const missed = (detail: string) => ({_tag: "missed" as const, detail});
+): Exclude<PitchRulingRoute, { _tag: "none" }> => {
+	const missed = (detail: string) => ({ _tag: "missed" as const, detail });
 	switch (pointed._tag) {
 		case "malformed":
 			return missed(`its ${POINTER} does not read as \`${POINTER_GRAMMAR}\`: ${pointed.reason}`);
@@ -599,10 +602,13 @@ const judgeRuling = (
 		case "own": {
 			const read = pointed.read;
 			if (read._tag === "unread") {
-				return {_tag: "unread", detail: `its ${POINTER} links ${pointed.url}, but ${read.reason}`};
+				return {
+					_tag: "unread",
+					detail: `its ${POINTER} links ${pointed.url}, but ${read.reason}`,
+				};
 			}
 			return read.scan.all.some((standing) => standing.ruling.ruling === pointed.url)
-				? {_tag: "ruled", ruling: pointed.url}
+				? { _tag: "ruled", ruling: pointed.url }
 				: missed(
 						`its ${POINTER} links ${pointed.url}, but no \`decision-ruled:\` marker from a control-plane account cites that comment`,
 					);
@@ -610,7 +616,8 @@ const judgeRuling = (
 		case "other": {
 			const read = pointed.read;
 			const linked = `its ${POINTER} links ${pointed.url}`;
-			if (read._tag === "unread") return {_tag: "unread", detail: `${linked}, but ${read.reason}`};
+			if (read._tag === "unread")
+				return { _tag: "unread", detail: `${linked}, but ${read.reason}` };
 			if (read._tag === "missing") {
 				return missed(`${linked}, but #${pointed.issue} carries no comment with that id`);
 			}
@@ -635,7 +642,7 @@ const judgeRuling = (
 					`${linked}, but #${pointed.issue} and #${candidate.number} do not share an open milestone`,
 				);
 			}
-			return {_tag: "ruled", ruling: pointed.url};
+			return { _tag: "ruled", ruling: pointed.url };
 		}
 	}
 };
@@ -653,7 +660,7 @@ const judgeRuling = (
  * @ruling https://github.com/kamp-us/phoenix/issues/10294#issuecomment-5974132205
  */
 export const resolvePitchRuling = (candidate: Candidate): PitchRulingRoute => {
-	if (!takesPitchRuling(candidate)) return {_tag: "none"};
+	if (!takesPitchRuling(candidate)) return { _tag: "none" };
 	let unread: PitchRulingRoute | null = null;
 	let missed: PitchRulingRoute | null = null;
 	for (const pointed of candidate.rulings) {
@@ -662,17 +669,17 @@ export const resolvePitchRuling = (candidate: Candidate): PitchRulingRoute => {
 		if (judged._tag === "unread") unread ??= judged;
 		else missed ??= judged;
 	}
-	return unread ?? missed ?? {_tag: "none"};
+	return unread ?? missed ?? { _tag: "none" };
 };
 
 export type Disposition =
-	| {readonly _tag: "out-of-scope"}
-	| {readonly _tag: "pitched"; readonly appetite: Appetite}
+	| { readonly _tag: "out-of-scope" }
+	| { readonly _tag: "pitched"; readonly appetite: Appetite }
 	/** A parentless feature a founder ruling names by number: it passes with no approved pitch. */
-	| {readonly _tag: "ruled"; readonly ruling: RulingUrl}
-	| {readonly _tag: "unpitched"; readonly detail: string}
+	| { readonly _tag: "ruled"; readonly ruling: RulingUrl }
+	| { readonly _tag: "unpitched"; readonly detail: string }
 	/** Whether a founder ruling covers the pitch could not be read. */
-	| {readonly _tag: "unread"; readonly detail: string};
+	| { readonly _tag: "unread"; readonly detail: string };
 
 const APPROVAL_DETAIL: {
 	readonly [K in Exclude<Approval["_tag"], "approved" | "appetite-mismatch">]: string;
@@ -685,7 +692,7 @@ const APPROVAL_DETAIL: {
 		"its `pitch-approved:` comment names no `appetite <S|M|L>` (or legacy `appetite <N> cycles`) — approval must bind the appetite it approved",
 };
 
-const commentDetail = (approval: Exclude<Approval, {_tag: "approved"}>): string =>
+const commentDetail = (approval: Exclude<Approval, { _tag: "approved" }>): string =>
 	approval._tag === "appetite-mismatch"
 		? `its approval names appetite ${describeAppetite(approval.approved)} but the body declares ${describeAppetite(approval.declared)} — re-approval needed`
 		: APPROVAL_DETAIL[approval._tag];
@@ -694,9 +701,9 @@ const commentDetail = (approval: Exclude<Approval, {_tag: "approved"}>): string 
 const pitchDisposition = (
 	candidate: Candidate,
 	table: BetTable,
-): Extract<Disposition, {_tag: "pitched" | "unpitched"}> => {
+): Extract<Disposition, { _tag: "pitched" | "unpitched" }> => {
 	const read = readPitch(candidate.body);
-	if (read._tag === "absent") return {_tag: "unpitched", detail: "has no `## Pitch` section"};
+	if (read._tag === "absent") return { _tag: "unpitched", detail: "has no `## Pitch` section" };
 	if (read._tag === "malformed") {
 		return {
 			_tag: "unpitched",
@@ -705,12 +712,12 @@ const pitchDisposition = (
 	}
 
 	const approval = resolveApproval(candidate.comments, read.appetite);
-	if (approval._tag === "approved") return {_tag: "pitched", appetite: approval.appetite};
+	if (approval._tag === "approved") return { _tag: "pitched", appetite: approval.appetite };
 	const bet = resolveBetApproval(candidate.number, table, read.appetite);
-	if (bet._tag === "approved") return {_tag: "pitched", appetite: read.appetite};
+	if (bet._tag === "approved") return { _tag: "pitched", appetite: read.appetite };
 	const onTable = betDetail(bet);
 	const detail = commentDetail(approval);
-	return {_tag: "unpitched", detail: onTable === null ? detail : `${detail}; and ${onTable}`};
+	return { _tag: "unpitched", detail: onTable === null ? detail : `${detail}; and ${onTable}` };
 };
 
 /**
@@ -721,7 +728,7 @@ export const disposition = (
 	candidate: Candidate,
 	table: BetTable = TABLE_NOT_CONSULTED,
 ): Disposition => {
-	if (!isLaneEntering(candidate)) return {_tag: "out-of-scope"};
+	if (!isLaneEntering(candidate)) return { _tag: "out-of-scope" };
 
 	const route = resolvePitchRuling(candidate);
 	if (route._tag === "ruled") return route;
@@ -732,7 +739,7 @@ export const disposition = (
 				_tag: "unread",
 				detail: `${route.detail} — whether a founder ruling covers its pitch is UNKNOWN`,
 			}
-		: {_tag: "unpitched", detail: `${pitch.detail}; and ${route.detail}`};
+		: { _tag: "unpitched", detail: `${pitch.detail}; and ${route.detail}` };
 };
 
 export interface Unpitched {
@@ -758,7 +765,7 @@ export type PitchVerdict =
 			readonly ruled: ReadonlyArray<Ruled>;
 	  }
 	/** No lane-entering work in scope — fail closed, never a vacuous pass. */
-	| {readonly pass: false; readonly reason: "zero-scope"; readonly scope: Scope}
+	| { readonly pass: false; readonly reason: "zero-scope"; readonly scope: Scope }
 	/** The labels that define scope do not exist in the repo at all — unmet prerequisite. */
 	| {
 			readonly pass: false;
@@ -799,15 +806,15 @@ export type PitchVerdict =
  */
 export const judge = (
 	candidates: ReadonlyArray<Candidate>,
-	scope: Scope = {_tag: "backlog"},
+	scope: Scope = { _tag: "backlog" },
 	table: BetTable = TABLE_NOT_CONSULTED,
 ): PitchVerdict => {
 	const inScope = candidates.filter(isLaneEntering);
 	if (inScope.length === 0) {
-		if (scope._tag === "backlog") return {pass: false, reason: "zero-scope", scope};
+		if (scope._tag === "backlog") return { pass: false, reason: "zero-scope", scope };
 		return scope.universe._tag === "absent"
-			? {pass: false, reason: "vocabulary-absent", scope, missing: scope.universe.missing}
-			: {pass: true, scope, scanned: 0, pitched: 0, ruled: []};
+			? { pass: false, reason: "vocabulary-absent", scope, missing: scope.universe.missing }
+			: { pass: true, scope, scanned: 0, pitched: 0, ruled: [] };
 	}
 
 	const unpitched: Array<Unpitched> = [];
@@ -815,16 +822,16 @@ export const judge = (
 	const ruled: Array<Ruled> = [];
 	let pitched = 0;
 	for (const candidate of inScope) {
-		const {number, title} = candidate;
+		const { number, title } = candidate;
 		const resolved = disposition(candidate, table);
 		if (resolved._tag === "pitched") pitched++;
-		else if (resolved._tag === "ruled") ruled.push({number, title, ruling: resolved.ruling});
+		else if (resolved._tag === "ruled") ruled.push({ number, title, ruling: resolved.ruling });
 		else if (resolved._tag === "unpitched")
-			unpitched.push({number, title, detail: resolved.detail});
-		else if (resolved._tag === "unread") unread.push({number, title, detail: resolved.detail});
+			unpitched.push({ number, title, detail: resolved.detail });
+		else if (resolved._tag === "unread") unread.push({ number, title, detail: resolved.detail });
 	}
 
-	const counted = {scope, scanned: inScope.length, pitched, ruled};
+	const counted = { scope, scanned: inScope.length, pitched, ruled };
 	const [firstUnpitched, ...moreUnpitched] = unpitched;
 	if (firstUnpitched !== undefined) {
 		return {
@@ -837,9 +844,9 @@ export const judge = (
 	}
 	const [firstUnread, ...moreUnread] = unread;
 	if (firstUnread !== undefined) {
-		return {pass: false, reason: "unread", ...counted, unread: [firstUnread, ...moreUnread]};
+		return { pass: false, reason: "unread", ...counted, unread: [firstUnread, ...moreUnread] };
 	}
-	return {pass: true, ...counted};
+	return { pass: true, ...counted };
 };
 
 const scopeLabel = (scope: Scope): string =>

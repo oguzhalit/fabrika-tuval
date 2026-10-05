@@ -15,7 +15,7 @@
  * pull request's own author — the same conjunctive shape `./cap-clearance.ts`'s reader applies.
  */
 
-import type {NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines} from "./format.ts";
+import type { NonEmptyReadonlyArray, WireEmit, WireRead, WireReadLines } from "./format.ts";
 import {
 	absent,
 	FIELD_SEPARATOR,
@@ -33,7 +33,7 @@ export const KEY = "takeover-granted";
 declare const GRANTED_PULL: unique symbol;
 
 /** The pull request a grant hands over: a positive integer. No other inhabitant exists. */
-export type GrantedPull = number & {readonly [GRANTED_PULL]: true};
+export type GrantedPull = number & { readonly [GRANTED_PULL]: true };
 
 export const grantedPull = (raw: number): GrantedPull | null =>
 	Number.isInteger(raw) && raw > 0 ? (raw as GrantedPull) : null;
@@ -79,11 +79,11 @@ export const read = (artifact: string): TakeoverGrantRead => {
 			evidence,
 		);
 	}
-	return {_tag: "Found", value: {pr, at}};
+	return { _tag: "Found", value: { pr, at } };
 };
 
 /** Compose the marker's first line. Round-trips through {@link read}. */
-export const emit = ({pr, at}: TakeoverGrant): string =>
+export const emit = ({ pr, at }: TakeoverGrant): string =>
 	`${KEY}: #${pr} ${FIELD_SEPARATOR} ${at}\n`;
 
 export const renderGrant = (grant: TakeoverGrant): NonEmptyReadonlyArray<string> => [
@@ -92,8 +92,8 @@ export const renderGrant = (grant: TakeoverGrant): NonEmptyReadonlyArray<string>
 ];
 
 export type TakeoverGrantFields =
-	| {readonly _tag: "Fields"; readonly grant: TakeoverGrant}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly grant: TakeoverGrant }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 /** `<key>: <value>` or `<key><TAB><value>`, so `wire read`'s own output pipes back into `wire emit`. */
 const FIELD_LINE = /^([A-Za-z-]+)[ \t]*[:\t][ \t]*(.*)$/;
@@ -140,19 +140,19 @@ export const parseFields = (fields: string): TakeoverGrantFields => {
 			reason: `"${seen.get("at") ?? ""}" is not an ISO-8601 UTC timestamp — expected a Z-suffixed instant`,
 		};
 	}
-	return {_tag: "Fields", grant: {pr, at}};
+	return { _tag: "Fields", grant: { pr, at } };
 };
 
 /** The registry row's byte-level `emit`, bound to this module's typed core. */
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.grant)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.grant) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderGrant(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderGrant(result.value) } : result;
 };

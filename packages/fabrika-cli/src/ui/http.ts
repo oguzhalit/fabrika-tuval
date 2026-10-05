@@ -8,20 +8,20 @@
  * the whole difference from the upstream capture-side upload, whose failures are projected away by
  * an error channel typed `never`: here a failed verification is a value the verb refuses on.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import * as HttpClient from "effect/unstable/http/HttpClient";
 import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {PNG_CONTENT_TYPE, parseUploadResponse, uploadEndpoint} from "../capture/upload.ts";
-import {readBackThroughRenderer} from "../io/attachment-read-back.ts";
-import {existenceOf, resolveToken, restRead} from "../io/gh-api.ts";
-import {fail, ok} from "../io/git.ts";
-import {isRecord} from "../io/json.ts";
-import type {Upload, UploadTarget} from "./evidence-verb.ts";
-import type {FetchLeg} from "./golden-verb.ts";
-import {legFailed} from "./leg-failed.ts";
-import {sha256Of} from "./png.ts";
-import {goldenUrl} from "./pointer.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { PNG_CONTENT_TYPE, parseUploadResponse, uploadEndpoint } from "../capture/upload.ts";
+import { readBackThroughRenderer } from "../io/attachment-read-back.ts";
+import { existenceOf, resolveToken, restRead } from "../io/gh-api.ts";
+import { fail, ok } from "../io/git.ts";
+import { isRecord } from "../io/json.ts";
+import type { Upload, UploadTarget } from "./evidence-verb.ts";
+import type { FetchLeg } from "./golden-verb.ts";
+import { legFailed } from "./leg-failed.ts";
+import { sha256Of } from "./png.ts";
+import { goldenUrl } from "./pointer.ts";
 
 /** Settle a promise into its value or its failure, so no path here needs a `try`. */
 const attempt = <A>(promise: Promise<A>): Promise<A | Error> =>
@@ -36,18 +36,20 @@ export const fetchGolden: FetchLeg = (url) =>
 		try: async () => {
 			const response = await attempt(fetch(url));
 			if (response instanceof Error) {
-				return {_tag: "Failed" as const, reason: `GET ${url} failed: ${response.message}`};
+				return { _tag: "Failed" as const, reason: `GET ${url} failed: ${response.message}` };
 			}
 			if (!response.ok) {
-				return {_tag: "Failed" as const, reason: `GET ${url} returned HTTP ${response.status}`};
+				return { _tag: "Failed" as const, reason: `GET ${url} returned HTTP ${response.status}` };
 			}
 			const body = await attempt(response.arrayBuffer());
 			return body instanceof Error
-				? {_tag: "Failed" as const, reason: `GET ${url} failed while reading: ${body.message}`}
-				: {_tag: "Ok" as const, bytes: new Uint8Array(body)};
+				? { _tag: "Failed" as const, reason: `GET ${url} failed while reading: ${body.message}` }
+				: { _tag: "Ok" as const, bytes: new Uint8Array(body) };
 		},
 		catch: legFailed,
-	}).pipe(Effect.catch((cause) => Effect.succeed({_tag: "Failed" as const, reason: cause.reason})));
+	}).pipe(
+		Effect.catch((cause) => Effect.succeed({ _tag: "Failed" as const, reason: cause.reason })),
+	);
 
 /** Store tier: content-addressed PUT, then a GET back that must hash to the same address. */
 export const storeUpload = (store: string, target: UploadTarget): Effect.Effect<Upload> =>
@@ -57,28 +59,30 @@ export const storeUpload = (store: string, target: UploadTarget): Effect.Effect<
 			const put = await attempt(
 				fetch(url, {
 					method: "PUT",
-					body: target.bytes,
-					headers: {"content-type": PNG_CONTENT_TYPE},
+					body: target.bytes as unknown as BodyInit,
+					headers: { "content-type": PNG_CONTENT_TYPE },
 				}),
 			);
 			if (put instanceof Error)
-				return {_tag: "Failed", reason: `PUT ${url} failed: ${put.message}`};
-			if (!put.ok) return {_tag: "Failed", reason: `PUT ${url} returned HTTP ${put.status}`};
+				return { _tag: "Failed", reason: `PUT ${url} failed: ${put.message}` };
+			if (!put.ok) return { _tag: "Failed", reason: `PUT ${url} returned HTTP ${put.status}` };
 			const get = await attempt(fetch(url));
 			if (get instanceof Error)
-				return {_tag: "Failed", reason: `GET ${url} failed: ${get.message}`};
-			if (!get.ok) return {_tag: "Failed", reason: `GET ${url} returned HTTP ${get.status}`};
+				return { _tag: "Failed", reason: `GET ${url} failed: ${get.message}` };
+			if (!get.ok) return { _tag: "Failed", reason: `GET ${url} returned HTTP ${get.status}` };
 			const body = await attempt(get.arrayBuffer());
 			if (body instanceof Error) {
-				return {_tag: "Failed", reason: `GET ${url} failed while reading: ${body.message}`};
+				return { _tag: "Failed", reason: `GET ${url} failed while reading: ${body.message}` };
 			}
 			const seen = sha256Of(new Uint8Array(body));
 			return seen === target.sha256
-				? {_tag: "Ok", url}
-				: {_tag: "Failed", reason: `${url} reads back as ${seen}, not ${target.sha256}`};
+				? { _tag: "Ok", url }
+				: { _tag: "Failed", reason: `${url} reads back as ${seen}, not ${target.sha256}` };
 		},
 		catch: legFailed,
-	}).pipe(Effect.catch((cause) => Effect.succeed<Upload>({_tag: "Failed", reason: cause.reason})));
+	}).pipe(
+		Effect.catch((cause) => Effect.succeed<Upload>({ _tag: "Failed", reason: cause.reason })),
+	);
 
 /** What the attachment tier needs before it can post anything: the repo, its id, and a credential. */
 interface Credentials {
@@ -103,7 +107,7 @@ const isTrustedAttachment = (hostedUrl: string): boolean => {
 	);
 };
 
-const failed = (reason: string): Upload => ({_tag: "Failed", reason});
+const failed = (reason: string): Upload => ({ _tag: "Failed", reason });
 
 /** POST the PNG and take the URL the endpoint answers. A failure names the status, never the body. */
 const postAttachment = (
@@ -128,12 +132,12 @@ const postAttachment = (
 		Effect.flatMap((response) =>
 			response.text.pipe(
 				Effect.map((body): Upload => {
-					const hostedUrl = parseUploadResponse({status: response.status, body}).hostedUrl;
+					const hostedUrl = parseUploadResponse({ status: response.status, body }).hostedUrl;
 					return hostedUrl === null
 						? failed(
 								`the user-attachments upload returned no trusted URL (HTTP ${response.status})`,
 							)
-						: {_tag: "Ok", url: hostedUrl};
+						: { _tag: "Ok", url: hostedUrl };
 				}),
 				Effect.catch(() =>
 					Effect.succeed(failed("the user-attachments upload response could not be read")),
@@ -202,7 +206,7 @@ const resolveCredentials = (
 				? ok(body.id)
 				: fail("GitHub answered 200 but named no repository id"),
 		);
-		if (read._tag === "Present") return {repo, repositoryId: read.value, token: token.value};
+		if (read._tag === "Present") return { repo, repositoryId: read.value, token: token.value };
 		return read._tag === "Absent"
 			? `${repo} does not exist, so it names no repository id`
 			: `cannot resolve ${repo}'s numeric id: ${read.reason}`;

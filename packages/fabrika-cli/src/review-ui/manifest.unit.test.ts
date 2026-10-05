@@ -1,4 +1,4 @@
-import {assert, describe, it} from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import {
 	type CaptureEntry,
 	type CaptureManifest,
@@ -26,7 +26,7 @@ const manifest: CaptureManifest = {
 			width: 1280,
 			height: 2140,
 			sha256: "9c41",
-			pageErrors: {rows: [], more: 0},
+			pageErrors: { rows: [], more: 0 },
 		},
 		{
 			surface: "/pano",
@@ -35,7 +35,7 @@ const manifest: CaptureManifest = {
 			width: 390,
 			height: 3200,
 			sha256: "1f7b",
-			pageErrors: {rows: [], more: 0},
+			pageErrors: { rows: [], more: 0 },
 		},
 	],
 };
@@ -64,15 +64,15 @@ describe("the set path", () => {
 describe("the manifest round-trip", () => {
 	it("parses back exactly what it serialized, viewport label and all", () => {
 		const read = parseManifest(serializeManifest(manifest));
-		assert.deepStrictEqual(read, {_tag: "Manifest", value: manifest});
+		assert.deepStrictEqual(read, { _tag: "Manifest", value: manifest });
 	});
 
 	// Two shots of one surface differ only by the label, so an entry that lost it could not say what
 	// width its pixels are of — and the two would read as one capture recorded twice.
 	it("refuses an entry carrying no viewport label", () => {
-		const {viewport: _dropped, ...unlabelled} = manifest.captures[0] as CaptureEntry;
+		const { viewport: _dropped, ...unlabelled } = manifest.captures[0] as CaptureEntry;
 		assert.strictEqual(
-			parseManifest(JSON.stringify({...manifest, captures: [unlabelled]}))._tag,
+			parseManifest(JSON.stringify({ ...manifest, captures: [unlabelled] }))._tag,
 			"Malformed",
 		);
 	});
@@ -83,7 +83,7 @@ describe("the manifest round-trip", () => {
 			captures: [
 				{
 					...(manifest.captures[0] as CaptureEntry),
-					scheme: {requested: "dark", proven: "dark"},
+					scheme: { requested: "dark", proven: "dark" },
 					path: "/tmp/fabrika-review-ui/4321-03135b91/judged/pano@desktop-dark.png",
 				},
 			],
@@ -98,7 +98,10 @@ describe("the manifest round-trip", () => {
 		const accented: CaptureManifest = {
 			...manifest,
 			captures: [
-				{...(manifest.captures[0] as CaptureEntry), accent: {requested: "amber", proven: "amber"}},
+				{
+					...(manifest.captures[0] as CaptureEntry),
+					accent: { requested: "amber", proven: "amber" },
+				},
 			],
 		};
 		assert.deepStrictEqual(parseManifest(serializeManifest(accented)), {
@@ -108,20 +111,32 @@ describe("the manifest round-trip", () => {
 	});
 
 	it("refuses an accent field that is not a requested/proven pair, rather than dropping it", () => {
-		for (const accent of ["amber", {requested: "amber"}, {requested: "amber", proven: ""}, null]) {
+		for (const accent of [
+			"amber",
+			{ requested: "amber" },
+			{ requested: "amber", proven: "" },
+			null,
+		]) {
 			assert.strictEqual(
-				parseManifest(JSON.stringify({...manifest, captures: [{...manifest.captures[0], accent}]}))
-					._tag,
+				parseManifest(
+					JSON.stringify({ ...manifest, captures: [{ ...manifest.captures[0], accent }] }),
+				)._tag,
 				"Malformed",
 			);
 		}
 	});
 
 	it("refuses a scheme field that is not a light/dark pair, rather than dropping it", () => {
-		for (const scheme of ["dark", {requested: "dark"}, {requested: "dark", proven: "dim"}, null]) {
+		for (const scheme of [
+			"dark",
+			{ requested: "dark" },
+			{ requested: "dark", proven: "dim" },
+			null,
+		]) {
 			assert.strictEqual(
-				parseManifest(JSON.stringify({...manifest, captures: [{...manifest.captures[0], scheme}]}))
-					._tag,
+				parseManifest(
+					JSON.stringify({ ...manifest, captures: [{ ...manifest.captures[0], scheme }] }),
+				)._tag,
 				"Malformed",
 			);
 		}
@@ -134,7 +149,7 @@ describe("the manifest round-trip", () => {
 				...manifest.captures,
 				{
 					...(manifest.captures[0] as CaptureEntry),
-					scheme: {requested: "dark", proven: "dark"},
+					scheme: { requested: "dark", proven: "dark" },
 					interaction: {
 						label: "sil-highlighted",
 						steps: ['click:role=button[name="Aç"]', 'hover:role=menuitem[name="Sil"]'],
@@ -155,15 +170,15 @@ describe("the manifest round-trip", () => {
 	it("refuses an interaction field that is not a label with its steps and proofs, rather than dropping it", () => {
 		for (const interaction of [
 			"sil",
-			{label: "sil", steps: ["hover:a"]},
-			{label: "", steps: ["hover:a"], proven: ["a"]},
-			{label: "sil", steps: [], proven: ["a"]},
-			{label: "sil", steps: ["hover:a"], proven: [1]},
+			{ label: "sil", steps: ["hover:a"] },
+			{ label: "", steps: ["hover:a"], proven: ["a"] },
+			{ label: "sil", steps: [], proven: ["a"] },
+			{ label: "sil", steps: ["hover:a"], proven: [1] },
 			null,
 		]) {
 			assert.strictEqual(
 				parseManifest(
-					JSON.stringify({...manifest, captures: [{...manifest.captures[0], interaction}]}),
+					JSON.stringify({ ...manifest, captures: [{ ...manifest.captures[0], interaction }] }),
 				)._tag,
 				"Malformed",
 			);
@@ -173,16 +188,16 @@ describe("the manifest round-trip", () => {
 	it("refuses a document it cannot read whole, rather than defaulting a field", () => {
 		assert.strictEqual(parseManifest("{")._tag, "Malformed");
 		assert.strictEqual(parseManifest("[]")._tag, "Malformed");
-		assert.strictEqual(parseManifest(JSON.stringify({...manifest, head: 3}))._tag, "Malformed");
+		assert.strictEqual(parseManifest(JSON.stringify({ ...manifest, head: 3 }))._tag, "Malformed");
 		assert.strictEqual(
-			parseManifest(JSON.stringify({...manifest, captures: [{surface: "/pano"}]}))._tag,
+			parseManifest(JSON.stringify({ ...manifest, captures: [{ surface: "/pano" }] }))._tag,
 			"Malformed",
 		);
 	});
 
 	it("refuses a set with zero captures — a set with no member is not a set", () => {
 		assert.strictEqual(
-			parseManifest(JSON.stringify({...manifest, captures: []}))._tag,
+			parseManifest(JSON.stringify({ ...manifest, captures: [] }))._tag,
 			"Malformed",
 		);
 	});
@@ -194,7 +209,7 @@ describe("the manifest round-trip", () => {
 				{
 					...(manifest.captures[0] as CaptureManifest["captures"][number]),
 					pageErrors: {
-						rows: [{kind: "console.error", text: "Warning: missing key prop"}],
+						rows: [{ kind: "console.error", text: "Warning: missing key prop" }],
 						more: 41,
 					},
 				},
@@ -203,7 +218,7 @@ describe("the manifest round-trip", () => {
 		const document = serializeManifest(capped);
 		assert.include(document, '"pageErrors":{"rows":[{"kind":"console.error"');
 		assert.include(document, '"more":41');
-		assert.deepStrictEqual(parseManifest(document), {_tag: "Manifest", value: capped});
+		assert.deepStrictEqual(parseManifest(document), { _tag: "Manifest", value: capped });
 	});
 
 	it("refuses the pre-collapse bare array, so a stale writer is Malformed and not silently read", () => {
@@ -212,7 +227,7 @@ describe("the manifest round-trip", () => {
 			captures: [
 				{
 					...(manifest.captures[0] as CaptureManifest["captures"][number]),
-					pageErrors: [{kind: "console.error", text: "Warning: missing key prop"}],
+					pageErrors: [{ kind: "console.error", text: "Warning: missing key prop" }],
 				},
 			],
 		});

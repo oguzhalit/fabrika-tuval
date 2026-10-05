@@ -18,8 +18,8 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/6913#issuecomment-5519863564
  */
 
-import {type ReadingValidator, readingValidators, renderReadingValidators} from "../entries.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import { type ReadingValidator, readingValidators, renderReadingValidators } from "../entries.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const CONFIG_VALIDATORS = "configValidators";
 
@@ -56,14 +56,14 @@ export const configValidatorsKey: KeyGroup<ReadonlyArray<ConfigValidator>> = {
 				command: {
 					type: "array",
 					description: 'The argv to spawn — e.g. ["pnpm", "exec", "lefthook", "validate"].',
-					items: {type: "string"},
+					items: { type: "string" },
 					minItems: 1,
 				},
 				reads: {
 					type: "array",
 					description:
 						"The exact repo-relative files this command opens, never a glob — what makes a passing run checkable per file.",
-					items: {type: "string", minLength: 1, pattern: "^[^*?\\[\\]{}]+$"},
+					items: { type: "string", minLength: 1, pattern: "^[^*?\\[\\]{}]+$" },
 					minItems: 1,
 				},
 			},

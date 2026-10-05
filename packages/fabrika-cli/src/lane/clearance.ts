@@ -24,18 +24,18 @@
  * operator re-runs the verb and the budget is the same as if it had landed the first time.
  */
 
-import {Effect, FileSystem, Path, Result} from "effect";
-import {appendText} from "../io/fs.ts";
-import {lockedRefusal, withLedgerLock} from "./append-lock.ts";
-import {applyClearance, resolveTask} from "./fold.ts";
-import {type LaneRef, loadLane} from "./store.ts";
+import { Effect, FileSystem, Path, Result } from "effect";
+import { appendText } from "../io/fs.ts";
+import { lockedRefusal, withLedgerLock } from "./append-lock.ts";
+import { applyClearance, resolveTask } from "./fold.ts";
+import { type LaneRef, loadLane } from "./store.ts";
 
 export type Recorded =
-	| {readonly _tag: "Recorded"; readonly task: string; readonly path: string}
-	| {readonly _tag: "AlreadyHeld"; readonly task: string; readonly path: string}
+	| { readonly _tag: "Recorded"; readonly task: string; readonly path: string }
+	| { readonly _tag: "AlreadyHeld"; readonly task: string; readonly path: string }
 	/** No lane at this ref — nothing local can trip, so this is an answer, not a fault. */
-	| {readonly _tag: "NoLane"; readonly dir: string}
-	| {readonly _tag: "Unusable"; readonly path: string; readonly reason: string};
+	| { readonly _tag: "NoLane"; readonly dir: string }
+	| { readonly _tag: "Unusable"; readonly path: string; readonly reason: string };
 
 /** Append one cleared round to a lane task's log. Every refusal names the document it read. */
 export const recordClearedRound = (
@@ -49,20 +49,24 @@ export const recordClearedRound = (
 		const fs = yield* FileSystem.FileSystem;
 		const path = yield* Path.Path;
 		return yield* withLedgerLock(
-			{fs, path, dir: path.join(ref.root, ref.lane), verb: VERB},
+			{ fs, path, dir: path.join(ref.root, ref.lane), verb: VERB },
 			Effect.gen(function* () {
 				const loaded = yield* loadLane(ref);
-				if (loaded._tag === "Absent") return {_tag: "NoLane" as const, dir: loaded.dir};
+				if (loaded._tag === "Absent") return { _tag: "NoLane" as const, dir: loaded.dir };
 				if (loaded._tag === "Unreadable") {
-					return {_tag: "Unusable" as const, path: loaded.path, reason: loaded.reason};
+					return { _tag: "Unusable" as const, path: loaded.path, reason: loaded.reason };
 				}
 				if (loaded._tag === "Malformed") {
-					return {_tag: "Unusable" as const, path: loaded.path, reason: loaded.defects.join("; ")};
+					return {
+						_tag: "Unusable" as const,
+						path: loaded.path,
+						reason: loaded.defects.join("; "),
+					};
 				}
 
 				const resolved = resolveTask(loaded.lane, task);
 				if (resolved._tag === "Unresolved") {
-					return {_tag: "Unusable" as const, path: loaded.logPath, reason: resolved.reason};
+					return { _tag: "Unusable" as const, path: loaded.logPath, reason: resolved.reason };
 				}
 
 				const at = yield* Effect.sync(() => new Date().toISOString());
@@ -75,21 +79,21 @@ export const recordClearedRound = (
 					rationale,
 				);
 				if (applied._tag === "Refused") {
-					return {_tag: "Unusable" as const, path: loaded.logPath, reason: applied.reason};
+					return { _tag: "Unusable" as const, path: loaded.logPath, reason: applied.reason };
 				}
 				if (applied._tag === "AlreadyHeld") {
-					return {_tag: "AlreadyHeld" as const, task: resolved.taskId, path: loaded.logPath};
+					return { _tag: "AlreadyHeld" as const, task: resolved.taskId, path: loaded.logPath };
 				}
 
 				const wrote = yield* Effect.result(
 					appendText(loaded.logPath, `${JSON.stringify(applied.entry)}\n`),
 				);
 				return Result.isFailure(wrote)
-					? ({_tag: "Unusable", path: loaded.logPath, reason: wrote.failure.reason} as const)
-					: ({_tag: "Recorded", task: resolved.taskId, path: loaded.logPath} as const);
+					? ({ _tag: "Unusable", path: loaded.logPath, reason: wrote.failure.reason } as const)
+					: ({ _tag: "Recorded", task: resolved.taskId, path: loaded.logPath } as const);
 			}),
 			{
-				onAbsent: (dir) => ({_tag: "NoLane" as const, dir}),
+				onAbsent: (dir) => ({ _tag: "NoLane" as const, dir }),
 				onLocked: (lockDir) => ({
 					_tag: "Unusable" as const,
 					path: lockDir,

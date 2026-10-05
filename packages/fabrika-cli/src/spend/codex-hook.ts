@@ -1,15 +1,15 @@
-import {NodeRuntime, NodeServices} from "@effect/platform-node";
-import {Console, Effect, Path} from "effect";
-import {execCapture} from "../io/exec.ts";
-import {readStdin} from "../io/stdin.ts";
-import {runCodexHook} from "./codex-hook-verb.ts";
+import { NodeRuntime, NodeServices } from "@effect/platform-node";
+import { Console, Effect, Path } from "effect";
+import { execCapture } from "../io/exec.ts";
+import { readStdin } from "../io/stdin.ts";
+import { runCodexHook } from "./codex-hook-verb.ts";
 
 Effect.gen(function* () {
 	const path = yield* Path.Path;
 	const input = readStdin();
 	if (input._tag !== "Text") {
 		yield* Console.log(
-			JSON.stringify({systemMessage: "Fabrika usage hook input unreadable; work is unchanged."}),
+			JSON.stringify({ systemMessage: "Fabrika usage hook input unreadable; work is unchanged." }),
 		);
 		return;
 	}
@@ -26,7 +26,7 @@ Effect.gen(function* () {
 		process.env.CODEX_HOME ?? (process.env.HOME ? path.join(process.env.HOME, ".codex") : null);
 	if (home === null) {
 		yield* Console.log(
-			JSON.stringify({systemMessage: "Fabrika usage: Codex session location is unknown."}),
+			JSON.stringify({ systemMessage: "Fabrika usage: Codex session location is unknown." }),
 		);
 		return;
 	}

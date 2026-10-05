@@ -1,5 +1,5 @@
-import {Effect, type FileSystem, Layer, type Path} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, type FileSystem, Layer, type Path } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	fakeFs,
 	fakeSeams,
@@ -10,10 +10,10 @@ import {
 	unconfigured,
 	unconfiguredOnPlatform,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {PULL_FILES_CAP} from "../io/pulls.ts";
-import {INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {runDiagnose} from "./diagnose-verb.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { PULL_FILES_CAP } from "../io/pulls.ts";
+import { INCOMPLETE_SCAN, PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { runDiagnose } from "./diagnose-verb.ts";
 import {
 	COMMIT_DATE,
 	checkRuns,
@@ -45,10 +45,10 @@ const COMPARE = /^GET .*\/repos\/o\/r\/compare\/main\.\.\.[0-9a-f]+$/;
 const PERMISSION = /^GET .*\/repos\/o\/r\/collaborators\/\S+\/permission$/;
 
 /** The shared payload fixtures speak `gh`'s `ExecResult`; the seam now serves the same bytes. */
-const reply = (result: ExecResult, status = 200): HttpReply => ({status, body: result.stdout});
+const reply = (result: ExecResult, status = 200): HttpReply => ({ status, body: result.stdout });
 
 /** An empty bare-array page — no `Link`, so the walk is proven exhausted. */
-const emptyPage: HttpReply = {status: 200, body: "[]"};
+const emptyPage: HttpReply = { status: 200, body: "[]" };
 
 /**
  * The commit payload, carrying both fields read off it: `commitExists` wants `sha` and
@@ -56,14 +56,17 @@ const emptyPage: HttpReply = {status: 200, body: "[]"};
  */
 const commit = (at: string): HttpReply => ({
 	status: 200,
-	body: JSON.stringify({sha: HEAD, commit: {committer: {date: at}}}),
+	body: JSON.stringify({ sha: HEAD, commit: { committer: { date: at } } }),
 });
 
-const behind = (by: number): HttpReply => ({status: 200, body: JSON.stringify({behind_by: by})});
+const behind = (by: number): HttpReply => ({
+	status: 200,
+	body: JSON.stringify({ behind_by: by }),
+});
 
 const permission = (level: string): HttpReply => ({
 	status: 200,
-	body: JSON.stringify({permission: level}),
+	body: JSON.stringify({ permission: level }),
 });
 
 const NOW = Date.parse("2026-08-08T01:00:00Z");
@@ -85,15 +88,15 @@ const options = {
 	now: NOW,
 };
 
-const green = (name = "ci-required") => ({name, status: "completed", conclusion: "success"});
+const green = (name = "ci-required") => ({ name, status: "completed", conclusion: "success" });
 
 /** The whole happy read set, in the order the verb walks it. Cases override the row they are about. */
 const script = (overrides: ReadonlyArray<Scripted> = []): ReadonlyArray<Scripted> => [
 	...overrides,
-	[PULL, reply(pull({updatedAt: PUSHED}))],
+	[PULL, reply(pull({ updatedAt: PUSHED }))],
 	[FILES, reply(files("apps/site/worker/a.ts", "apps/site/worker/b.ts"))],
 	[CHECK_RUNS, reply(checkRuns(1, [green()]))],
-	[WORKFLOWS, reply(workflows({path: ".github/workflows/ci.yml"}))],
+	[WORKFLOWS, reply(workflows({ path: ".github/workflows/ci.yml" }))],
 	[RUN_COUNT, reply(runsTotal(3))],
 	[COMMENTS, reply(comments())],
 	[TIMELINE, emptyPage],
@@ -109,7 +112,7 @@ const script = (overrides: ReadonlyArray<Scripted> = []): ReadonlyArray<Scripted
 const run = (rows: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
 		Effect.provide(
-			runDiagnose({...options, ...overrides}),
+			runDiagnose({ ...options, ...overrides }),
 			Layer.mergeAll(fakeSeams(rows).layer, unconfigured),
 		),
 	);
@@ -122,7 +125,7 @@ const runWith = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runDiagnose({...options, ...overrides}),
+			runDiagnose({ ...options, ...overrides }),
 			Layer.mergeAll(fakeSeams(rows).layer, config),
 		),
 	);
@@ -153,13 +156,13 @@ describe("runDiagnose answers", () => {
 		const out = await runWith(
 			script([
 				...uiConfiguredOnPlatform(),
-				[PULL, reply(pull({updatedAt: PUSHED, comments: 2, changedFiles: 1}))],
+				[PULL, reply(pull({ updatedAt: PUSHED, comments: 2, changedFiles: 1 }))],
 				[FILES, reply(files("apps/site/src/flags/shell-keys.ts"))],
 				[
 					COMMENTS,
 					reply(
 						comments(
-							{id: 1, body: `review-code: PASS @ ${HEAD} — the clause`},
+							{ id: 1, body: `review-code: PASS @ ${HEAD} — the clause` },
 							{
 								id: 2,
 								body: `routed-elsewhere: review-ui @ ${HEAD} — no rendered delta; the diff is prose only`,
@@ -179,13 +182,13 @@ describe("runDiagnose answers", () => {
 		const out = await runWith(
 			script([
 				...uiConfiguredOnPlatform(),
-				[PULL, reply(pull({updatedAt: PUSHED, comments: 2, changedFiles: 1}))],
+				[PULL, reply(pull({ updatedAt: PUSHED, comments: 2, changedFiles: 1 }))],
 				[FILES, reply(files("apps/site/src/flags/shell-keys.ts"))],
 				[
 					COMMENTS,
 					reply(
 						comments(
-							{id: 1, body: `review-code: PASS @ ${HEAD} — the clause`},
+							{ id: 1, body: `review-code: PASS @ ${HEAD} — the clause` },
 							{
 								id: 2,
 								body: `routed-elsewhere: review-ui @ ${OTHER_HEAD} — no rendered delta; the diff is prose only`,
@@ -204,7 +207,7 @@ describe("runDiagnose answers", () => {
 	it("drops a route aimed at a namespace other than review-ui", async () => {
 		const out = await run(
 			script([
-				[PULL, reply(pull({updatedAt: PUSHED, comments: 1}))],
+				[PULL, reply(pull({ updatedAt: PUSHED, comments: 1 }))],
 				[
 					COMMENTS,
 					reply(
@@ -224,7 +227,9 @@ describe("runDiagnose answers", () => {
 			script([
 				[
 					CHECK_RUNS,
-					reply(checkRuns(1, [{name: "ci-required", status: "completed", conclusion: "failure"}])),
+					reply(
+						checkRuns(1, [{ name: "ci-required", status: "completed", conclusion: "failure" }]),
+					),
 				],
 			]),
 		);
@@ -237,7 +242,9 @@ describe("runDiagnose answers", () => {
 			script([
 				[
 					CHECK_RUNS,
-					reply(checkRuns(1, [{name: "ci-required", status: "completed", conclusion: "failure"}])),
+					reply(
+						checkRuns(1, [{ name: "ci-required", status: "completed", conclusion: "failure" }]),
+					),
 				],
 				[RULES, rules("ci-required", "code-scanning/codeql")],
 			]),
@@ -248,7 +255,7 @@ describe("runDiagnose answers", () => {
 	it("reports conflicted above check-surface — no merge ref is why the contexts are absent", async () => {
 		const out = await run(
 			script([
-				[PULL, reply(pull({mergeable: false, mergeableState: "dirty", updatedAt: PUSHED}))],
+				[PULL, reply(pull({ mergeable: false, mergeableState: "dirty", updatedAt: PUSHED }))],
 				[RULES, rules("ci-required", "code-scanning/codeql")],
 			]),
 		);
@@ -265,7 +272,7 @@ describe("runDiagnose answers", () => {
 		const CONFIG_AT_BASE = /^GET .*\/repos\/o\/r\/contents\/\.fabrika\.jsonc\?ref=main$/;
 		const RUNNING_ACCOUNT = /^GET .*\/user$/;
 		const conflicted = (author: string) =>
-			reply(pull({mergeable: false, mergeableState: "dirty", updatedAt: PUSHED, author}));
+			reply(pull({ mergeable: false, mergeableState: "dirty", updatedAt: PUSHED, author }));
 		const authorLine = (stdout: string) =>
 			stdout.split("\n").find((line) => line.startsWith("author\t"));
 
@@ -273,8 +280,8 @@ describe("runDiagnose answers", () => {
 			const out = await run(
 				script([
 					[PULL, conflicted("usirin")],
-					[CONFIG_AT_BASE, {status: 404, body: '{"message":"Not Found"}'}],
-					[RUNNING_ACCOUNT, {status: 200, body: JSON.stringify({login: "usirin"})}],
+					[CONFIG_AT_BASE, { status: 404, body: '{"message":"Not Found"}' }],
+					[RUNNING_ACCOUNT, { status: 200, body: JSON.stringify({ login: "usirin" }) }],
 					[RULES, rules("ci-required", "code-scanning/codeql")],
 				]),
 			);
@@ -286,8 +293,8 @@ describe("runDiagnose answers", () => {
 			const out = await run(
 				script([
 					[PULL, conflicted("ada")],
-					[CONFIG_AT_BASE, {status: 404, body: '{"message":"Not Found"}'}],
-					[RUNNING_ACCOUNT, {status: 200, body: JSON.stringify({login: "usirin"})}],
+					[CONFIG_AT_BASE, { status: 404, body: '{"message":"Not Found"}' }],
+					[RUNNING_ACCOUNT, { status: 200, body: JSON.stringify({ login: "usirin" }) }],
 					[RULES, rules("ci-required", "code-scanning/codeql")],
 				]),
 			);
@@ -299,10 +306,10 @@ describe("runDiagnose answers", () => {
 			const out = await run(
 				script([
 					[PULL, conflicted("usirin")],
-					[CONFIG_AT_BASE, {status: 404, body: '{"message":"Not Found"}'}],
+					[CONFIG_AT_BASE, { status: 404, body: '{"message":"Not Found"}' }],
 					[
 						RUNNING_ACCOUNT,
-						{status: 403, body: '{"message":"Resource not accessible by integration"}'},
+						{ status: 403, body: '{"message":"Resource not accessible by integration"}' },
 					],
 					[RULES, rules("ci-required", "code-scanning/codeql")],
 				]),
@@ -321,18 +328,18 @@ describe("runDiagnose answers", () => {
 		const CONFIG_AT_BASE = /^GET .*\/repos\/o\/r\/contents\/\.fabrika\.jsonc\?ref=main$/;
 		const RUNNING_ACCOUNT = /^GET .*\/user$/;
 		const failing = reply(
-			checkRuns(1, [{name: "ci-required", status: "completed", conclusion: "failure"}]),
+			checkRuns(1, [{ name: "ci-required", status: "completed", conclusion: "failure" }]),
 		);
 		const red = (author: string, runningAccount: HttpReply) =>
 			run(
 				script([
-					[PULL, reply(pull({updatedAt: PUSHED, author}))],
+					[PULL, reply(pull({ updatedAt: PUSHED, author }))],
 					[CHECK_RUNS, failing],
-					[CONFIG_AT_BASE, {status: 404, body: '{"message":"Not Found"}'}],
+					[CONFIG_AT_BASE, { status: 404, body: '{"message":"Not Found"}' }],
 					[RUNNING_ACCOUNT, runningAccount],
 				]),
 			);
-		const asUsirin: HttpReply = {status: 200, body: JSON.stringify({login: "usirin"})};
+		const asUsirin: HttpReply = { status: 200, body: JSON.stringify({ login: "usirin" }) };
 
 		it("reads the running account's own red PR as ours, so §3's logic route can name build", async () => {
 			const out = await red("usirin", asUsirin);
@@ -354,7 +361,7 @@ describe("runDiagnose answers", () => {
 	it("skips the conflict arm on an indefinite mergeability, leaving the class it had", async () => {
 		const out = await run(
 			script([
-				[PULL, reply(pull({mergeable: null, mergeableState: "unknown", updatedAt: PUSHED}))],
+				[PULL, reply(pull({ mergeable: null, mergeableState: "unknown", updatedAt: PUSHED }))],
 				[RULES, rules("ci-required", "code-scanning/codeql")],
 			]),
 		);
@@ -370,7 +377,9 @@ describe("runDiagnose answers", () => {
 			script([
 				[
 					CHECK_RUNS,
-					reply(checkRuns(1, [{name: "ci-required", status: "completed", conclusion: "failure"}])),
+					reply(
+						checkRuns(1, [{ name: "ci-required", status: "completed", conclusion: "failure" }]),
+					),
 				],
 				[RULES, httpError(403, "Must have admin rights")],
 			]),
@@ -388,7 +397,7 @@ describe("runDiagnose answers", () => {
 			script([
 				[
 					CHECK_RUNS,
-					reply(checkRuns(1, [{name: "unit tests", status: "completed", conclusion: "failure"}])),
+					reply(checkRuns(1, [{ name: "unit tests", status: "completed", conclusion: "failure" }])),
 				],
 				[RULES, planGated],
 			]),
@@ -410,8 +419,8 @@ describe("runDiagnose answers", () => {
 					CHECK_RUNS,
 					reply(
 						checkRuns(2, [
-							{name: "ci-required", status: "completed", conclusion: "success"},
-							{name: "Analyze (python)", status: "completed", conclusion: "failure"},
+							{ name: "ci-required", status: "completed", conclusion: "success" },
+							{ name: "Analyze (python)", status: "completed", conclusion: "failure" },
 						]),
 					),
 				],
@@ -431,8 +440,8 @@ describe("runDiagnose answers", () => {
 					CHECK_RUNS,
 					reply(
 						checkRuns(2, [
-							{name: "ci-required", status: "completed", conclusion: "failure"},
-							{name: "Analyze (python)", status: "completed", conclusion: "success"},
+							{ name: "ci-required", status: "completed", conclusion: "failure" },
+							{ name: "Analyze (python)", status: "completed", conclusion: "success" },
 						]),
 					),
 				],
@@ -448,7 +457,7 @@ describe("runDiagnose answers", () => {
 			script([
 				[
 					CHECK_RUNS,
-					reply(checkRuns(1, [{name: "unit tests", status: "completed", conclusion: "failure"}])),
+					reply(checkRuns(1, [{ name: "unit tests", status: "completed", conclusion: "failure" }])),
 				],
 				[RULES, rules()],
 			]),
@@ -458,7 +467,7 @@ describe("runDiagnose answers", () => {
 	});
 
 	it("declares arm 7's unimplemented half on stderr rather than letting the class read whole", async () => {
-		const out = await run(script([[PULL, reply(pull({assignees: ["usirin"]}))]]));
+		const out = await run(script([[PULL, reply(pull({ assignees: ["usirin"] }))]]));
 		expect(out.code).toBe(0);
 		expect(out.stderr.join("\n")).toContain("UNIMPLEMENTED");
 		expect(out.stderr.join("\n")).toContain("derived from reviews alone");
@@ -466,21 +475,21 @@ describe("runDiagnose answers", () => {
 
 	it("reads an assignee whose activity is inside the dwell as attended, not as a strand", async () => {
 		const out = await run(
-			script([[PULL, reply(pull({assignees: ["usirin"], updatedAt: "2026-08-08T00:55:00Z"}))]]),
+			script([[PULL, reply(pull({ assignees: ["usirin"], updatedAt: "2026-08-08T00:55:00Z" }))]]),
 		);
 		expect(out.stdout.split("\n")[0]).toBe(`stall\tattended\t${HEAD}\t5`);
 	});
 
 	it("reads an assignee gone quiet past the dwell as claim-stale, naming why", async () => {
 		const out = await run(
-			script([[PULL, reply(pull({assignees: ["usirin"], updatedAt: "2026-08-07T20:00:00Z"}))]]),
+			script([[PULL, reply(pull({ assignees: ["usirin"], updatedAt: "2026-08-07T20:00:00Z" }))]]),
 		);
 		expect(out.stdout.split("\n")[0]).toContain("claim-stale");
 		expect(out.stderr.join("\n")).toContain("claim-stale fired on inactivity");
 	});
 
 	it("reads a draft as not-open — an answer, not a refusal", async () => {
-		const out = await run(script([[PULL, reply(pull({draft: true, updatedAt: PUSHED}))]]));
+		const out = await run(script([[PULL, reply(pull({ draft: true, updatedAt: PUSHED }))]]));
 		expect(out.code).toBe(0);
 		expect(out.stdout.split("\n")[0]).toContain("not-open");
 	});
@@ -499,7 +508,7 @@ describe("runDiagnose answers", () => {
 				[WORKFLOWS, reply(workflows())],
 				[RUN_COUNT, reply(runsTotal(0))],
 			]),
-			fakeFs({files: {"/repo/.fabrika.jsonc": '{"ci": {"noProducer": "degrade"}}'}}).layer,
+			fakeFs({ files: { "/repo/.fabrika.jsonc": '{"ci": {"noProducer": "degrade"}}' } }).layer,
 		);
 		expect(noCi.stdout).toContain("ci\tnone\t0");
 	});
@@ -524,7 +533,7 @@ describe("runDiagnose answers", () => {
 		const out = await run(
 			script([
 				[CHECK_RUNS, reply(checkRuns(0, []))],
-				[WORKFLOWS, reply(workflows({path: "dynamic/github-code-scanning/codeql"}))],
+				[WORKFLOWS, reply(workflows({ path: "dynamic/github-code-scanning/codeql" }))],
 				[RUN_COUNT, reply(runsTotal(2))],
 			]),
 		);
@@ -539,7 +548,7 @@ describe("runDiagnose answers", () => {
 				[WORKFLOWS, reply(workflows())],
 				[RUN_COUNT, reply(runsTotal(0))],
 			]),
-			fakeFs({files: {"/repo/.fabrika.jsonc": '{"ci": {"noProducer": "maybe"}}'}}).layer,
+			fakeFs({ files: { "/repo/.fabrika.jsonc": '{"ci": {"noProducer": "maybe"}}' } }).layer,
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -559,7 +568,7 @@ describe("runDiagnose refuses rather than guessing a class", () => {
 	// a base cached at the last push. This used to refuse at 13, on the verb an operator reaches for
 	// when a PR is already stuck.
 	it("reports a file list short of the declared count and still classifies (#9322)", async () => {
-		const out = await run(script([[PULL, reply(pull({changedFiles: 9, updatedAt: PUSHED}))]]));
+		const out = await run(script([[PULL, reply(pull({ changedFiles: 9, updatedAt: PUSHED }))]]));
 		expect(out.code).toBe(0);
 		expect(out.stderr.join("\n")).toContain(
 			"GitHub's file list for #4321 holds 2 paths against the 9 its own pull-request record declares",
@@ -571,7 +580,7 @@ describe("runDiagnose refuses rather than guessing a class", () => {
 	it("refuses an empty file list on 7 even where the record declares files (#9322)", async () => {
 		const out = await run(
 			script([
-				[PULL, reply(pull({changedFiles: 9, updatedAt: PUSHED}))],
+				[PULL, reply(pull({ changedFiles: 9, updatedAt: PUSHED }))],
 				[FILES, reply(files())],
 			]),
 		);
@@ -588,10 +597,12 @@ describe("runDiagnose refuses rather than guessing a class", () => {
 	it("refuses a file list at the 3000-file ceiling on 13 (#9322)", async () => {
 		const out = await run(
 			script([
-				[PULL, reply(pull({changedFiles: PULL_FILES_CAP, updatedAt: PUSHED}))],
+				[PULL, reply(pull({ changedFiles: PULL_FILES_CAP, updatedAt: PUSHED }))],
 				[
 					FILES,
-					reply(files(...Array.from({length: PULL_FILES_CAP}, (_, i) => `apps/site/src/f${i}.ts`))),
+					reply(
+						files(...Array.from({ length: PULL_FILES_CAP }, (_, i) => `apps/site/src/f${i}.ts`)),
+					),
 				],
 			]),
 		);
@@ -605,7 +616,7 @@ describe("runDiagnose refuses rather than guessing a class", () => {
 	it("refuses a short comment enumeration on 13", async () => {
 		const out = await run(
 			script([
-				[PULL, reply(pull({comments: 9, updatedAt: PUSHED}))],
+				[PULL, reply(pull({ comments: 9, updatedAt: PUSHED }))],
 				[COMMENTS, reply(comments())],
 			]),
 		);
@@ -615,7 +626,7 @@ describe("runDiagnose refuses rather than guessing a class", () => {
 
 	it("refuses an unexhausted timeline read on 13 — a queue entry could sit on an unread page", async () => {
 		const out = await run(
-			script([[TIMELINE, {...emptyPage, headers: linkNext("https://api.github.com/next")}]]),
+			script([[TIMELINE, { ...emptyPage, headers: linkNext("https://api.github.com/next") }]]),
 		);
 		expect(out.code).toBe(INCOMPLETE_SCAN);
 		expect(out.stderr.at(-1)).toContain("never reached a terminal page");
@@ -636,7 +647,7 @@ describe("runDiagnose refuses rather than guessing a class", () => {
 	});
 
 	it("refuses a malformed --sha as a usage error, never as a wildcard", async () => {
-		const out = await run(script(), {sha: "zz"});
+		const out = await run(script(), { sha: "zz" });
 		expect(out.code).toBe(1);
 		expect(out.stdout).toBe("");
 	});
@@ -644,10 +655,10 @@ describe("runDiagnose refuses rather than guessing a class", () => {
 	it("refuses an unreadable ACL on 11 rather than dropping the verdict it gates", async () => {
 		const out = await run(
 			script([
-				[PULL, reply(pull({comments: 1, updatedAt: PUSHED}))],
+				[PULL, reply(pull({ comments: 1, updatedAt: PUSHED }))],
 				[
 					COMMENTS,
-					reply(comments({id: 1, body: `review-code: PASS @ ${HEAD} — the ACs are met.`})),
+					reply(comments({ id: 1, body: `review-code: PASS @ ${HEAD} — the ACs are met.` })),
 				],
 				[PERMISSION, httpError(502, "Bad gateway")],
 			]),

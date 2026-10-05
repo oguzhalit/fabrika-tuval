@@ -14,20 +14,20 @@
  * saying it ran, and on an unapproved plan the gate is exactly what did not run.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {requireCallerToken, requireClaim, requireSession} from "../build/claim.ts";
-import {badNumber, resolveTargetRepo} from "../build/target.ts";
-import {cycleDocOr} from "../config/paths.ts";
-import {createComment, getComment} from "../io/issues.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {clause, emit, headSha, type Polarity} from "../wire/verdict-marker.ts";
-import {requireApproval} from "./approval.ts";
-import {CAVEAT_KINDS, type Caveat, readCaveats, renderCaveats} from "./caveats.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { requireCallerToken, requireClaim, requireSession } from "../build/claim.ts";
+import { badNumber, resolveTargetRepo } from "../build/target.ts";
+import { cycleDocOr } from "../config/paths.ts";
+import { createComment, getComment } from "../io/issues.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { clause, emit, headSha, type Polarity } from "../wire/verdict-marker.ts";
+import { requireApproval } from "./approval.ts";
+import { CAVEAT_KINDS, type Caveat, readCaveats, renderCaveats } from "./caveats.ts";
 import {
 	BARE_AT_PATH,
 	LEAKED_PATH,
@@ -37,8 +37,8 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import type {Floor} from "./defects.ts";
-import {DIGEST_RE} from "./digest.ts";
+import type { Floor } from "./defects.ts";
+import { DIGEST_RE } from "./digest.ts";
 import {
 	deriveFloorFor,
 	loadLedger,
@@ -48,7 +48,7 @@ import {
 	requireEpic,
 	scannedChildren,
 } from "./load.ts";
-import type {Ledger} from "./model.ts";
+import type { Ledger } from "./model.ts";
 
 const VERB = "plan verdict";
 
@@ -90,7 +90,7 @@ export const composeVerdict = (
 	const text = clause(clauseFor(ledger.children.length, floor));
 	if (sha === null || text === null) return null;
 	const sections = [
-		emit({namespace: NAMESPACE, polarity, sha, content: null, clause: text}).trimEnd(),
+		emit({ namespace: NAMESPACE, polarity, sha, content: null, clause: text }).trimEnd(),
 		`Scanned: ${ledger.children.map((child) => `#${child.number}`).join(", ")}`,
 	];
 	if (floor.defects.length > 0) {

@@ -96,7 +96,7 @@ const unquoteCStyle = (body: string): string => {
 /** The `a/` and `b/` paths off a `diff --git` header, whichever of the two forms each side took. */
 export const headerPaths = (
 	line: string,
-): {readonly before: string; readonly after: string} | null => {
+): { readonly before: string; readonly after: string } | null => {
 	const header = FILE_HEADER.exec(line);
 	if (header === null) return null;
 	const [, quotedBefore, bareBefore, quotedAfter, bareAfter] = header;
@@ -134,7 +134,7 @@ export const changedLines = (diff: string): ReadonlyArray<DiffLine> => {
 	for (const raw of diff.split("\n")) {
 		const header = headerPaths(raw);
 		if (header !== null) {
-			const {before, after} = header;
+			const { before, after } = header;
 			file = after === "/dev/null" || after === "" ? before : after;
 			oldLine = 0;
 			newLine = 0;
@@ -150,10 +150,10 @@ export const changedLines = (diff: string): ReadonlyArray<DiffLine> => {
 		// number, so it is skipped rather than read as a change.
 		if (newLine === 0 && oldLine === 0) continue;
 		if (raw.startsWith("+")) {
-			out.push({file, line: newLine, kind: "added", text: raw.slice(1)});
+			out.push({ file, line: newLine, kind: "added", text: raw.slice(1) });
 			newLine += 1;
 		} else if (raw.startsWith("-")) {
-			out.push({file, line: oldLine, kind: "removed", text: raw.slice(1)});
+			out.push({ file, line: oldLine, kind: "removed", text: raw.slice(1) });
 			oldLine += 1;
 		} else if (raw.startsWith(" ") || raw === "") {
 			oldLine += 1;
@@ -195,15 +195,15 @@ const ASSERTION = /\b(?:expect|assert)\b(?:\s*\.\s*[A-Za-z_$][\w$]*)*\s*\(/;
  */
 export const tierMHits = (diff: string): ReadonlyArray<TierMHit> => {
 	const hits: TierMHit[] = [];
-	for (const {file, line, kind, text} of changedLines(diff)) {
+	for (const { file, line, kind, text } of changedLines(diff)) {
 		if (kind === "added") {
 			for (const token of SUPPRESSIONS) {
-				if (text.includes(token)) hits.push({kind: "suppression", file, line, token});
+				if (text.includes(token)) hits.push({ kind: "suppression", file, line, token });
 			}
 			continue;
 		}
 		if (TEST_FILE.test(file) && ASSERTION.test(text)) {
-			hits.push({kind: "removed-assertion", file, line, token: text.trim()});
+			hits.push({ kind: "removed-assertion", file, line, token: text.trim() });
 		}
 	}
 	return hits;

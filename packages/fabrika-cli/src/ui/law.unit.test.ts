@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {parseRegistry} from "./law.ts";
+import { describe, expect, it } from "vitest";
+import { parseRegistry } from "./law.ts";
 
 const row = (overrides: Record<string, unknown> = {}) => ({
 	id: "faint-token-meaning",
@@ -12,11 +12,11 @@ const row = (overrides: Record<string, unknown> = {}) => ({
 	...overrides,
 });
 
-const parse = (rows: ReadonlyArray<unknown>) => parseRegistry(JSON.stringify({rows}));
+const parse = (rows: ReadonlyArray<unknown>) => parseRegistry(JSON.stringify({ rows }));
 
 describe("parseRegistry", () => {
 	it("returns the rows verbatim, in file order", () => {
-		const parsed = parse([row(), row({id: "second-row"})]);
+		const parsed = parse([row(), row({ id: "second-row" })]);
 		expect(parsed._tag).toBe("Rows");
 		if (parsed._tag !== "Rows") return;
 		expect(parsed.rows.map((r) => r.id)).toEqual(["faint-token-meaning", "second-row"]);
@@ -33,23 +33,23 @@ describe("parseRegistry", () => {
 	it.each([
 		[
 			"a missing field",
-			row({statement: undefined}),
+			row({ statement: undefined }),
 			"rows[0].statement is missing or not a string",
 		],
-		["an unknown field", row({extra: "x"}), 'rows[0] carries an unknown field "extra"'],
+		["an unknown field", row({ extra: "x" }), 'rows[0] carries an unknown field "extra"'],
 		[
 			"an off-enum class",
-			row({class: "advisery"}),
+			row({ class: "advisery" }),
 			'rows[0].class "advisery" is off its enum (blocking | advisory)',
 		],
 		[
 			"an off-enum machineCheck",
-			row({machineCheck: "eyeball"}),
+			row({ machineCheck: "eyeball" }),
 			'rows[0].machineCheck "eyeball" is off its enum (verb | vlm | none)',
 		],
-		["a non-kebab id", row({id: "Faint Token"}), 'rows[0].id "Faint Token" is not kebab-case'],
+		["a non-kebab id", row({ id: "Faint Token" }), 'rows[0].id "Faint Token" is not kebab-case'],
 	])("refuses the whole file on %s", (_label, bad, violation) => {
-		expect(parse([bad])).toEqual({_tag: "Violation", violation});
+		expect(parse([bad])).toEqual({ _tag: "Violation", violation });
 	});
 
 	it("refuses a duplicate id, naming the second occurrence", () => {

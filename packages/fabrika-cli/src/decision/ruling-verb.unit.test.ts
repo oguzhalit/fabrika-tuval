@@ -1,9 +1,9 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type Scripted} from "../fakes.test-support.ts";
-import {emit, markedIssue, rulingUrl, scopeDigest} from "../wire/decision-ruling.ts";
-import {markerTime} from "../wire/grill-marker.ts";
-import {bodyDigest} from "./digest.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type Scripted } from "../fakes.test-support.ts";
+import { emit, markedIssue, rulingUrl, scopeDigest } from "../wire/decision-ruling.ts";
+import { markerTime } from "../wire/grill-marker.ts";
+import { bodyDigest } from "./digest.ts";
 import {
 	acl,
 	BODY,
@@ -17,24 +17,24 @@ import {
 	RULER,
 	RULING_URL,
 } from "./fixtures.test-support.ts";
-import {runRuling} from "./ruling-verb.ts";
+import { runRuling } from "./ruling-verb.ts";
 
-const BAD_GATEWAY = JSON.stringify({message: "Bad gateway"});
-const NOT_FOUND = JSON.stringify({message: "Not Found"});
+const BAD_GATEWAY = JSON.stringify({ message: "Bad gateway" });
+const NOT_FOUND = JSON.stringify({ message: "Not Found" });
 
 type Script = ReadonlyArray<Scripted>;
 
 const run = (script: Script) => {
 	const seams = fakeSeams(script);
 	return Effect.runPromise(
-		Effect.provide(runRuling({number: ISSUE, repo: null, env}), seams.layer),
+		Effect.provide(runRuling({ number: ISSUE, repo: null, env }), seams.layer),
 	).then((outcome) => JSON.parse(outcome.stdout === "" ? "null" : outcome.stdout) ?? outcome);
 };
 
 const outcomeOf = (script: Script) => {
 	const seams = fakeSeams(script);
 	return Effect.runPromise(
-		Effect.provide(runRuling({number: ISSUE, repo: null, env}), seams.layer),
+		Effect.provide(runRuling({ number: ISSUE, repo: null, env }), seams.layer),
 	);
 };
 
@@ -108,7 +108,7 @@ describe("runRuling", () => {
 			[COMMENTS, comments([900002, "drive-by", marker(bodyDigest(BODY))])],
 			...acl,
 		]);
-		expect(answer).toMatchObject({state: "absent", unauthorized: 1, disregarded: 0});
+		expect(answer).toMatchObject({ state: "absent", unauthorized: 1, disregarded: 0 });
 	});
 
 	it("counts a drifted marker disregarded rather than dropping it", async () => {
@@ -117,7 +117,7 @@ describe("runRuling", () => {
 			[COMMENTS, comments([900002, RULER, "decision-ruled: #4300 @ NOTHEX · last Thursday\n"])],
 			...acl,
 		]);
-		expect(answer).toMatchObject({state: "absent", disregarded: 1});
+		expect(answer).toMatchObject({ state: "absent", disregarded: 1 });
 	});
 
 	it("takes the newest marker when a decision has been re-ruled", async () => {
@@ -132,12 +132,12 @@ describe("runRuling", () => {
 			],
 			...acl,
 		]);
-		expect(answer).toMatchObject({state: "current", comment: 900003});
+		expect(answer).toMatchObject({ state: "current", comment: 900003 });
 	});
 
 	it("is UNKNOWN, never absent, when the roster cannot be read", async () => {
 		const outcome = await outcomeOf([
-			[MEMBERS, {status: 502, body: BAD_GATEWAY}],
+			[MEMBERS, { status: 502, body: BAD_GATEWAY }],
 			[ISSUE_READ, issueRead()],
 			[COMMENTS, comments([900002, RULER, marker(bodyDigest(BODY))])],
 			...acl,
@@ -148,7 +148,7 @@ describe("runRuling", () => {
 
 	it("is UNKNOWN, never absent, when the comments cannot be read", async () => {
 		const outcome = await outcomeOf([
-			[COMMENTS, {status: 502, body: BAD_GATEWAY}],
+			[COMMENTS, { status: 502, body: BAD_GATEWAY }],
 			[ISSUE_READ, issueRead()],
 			...acl,
 		]);
@@ -164,13 +164,13 @@ describe("runRuling", () => {
 			...acl,
 		]);
 		expect(outcome.code).toBe(0);
-		expect(JSON.parse(outcome.stdout)).toMatchObject({state: "current", by: RULER});
+		expect(JSON.parse(outcome.stdout)).toMatchObject({ state: "current", by: RULER });
 	});
 
 	it("splits an unreadable issue from a proven absent one", async () => {
-		const unreadable = await outcomeOf([[ISSUE_READ, {status: 502, body: BAD_GATEWAY}]]);
+		const unreadable = await outcomeOf([[ISSUE_READ, { status: 502, body: BAD_GATEWAY }]]);
 		expect(unreadable.code).toBe(11);
-		const gone = await outcomeOf([[ISSUE_READ, {status: 404, body: NOT_FOUND}]]);
+		const gone = await outcomeOf([[ISSUE_READ, { status: 404, body: NOT_FOUND }]]);
 		expect(gone.code).toBe(7);
 	});
 
@@ -187,15 +187,15 @@ describe("runRuling", () => {
 			[COMMENTS, comments([900002, RULER, elsewhere])],
 			...acl,
 		]);
-		expect(answer).toMatchObject({state: "absent", disregarded: 0, unauthorized: 0});
+		expect(answer).toMatchObject({ state: "absent", disregarded: 0, unauthorized: 0 });
 	});
 
 	it("reports no audience label as null rather than guessing one", async () => {
 		const answer = await run([
 			[ISSUE_READ, issueRead(["type:decision"])],
-			[COMMENTS, {status: 200, body: "[]"}],
+			[COMMENTS, { status: 200, body: "[]" }],
 			...acl,
 		]);
-		expect(answer).toMatchObject({audience: null, state: "absent"});
+		expect(answer).toMatchObject({ audience: null, state: "absent" });
 	});
 });

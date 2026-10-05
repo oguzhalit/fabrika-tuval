@@ -26,30 +26,34 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/9597#issuecomment-5754418554
  */
-import {Effect} from "effect";
-import {branchProtectionContexts, rulesetContexts} from "../heal-ci/github.ts";
-import {isPlanGated, type ServedStatus} from "../io/gh-api.ts";
-import type {Shell} from "../io/git.ts";
-import {isFailing, isInformational, type Rollup, type RollupRun} from "./rollup.ts";
+import { Effect } from "effect";
+import { branchProtectionContexts, rulesetContexts } from "../heal-ci/github.ts";
+import { isPlanGated, type ServedStatus } from "../io/gh-api.ts";
+import type { Shell } from "../io/git.ts";
+import { isFailing, isInformational, type Rollup, type RollupRun } from "./rollup.ts";
 
 export type DeclaredRead =
 	/** The declared set is known, however many members it has. */
-	| {readonly _tag: "Declared"; readonly contexts: ReadonlyArray<string>; readonly scanned: number}
+	| {
+			readonly _tag: "Declared";
+			readonly contexts: ReadonlyArray<string>;
+			readonly scanned: number;
+	  }
 	/** The repository's plan offers neither rulesets nor branch protection: nothing can be declared. */
-	| {readonly _tag: "PlanGated"}
+	| { readonly _tag: "PlanGated" }
 	/** The token cannot see the protection surface — an answer at exit `0`, never `no-requirements`. */
-	| {readonly _tag: "Unprobeable"; readonly reason: string}
+	| { readonly _tag: "Unprobeable"; readonly reason: string }
 	/** The rules enumeration completed and is provably short of a terminal page. */
-	| {readonly _tag: "Incomplete"; readonly scanned: number}
+	| { readonly _tag: "Incomplete"; readonly scanned: number }
 	/** A read failed for a reason that is not this token's permission — coverage is UNKNOWN. */
-	| {readonly _tag: "Unknown"; readonly what: string; readonly reason: string};
+	| { readonly _tag: "Unknown"; readonly what: string; readonly reason: string };
 
 /** One refused authority read, sorted by what the refusal says about the branch. */
 const refused = (answer: ServedStatus, what: string, reason: string): DeclaredRead => {
-	if (isPlanGated(answer)) return {_tag: "PlanGated"};
+	if (isPlanGated(answer)) return { _tag: "PlanGated" };
 	return answer.status === 401 || answer.status === 403
-		? {_tag: "Unprobeable", reason}
-		: {_tag: "Unknown", what, reason};
+		? { _tag: "Unprobeable", reason }
+		: { _tag: "Unknown", what, reason };
 };
 
 /**
@@ -63,7 +67,7 @@ export const readDeclared = (repo: string, base: string): Shell<DeclaredRead> =>
 		const rules = yield* rulesetContexts(repo, base);
 		if (rules._tag === "Failure") return refused(rules, "the ruleset list", rules.reason);
 		if (!rules.value.exhausted) {
-			return {_tag: "Incomplete" as const, scanned: rules.value.scanned};
+			return { _tag: "Incomplete" as const, scanned: rules.value.scanned };
 		}
 
 		const answered = yield* branchProtectionContexts(repo, base);
@@ -103,8 +107,8 @@ export type BlockingSet =
 
 /** The answer over a declared read: an authority to judge by, or the read that could not be made. */
 export type BlockingRead =
-	| {readonly _tag: "Set"; readonly set: BlockingSet}
-	| Exclude<DeclaredRead, {readonly _tag: "Declared" | "PlanGated"}>;
+	| { readonly _tag: "Set"; readonly set: BlockingSet }
+	| Exclude<DeclaredRead, { readonly _tag: "Declared" | "PlanGated" }>;
 
 const denylistSet = (because: "undeclared" | "plan-gated"): BlockingSet => ({
 	token: "no-requirements",
@@ -122,14 +126,14 @@ const denylistSet = (because: "undeclared" | "plan-gated"): BlockingSet => ({
 export const blockingSet = (declared: ReadonlyArray<string>): BlockingSet => {
 	if (declared.length === 0) return denylistSet("undeclared");
 	const required = new Set(declared);
-	return {token: "required", contexts: declared, blocks: (name) => required.has(name.trim())};
+	return { token: "required", contexts: declared, blocks: (name) => required.has(name.trim()) };
 };
 
 /** The blocking authority of the branch a pull request targets. */
 export const readBlockingSet = (repo: string, base: string): Shell<BlockingRead> =>
 	Effect.map(readDeclared(repo, base), (declared): BlockingRead => {
-		if (declared._tag === "Declared") return {_tag: "Set", set: blockingSet(declared.contexts)};
-		if (declared._tag === "PlanGated") return {_tag: "Set", set: denylistSet("plan-gated")};
+		if (declared._tag === "Declared") return { _tag: "Set", set: blockingSet(declared.contexts) };
+		if (declared._tag === "PlanGated") return { _tag: "Set", set: denylistSet("plan-gated") };
 		return declared;
 	});
 
@@ -143,7 +147,7 @@ export const readBlockingSet = (repo: string, base: string): Shell<BlockingRead>
 export const unreadableCause = (
 	verb: string,
 	base: string,
-	read: Exclude<BlockingRead, {readonly _tag: "Set"}>,
+	read: Exclude<BlockingRead, { readonly _tag: "Set" }>,
 ): string => {
 	const tail = "which checks block is UNKNOWN, never none.";
 	if (read._tag === "Unprobeable") {
@@ -190,20 +194,20 @@ export const noBlockingRunNote = (verb: string, base: string, set: BlockingSet):
  */
 export type Reporting =
 	/** Every declared context has a run here — or, under the denylist, at least one run blocks. */
-	| {readonly _tag: "Reported"}
+	| { readonly _tag: "Reported" }
 	/** Runs block here, and these declared contexts have posted nothing at this head yet. */
-	| {readonly _tag: "Unreported"; readonly contexts: readonly [string, ...string[]]}
+	| { readonly _tag: "Unreported"; readonly contexts: readonly [string, ...string[]] }
 	/** No run at this head blocks at all. */
-	| {readonly _tag: "Silent"};
+	| { readonly _tag: "Silent" };
 
 /** The reporting state of `set` over the check-run names present at one head. */
 export const reportingAt = (set: BlockingSet, names: ReadonlyArray<string>): Reporting => {
-	if (!names.some((name) => set.blocks(name))) return {_tag: "Silent"};
+	if (!names.some((name) => set.blocks(name))) return { _tag: "Silent" };
 	const posted = new Set(names.map((name) => name.trim()));
 	const [first, ...rest] = set.contexts.filter((context) => !posted.has(context)).sort();
 	return first === undefined
-		? {_tag: "Reported"}
-		: {_tag: "Unreported", contexts: [first, ...rest]};
+		? { _tag: "Reported" }
+		: { _tag: "Unreported", contexts: [first, ...rest] };
 };
 
 /**
@@ -239,7 +243,7 @@ export const reportingNote = (
 export const reportedLine = (
 	verb: string,
 	set: BlockingSet,
-	runs: ReadonlyArray<RollupRun & {readonly name: string}>,
+	runs: ReadonlyArray<RollupRun & { readonly name: string }>,
 ): ReadonlyArray<string> => {
 	const names = runs
 		.filter((run) => !set.blocks(run.name) && isFailing(run))

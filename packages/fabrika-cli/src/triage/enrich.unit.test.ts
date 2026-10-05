@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {read} from "../wire/acceptance-criteria.ts";
+import { describe, expect, it } from "vitest";
+import { read } from "../wire/acceptance-criteria.ts";
 import {
 	authoredRegion,
 	composeBody,
@@ -9,8 +9,8 @@ import {
 	SUMMARY_LINE,
 	wrapOriginal,
 } from "./enrich.ts";
-import {legacyPreserved} from "./enrich-legacy.ts";
-import type {EnrichText} from "./plain-summary.ts";
+import { legacyPreserved } from "./enrich-legacy.ts";
+import type { EnrichText } from "./plain-summary.ts";
 
 const ISSUE = 4312;
 const OTHER = 4290;
@@ -24,7 +24,7 @@ const SUMMARY =
 const LEAD = `## In plain words\n\n${SUMMARY}\n\n`;
 
 /** What the verb hands the envelope once it has lifted the summary out of stdin. */
-const plain = (body: string): EnrichText => ({summary: SUMMARY, body});
+const plain = (body: string): EnrichText => ({ summary: SUMMARY, body });
 
 /** A first enrichment in default mode, exactly as the verb composes it. */
 const enrichedDefault = (issue = ISSUE): string =>
@@ -111,19 +111,19 @@ describe("the composed envelope", () => {
 describe("detect — the marker is the whole rule, and it is mode-independent (#4866)", () => {
 	it("reads a fresh, never-enriched body as Fresh", () => {
 		const detection = detect(ORIGINAL, ISSUE, legacyPreserved);
-		expect(detection).toMatchObject({_tag: "Fresh", reason: "no marker"});
+		expect(detection).toMatchObject({ _tag: "Fresh", reason: "no marker" });
 	});
 
 	it("reads a body that MENTIONS the marker mid-line as fresh, never as enriched", () => {
 		// A bug report about this very format is an ordinary filing here. Treating its prose as a
 		// marker would overwrite the reporter's own text above the mention.
 		const talking = `The verb writes <!-- fabrika:enriched issue=4312 mode=rewrite --> above the block.\n\n${ORIGINAL}`;
-		expect(detect(talking, ISSUE, legacyPreserved)).toMatchObject({_tag: "Fresh"});
+		expect(detect(talking, ISSUE, legacyPreserved)).toMatchObject({ _tag: "Fresh" });
 	});
 
 	it("recognises this issue's own default-mode envelope", () => {
 		const detection = detect(enrichedDefault(), ISSUE, legacyPreserved);
-		expect(detection).toMatchObject({_tag: "Enriched", via: "marker", markedMode: "rewrite"});
+		expect(detection).toMatchObject({ _tag: "Enriched", via: "marker", markedMode: "rewrite" });
 	});
 
 	it("recognises a DEFAULT-mode envelope that the retired --epic shape detector could not (#4866)", () => {
@@ -131,7 +131,7 @@ describe("detect — the marker is the whole rule, and it is mode-independent (#
 		// The control: shape inspection misses it, which is exactly how the verb came to wrap a second
 		// time and nest the previous provenance boundary inside a fresh block.
 		expect(retiredEpicAnchors(body)).toBe(false);
-		expect(detect(body, ISSUE, legacyPreserved)).toMatchObject({_tag: "Enriched", via: "marker"});
+		expect(detect(body, ISSUE, legacyPreserved)).toMatchObject({ _tag: "Enriched", via: "marker" });
 	});
 
 	it("recognises an --epic envelope that the retired terminality test could not (#4866, reverse direction)", () => {
@@ -153,7 +153,7 @@ describe("detect — the marker is the whole rule, and it is mode-independent (#
 			preserved: tail,
 		});
 		const detection = detect(planned, ISSUE, legacyPreserved);
-		expect(detection).toMatchObject({_tag: "Enriched"});
+		expect(detection).toMatchObject({ _tag: "Enriched" });
 		if (detection._tag !== "Enriched") throw new Error("unreachable");
 		expect(detection.preserved).toBe(tail);
 	});
@@ -176,7 +176,7 @@ describe("the marker binds the issue number — a paste reads as FRESH", () => {
 		// The shape detector the ruling retired would have accepted this and overwritten the reporter's
 		// text above it. The binding is what refuses it.
 		expect(retiredEpicAnchors(pasted)).toBe(true);
-		expect(detect(pasted, ISSUE, legacyPreserved)).toMatchObject({_tag: "Fresh"});
+		expect(detect(pasted, ISSUE, legacyPreserved)).toMatchObject({ _tag: "Fresh" });
 	});
 
 	it("never consults the legacy shapes for a foreign-marker body, however v1-shaped it is", () => {
@@ -199,7 +199,7 @@ describe("the marker binds the issue number — a paste reads as FRESH", () => {
 			preserved: buried,
 		});
 		const detection = detect(body, ISSUE, legacyPreserved);
-		expect(detection).toMatchObject({_tag: "Enriched", markedMode: "rewrite"});
+		expect(detection).toMatchObject({ _tag: "Enriched", markedMode: "rewrite" });
 		if (detection._tag !== "Enriched") throw new Error("unreachable");
 		expect(detection.preserved).toBe(buried);
 	});
@@ -211,7 +211,7 @@ describe("legacy migration — recognise once, stamp in passing, never wrap twic
 
 	it("recognises a v1 default envelope and hands back the block as the preserved region", () => {
 		const detection = detect(legacyDefault, ISSUE, legacyPreserved);
-		expect(detection).toMatchObject({_tag: "Enriched", via: "legacy", markedMode: null});
+		expect(detection).toMatchObject({ _tag: "Enriched", via: "legacy", markedMode: null });
 		if (detection._tag !== "Enriched") throw new Error("unreachable");
 		expect(detection.preserved).toBe(
 			`<details>\n${SUMMARY_LINE.rewrite}\n\n${ORIGINAL}\n\n</details>\n`,
@@ -220,7 +220,7 @@ describe("legacy migration — recognise once, stamp in passing, never wrap twic
 
 	it("recognises a v1 --epic envelope even once plan-epic has appended below it", () => {
 		const detection = detect(legacyEpic, ISSUE, legacyPreserved);
-		expect(detection).toMatchObject({_tag: "Enriched", via: "legacy"});
+		expect(detection).toMatchObject({ _tag: "Enriched", via: "legacy" });
 		if (detection._tag !== "Enriched") throw new Error("unreachable");
 		expect(detection.preserved).toBe(
 			`<details>\n${SUMMARY_LINE.wrap}\n\n${ORIGINAL}\n\n</details>\n\n## Plan (plan-epic)\n\nPhase 1: #4400\n`,
@@ -239,13 +239,13 @@ describe("legacy migration — recognise once, stamp in passing, never wrap twic
 		expect(summaryLines(migrated)).toEqual([SUMMARY_LINE.rewrite]);
 		expect(markerLines(migrated)).toEqual([renderMarker(ISSUE, "rewrite")]);
 		// And the migration is one-way: the second pass goes through the marker, never the legacy door.
-		expect(detect(migrated, ISSUE, legacyPreserved)).toMatchObject({via: "marker"});
+		expect(detect(migrated, ISSUE, legacyPreserved)).toMatchObject({ via: "marker" });
 	});
 
 	it("refuses a body that merely QUOTES an envelope below the reporter's own framing", () => {
 		const quoting = `I filed this because the format below looks wrong to me:\n\n<details>\n${SUMMARY_LINE.wrap}\n\n${ORIGINAL}\n\n</details>\n\nWhat should it be?\n`;
 		expect(legacyPreserved(quoting)).toBeNull();
-		expect(detect(quoting, ISSUE, legacyPreserved)).toMatchObject({_tag: "Fresh"});
+		expect(detect(quoting, ISSUE, legacyPreserved)).toMatchObject({ _tag: "Fresh" });
 	});
 
 	it("refuses a pitch that quotes the summary line ABOVE the epic header", () => {

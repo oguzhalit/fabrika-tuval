@@ -1,11 +1,11 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type CapturedSurface, CaptureError, type UnwrittenSurface} from "../capture/capture.ts";
-import {NO_FORCED_FLAGS} from "../capture/flag-override.ts";
-import {DESKTOP_VIEWPORT, MOBILE_VIEWPORT} from "../capture/plan.ts";
-import {PAGE_ERROR_CAP} from "./manifest.ts";
-import {type CaptureShots, makeCaptureRenderLeg} from "./render-leg.ts";
-import type {SurfaceRender} from "./render-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type CapturedSurface, CaptureError, type UnwrittenSurface } from "../capture/capture.ts";
+import { NO_FORCED_FLAGS } from "../capture/flag-override.ts";
+import { DESKTOP_VIEWPORT, MOBILE_VIEWPORT } from "../capture/plan.ts";
+import { PAGE_ERROR_CAP } from "./manifest.ts";
+import { type CaptureShots, makeCaptureRenderLeg } from "./render-leg.ts";
+import type { SurfaceRender } from "./render-verb.ts";
 
 const PREVIEW = "https://pr-4321-web.example.test";
 
@@ -25,7 +25,7 @@ const request = {
 const failing =
 	(message: string): CaptureShots =>
 	() =>
-		Effect.fail(new CaptureError({message}));
+		Effect.fail(new CaptureError({ message }));
 
 /**
  * A 24-byte PNG header declaring the given size — enough for `validateCaptureBytes`, no codec
@@ -60,7 +60,7 @@ const succeeding =
 const run = (capture: CaptureShots): SurfaceRender =>
 	Effect.runSync(makeCaptureRenderLeg(capture)(request));
 
-const authRequest = {...request, surface: "/pano:auth", cookies: []};
+const authRequest = { ...request, surface: "/pano:auth", cookies: [] };
 
 /** A shot for the `:auth` request, so its `state` matches what the leg planned. */
 const authShot =
@@ -104,30 +104,30 @@ describe("captureRenderLeg", () => {
 	});
 
 	it("still routes a 4xx navigation to Unreachable", () => {
-		expect(run(succeeding({status: 404}))._tag).toBe("Unreachable");
+		expect(run(succeeding({ status: 404 }))._tag).toBe("Unreachable");
 	});
 
 	it("reports a decodable capture as Rendered", () => {
-		expect(run(succeeding({status: 200}))._tag).toBe("Rendered");
+		expect(run(succeeding({ status: 200 }))._tag).toBe("Rendered");
 	});
 
 	it("collapses a capture's page errors to the cap plus a count of the rest", () => {
-		const noisy = Array.from({length: PAGE_ERROR_CAP + 4}, (_, i) => ({
+		const noisy = Array.from({ length: PAGE_ERROR_CAP + 4 }, (_, i) => ({
 			kind: "console.error" as const,
 			text: `Warning: ${i}`,
 		}));
-		const render = run(succeeding({status: 200, pageErrors: noisy}));
+		const render = run(succeeding({ status: 200, pageErrors: noisy }));
 		expect(render).toMatchObject({
 			_tag: "Rendered",
-			entry: {pageErrors: {rows: noisy.slice(0, PAGE_ERROR_CAP), more: 4}},
+			entry: { pageErrors: { rows: noisy.slice(0, PAGE_ERROR_CAP), more: 4 } },
 		});
 	});
 
 	it("keeps a short list whole and still counts zero, so capped-at-length reads as whole", () => {
-		const one = [{kind: "console.error" as const, text: "Warning: missing key prop"}];
-		expect(run(succeeding({status: 200, pageErrors: one}))).toMatchObject({
+		const one = [{ kind: "console.error" as const, text: "Warning: missing key prop" }];
+		expect(run(succeeding({ status: 200, pageErrors: one }))).toMatchObject({
 			_tag: "Rendered",
-			entry: {pageErrors: {rows: one, more: 0}},
+			entry: { pageErrors: { rows: one, more: 0 } },
 		});
 	});
 });
@@ -138,7 +138,7 @@ describe("captureRenderLeg", () => {
  * from desktop pixels is a valid PNG no byte check downstream can tell from the real thing.
  */
 describe("captureRenderLeg — the shot's own width", () => {
-	const mobileRequest = {...request, viewport: MOBILE_VIEWPORT};
+	const mobileRequest = { ...request, viewport: MOBILE_VIEWPORT };
 	const runMobile = (capture: CaptureShots): SurfaceRender =>
 		Effect.runSync(makeCaptureRenderLeg(capture)(mobileRequest));
 
@@ -146,19 +146,21 @@ describe("captureRenderLeg — the shot's own width", () => {
 		const planned: number[] = [];
 		const spy: CaptureShots = (plan, _outDir, _options) => {
 			planned.push(plan[0]?.viewport.width ?? 0);
-			return succeeding({status: 200, pngBytes: pngHeader(MOBILE_VIEWPORT.width)})([], "", {});
+			return succeeding({ status: 200, pngBytes: pngHeader(MOBILE_VIEWPORT.width) })([], "", {});
 		};
 		runMobile(spy);
 		expect(planned).toEqual([MOBILE_VIEWPORT.width]);
 	});
 
 	it("records the shot when its bytes read back at the requested width", () => {
-		const render = runMobile(succeeding({status: 200, pngBytes: pngHeader(MOBILE_VIEWPORT.width)}));
-		expect(render).toMatchObject({_tag: "Rendered", entry: {viewport: "mobile", width: 390}});
+		const render = runMobile(
+			succeeding({ status: 200, pngBytes: pngHeader(MOBILE_VIEWPORT.width) }),
+		);
+		expect(render).toMatchObject({ _tag: "Rendered", entry: { viewport: "mobile", width: 390 } });
 	});
 
 	it("refuses a desktop-width shot filed under mobile, naming both widths", () => {
-		expect(runMobile(succeeding({status: 200, pngBytes: pngHeader(1280)}))).toEqual({
+		expect(runMobile(succeeding({ status: 200, pngBytes: pngHeader(1280) }))).toEqual({
 			_tag: "WrongViewport",
 			wanted: 390,
 			rendered: 1280,
@@ -168,7 +170,7 @@ describe("captureRenderLeg — the shot's own width", () => {
 	// Undecodable comes first: "invalid bytes" is the truer answer than "the wrong width", and a
 	// width read off bytes that failed validation would be a number nobody proved.
 	it("keeps an invalid capture on the Invalid arm rather than the width one", () => {
-		expect(run(succeeding({status: 200, pngBytes: new Uint8Array(0)}))._tag).toBe("Invalid");
+		expect(run(succeeding({ status: 200, pngBytes: new Uint8Array(0) }))._tag).toBe("Invalid");
 	});
 });
 
@@ -183,7 +185,7 @@ describe("captureRenderLeg — the :auth session proof", () => {
 		const spy: CaptureShots = (_plan, _outDir, options) => {
 			asked.push(options?.sessionProbeUrl);
 			return authShot({
-				sessionProof: {_tag: "SignedIn", userId: "u1", tier: "yazar", emailVerified: true},
+				sessionProof: { _tag: "SignedIn", userId: "u1", tier: "yazar", emailVerified: true },
 			})([], "", {});
 		};
 		runAuth(spy);
@@ -196,7 +198,7 @@ describe("captureRenderLeg — the :auth session proof", () => {
 		expect(
 			runAuth(
 				authShot({
-					sessionProof: {_tag: "SignedIn", userId: "u1", tier: "yazar", emailVerified: true},
+					sessionProof: { _tag: "SignedIn", userId: "u1", tier: "yazar", emailVerified: true },
 				}),
 			)._tag,
 		).toBe("Rendered");
@@ -208,7 +210,7 @@ describe("captureRenderLeg — the :auth session proof", () => {
 	 */
 	it("refuses a visitor's render under the :auth name, saying which visitor answer it was", () => {
 		const reasonOf = (cause: "BadSignature" | "NoSessionRow"): string => {
-			const render = runAuth(authShot({sessionProof: {_tag: "Anonymous", cause}}));
+			const render = runAuth(authShot({ sessionProof: { _tag: "Anonymous", cause } }));
 			return render._tag === "Unauthenticated" ? render.reason : `not refused: ${render._tag}`;
 		};
 		const visitor = "the preview answered the seeded cookie as a visitor: ";
@@ -220,8 +222,8 @@ describe("captureRenderLeg — the :auth session proof", () => {
 
 	it("refuses an unreadable probe too — a proof nobody could read is not a proof", () => {
 		expect(
-			runAuth(authShot({sessionProof: {_tag: "Unreadable", reason: "probe answered 502"}})),
-		).toEqual({_tag: "Unauthenticated", reason: "probe answered 502"});
+			runAuth(authShot({ sessionProof: { _tag: "Unreadable", reason: "probe answered 502" } })),
+		).toEqual({ _tag: "Unauthenticated", reason: "probe answered 502" });
 		expect(runAuth(authShot({}))._tag).toBe("Unauthenticated");
 	});
 });
@@ -232,7 +234,7 @@ describe("captureRenderLeg — the :auth session proof", () => {
  * the feature is designed never to show.
  */
 describe("captureRenderLeg — the rendered actor's tier", () => {
-	const caylakRequest = {...request, surface: "/hosgeldin:auth-caylak"};
+	const caylakRequest = { ...request, surface: "/hosgeldin:auth-caylak" };
 	const caylakShot =
 		(tier: string): CaptureShots =>
 		() =>
@@ -246,7 +248,7 @@ describe("captureRenderLeg — the rendered actor's tier", () => {
 					pngBytes: pngHeader(),
 					pageErrors: [],
 					status: 200,
-					sessionProof: {_tag: "SignedIn" as const, userId: "u1", tier, emailVerified: true},
+					sessionProof: { _tag: "SignedIn" as const, userId: "u1", tier, emailVerified: true },
 				},
 			]);
 	const runCaylak = (capture: CaptureShots): SurfaceRender =>
@@ -268,10 +270,10 @@ describe("captureRenderLeg — the rendered actor's tier", () => {
 		expect(
 			runAuth(
 				authShot({
-					sessionProof: {_tag: "SignedIn", userId: "u1", tier: "çaylak", emailVerified: true},
+					sessionProof: { _tag: "SignedIn", userId: "u1", tier: "çaylak", emailVerified: true },
 				}),
 			),
-		).toEqual({_tag: "WrongTier", wanted: "yazar", rendered: "çaylak"});
+		).toEqual({ _tag: "WrongTier", wanted: "yazar", rendered: "çaylak" });
 	});
 });
 
@@ -281,7 +283,7 @@ describe("captureRenderLeg — the rendered actor's tier", () => {
  * name — the shot of the write the surface exists to show being refused.
  */
 describe("captureRenderLeg — the rendered actor's email verification", () => {
-	const unverifiedRequest = {...request, surface: "/hosgeldin:auth-caylak-unverified"};
+	const unverifiedRequest = { ...request, surface: "/hosgeldin:auth-caylak-unverified" };
 	const unverifiedShot =
 		(tier: string, emailVerified: boolean): CaptureShots =>
 		() =>
@@ -295,7 +297,7 @@ describe("captureRenderLeg — the rendered actor's email verification", () => {
 					pngBytes: pngHeader(),
 					pageErrors: [],
 					status: 200,
-					sessionProof: {_tag: "SignedIn" as const, userId: "u1", tier, emailVerified},
+					sessionProof: { _tag: "SignedIn" as const, userId: "u1", tier, emailVerified },
 				},
 			]);
 	const runUnverified = (capture: CaptureShots): SurfaceRender =>
@@ -321,7 +323,7 @@ describe("captureRenderLeg — the rendered actor's email verification", () => {
 	});
 
 	it("refuses an unverified çaylak's render under the verified :auth-caylak name too", () => {
-		const caylak = {...request, surface: "/hosgeldin:auth-caylak"};
+		const caylak = { ...request, surface: "/hosgeldin:auth-caylak" };
 		const shot: CaptureShots = () =>
 			Effect.succeed([
 				{
@@ -353,27 +355,27 @@ describe("captureRenderLeg — the rendered actor's email verification", () => {
  * cookie renders the flag-off page, and that page is a valid PNG under the flag-on name.
  */
 describe("captureRenderLeg — the forced-flag proof", () => {
-	const FORCED = {"welcome-banner": true};
-	const forcedRequest = {...authRequest, forcedFlags: FORCED};
+	const FORCED = { "welcome-banner": true };
+	const forcedRequest = { ...authRequest, forcedFlags: FORCED };
 	const runForced = (capture: CaptureShots): SurfaceRender =>
 		Effect.runSync(makeCaptureRenderLeg(capture)(forcedRequest));
-	const signedIn = {_tag: "SignedIn", userId: "u1", tier: "yazar", emailVerified: true} as const;
+	const signedIn = { _tag: "SignedIn", userId: "u1", tier: "yazar", emailVerified: true } as const;
 
 	it("asks the preview's own evaluation seam, and asks nothing when no flag is forced", () => {
 		const asked: Array<unknown> = [];
 		const spy: CaptureShots = (_plan, _outDir, options) => {
 			asked.push(options?.flagProbe);
-			return authShot({sessionProof: signedIn, overrideProof: {_tag: "Forced"}})([], "", {});
+			return authShot({ sessionProof: signedIn, overrideProof: { _tag: "Forced" } })([], "", {});
 		};
 		runForced(spy);
 		runAuth(spy);
-		expect(asked[0]).toEqual({url: `${PREVIEW}/api/flags/evaluate`, flags: FORCED});
+		expect(asked[0]).toEqual({ url: `${PREVIEW}/api/flags/evaluate`, flags: FORCED });
 		expect(asked[1]).toBeUndefined();
 	});
 
 	it("records the shot only when every forced key came back forced", () => {
 		expect(
-			runForced(authShot({sessionProof: signedIn, overrideProof: {_tag: "Forced"}}))._tag,
+			runForced(authShot({ sessionProof: signedIn, overrideProof: { _tag: "Forced" } }))._tag,
 		).toBe("Rendered");
 	});
 
@@ -382,7 +384,7 @@ describe("captureRenderLeg — the forced-flag proof", () => {
 			runForced(
 				authShot({
 					sessionProof: signedIn,
-					overrideProof: {_tag: "Inert", keys: ["welcome-banner"]},
+					overrideProof: { _tag: "Inert", keys: ["welcome-banner"] },
 				}),
 			),
 		).toEqual({
@@ -396,19 +398,19 @@ describe("captureRenderLeg — the forced-flag proof", () => {
 			runForced(
 				authShot({
 					sessionProof: signedIn,
-					overrideProof: {_tag: "Unreadable", reason: "probe answered 502"},
+					overrideProof: { _tag: "Unreadable", reason: "probe answered 502" },
 				}),
 			),
-		).toEqual({_tag: "OverrideInert", reason: "probe answered 502"});
-		expect(runForced(authShot({sessionProof: signedIn}))._tag).toBe("OverrideInert");
+		).toEqual({ _tag: "OverrideInert", reason: "probe answered 502" });
+		expect(runForced(authShot({ sessionProof: signedIn }))._tag).toBe("OverrideInert");
 	});
 
 	it("keeps the session refusal ahead of the override one — a visitor's page proves no flag", () => {
 		expect(
 			runForced(
 				authShot({
-					sessionProof: {_tag: "Anonymous", cause: "NoSessionRow"},
-					overrideProof: {_tag: "Forced"},
+					sessionProof: { _tag: "Anonymous", cause: "NoSessionRow" },
+					overrideProof: { _tag: "Forced" },
 				}),
 			)._tag,
 		).toBe("Unauthenticated");
@@ -420,8 +422,8 @@ describe("captureRenderLeg — the forced-flag proof", () => {
  * PNG under the requested locale's name.
  */
 describe("captureRenderLeg — the locale proof", () => {
-	const SEED = {storageKey: "app.locale", value: "en"};
-	const localeRequest = {...request, locale: SEED};
+	const SEED = { storageKey: "app.locale", value: "en" };
+	const localeRequest = { ...request, locale: SEED };
 	const runLocale = (capture: CaptureShots): SurfaceRender =>
 		Effect.runSync(makeCaptureRenderLeg(capture)(localeRequest));
 
@@ -429,7 +431,7 @@ describe("captureRenderLeg — the locale proof", () => {
 		const asked: Array<unknown> = [];
 		const spy: CaptureShots = (_plan, _outDir, options) => {
 			asked.push(options?.locale);
-			return succeeding({localeProof: {_tag: "Seeded"}})([], "", {});
+			return succeeding({ localeProof: { _tag: "Seeded" } })([], "", {});
 		};
 		runLocale(spy);
 		run(spy);
@@ -437,11 +439,11 @@ describe("captureRenderLeg — the locale proof", () => {
 	});
 
 	it("records the shot only when the page's lang named the seeded value", () => {
-		expect(runLocale(succeeding({localeProof: {_tag: "Seeded"}}))._tag).toBe("Rendered");
+		expect(runLocale(succeeding({ localeProof: { _tag: "Seeded" } }))._tag).toBe("Rendered");
 	});
 
 	it("refuses a default-locale render under the seeded name, naming the lang it read", () => {
-		expect(runLocale(succeeding({localeProof: {_tag: "Mismatch", rendered: "tr"}}))).toEqual({
+		expect(runLocale(succeeding({ localeProof: { _tag: "Mismatch", rendered: "tr" } }))).toEqual({
 			_tag: "WrongLocale",
 			wanted: "en",
 			reason: `the page's lang read back "tr"`,
@@ -450,8 +452,8 @@ describe("captureRenderLeg — the locale proof", () => {
 
 	it("refuses an unreadable lang and an absent proof — neither is a proof", () => {
 		expect(
-			runLocale(succeeding({localeProof: {_tag: "Unreadable", reason: "lang read failed: x"}})),
-		).toEqual({_tag: "WrongLocale", wanted: "en", reason: "lang read failed: x"});
+			runLocale(succeeding({ localeProof: { _tag: "Unreadable", reason: "lang read failed: x" } })),
+		).toEqual({ _tag: "WrongLocale", wanted: "en", reason: "lang read failed: x" });
 		expect(runLocale(succeeding({}))).toEqual({
 			_tag: "WrongLocale",
 			wanted: "en",
@@ -463,8 +465,8 @@ describe("captureRenderLeg — the locale proof", () => {
 		expect(
 			runLocale(
 				succeeding({
-					localeProof: {_tag: "Mismatch", rendered: "tr"},
-					pageErrors: [{kind: "pageerror", text: "TypeError: x is null"}],
+					localeProof: { _tag: "Mismatch", rendered: "tr" },
+					pageErrors: [{ kind: "pageerror", text: "TypeError: x is null" }],
 				}),
 			)._tag,
 		).toBe("Crashed");
@@ -476,27 +478,27 @@ describe("captureRenderLeg — the locale proof", () => {
  * under the requested scheme's name.
  */
 describe("captureRenderLeg — the scheme proof", () => {
-	const DARK = {scheme: "dark", rootAttribute: "data-theme"} as const;
-	const schemeRequest = {...request, scheme: DARK};
+	const DARK = { scheme: "dark", rootAttribute: "data-theme" } as const;
+	const schemeRequest = { ...request, scheme: DARK };
 	const runScheme = (capture: CaptureShots): SurfaceRender =>
 		Effect.runSync(makeCaptureRenderLeg(capture)(schemeRequest));
 
 	it("plans the shot in the requested scheme, and plans no scheme when none was asked for", () => {
-		const planned: Array<{readonly scheme: unknown; readonly fileName: string}> = [];
+		const planned: Array<{ readonly scheme: unknown; readonly fileName: string }> = [];
 		const spy: CaptureShots = (plan) => {
-			planned.push(...plan.map((shot) => ({scheme: shot.scheme, fileName: shot.fileName})));
-			return succeeding({schemeProof: {_tag: "Proven", scheme: "dark"}})([], "", {});
+			planned.push(...plan.map((shot) => ({ scheme: shot.scheme, fileName: shot.fileName })));
+			return succeeding({ schemeProof: { _tag: "Proven", scheme: "dark" } })([], "", {});
 		};
 		runScheme(spy);
 		run(spy);
 		expect(planned).toEqual([
-			{scheme: DARK, fileName: "pano@desktop-dark.png"},
-			{scheme: undefined, fileName: "pano@desktop.png"},
+			{ scheme: DARK, fileName: "pano@desktop-dark.png" },
+			{ scheme: undefined, fileName: "pano@desktop.png" },
 		]);
 	});
 
 	it("records the requested and the proven scheme on the entry, and neither without a request", () => {
-		const proven = runScheme(succeeding({schemeProof: {_tag: "Proven", scheme: "dark"}}));
+		const proven = runScheme(succeeding({ schemeProof: { _tag: "Proven", scheme: "dark" } }));
 		expect(proven._tag === "Rendered" && proven.entry.scheme).toEqual({
 			requested: "dark",
 			proven: "dark",
@@ -506,16 +508,20 @@ describe("captureRenderLeg — the scheme proof", () => {
 	});
 
 	it("refuses the other scheme under the requested name, naming what the page published", () => {
-		expect(runScheme(succeeding({schemeProof: {_tag: "Mismatch", rendered: "light"}}))).toEqual({
-			_tag: "WrongScheme",
-			wanted: "dark",
-			reason: `the page's data-theme read back "light"`,
-		});
+		expect(runScheme(succeeding({ schemeProof: { _tag: "Mismatch", rendered: "light" } }))).toEqual(
+			{
+				_tag: "WrongScheme",
+				wanted: "dark",
+				reason: `the page's data-theme read back "light"`,
+			},
+		);
 	});
 
 	it("refuses an unreadable attribute and an absent proof — neither is a proof", () => {
 		const unreadable = "the page's root carries no data-theme attribute";
-		expect(runScheme(succeeding({schemeProof: {_tag: "Unreadable", reason: unreadable}}))).toEqual({
+		expect(
+			runScheme(succeeding({ schemeProof: { _tag: "Unreadable", reason: unreadable } })),
+		).toEqual({
 			_tag: "WrongScheme",
 			wanted: "dark",
 			reason: unreadable,
@@ -531,8 +537,8 @@ describe("captureRenderLeg — the scheme proof", () => {
 		expect(
 			runScheme(
 				succeeding({
-					schemeProof: {_tag: "Mismatch", rendered: "light"},
-					pageErrors: [{kind: "pageerror", text: "TypeError: x is null"}],
+					schemeProof: { _tag: "Mismatch", rendered: "light" },
+					pageErrors: [{ kind: "pageerror", text: "TypeError: x is null" }],
 				}),
 			)._tag,
 		).toBe("Crashed");
@@ -544,27 +550,27 @@ describe("captureRenderLeg — the scheme proof", () => {
  * the requested accent's name.
  */
 describe("captureRenderLeg — the accent proof", () => {
-	const AMBER = {rootAttribute: "data-color-theme", value: "amber"};
-	const accentRequest = {...request, accent: AMBER};
+	const AMBER = { rootAttribute: "data-color-theme", value: "amber" };
+	const accentRequest = { ...request, accent: AMBER };
 	const runAccent = (capture: CaptureShots): SurfaceRender =>
 		Effect.runSync(makeCaptureRenderLeg(capture)(accentRequest));
 
 	it("hands the accent to the capture and keeps the file name, and sets nothing when none was asked for", () => {
-		const asked: Array<{readonly accent: unknown; readonly fileName: string | undefined}> = [];
+		const asked: Array<{ readonly accent: unknown; readonly fileName: string | undefined }> = [];
 		const spy: CaptureShots = (plan, _outDir, options) => {
-			asked.push({accent: options?.accent, fileName: plan[0]?.fileName});
-			return succeeding({accentProof: {_tag: "Proven", accent: "amber"}})([], "", {});
+			asked.push({ accent: options?.accent, fileName: plan[0]?.fileName });
+			return succeeding({ accentProof: { _tag: "Proven", accent: "amber" } })([], "", {});
 		};
 		runAccent(spy);
 		run(spy);
 		expect(asked).toEqual([
-			{accent: AMBER, fileName: "pano@desktop.png"},
-			{accent: undefined, fileName: "pano@desktop.png"},
+			{ accent: AMBER, fileName: "pano@desktop.png" },
+			{ accent: undefined, fileName: "pano@desktop.png" },
 		]);
 	});
 
 	it("records the requested and the proven accent on the entry, and neither without a request", () => {
-		const proven = runAccent(succeeding({accentProof: {_tag: "Proven", accent: "amber"}}));
+		const proven = runAccent(succeeding({ accentProof: { _tag: "Proven", accent: "amber" } }));
 		expect(proven._tag === "Rendered" && proven.entry.accent).toEqual({
 			requested: "amber",
 			proven: "amber",
@@ -574,16 +580,20 @@ describe("captureRenderLeg — the accent proof", () => {
 	});
 
 	it("refuses another accent under the requested name, naming what the root carried", () => {
-		expect(runAccent(succeeding({accentProof: {_tag: "Mismatch", rendered: "ember"}}))).toEqual({
-			_tag: "WrongAccent",
-			wanted: "amber",
-			reason: `the page's data-color-theme read back "ember"`,
-		});
+		expect(runAccent(succeeding({ accentProof: { _tag: "Mismatch", rendered: "ember" } }))).toEqual(
+			{
+				_tag: "WrongAccent",
+				wanted: "amber",
+				reason: `the page's data-color-theme read back "ember"`,
+			},
+		);
 	});
 
 	it("refuses an unreadable attribute and an absent proof — neither is a proof", () => {
 		const unreadable = "the page's root carries no data-color-theme attribute";
-		expect(runAccent(succeeding({accentProof: {_tag: "Unreadable", reason: unreadable}}))).toEqual({
+		expect(
+			runAccent(succeeding({ accentProof: { _tag: "Unreadable", reason: unreadable } })),
+		).toEqual({
 			_tag: "WrongAccent",
 			wanted: "amber",
 			reason: unreadable,
@@ -599,8 +609,8 @@ describe("captureRenderLeg — the accent proof", () => {
 		expect(
 			runAccent(
 				succeeding({
-					accentProof: {_tag: "Mismatch", rendered: "ember"},
-					pageErrors: [{kind: "pageerror", text: "TypeError: x is null"}],
+					accentProof: { _tag: "Mismatch", rendered: "ember" },
+					pageErrors: [{ kind: "pageerror", text: "TypeError: x is null" }],
 				}),
 			)._tag,
 		).toBe("Crashed");
@@ -616,11 +626,11 @@ describe("captureRenderLeg — the interaction proof", () => {
 	const SIL = {
 		label: "sil-highlighted",
 		steps: [
-			{verb: "click", locator: 'role=button[name="Aç"]'},
-			{verb: "hover", locator: 'role=menuitem[name="Sil"]'},
+			{ verb: "click", locator: 'role=button[name="Aç"]' },
+			{ verb: "hover", locator: 'role=menuitem[name="Sil"]' },
 		],
 	} as const;
-	const interactRequest = {...request, interaction: SIL};
+	const interactRequest = { ...request, interaction: SIL };
 	const runInteract = (capture: CaptureShots): SurfaceRender =>
 		Effect.runSync(makeCaptureRenderLeg(capture)(interactRequest));
 	const REFUSED = {
@@ -645,25 +655,25 @@ describe("captureRenderLeg — the interaction proof", () => {
 			]);
 
 	it("plans the shot with its interaction and label, and plans neither for a shot at rest", () => {
-		const planned: Array<{readonly interaction: unknown; readonly fileName: string}> = [];
+		const planned: Array<{ readonly interaction: unknown; readonly fileName: string }> = [];
 		const spy: CaptureShots = (plan) => {
 			planned.push(
-				...plan.map((shot) => ({interaction: shot.interaction, fileName: shot.fileName})),
+				...plan.map((shot) => ({ interaction: shot.interaction, fileName: shot.fileName })),
 			);
-			return succeeding({interactionProof: {_tag: "Proven", proven: ["x"]}})([], "", {});
+			return succeeding({ interactionProof: { _tag: "Proven", proven: ["x"] } })([], "", {});
 		};
 		runInteract(spy);
 		run(spy);
 		expect(planned).toEqual([
-			{interaction: SIL, fileName: "pano~sil-highlighted@desktop.png"},
-			{interaction: undefined, fileName: "pano@desktop.png"},
+			{ interaction: SIL, fileName: "pano~sil-highlighted@desktop.png" },
+			{ interaction: undefined, fileName: "pano@desktop.png" },
 		]);
 	});
 
 	it("records the label, the steps it ran and what the page proved, and nothing on a shot at rest", () => {
 		const proven = runInteract(
 			succeeding({
-				interactionProof: {_tag: "Proven", proven: ['role=menuitem[name="Sil"] matches :hover']},
+				interactionProof: { _tag: "Proven", proven: ['role=menuitem[name="Sil"] matches :hover'] },
 			}),
 		);
 		expect(proven._tag === "Rendered" && proven.entry.interaction).toEqual({
@@ -691,12 +701,12 @@ describe("captureRenderLeg — the interaction proof", () => {
 
 	it("keeps a crash ahead of the interaction proof — a page that threw is a red render", () => {
 		expect(
-			runInteract(unwritten({pageErrors: [{kind: "pageerror", text: "TypeError: x is null"}]}))
+			runInteract(unwritten({ pageErrors: [{ kind: "pageerror", text: "TypeError: x is null" }] }))
 				._tag,
 		).toBe("Crashed");
 	});
 
 	it("keeps an unreachable page ahead of it too — a 404 has no menu to open", () => {
-		expect(runInteract(unwritten({status: 404}))._tag).toBe("Unreachable");
+		expect(runInteract(unwritten({ status: 404 }))._tag).toBe("Unreachable");
 	});
 });

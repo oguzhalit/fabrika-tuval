@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {statedOrderings, unwiredReferences} from "./ordering.ts";
+import { describe, expect, it } from "vitest";
+import { statedOrderings, unwiredReferences } from "./ordering.ts";
 
 const numbers = (text: string) => statedOrderings(text).flatMap((o) => o.references);
 
@@ -61,7 +61,7 @@ describe("statedOrderings — what counts as a statement", () => {
 
 	it("reports the line number and the line as written, quotations intact", () => {
 		const found = statedOrderings("intro\n\nBlocked by #6661 for now.\n");
-		expect(found).toEqual([{line: 3, text: "Blocked by #6661 for now.", references: [6661]}]);
+		expect(found).toEqual([{ line: 3, text: "Blocked by #6661 for now.", references: [6661] }]);
 	});
 
 	it("deduplicates a number the same statement names twice", () => {

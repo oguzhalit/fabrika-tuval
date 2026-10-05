@@ -16,22 +16,22 @@
  * value belongs.
  */
 
-import {randomBytes} from "node:crypto";
-import {Effect, Option} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStdin} from "../io/stdin.ts";
-import {KINDS} from "./body.ts";
-import {runDescope} from "./descope-verb.ts";
-import {runFinding} from "./finding-verb.ts";
-import {runFork} from "./fork-verb.ts";
-import {runLane} from "./lane-verb.ts";
-import {OUTCOMES} from "./markers.ts";
-import {runOpen} from "./open-verb.ts";
-import {runRead} from "./read-verb.ts";
-import {runRecord} from "./record-verb.ts";
-import {runTicket} from "./ticket-verb.ts";
+import { randomBytes } from "node:crypto";
+import { Effect, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStdin } from "../io/stdin.ts";
+import { KINDS } from "./body.ts";
+import { runDescope } from "./descope-verb.ts";
+import { runFinding } from "./finding-verb.ts";
+import { runFork } from "./fork-verb.ts";
+import { runLane } from "./lane-verb.ts";
+import { OUTCOMES } from "./markers.ts";
+import { runOpen } from "./open-verb.ts";
+import { runRead } from "./read-verb.ts";
+import { runRecord } from "./record-verb.ts";
+import { runTicket } from "./ticket-verb.ts";
 
 const repoFlag = Flag.string("repo").pipe(
 	Flag.optional,
@@ -70,7 +70,7 @@ const open = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({destination, repo}) {
+	Effect.fn(function* ({ destination, repo }) {
 		yield* emit(
 			yield* runOpen({
 				destination,
@@ -109,9 +109,9 @@ const open = leafCommand(
 
 const read = leafCommand(
 	"read",
-	{map: mapArg, repo: repoFlag},
-	Effect.fn(function* ({map, repo}) {
-		yield* emit(yield* runRead({map, repo: Option.getOrNull(repo), env: process.env}));
+	{ map: mapArg, repo: repoFlag },
+	Effect.fn(function* ({ map, repo }) {
+		yield* emit(yield* runRead({ map, repo: Option.getOrNull(repo), env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription("The map's whole state, section by section."),
@@ -125,7 +125,7 @@ const read = leafCommand(
 			'  Derivation: the wayfinding skill\'s contract.md, "map read"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika map read 9140"}]),
+	Command.withExamples([{ command: "fabrika map read 9140" }]),
 );
 
 const ticket = leafCommand(
@@ -151,7 +151,7 @@ const ticket = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({map, digest, kind, question, blocks, blockedBy, repo}) {
+	Effect.fn(function* ({ map, digest, kind, question, blocks, blockedBy, repo }) {
 		yield* emit(
 			yield* runTicket({
 				map,
@@ -196,10 +196,16 @@ const ticket = leafCommand(
 
 const lane = leafCommand(
 	"lane",
-	{map: mapArg, ticket: ticketFlag, nonce: nonceFlag, repo: repoFlag},
-	Effect.fn(function* ({map, ticket: number, nonce, repo}) {
+	{ map: mapArg, ticket: ticketFlag, nonce: nonceFlag, repo: repoFlag },
+	Effect.fn(function* ({ map, ticket: number, nonce, repo }) {
 		yield* emit(
-			yield* runLane({map, ticket: number, nonce, repo: Option.getOrNull(repo), env: process.env}),
+			yield* runLane({
+				map,
+				ticket: number,
+				nonce,
+				repo: Option.getOrNull(repo),
+				env: process.env,
+			}),
 		);
 	}),
 ).pipe(
@@ -218,7 +224,7 @@ const lane = leafCommand(
 			'  Derivation: the wayfinding skill\'s contract.md, "map lane"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika map lane 9140 --ticket 9143 --nonce 7f3a9c21"}]),
+	Command.withExamples([{ command: "fabrika map lane 9140 --ticket 9143 --nonce 7f3a9c21" }]),
 );
 
 const finding = leafCommand(
@@ -238,7 +244,7 @@ const finding = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({map, ticket: number, nonce, outcome, finding: path, repo}) {
+	Effect.fn(function* ({ map, ticket: number, nonce, outcome, finding: path, repo }) {
 		yield* emit(
 			yield* runFinding({
 				map,
@@ -271,7 +277,7 @@ const finding = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika map finding 9140 --ticket 9143 --nonce 7f3a9c21 --outcome no-evidence"},
+		{ command: "fabrika map finding 9140 --ticket 9143 --nonce 7f3a9c21 --outcome no-evidence" },
 	]),
 );
 
@@ -295,7 +301,7 @@ const fork = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({map, digest, ticket: number, session, spike, repo}) {
+	Effect.fn(function* ({ map, digest, ticket: number, session, spike, repo }) {
 		yield* emit(
 			yield* runFork({
 				map,
@@ -328,7 +334,7 @@ const fork = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika map fork 9140 --digest a1b2c3d4e5f6 --ticket 9144 --session 9301"},
+		{ command: "fabrika map fork 9140 --digest a1b2c3d4e5f6 --ticket 9144 --session 9301" },
 	]),
 );
 
@@ -405,7 +411,7 @@ const record = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika map record 9140 --digest a1b2c3d4e5f6 --ticket 9143 --finding finding.md"},
+		{ command: "fabrika map record 9140 --digest a1b2c3d4e5f6 --ticket 9143 --finding finding.md" },
 	]),
 );
 
@@ -428,7 +434,7 @@ const descope = leafCommand(
 		),
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({map, digest, direction, reason, ticket: number, repo}) {
+	Effect.fn(function* ({ map, digest, direction, reason, ticket: number, repo }) {
 		yield* emit(
 			yield* runDescope({
 				map,

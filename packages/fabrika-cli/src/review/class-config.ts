@@ -27,17 +27,17 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10031
  */
 
-import {Effect} from "effect";
-import {CONFIG_PATH, type ConfigSource} from "../config/document.ts";
-import {governedRootsKey} from "../config/keys/governed-roots.ts";
-import {type ReviewSubsystem, reviewSubsystemsKey} from "../config/keys/review-subsystems.ts";
-import {prefixesOf, type UiSurface, uiSurfacesKey} from "../config/keys/ui-surfaces.ts";
-import {loadConfig} from "../config/load.ts";
-import {type Read, readFromLoad} from "../config/read-key.ts";
-import {execCapture} from "../io/exec.ts";
-import {readFileAt, type Shell} from "../io/git.ts";
-import {mergeBaseOf} from "../io/pulls.ts";
-import {readFileAtRef} from "../ship/github.ts";
+import { Effect } from "effect";
+import { CONFIG_PATH, type ConfigSource } from "../config/document.ts";
+import { governedRootsKey } from "../config/keys/governed-roots.ts";
+import { type ReviewSubsystem, reviewSubsystemsKey } from "../config/keys/review-subsystems.ts";
+import { prefixesOf, type UiSurface, uiSurfacesKey } from "../config/keys/ui-surfaces.ts";
+import { loadConfig } from "../config/load.ts";
+import { type Read, readFromLoad } from "../config/read-key.ts";
+import { execCapture } from "../io/exec.ts";
+import { readFileAt, type Shell } from "../io/git.ts";
+import { mergeBaseOf } from "../io/pulls.ts";
+import { readFileAtRef } from "../ship/github.ts";
 
 /** Which of the two commits a config was read at — named in every note and every refusal. */
 export type ConfigSide = "head" | "base";
@@ -63,7 +63,7 @@ export interface ClassConfig {
 }
 
 export type ClassConfigRead =
-	| {readonly _tag: "Config"; readonly config: ClassConfig}
+	| { readonly _tag: "Config"; readonly config: ClassConfig }
 	| {
 			readonly _tag: "Refused";
 			/** The whole sentence a verb prints: its name, the reason, and its consequence. */
@@ -92,7 +92,7 @@ const union = <A>(values: ReadonlyArray<A>, keyOf: (value: A) => string): Readon
 	return [...seen.values()];
 };
 
-type Value<A> = Extract<Read<A>, {readonly _tag: "Value"}>;
+type Value<A> = Extract<Read<A>, { readonly _tag: "Value" }>;
 
 interface Side {
 	readonly _tag: "Side";
@@ -103,7 +103,7 @@ interface Side {
 }
 
 /** One commit's three keys, or the first reason one of them has no value. */
-const sideOf = (at: ConfigAt): Side | Extract<Read<never>, {readonly _tag: "Refused"}> => {
+const sideOf = (at: ConfigAt): Side | Extract<Read<never>, { readonly _tag: "Refused" }> => {
 	const load = loadConfig(at.source);
 	const governed = readFromLoad(load, governedRootsKey);
 	if (governed._tag === "Refused") return governed;
@@ -111,7 +111,7 @@ const sideOf = (at: ConfigAt): Side | Extract<Read<never>, {readonly _tag: "Refu
 	if (surfaces._tag === "Refused") return surfaces;
 	const subsystems = readFromLoad(load, reviewSubsystemsKey);
 	if (subsystems._tag === "Refused") return subsystems;
-	return {_tag: "Side", at, governed, surfaces, subsystems};
+	return { _tag: "Side", at, governed, surfaces, subsystems };
 };
 
 /**
@@ -175,17 +175,17 @@ export const configAtCommit = (side: ConfigSide, sha: string): Shell<ConfigAt> =
 	Effect.gen(function* () {
 		const listed = yield* execCapture("git", ["ls-tree", "--full-tree", sha, "--", CONFIG_PATH]);
 		if (!listed.ok) {
-			return {side, sha, source: {_tag: "Unreadable" as const, reason: listed.reason}};
+			return { side, sha, source: { _tag: "Unreadable" as const, reason: listed.reason } };
 		}
-		if (listed.stdout.trim() === "") return {side, sha, source: {_tag: "Absent" as const}};
+		if (listed.stdout.trim() === "") return { side, sha, source: { _tag: "Absent" as const } };
 		const text = yield* readFileAt(sha, CONFIG_PATH);
 		return {
 			side,
 			sha,
 			source:
 				text._tag === "Ok"
-					? {_tag: "Text" as const, text: text.value}
-					: {_tag: "Unreadable" as const, reason: text.reason},
+					? { _tag: "Text" as const, text: text.value }
+					: { _tag: "Unreadable" as const, reason: text.reason },
 		};
 	});
 
@@ -207,10 +207,10 @@ const configAtPlatformRef = (repo: string, side: ConfigSide, sha: string): Shell
 		sha,
 		source:
 			read._tag === "Present"
-				? {_tag: "Text" as const, text: read.value}
+				? { _tag: "Text" as const, text: read.value }
 				: read._tag === "Absent"
-					? {_tag: "Absent" as const}
-					: {_tag: "Unreadable" as const, reason: read.reason},
+					? { _tag: "Absent" as const }
+					: { _tag: "Unreadable" as const, reason: read.reason },
 	}));
 
 /**
@@ -221,7 +221,7 @@ export const classConfigOfPull = (
 	verb: string,
 	consequence: string,
 	repo: string,
-	pull: {readonly headSha: string; readonly baseRef: string},
+	pull: { readonly headSha: string; readonly baseRef: string },
 ): Shell<ClassConfigRead> =>
 	Effect.gen(function* () {
 		const base = yield* mergeBaseOf(repo, pull.baseRef, pull.headSha);

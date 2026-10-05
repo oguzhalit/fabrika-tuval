@@ -1,8 +1,8 @@
-import {describe, expect, it} from "vitest";
-import {parseFrames, renderFrame} from "./frames.ts";
+import { describe, expect, it } from "vitest";
+import { parseFrames, renderFrame } from "./frames.ts";
 
 const frame = (context: string, text: string) =>
-	renderFrame({context, jobId: "441", bytes: text.length, truncated: false, text});
+	renderFrame({ context, jobId: "441", bytes: text.length, truncated: false, text });
 
 describe("parseFrames", () => {
 	it("round-trips what renderFrame writes", () => {

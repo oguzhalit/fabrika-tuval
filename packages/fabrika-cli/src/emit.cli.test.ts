@@ -10,12 +10,12 @@
  * `wire emit` is the producer because its answer scales with stdin, it touches no network, and its
  * composition is a pure function this file can call directly for the expected bytes.
  */
-import {execFileSync} from "node:child_process";
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "./test-budget.ts";
-import {emitFromFields} from "./wire/build-deviations.ts";
-import {ZERO_SCOPE} from "./wire/codes.ts";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "./test-budget.ts";
+import { emitFromFields } from "./wire/build-deviations.ts";
+import { ZERO_SCOPE } from "./wire/codes.ts";
 
 const BIN = fileURLToPath(new URL("./bin.ts", import.meta.url));
 
@@ -25,7 +25,7 @@ const ENTRIES = 20_000;
 const fields = [
 	"issue: 6226",
 	...Array.from(
-		{length: ENTRIES},
+		{ length: ENTRIES },
 		(_unused, at) => `-\tsaid ${at}\tdid ${at}\twhy ${at}\tstated here ${at}`,
 	),
 ].join("\n");
@@ -37,13 +37,13 @@ const fields = [
 const fabrika = (
 	args: ReadonlyArray<string>,
 	input: string,
-): {readonly code: number; readonly stdout: string} => {
+): { readonly code: number; readonly stdout: string } => {
 	try {
 		return {
 			code: 0,
 			stdout: execFileSync(process.execPath, [BIN, ...args], {
 				encoding: "utf8",
-				env: {...process.env, FABRIKA_SKIP_INFER: "1"},
+				env: { ...process.env, FABRIKA_SKIP_INFER: "1" },
 				input,
 				// execFileSync's own default is 1 MiB, and the answer under test is larger.
 				maxBuffer: 64 * 1024 * 1024,
@@ -51,12 +51,12 @@ const fabrika = (
 			}),
 		};
 	} catch (err) {
-		const failure = err as {status?: number; stdout?: string};
-		return {code: failure.status ?? -1, stdout: failure.stdout ?? ""};
+		const failure = err as { status?: number; stdout?: string };
+		return { code: failure.status ?? -1, stdout: failure.stdout ?? "" };
 	}
 };
 
-describe("a verb's answer survives a pipe", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
+describe("a verb's answer survives a pipe", { timeout: SUBPROCESS_TEST_TIMEOUT_MS }, () => {
 	it("delivers a multi-megabyte answer byte-complete", () => {
 		const composed = emitFromFields(fields);
 		expect(composed._tag).toBe("Composed");

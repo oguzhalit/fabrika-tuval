@@ -9,10 +9,10 @@
  * correctable thing first.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {LEAK_NAMES, type LeakNames} from "../config/keys/leak-names.ts";
-import type {Read} from "../config/read-key.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { LEAK_NAMES, type LeakNames } from "../config/keys/leak-names.ts";
+import type { Read } from "../config/read-key.ts";
 import {
 	createIssue,
 	currentBranch,
@@ -22,9 +22,9 @@ import {
 	listLabels,
 	resolveRepo,
 } from "../io/issues.ts";
-import {sessionIdFrom} from "../io/session-id.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { sessionIdFrom } from "../io/session-id.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	BAD_SECTIONS,
 	BARE_AT_PATH,
@@ -46,7 +46,7 @@ import {
 	REQUIRED_SECTIONS,
 	renderFooter,
 } from "./compose.ts";
-import {isBareAtReference, redactionTally, renderLeaks, scanBody} from "./leaks.ts";
+import { isBareAtReference, redactionTally, renderLeaks, scanBody } from "./leaks.ts";
 
 export interface FileOptions {
 	readonly title: string;
@@ -97,7 +97,7 @@ export const runFile = (
 	options: FileOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {label, json, title} = options;
+		const { label, json, title } = options;
 
 		if (title.trim() === "") {
 			return refuse(FAILED, "report file: --title is empty — refusing to file an untitled report.");

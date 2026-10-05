@@ -7,12 +7,12 @@
  * and thirteen copies of it are thirteen chances to fold the two outcomes together — a 404 is a fact
  * about the repository, an unreachable GitHub is not a fact about anything.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {resolveRepo} from "../io/issues.ts";
-import {getPullRequest, type PullRecord} from "../io/pulls.ts";
-import {FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { resolveRepo } from "../io/issues.ts";
+import { getPullRequest, type PullRecord } from "../io/pulls.ts";
+import { FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
 
 /** The null token this group prints for a field with no value. One token, every verb. */
 export const NULL_TOKEN = "-";
@@ -24,8 +24,8 @@ export const scannedLine = (verb: string, scanned: number, noun: string, note?: 
 	}.`;
 
 export type Resolved =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Repo"; readonly repo: string};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Repo"; readonly repo: string };
 
 export const resolveTargetRepo = (
 	verb: string,
@@ -42,7 +42,7 @@ export const resolveTargetRepo = (
 						`${verb}: cannot resolve a target repo — set CLAUDE_PIPELINE_REPO, or run inside a checkout whose origin remote resolves.`,
 					),
 				}
-			: {_tag: "Repo" as const, repo: attempt.value};
+			: { _tag: "Repo" as const, repo: attempt.value };
 	});
 
 export interface TargetOptions {
@@ -55,8 +55,8 @@ export interface TargetOptions {
 }
 
 export type Target =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Pull"; readonly pull: PullRecord};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Pull"; readonly pull: PullRecord };
 
 export const resolvePull = (
 	verb: string,
@@ -95,7 +95,7 @@ export const resolvePull = (
 				outcome: refuse(ZERO_SCOPE, `${verb}: PR #${pr} is closed — ${options.closedReason}`),
 			};
 		}
-		return {_tag: "Pull" as const, pull};
+		return { _tag: "Pull" as const, pull };
 	});
 
 /** A positive integer, or the usage refusal — every verb's first check. */

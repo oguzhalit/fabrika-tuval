@@ -14,8 +14,8 @@
  * none gets the structural shapes alone.
  */
 
-import {type LeakNames, NO_LEAK_NAMES} from "../config/keys/leak-names.ts";
-import {type ReasonHistogram, reasonHistogram} from "../evidence.ts";
+import { type LeakNames, NO_LEAK_NAMES } from "../config/keys/leak-names.ts";
+import { type ReasonHistogram, reasonHistogram } from "../evidence.ts";
 
 export type LeakClass =
 	| "home-relative"
@@ -91,7 +91,7 @@ const KEY_OPENER = /(["'])$/;
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/10233
  */
-const isPathAlias = ({line, start, end}: Site): boolean => {
+const isPathAlias = ({ line, start, end }: Site): boolean => {
 	const quoted = line.slice(start, end);
 	const before = line.slice(0, start);
 	const after = line.slice(end);
@@ -126,18 +126,18 @@ const PATH_RE = new RegExp(
 /** Trailing sentence punctuation is prose, not part of the path. */
 const trimPunctuation = (match: string): string => match.replace(/[.,;:!?]+$/, "");
 
-const ROOTS: ReadonlyArray<{prefix: string; cls: LeakClass; mask: string}> = [
-	{prefix: "/private/tmp", cls: "temp root", mask: "/private/tmp/<redacted>"},
-	{prefix: "/private/var", cls: "temp root", mask: "/private/var/<redacted>"},
-	{prefix: "/var/folders", cls: "temp root", mask: "/var/folders/<redacted>"},
-	{prefix: "/tmp", cls: "temp root", mask: "/tmp/<redacted>"},
-	{prefix: "/Users", cls: "absolute home root", mask: "/Users/<redacted>"},
-	{prefix: "/home", cls: "absolute home root", mask: "/home/<redacted>"},
-	{prefix: "~", cls: "home-relative", mask: "~/<redacted>"},
+const ROOTS: ReadonlyArray<{ prefix: string; cls: LeakClass; mask: string }> = [
+	{ prefix: "/private/tmp", cls: "temp root", mask: "/private/tmp/<redacted>" },
+	{ prefix: "/private/var", cls: "temp root", mask: "/private/var/<redacted>" },
+	{ prefix: "/var/folders", cls: "temp root", mask: "/var/folders/<redacted>" },
+	{ prefix: "/tmp", cls: "temp root", mask: "/tmp/<redacted>" },
+	{ prefix: "/Users", cls: "absolute home root", mask: "/Users/<redacted>" },
+	{ prefix: "/home", cls: "absolute home root", mask: "/home/<redacted>" },
+	{ prefix: "~", cls: "home-relative", mask: "~/<redacted>" },
 ];
 
-const rootOf = (path: string): {cls: LeakClass; mask: string} =>
-	ROOTS.find((r) => path.startsWith(r.prefix)) ?? {cls: "temp root", mask: "/tmp/<redacted>"};
+const rootOf = (path: string): { cls: LeakClass; mask: string } =>
+	ROOTS.find((r) => path.startsWith(r.prefix)) ?? { cls: "temp root", mask: "/tmp/<redacted>" };
 
 /**
  * An email address: a local part, `@`, and a dotted domain ending in an alphabetic label.
@@ -184,7 +184,7 @@ interface Rule {
 		match: string,
 		groups: ReadonlyArray<string | undefined>,
 		site: Site,
-	) => {cls: LeakClass; mask: string} | null;
+	) => { cls: LeakClass; mask: string } | null;
 	/** Whether trailing sentence punctuation is split off before judging, as a path's is. */
 	readonly trims: boolean;
 }
@@ -199,7 +199,7 @@ const EMAIL_RULE: Rule = {
 	re: EMAIL_RE,
 	trims: false,
 	judge: (_match, [local = "", domain = "", tld = ""]) =>
-		isPersonalAddress(local, domain, tld) ? {cls: "email", mask: "<redacted email>"} : null,
+		isPersonalAddress(local, domain, tld) ? { cls: "email", mask: "<redacted email>" } : null,
 };
 
 /**
@@ -217,7 +217,7 @@ const nameRules = (names: LeakNames): ReadonlyArray<Rule> => {
 				"gi",
 			),
 			trims: true,
-			judge: () => ({cls: "private repo link", mask: "<redacted private repo link>"}),
+			judge: () => ({ cls: "private repo link", mask: "<redacted private repo link>" }),
 		});
 		rules.push({
 			re: new RegExp(String.raw`(?<![A-Za-z0-9_./-])(${escaped})#\d+(?![0-9])`, "gi"),
@@ -232,7 +232,7 @@ const nameRules = (names: LeakNames): ReadonlyArray<Rule> => {
 		rules.push({
 			re: new RegExp(escapeRegExp(identifier), "gi"),
 			trims: false,
-			judge: () => ({cls: "named identifier", mask: "<redacted>"}),
+			judge: () => ({ cls: "named identifier", mask: "<redacted>" }),
 		});
 	}
 	return rules;
@@ -263,14 +263,14 @@ export const scanBody = (body: string, names: LeakNames = NO_LEAK_NAMES): Scan =
 				const start = rest[offsetAt] as number;
 				const match = rule.trims ? trimPunctuation(raw) : raw;
 				const tail = raw.slice(match.length);
-				const verdict = rule.judge(match, groups, {line: text, start, end: start + raw.length});
+				const verdict = rule.judge(match, groups, { line: text, start, end: start + raw.length });
 				if (verdict === null) return raw;
-				leaks.push({line: index + 1, class: verdict.cls, text: match});
+				leaks.push({ line: index + 1, class: verdict.cls, text: match });
 				return verdict.mask + tail;
 			});
 		}, line),
 	);
-	return {leaks, redacted: leaks.length === 0 ? body : lines.join("\n")};
+	return { leaks, redacted: leaks.length === 0 ? body : lines.join("\n") };
 };
 
 /**

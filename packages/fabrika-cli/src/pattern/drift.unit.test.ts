@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {candidateTokens, driftOutcome, isRepoPath} from "./drift.ts";
+import { describe, expect, it } from "vitest";
+import { candidateTokens, driftOutcome, isRepoPath } from "./drift.ts";
 
 const TOP_LEVEL = new Set(["packages", "apps", ".patterns", "README.md"]);
 
@@ -44,13 +44,13 @@ describe("isRepoPath", () => {
 
 describe("driftOutcome", () => {
 	it("is `drifted` when anything moved and `current` when nothing did", () => {
-		expect(driftOutcome({inRepo: 3, moved: 1})).toBe("drifted");
-		expect(driftOutcome({inRepo: 3, moved: 0})).toBe("current");
+		expect(driftOutcome({ inRepo: 3, moved: 1 })).toBe("drifted");
+		expect(driftOutcome({ inRepo: 3, moved: 0 })).toBe("current");
 	});
 
 	// `unanchored` is NOT a clearance. Reporting it as `current` would be a clean pass over nothing,
 	// the one shape a fail-closed gate must never produce.
 	it("is `unanchored`, never `current`, when nothing was followed", () => {
-		expect(driftOutcome({inRepo: 0, moved: 0})).toBe("unanchored");
+		expect(driftOutcome({ inRepo: 0, moved: 0 })).toBe("unanchored");
 	});
 });

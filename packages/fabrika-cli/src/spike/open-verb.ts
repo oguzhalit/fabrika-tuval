@@ -17,13 +17,13 @@
  * sibling verbs invert.
  */
 
-import {Effect} from "effect";
-import {exists, readFile, realPath, writeFile} from "../io/fs.ts";
-import {repoRoot, treeStatus} from "../io/git.ts";
-import {createIssue, getIssue, listLabels, openIssuesWithLabel} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {issueBody, SPIKE_LABEL, spikeTitle} from "./bodies.ts";
+import { Effect } from "effect";
+import { exists, readFile, realPath, writeFile } from "../io/fs.ts";
+import { repoRoot, treeStatus } from "../io/git.ts";
+import { createIssue, getIssue, listLabels, openIssuesWithLabel } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { issueBody, SPIKE_LABEL, spikeTitle } from "./bodies.ts";
 import {
 	MALFORMED_RECORD,
 	MANIFEST_INCOMPLETE,
@@ -36,7 +36,7 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {leakFree, nonceGrammar, type SpikeEffect, targetRepo} from "./guards.ts";
+import { leakFree, nonceGrammar, type SpikeEffect, targetRepo } from "./guards.ts";
 import {
 	isInsideTree,
 	isKind,
@@ -118,9 +118,9 @@ export const runOpen = (options: OpenOptions): SpikeEffect<VerbOutcome> =>
 		const resolved = yield* Effect.all([realPath(root.value), realPath(options.tmpRoot)], {
 			concurrency: 1,
 		}).pipe(
-			Effect.map(([treeRoot, tmpRoot]) => ({_tag: "Ok" as const, treeRoot, tmpRoot})),
+			Effect.map(([treeRoot, tmpRoot]) => ({ _tag: "Ok" as const, treeRoot, tmpRoot })),
 			Effect.catchTag("fabrika-cli/ReadFailed", (failure) =>
-				Effect.succeed({_tag: "Failed" as const, what: failure.path, reason: failure.reason}),
+				Effect.succeed({ _tag: "Failed" as const, what: failure.path, reason: failure.reason }),
 			),
 		);
 		if (resolved._tag === "Failed") {
@@ -129,7 +129,7 @@ export const runOpen = (options: OpenOptions): SpikeEffect<VerbOutcome> =>
 				`${VERB}: cannot read ${resolved.what}: ${resolved.reason} — nothing was minted and no workspace exists.`,
 			);
 		}
-		const {treeRoot, tmpRoot} = resolved;
+		const { treeRoot, tmpRoot } = resolved;
 
 		const nonce = options.nonce ?? options.mintNonce();
 		const workspace = workspacePath(tmpRoot, nonce);
@@ -143,9 +143,9 @@ export const runOpen = (options: OpenOptions): SpikeEffect<VerbOutcome> =>
 		const scope = `${VERB}: ${repo}, nonce ${nonce}, workspace ${workspace}, tree ${treeRoot}.`;
 
 		const present = yield* exists(workspace).pipe(
-			Effect.map((value) => ({_tag: "Ok" as const, value})),
+			Effect.map((value) => ({ _tag: "Ok" as const, value })),
 			Effect.catchTag("fabrika-cli/ReadFailed", (failure) =>
-				Effect.succeed({_tag: "Failed" as const, reason: failure.reason}),
+				Effect.succeed({ _tag: "Failed" as const, reason: failure.reason }),
 			),
 		);
 		if (present._tag === "Failed") {
@@ -155,7 +155,7 @@ export const runOpen = (options: OpenOptions): SpikeEffect<VerbOutcome> =>
 			);
 		}
 		if (present.value) {
-			return yield* resumeExisting({repo, workspace, nonce, question, kind, scope});
+			return yield* resumeExisting({ repo, workspace, nonce, question, kind, scope });
 		}
 		if (options.nonce !== null) {
 			return refuse(
@@ -207,9 +207,9 @@ export const runOpen = (options: OpenOptions): SpikeEffect<VerbOutcome> =>
 		}
 
 		const title = spikeTitle(question);
-		const body = issueBody({question, kind, nonce, ticket: options.ticket});
+		const body = issueBody({ question, kind, nonce, ticket: options.ticket });
 		const leaked = leakFree(VERB, "composed title", title) ?? leakFree(VERB, "composed body", body);
-		if (leaked !== null) return {...leaked, stderr: [scope, ...leaked.stderr]};
+		if (leaked !== null) return { ...leaked, stderr: [scope, ...leaked.stderr] };
 
 		const created = yield* createIssue(repo, title, body, SPIKE_LABEL);
 		if (created._tag === "Failure") {
@@ -245,7 +245,7 @@ export const runOpen = (options: OpenOptions): SpikeEffect<VerbOutcome> =>
 			);
 		}
 
-		const completed: Manifest = {...provisional, spike};
+		const completed: Manifest = { ...provisional, spike };
 		const failure = yield* writeManifest(workspace, completed);
 		if (failure !== null) {
 			return refuse(
@@ -281,9 +281,9 @@ const resumeExisting = (input: {
 	Effect.gen(function* () {
 		const path = manifestPath(input.workspace);
 		const read = yield* readFile(path).pipe(
-			Effect.map((text) => ({_tag: "Text" as const, text})),
+			Effect.map((text) => ({ _tag: "Text" as const, text })),
 			Effect.catchTag("fabrika-cli/ReadFailed", (failure) =>
-				Effect.succeed({_tag: "Failed" as const, reason: failure.reason}),
+				Effect.succeed({ _tag: "Failed" as const, reason: failure.reason }),
 			),
 		);
 		if (read._tag === "Failed") {
@@ -334,7 +334,7 @@ const resumeExisting = (input: {
 			}
 			if (issue._tag === "Absent") continue;
 			if (!issueBodyNames(issue.value.body, input.nonce)) continue;
-			const completed: Manifest = {...manifest.value, spike: row.number};
+			const completed: Manifest = { ...manifest.value, spike: row.number };
 			const failure = yield* writeManifest(input.workspace, completed);
 			return failure === null
 				? answered(completed, input.workspace, input.scope)

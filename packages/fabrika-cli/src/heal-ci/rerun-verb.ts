@@ -20,11 +20,11 @@
  *
  * @ruling https://github.com/kamp-us/phoenix/issues/7206
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {createComment, getComment, listComments} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { createComment, getComment, listComments } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
 import {
 	badNumber,
 	inspectedSha,
@@ -32,7 +32,7 @@ import {
 	resolvePull,
 	resolveTargetRepo,
 } from "../ship/target.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	INCOMPLETE_SCAN,
 	OFF_VOCABULARY,
@@ -44,9 +44,9 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {getWorkflowRun, rerunFailedJobs} from "./github.ts";
-import {markerBoundTo, renderMarker} from "./marker.ts";
-import {RERUNNABLE_SIGNATURE_IDS, rerunLicence} from "./signatures.ts";
+import { getWorkflowRun, rerunFailedJobs } from "./github.ts";
+import { markerBoundTo, renderMarker } from "./marker.ts";
+import { RERUNNABLE_SIGNATURE_IDS, rerunLicence } from "./signatures.ts";
 
 const VERB = "heal-ci rerun";
 

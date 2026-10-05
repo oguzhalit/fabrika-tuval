@@ -18,10 +18,10 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9914
  */
 
-import {PRIORITIES} from "../../triage/facets.ts";
-import type {JsonSchema} from "../json-schema.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
-import type {ProjectTarget} from "./table.ts";
+import { PRIORITIES } from "../../triage/facets.ts";
+import type { JsonSchema } from "../json-schema.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
+import type { ProjectTarget } from "./table.ts";
 
 export const BOARDS = "boards";
 
@@ -67,23 +67,23 @@ export interface OnCallBoard {
 
 export type Boards =
 	/** No `boards` block: the one weekly table. */
-	{readonly _tag: "One"} | {readonly _tag: "Split"; readonly onCall: OnCallBoard};
+	{ readonly _tag: "One" } | { readonly _tag: "Split"; readonly onCall: OnCallBoard };
 
-export const ONE_BOARD: Boards = {_tag: "One"};
+export const ONE_BOARD: Boards = { _tag: "One" };
 
 export const SHIPPED_ON_CALL: OnCallBoard = {
-	route: {origins: ["customer"], types: ["bug"], labels: []},
+	route: { origins: ["customer"], types: ["bug"], labels: [] },
 	responseTargets: {
-		byLabel: [{name: "same day", hours: 24, labels: [PRIORITIES[0] as string]}],
-		otherwise: {name: "this week", hours: 168},
+		byLabel: [{ name: "same day", hours: 24, labels: [PRIORITIES[0] as string] }],
+		otherwise: { name: "this week", hours: 168 },
 	},
 	spendShare: 20,
-	project: {owner: null, number: null},
+	project: { owner: null, number: null },
 };
 
 const named = (path: string): string => `\`${BOARDS}.${path}\``;
 
-const malformed = (reason: string): {readonly _tag: "Malformed"; readonly reason: string} => ({
+const malformed = (reason: string): { readonly _tag: "Malformed"; readonly reason: string } => ({
 	_tag: "Malformed",
 	reason,
 });
@@ -103,7 +103,7 @@ const recordOf = (
 	if (record === null) return malformed(`${named(path)} is not an object`);
 	const stray = Object.keys(record).find((key) => !known.includes(key));
 	return stray === undefined
-		? {_tag: "Value", value: record}
+		? { _tag: "Value", value: record }
 		: malformed(`${named(`${path}.${stray}`)} is not a setting — one of ${known.join(", ")}`);
 };
 
@@ -113,7 +113,7 @@ const nameList = (
 	what: string,
 	fallback: ReadonlyArray<string>,
 ): Decoded<ReadonlyArray<string>> => {
-	if (raw === undefined) return {_tag: "Value", value: fallback};
+	if (raw === undefined) return { _tag: "Value", value: fallback };
 	if (!Array.isArray(raw)) return malformed(`${named(path)} is not a list of ${what}s`);
 	const names: string[] = [];
 	for (const entry of raw) {
@@ -124,15 +124,15 @@ const nameList = (
 			return malformed(`${named(path)} names "${entry.trim()}" twice`);
 		names.push(entry.trim());
 	}
-	return {_tag: "Value", value: names};
+	return { _tag: "Value", value: names };
 };
 
 const route = (raw: unknown): Decoded<Route> => {
-	if (raw === undefined) return {_tag: "Value", value: SHIPPED_ON_CALL.route};
+	if (raw === undefined) return { _tag: "Value", value: SHIPPED_ON_CALL.route };
 	const read = recordOf(raw, "onCall.route", ["origins", "types", "labels"]);
 	if (read._tag === "Malformed") return read;
 	const record = read.value;
-	const fields = {} as {-readonly [K in keyof Route]: Route[K]};
+	const fields = {} as { -readonly [K in keyof Route]: Route[K] };
 	for (const [key, what] of [
 		["origins", "origin"],
 		["types", "type name"],
@@ -142,7 +142,7 @@ const route = (raw: unknown): Decoded<Route> => {
 		if (decoded._tag === "Malformed") return decoded;
 		fields[key] = decoded.value;
 	}
-	return {_tag: "Value", value: fields};
+	return { _tag: "Value", value: fields };
 };
 
 const target = (raw: unknown, path: string, labeled: boolean): Decoded<LabeledTarget> => {
@@ -150,14 +150,14 @@ const target = (raw: unknown, path: string, labeled: boolean): Decoded<LabeledTa
 	const read = recordOf(raw, path, known);
 	if (read._tag === "Malformed") return read;
 	const record = read.value;
-	const {name, hours} = record;
+	const { name, hours } = record;
 	if (typeof name !== "string" || name.trim() === "") {
 		return malformed(`${named(`${path}.name`)} is not a target name`);
 	}
 	if (typeof hours !== "number" || !Number.isFinite(hours) || hours <= 0) {
 		return malformed(`${named(`${path}.hours`)} is not a positive number of hours`);
 	}
-	if (!labeled) return {_tag: "Value", value: {name: name.trim(), hours, labels: []}};
+	if (!labeled) return { _tag: "Value", value: { name: name.trim(), hours, labels: [] } };
 	const labels = nameList(record.labels, `${path}.labels`, "label name", []);
 	if (labels._tag === "Malformed") return labels;
 	if (labels.value.length === 0) {
@@ -165,11 +165,11 @@ const target = (raw: unknown, path: string, labeled: boolean): Decoded<LabeledTa
 			`${named(`${path}.labels`)} names no label — an unlabeled target is \`onCall.responseTargets.otherwise\``,
 		);
 	}
-	return {_tag: "Value", value: {name: name.trim(), hours, labels: labels.value}};
+	return { _tag: "Value", value: { name: name.trim(), hours, labels: labels.value } };
 };
 
 const responseTargets = (raw: unknown): Decoded<ResponseTargets> => {
-	if (raw === undefined) return {_tag: "Value", value: SHIPPED_ON_CALL.responseTargets};
+	if (raw === undefined) return { _tag: "Value", value: SHIPPED_ON_CALL.responseTargets };
 	const path = "onCall.responseTargets";
 	const read = recordOf(raw, path, ["byLabel", "otherwise"]);
 	if (read._tag === "Malformed") return read;
@@ -184,10 +184,13 @@ const responseTargets = (raw: unknown): Decoded<ResponseTargets> => {
 	}
 	const fallback =
 		record.otherwise === undefined
-			? {_tag: "Value" as const, value: {...SHIPPED_ON_CALL.responseTargets.otherwise, labels: []}}
+			? {
+					_tag: "Value" as const,
+					value: { ...SHIPPED_ON_CALL.responseTargets.otherwise, labels: [] },
+				}
 			: target(record.otherwise, `${path}.otherwise`, false);
 	if (fallback._tag === "Malformed") return fallback;
-	const otherwise = {name: fallback.value.name, hours: fallback.value.hours};
+	const otherwise = { name: fallback.value.name, hours: fallback.value.hours };
 	const names = [...byLabel.map((one) => one.name), otherwise.name];
 	const twice = names.find((name, index) => names.indexOf(name) !== index);
 	if (twice !== undefined) {
@@ -195,20 +198,20 @@ const responseTargets = (raw: unknown): Decoded<ResponseTargets> => {
 			`${named(path)} names the target "${twice}" twice — each is one option of the Response target field`,
 		);
 	}
-	return {_tag: "Value", value: {byLabel, otherwise}};
+	return { _tag: "Value", value: { byLabel, otherwise } };
 };
 
 const spendShare = (raw: unknown): Decoded<number> => {
-	if (raw === undefined) return {_tag: "Value", value: SHIPPED_ON_CALL.spendShare};
+	if (raw === undefined) return { _tag: "Value", value: SHIPPED_ON_CALL.spendShare };
 	return typeof raw === "number" && Number.isFinite(raw) && raw > 0 && raw <= 100
-		? {_tag: "Value", value: raw}
+		? { _tag: "Value", value: raw }
 		: malformed(`${named("onCall.spendShare")} is not a percentage above 0 and at most 100`);
 };
 
 const LOGIN = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/;
 
 const project = (raw: unknown): Decoded<ProjectTarget> => {
-	if (raw === undefined) return {_tag: "Value", value: SHIPPED_ON_CALL.project};
+	if (raw === undefined) return { _tag: "Value", value: SHIPPED_ON_CALL.project };
 	const read = recordOf(raw, "onCall.project", ["owner", "number"]);
 	if (read._tag === "Malformed") return read;
 	const record = read.value;
@@ -220,7 +223,7 @@ const project = (raw: unknown): Decoded<ProjectTarget> => {
 	if (number !== null && (typeof number !== "number" || !Number.isInteger(number) || number < 1)) {
 		return malformed(`${named("onCall.project.number")} is not a positive integer`);
 	}
-	return {_tag: "Value", value: {owner, number}};
+	return { _tag: "Value", value: { owner, number } };
 };
 
 const onCall = (raw: unknown): Decoded<OnCallBoard> => {
@@ -259,12 +262,12 @@ const decode = (raw: unknown): Decoded<Boards> => {
 	const board = onCall(record.onCall);
 	return board._tag === "Malformed"
 		? board
-		: {_tag: "Value", value: {_tag: "Split", onCall: board.value}};
+		: { _tag: "Value", value: { _tag: "Split", onCall: board.value } };
 };
 
 const names = (description: string): JsonSchema => ({
 	type: "array",
-	items: {type: "string", minLength: 1},
+	items: { type: "string", minLength: 1 },
 	uniqueItems: true,
 	description,
 });
@@ -285,7 +288,7 @@ export const boardsKey: KeyGroup<Boards> = {
 	key: BOARDS,
 	shippedDefault: ONE_BOARD,
 	decode,
-	render: (value) => (value._tag === "One" ? null : {onCall: value.onCall}),
+	render: (value) => (value._tag === "One" ? null : { onCall: value.onCall }),
 	jsonSchema: {
 		type: "object",
 		description:
@@ -324,7 +327,7 @@ export const boardsKey: KeyGroup<Boards> = {
 									properties: {
 										name: targetName,
 										hours,
-										labels: {...names("The labels this target applies to."), minItems: 1},
+										labels: { ...names("The labels this target applies to."), minItems: 1 },
 									},
 									required: ["name", "hours", "labels"],
 									additionalProperties: false,
@@ -333,7 +336,7 @@ export const boardsKey: KeyGroup<Boards> = {
 							otherwise: {
 								type: "object",
 								description: "The target for every item no `byLabel` target matches.",
-								properties: {name: targetName, hours},
+								properties: { name: targetName, hours },
 								required: ["name", "hours"],
 								additionalProperties: false,
 							},

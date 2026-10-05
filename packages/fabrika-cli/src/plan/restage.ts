@@ -29,7 +29,7 @@ import {
 	renderTopologyBlock,
 	topologySpans,
 } from "../build/dependencies.ts";
-import {preservedEnvelope} from "../triage/enrich.ts";
+import { preservedEnvelope } from "../triage/enrich.ts";
 
 /** One child link as the board reports it — `plan/github.ts`'s `SubIssueLink`, narrowed to what is judged. */
 export interface Observed {
@@ -48,18 +48,18 @@ export type Restage =
 			readonly kept: ReadonlyArray<number>;
 	  }
 	/** Every ref the region names is still live — the idempotent no-op, and nothing is written. */
-	| {readonly _tag: "Unchanged"; readonly kept: ReadonlyArray<number>}
+	| { readonly _tag: "Unchanged"; readonly kept: ReadonlyArray<number> }
 	/** Dropping the abandoned refs would leave no phase at all — a plan to re-plan, not to rewrite. */
-	| {readonly _tag: "Emptied"; readonly dropped: ReadonlyArray<number>}
+	| { readonly _tag: "Emptied"; readonly dropped: ReadonlyArray<number> }
 	/** The body carries no `## Dependencies` heading. */
-	| {readonly _tag: "Absent"}
+	| { readonly _tag: "Absent" }
 	/** It carries more than one, so the region has no single meaning. */
-	| {readonly _tag: "Ambiguous"; readonly count: number}
+	| { readonly _tag: "Ambiguous"; readonly count: number }
 	/** The only one sits inside the preserved brief — that is filed content, not a machine-owned region. */
-	| {readonly _tag: "InPreservedBrief"}
-	| {readonly _tag: "Unparseable"; readonly line: number; readonly text: string}
+	| { readonly _tag: "InPreservedBrief" }
+	| { readonly _tag: "Unparseable"; readonly line: number; readonly text: string }
 	/** The composed region does not parse back to the edges it was composed from. */
-	| {readonly _tag: "ReadbackMismatch"};
+	| { readonly _tag: "ReadbackMismatch" };
 
 /** Closed for a reason other than `completed` — closed without landing, in `lane emit`'s own terms. */
 const abandonedIn = (observations: ReadonlyArray<Observed>): ReadonlySet<number> =>
@@ -97,12 +97,12 @@ const filterEdges = (
 	for (const edge of edges) {
 		if (edge._tag === "Phase") {
 			const members = edge.members.filter(alive);
-			if (members.length > 0) kept.push({...edge, members});
+			if (members.length > 0) kept.push({ ...edge, members });
 			continue;
 		}
 		if (!alive(edge.subject)) continue;
 		const needs = edge.needs.filter(alive);
-		if (needs.length > 0) kept.push({...edge, needs});
+		if (needs.length > 0) kept.push({ ...edge, needs });
 	}
 	return kept;
 };
@@ -118,32 +118,32 @@ export const restageBody = (body: string, observations: ReadonlyArray<Observed>)
 	const lines = normalized.split("\n");
 	const spans = topologySpans(normalized);
 	const span = spans[0];
-	if (span === undefined) return {_tag: "Absent"};
-	if (spans.length > 1) return {_tag: "Ambiguous", count: spans.length};
+	if (span === undefined) return { _tag: "Absent" };
+	if (spans.length > 1) return { _tag: "Ambiguous", count: spans.length };
 
 	const envelope = preservedEnvelope(lines);
 	if (envelope !== null && span.heading > envelope.start && span.heading < envelope.end) {
-		return {_tag: "InPreservedBrief"};
+		return { _tag: "InPreservedBrief" };
 	}
 
 	const topology = readTopology(normalized);
-	if (topology._tag === "Absent") return {_tag: "Absent"};
+	if (topology._tag === "Absent") return { _tag: "Absent" };
 	if (topology._tag === "Unparseable") {
-		return {_tag: "Unparseable", line: topology.line, text: topology.text};
+		return { _tag: "Unparseable", line: topology.line, text: topology.text };
 	}
 
 	const abandoned = abandonedIn(observations);
 	const named = issueNumbers(topology.edges);
 	const dropped = named.filter((number) => abandoned.has(number));
-	if (dropped.length === 0) return {_tag: "Unchanged", kept: named};
+	if (dropped.length === 0) return { _tag: "Unchanged", kept: named };
 
 	const filtered = filterEdges(topology.edges, abandoned);
-	if (!filtered.some((edge) => edge._tag === "Phase")) return {_tag: "Emptied", dropped};
+	if (!filtered.some((edge) => edge._tag === "Phase")) return { _tag: "Emptied", dropped };
 
 	const block = renderTopologyBlock(filtered);
 	const reparsed = readTopology(block);
 	if (reparsed._tag !== "Parsed" || renderTopologyBlock(reparsed.edges) !== block) {
-		return {_tag: "ReadbackMismatch"};
+		return { _tag: "ReadbackMismatch" };
 	}
 
 	const before = lines.slice(0, span.heading).join("\n").replace(/\s+$/, "");

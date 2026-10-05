@@ -21,8 +21,8 @@
  * (`claude-plugins/fabrika/docs/hook-surface.md`, *The dispatch-failure policy point*).
  */
 
-import {EMPTY_STDIN as SHARED_EMPTY_STDIN} from "../exit-codes.ts";
-import {NO_IMPLEMENTATION} from "../verb.ts";
+import { EMPTY_STDIN as SHARED_EMPTY_STDIN } from "../exit-codes.ts";
+import { NO_IMPLEMENTATION } from "../verb.ts";
 
 /** The answer is on stdout. Restated because {@link HOOK_EXIT_TABLE} spans the whole matrix. */
 const ANSWER = 0;
@@ -167,19 +167,25 @@ export interface ExitCodeRow {
 
 /** The whole matrix in ascending order — the machine-readable form of the group's exit contract. */
 export const HOOK_EXIT_TABLE: ReadonlyArray<ExitCodeRow> = [
-	{code: ANSWER, meaning: "the answer is on stdout"},
-	{code: FAILED, meaning: "usage error, or the verb failed to run"},
-	{code: EMPTY_STDIN, meaning: "stdin was read and held nothing"},
+	{ code: ANSWER, meaning: "the answer is on stdout" },
+	{ code: FAILED, meaning: "usage error, or the verb failed to run" },
+	{ code: EMPTY_STDIN, meaning: "stdin was read and held nothing" },
 	{
 		code: MALFORMED_ENVELOPE,
 		meaning: "stdin held bytes that are not a harness hook envelope",
 	},
-	{code: ENVELOPE_UNKNOWN, meaning: "fd 0 could not be read — UNKNOWN, never malformed"},
-	{code: WRONG_EVENT, meaning: "the envelope is a harness event this verb does not judge"},
-	{code: UNPLANNABLE_WORKTREE, meaning: "the envelope names no worktree this verb can create"},
-	{code: BASE_FETCH_FAILED, meaning: "the base ref could not be fetched — the base would be stale"},
-	{code: WORKTREE_ADD_FAILED, meaning: "`git worktree add` failed — no worktree exists"},
-	{code: DEPS_NOT_PROVISIONED, meaning: "the worktree was created and its deps were not installed"},
+	{ code: ENVELOPE_UNKNOWN, meaning: "fd 0 could not be read — UNKNOWN, never malformed" },
+	{ code: WRONG_EVENT, meaning: "the envelope is a harness event this verb does not judge" },
+	{ code: UNPLANNABLE_WORKTREE, meaning: "the envelope names no worktree this verb can create" },
+	{
+		code: BASE_FETCH_FAILED,
+		meaning: "the base ref could not be fetched — the base would be stale",
+	},
+	{ code: WORKTREE_ADD_FAILED, meaning: "`git worktree add` failed — no worktree exists" },
+	{
+		code: DEPS_NOT_PROVISIONED,
+		meaning: "the worktree was created and its deps were not installed",
+	},
 	{
 		code: GROUND_UNKNOWN,
 		meaning: "the working tree the envelope's cwd belongs to could not be established",
@@ -188,7 +194,7 @@ export const HOOK_EXIT_TABLE: ReadonlyArray<ExitCodeRow> = [
 		code: SYNC_REFUSED,
 		meaning: "the plugin source's primary worktree is in no state to be advanced",
 	},
-	{code: REMOTE_UNREADABLE, meaning: "the plugin source's remote could not be fetched — UNKNOWN"},
+	{ code: REMOTE_UNREADABLE, meaning: "the plugin source's remote could not be fetched — UNKNOWN" },
 	{
 		code: FAST_FORWARD_FAILED,
 		meaning: "the planned fast-forward failed — the tree changed under it",
@@ -201,6 +207,6 @@ export const HOOK_EXIT_TABLE: ReadonlyArray<ExitCodeRow> = [
 		code: CREATION_LOCK_UNAVAILABLE,
 		meaning: "the repo-level worktree creation lock could not be taken — nothing was created",
 	},
-	{code: NO_IMPLEMENTATION, meaning: "no implementation could be resolved"},
-	{code: NEVER_RAN, meaning: "the verb never ran (unresolved binary)"},
+	{ code: NO_IMPLEMENTATION, meaning: "no implementation could be resolved" },
+	{ code: NEVER_RAN, meaning: "the verb never ran (unresolved binary)" },
 ];

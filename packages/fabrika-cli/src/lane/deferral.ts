@@ -17,8 +17,8 @@
  * board: entries in, verdict out.
  *
  */
-import type {LogEntry} from "./fold.ts";
-import {AMENDED_EVENT, bareEvent} from "./machine.ts";
+import type { LogEntry } from "./fold.ts";
+import { AMENDED_EVENT, bareEvent } from "./machine.ts";
 
 /** One task an amendment defers, as it rides the `defers` payload. */
 export interface Deferral {
@@ -37,8 +37,8 @@ export interface ResolvedDeferral extends Deferral {
 }
 
 export type DeferralResult =
-	| {readonly _tag: "Resolved"; readonly deferrals: ReadonlyArray<ResolvedDeferral>}
-	| {readonly _tag: "Undecidable"; readonly defects: ReadonlyArray<string>};
+	| { readonly _tag: "Resolved"; readonly deferrals: ReadonlyArray<ResolvedDeferral> }
+	| { readonly _tag: "Undecidable"; readonly defects: ReadonlyArray<string> };
 
 /**
  * Resolve every `defers` payload in the log against the entries it claims to cover.
@@ -68,12 +68,12 @@ export const resolveDeferrals = (entries: ReadonlyArray<LogEntry>): DeferralResu
 			}
 			seen.add(deferral.task);
 			const recorded = entries
-				.map((candidate, at) => ({candidate, at}))
+				.map((candidate, at) => ({ candidate, at }))
 				.filter(
-					({candidate}) =>
+					({ candidate }) =>
 						candidate.task === deferral.task && bareEvent(candidate.event) !== AMENDED_EVENT,
 				);
-			const bounded = recorded.filter(({candidate}) => candidate.at === deferral.through);
+			const bounded = recorded.filter(({ candidate }) => candidate.at === deferral.through);
 			if (bounded.length !== 1) {
 				defects.push(
 					`the ${AMENDED_EVENT} at ${entry.at} defers task "${deferral.task}" through ${deferral.through}, which names ${bounded.length === 0 ? "no" : `${bounded.length}`} recorded event of that task`,
@@ -81,19 +81,19 @@ export const resolveDeferrals = (entries: ReadonlyArray<LogEntry>): DeferralResu
 				continue;
 			}
 			const boundAt = bounded[0]?.at ?? -1;
-			const uncovered = recorded.filter(({at}) => at > boundAt || at > index);
+			const uncovered = recorded.filter(({ at }) => at > boundAt || at > index);
 			if (uncovered.length > 0) {
 				defects.push(
 					`the ${AMENDED_EVENT} at ${entry.at} defers task "${deferral.task}" through ${deferral.through}, and the log records ${uncovered.length} later event(s) of that task: ${uncovered
-						.map(({candidate}) => `${bareEvent(candidate.event)} at ${candidate.at}`)
+						.map(({ candidate }) => `${bareEvent(candidate.event)} at ${candidate.at}`)
 						.join(", ")}`,
 				);
 				continue;
 			}
-			deferrals.push({...deferral, at: entry.at});
+			deferrals.push({ ...deferral, at: entry.at });
 		}
 	}
-	return defects.length > 0 ? {_tag: "Undecidable", defects} : {_tag: "Resolved", deferrals};
+	return defects.length > 0 ? { _tag: "Undecidable", defects } : { _tag: "Resolved", deferrals };
 };
 
 /**

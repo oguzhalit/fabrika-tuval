@@ -26,12 +26,12 @@
  * this file red for reasons it is not judging. Those two are `worktree-concurrency.git.test.ts`'s
  * subject, over the same {@link openClone} fixture.
  */
-import {execFile, execFileSync} from "node:child_process";
-import {existsSync} from "node:fs";
-import {join} from "node:path";
-import {promisify} from "node:util";
-import {afterAll, describe, expect, it} from "vitest";
-import {GIT_ENV, openClone, removeClones} from "./throwaway-clone.test-support.ts";
+import { execFile, execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { promisify } from "node:util";
+import { afterAll, describe, expect, it } from "vitest";
+import { GIT_ENV, openClone, removeClones } from "./throwaway-clone.test-support.ts";
 import {
 	baseRefFor,
 	dropBaseRefArgs,
@@ -48,16 +48,16 @@ const ROUNDS = 20;
 /** One spawn's base resolution: exactly the three commands the verb runs, in the verb's order. */
 const resolveBase = async (clone: string, name: string, nonce: string): Promise<string> => {
 	const ref = baseRefFor(name, nonce);
-	const git = (args: ReadonlyArray<string>) => run("git", [...args], {cwd: clone, env: GIT_ENV});
+	const git = (args: ReadonlyArray<string>) => run("git", [...args], { cwd: clone, env: GIT_ENV });
 	try {
 		await git(fetchBaseArgs("main", ref));
-		const {stdout} = await git(resolveBaseArgs(ref));
+		const { stdout } = await git(resolveBaseArgs(ref));
 		await git(dropBaseRefArgs(ref));
 		return stdout.trim();
 	} catch (cause) {
 		// `rev-parse --quiet` says nothing when the ref it was pointed at held nothing, which is
 		// precisely the shared-`FETCH_HEAD` loss — so name it rather than reporting a blank failure.
-		const stderr = String((cause as {stderr?: string}).stderr ?? (cause as Error).message).trim();
+		const stderr = String((cause as { stderr?: string }).stderr ?? (cause as Error).message).trim();
 		return `FAILED: ${stderr === "" ? "the base ref resolved to no commit" : stderr.split("\n").join(" | ")}`;
 	}
 };
@@ -66,14 +66,14 @@ afterAll(removeClones);
 
 describe("resolving the base under parallel spawns", () => {
 	it("gives every one of N concurrent spawns the same fetched tip, and leaves no per-spawn ref behind", async () => {
-		const {clone, tip} = openClone();
+		const { clone, tip } = openClone();
 		expect(isCommitId(tip)).toBe(true);
 
 		const resolved: string[] = [];
 		for (let round = 0; round < ROUNDS; round++) {
 			resolved.push(
 				...(await Promise.all(
-					Array.from({length: SPAWNS}, (_, i) => resolveBase(clone, "agent", `${round}-${i}`)),
+					Array.from({ length: SPAWNS }, (_, i) => resolveBase(clone, "agent", `${round}-${i}`)),
 				)),
 			);
 		}
@@ -100,7 +100,7 @@ describe("the per-spawn base ref", () => {
 		for (const name of ["agent..1", "agent.lock", "a.b.c", "Agent_9"]) {
 			const ref = baseRefFor(name, "0123456789ab");
 			expect(() =>
-				execFileSync("git", ["check-ref-format", ref], {env: GIT_ENV, stdio: "ignore"}),
+				execFileSync("git", ["check-ref-format", ref], { env: GIT_ENV, stdio: "ignore" }),
 			).not.toThrow();
 		}
 	});
@@ -115,7 +115,7 @@ describe("the per-spawn base ref", () => {
 	});
 
 	it("leaves the directory its leaf lived in behind, so a sibling's fetch can still lock a ref there", async () => {
-		const {clone, tip} = openClone();
+		const { clone, tip } = openClone();
 		expect(await resolveBase(clone, "agent-alone", "0123456789ab")).toBe(tip);
 
 		// `update-ref -d` prunes every parent it empties, floored two components in. That leaf was the

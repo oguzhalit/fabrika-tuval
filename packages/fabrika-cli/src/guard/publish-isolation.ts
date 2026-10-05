@@ -79,9 +79,9 @@ export interface IsolationViolation {
  * exactly their own evidence. `scanned` is the set of published package NAMES covered.
  */
 export type PublishIsolationVerdict =
-	| {readonly pass: true; readonly scanned: ReadonlyArray<string>}
+	| { readonly pass: true; readonly scanned: ReadonlyArray<string> }
 	/** No published package in scope — fail closed, never a vacuous pass. */
-	| {readonly pass: false; readonly reason: "zero-scope"}
+	| { readonly pass: false; readonly reason: "zero-scope" }
 	| {
 			readonly pass: false;
 			readonly reason: "linked-private-deps";
@@ -106,10 +106,10 @@ export const unscopedName = (name: string): string =>
  *   target, else the dependency's own name.
  */
 export type DepTarget =
-	| {readonly kind: "workspace-package"; readonly name: string}
-	| {readonly kind: "workspace-path"; readonly path: string}
-	| {readonly kind: "local-path"; readonly spec: string}
-	| {readonly kind: "registry"; readonly name: string};
+	| { readonly kind: "workspace-package"; readonly name: string }
+	| { readonly kind: "workspace-path"; readonly path: string }
+	| { readonly kind: "local-path"; readonly spec: string }
+	| { readonly kind: "registry"; readonly name: string };
 
 const WORKSPACE_PROTOCOL = "workspace:";
 const NPM_PROTOCOL = "npm:";
@@ -121,16 +121,16 @@ export const depTarget = (dep: DepEntry): DepTarget => {
 	const value = dep.value.trim();
 	if (value.startsWith(WORKSPACE_PROTOCOL)) {
 		const rest = value.slice(WORKSPACE_PROTOCOL.length);
-		if (rest.startsWith(".") || rest.startsWith("/")) return {kind: "workspace-path", path: rest};
-		return {kind: "workspace-package", name: ALIASED_NAME.exec(rest)?.[1] ?? dep.name};
+		if (rest.startsWith(".") || rest.startsWith("/")) return { kind: "workspace-path", path: rest };
+		return { kind: "workspace-package", name: ALIASED_NAME.exec(rest)?.[1] ?? dep.name };
 	}
-	if (value.includes(WORKSPACE_PROTOCOL)) return {kind: "workspace-package", name: dep.name};
-	if (LOCAL_PROTOCOLS.some((p) => value.startsWith(p))) return {kind: "local-path", spec: value};
+	if (value.includes(WORKSPACE_PROTOCOL)) return { kind: "workspace-package", name: dep.name };
+	if (LOCAL_PROTOCOLS.some((p) => value.startsWith(p))) return { kind: "local-path", spec: value };
 	if (value.startsWith(NPM_PROTOCOL)) {
 		const rest = value.slice(NPM_PROTOCOL.length);
-		return {kind: "registry", name: ALIASED_NAME.exec(rest)?.[1] ?? rest};
+		return { kind: "registry", name: ALIASED_NAME.exec(rest)?.[1] ?? rest };
 	}
-	return {kind: "registry", name: dep.name};
+	return { kind: "registry", name: dep.name };
 };
 
 const violationKind = (
@@ -159,7 +159,7 @@ const violationKind = (
  */
 export const judge = (manifests: ReadonlyArray<PublishedManifest>): PublishIsolationVerdict => {
 	if (manifests.length === 0) {
-		return {pass: false, reason: "zero-scope"};
+		return { pass: false, reason: "zero-scope" };
 	}
 	const publishedNames = new Set(manifests.map((m) => m.name));
 	const scanned = manifests.map((m) => m.name);
@@ -168,14 +168,14 @@ export const judge = (manifests: ReadonlyArray<PublishedManifest>): PublishIsola
 		for (const dep of m.deps) {
 			const kind = violationKind(depTarget(dep), publishedNames);
 			if (kind !== undefined) {
-				violations.push({path: m.path, field: dep.field, name: dep.name, value: dep.value, kind});
+				violations.push({ path: m.path, field: dep.field, name: dep.name, value: dep.value, kind });
 			}
 		}
 	}
 	if (violations.length > 0) {
-		return {pass: false, reason: "linked-private-deps", scanned, violations};
+		return { pass: false, reason: "linked-private-deps", scanned, violations };
 	}
-	return {pass: true, scanned};
+	return { pass: true, scanned };
 };
 
 /** One violation as its own report line, carrying the why and the fix. */
@@ -246,7 +246,7 @@ export const parsePublishArms = (workflowYaml: string): ReadonlyArray<PublishArm
 	return anchors.map((m, i) => {
 		const from = m.index + m[0].length;
 		const to = anchors[i + 1]?.index ?? workflowYaml.length;
-		return {prefix: m[1] ?? "", dir: ARM_DIR.exec(workflowYaml.slice(from, to))?.[1] ?? null};
+		return { prefix: m[1] ?? "", dir: ARM_DIR.exec(workflowYaml.slice(from, to))?.[1] ?? null };
 	});
 };
 
@@ -262,13 +262,13 @@ export const parsePublishArms = (workflowYaml: string): ReadonlyArray<PublishArm
  *   by name and takes the highest matching version, so the link can reach the other member.
  */
 export type ScopeDrift =
-	| {readonly reason: "no-directory"; readonly prefix: string}
+	| { readonly reason: "no-directory"; readonly prefix: string }
 	| {
 			readonly reason: "several-directories";
 			readonly prefix: string;
 			readonly dirs: ReadonlyArray<string>;
 	  }
-	| {readonly reason: "no-member"; readonly prefix: string; readonly dir: string}
+	| { readonly reason: "no-member"; readonly prefix: string; readonly dir: string }
 	| {
 			readonly reason: "name-mismatch";
 			readonly prefix: string;
@@ -317,30 +317,30 @@ export const resolvePublished = (
 		const dirs = [...dirSet].sort();
 		const [dir] = dirs;
 		if (dir === undefined) {
-			drift.push({reason: "no-directory", prefix});
+			drift.push({ reason: "no-directory", prefix });
 			continue;
 		}
 		if (dirs.length > 1) {
-			drift.push({reason: "several-directories", prefix, dirs});
+			drift.push({ reason: "several-directories", prefix, dirs });
 			continue;
 		}
 		const member = members.find((m) => manifestDir(m) === dir);
 		if (member === undefined) {
-			drift.push({reason: "no-member", prefix, dir});
+			drift.push({ reason: "no-member", prefix, dir });
 			continue;
 		}
 		if (unscopedName(member.name) !== prefix) {
-			drift.push({reason: "name-mismatch", prefix, dir, name: member.name});
+			drift.push({ reason: "name-mismatch", prefix, dir, name: member.name });
 			continue;
 		}
 		const others = members.filter((m) => m !== member && m.name === member.name).map(manifestDir);
 		if (others.length > 0) {
-			drift.push({reason: "name-shared", prefix, dir, name: member.name, others});
+			drift.push({ reason: "name-shared", prefix, dir, name: member.name, others });
 			continue;
 		}
 		published.push(member);
 	}
-	return {published, drift};
+	return { published, drift };
 };
 
 /** One drift as its own report line, carrying the fix. */
@@ -366,7 +366,7 @@ export const manifestRuntimeDeps = (pkg: Record<string, unknown>): ReadonlyArray
 		const block = pkg[field];
 		if (block === null || typeof block !== "object") continue;
 		for (const [name, value] of Object.entries(block as Record<string, unknown>)) {
-			if (typeof value === "string") out.push({field, name, value});
+			if (typeof value === "string") out.push({ field, name, value });
 		}
 	}
 	return out;

@@ -1,9 +1,9 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeShell, okOut, tree} from "../fakes.test-support.ts";
-import {PRECONDITION_UNKNOWN} from "./codes.ts";
-import {runCorpus} from "./corpus-verb.ts";
-import {FIXTURES} from "./fixtures.test-support.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeShell, okOut, tree } from "../fakes.test-support.ts";
+import { PRECONDITION_UNKNOWN } from "./codes.ts";
+import { runCorpus } from "./corpus-verb.ts";
+import { FIXTURES } from "./fixtures.test-support.ts";
 
 const SHA = "49a22902d1e0c7b3f5a8e4126b9d0f3c7a1e5b82";
 const DOC_SHA = "c18bd103ce24cda98aed690cbbec2669f46f98f8";
@@ -35,12 +35,12 @@ const base = (overrides: Script = [], dir = ".patterns") =>
 		[/^git log -1/, okOut(`${DOC_SHA}\t2026-08-09\n`)],
 	]);
 
-const options = {dir: ".patterns", base: "origin/main", json: false};
+const options = { dir: ".patterns", base: "origin/main", json: false };
 
 const run = (overrides: Script = [], opts: Partial<typeof options> = {}) =>
 	Effect.runPromise(
 		Effect.provide(
-			runCorpus({...options, ...opts}),
+			runCorpus({ ...options, ...opts }),
 			base(overrides, opts.dir ?? options.dir).layer,
 		),
 	);

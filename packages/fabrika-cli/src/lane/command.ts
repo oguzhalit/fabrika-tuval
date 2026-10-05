@@ -6,51 +6,51 @@
  * decision lives in the verb modules beside it, which is what makes each refusal testable without
  * spawning a process.
  */
-import {randomUUID} from "node:crypto";
-import {tmpdir} from "node:os";
-import {fileURLToPath} from "node:url";
-import {Effect, type FileSystem, Option, Path} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {claimReader} from "../build/claimants-verb.ts";
-import {claimStanding} from "../build/dead-claim.ts";
-import {childLaneBranches} from "../build/lane.ts";
-import {assemblyRefreshKey} from "../config/keys/assembly-refresh.ts";
-import {laneConcurrencyCapKey} from "../config/keys/lane-concurrency-cap.ts";
-import {machineryLapsKey} from "../config/keys/machinery-laps.ts";
-import {parkCauseKey} from "../config/keys/park-cause.ts";
-import {readKey} from "../config/read-key.ts";
-import {resolveEntrypoint} from "../delegate/entrypoint.ts";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {localBranches, repoRoot} from "../io/git.ts";
-import {readStdin} from "../io/stdin.ts";
-import {SHIP_CLASS_NAMES} from "../review/classes.ts";
-import {runReconcile as runShipReconcile} from "../ship/reconcile-verb.ts";
-import {sizeStopOnGitHub} from "../table/size-stop.ts";
-import {runSync, syncBoard} from "../table/sync-verb.ts";
-import {FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {DEFAULT_ORIGIN, ORIGINS} from "../wire/lane-record.ts";
-import {admitBoardKey, admitKey} from "./admission.ts";
-import {claimOwnership, runAmend} from "./amend-verb.ts";
-import {closedReader} from "./archive-move.ts";
-import {runArchiveSweep} from "./archive-sweep-verb.ts";
-import {boardClaimSeams, runArchive} from "./archive-verb.ts";
-import {standingInLinkedWorktree} from "./assembly.ts";
-import {runAssemblyBody} from "./assembly-body-verb.ts";
-import {FIELDS, runAssemblyPr} from "./assembly-pr-verb.ts";
-import {runAssembly} from "./assembly-verb.ts";
-import {runAttachIntegrate} from "./attach-integrate-verb.ts";
-import {boardRecorder, boardSeatReader} from "./board-seat.ts";
-import {runBrief} from "./brief-verb.ts";
-import {claimHoldReader} from "./claim-hold.ts";
-import {runLaneAdopt, runLaneClaim, runLaneRelease} from "./claim-verb.ts";
-import {boardPull, runCleanup} from "./cleanup-verb.ts";
-import {runClear} from "./clear-verb.ts";
-import {closureReader} from "./closure.ts";
-import {CLASS_UNRECOGNISED} from "./codes.ts";
-import {runDispatch} from "./dispatch-verb.ts";
-import {runEmit} from "./emit-verb.ts";
-import {expectationReader} from "./expectation.ts";
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
+import { Effect, type FileSystem, Option, Path } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { claimReader } from "../build/claimants-verb.ts";
+import { claimStanding } from "../build/dead-claim.ts";
+import { childLaneBranches } from "../build/lane.ts";
+import { assemblyRefreshKey } from "../config/keys/assembly-refresh.ts";
+import { laneConcurrencyCapKey } from "../config/keys/lane-concurrency-cap.ts";
+import { machineryLapsKey } from "../config/keys/machinery-laps.ts";
+import { parkCauseKey } from "../config/keys/park-cause.ts";
+import { readKey } from "../config/read-key.ts";
+import { resolveEntrypoint } from "../delegate/entrypoint.ts";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { localBranches, repoRoot } from "../io/git.ts";
+import { readStdin } from "../io/stdin.ts";
+import { SHIP_CLASS_NAMES } from "../review/classes.ts";
+import { runReconcile as runShipReconcile } from "../ship/reconcile-verb.ts";
+import { sizeStopOnGitHub } from "../table/size-stop.ts";
+import { runSync, syncBoard } from "../table/sync-verb.ts";
+import { FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { DEFAULT_ORIGIN, ORIGINS } from "../wire/lane-record.ts";
+import { admitBoardKey, admitKey } from "./admission.ts";
+import { claimOwnership, runAmend } from "./amend-verb.ts";
+import { closedReader } from "./archive-move.ts";
+import { runArchiveSweep } from "./archive-sweep-verb.ts";
+import { boardClaimSeams, runArchive } from "./archive-verb.ts";
+import { standingInLinkedWorktree } from "./assembly.ts";
+import { runAssemblyBody } from "./assembly-body-verb.ts";
+import { FIELDS, runAssemblyPr } from "./assembly-pr-verb.ts";
+import { runAssembly } from "./assembly-verb.ts";
+import { runAttachIntegrate } from "./attach-integrate-verb.ts";
+import { boardRecorder, boardSeatReader } from "./board-seat.ts";
+import { runBrief } from "./brief-verb.ts";
+import { claimHoldReader } from "./claim-hold.ts";
+import { runLaneAdopt, runLaneClaim, runLaneRelease } from "./claim-verb.ts";
+import { boardPull, runCleanup } from "./cleanup-verb.ts";
+import { runClear } from "./clear-verb.ts";
+import { closureReader } from "./closure.ts";
+import { CLASS_UNRECOGNISED } from "./codes.ts";
+import { runDispatch } from "./dispatch-verb.ts";
+import { runEmit } from "./emit-verb.ts";
+import { expectationReader } from "./expectation.ts";
 import {
 	configRootOrRefuse,
 	deriveRepoRoot,
@@ -58,10 +58,10 @@ import {
 	repoGroundRefusal,
 	resolveRootOrRefuse,
 } from "./ground.ts";
-import {laneHelp, ROOT_EXITS} from "./help.ts";
-import {runHistory} from "./history-verb.ts";
-import {runDispatched, runWorking} from "./in-flight-verb.ts";
-import {runIntegrate} from "./integrate-verb.ts";
+import { laneHelp, ROOT_EXITS } from "./help.ts";
+import { runHistory } from "./history-verb.ts";
+import { runDispatched, runWorking } from "./in-flight-verb.ts";
+import { runIntegrate } from "./integrate-verb.ts";
 import {
 	archivedRoot,
 	defaultRoot,
@@ -72,20 +72,20 @@ import {
 	resolveKeyIssue,
 	templateFile,
 } from "./key.ts";
-import {runLeave} from "./leave-verb.ts";
-import {runMigrate} from "./migrate-verb.ts";
-import {runOpen} from "./open-verb.ts";
-import {runPrint} from "./print-verb.ts";
-import {priorLaneReader} from "./prior-lane.ts";
-import {proveDispatched, runProve} from "./prove-verb.ts";
-import {pullsReader} from "./pulls-reader.ts";
-import {runPush} from "./push-verb.ts";
-import {type ReconcileRoot, runReconcile} from "./reconcile-verb.ts";
-import {LEDGER_SPEND} from "./record.ts";
-import {recordBoard, runRecord} from "./record-verb.ts";
-import {queueReadOf, runRecover} from "./recover-verb.ts";
-import {runRefresh} from "./refresh-verb.ts";
-import {keyRefusal} from "./refusals.ts";
+import { runLeave } from "./leave-verb.ts";
+import { runMigrate } from "./migrate-verb.ts";
+import { runOpen } from "./open-verb.ts";
+import { runPrint } from "./print-verb.ts";
+import { priorLaneReader } from "./prior-lane.ts";
+import { proveDispatched, runProve } from "./prove-verb.ts";
+import { pullsReader } from "./pulls-reader.ts";
+import { runPush } from "./push-verb.ts";
+import { type ReconcileRoot, runReconcile } from "./reconcile-verb.ts";
+import { LEDGER_SPEND } from "./record.ts";
+import { recordBoard, runRecord } from "./record-verb.ts";
+import { queueReadOf, runRecover } from "./recover-verb.ts";
+import { runRefresh } from "./refresh-verb.ts";
+import { keyRefusal } from "./refusals.ts";
 import {
 	AXIS_ISSUE_CAUSES,
 	classesForEvent,
@@ -93,23 +93,23 @@ import {
 	PARK_CAUSE_TOKENS,
 	RULING_ISSUE_CAUSES,
 } from "./report.ts";
-import {issueCloser, runReport} from "./report-verb.ts";
-import {runRetrigger} from "./retrigger-verb.ts";
-import {runLaneScratch} from "./scratch-verb.ts";
-import {runSeats} from "./seats-verb.ts";
-import {boardReaders, runSettle} from "./settle-verb.ts";
-import {BUILD_CLAIM_BUDGET_MINUTES, DISPATCH_BUDGET, SHELL_BUDGETS} from "./shell-budget.ts";
-import {runStale} from "./stale-verb.ts";
-import {runStatus} from "./status-verb.ts";
+import { issueCloser, runReport } from "./report-verb.ts";
+import { runRetrigger } from "./retrigger-verb.ts";
+import { runLaneScratch } from "./scratch-verb.ts";
+import { runSeats } from "./seats-verb.ts";
+import { boardReaders, runSettle } from "./settle-verb.ts";
+import { BUILD_CLAIM_BUDGET_MINUTES, DISPATCH_BUDGET, SHELL_BUDGETS } from "./shell-budget.ts";
+import { runStale } from "./stale-verb.ts";
+import { runStatus } from "./status-verb.ts";
 import {
 	DEFAULT_ARCHIVED_LANES_ROOT,
 	DEFAULT_CHORES_ROOT,
 	DEFAULT_LANES_ROOT,
 	type LaneRef,
 } from "./store.ts";
-import {runTransition} from "./transition-verb.ts";
-import {runWait} from "./wait-verb.ts";
-import {runWorktree} from "./worktree-verb.ts";
+import { runTransition } from "./transition-verb.ts";
+import { runWait } from "./wait-verb.ts";
+import { runWorktree } from "./worktree-verb.ts";
 
 const laneArgument = Argument.string("lane").pipe(
 	Argument.withDescription(
@@ -160,7 +160,7 @@ const dispatch = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, root, harness, task, skills, worktree}) {
+	Effect.fn(function* ({ lane, root, harness, task, skills, worktree }) {
 		const entrypoint = yield* resolveEntrypoint();
 		yield* emit(
 			yield* onKey("dispatch", lane, root, (_key, ref) =>
@@ -210,8 +210,8 @@ const dispatch = leafCommand(
 
 const status = leafCommand(
 	"status",
-	{lane: laneArgument, root: rootFlag},
-	Effect.fn(function* ({lane, root}) {
+	{ lane: laneArgument, root: rootFlag },
+	Effect.fn(function* ({ lane, root }) {
 		yield* emit(yield* onKey("status", lane, root, (_key, ref) => runStatus(ref)));
 	}),
 ).pipe(
@@ -230,8 +230,8 @@ const status = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane status 5673"},
-		{command: "fabrika lane status chore:park-sweep"},
+		{ command: "fabrika lane status 5673" },
+		{ command: "fabrika lane status chore:park-sweep" },
 	]),
 );
 
@@ -415,8 +415,8 @@ const transition = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane transition 5673 DONE"},
-		{command: "fabrika lane transition 5673 UNBLOCKED --grant-wait 1"},
+		{ command: "fabrika lane transition 5673 DONE" },
+		{ command: "fabrika lane transition 5673 UNBLOCKED --grant-wait 1" },
 	]),
 );
 
@@ -443,7 +443,7 @@ const attachIntegrate = leafCommand(
 			Flag.withDescription("the assembly branch head that integrate FAIL was refused against"),
 		),
 	},
-	Effect.fn(function* ({lane, root, task, at, integrateExit, assemblyHead}) {
+	Effect.fn(function* ({ lane, root, task, at, integrateExit, assemblyHead }) {
 		yield* emit(
 			yield* onKey("attach-integrate", lane, root, (_key, ref) =>
 				runAttachIntegrate({
@@ -506,7 +506,7 @@ const clear = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, root, task, rationale, repo}) {
+	Effect.fn(function* ({ lane, root, task, rationale, repo }) {
 		yield* emit(
 			yield* onKey("clear", lane, root, (_key, ref) =>
 				runClear({
@@ -679,8 +679,8 @@ const report = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane report 5736 --token SHIPPED-PR --pr <pr-url>"},
-		{command: "fabrika lane report 8810 --task issue_8819 --token REPLAY-COLLIDED"},
+		{ command: "fabrika lane report 5736 --token SHIPPED-PR --pr <pr-url>" },
+		{ command: "fabrika lane report 8810 --task issue_8819 --token REPLAY-COLLIDED" },
 	]),
 );
 
@@ -710,7 +710,7 @@ const prove = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, event, root, task, pr, classes, repo}) {
+	Effect.fn(function* ({ lane, event, root, task, pr, classes, repo }) {
 		const classed = classesForEvent(classes);
 		if (classed._tag === "Rejected") {
 			yield* emit(refuse(CLASS_UNRECOGNISED, `fabrika lane prove: ${classed.reason}.`));
@@ -753,13 +753,13 @@ const prove = leafCommand(
 			},
 		),
 	),
-	Command.withExamples([{command: "fabrika lane prove 5673 DONE"}]),
+	Command.withExamples([{ command: "fabrika lane prove 5673 DONE" }]),
 );
 
 const history = leafCommand(
 	"history",
-	{lane: laneArgument, root: rootFlag},
-	Effect.fn(function* ({lane, root}) {
+	{ lane: laneArgument, root: rootFlag },
+	Effect.fn(function* ({ lane, root }) {
 		yield* emit(yield* onKey("history", lane, root, (_key, ref) => runHistory(ref)));
 	}),
 ).pipe(
@@ -777,13 +777,13 @@ const history = leafCommand(
 			},
 		),
 	),
-	Command.withExamples([{command: "fabrika lane history 5673"}]),
+	Command.withExamples([{ command: "fabrika lane history 5673" }]),
 );
 
 const print = leafCommand(
 	"print",
-	{lane: laneArgument, root: rootFlag},
-	Effect.fn(function* ({lane, root}) {
+	{ lane: laneArgument, root: rootFlag },
+	Effect.fn(function* ({ lane, root }) {
 		yield* emit(yield* onKey("print", lane, root, (_key, ref) => runPrint(ref)));
 	}),
 ).pipe(
@@ -801,7 +801,7 @@ const print = leafCommand(
 			},
 		),
 	),
-	Command.withExamples([{command: "fabrika lane print 5673"}]),
+	Command.withExamples([{ command: "fabrika lane print 5673" }]),
 );
 
 const templatePath = (kind: LaneKey["_tag"]): string =>
@@ -831,7 +831,7 @@ const open = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, root, repo, fromBoard, origin}) {
+	Effect.fn(function* ({ lane, root, repo, fromBoard, origin }) {
 		const configRoot = yield* configRootOrRefuse("fabrika lane open", process.cwd());
 		if (typeof configRoot !== "string") {
 			yield* emit(configRoot);
@@ -878,8 +878,8 @@ const open = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane open 5673"},
-		{command: "fabrika lane open chore:park-sweep"},
+		{ command: "fabrika lane open 5673" },
+		{ command: "fabrika lane open chore:park-sweep" },
 	]),
 );
 
@@ -909,7 +909,7 @@ const emitLane = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({epic, root, children, repo, origin}) {
+	Effect.fn(function* ({ epic, root, children, repo, origin }) {
 		const configRoot = yield* configRootOrRefuse("fabrika lane emit", process.cwd());
 		if (typeof configRoot !== "string") {
 			yield* emit(configRoot);
@@ -966,8 +966,8 @@ const emitLane = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane emit 5680"},
-		{command: "fabrika lane emit 5817 --children"},
+		{ command: "fabrika lane emit 5680" },
+		{ command: "fabrika lane emit 5817 --children" },
 	]),
 );
 
@@ -997,7 +997,7 @@ const amend = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({epic, root, defer, deferReason, repo}) {
+	Effect.fn(function* ({ epic, root, defer, deferReason, repo }) {
 		const resolvedRoot = yield* resolveRootOrRefuse(
 			"fabrika lane amend",
 			root,
@@ -1047,7 +1047,7 @@ const amend = leafCommand(
 			},
 		),
 	),
-	Command.withExamples([{command: "fabrika lane amend 7499"}]),
+	Command.withExamples([{ command: "fabrika lane amend 7499" }]),
 );
 
 const assembly = leafCommand(
@@ -1064,7 +1064,7 @@ const assembly = leafCommand(
 		),
 		root: rootFlag,
 	},
-	Effect.fn(function* ({epic, remove, root}) {
+	Effect.fn(function* ({ epic, remove, root }) {
 		const resolvedRoot = yield* resolveRootOrRefuse(
 			"fabrika lane assembly",
 			root,
@@ -1105,8 +1105,8 @@ const assembly = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane assembly 5680"},
-		{command: "fabrika lane assembly 5680 --remove"},
+		{ command: "fabrika lane assembly 5680" },
+		{ command: "fabrika lane assembly 5680 --remove" },
 	]),
 );
 
@@ -1128,9 +1128,9 @@ const assemblyPr = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({epic, field, repo}) {
+	Effect.fn(function* ({ epic, field, repo }) {
 		yield* emit(
-			yield* runAssemblyPr({epic, field, repo: Option.getOrNull(repo), env: process.env}),
+			yield* runAssemblyPr({ epic, field, repo: Option.getOrNull(repo), env: process.env }),
 		);
 	}),
 ).pipe(
@@ -1148,8 +1148,8 @@ const assemblyPr = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane assembly-pr 8070 --field title"},
-		{command: "fabrika lane assembly-pr 8070 --field about"},
+		{ command: "fabrika lane assembly-pr 8070 --field title" },
+		{ command: "fabrika lane assembly-pr 8070 --field about" },
 	]),
 );
 
@@ -1160,8 +1160,8 @@ const assemblyBody = leafCommand(
 			Argument.withDescription("the epic issue the assembly PR must close"),
 		),
 	},
-	Effect.fn(function* ({epic}) {
-		yield* emit(yield* runAssemblyBody({epic, stdin: Effect.sync(readStdin)}));
+	Effect.fn(function* ({ epic }) {
+		yield* emit(yield* runAssemblyBody({ epic, stdin: Effect.sync(readStdin) }));
 	}),
 ).pipe(
 	Command.withShortDescription(
@@ -1200,7 +1200,7 @@ const integrate = leafCommand(
 		),
 		root: rootFlag,
 	},
-	Effect.fn(function* ({epic, child, root}) {
+	Effect.fn(function* ({ epic, child, root }) {
 		const resolvedRoot = yield* resolveRootOrRefuse(
 			"fabrika lane integrate",
 			root,
@@ -1213,7 +1213,7 @@ const integrate = leafCommand(
 		}
 		yield* emit(
 			yield* onGround("integrate", [resolvedRoot], process.cwd(), () =>
-				runIntegrate({epic, child, root: resolvedRoot, lane: String(epic)}),
+				runIntegrate({ epic, child, root: resolvedRoot, lane: String(epic) }),
 			),
 		);
 	}),
@@ -1244,7 +1244,7 @@ const integrate = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane integrate 7140 --child build/7162-app-bootstrap-5558c9a2"},
+		{ command: "fabrika lane integrate 7140 --child build/7162-app-bootstrap-5558c9a2" },
 	]),
 );
 
@@ -1274,7 +1274,7 @@ const refresh = leafCommand(
 		),
 		root: rootFlag,
 	},
-	Effect.fn(function* ({epic, base, repo, onReview, root}) {
+	Effect.fn(function* ({ epic, base, repo, onReview, root }) {
 		const resolvedRoot = yield* resolveRootOrRefuse(
 			"fabrika lane refresh",
 			root,
@@ -1331,8 +1331,8 @@ const refresh = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane refresh 8810"},
-		{command: "fabrika lane refresh 8810 --on-review"},
+		{ command: "fabrika lane refresh 8810" },
+		{ command: "fabrika lane refresh 8810 --on-review" },
 	]),
 );
 
@@ -1349,8 +1349,8 @@ const retrigger = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({epic, repo}) {
-		yield* emit(yield* runRetrigger({epic, repo: Option.getOrNull(repo), env: process.env}));
+	Effect.fn(function* ({ epic, repo }) {
+		yield* emit(yield* runRetrigger({ epic, repo: Option.getOrNull(repo), env: process.env }));
 	}),
 ).pipe(
 	Command.withShortDescription(
@@ -1367,7 +1367,7 @@ const retrigger = leafCommand(
 			},
 		),
 	),
-	Command.withExamples([{command: "fabrika lane retrigger 8716"}]),
+	Command.withExamples([{ command: "fabrika lane retrigger 8716" }]),
 );
 
 const pushLane = leafCommand(
@@ -1378,7 +1378,7 @@ const pushLane = leafCommand(
 		),
 		root: rootFlag,
 	},
-	Effect.fn(function* ({epic, root}) {
+	Effect.fn(function* ({ epic, root }) {
 		const resolvedRoot = yield* resolveRootOrRefuse(
 			"fabrika lane push",
 			root,
@@ -1391,7 +1391,7 @@ const pushLane = leafCommand(
 		}
 		yield* emit(
 			yield* onGround("push", [resolvedRoot], process.cwd(), () =>
-				runPush({epic, root: resolvedRoot, lane: String(epic)}),
+				runPush({ epic, root: resolvedRoot, lane: String(epic) }),
 			),
 		);
 	}),
@@ -1413,7 +1413,7 @@ const pushLane = leafCommand(
 			},
 		),
 	),
-	Command.withExamples([{command: "fabrika lane push 5680"}]),
+	Command.withExamples([{ command: "fabrika lane push 5680" }]),
 );
 
 const brief = leafCommand(
@@ -1432,7 +1432,7 @@ const brief = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, root, task, repo}) {
+	Effect.fn(function* ({ lane, root, task, repo }) {
 		const entrypoint = yield* resolveEntrypoint();
 		yield* emit(
 			yield* onKey("brief", lane, root, (_key, ref) =>
@@ -1471,7 +1471,7 @@ const brief = leafCommand(
 			},
 		),
 	),
-	Command.withExamples([{command: "fabrika lane brief 5680 --task issue_5729"}]),
+	Command.withExamples([{ command: "fabrika lane brief 5680 --task issue_5729" }]),
 );
 
 const laneTokenFlag = Flag.string("token").pipe(
@@ -1496,7 +1496,7 @@ const claim = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, token, repo}) {
+	Effect.fn(function* ({ lane, token, repo }) {
 		yield* emit(
 			yield* onBoardKey(lane, (key) =>
 				runLaneClaim({
@@ -1526,7 +1526,7 @@ const claim = leafCommand(
 			},
 		),
 	),
-	Command.withExamples([{command: "fabrika lane claim 5492"}]),
+	Command.withExamples([{ command: "fabrika lane claim 5492" }]),
 );
 
 const release = leafCommand(
@@ -1541,7 +1541,7 @@ const release = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, token, repo}) {
+	Effect.fn(function* ({ lane, token, repo }) {
 		yield* emit(
 			yield* onBoardKey(lane, (key) =>
 				runLaneRelease({
@@ -1568,7 +1568,7 @@ const release = leafCommand(
 			},
 		),
 	),
-	Command.withExamples([{command: "fabrika lane release 5492 --token lane:s-9f2e:c1a4d6f8-…"}]),
+	Command.withExamples([{ command: "fabrika lane release 5492 --token lane:s-9f2e:c1a4d6f8-…" }]),
 );
 
 const scratch = leafCommand(
@@ -1588,7 +1588,7 @@ const scratch = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, slug, token, repo}) {
+	Effect.fn(function* ({ lane, slug, token, repo }) {
 		yield* emit(
 			yield* onBoardKey(lane, (key) =>
 				runLaneScratch({
@@ -1618,7 +1618,7 @@ const scratch = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane scratch 5492 --slug helpers --token lane:s-9f2e:c1a4d6f8-…"},
+		{ command: "fabrika lane scratch 5492 --slug helpers --token lane:s-9f2e:c1a4d6f8-…" },
 	]),
 );
 
@@ -1641,7 +1641,7 @@ const adopt = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, session, reason, repo}) {
+	Effect.fn(function* ({ lane, session, reason, repo }) {
 		yield* emit(
 			yield* onBoardKey(lane, (key) =>
 				runLaneAdopt({
@@ -1701,7 +1701,7 @@ const stale = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({root, olderThan, claims, repo}) {
+	Effect.fn(function* ({ root, olderThan, claims, repo }) {
 		let roots: ReadonlyArray<string>;
 		if (Option.isSome(root)) {
 			roots = [root.value];
@@ -1740,9 +1740,9 @@ const stale = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane stale"},
-		{command: "fabrika lane stale --older-than 120"},
-		{command: "fabrika lane stale --claims"},
+		{ command: "fabrika lane stale" },
+		{ command: "fabrika lane stale --older-than 120" },
+		{ command: "fabrika lane stale --claims" },
 	]),
 );
 
@@ -1757,7 +1757,7 @@ const seats = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({root, repo}) {
+	Effect.fn(function* ({ root, repo }) {
 		const configRoot = yield* configRootOrRefuse("fabrika lane seats", process.cwd());
 		if (typeof configRoot !== "string") {
 			yield* emit(configRoot);
@@ -1804,8 +1804,8 @@ const seats = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane seats"},
-		{command: "fabrika lane seats --root .fabrika/lanes"},
+		{ command: "fabrika lane seats" },
+		{ command: "fabrika lane seats --root .fabrika/lanes" },
 	]),
 );
 
@@ -1830,7 +1830,7 @@ const migrate = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, root, check, repo}) {
+	Effect.fn(function* ({ lane, root, check, repo }) {
 		let base: string | undefined;
 		if (Option.isSome(root)) {
 			base = root.value;
@@ -1844,13 +1844,13 @@ const migrate = leafCommand(
 		}
 		const roots = Option.match(root, {
 			onNone: () => [
-				{root: `${base}/${DEFAULT_LANES_ROOT}`, templatePaths: [templatePath("Issue")]},
-				{root: `${base}/${DEFAULT_CHORES_ROOT}`, templatePaths: [templatePath("Chore")]},
+				{ root: `${base}/${DEFAULT_LANES_ROOT}`, templatePaths: [templatePath("Issue")] },
+				{ root: `${base}/${DEFAULT_CHORES_ROOT}`, templatePaths: [templatePath("Chore")] },
 			],
 			// A relocated root holds whatever was opened into it, so both templates are
 			// candidates and the lane's own machine id picks — never the root's position.
 			onSome: (only) => [
-				{root: only, templatePaths: [templatePath("Issue"), templatePath("Chore")]},
+				{ root: only, templatePaths: [templatePath("Issue"), templatePath("Chore")] },
 			],
 		});
 		yield* emit(
@@ -1887,10 +1887,10 @@ const migrate = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane migrate --check"},
-		{command: "fabrika lane migrate"},
-		{command: "fabrika lane migrate 6457 --check"},
-		{command: "fabrika lane migrate chore:park-sweep"},
+		{ command: "fabrika lane migrate --check" },
+		{ command: "fabrika lane migrate" },
+		{ command: "fabrika lane migrate 6457 --check" },
+		{ command: "fabrika lane migrate chore:park-sweep" },
 	]),
 );
 
@@ -1930,7 +1930,7 @@ const archive = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, sweep, retriaged, root, archivedRoot: archived, token, repo}) {
+	Effect.fn(function* ({ lane, sweep, retriaged, root, archivedRoot: archived, token, repo }) {
 		if (sweep && retriaged) {
 			yield* emit(
 				refuse(
@@ -2040,10 +2040,10 @@ const archive = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane archive 6037"},
-		{command: "fabrika lane archive 10054 --retriaged --token <your lane-claim token>"},
-		{command: "fabrika lane archive 8810 --token <the token `fabrika lane claim` printed>"},
-		{command: "fabrika lane archive --sweep"},
+		{ command: "fabrika lane archive 6037" },
+		{ command: "fabrika lane archive 10054 --retriaged --token <your lane-claim token>" },
+		{ command: "fabrika lane archive 8810 --token <the token `fabrika lane claim` printed>" },
+		{ command: "fabrika lane archive --sweep" },
 	]),
 );
 
@@ -2075,7 +2075,7 @@ const settle = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, root, task, token, landedBy, repo}) {
+	Effect.fn(function* ({ lane, root, task, token, landedBy, repo }) {
 		const readers = boardReaders(Option.getOrNull(repo), process.env);
 		yield* emit(
 			yield* onKey("settle", lane, root, (key, ref) =>
@@ -2116,8 +2116,8 @@ const settle = leafCommand(
 		}),
 	),
 	Command.withExamples([
-		{command: "fabrika lane settle 5983"},
-		{command: "fabrika lane settle 6100 --landed-by 6878"},
+		{ command: "fabrika lane settle 5983" },
+		{ command: "fabrika lane settle 6100 --landed-by 6878" },
 	]),
 );
 
@@ -2138,12 +2138,12 @@ const reconcile = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({root, check, repo}) {
+	Effect.fn(function* ({ root, check, repo }) {
 		let roots: ReadonlyArray<ReconcileRoot>;
 		if (Option.isSome(root)) {
 			// A relocated root holds whatever was opened into it, so both templates are candidates and
 			// the lane's own machine id picks — never the root's position.
-			roots = [{root: root.value, templatePaths: [templatePath("Issue"), templatePath("Chore")]}];
+			roots = [{ root: root.value, templatePaths: [templatePath("Issue"), templatePath("Chore")] }];
 		} else {
 			const ground = yield* deriveRepoRoot(process.cwd());
 			if (ground._tag !== "Derived") {
@@ -2191,8 +2191,8 @@ const reconcile = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane reconcile --check"},
-		{command: "fabrika lane reconcile"},
+		{ command: "fabrika lane reconcile --check" },
+		{ command: "fabrika lane reconcile" },
 	]),
 );
 
@@ -2217,7 +2217,7 @@ const recover = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({root, check, spawns, repo}) {
+	Effect.fn(function* ({ root, check, spawns, repo }) {
 		const parkCause = yield* readKey(process.cwd(), parkCauseKey);
 		let roots: ReadonlyArray<string>;
 		if (Option.isSome(root)) {
@@ -2248,8 +2248,8 @@ const recover = leafCommand(
 						Effect.gen(function* () {
 							const read = yield* localBranches;
 							return read._tag === "Failure"
-								? ({_tag: "Unknown", reason: read.reason} as const)
-								: ({_tag: "Read", branches: childLaneBranches(issue, read.value)} as const);
+								? ({ _tag: "Unknown", reason: read.reason } as const)
+								: ({ _tag: "Read", branches: childLaneBranches(issue, read.value) } as const);
 						}),
 					pulls: pullsReader(Option.getOrNull(repo), process.env),
 				}
@@ -2295,10 +2295,10 @@ const recover = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane recover --check"},
-		{command: "fabrika lane recover"},
-		{command: "fabrika lane recover --spawns --check"},
-		{command: "fabrika lane recover --spawns"},
+		{ command: "fabrika lane recover --check" },
+		{ command: "fabrika lane recover" },
+		{ command: "fabrika lane recover --spawns --check" },
+		{ command: "fabrika lane recover --spawns" },
 	]),
 );
 
@@ -2318,8 +2318,8 @@ const wait = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, root, on, until}) {
-		yield* emit(yield* onKey("wait", lane, root, (_key, ref) => runWait({...ref, on, until})));
+	Effect.fn(function* ({ lane, root, on, until }) {
+		yield* emit(yield* onKey("wait", lane, root, (_key, ref) => runWait({ ...ref, on, until })));
 	}),
 ).pipe(
 	Command.withShortDescription("Record what a lane is waiting on, and until when."),
@@ -2340,7 +2340,7 @@ const wait = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: 'fabrika lane wait 5673 --on "the design review" --until 2026-10-05'},
+		{ command: 'fabrika lane wait 5673 --on "the design review" --until 2026-10-05' },
 	]),
 );
 
@@ -2356,10 +2356,10 @@ const dispatched = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, root, task}) {
+	Effect.fn(function* ({ lane, root, task }) {
 		yield* emit(
 			yield* onKey("dispatched", lane, root, (_key, ref) =>
-				runDispatched({...ref, task: Option.getOrNull(task)}),
+				runDispatched({ ...ref, task: Option.getOrNull(task) }),
 			),
 		);
 	}),
@@ -2382,7 +2382,7 @@ const dispatched = leafCommand(
 			},
 		),
 	),
-	Command.withExamples([{command: "fabrika lane dispatched 5673"}]),
+	Command.withExamples([{ command: "fabrika lane dispatched 5673" }]),
 );
 
 const working = leafCommand(
@@ -2398,11 +2398,11 @@ const working = leafCommand(
 			Flag.withDescription("the build claim token `build claim` answered `won` with"),
 		),
 	},
-	Effect.fn(function* ({lane, root, task, token}) {
+	Effect.fn(function* ({ lane, root, task, token }) {
 		const worktree = yield* repoRoot;
 		yield* emit(
 			yield* onKey("working", lane, root, (_key, ref) =>
-				runWorking({...ref, task: Option.getOrNull(task), token, worktree}),
+				runWorking({ ...ref, task: Option.getOrNull(task), token, worktree }),
 			),
 		);
 	}),
@@ -2444,12 +2444,12 @@ const worktree = leafCommand(
 			Flag.withDescription("the task this shell serves; omit it for the lane's driver"),
 		),
 	},
-	Effect.fn(function* ({lane, root, task}) {
+	Effect.fn(function* ({ lane, root, task }) {
 		const tree = yield* repoRoot;
 		const linked = yield* standingInLinkedWorktree;
 		yield* emit(
 			yield* onKey("worktree", lane, root, (_key, ref) =>
-				runWorktree({...ref, task: Option.getOrNull(task), worktree: tree, linked}),
+				runWorktree({ ...ref, task: Option.getOrNull(task), worktree: tree, linked }),
 			),
 		);
 	}),
@@ -2473,7 +2473,7 @@ const worktree = leafCommand(
 		),
 	),
 	Command.withExamples([
-		{command: "fabrika lane worktree 5673 --root /repo/.fabrika/lanes --task issue"},
+		{ command: "fabrika lane worktree 5673 --root /repo/.fabrika/lanes --task issue" },
 	]),
 );
 
@@ -2489,11 +2489,11 @@ const cleanup = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, root, repo}) {
+	Effect.fn(function* ({ lane, root, repo }) {
 		const caller = yield* repoRoot;
 		const pull = boardPull(Option.getOrNull(repo), process.env);
 		yield* emit(
-			yield* onKey("cleanup", lane, root, (_key, ref) => runCleanup({...ref, caller, pull})),
+			yield* onKey("cleanup", lane, root, (_key, ref) => runCleanup({ ...ref, caller, pull })),
 		);
 	}),
 ).pipe(
@@ -2514,7 +2514,7 @@ const cleanup = leafCommand(
 			["stderr names every tree: removed, gone, left (this, main or a driver's tree) or kept."],
 		),
 	),
-	Command.withExamples([{command: "fabrika lane cleanup 5673"}]),
+	Command.withExamples([{ command: "fabrika lane cleanup 5673" }]),
 );
 
 const leave = leafCommand(
@@ -2522,7 +2522,7 @@ const leave = leafCommand(
 	{},
 	Effect.fn(function* () {
 		const tree = yield* repoRoot;
-		yield* emit(yield* runLeave({tree}));
+		yield* emit(yield* runLeave({ tree }));
 	}),
 ).pipe(
 	Command.withShortDescription("Remove the worktree this shell stands in, unless it holds work."),
@@ -2538,7 +2538,7 @@ const leave = leafCommand(
 			["main: the main working tree is never removed. Nothing is forced."],
 		),
 	),
-	Command.withExamples([{command: "fabrika lane leave"}]),
+	Command.withExamples([{ command: "fabrika lane leave" }]),
 );
 
 const record = leafCommand(
@@ -2553,7 +2553,7 @@ const record = leafCommand(
 			),
 		),
 	},
-	Effect.fn(function* ({lane, root, repo}) {
+	Effect.fn(function* ({ lane, root, repo }) {
 		const board = recordBoard(Option.getOrNull(repo), process.env);
 		yield* emit(
 			yield* onKey("record", lane, root, (key, ref) =>
@@ -2596,7 +2596,7 @@ const record = leafCommand(
 			},
 		),
 	),
-	Command.withExamples([{command: "fabrika lane record 5673"}]),
+	Command.withExamples([{ command: "fabrika lane record 5673" }]),
 );
 
 export const laneCommand = Command.make("lane").pipe(

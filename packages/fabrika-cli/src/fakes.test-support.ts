@@ -8,13 +8,13 @@
  * [.patterns/effect-process-cli-shell.md](../../../.patterns/effect-process-cli-shell.md). The seam
  * a test replaces is therefore the same seam production uses.
  */
-import {Effect, FileSystem, Layer, Option, Path, PlatformError, Sink, Stream} from "effect";
+import { Effect, FileSystem, Layer, Option, Path, PlatformError, Sink, Stream } from "effect";
 import type * as HttpBody from "effect/unstable/http/HttpBody";
 import * as HttpClient from "effect/unstable/http/HttpClient";
 import * as HttpClientError from "effect/unstable/http/HttpClientError";
 import * as HttpClientResponse from "effect/unstable/http/HttpClientResponse";
-import {ChildProcessSpawner} from "effect/unstable/process";
-import type {ExecResult} from "./io/exec.ts";
+import { ChildProcessSpawner } from "effect/unstable/process";
+import type { ExecResult } from "./io/exec.ts";
 
 const enc = new TextEncoder();
 
@@ -159,12 +159,12 @@ export interface FakeFs {
 
 /** An in-memory filesystem layer that can be told to fail a specific read, probe or write. */
 export const fakeFs = (options: FakeFsOptions): FakeFs => {
-	const dirs: Record<string, ReadonlyArray<string> | null> = {...options.dirs};
-	const files: Record<string, string | null> = {...options.files};
+	const dirs: Record<string, ReadonlyArray<string> | null> = { ...options.dirs };
+	const files: Record<string, string | null> = { ...options.files };
 	const written = new Map<string, string>();
 	const directories = new Set([...(options.directories ?? []), ...(options.mkdirExisting ?? [])]);
 	const held = new Set(options.mkdirExisting ?? []);
-	const mtimes: Record<string, Date> = {...options.mtimes};
+	const mtimes: Record<string, Date> = { ...options.mtimes };
 	const decoder = new TextDecoder();
 	const parentOf = (of: string): string => {
 		const cut = of.lastIndexOf("/");
@@ -225,7 +225,10 @@ export const fakeFs = (options: FakeFsOptions): FakeFs => {
 					? answer()
 					: Effect.flatMap(answer(), (read) => Effect.as(during, read));
 			},
-			makeDirectory: (path: string, mkdirOptions?: {readonly recursive?: boolean | undefined}) => {
+			makeDirectory: (
+				path: string,
+				mkdirOptions?: { readonly recursive?: boolean | undefined },
+			) => {
 				if (options.unwritable?.includes(path) === true) return notFound("makeDirectory", path);
 				if (options.mkdirMissingParent?.includes(path) === true) {
 					return notFound("makeDirectory", path);
@@ -325,7 +328,7 @@ export const fakeFs = (options: FakeFsOptions): FakeFs => {
 			writeFileString: (
 				path: string,
 				data: string,
-				opts?: {readonly flag?: string | undefined},
+				opts?: { readonly flag?: string | undefined },
 			) => {
 				if (options.unwritable?.includes(path) === true) return notFound("writeFileString", path);
 				// An `x` flag is an exclusive create: it fails EEXIST rather than overwriting, which is
@@ -361,7 +364,7 @@ export const fakeFs = (options: FakeFsOptions): FakeFs => {
 		}),
 		Path.layer,
 	);
-	return {layer, written};
+	return { layer, written };
 };
 
 export interface FakeShell {
@@ -393,7 +396,7 @@ const pipedInput = (stdin: unknown): Effect.Effect<string> => {
 	if (stdin === undefined || typeof stdin === "string") return Effect.succeed("");
 	const source =
 		typeof stdin === "object" && stdin !== null && "stream" in stdin
-			? (stdin as {readonly stream: unknown}).stream
+			? (stdin as { readonly stream: unknown }).stream
 			: stdin;
 	if (source === undefined || typeof source === "string") return Effect.succeed("");
 	return Stream.decodeText(source as Stream.Stream<Uint8Array, unknown>).pipe(
@@ -417,7 +420,7 @@ const pipedInput = (stdin: unknown): Effect.Effect<string> => {
  */
 export const fakeShell = (
 	script: ReadonlyArray<readonly [RegExp, ScriptedExec]>,
-	fallback: ExecResult = {ok: false, stdout: "", reason: "unscripted command"},
+	fallback: ExecResult = { ok: false, stdout: "", reason: "unscripted command" },
 	unstartable: ReadonlyArray<RegExp> = [],
 	/** A shared sink both seams push to, so an ordering assertion can span them ({@link fakeSeams}). */
 	log: Array<string> = [],
@@ -466,7 +469,7 @@ export const fakeShell = (
 			}),
 		),
 	);
-	return {layer, calls, inputs, cwds};
+	return { layer, calls, inputs, cwds };
 };
 
 /**
@@ -555,12 +558,12 @@ export const once = (source: RegExp): RegExp => {
 	return pattern;
 };
 
-export const okOut = (stdout: string): ExecResult => ({ok: true, stdout, reason: ""});
+export const okOut = (stdout: string): ExecResult => ({ ok: true, stdout, reason: "" });
 
-export const errOut = (reason: string): ExecResult => ({ok: false, stdout: "", reason});
+export const errOut = (reason: string): ExecResult => ({ ok: false, stdout: "", reason });
 
 /** A scripted spawn answer that may name its exit code; without one, a failure exits 1. */
-export type ScriptedExec = ExecResult & {readonly exitCode?: number};
+export type ScriptedExec = ExecResult & { readonly exitCode?: number };
 
 const exitCodeOf = (result: ScriptedExec): number => result.exitCode ?? (result.ok ? 0 : 1);
 
@@ -606,7 +609,7 @@ const UI_SURFACES = [
  * declared nothing, and the wrong ground to derive that class on.
  */
 export const uiConfigured: Layer.Layer<FileSystem.FileSystem | Path.Path> = fakeFs({
-	files: {"/repo/.fabrika.jsonc": JSON.stringify({uiSurfaces: UI_SURFACES})},
+	files: { "/repo/.fabrika.jsonc": JSON.stringify({ uiSurfaces: UI_SURFACES }) },
 }).layer;
 
 /**
@@ -639,7 +642,7 @@ export const configAtCommit = (
 export const unconfiguredAtCommits = configAtCommit(null);
 
 /** {@link uiConfigured}'s two rows, at every commit. */
-export const uiConfiguredAtCommits = configAtCommit(JSON.stringify({uiSurfaces: UI_SURFACES}));
+export const uiConfiguredAtCommits = configAtCommit(JSON.stringify({ uiSurfaces: UI_SURFACES }));
 
 /**
  * `.fabrika.jsonc` as the platform serves it at `sha` — `null` answers `404`, a commit carrying none.
@@ -650,7 +653,7 @@ export const configOnPlatform = (
 ): ReadonlyArray<Scripted> => [
 	[
 		new RegExp(`^GET .*/repos/[^/]+/[^/]+/contents/\\.fabrika\\.jsonc\\?ref=${sha}$`),
-		text === null ? {status: 404, body: '{"message":"Not Found"}'} : {status: 200, body: text},
+		text === null ? { status: 404, body: '{"message":"Not Found"}' } : { status: 200, body: text },
 	],
 ];
 
@@ -665,7 +668,7 @@ export const mergeBaseOnPlatform = (mergeBase: string): Scripted => [
 	{
 		status: 200,
 		body: JSON.stringify({
-			merge_base_commit: {sha: mergeBase},
+			merge_base_commit: { sha: mergeBase },
 			status: "ahead",
 			ahead_by: 1,
 			behind_by: 0,
@@ -683,7 +686,7 @@ export const unconfiguredOnPlatform = (mergeBase: string = "b".repeat(40)) => [
 /** {@link uiConfigured}'s two rows, at every commit the platform serves. */
 export const uiConfiguredOnPlatform = (mergeBase: string = "b".repeat(40)) => [
 	mergeBaseOnPlatform(mergeBase),
-	...configOnPlatform(JSON.stringify({uiSurfaces: UI_SURFACES})),
+	...configOnPlatform(JSON.stringify({ uiSurfaces: UI_SURFACES })),
 ];
 
 /** `git ls-tree --name-only` output: one name per line. */
@@ -742,7 +745,7 @@ const requestBody = (body: HttpBody.HttpBody): string => {
  */
 export const fakeHttp = (
 	script: ReadonlyArray<readonly [RegExp, HttpReply]>,
-	fallback: HttpReply = {status: 500, body: '{"message":"unscripted request"}'},
+	fallback: HttpReply = { status: 500, body: '{"message":"unscripted request"}' },
 	unreachable: ReadonlyArray<RegExp> = [],
 	/** The same shared sink {@link fakeShell} takes — see {@link fakeSeams}. */
 	log: Array<string> = [],
@@ -775,13 +778,13 @@ export const fakeHttp = (
 					// successful delete with — is only scriptable if the body is dropped here.
 					new Response(NULL_BODY_STATUSES.has(reply.status) ? null : reply.body, {
 						status: reply.status,
-						headers: {...reply.headers},
+						headers: { ...reply.headers },
 					}),
 				),
 			);
 		}),
 	);
-	return {layer, calls, bodies, headers};
+	return { layer, calls, bodies, headers };
 };
 
 /**
@@ -805,17 +808,17 @@ export const fakeHttpBy = (answer: (line: string, body: string) => HttpReply): F
 					request,
 					new Response(NULL_BODY_STATUSES.has(reply.status) ? null : reply.body, {
 						status: reply.status,
-						headers: {...reply.headers},
+						headers: { ...reply.headers },
 					}),
 				);
 			}),
 		),
 	);
-	return {layer, calls, bodies, headers};
+	return { layer, calls, bodies, headers };
 };
 
 /** A served page of a bare-array read, with the `Link` header that says another page follows. */
-export const linkNext = (url: string): Record<string, string> => ({link: `<${url}>; rel="next"`});
+export const linkNext = (url: string): Record<string, string> => ({ link: `<${url}>; rel="next"` });
 
 /**
  * One scripted answer for either seam. Which seam a row belongs to is not a field: the reply's own

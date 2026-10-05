@@ -1,5 +1,7 @@
 /** A board whose every method call is logged by name, in call order, before it runs. */
-export const spy = <B extends object>(board: B): {readonly board: B; readonly calls: string[]} => {
+export const spy = <B extends object>(
+	board: B,
+): { readonly board: B; readonly calls: string[] } => {
 	const calls: string[] = [];
 	const wrapped = Object.fromEntries(
 		Object.entries(board).map(([name, method]) => [
@@ -10,5 +12,5 @@ export const spy = <B extends object>(board: B): {readonly board: B; readonly ca
 			},
 		]),
 	) as B;
-	return {board: wrapped, calls};
+	return { board: wrapped, calls };
 };

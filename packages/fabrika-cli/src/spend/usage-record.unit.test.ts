@@ -1,7 +1,7 @@
-import {readFileSync} from "node:fs";
-import {Result} from "effect";
-import {expect, it} from "vitest";
-import {decodeUsageRecord} from "./usage-record.ts";
+import { readFileSync } from "node:fs";
+import { Result } from "effect";
+import { expect, it } from "vitest";
+import { decodeUsageRecord } from "./usage-record.ts";
 
 const fixture = JSON.parse(
 	readFileSync(new URL("./fixtures/attributed/codex.json", import.meta.url), "utf8"),
@@ -15,16 +15,16 @@ it("rejects additive reasoning and TTL subsets and broken counter relationships"
 				{
 					field: "bad",
 					category,
-					value: {state: "measured", tokens: 1},
-					meaning: {kind: "additive"},
+					value: { state: "measured", tokens: 1 },
+					meaning: { kind: "additive" },
 				},
 			],
 		};
 		expect(Result.isFailure(decodeUsageRecord(invalid))).toBe(true);
 	}
-	const orphan = {...fixture, counters: [fixture.counters[1]]};
+	const orphan = { ...fixture, counters: [fixture.counters[1]] };
 	expect(Result.isFailure(decodeUsageRecord(orphan))).toBe(true);
-	const duplicate = {...fixture, counters: [fixture.counters[0], fixture.counters[0]]};
+	const duplicate = { ...fixture, counters: [fixture.counters[0], fixture.counters[0]] };
 	expect(Result.isFailure(decodeUsageRecord(duplicate))).toBe(true);
 });
 
@@ -33,7 +33,12 @@ it("preserves absence, unsupported, unavailable, not-applicable and measured zer
 		const value = {
 			...fixture,
 			counters: [
-				{field: "native_counter", category: "other", value: {state}, meaning: {kind: "unknown"}},
+				{
+					field: "native_counter",
+					category: "other",
+					value: { state },
+					meaning: { kind: "unknown" },
+				},
 			],
 		};
 		const decoded = decodeUsageRecord(value);
@@ -45,12 +50,14 @@ it("preserves absence, unsupported, unavailable, not-applicable and measured zer
 			Result.isFailure(
 				decodeUsageRecord({
 					...fixture,
-					counters: [{...fixture.counters[0], value: {state: "measured", tokens}}],
+					counters: [{ ...fixture.counters[0], value: { state: "measured", tokens } }],
 				}),
 			),
 		).toBe(true);
 	}
-	expect(Result.isFailure(decodeUsageRecord({...fixture, prompt: "must not persist"}))).toBe(true);
+	expect(Result.isFailure(decodeUsageRecord({ ...fixture, prompt: "must not persist" }))).toBe(
+		true,
+	);
 });
 
 it("accepts native cache TTL subsets without manufacturing cached output", () => {

@@ -1,7 +1,7 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, type FakeShell, fakeShell, okOut, once} from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, type FakeShell, fakeShell, okOut, once } from "../fakes.test-support.ts";
+import type { ExecResult } from "../io/exec.ts";
 import {
 	OFF_VOCABULARY,
 	PRECONDITION_UNKNOWN,
@@ -9,7 +9,7 @@ import {
 	UNREACHABLE_TIP,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {runSeat} from "./seat-verb.ts";
+import { runSeat } from "./seat-verb.ts";
 
 const TIP = "4011b1d8238aaf1d71de8704bedb1aa1dd98fda9";
 const BASE = "99b145346624d50b12c93309c9f566cce40cc8f2";
@@ -32,7 +32,7 @@ type Row = readonly [RegExp, ExecResult];
 /** Every diagnostic line the verb emitted, joined — what a caller reads on stderr. */
 const shellSaid = (stderr: ReadonlyArray<string>): string => stderr.join("\n");
 
-const options: {issue: number; base: string | null; tip: string | null; json: boolean} = {
+const options: { issue: number; base: string | null; tip: string | null; json: boolean } = {
 	issue: 8820,
 	base: BASE,
 	tip: TIP,
@@ -40,7 +40,7 @@ const options: {issue: number; base: string | null; tip: string | null; json: bo
 };
 
 const run = (shell: FakeShell, overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runSeat({...options, ...overrides}), shell.layer));
+	Effect.runPromise(Effect.provide(runSeat({ ...options, ...overrides }), shell.layer));
 
 /**
  * A tree holding the child's branch at the range tip, standing on each of `heads` in turn.
@@ -77,7 +77,7 @@ describe("runSeat — the seated case", () => {
 	});
 
 	it("names the range's carrier and the read-back head under --json", async () => {
-		const out = await run(tree([ELSEWHERE, TIP]), {json: true});
+		const out = await run(tree([ELSEWHERE, TIP]), { json: true });
 		expect(JSON.parse(out.stdout)).toEqual({
 			answer: "seated",
 			issue: 8820,
@@ -225,18 +225,18 @@ describe("runSeat — the reads that are UNKNOWN, never a seat", () => {
 
 describe("runSeat — the operands", () => {
 	it("refuses a range with one end", async () => {
-		const out = await run(fakeShell([]), {tip: null});
+		const out = await run(fakeShell([]), { tip: null });
 		expect(out.code).toBe(OFF_VOCABULARY);
 	});
 
 	it("refuses a run with no range at all — there is no PR here to resolve one from", async () => {
-		const out = await run(fakeShell([]), {base: null, tip: null});
+		const out = await run(fakeShell([]), { base: null, tip: null });
 		expect(out.code).toBe(OFF_VOCABULARY);
 		expect(shellSaid(out.stderr)).toContain("--base and --tip are required");
 	});
 
 	it("refuses a positional that is not an issue number", async () => {
-		const out = await run(fakeShell([]), {issue: 0});
+		const out = await run(fakeShell([]), { issue: 0 });
 		expect(out.code).toBe(1);
 	});
 });

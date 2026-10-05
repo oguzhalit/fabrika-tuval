@@ -16,17 +16,17 @@
  * rather than emit the parser's generic message.
  */
 
-import {Effect, Option} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStdin} from "../io/stdin.ts";
-import {runAdd} from "./add-verb.ts";
-import {runCheck} from "./check-verb.ts";
-import {runDrift} from "./drift-verb.ts";
-import {runInit} from "./init-verb.ts";
-import {runLookup} from "./lookup-verb.ts";
-import {runSections} from "./sections-verb.ts";
+import { Effect, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStdin } from "../io/stdin.ts";
+import { runAdd } from "./add-verb.ts";
+import { runCheck } from "./check-verb.ts";
+import { runDrift } from "./drift-verb.ts";
+import { runInit } from "./init-verb.ts";
+import { runLookup } from "./lookup-verb.ts";
+import { runSections } from "./sections-verb.ts";
 
 const dirFlag = Flag.string("dir").pipe(
 	Flag.withDefault(".glossary"),
@@ -55,8 +55,8 @@ const init = leafCommand(
 		dir: dirFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({register, dir, json}) {
-		yield* emit(yield* runInit({register, dir, json, cwd: process.cwd()}));
+	Effect.fn(function* ({ register, dir, json }) {
+		yield* emit(yield* runInit({ register, dir, json, cwd: process.cwd() }));
 	}),
 ).pipe(
 	Command.withShortDescription("Create a register file that does not exist yet."),
@@ -71,7 +71,7 @@ const init = leafCommand(
 			'  Derivation: the glossary skill\'s contract.md, "glossary init"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika glossary init --register terms"}]),
+	Command.withExamples([{ command: "fabrika glossary init --register terms" }]),
 );
 
 const drift = leafCommand(
@@ -91,8 +91,8 @@ const drift = leafCommand(
 		),
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({register, dir, paths, limit, json}) {
-		yield* emit(yield* runDrift({register, dir, paths, limit, json, cwd: process.cwd()}));
+	Effect.fn(function* ({ register, dir, paths, limit, json }) {
+		yield* emit(yield* runDrift({ register, dir, paths, limit, json, cwd: process.cwd() }));
 	}),
 ).pipe(
 	Command.withShortDescription("The surfaces that moved since the register last changed."),
@@ -106,7 +106,7 @@ const drift = leafCommand(
 			'  Derivation: the glossary skill\'s contract.md, "glossary drift"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika glossary drift --register terms"}]),
+	Command.withExamples([{ command: "fabrika glossary drift --register terms" }]),
 );
 
 const lookup = leafCommand(
@@ -120,8 +120,8 @@ const lookup = leafCommand(
 		dir: dirFlag,
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({terms, register, dir, json}) {
-		yield* emit(yield* runLookup({terms, register, dir, json, cwd: process.cwd()}));
+	Effect.fn(function* ({ terms, register, dir, json }) {
+		yield* emit(yield* runLookup({ terms, register, dir, json, cwd: process.cwd() }));
 	}),
 ).pipe(
 	Command.withShortDescription("Whether a term is already declared, and what overlaps it."),
@@ -135,14 +135,14 @@ const lookup = leafCommand(
 			'  Derivation: the glossary skill\'s contract.md, "glossary lookup"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: 'fabrika glossary lookup "front door" --register both'}]),
+	Command.withExamples([{ command: 'fabrika glossary lookup "front door" --register both' }]),
 );
 
 const sections = leafCommand(
 	"sections",
-	{register: registerFlag("terms", "terms, language, both"), dir: dirFlag, json: jsonFlag},
-	Effect.fn(function* ({register, dir, json}) {
-		yield* emit(yield* runSections({register, dir, json, cwd: process.cwd()}));
+	{ register: registerFlag("terms", "terms, language, both"), dir: dirFlag, json: jsonFlag },
+	Effect.fn(function* ({ register, dir, json }) {
+		yield* emit(yield* runSections({ register, dir, json, cwd: process.cwd() }));
 	}),
 ).pipe(
 	Command.withShortDescription("The live section names of a register."),
@@ -156,7 +156,7 @@ const sections = leafCommand(
 			'  Derivation: the glossary skill\'s contract.md, "glossary sections"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika glossary sections --register terms"}]),
+	Command.withExamples([{ command: "fabrika glossary sections --register terms" }]),
 );
 
 const add = leafCommand(
@@ -259,7 +259,7 @@ const check = leafCommand(
 		),
 		json: jsonFlag,
 	},
-	Effect.fn(function* ({register, dir, decisions, json}) {
+	Effect.fn(function* ({ register, dir, decisions, json }) {
 		yield* emit(
 			yield* runCheck({
 				register,
@@ -284,7 +284,7 @@ const check = leafCommand(
 			'  Derivation: the glossary skill\'s contract.md, "glossary check"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika glossary check --register both"}]),
+	Command.withExamples([{ command: "fabrika glossary check --register both" }]),
 );
 
 export const glossaryCommand = Command.make("glossary").pipe(

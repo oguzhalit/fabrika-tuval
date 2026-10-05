@@ -1,9 +1,14 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {comments, LANE_UUID, marker, LANE_TOKEN as TOKEN} from "../build/fixtures.test-support.ts";
-import type {HttpReply} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {read as readMarker} from "../wire/verdict-marker.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import {
+	comments,
+	LANE_UUID,
+	marker,
+	LANE_TOKEN as TOKEN,
+} from "../build/fixtures.test-support.ts";
+import type { HttpReply } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { read as readMarker } from "../wire/verdict-marker.ts";
 import {
 	BARE_AT_PATH,
 	CLAIM_NOT_MINE,
@@ -32,7 +37,7 @@ import {
 	SUB_ISSUES,
 	subIssues,
 } from "./fixtures.test-support.ts";
-import {runVerdict} from "./verdict-verb.ts";
+import { runVerdict } from "./verdict-verb.ts";
 
 const EPIC = /^GET https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4300$/;
 const SUBS = SUB_ISSUES;
@@ -43,9 +48,9 @@ const PERM = /^GET .*\/repos\/o\/r\/collaborators\/agent\/permission/;
 const POST = /^POST .*\/repos\/o\/r\/issues\/4300\/comments$/;
 const GET_COMMENT = /^GET .*\/repos\/o\/r\/issues\/comments\/512346$/;
 
-const ONE_CHILD_EPIC = epic({body: epicBody({dependencies: "- phase 1: #4301"})});
-const CLEAN_CHILD = child({number: 4301});
-const DEFECTIVE_CHILD = child({number: 4301, body: childBody({criteria: "no boxes"})});
+const ONE_CHILD_EPIC = epic({ body: epicBody({ dependencies: "- phase 1: #4301" }) });
+const CLEAN_CHILD = child({ number: 4301 });
+const DEFECTIVE_CHILD = child({ number: 4301, body: childBody({ criteria: "no boxes" }) });
 
 const env = {
 	CLAUDE_PIPELINE_REPO: "o/r",
@@ -59,8 +64,8 @@ const env = {
  * approval has to be a row here rather than a second scripted `COMMENTS` entry nothing would reach.
  */
 const claimed = (digest: string): ReadonlyArray<Scripted> => [
-	[COMMENTS, comments({id: 1, body: marker(SESSION, LANE_UUID)}, approvalRow(digest))],
-	[PERM, {status: 200, body: '{"permission":"write"}'}],
+	[COMMENTS, comments({ id: 1, body: marker(SESSION, LANE_UUID) }, approvalRow(digest))],
+	[PERM, { status: 200, body: '{"permission":"write"}' }],
 	...ROSTER,
 ];
 
@@ -73,22 +78,22 @@ const ledger = (childPayload: HttpReply): ReadonlyArray<Scripted> => [
 
 const POSTED: HttpReply = {
 	status: 201,
-	body: JSON.stringify({id: 512346, html_url: `${issueUrl(4300)}#c`}),
+	body: JSON.stringify({ id: 512346, html_url: `${issueUrl(4300)}#c` }),
 };
 
 const digestOf = (childPayload: HttpReply): Promise<string> =>
-	digestOver(ledger(childPayload), {env});
+	digestOver(ledger(childPayload), { env });
 
 const run = (
 	digest: string,
 	script: ReadonlyArray<Scripted>,
-	overrides: {caveats?: string; polarity?: string | null} = {},
+	overrides: { caveats?: string; polarity?: string | null } = {},
 ) => {
 	const seams = planSeams(script);
 	const stdin: StdinRead =
 		overrides.caveats === undefined
-			? {_tag: "NoStdin", reason: "a TTY"}
-			: {_tag: "Text", text: overrides.caveats};
+			? { _tag: "NoStdin", reason: "a TTY" }
+			: { _tag: "Text", text: overrides.caveats };
 	return Effect.runPromise(
 		Effect.provide(
 			runVerdict({
@@ -103,16 +108,19 @@ const run = (
 			}),
 			seams.layer,
 		),
-	).then((outcome) => ({outcome, calls: seams.http.calls, bodies: seams.http.bodies}));
+	).then((outcome) => ({ outcome, calls: seams.http.calls, bodies: seams.http.bodies }));
 };
 
 /** The bytes the verb posted — the marker travels as the request body's `body` field now. */
-const postedBody = (run: {calls: ReadonlyArray<string>; bodies: ReadonlyArray<string>}): string => {
+const postedBody = (run: {
+	calls: ReadonlyArray<string>;
+	bodies: ReadonlyArray<string>;
+}): string => {
 	const at = run.calls.findIndex((line) => POST.test(line));
 	if (at < 0) return "";
 	const sent: unknown = JSON.parse(run.bodies[at] ?? "{}");
 	return typeof sent === "object" && sent !== null && "body" in sent
-		? String((sent as {body: unknown}).body)
+		? String((sent as { body: unknown }).body)
 		: "";
 };
 
@@ -121,11 +129,11 @@ describe("runVerdict", () => {
 		const digest = await digestOf(CLEAN_CHILD);
 		const first = await run(digest, [...claimed(digest), ...ledger(CLEAN_CHILD), [POST, POSTED]]);
 		const body = postedBody(first);
-		const {outcome} = await run(digest, [
+		const { outcome } = await run(digest, [
 			...claimed(digest),
 			...ledger(CLEAN_CHILD),
 			[POST, POSTED],
-			[GET_COMMENT, {status: 200, body: JSON.stringify({body})}],
+			[GET_COMMENT, { status: 200, body: JSON.stringify({ body }) }],
 		]);
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout)).toEqual({
@@ -179,10 +187,10 @@ describe("runVerdict", () => {
 	 */
 	it("refuses 10 when --polarity disagrees with the derived floor, and posts nothing", async () => {
 		const digest = await digestOf(DEFECTIVE_CHILD);
-		const {outcome, calls} = await run(
+		const { outcome, calls } = await run(
 			digest,
 			[...claimed(digest), ...ledger(DEFECTIVE_CHILD), [POST, POSTED]],
-			{polarity: "PASS"},
+			{ polarity: "PASS" },
 		);
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toContain("a verdict relays the floor, it does not form one");
@@ -191,7 +199,7 @@ describe("runVerdict", () => {
 
 	it("accepts a --polarity that agrees", async () => {
 		const digest = await digestOf(CLEAN_CHILD);
-		const {calls} = await run(
+		const { calls } = await run(
 			digest,
 			[...claimed(digest), ...ledger(CLEAN_CHILD), [POST, POSTED]],
 			{
@@ -213,7 +221,7 @@ describe("runVerdict", () => {
 
 	it("refuses 10 on a caveat kind off the closed set", async () => {
 		const digest = await digestOf(CLEAN_CHILD);
-		const {outcome, calls} = await run(
+		const { outcome, calls } = await run(
 			digest,
 			[...claimed(digest), ...ledger(CLEAN_CHILD), [POST, POSTED]],
 			{
@@ -227,7 +235,7 @@ describe("runVerdict", () => {
 
 	it("refuses 10 on a caveat naming a ref outside the scanned set", async () => {
 		const digest = await digestOf(CLEAN_CHILD);
-		const {outcome} = await run(
+		const { outcome } = await run(
 			digest,
 			[...claimed(digest), ...ledger(CLEAN_CHILD), [POST, POSTED]],
 			{
@@ -255,7 +263,7 @@ describe("runVerdict", () => {
 
 	it("refuses 21 when the plan moved, and posts nothing", async () => {
 		const digest = await digestOf(CLEAN_CHILD);
-		const {outcome, calls} = await run("000000000000", [
+		const { outcome, calls } = await run("000000000000", [
 			...claimed(digest),
 			...ledger(CLEAN_CHILD),
 			[POST, POSTED],
@@ -267,28 +275,28 @@ describe("runVerdict", () => {
 	/** The verb is the only emit path, and it re-reads what it posted. */
 	it("refuses 9 when the posted comment does not read back", async () => {
 		const digest = await digestOf(CLEAN_CHILD);
-		const {outcome} = await run(digest, [
+		const { outcome } = await run(digest, [
 			...claimed(digest),
 			...ledger(CLEAN_CHILD),
 			[POST, POSTED],
-			[GET_COMMENT, {status: 200, body: JSON.stringify({body: "something else entirely"})}],
+			[GET_COMMENT, { status: 200, body: JSON.stringify({ body: "something else entirely" }) }],
 		]);
 		expect(outcome.code).toBe(READBACK_MISMATCH);
 		expect(outcome.stdout).toBe("");
 	});
 
 	it("refuses 15 when this session does not hold the epic's claim", async () => {
-		const {outcome, calls} = await run("4d90e1bb27ac", [
+		const { outcome, calls } = await run("4d90e1bb27ac", [
 			[EPIC, ONE_CHILD_EPIC],
-			[COMMENTS, comments({id: 1, body: marker("another-session", LANE_UUID)})],
-			[PERM, {status: 200, body: '{"permission":"write"}'}],
+			[COMMENTS, comments({ id: 1, body: marker("another-session", LANE_UUID) })],
+			[PERM, { status: 200, body: '{"permission":"write"}' }],
 		]);
 		expect(outcome.code).toBe(CLAIM_NOT_MINE);
 		expect(calls.some((line) => POST.test(line))).toBe(false);
 	});
 
 	it("refuses 10 on a malformed --digest before any read", async () => {
-		const {outcome, calls} = await run("nothex", []);
+		const { outcome, calls } = await run("nothex", []);
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(calls).toEqual([]);
 	});
@@ -304,7 +312,7 @@ describe("runVerdict", () => {
 					repo: null,
 					env,
 					cwd: CWD,
-					stdin: Effect.succeed<StdinRead>({_tag: "Failed", reason: "EIO"}),
+					stdin: Effect.succeed<StdinRead>({ _tag: "Failed", reason: "EIO" }),
 				}),
 				planSeams([]).layer,
 			),
@@ -318,9 +326,9 @@ describe("runVerdict", () => {
 			[EPIC, ONE_CHILD_EPIC],
 			[SUBS, subIssues(4301)],
 			[CHILD, CLEAN_CHILD],
-			[CYCLE, {status: 502, body: '{"message":"Bad gateway"}'}],
+			[CYCLE, { status: 502, body: '{"message":"Bad gateway"}' }],
 		] as ReadonlyArray<Scripted>;
-		const digest = await digestOver(script, {env});
+		const digest = await digestOver(script, { env });
 		const posted = await run(digest, [...claimed(digest), ...script, [POST, POSTED]]);
 		expect(postedBody(posted)).toContain("1 class(es) skipped");
 		expect(postedBody(posted)).toContain("## Skipped classes");
@@ -332,9 +340,9 @@ describe("runVerdict", () => {
 	 */
 	it("refuses 25 on an unapproved plan, posting nothing", async () => {
 		const digest = await digestOf(DEFECTIVE_CHILD);
-		const {outcome, calls} = await run(digest, [
-			[COMMENTS, comments({id: 1, body: marker(SESSION, LANE_UUID)})],
-			[PERM, {status: 200, body: '{"permission":"write"}'}],
+		const { outcome, calls } = await run(digest, [
+			[COMMENTS, comments({ id: 1, body: marker(SESSION, LANE_UUID) })],
+			[PERM, { status: 200, body: '{"permission":"write"}' }],
 			...ROSTER,
 			...ledger(DEFECTIVE_CHILD),
 			[POST, POSTED],
@@ -345,9 +353,12 @@ describe("runVerdict", () => {
 
 	it("refuses 25 on a stale approval, posting nothing", async () => {
 		const digest = await digestOf(CLEAN_CHILD);
-		const {outcome, calls} = await run(digest, [
-			[COMMENTS, comments({id: 1, body: marker(SESSION, LANE_UUID)}, approvalRow("0000000000ff"))],
-			[PERM, {status: 200, body: '{"permission":"write"}'}],
+		const { outcome, calls } = await run(digest, [
+			[
+				COMMENTS,
+				comments({ id: 1, body: marker(SESSION, LANE_UUID) }, approvalRow("0000000000ff")),
+			],
+			[PERM, { status: 200, body: '{"permission":"write"}' }],
 			...ROSTER,
 			...ledger(CLEAN_CHILD),
 			[POST, POSTED],

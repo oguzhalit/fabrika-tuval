@@ -1,5 +1,5 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
 import {
 	configAtCommit,
 	errOut,
@@ -9,7 +9,7 @@ import {
 	unconfigured,
 	unconfiguredAtCommits,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
+import type { ExecResult } from "../io/exec.ts";
 import {
 	INCOMPLETE_SCAN,
 	OFF_VOCABULARY,
@@ -38,12 +38,12 @@ import {
 	TREE_AT,
 	treeOf,
 } from "./fixtures.test-support.ts";
-import {NOT_CP_NOTICE, runScope} from "./scope-verb.ts";
+import { NOT_CP_NOTICE, runScope } from "./scope-verb.ts";
 
 const PULL = /^GET .*\/repos\/o\/r\/pulls\/4321$/;
 
 /** A fixture's canned JSON, served as the 200 the REST read now parses. */
-const served = (result: ExecResult) => ({status: 200, body: result.stdout});
+const served = (result: ExecResult) => ({ status: 200, body: result.stdout });
 
 const options = {
 	pr: 4321 as number | null,
@@ -52,19 +52,19 @@ const options = {
 	tip: null as string | null,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 };
 
 const run = (script: ReadonlyArray<Scripted>, overrides: Partial<typeof options> = {}) =>
 	Effect.runPromise(
 		Effect.provide(
-			runScope({...options, ...overrides}),
+			runScope({ ...options, ...overrides }),
 			Layer.merge(fakeSeams(script).layer, unconfigured),
 		),
 	);
 
 const happy = (...rows: ReadonlyArray<readonly [string, string]>): ReadonlyArray<Scripted> => [
-	[PULL, served(pull({changedFiles: rows.length}))],
+	[PULL, served(pull({ changedFiles: rows.length }))],
 	...binding(),
 	[STATUS_AT(), statuses(...rows)],
 	[TREE_AT(), treeOf(...FULL_TREE)],
@@ -82,7 +82,7 @@ describe("runScope over a foreign repo's declared roots", () => {
 	// `review scope` derives the same requirement over the same key. Both verbs read one list.
 	it("tallies the roots the config declares, not the shipped defaults", async () => {
 		const out = await run([
-			...declaring({governedRoots: ["src/", ".fabrika.jsonc"]}),
+			...declaring({ governedRoots: ["src/", ".fabrika.jsonc"] }),
 			...happy(["M", "src/cart.ts"]),
 		]);
 		expect(out.stdout).toContain(`governance\trequired\t${HEAD}`);
@@ -95,7 +95,7 @@ describe("runScope over a foreign repo's declared roots", () => {
 	it("tallies a root the merge base declares after the head drops it", async () => {
 		const out = await run([
 			...configAtCommit("{}", HEAD),
-			...configAtCommit(JSON.stringify({governedRoots: ["src/", ".fabrika.jsonc"]}), BASE),
+			...configAtCommit(JSON.stringify({ governedRoots: ["src/", ".fabrika.jsonc"] }), BASE),
 			...happy(["M", "src/cart.ts"]),
 		]);
 		expect(out.stdout).toContain(`governance\trequired\t${HEAD}`);
@@ -103,7 +103,7 @@ describe("runScope over a foreign repo's declared roots", () => {
 	});
 
 	it("refuses UNKNOWN on a config it cannot decode — never `not-required`", async () => {
-		const out = await run([...declaring({governedRoots: 7}), ...GOVERNING]);
+		const out = await run([...declaring({ governedRoots: 7 }), ...GOVERNING]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		// Nothing on stdout is the assertion: the answer line is where `not-required` would be, and
 		// the refusal below says in words that it is not one.
@@ -144,27 +144,27 @@ describe("runScope", () => {
 	// The binding runs against a main that has moved on (`BASE_TIP` is ahead of `BASE`), so `base`
 	// naming the branch point rather than that tip is the whole assertion here.
 	it("emits the record with --json, carrying the merge base the range was read across", async () => {
-		const out = await run(GOVERNING, {json: true});
+		const out = await run(GOVERNING, { json: true });
 		const record = JSON.parse(out.stdout);
 		// `roots` is a histogram object, not an array of `{name, files}` — the evidence collapse.
 		// `records` beside it stays whole: every `id` feeds `governance sweep --record`.
-		expect(record.roots).toEqual({".decisions/": 1, ".claude/": 1});
+		expect(record.roots).toEqual({ ".decisions/": 1, ".claude/": 1 });
 		expect(record).toMatchObject({
 			outcome: "required",
 			head: HEAD,
 			base: BASE,
 			self: false,
 			scanned: 2,
-			records: [{id: "0240", change: "added"}],
+			records: [{ id: "0240", change: "added" }],
 		});
 		expect(record.base).not.toBe(BASE_TIP);
 	});
 
 	it("says on stderr, on every run, that this is not the §CP answer", async () => {
 		expect((await run(GOVERNING)).stderr).toContain(NOT_CP_NOTICE);
-		expect((await run([[PULL, {status: 404, body: '{"message":"Not Found"}'}]])).stderr).toContain(
-			NOT_CP_NOTICE,
-		);
+		expect(
+			(await run([[PULL, { status: 404, body: '{"message":"Not Found"}' }]])).stderr,
+		).toContain(NOT_CP_NOTICE);
 	});
 
 	it("reports the commit it bound to and what it partitioned", async () => {
@@ -179,7 +179,7 @@ describe("runScope", () => {
 
 	it("names a root that is absent in this repository rather than counting it silently", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 1}))],
+			[PULL, served(pull({ changedFiles: 1 }))],
 			...binding(),
 			[STATUS_AT(), statuses(["M", ".decisions/0240-x.md"])],
 			[TREE_AT(), treeOf(".decisions/0240-x.md", "src/cart.ts")],
@@ -190,20 +190,20 @@ describe("runScope", () => {
 	});
 
 	it("refuses a PR proven absent on 7", async () => {
-		const out = await run([[PULL, {status: 404, body: '{"message":"Not Found"}'}]]);
+		const out = await run([[PULL, { status: 404, body: '{"message":"Not Found"}' }]]);
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stdout).toBe("");
 	});
 
 	it("refuses a closed PR, and a zero-file PR, on 7 — never `not-required`", async () => {
-		expect((await run([[PULL, served(pull({state: "closed"}))]])).code).toBe(ZERO_SCOPE);
-		const empty = await run([[PULL, served(pull({changedFiles: 0}))]]);
+		expect((await run([[PULL, served(pull({ state: "closed" }))]])).code).toBe(ZERO_SCOPE);
+		const empty = await run([[PULL, served(pull({ changedFiles: 0 }))]]);
 		expect(empty.code).toBe(ZERO_SCOPE);
 		expect(empty.stderr.at(-2)).toContain("refusing to derive over an empty diff");
 	});
 
 	it("separates an UNREADABLE PR from an absent one — 11, never 7", async () => {
-		const out = await run([[PULL, {status: 502, body: "{}"}]]);
+		const out = await run([[PULL, { status: 502, body: "{}" }]]);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.code).not.toBe(ZERO_SCOPE);
 		expect(out.stderr.at(-2)).toContain('is UNKNOWN, never "not-required"');
@@ -222,7 +222,7 @@ describe("runScope", () => {
 
 	it("derives from the local read when GitHub declares more files, and prints the disagreement", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 9}))],
+			[PULL, served(pull({ changedFiles: 9 }))],
 			...binding(),
 			[STATUS_AT(), statuses(["M", ".claude/skills/review/SKILL.md"])],
 			[TREE_AT(), treeOf(...FULL_TREE)],
@@ -236,7 +236,7 @@ describe("runScope", () => {
 
 	it("refuses an empty local read on 7 — never `not-required`, whatever GitHub declares", async () => {
 		const out = await run([
-			[PULL, served(pull({changedFiles: 9}))],
+			[PULL, served(pull({ changedFiles: 9 }))],
 			...binding(),
 			[STATUS_AT(), statuses()],
 		]);
@@ -248,17 +248,17 @@ describe("runScope", () => {
 	});
 
 	it("refuses a --sha that is not the PR's head on 12, and a malformed one on 10", async () => {
-		expect((await run(GOVERNING, {sha: OLD_HEAD})).code).toBe(STALE_HEAD);
-		expect((await run(GOVERNING, {sha: "origin/main"})).code).toBe(OFF_VOCABULARY);
+		expect((await run(GOVERNING, { sha: OLD_HEAD })).code).toBe(STALE_HEAD);
+		expect((await run(GOVERNING, { sha: "origin/main" })).code).toBe(OFF_VOCABULARY);
 	});
 
 	it("refuses a non-PR number, and an unresolvable repo, on 1", async () => {
-		expect((await run(GOVERNING, {pr: 0})).code).toBe(1);
-		expect((await run(GOVERNING, {env: {}})).code).toBe(1);
+		expect((await run(GOVERNING, { pr: 0 })).code).toBe(1);
+		expect((await run(GOVERNING, { env: {} })).code).toBe(1);
 	});
 });
 
-const ranged = {pr: null, base: RANGE_BASE, tip: RANGE_TIP};
+const ranged = { pr: null, base: RANGE_BASE, tip: RANGE_TIP };
 
 const overRange = (...rows: ReadonlyArray<StatusRow>): ReadonlyArray<Scripted> => [
 	[MERGE_BASE_OF(), okOut(`${RANGE_MERGE_BASE}\n`)],
@@ -325,7 +325,7 @@ describe("runScope over a range", () => {
 	// before `governance base` can be asked for the base revision's bytes.
 	it("sets `self` on a range that edits this skill, and names merge-base(base, tip) as the base", async () => {
 		const declared = configAtCommit(
-			JSON.stringify({governedRoots: ["claude-plugins/", ".fabrika.jsonc"]}),
+			JSON.stringify({ governedRoots: ["claude-plugins/", ".fabrika.jsonc"] }),
 		);
 		const out = await run([...declared, ...overRange(["M", `${SKILL_ROOT}SKILL.md`])], {
 			...ranged,
@@ -402,28 +402,28 @@ describe("runScope over a range", () => {
 
 	it("refuses a lone end, a --sha beside a range, and a positional beside one, on 10", async () => {
 		for (const overrides of [
-			{pr: null, base: RANGE_BASE, tip: null},
-			{pr: null, base: null, tip: RANGE_TIP},
+			{ pr: null, base: RANGE_BASE, tip: null },
+			{ pr: null, base: null, tip: RANGE_TIP },
 		]) {
 			const out = await run([], overrides);
 			expect(out.code).toBe(OFF_VOCABULARY);
 			expect(out.stderr.join("\n")).toContain("--base and --tip come together");
 		}
-		const withSha = await run([], {...ranged, sha: HEAD});
+		const withSha = await run([], { ...ranged, sha: HEAD });
 		expect(withSha.code).toBe(OFF_VOCABULARY);
 		expect(withSha.stderr.join("\n")).toContain("--sha does not combine with --base/--tip");
 
-		const withPr = await run([], {...ranged, pr: 4321});
+		const withPr = await run([], { ...ranged, pr: 4321 });
 		expect(withPr.code).toBe(OFF_VOCABULARY);
 		expect(withPr.stderr.join("\n")).toContain("a range is its own subject");
 	});
 
 	it("refuses a range end that is not a revision, and a subject named neither way, on 10", async () => {
-		const bad = await run([], {...ranged, tip: "origin/main"});
+		const bad = await run([], { ...ranged, tip: "origin/main" });
 		expect(bad.code).toBe(OFF_VOCABULARY);
 		expect(bad.stderr.join("\n")).toContain('--tip "origin/main" is not a revision');
 
-		const none = await run([], {pr: null, base: null, tip: null});
+		const none = await run([], { pr: null, base: null, tip: null });
 		expect(none.code).toBe(OFF_VOCABULARY);
 		expect(none.stderr.join("\n")).toContain("there is no subject here");
 	});
@@ -431,7 +431,7 @@ describe("runScope over a range", () => {
 	it("reads only the object database — no PR is resolved and nothing is checked out", async () => {
 		const fake = fakeSeams(overRange(["M", "src/cart.ts"]));
 		await Effect.runPromise(
-			Effect.provide(runScope({...options, ...ranged}), Layer.merge(fake.layer, unconfigured)),
+			Effect.provide(runScope({ ...options, ...ranged }), Layer.merge(fake.layer, unconfigured)),
 		);
 		expect(fake.requests).toEqual([]);
 		expect(fake.calls.some((call) => call.startsWith("git checkout"))).toBe(false);

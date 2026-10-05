@@ -11,15 +11,15 @@
  * independently-written gates are two chances to disagree about what a refused config means.
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ResolvedBoard} from "../config/board.ts";
-import {CONFIG_PATH} from "../config/document.ts";
-import {resolveBoard} from "../config/resolve-board.ts";
-import {unusableReason} from "../config/unusable.ts";
-import {loadRepoConfig} from "../config/working-root.ts";
-import {refuse, type VerbOutcome} from "../verb.ts";
-import {CONFIG_REFUSED} from "./codes.ts";
-import {FACET_VOCABULARY} from "./facets.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ResolvedBoard } from "../config/board.ts";
+import { CONFIG_PATH } from "../config/document.ts";
+import { resolveBoard } from "../config/resolve-board.ts";
+import { unusableReason } from "../config/unusable.ts";
+import { loadRepoConfig } from "../config/working-root.ts";
+import { refuse, type VerbOutcome } from "../verb.ts";
+import { CONFIG_REFUSED } from "./codes.ts";
+import { FACET_VOCABULARY } from "./facets.ts";
 
 /**
  * The gate's two answers: the board this run reconciles against, or the refusal it owes.
@@ -29,8 +29,8 @@ import {FACET_VOCABULARY} from "./facets.ts";
  * changed between the two reads.
  */
 export type ConfigGate =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Ready"; readonly resolved: ResolvedBoard};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Ready"; readonly resolved: ResolvedBoard };
 
 /**
  * The board this repo's config resolves to, or the refusal it earns.
@@ -48,11 +48,11 @@ export const guardConfig = (
 	Effect.gen(function* () {
 		const load = yield* loadRepoConfig(cwd);
 		const unusable = unusableReason(load);
-		if (unusable !== null) return {_tag: "Refused" as const, outcome: refusal(verb, unusable)};
+		if (unusable !== null) return { _tag: "Refused" as const, outcome: refusal(verb, unusable) };
 		const board = resolveBoard(load, FACET_VOCABULARY);
 		return board._tag === "Refused"
-			? {_tag: "Refused" as const, outcome: refusal(verb, board.reason)}
-			: {_tag: "Ready" as const, resolved: board.resolved};
+			? { _tag: "Refused" as const, outcome: refusal(verb, board.reason) }
+			: { _tag: "Ready" as const, resolved: board.resolved };
 	});
 
 const refusal = (verb: string, reason: string): VerbOutcome =>

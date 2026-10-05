@@ -2,10 +2,10 @@
  * `lane dispatch`'s pre-dispatch refresh — the assembly branch moves onto trunk before a child's
  * worktree is cut from it, and a repo that declared nothing keeps the dispatch path it has today.
  */
-import {Effect, type FileSystem, Layer, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {describe, expect, it} from "vitest";
-import type {EntrypointRead} from "../delegate/entrypoint.ts";
+import { Effect, type FileSystem, Layer, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { describe, expect, it } from "vitest";
+import type { EntrypointRead } from "../delegate/entrypoint.ts";
 import {
 	errOut,
 	fakeFs,
@@ -15,13 +15,13 @@ import {
 	once,
 	type Scripted,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {LANE_UNREADABLE, MERGE_CONFLICT, NO_SHELL} from "./codes.ts";
-import {type DispatchOptions, runDispatch} from "./dispatch-verb.ts";
-import {emitMachine} from "./emit.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
-import {REFRESH_PARK_CAUSE, type RefreshOptions, runRefresh} from "./refresh-verb.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { LANE_UNREADABLE, MERGE_CONFLICT, NO_SHELL } from "./codes.ts";
+import { type DispatchOptions, runDispatch } from "./dispatch-verb.ts";
+import { emitMachine } from "./emit.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
+import { REFRESH_PARK_CAUSE, type RefreshOptions, runRefresh } from "./refresh-verb.ts";
 
 const ROOT = ".fabrika/lanes";
 const EPIC = 5800;
@@ -51,7 +51,7 @@ const SEATED: ExecResult = okOut(
 
 /** The reads a merging run makes before `git merge`, ending on "the branch does not carry trunk". */
 const upToMerge = (): ReadonlyArray<Scripted> => [
-	[/^GET \S+\/repos\/o\/r$/, {status: 200, body: JSON.stringify({default_branch: "main"})}],
+	[/^GET \S+\/repos\/o\/r$/, { status: 200, body: JSON.stringify({ default_branch: "main" }) }],
 	[LIST, SEATED],
 	[once(HEAD), okOut(BEFORE)],
 	[once(STATUS), okOut("")],
@@ -62,7 +62,7 @@ const upToMerge = (): ReadonlyArray<Scripted> => [
 
 const emitted = () => {
 	const machine = emitMachine(EPIC, `## Dependencies\n\n- phase 1: #${CHILD}\n`, [
-		{number: CHILD, state: "open", stateReason: null, classes: []},
+		{ number: CHILD, state: "open", stateReason: null, classes: [] },
 	]);
 	if (machine._tag !== "Emitted") throw new Error(`the epic fixture did not emit: ${machine._tag}`);
 	return machine.text;
@@ -76,7 +76,7 @@ const laneFiles = (declared: string | null) => ({
 		event: `ISSUE_${CHILD}.WIP`,
 		at: "2026-09-09T00:00:00Z",
 	})}\n`,
-	...(declared === null ? {} : {[`${CWD}/.fabrika.jsonc`]: declared}),
+	...(declared === null ? {} : { [`${CWD}/.fabrika.jsonc`]: declared }),
 });
 
 const options: DispatchOptions = {
@@ -84,8 +84,15 @@ const options: DispatchOptions = {
 	lane: String(EPIC),
 	task: `issue_${CHILD}`,
 	repo: null,
-	env: {CODEX_THREAD_ID: "codex-thread", CLAUDE_PIPELINE_REPO: "o/r", GITHUB_TOKEN: "ghp_scripted"},
-	entrypoint: {_tag: "Entrypoint", entrypoint: "packages/fabrika-cli/src/bin.ts"} as EntrypointRead,
+	env: {
+		CODEX_THREAD_ID: "codex-thread",
+		CLAUDE_PIPELINE_REPO: "o/r",
+		GITHUB_TOKEN: "ghp_scripted",
+	},
+	entrypoint: {
+		_tag: "Entrypoint",
+		entrypoint: "packages/fabrika-cli/src/bin.ts",
+	} as EntrypointRead,
 	cwd: CWD,
 	harness: "codex",
 	skills: "/skills",
@@ -123,9 +130,9 @@ const run = (
 					return refresh(refreshOptions);
 				},
 			),
-			Layer.merge(shell.layer, fakeFs({files: laneFiles(declared)}).layer),
+			Layer.merge(shell.layer, fakeFs({ files: laneFiles(declared) }).layer),
 		),
-	).then((outcome) => ({outcome, calls: shell.calls, reached}));
+	).then((outcome) => ({ outcome, calls: shell.calls, reached }));
 };
 
 const PRIMARY = "/primary";
@@ -171,12 +178,12 @@ const runStraddled = (
 			),
 			Layer.merge(shell.layer, straddled(primary, worktree).layer),
 		),
-	).then((outcome) => ({outcome, calls: shell.calls, arms}));
+	).then((outcome) => ({ outcome, calls: shell.calls, arms }));
 };
 
 describe("the pre-dispatch assembly refresh", () => {
 	it("merges the trunk into the assembly branch before the brief is emitted", async () => {
-		const {outcome, calls, reached} = await run('{"assemblyRefresh":{"onDispatch":"on"}}', [
+		const { outcome, calls, reached } = await run('{"assemblyRefresh":{"onDispatch":"on"}}', [
 			...upToMerge(),
 			[MERGE, okOut("")],
 			[HEAD, okOut(AFTER)],
@@ -188,7 +195,7 @@ describe("the pre-dispatch assembly refresh", () => {
 	});
 
 	it("merges nothing under the shipped key, so the dispatch path is the one it has today", async () => {
-		const {outcome, calls, reached} = await run(null, []);
+		const { outcome, calls, reached } = await run(null, []);
 
 		expect(reached).toEqual(["refresh", "brief"]);
 		expect(calls).toEqual([]);
@@ -196,7 +203,7 @@ describe("the pre-dispatch assembly refresh", () => {
 	});
 
 	it("relays a conflict as the park it names, and no shell is briefed over the stale branch", async () => {
-		const {outcome, calls, reached} = await run('{"assemblyRefresh":{"onDispatch":"on"}}', [
+		const { outcome, calls, reached } = await run('{"assemblyRefresh":{"onDispatch":"on"}}', [
 			...upToMerge(),
 			[MERGE, errOut("CONFLICT (content): Merge conflict in src/lane/report.ts")],
 			[ABORT, okOut("")],
@@ -211,31 +218,31 @@ describe("the pre-dispatch assembly refresh", () => {
 	});
 
 	it("reads its arm off the repository that owns the cwd, not the worktree standing in it", async () => {
-		const {outcome, calls, arms} = await runStraddled(
+		const { outcome, calls, arms } = await runStraddled(
 			'{"assemblyRefresh":{"onDispatch":"on"}}',
 			'{"assemblyRefresh":{"onDispatch":"off"}}',
 			[...upToMerge(), [MERGE, okOut("")], [HEAD, okOut(AFTER)]],
 		);
 
-		expect(arms).toMatchObject([{_tag: "Value", value: {onDispatch: "on"}}]);
+		expect(arms).toMatchObject([{ _tag: "Value", value: { onDispatch: "on" } }]);
 		expect(calls).toContain(`git -C ${SEAT} merge --no-edit --no-ff ${TIP}`);
 		expect(outcome.code).toBe(NO_SHELL);
 	});
 
 	it("declines where the owning repository declines, whatever the worktree's own copy says", async () => {
-		const {outcome, calls, arms} = await runStraddled(
+		const { outcome, calls, arms } = await runStraddled(
 			'{"assemblyRefresh":{"onDispatch":"off"}}',
 			'{"assemblyRefresh":{"onDispatch":"on"}}',
 			[],
 		);
 
-		expect(arms).toMatchObject([{_tag: "Value", value: {onDispatch: "off"}}]);
+		expect(arms).toMatchObject([{ _tag: "Value", value: { onDispatch: "off" } }]);
 		expect(calls).toEqual([]);
 		expect(outcome.code).toBe(NO_SHELL);
 	});
 
 	it("refuses when the owning repository cannot be read, rather than falling back to the cwd", async () => {
-		const {outcome, calls, arms} = await runStraddled(
+		const { outcome, calls, arms } = await runStraddled(
 			null,
 			'{"assemblyRefresh":{"onDispatch":"on"}}',
 			[],
@@ -247,7 +254,7 @@ describe("the pre-dispatch assembly refresh", () => {
 	});
 
 	it("refreshes nothing on a single-issue lane, which owns no assembly branch", async () => {
-		const single = {...options, lane: "8617", task: "issue"};
+		const single = { ...options, lane: "8617", task: "issue" };
 		const shell = fakeShell([]);
 		const reached: string[] = [];
 		const outcome = await Effect.runPromise(
@@ -261,7 +268,7 @@ describe("the pre-dispatch assembly refresh", () => {
 						return Effect.succeed(answer(""));
 					},
 				),
-				Layer.merge(shell.layer, fakeFs({files: laneFiles(null)}).layer),
+				Layer.merge(shell.layer, fakeFs({ files: laneFiles(null) }).layer),
 			),
 		);
 

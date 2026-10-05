@@ -20,14 +20,14 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/10084
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {appetiteSizesKey} from "../config/keys/appetite-sizes.ts";
-import {boardsKey} from "../config/keys/boards.ts";
-import {tableKey} from "../config/keys/table.ts";
-import {readKey} from "../config/read-key.ts";
-import type {Api} from "../io/gh-api.ts";
-import {resolveRepo} from "../io/issues.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { appetiteSizesKey } from "../config/keys/appetite-sizes.ts";
+import { boardsKey } from "../config/keys/boards.ts";
+import { tableKey } from "../config/keys/table.ts";
+import { readKey } from "../config/read-key.ts";
+import type { Api } from "../io/gh-api.ts";
+import { resolveRepo } from "../io/issues.ts";
 import {
 	createField,
 	createProject,
@@ -47,7 +47,7 @@ import {
 	updateView,
 	withProjects,
 } from "../io/projects.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	AMBIGUOUS_PROJECT,
 	CONFIG_MALFORMED,
@@ -58,7 +58,7 @@ import {
 	SHAPE_CONFLICT,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {onCallBoard, onCallShape} from "./on-call.ts";
+import { onCallBoard, onCallShape } from "./on-call.ts";
 import {
 	describeDrift,
 	describeLegacy,
@@ -100,13 +100,13 @@ type Run =
 			readonly legacy: ReadonlyArray<string>;
 			readonly manualSteps: ReadonlyArray<string>;
 	  }
-	| {readonly _tag: "Refused"; readonly code: number; readonly reason: string};
+	| { readonly _tag: "Refused"; readonly code: number; readonly reason: string };
 
-const refused = (code: number, reason: string): Run => ({_tag: "Refused", code, reason});
+const refused = (code: number, reason: string): Run => ({ _tag: "Refused", code, reason });
 
 /** A non-`Ok` answer as the run's refusal; `onFailure` seats a read and a write differently. */
 const stop = (
-	answer: Exclude<ProjectsAnswer<unknown>, {_tag: "Ok"}>,
+	answer: Exclude<ProjectsAnswer<unknown>, { _tag: "Ok" }>,
 	onFailure: number,
 	what: string,
 ): Run =>
@@ -115,8 +115,8 @@ const stop = (
 		: refused(onFailure, `${VERB}: ${what}: ${answer.reason}.`);
 
 type Located =
-	| {readonly _tag: "Located"; readonly origin: Origin; readonly project: ProjectSnapshot}
-	| {readonly _tag: "Refused"; readonly run: Run};
+	| { readonly _tag: "Located"; readonly origin: Origin; readonly project: ProjectSnapshot }
+	| { readonly _tag: "Refused"; readonly run: Run };
 
 const locate = (
 	token: string,
@@ -144,10 +144,10 @@ const locate = (
 					),
 				};
 			}
-			return {_tag: "Located", origin: "found", project: read.value};
+			return { _tag: "Located", origin: "found", project: read.value };
 		}
 
-		const {title} = target;
+		const { title } = target;
 		const titled = (refs: ReadonlyArray<ProjectRef>) =>
 			refs.filter((ref) => ref.title === title && !ref.closed);
 		const ambiguous = (refs: ReadonlyArray<ProjectRef>, where: string): Located => ({
@@ -160,7 +160,7 @@ const locate = (
 		const readExisting = (ref: ProjectRef, origin: Origin): Api<Located> =>
 			Effect.map(readProject(token, ref.id), (read) =>
 				read._tag === "Ok"
-					? {_tag: "Located", origin, project: read.value}
+					? { _tag: "Located", origin, project: read.value }
 					: {
 							_tag: "Refused",
 							run: stop(read, PRECONDITION_UNKNOWN, `cannot read project #${ref.number}`),
@@ -223,7 +223,7 @@ const locate = (
 				),
 			};
 		}
-		return {_tag: "Located", origin: "created", project: read.value};
+		return { _tag: "Located", origin: "created", project: read.value };
 	});
 
 /** A grouping by field name, resolved to the numeric id REST takes; `null` when the field is absent. */
@@ -233,7 +233,7 @@ const groupingOf = (
 ): NewViewGrouping | null => {
 	if (grouping._tag === "None") return grouping;
 	const fieldId = databaseIdOf.get(grouping.field);
-	return fieldId === undefined ? null : {_tag: grouping._tag, fieldId};
+	return fieldId === undefined ? null : { _tag: grouping._tag, fieldId };
 };
 
 /** Apply one step against the project as it now reads; `null` is success. */
@@ -241,7 +241,7 @@ const apply = (
 	token: string,
 	project: ProjectSnapshot,
 	step: Step,
-): Api<Exclude<ProjectsAnswer<unknown>, {_tag: "Ok"}> | null> =>
+): Api<Exclude<ProjectsAnswer<unknown>, { _tag: "Ok" }> | null> =>
 	Effect.gen(function* () {
 		switch (step._tag) {
 			case "CreateField": {
@@ -277,16 +277,16 @@ const apply = (
 			}
 			case "UpdateView": {
 				const done = yield* updateView(token, step.viewId, {
-					...(step.layout !== null ? {layout: step.layout} : {}),
-					...(step.filter !== null ? {filter: step.filter} : {}),
-					...(step.visibleFieldIds !== null ? {visibleFieldIds: step.visibleFieldIds} : {}),
+					...(step.layout !== null ? { layout: step.layout } : {}),
+					...(step.filter !== null ? { filter: step.filter } : {}),
+					...(step.visibleFieldIds !== null ? { visibleFieldIds: step.visibleFieldIds } : {}),
 				});
 				return done._tag === "Ok" ? null : done;
 			}
 			case "UpdateProject": {
 				const done = yield* updateProject(token, project.id, {
-					...(step.readme !== null ? {readme: step.readme.text} : {}),
-					...(step.shortDescription !== null ? {shortDescription: step.shortDescription} : {}),
+					...(step.readme !== null ? { readme: step.readme.text } : {}),
+					...(step.shortDescription !== null ? { shortDescription: step.shortDescription } : {}),
 				});
 				return done._tag === "Ok" ? null : done;
 			}
@@ -339,7 +339,7 @@ const applyAll = (
 const reread = (token: string, project: ProjectSnapshot, landed: ReadonlyArray<string>) =>
 	Effect.map(readProject(token, project.id), (read) =>
 		read._tag === "Ok"
-			? ({_tag: "Read", project: read.value} as const)
+			? ({ _tag: "Read", project: read.value } as const)
 			: ({
 					_tag: "Refused",
 					run: stop(
@@ -361,7 +361,7 @@ const converge = (
 	Effect.gen(function* () {
 		const located = yield* locate(token, repo, node, target);
 		if (located._tag === "Refused") return located.run;
-		const {origin} = located;
+		const { origin } = located;
 		const shape = shapeOf(located.project.title);
 
 		const wrote = locateWrote(origin, located.project, repo);
@@ -452,18 +452,18 @@ export const runSetup = (
 					(title) => tableShape(table, sizes.value, repo, title),
 				);
 				if (product._tag === "Refused" || boards.value._tag === "One") {
-					return ran({product, onCall: null});
+					return ran({ product, onCall: null });
 				}
-				const {onCall: split} = boards.value;
+				const { onCall: split } = boards.value;
 				const onCall = yield* converge(token, repo, node.value, onCallBoard(repo, split), (title) =>
 					onCallShape(split, repo, title),
 				);
-				return ran({product, onCall});
+				return ran({ product, onCall });
 			}),
 		);
 		if (run._tag === "MissingScope") return refuse(SCOPE_MISSING, `${VERB}: ${run.reason}.`);
 		if (run._tag === "Failed") return refuse(PRECONDITION_UNKNOWN, `${VERB}: ${run.reason}.`);
-		const {product, onCall} = run.value;
+		const { product, onCall } = run.value;
 		if (product._tag === "Refused") return refuse(product.code, product.reason);
 		if (onCall?._tag === "Refused") {
 			return refuse(
@@ -479,19 +479,19 @@ export const runSetup = (
 			...notesOf(product, repo, "the table"),
 			...(onCall === null ? [] : notesOf(onCall, repo, "the on-call board")),
 		];
-		const {answer: verdict, ...rest} = summaryOf(product);
+		const { answer: verdict, ...rest } = summaryOf(product);
 		return answer(
 			`${JSON.stringify({
 				answer: verdict,
 				repo,
 				...rest,
-				...(onCall === null ? {} : {onCall: summaryOf(onCall)}),
+				...(onCall === null ? {} : { onCall: summaryOf(onCall) }),
 			})}\n`,
 			notes,
 		);
 	});
 
-type Done = Extract<Run, {_tag: "Done"}>;
+type Done = Extract<Run, { _tag: "Done" }>;
 
 interface Runs {
 	readonly product: Run;
@@ -499,14 +499,14 @@ interface Runs {
 	readonly onCall: Run | null;
 }
 
-const ran = (value: Runs): ProjectsAnswer<Runs> => ({_tag: "Ok", value});
+const ran = (value: Runs): ProjectsAnswer<Runs> => ({ _tag: "Ok", value });
 
 const verdictOf = (done: Done): "created" | "reconciled" | "unchanged" =>
 	done.origin === "created" ? "created" : done.changes.length > 0 ? "reconciled" : "unchanged";
 
 const summaryOf = (done: Done) => ({
 	answer: verdictOf(done),
-	project: {number: done.project.number, title: done.project.title, url: done.project.url},
+	project: { number: done.project.number, title: done.project.title, url: done.project.url },
 	changes: done.changes,
 	drift: done.drift,
 	legacy: done.legacy,

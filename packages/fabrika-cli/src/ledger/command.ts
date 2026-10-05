@@ -21,22 +21,22 @@
  * fail-open risk is a *wrong* value — which is `21` and `10` respectively, not a missing one.
  */
 
-import {Effect, Option} from "effect";
-import {Argument, Command, Flag} from "effect/unstable/cli";
-import {emit} from "../emit.ts";
-import {leafCommand} from "../excess-operand.ts";
-import {readStdin} from "../io/stdin.ts";
-import {runAdopt} from "./adopt-verb.ts";
-import {runChild} from "./child-verb.ts";
-import {runDefer} from "./defer-verb.ts";
-import {runDigest} from "./digest-verb.ts";
-import {runDraft} from "./draft-verb.ts";
-import {runEdges} from "./edges-verb.ts";
-import {runOpen} from "./open-verb.ts";
-import {runRetopology} from "./retopology-verb.ts";
-import {runSupersede} from "./supersede-verb.ts";
-import {runTopology} from "./topology-verb.ts";
-import {runWrite} from "./write-verb.ts";
+import { Effect, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
+import { emit } from "../emit.ts";
+import { leafCommand } from "../excess-operand.ts";
+import { readStdin } from "../io/stdin.ts";
+import { runAdopt } from "./adopt-verb.ts";
+import { runChild } from "./child-verb.ts";
+import { runDefer } from "./defer-verb.ts";
+import { runDigest } from "./digest-verb.ts";
+import { runDraft } from "./draft-verb.ts";
+import { runEdges } from "./edges-verb.ts";
+import { runOpen } from "./open-verb.ts";
+import { runRetopology } from "./retopology-verb.ts";
+import { runSupersede } from "./supersede-verb.ts";
+import { runTopology } from "./topology-verb.ts";
+import { runWrite } from "./write-verb.ts";
 
 const repoFlag = Flag.string("repo").pipe(
 	Flag.optional,
@@ -65,8 +65,8 @@ const stdin = Effect.sync(readStdin);
 
 const open = leafCommand(
 	"open",
-	{number: epicArg, token: tokenFlag, repo: repoFlag},
-	Effect.fn(function* ({number, token, repo}) {
+	{ number: epicArg, token: tokenFlag, repo: repoFlag },
+	Effect.fn(function* ({ number, token, repo }) {
 		yield* emit(
 			yield* runOpen({
 				number,
@@ -91,13 +91,13 @@ const open = leafCommand(
 			'  Derivation: the plan-epic skill\'s contract.md, "ledger open"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika ledger open 9420 --token build:s-9f2e:c1a4d6f8-…"}]),
+	Command.withExamples([{ command: "fabrika ledger open 9420 --token build:s-9f2e:c1a4d6f8-…" }]),
 );
 
 const draft = leafCommand(
 	"draft",
-	{number: epicArg, bodyDigest: bodyDigestFlag, token: tokenFlag, repo: repoFlag},
-	Effect.fn(function* ({number, bodyDigest, token, repo}) {
+	{ number: epicArg, bodyDigest: bodyDigestFlag, token: tokenFlag, repo: repoFlag },
+	Effect.fn(function* ({ number, bodyDigest, token, repo }) {
 		yield* emit(
 			yield* runDraft({
 				number,
@@ -259,7 +259,7 @@ const adopt = leafCommand(
 		token: tokenFlag,
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({number, child: childNumber, stories, containment, token, repo}) {
+	Effect.fn(function* ({ number, child: childNumber, stories, containment, token, repo }) {
 		yield* emit(
 			yield* runAdopt({
 				number,
@@ -295,14 +295,16 @@ const adopt = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika ledger adopt 9420 --child 8195 --stories 2 --token build:s-9f2e:c1a4d6f8-…"},
+		{
+			command: "fabrika ledger adopt 9420 --child 8195 --stories 2 --token build:s-9f2e:c1a4d6f8-…",
+		},
 	]),
 );
 
 const topology = leafCommand(
 	"topology",
-	{number: epicArg, token: tokenFlag, repo: repoFlag},
-	Effect.fn(function* ({number, token, repo}) {
+	{ number: epicArg, token: tokenFlag, repo: repoFlag },
+	Effect.fn(function* ({ number, token, repo }) {
 		yield* emit(
 			yield* runTopology({
 				number,
@@ -331,14 +333,14 @@ const topology = leafCommand(
 		].join("\n"),
 	),
 	Command.withExamples([
-		{command: "fabrika ledger topology 9420 --token build:s-9f2e:c1a4d6f8-… < topo.txt"},
+		{ command: "fabrika ledger topology 9420 --token build:s-9f2e:c1a4d6f8-… < topo.txt" },
 	]),
 );
 
 const write = leafCommand(
 	"write",
-	{number: epicArg, bodyDigest: bodyDigestFlag, token: tokenFlag, repo: repoFlag},
-	Effect.fn(function* ({number, bodyDigest, token, repo}) {
+	{ number: epicArg, bodyDigest: bodyDigestFlag, token: tokenFlag, repo: repoFlag },
+	Effect.fn(function* ({ number, bodyDigest, token, repo }) {
 		yield* emit(
 			yield* runWrite({
 				number,
@@ -377,8 +379,8 @@ const write = leafCommand(
 
 const digest = leafCommand(
 	"digest",
-	{number: epicArg, token: tokenFlag, repo: repoFlag},
-	Effect.fn(function* ({number, token, repo}) {
+	{ number: epicArg, token: tokenFlag, repo: repoFlag },
+	Effect.fn(function* ({ number, token, repo }) {
 		yield* emit(
 			yield* runDigest({
 				number,
@@ -401,13 +403,13 @@ const digest = leafCommand(
 			'  Derivation: the plan-epic skill\'s contract.md, "ledger digest"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika ledger digest 5817 --token build:s-9f2e:c1a4d6f8-…"}]),
+	Command.withExamples([{ command: "fabrika ledger digest 5817 --token build:s-9f2e:c1a4d6f8-…" }]),
 );
 
 const retopology = leafCommand(
 	"retopology",
-	{number: epicArg, bodyDigest: bodyDigestFlag, token: tokenFlag, repo: repoFlag},
-	Effect.fn(function* ({number, bodyDigest, token, repo}) {
+	{ number: epicArg, bodyDigest: bodyDigestFlag, token: tokenFlag, repo: repoFlag },
+	Effect.fn(function* ({ number, bodyDigest, token, repo }) {
 		yield* emit(
 			yield* runRetopology({
 				number,
@@ -458,7 +460,7 @@ const defer = leafCommand(
 		token: tokenFlag,
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({number, child: childNumber, reason, token, repo}) {
+	Effect.fn(function* ({ number, child: childNumber, reason, token, repo }) {
 		yield* emit(
 			yield* runDefer({
 				number,
@@ -506,7 +508,7 @@ const supersede = leafCommand(
 		token: tokenFlag,
 		repo: repoFlag,
 	},
-	Effect.fn(function* ({number, child: childNumber, reason, token, repo}) {
+	Effect.fn(function* ({ number, child: childNumber, reason, token, repo }) {
 		yield* emit(
 			yield* runSupersede({
 				number,
@@ -545,8 +547,8 @@ const supersede = leafCommand(
 
 const edges = leafCommand(
 	"edges",
-	{number: epicArg, token: tokenFlag, repo: repoFlag},
-	Effect.fn(function* ({number, token, repo}) {
+	{ number: epicArg, token: tokenFlag, repo: repoFlag },
+	Effect.fn(function* ({ number, token, repo }) {
 		yield* emit(
 			yield* runEdges({
 				number,
@@ -573,7 +575,7 @@ const edges = leafCommand(
 			'  Derivation: the plan-epic skill\'s contract.md, "ledger edges"',
 		].join("\n"),
 	),
-	Command.withExamples([{command: "fabrika ledger edges 9420 --token build:s-9f2e:c1a4d6f8-…"}]),
+	Command.withExamples([{ command: "fabrika ledger edges 9420 --token build:s-9f2e:c1a4d6f8-…" }]),
 );
 
 export const ledgerCommand = Command.make("ledger").pipe(

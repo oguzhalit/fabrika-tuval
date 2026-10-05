@@ -10,9 +10,9 @@
  * ref is the whole defect class.
  */
 
-import {Effect} from "effect";
-import {execCapture} from "../io/exec.ts";
-import {type Attempt, fail, fetchAndResolve, ok, type Shell} from "../io/git.ts";
+import { Effect } from "effect";
+import { execCapture } from "../io/exec.ts";
+import { type Attempt, fail, fetchAndResolve, ok, type Shell } from "../io/git.ts";
 
 /** How many commits `base` carries that HEAD does not. `0` is a fresh tree. */
 export const commitsBehind = (base: string): Shell<Attempt<number>> =>

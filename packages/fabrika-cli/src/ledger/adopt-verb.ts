@@ -17,26 +17,26 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/8556#issuecomment-5625029977
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
+import { Effect, type FileSystem, type Path } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {getParent} from "../build/github.ts";
-import {scannedLine} from "../build/target.ts";
-import {CONFIG_PATH} from "../config/document.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { getParent } from "../build/github.ts";
+import { scannedLine } from "../build/target.ts";
+import { CONFIG_PATH } from "../config/document.ts";
 import {
 	CONTAINMENT_VOCABULARY,
 	containmentVocabularyKey,
 } from "../config/keys/containment-vocabulary.ts";
-import {resolve} from "../config/load.ts";
-import {loadRepoConfig} from "../config/working-root.ts";
-import {addLabels, listLabels, removeLabel} from "../io/issues.ts";
-import {PLANNED, TRIAGED} from "../labels.ts";
-import {listSubIssues} from "../plan/github.ts";
-import {compose} from "../report/amend.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {missingLabelRemedy, readBoard} from "../status/label-remedy.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {amendmentSection, judgeAdoption, parseStoriesFlag} from "./adoption.ts";
+import { resolve } from "../config/load.ts";
+import { loadRepoConfig } from "../config/working-root.ts";
+import { addLabels, listLabels, removeLabel } from "../io/issues.ts";
+import { PLANNED, TRIAGED } from "../labels.ts";
+import { listSubIssues } from "../plan/github.ts";
+import { compose } from "../report/amend.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { missingLabelRemedy, readBoard } from "../status/label-remedy.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { amendmentSection, judgeAdoption, parseStoriesFlag } from "./adoption.ts";
 import {
 	LINK_UNPROVEN,
 	MANIFEST_UNWRITTEN,
@@ -46,10 +46,10 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {linkSubIssue, patchIssueBodyOver, readAdoptee} from "./github.ts";
-import {type LedgerMessages, type OpenOptions, openGround} from "./preconditions.ts";
-import type {ChildRecord} from "./run.ts";
-import {appendChild, loadManifest, loadRun, maskedLeakRefusal, rewriteChild} from "./run-io.ts";
+import { linkSubIssue, patchIssueBodyOver, readAdoptee } from "./github.ts";
+import { type LedgerMessages, type OpenOptions, openGround } from "./preconditions.ts";
+import type { ChildRecord } from "./run.ts";
+import { appendChild, loadManifest, loadRun, maskedLeakRefusal, rewriteChild } from "./run-io.ts";
 
 const VERB = "ledger adopt";
 
@@ -97,7 +97,7 @@ export const runAdopt = (
 
 		const ground = yield* openGround(MESSAGES, options);
 		if (ground._tag === "Refused") return ground.outcome;
-		const {repo, epic, dir, notes} = ground;
+		const { repo, epic, dir, notes } = ground;
 
 		const run = yield* loadRun(MESSAGES, dir, notes);
 		if (run._tag === "Refused") return run.outcome;
@@ -194,7 +194,7 @@ export const runAdopt = (
 		if (judged.fields.length > 0) {
 			const section = amendmentSection(epic.number, judged.fields);
 			const leaked = maskedLeakRefusal(VERB, "amendment", section);
-			if (leaked !== null) return {...leaked, stderr: [...diagnostics, ...leaked.stderr]};
+			if (leaked !== null) return { ...leaked, stderr: [...diagnostics, ...leaked.stderr] };
 
 			const amendment = compose(adoptee.body, section, options.now());
 			const written = yield* patchIssueBodyOver(options.env, repo, child, amendment.body);
@@ -283,7 +283,7 @@ export const runAdopt = (
 		if (!alreadyLinked) {
 			const reread = yield* loadManifest(MESSAGES, dir, diagnostics);
 			if (reread._tag === "Refused") return reread.outcome;
-			const rewritten = yield* rewriteChild(dir, reread.value, {...record, linked: true});
+			const rewritten = yield* rewriteChild(dir, reread.value, { ...record, linked: true });
 			if (rewritten !== null) {
 				return refuse(
 					MANIFEST_UNWRITTEN,

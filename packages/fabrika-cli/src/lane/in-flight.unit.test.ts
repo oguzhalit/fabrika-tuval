@@ -1,12 +1,12 @@
 /** The in-flight record — its two writers, and what `lane status` names off it. */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeFs} from "../fakes.test-support.ts";
-import {fail, ok} from "../io/git.ts";
-import {FACT_REFUSED, LANE_UNREADABLE, NO_SHELL} from "./codes.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
-import {runDispatched, runWorking} from "./in-flight-verb.ts";
-import {runStatus} from "./status-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeFs } from "../fakes.test-support.ts";
+import { fail, ok } from "../io/git.ts";
+import { FACT_REFUSED, LANE_UNREADABLE, NO_SHELL } from "./codes.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
+import { runDispatched, runWorking } from "./in-flight-verb.ts";
+import { runStatus } from "./status-verb.ts";
 
 const ROOT = ".fabrika/lanes";
 const LANE = "42";
@@ -22,88 +22,88 @@ const TREE_B = "/work/trees/agent-b";
 const at = (minute: number): string => new Date(Date.UTC(2026, 8, 29, 6, minute)).toISOString();
 
 const event = (name: string, minute: number, extra: Record<string, unknown> = {}): string =>
-	`${JSON.stringify({task: "issue", event: `ISSUE.${name}`, at: at(minute), ...extra})}\n`;
+	`${JSON.stringify({ task: "issue", event: `ISSUE.${name}`, at: at(minute), ...extra })}\n`;
 
 const dispatch = (minute: number): string =>
-	`${JSON.stringify({kind: "dispatched", task: "issue", state: "build", at: at(minute)})}\n`;
+	`${JSON.stringify({ kind: "dispatched", task: "issue", state: "build", at: at(minute) })}\n`;
 
 const working = (minute: number, token: string, worktree: string): string =>
-	`${JSON.stringify({kind: "working", task: "issue", token, worktree, at: at(minute)})}\n`;
+	`${JSON.stringify({ kind: "working", task: "issue", token, worktree, at: at(minute) })}\n`;
 
 const laneFs = (log: string, records?: string) =>
 	fakeFs({
 		files: {
 			[WORKFLOW]: coderTemplateText(),
 			[LOG]: log,
-			...(records === undefined ? {} : {[RECORDS]: records}),
+			...(records === undefined ? {} : { [RECORDS]: records }),
 		},
-		dirs: {[ROOT]: [LANE]},
+		dirs: { [ROOT]: [LANE] },
 		directories: [ROOT],
 	});
 
 const status = async (log: string, records?: string) => {
 	const out = await Effect.runPromise(
-		Effect.provide(runStatus({root: ROOT, lane: LANE}), laneFs(log, records).layer),
+		Effect.provide(runStatus({ root: ROOT, lane: LANE }), laneFs(log, records).layer),
 	);
 	expect(out.code).toBe(0);
-	return {out, answer: JSON.parse(out.stdout) as Record<string, unknown>};
+	return { out, answer: JSON.parse(out.stdout) as Record<string, unknown> };
 };
 
 describe("lane status names the shell in flight", () => {
 	it("shows a dispatch and the builder's seat beside it", async () => {
-		const {answer} = await status(event("WIP", 0), dispatch(1) + working(2, TOKEN_A, TREE_A));
+		const { answer } = await status(event("WIP", 0), dispatch(1) + working(2, TOKEN_A, TREE_A));
 
 		expect(answer.inFlight).toEqual({
 			issue: {
-				dispatched: {state: "build", shell: "builder", at: at(1)},
-				working: {token: TOKEN_A, worktree: TREE_A, at: at(2)},
+				dispatched: { state: "build", shell: "builder", at: at(1) },
+				working: { token: TOKEN_A, worktree: TREE_A, at: at(2) },
 			},
 		});
 	});
 
 	it("names a dispatch no builder has claimed under yet with a null seat", async () => {
-		const {answer} = await status(event("WIP", 0), dispatch(1));
+		const { answer } = await status(event("WIP", 0), dispatch(1));
 
 		expect(answer.inFlight).toEqual({
-			issue: {dispatched: {state: "build", shell: "builder", at: at(1)}, working: null},
+			issue: { dispatched: { state: "build", shell: "builder", at: at(1) }, working: null },
 		});
 	});
 
 	it("drops the record once a terminal, a lap or a park moves the task", async () => {
 		const facts = dispatch(1) + working(2, TOKEN_A, TREE_A);
 		for (const moved of [
-			event("DONE", 3, {pr: "https://forge.test/o/r/pull/12"}),
-			event("LAP", 3, {cause: "spawn-dead"}),
-			event("BLOCKED", 3, {cause: "spawn-dead"}),
+			event("DONE", 3, { pr: "https://forge.test/o/r/pull/12" }),
+			event("LAP", 3, { cause: "spawn-dead" }),
+			event("BLOCKED", 3, { cause: "spawn-dead" }),
 		]) {
-			const {answer} = await status(event("WIP", 0) + moved, facts);
+			const { answer } = await status(event("WIP", 0) + moved, facts);
 			expect(answer).not.toHaveProperty("inFlight");
 		}
 	});
 
 	it("keeps the record across a clearance, which moves no task", async () => {
-		const {answer} = await status(
-			event("WIP", 0) + event("CLEARED", 3, {round: 1}),
+		const { answer } = await status(
+			event("WIP", 0) + event("CLEARED", 3, { round: 1 }),
 			dispatch(1) + working(2, TOKEN_A, TREE_A),
 		);
 
-		expect(answer.inFlight).toMatchObject({issue: {working: {token: TOKEN_A}}});
+		expect(answer.inFlight).toMatchObject({ issue: { working: { token: TOKEN_A } } });
 	});
 
 	it("after a SHELL-DEAD lap and a re-dispatch, names the second shell and not the first", async () => {
-		const log = event("WIP", 0) + event("LAP", 3, {cause: "spawn-dead"});
+		const log = event("WIP", 0) + event("LAP", 3, { cause: "spawn-dead" });
 		const first = dispatch(1) + working(2, TOKEN_A, TREE_A);
 
 		const respawned = await status(log, first + dispatch(4));
 		expect(respawned.answer.inFlight).toEqual({
-			issue: {dispatched: {state: "build", shell: "builder", at: at(4)}, working: null},
+			issue: { dispatched: { state: "build", shell: "builder", at: at(4) }, working: null },
 		});
 
 		const seated = await status(log, first + dispatch(4) + working(5, TOKEN_B, TREE_B));
 		expect(seated.answer.inFlight).toEqual({
 			issue: {
-				dispatched: {state: "build", shell: "builder", at: at(4)},
-				working: {token: TOKEN_B, worktree: TREE_B, at: at(5)},
+				dispatched: { state: "build", shell: "builder", at: at(4) },
+				working: { token: TOKEN_B, worktree: TREE_B, at: at(5) },
 			},
 		});
 		expect(seated.out.stdout).not.toContain(TOKEN_A);
@@ -111,18 +111,18 @@ describe("lane status names the shell in flight", () => {
 	});
 
 	it("drops a seat recorded before the standing dispatch — it was the replaced shell's", async () => {
-		const {answer} = await status(
+		const { answer } = await status(
 			event("WIP", 0),
 			dispatch(1) + working(2, TOKEN_A, TREE_A) + dispatch(3),
 		);
 
 		expect(answer.inFlight).toEqual({
-			issue: {dispatched: {state: "build", shell: "builder", at: at(3)}, working: null},
+			issue: { dispatched: { state: "build", shell: "builder", at: at(3) }, working: null },
 		});
 	});
 
 	it("changes no machine fold: stateValue and context match the same ledger without the record", async () => {
-		const log = event("WIP", 0) + event("LAP", 3, {cause: "spawn-dead"});
+		const log = event("WIP", 0) + event("LAP", 3, { cause: "spawn-dead" });
 		const without = await status(log);
 		const withRecord = await status(
 			log,
@@ -131,15 +131,15 @@ describe("lane status names the shell in flight", () => {
 
 		expect(withRecord.answer.stateValue).toEqual(without.answer.stateValue);
 		expect(withRecord.answer.context).toEqual(without.answer.context);
-		const {inFlight, ...rest} = withRecord.answer;
+		const { inFlight, ...rest } = withRecord.answer;
 		expect(inFlight).toBeDefined();
 		expect(rest).toEqual(without.answer);
 	});
 
 	it("still answers the fold when the record does not read, and says the record is UNKNOWN", async () => {
-		const {out, answer} = await status(event("WIP", 0), "not json\n");
+		const { out, answer } = await status(event("WIP", 0), "not json\n");
 
-		expect(answer.stateValue).toEqual({pipeline: {issue: "build"}});
+		expect(answer.stateValue).toEqual({ pipeline: { issue: "build" } });
 		expect(answer).not.toHaveProperty("inFlight");
 		expect(answer.inFlightUnread).toContain("not the shape");
 		expect(out.stderr.join("\n")).toContain("UNKNOWN");
@@ -148,7 +148,7 @@ describe("lane status names the shell in flight", () => {
 
 describe("lane dispatched", () => {
 	const run = (fs: ReturnType<typeof laneFs>, task: string | null = null) =>
-		Effect.runPromise(Effect.provide(runDispatched({root: ROOT, lane: LANE, task}), fs.layer));
+		Effect.runPromise(Effect.provide(runDispatched({ root: ROOT, lane: LANE, task }), fs.layer));
 
 	it("records the state and the shell it routes to, and never an event", async () => {
 		const fs = laneFs(event("WIP", 0));
@@ -188,7 +188,7 @@ describe("lane working", () => {
 		worktree: ReturnType<typeof ok<string>> | ReturnType<typeof fail> = ok(TREE_A),
 	) =>
 		Effect.runPromise(
-			Effect.provide(runWorking({root: ROOT, lane: LANE, task: null, token, worktree}), fs.layer),
+			Effect.provide(runWorking({ root: ROOT, lane: LANE, task: null, token, worktree }), fs.layer),
 		);
 
 	it("records the claim token and the absolute tree on the task the builder serves", async () => {
@@ -213,17 +213,22 @@ describe("lane working", () => {
 
 	it("refuses what is not a build claim, a tree it cannot place, and a task no builder serves", async () => {
 		const cases = [
-			{log: event("WIP", 0), token: "lane:session-a:1111", tree: ok(TREE_A), code: FACT_REFUSED},
-			{log: event("WIP", 0), token: TOKEN_A, tree: ok("work/tree"), code: FACT_REFUSED},
-			{log: event("WIP", 0), token: TOKEN_A, tree: fail("not a repository"), code: LANE_UNREADABLE},
+			{ log: event("WIP", 0), token: "lane:session-a:1111", tree: ok(TREE_A), code: FACT_REFUSED },
+			{ log: event("WIP", 0), token: TOKEN_A, tree: ok("work/tree"), code: FACT_REFUSED },
 			{
-				log: event("WIP", 0) + event("DONE", 1, {pr: "https://forge.test/o/r/pull/12"}),
+				log: event("WIP", 0),
+				token: TOKEN_A,
+				tree: fail("not a repository"),
+				code: LANE_UNREADABLE,
+			},
+			{
+				log: event("WIP", 0) + event("DONE", 1, { pr: "https://forge.test/o/r/pull/12" }),
 				token: TOKEN_A,
 				tree: ok(TREE_A),
 				code: NO_SHELL,
 			},
 		];
-		for (const {log, token, tree, code} of cases) {
+		for (const { log, token, tree, code } of cases) {
 			const fs = laneFs(log);
 			const out = await run(fs, token, tree);
 			expect(out.code).toBe(code);

@@ -1,5 +1,5 @@
-import {Effect, FileSystem, Path, Result, Schema} from "effect";
-import {type Binding, decodeJson, digest, type Hook} from "./native.ts";
+import { Effect, FileSystem, Path, Result, Schema } from "effect";
+import { type Binding, decodeJson, digest, type Hook } from "./native.ts";
 
 const Saved = Schema.Struct({
 	root: Schema.String,
@@ -9,7 +9,7 @@ const Saved = Schema.Struct({
 	provider: Schema.NullOr(Schema.String),
 	transcript: Schema.String,
 });
-const Child = Schema.Struct({id: Schema.String, path: Schema.String, explicit: Schema.Boolean});
+const Child = Schema.Struct({ id: Schema.String, path: Schema.String, explicit: Schema.Boolean });
 export type ExpectedTranscript = Pick<typeof Child.Type, "path" | "explicit">;
 
 export const inventory = Effect.fn("spend.claude.inventory")(function* (
@@ -20,13 +20,13 @@ export const inventory = Effect.fn("spend.claude.inventory")(function* (
 	const fs = yield* FileSystem.FileSystem;
 	const path = yield* Path.Path;
 	const dir = path.join(directory, digest(binding.root));
-	yield* fs.makeDirectory(dir, {recursive: true});
+	yield* fs.makeDirectory(dir, { recursive: true });
 	const bindingPath = path.join(dir, "binding.json");
 	const saved = yield* Effect.result(
 		fs.writeFileString(
 			bindingPath,
-			JSON.stringify({...binding, transcript: hook.transcript_path}),
-			{flag: "wx"},
+			JSON.stringify({ ...binding, transcript: hook.transcript_path }),
+			{ flag: "wx" },
 		),
 	);
 	if (Result.isFailure(saved) && saved.failure.reason._tag !== "AlreadyExists")
@@ -69,7 +69,7 @@ export const inventory = Effect.fn("spend.claude.inventory")(function* (
 			if (child.success.explicit || !expected.get(child.success.id)?.explicit)
 				expected.set(child.success.id, child.success);
 		}
-		sessions.push({binding: decoded.success, transcript: decoded.success.transcript, expected});
+		sessions.push({ binding: decoded.success, transcript: decoded.success.transcript, expected });
 	}
 	return sessions;
 });

@@ -10,10 +10,10 @@
  * rewriting a leaked path inside it, so the two refusals must stay distinct.
  */
 
-import type {StdinRead} from "../io/stdin.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "../report/leaks.ts";
-import {FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {BARE_AT_PATH, EMPTY_STDIN, LEAKED_PATH} from "./codes.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "../report/leaks.ts";
+import { FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { BARE_AT_PATH, EMPTY_STDIN, LEAKED_PATH } from "./codes.ts";
 
 /** What one verb calls the text it is guarding, so each refusal reads as that verb's own. */
 export interface AuthoredSurface {
@@ -29,8 +29,8 @@ export interface AuthoredSurface {
 }
 
 export type Authored =
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome}
-	| {readonly _tag: "Text"; readonly text: string; readonly bytes: number};
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome }
+	| { readonly _tag: "Text"; readonly text: string; readonly bytes: number };
 
 export const readAuthored = (surface: AuthoredSurface, read: StdinRead): Authored => {
 	if (read._tag === "Failed") {
@@ -53,9 +53,9 @@ export const readAuthored = (surface: AuthoredSurface, read: StdinRead): Authore
 		};
 	}
 	if (isBareAtReference(text)) {
-		return {_tag: "Refused", outcome: refuse(BARE_AT_PATH, surface.bareAtMessage)};
+		return { _tag: "Refused", outcome: refuse(BARE_AT_PATH, surface.bareAtMessage) };
 	}
-	return {_tag: "Text", text, bytes};
+	return { _tag: "Text", text, bytes };
 };
 
 /**

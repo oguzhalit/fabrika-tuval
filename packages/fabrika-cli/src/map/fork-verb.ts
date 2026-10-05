@@ -12,12 +12,12 @@
  * given-grounding law reduced to an agent typing `(@founder)` after an entry that nothing verified.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {createComment, getComment, getIssue, patchIssueBody} from "../io/issues.ts";
-import {normalizeForReadback} from "../report/compose.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {digestOf, parseBody, renderFrontierRow, spliceSection} from "./body.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { createComment, getComment, getIssue, patchIssueBody } from "../io/issues.ts";
+import { normalizeForReadback } from "../report/compose.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { digestOf, parseBody, renderFrontierRow, spliceSection } from "./body.ts";
 import {
 	KIND_MISMATCH,
 	PRECONDITION_UNKNOWN,
@@ -25,8 +25,8 @@ import {
 	TICKET_UNKNOWN,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {digestFresh, notTerminal, requireMap, requireTicket, targetRepo} from "./guards.ts";
-import {composeForkMarker} from "./markers.ts";
+import { digestFresh, notTerminal, requireMap, requireTicket, targetRepo } from "./guards.ts";
+import { composeForkMarker } from "./markers.ts";
 
 /** The label a `grilling` session issue carries. A plain label read, never a second reader. */
 export const SESSION_LABEL = "grilling:session";
@@ -64,7 +64,7 @@ export const runFork = (
 			options.ticket,
 		);
 		if (resolved._tag === "Refused") return resolved.outcome;
-		const {ticket} = resolved.value;
+		const { ticket } = resolved.value;
 
 		const left = notTerminal(VERB, ticket, "a cleared question is not routed anywhere.");
 		if (left !== null) return left;
@@ -150,7 +150,7 @@ export const runFork = (
 
 		const rows = reread.value.body.frontier
 			.map((row) =>
-				renderFrontierRow(row.ticket === options.ticket ? {...row, forkedTo: routed} : row),
+				renderFrontierRow(row.ticket === options.ticket ? { ...row, forkedTo: routed } : row),
 			)
 			.join("\n");
 		const next = spliceSection(reread.value.body, "Frontier", rows);
@@ -187,7 +187,7 @@ export const runFork = (
 			JSON.stringify({
 				map: options.map,
 				ticket: options.ticket,
-				...(route === "session" ? {session: routed} : {spike: routed}),
+				...(route === "session" ? { session: routed } : { spike: routed }),
 				state: "forked",
 				digest: digestOf(reparsed.value.sections),
 			}),

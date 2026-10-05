@@ -19,8 +19,8 @@
  * neutrality would buy nothing and would require excluding the very bytes being verified.
  */
 
-import {createHash} from "node:crypto";
-import {normalizeForReadback} from "../report/compose.ts";
+import { createHash } from "node:crypto";
+import { normalizeForReadback } from "../report/compose.ts";
 
 export const DIGEST_LENGTH = 12;
 

@@ -47,7 +47,7 @@ declare const CRITERION_TEXT: unique symbol;
  * a `Found` carrying one would be a well-formed answer that grades a PR against nothing. The read
  * refused it before; the brand is what makes the refusal the only way to build one.
  */
-export type CriterionText = string & {readonly [CRITERION_TEXT]: true};
+export type CriterionText = string & { readonly [CRITERION_TEXT]: true };
 
 export const criterionText = (raw: string): CriterionText | null => {
 	const value = raw.trim();
@@ -64,7 +64,7 @@ declare const EVIDENCE_SOURCE: unique symbol;
  * outside-diff evidence and points at nothing. The read refuses it; the brand is what makes that
  * refusal the only way to build one.
  */
-export type EvidenceSource = string & {readonly [EVIDENCE_SOURCE]: true};
+export type EvidenceSource = string & { readonly [EVIDENCE_SOURCE]: true };
 
 export const evidenceSource = (raw: string): EvidenceSource | null => {
 	const value = raw.trim();
@@ -114,7 +114,7 @@ export type EvidenceSplit =
 			readonly evidence: EvidenceSource | null;
 	  }
 	/** A marker is there and unusable — the keyword drifted, or it names no source. */
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 /**
  * Split the outside-diff evidence marker off a criterion's text.
@@ -129,9 +129,10 @@ export const splitEvidence = (raw: string): EvidenceSplit => {
 	const suffix = comments?.[0] ?? "";
 	const head = suffix === "" ? raw : raw.slice(0, raw.length - suffix.length);
 	const tail = EVIDENCE_TAIL.exec(head.trimEnd());
-	if (tail === null) return {_tag: "Split", text: raw, evidence: null};
+	if (tail === null) return { _tag: "Split", text: raw, evidence: null };
 	const keyword = tail[1] ?? "";
-	if (keyword.toLowerCase() !== EVIDENCE_KEYWORD) return {_tag: "Split", text: raw, evidence: null};
+	if (keyword.toLowerCase() !== EVIDENCE_KEYWORD)
+		return { _tag: "Split", text: raw, evidence: null };
 	if (keyword !== EVIDENCE_KEYWORD) {
 		return {
 			_tag: "Unusable",
@@ -166,7 +167,7 @@ export const withoutEvidenceMarker = (raw: string): string => {
 };
 
 /** Compose one criterion's line text: what it says, then its marker where it carries one. */
-export const renderCriterionText = ({text, evidence}: AcceptanceCriterion): string =>
+export const renderCriterionText = ({ text, evidence }: AcceptanceCriterion): string =>
 	evidence === null ? text : `${text} [${EVIDENCE_KEYWORD}: ${evidence}]`;
 
 export type AcceptanceCriteriaRead = WireRead<NonEmptyReadonlyArray<AcceptanceCriterion>>;
@@ -247,9 +248,9 @@ const normalize = (text: string): string => text.toLowerCase().replace(/[^a-z0-9
 /** Levenshtein distance, capped: anything past `limit` is reported as `limit + 1`. */
 const editDistance = (a: string, b: string, limit: number): number => {
 	if (Math.abs(a.length - b.length) > limit) return limit + 1;
-	let previous = Array.from({length: b.length + 1}, (_, i) => i);
+	let previous = Array.from({ length: b.length + 1 }, (_, i) => i);
 	for (let i = 1; i <= a.length; i++) {
-		const current = [i, ...Array.from<number>({length: b.length}).fill(0)];
+		const current = [i, ...Array.from<number>({ length: b.length }).fill(0)];
 		for (let j = 1; j <= b.length; j++) {
 			const substitution = (previous[j - 1] ?? 0) + (a[i - 1] === b[j - 1] ? 0 : 1);
 			const deletion = (previous[j] ?? 0) + 1;
@@ -325,7 +326,7 @@ export const contractRegionLines = (lines: ReadonlyArray<string>): ReadonlyArray
 			continue;
 		}
 		if (detailsDepth > 0) continue;
-		region.push({line: index + 1, text});
+		region.push({ line: index + 1, text });
 	}
 	return region;
 };
@@ -336,10 +337,10 @@ export const contractRegionLines = (lines: ReadonlyArray<string>): ReadonlyArray
  */
 export const scanHeadings = (lines: ReadonlyArray<string>): ReadonlyArray<Heading> => {
 	const headings: Heading[] = [];
-	for (const {line, text} of contractRegionLines(lines)) {
+	for (const { line, text } of contractRegionLines(lines)) {
 		const heading = ATX_HEADING.exec(text);
 		if (heading === null) continue;
-		headings.push({level: (heading[1] ?? "").length, text: heading[2] ?? "", line});
+		headings.push({ level: (heading[1] ?? "").length, text: heading[2] ?? "", line });
 	}
 	return headings;
 };
@@ -505,7 +506,7 @@ export const readSpans = (body: string): AcceptanceCriteriaSpans => {
 		const text = criterionText(split.text);
 		if (text !== null) {
 			criteria.push({
-				criterion: {text, checked: open.checked, evidence: split.evidence},
+				criterion: { text, checked: open.checked, evidence: split.evidence },
 				firstLine: open.firstLine,
 				lastLine: open.lastLine,
 			});
@@ -565,7 +566,7 @@ export const readSpans = (body: string): AcceptanceCriteriaSpans => {
 			`line ${heading.line}`,
 		);
 	}
-	return {_tag: "Found", value: [head, ...rest]};
+	return { _tag: "Found", value: [head, ...rest] };
 };
 
 /** Read the acceptance-criteria block out of an issue body — {@link readSpans} without the spans. */
@@ -573,7 +574,7 @@ export const read = (body: string): AcceptanceCriteriaRead => {
 	const spans = readSpans(body);
 	if (spans._tag !== "Found") return spans;
 	const [head, ...rest] = spans.value;
-	return {_tag: "Found", value: [head.criterion, ...rest.map((span) => span.criterion)]};
+	return { _tag: "Found", value: [head.criterion, ...rest.map((span) => span.criterion)] };
 };
 
 /** Compose criteria into the block's bytes. Round-trips through {@link read}, marker included. */
@@ -585,8 +586,8 @@ export const emit = (criteria: NonEmptyReadonlyArray<AcceptanceCriterion>): stri
 };
 
 export type AcceptanceFields =
-	| {readonly _tag: "Fields"; readonly criteria: NonEmptyReadonlyArray<AcceptanceCriterion>}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly criteria: NonEmptyReadonlyArray<AcceptanceCriterion> }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 const FIELD_LINE = /^(?:[-*][ \t]+)?(?:\[([ xX])\][ \t]*)?(.*)$/;
 
@@ -604,7 +605,7 @@ export const parseFields = (fields: string): AcceptanceFields => {
 		const match = FIELD_LINE.exec(line);
 		const split = splitEvidence(match?.[2] ?? "");
 		if (split._tag === "Unusable") {
-			return {_tag: "Unusable", reason: `line ${index + 1}: ${split.reason} — "${line}"`};
+			return { _tag: "Unusable", reason: `line ${index + 1}: ${split.reason} — "${line}"` };
 		}
 		const text = criterionText(split.text);
 		if (text === null) {
@@ -621,9 +622,12 @@ export const parseFields = (fields: string): AcceptanceFields => {
 	}
 	const [head, ...rest] = criteria;
 	if (head === undefined) {
-		return {_tag: "Unusable", reason: "no criterion lines — a block with no criteria is malformed"};
+		return {
+			_tag: "Unusable",
+			reason: "no criterion lines — a block with no criteria is malformed",
+		};
 	}
-	return {_tag: "Fields", criteria: [head, ...rest]};
+	return { _tag: "Fields", criteria: [head, ...rest] };
 };
 
 /**
@@ -639,7 +643,7 @@ export const renderCriteria = (
 	criteria: NonEmptyReadonlyArray<AcceptanceCriterion>,
 ): NonEmptyReadonlyArray<string> => {
 	const [head, ...rest] = criteria;
-	const line = ({checked, text, evidence}: AcceptanceCriterion): string =>
+	const line = ({ checked, text, evidence }: AcceptanceCriterion): string =>
 		`${checked ? "checked" : "open"}\t${text}${evidence === null ? "" : `\t${evidence}`}`;
 	return [line(head), ...rest.map(line)];
 };
@@ -648,12 +652,12 @@ export const renderCriteria = (
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.criteria)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.criteria) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderCriteria(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderCriteria(result.value) } : result;
 };

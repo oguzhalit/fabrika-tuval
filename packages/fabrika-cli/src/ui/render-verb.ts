@@ -14,17 +14,17 @@
  * requested surface resolves to are started — so a worker-free surface never waits on a worker's
  * readiness probe, and a repo with two runnable apps can render both.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {requireSession} from "../build/claim.ts";
-import {isKebabSlug} from "../build/lane.ts";
-import {laneScratchDir} from "../build/scratch-verb.ts";
-import {resolveTargetRepo} from "../build/target.ts";
-import {CONFIG_PATH} from "../config/document.ts";
-import {UI_SURFACES, type UiCapture, type UiSurface} from "../config/keys/ui-surfaces.ts";
-import {noUiSurfaces, uiCaptureOr, uiSurfacesOr} from "../config/paths.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {readBytes, writeText} from "./bytes.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { requireSession } from "../build/claim.ts";
+import { isKebabSlug } from "../build/lane.ts";
+import { laneScratchDir } from "../build/scratch-verb.ts";
+import { resolveTargetRepo } from "../build/target.ts";
+import { CONFIG_PATH } from "../config/document.ts";
+import { UI_SURFACES, type UiCapture, type UiSurface } from "../config/keys/ui-surfaces.ts";
+import { noUiSurfaces, uiCaptureOr, uiSurfacesOr } from "../config/paths.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { readBytes, writeText } from "./bytes.ts";
 import {
 	CAPTURE_INVALID,
 	NO_UI_SURFACE,
@@ -33,25 +33,25 @@ import {
 	RENDER_CRASHED,
 	SURFACE_UNREACHABLE,
 } from "./codes.ts";
-import {atRoot} from "./conventions.ts";
-import {requireUiLane} from "./lane.ts";
-import {probe} from "./manifest-verb.ts";
-import {decodePng, sha256Of} from "./png.ts";
-import {appForSurface, surfaceSlug, surfaceUrl} from "./surfaces.ts";
+import { atRoot } from "./conventions.ts";
+import { requireUiLane } from "./lane.ts";
+import { probe } from "./manifest-verb.ts";
+import { decodePng, sha256Of } from "./png.ts";
+import { appForSurface, surfaceSlug, surfaceUrl } from "./surfaces.ts";
 
 const VERB = "ui render";
 
 /** One shot's proven outcome — the four the exit matrix routes on, decided by the impure leg. */
 export type ShotOutcome =
-	| {readonly _tag: "Captured"}
-	| {readonly _tag: "Unreachable"; readonly reason: string}
-	| {readonly _tag: "Crashed"; readonly error: string}
-	| {readonly _tag: "Unknown"; readonly reason: string};
+	| { readonly _tag: "Captured" }
+	| { readonly _tag: "Unreachable"; readonly reason: string }
+	| { readonly _tag: "Crashed"; readonly error: string }
+	| { readonly _tag: "Unknown"; readonly reason: string };
 
 export interface ShotRequest {
 	readonly url: string;
 	readonly outPath: string;
-	readonly viewport: {readonly width: number; readonly height: number};
+	readonly viewport: { readonly width: number; readonly height: number };
 	/** Absolute path to a Playwright storage-state file, or `null` to browse signed out. */
 	readonly storageState: string | null;
 }
@@ -66,7 +66,7 @@ export type HarnessStart =
 			readonly origins: ReadonlyMap<string, string>;
 			readonly stop: Effect.Effect<void>;
 	  }
-	| {readonly _tag: "Failed"; readonly app: string; readonly reason: string}
+	| { readonly _tag: "Failed"; readonly app: string; readonly reason: string }
 	| {
 			readonly _tag: "NotReady";
 			readonly app: string;
@@ -101,8 +101,8 @@ interface Capture {
 }
 
 type SurfaceResult =
-	| {readonly _tag: "Ok"; readonly capture: Capture}
-	| {readonly _tag: "Bad"; readonly code: number; readonly line: string};
+	| { readonly _tag: "Ok"; readonly capture: Capture }
+	| { readonly _tag: "Bad"; readonly code: number; readonly line: string };
 
 /** One requested surface bound to the app that serves it, once that app's origin is known. */
 interface Placement {
@@ -121,15 +121,15 @@ const resolveApps = (
 	declared: ReadonlyArray<UiSurface>,
 	surfaces: ReadonlyArray<string>,
 ):
-	| {readonly _tag: "Resolved"; readonly served: ReadonlyArray<Served>}
-	| {readonly _tag: "Unmounted"; readonly surface: string} => {
+	| { readonly _tag: "Resolved"; readonly served: ReadonlyArray<Served> }
+	| { readonly _tag: "Unmounted"; readonly surface: string } => {
 	const served: Array<Served> = [];
 	for (const surface of surfaces) {
 		const app = appForSurface(declared, surface);
-		if (app === null) return {_tag: "Unmounted", surface};
-		served.push({surface, app});
+		if (app === null) return { _tag: "Unmounted", surface };
+		served.push({ surface, app });
 	}
-	return {_tag: "Resolved", served};
+	return { _tag: "Resolved", served };
 };
 
 /** A usage/vocabulary refusal on the operands, or `null` when they are well formed. */
@@ -173,7 +173,7 @@ const shoot = (
 	settings: UiCapture,
 	root: string,
 	setDir: string,
-	{surface, url}: Placement,
+	{ surface, url }: Placement,
 ): Effect.Effect<SurfaceResult, never, FileSystem.FileSystem> =>
 	Effect.gen(function* () {
 		const outPath = `${setDir}/${surfaceSlug(surface)}.png`;
@@ -326,7 +326,7 @@ export const runRender = (
 		}
 
 		const placements: Array<Placement> = [];
-		for (const {surface, app} of placed.served) {
+		for (const { surface, app } of placed.served) {
 			const origin = started.origins.get(app.name);
 			// `needed` is derived from `placed.served`, so a Ready leg that named no origin for one of
 			// them broke its own contract. Refusing here keeps that a named bug rather than a relative
@@ -339,12 +339,12 @@ export const runRender = (
 					lane.notes,
 				);
 			}
-			placements.push({surface, url: surfaceUrl(origin, app, surface)});
+			placements.push({ surface, url: surfaceUrl(origin, app, surface) });
 		}
 		const results = yield* Effect.forEach(
 			placements,
 			(placement) => shoot(options, settings, lane.root, setDir, placement),
-			{concurrency: 1},
+			{ concurrency: 1 },
 		).pipe(Effect.ensuring(started.stop));
 
 		const notes = [
@@ -366,7 +366,7 @@ export const runRender = (
 		}
 
 		const captures = results.flatMap((result) => (result._tag === "Ok" ? [result.capture] : []));
-		const stdout = `${JSON.stringify({set: options.out, captures})}\n`;
+		const stdout = `${JSON.stringify({ set: options.out, captures })}\n`;
 		const failure = yield* writeText(`${setDir}/manifest.json`, stdout);
 		return failure === null
 			? answer(stdout, notes)

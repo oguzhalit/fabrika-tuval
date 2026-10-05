@@ -30,7 +30,7 @@
  * reads the asset back through GitHub's markdown renderer, the shared read-back in
  * `../io/attachment-read-back.ts` that `review-ui post` and `ui evidence` both run.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import * as HttpClient from "effect/unstable/http/HttpClient";
 import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest";
 
@@ -99,7 +99,7 @@ export const parseUploadResponse = (res: RawUploadResponse): UploadOutcome => {
 			uploadError: `uploads.github.com/user-attachments/assets response carried no hosted URL (href/url field) — the undocumented endpoint may have changed: ${snippet(res.body)}`,
 		};
 	}
-	return {hostedUrl, uploadError: null};
+	return { hostedUrl, uploadError: null };
 };
 
 /**
@@ -185,7 +185,7 @@ export const uploadAsset = (
 	return HttpClient.execute(request).pipe(
 		Effect.flatMap((response) =>
 			response.text.pipe(
-				Effect.map((body) => parseUploadResponse({status: response.status, body})),
+				Effect.map((body) => parseUploadResponse({ status: response.status, body })),
 			),
 		),
 		Effect.catch((error: unknown) =>

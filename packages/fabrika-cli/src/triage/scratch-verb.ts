@@ -11,11 +11,11 @@
  * The printed path is machine-local and must never reach a posted artifact — the leak predicate the
  * writing verbs share reds on the temp roots it lives under.
  */
-import {Effect, FileSystem} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {isKebabSlug} from "../build/lane.ts";
-import {listCommentsReconciled, resolveRepo} from "../io/issues.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
+import { Effect, FileSystem } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { isKebabSlug } from "../build/lane.ts";
+import { listCommentsReconciled, resolveRepo } from "../io/issues.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	DEFAULT_TTL_MINUTES,
 	markersOf,
@@ -23,8 +23,8 @@ import {
 	requireSession,
 	resolveClaim,
 } from "./claim.ts";
-import {CLAIM_NOT_HELD, OFF_VOCABULARY, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {scannedLine} from "./scope.ts";
+import { CLAIM_NOT_HELD, OFF_VOCABULARY, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { scannedLine } from "./scope.ts";
 
 const VERB = "triage scratch";
 
@@ -59,7 +59,7 @@ export const runScratch = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem
 > =>
 	Effect.gen(function* () {
-		const {issue, slug} = options;
+		const { issue, slug } = options;
 
 		if (!Number.isInteger(issue) || issue <= 0) {
 			return refuse(FAILED, `${VERB}: ${issue} is not an issue number.`);
@@ -87,7 +87,7 @@ export const runScratch = (
 
 		const asking = requireCallerToken(VERB, session, options.token);
 		if ("refusal" in asking) return asking.refusal;
-		const {caller} = asking.value;
+		const { caller } = asking.value;
 
 		const repoAttempt = yield* resolveRepo(options.repo, options.env);
 		if (repoAttempt._tag === "Failure") {
@@ -137,7 +137,7 @@ export const runScratch = (
 
 		const dir = laneScratchDir(options.tmpRoot, session, issue, caller.nonce);
 		const fs = yield* FileSystem.FileSystem;
-		const failure: string | null = yield* fs.makeDirectory(dir, {recursive: true}).pipe(
+		const failure: string | null = yield* fs.makeDirectory(dir, { recursive: true }).pipe(
 			Effect.as(null),
 			Effect.catchTag("PlatformError", (cause) => Effect.succeed(cause.message)),
 		);

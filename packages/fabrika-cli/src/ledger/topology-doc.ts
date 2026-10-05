@@ -27,7 +27,7 @@
  * ahead of the `external` arm.
  */
 
-import {type Ref, readTopology} from "../build/dependencies.ts";
+import { type Ref, readTopology } from "../build/dependencies.ts";
 
 const LINE_RE = /^#(\d+)\s+phase\s+(\S+)(?:\s+requires\s+(.+))?$/i;
 const REF_RE = /^#(\d+)$/;
@@ -39,27 +39,27 @@ export interface DeclaredLine {
 }
 
 export type LineParse =
-	| {readonly _tag: "Line"; readonly line: DeclaredLine}
+	| { readonly _tag: "Line"; readonly line: DeclaredLine }
 	/** The line does not match the grammar at all — a `4`. */
-	| {readonly _tag: "Unparseable"; readonly index: number; readonly text: string}
+	| { readonly _tag: "Unparseable"; readonly index: number; readonly text: string }
 	/** The line parses and a value is off its closed vocabulary — a `10`. */
-	| {readonly _tag: "OffVocabulary"; readonly phase: string};
+	| { readonly _tag: "OffVocabulary"; readonly phase: string };
 
 /** Parse one stdin line. Blank lines are the caller's to drop before this is reached. */
 export const parseLine = (text: string, index: number): LineParse => {
 	const matched = LINE_RE.exec(text.trim());
 	if (matched?.[1] === undefined || matched[2] === undefined) {
-		return {_tag: "Unparseable", index, text: text.trim()};
+		return { _tag: "Unparseable", index, text: text.trim() };
 	}
 	if (!/^\d+$/.test(matched[2]) || Number.parseInt(matched[2], 10) < 1) {
-		return {_tag: "OffVocabulary", phase: matched[2]};
+		return { _tag: "OffVocabulary", phase: matched[2] };
 	}
 	const requires: number[] = [];
 	for (const raw of (matched[3] ?? "").split(",")) {
 		const part = raw.trim();
 		if (part === "") continue;
 		const ref = REF_RE.exec(part);
-		if (ref?.[1] === undefined) return {_tag: "Unparseable", index, text: text.trim()};
+		if (ref?.[1] === undefined) return { _tag: "Unparseable", index, text: text.trim() };
 		requires.push(Number.parseInt(ref[1], 10));
 	}
 	return {
@@ -90,15 +90,15 @@ export type Declared =
 			readonly lines: ReadonlyArray<DeclaredLine>;
 			readonly dropped: ReadonlyArray<string>;
 	  }
-	| {readonly _tag: "Absent"}
-	| {readonly _tag: "Unparseable"; readonly line: number; readonly text: string}
-	| {readonly _tag: "Foreign"; readonly ref: string}
-	| {readonly _tag: "Duplicate"; readonly child: number}
-	| {readonly _tag: "Unplaced"; readonly child: number}
+	| { readonly _tag: "Absent" }
+	| { readonly _tag: "Unparseable"; readonly line: number; readonly text: string }
+	| { readonly _tag: "Foreign"; readonly ref: string }
+	| { readonly _tag: "Duplicate"; readonly child: number }
+	| { readonly _tag: "Unplaced"; readonly child: number }
 	/** Every ref the block placed was dropped — a surviving topology with no child in it. */
-	| {readonly _tag: "Emptied"; readonly dropped: ReadonlyArray<string>};
+	| { readonly _tag: "Emptied"; readonly dropped: ReadonlyArray<string> };
 
-type IssueRef = Extract<Ref, {_tag: "Issue"}>;
+type IssueRef = Extract<Ref, { _tag: "Issue" }>;
 
 const refLabel = (ref: Ref): string => (ref._tag === "Issue" ? `#${ref.number}` : ref.id);
 
@@ -109,8 +109,8 @@ export const readDeclared = (
 	drop: boolean,
 ): Declared => {
 	const topo = readTopology(body);
-	if (topo._tag === "Absent") return {_tag: "Absent"};
-	if (topo._tag === "Unparseable") return {_tag: "Unparseable", line: topo.line, text: topo.text};
+	if (topo._tag === "Absent") return { _tag: "Absent" };
+	if (topo._tag === "Unparseable") return { _tag: "Unparseable", line: topo.line, text: topo.text };
 
 	const dropped: string[] = [];
 	const known = (ref: Ref): ref is IssueRef => {
@@ -127,7 +127,7 @@ export const readDeclared = (
 			const refs = edge._tag === "Phase" ? edge.members : [edge.subject, ...edge.needs];
 			for (const ref of refs) {
 				if (ref._tag !== "Issue" || !children.has(ref.number)) {
-					return {_tag: "Foreign", ref: refLabel(ref)};
+					return { _tag: "Foreign", ref: refLabel(ref) };
 				}
 			}
 		}
@@ -145,28 +145,28 @@ export const readDeclared = (
 		const subject = edge.subject.number;
 		requires.set(subject, [...(requires.get(subject) ?? []), ...needs]);
 	}
-	if (phases.size === 0) return {_tag: "Absent"};
+	if (phases.size === 0) return { _tag: "Absent" };
 
 	const placed = new Map<number, number>();
 	for (const [phase, members] of phases) {
 		for (const child of members) {
-			if (placed.has(child)) return {_tag: "Duplicate", child};
+			if (placed.has(child)) return { _tag: "Duplicate", child };
 			placed.set(child, phase);
 		}
 	}
 	for (const [subject, needs] of requires) {
 		for (const child of [subject, ...needs]) {
-			if (!placed.has(child)) return {_tag: "Unplaced", child};
+			if (!placed.has(child)) return { _tag: "Unplaced", child };
 		}
 	}
-	if (placed.size === 0) return {_tag: "Emptied", dropped};
+	if (placed.size === 0) return { _tag: "Emptied", dropped };
 
 	const lines = [...placed.entries()].map(([child, phase]) => ({
 		child,
 		phase,
 		requires: requires.get(child) ?? [],
 	}));
-	return {_tag: "Declared", lines, dropped};
+	return { _tag: "Declared", lines, dropped };
 };
 
 /** `[dependent, prerequisite]` — the first entry requires the second. */
@@ -302,9 +302,9 @@ export type TopologyCheck =
 			 */
 			readonly external: ReadonlyArray<number>;
 	  }
-	| {readonly _tag: "Invalid"; readonly reason: string};
+	| { readonly _tag: "Invalid"; readonly reason: string };
 
-const invalid = (reason: string): TopologyCheck => ({_tag: "Invalid", reason});
+const invalid = (reason: string): TopologyCheck => ({ _tag: "Invalid", reason });
 
 /**
  * Validate the declared lines against the run manifest's child set, then render and prove the round

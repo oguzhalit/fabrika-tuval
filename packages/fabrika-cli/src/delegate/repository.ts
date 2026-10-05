@@ -5,9 +5,9 @@
  * `$GIT_COMMON_DIR`, read off disk per `gitrepository-layout(5)` because the bootstrap has no
  * linked dependencies and no runtime for a `git` subprocess.
  */
-import {Effect, type FileSystem, Path} from "effect";
-import {exists, isDirectory, type ReadFailed, readFile, realPath} from "../io/fs.ts";
-import type {SelfOrigin} from "./root.ts";
+import { Effect, type FileSystem, Path } from "effect";
+import { exists, isDirectory, type ReadFailed, readFile, realPath } from "../io/fs.ts";
+import type { SelfOrigin } from "./root.ts";
 
 const GIT_ENTRY = ".git";
 const COMMON_DIR_FILE = "commondir";
@@ -57,8 +57,8 @@ export const repositoryOf = (
  * standing in it.
  */
 export type CopyOrigin =
-	| {readonly _tag: "same-repository"}
-	| {readonly _tag: "other-repository"; readonly checkout: string};
+	| { readonly _tag: "same-repository" }
+	| { readonly _tag: "other-repository"; readonly checkout: string };
 
 /**
  * Relate the running copy's checkout to the repo root above the cwd.
@@ -72,10 +72,10 @@ export const relateCopy = (
 ): Effect.Effect<CopyOrigin, ReadFailed, FileSystem.FileSystem | Path.Path> =>
 	Effect.gen(function* () {
 		if (self._tag === "no-checkout" || repoRoot === undefined || repoRoot === self.root)
-			return {_tag: "same-repository"} as const;
+			return { _tag: "same-repository" } as const;
 		const mine = yield* repositoryOf(self.root);
 		const theirs = yield* repositoryOf(repoRoot);
 		return mine !== undefined && mine === theirs
-			? ({_tag: "same-repository"} as const)
-			: ({_tag: "other-repository", checkout: self.root} as const);
+			? ({ _tag: "same-repository" } as const)
+			: ({ _tag: "other-repository", checkout: self.root } as const);
 	});

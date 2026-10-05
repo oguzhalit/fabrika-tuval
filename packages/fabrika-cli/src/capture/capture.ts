@@ -10,14 +10,14 @@
  * collects the runtime errors thrown into the page during the render
  * (`pageErrors`) — the crash signal the gate fails on (see `page-errors.ts`).
  */
-import {mkdir, writeFile} from "node:fs/promises";
-import {join} from "node:path";
-import {type BrowserContext, chromium, type Page} from "@playwright/test";
-import {Effect} from "effect";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { type BrowserContext, chromium, type Page } from "@playwright/test";
+import { Effect } from "effect";
 import * as Schema from "effect/Schema";
-import {type AccentProof, type AccentRequest, readAccentProof} from "./accent.ts";
-import {readSessionProof, type SessionProof} from "./auth.ts";
-import {readSchemeProof, type SchemeProof, type SchemeRequest} from "./color-scheme.ts";
+import { type AccentProof, type AccentRequest, readAccentProof } from "./accent.ts";
+import { readSessionProof, type SessionProof } from "./auth.ts";
+import { readSchemeProof, type SchemeProof, type SchemeRequest } from "./color-scheme.ts";
 import {
 	type ForcedFlags,
 	flagProbeBody,
@@ -37,9 +37,9 @@ import {
 	readVisibleProof,
 	type StepProof,
 } from "./interaction.ts";
-import {type LocaleProof, type LocaleSeed, readLocaleProof} from "./locale-seed.ts";
-import {type PageError, toPageError} from "./page-errors.ts";
-import type {Shot} from "./plan.ts";
+import { type LocaleProof, type LocaleSeed, readLocaleProof } from "./locale-seed.ts";
+import { type PageError, toPageError } from "./page-errors.ts";
+import type { Shot } from "./plan.ts";
 
 /** What one shot read off its page, whether or not it went on to write a PNG. */
 export interface ShotReads {
@@ -174,7 +174,7 @@ export interface CaptureOptions {
 	 * URL to ask, and the flags whose forced values the answer is checked against. Absent ⇒ no proof
 	 * is taken and `overrideProof` stays absent.
 	 */
-	readonly flagProbe?: {readonly url: string; readonly flags: ForcedFlags};
+	readonly flagProbe?: { readonly url: string; readonly flags: ForcedFlags };
 	/**
 	 * A `localStorage` entry written in every document of each shot's context before any page
 	 * script runs, then proved against the page's `document.documentElement.lang` before the shot.
@@ -234,11 +234,11 @@ const proveSession = (context: BrowserContext, probeUrl: string): Promise<Sessio
  */
 const proveOverride = (
 	context: BrowserContext,
-	probe: {readonly url: string; readonly flags: ForcedFlags},
+	probe: { readonly url: string; readonly flags: ForcedFlags },
 ): Promise<OverrideProof> =>
 	context.request
 		.post(probe.url, {
-			headers: {"content-type": "application/json"},
+			headers: { "content-type": "application/json" },
 			data: flagProbeBody(probe.flags),
 		})
 		.then(async (response) =>
@@ -269,7 +269,9 @@ const READ_LANG = "document.documentElement.lang";
  * terms as {@link proveSession}: an evaluation that throws is a fact about the probe.
  */
 const proveLocale = async (page: Page, value: string, settleMs: number): Promise<LocaleProof> => {
-	await page.waitForFunction(langIs(value), undefined, {timeout: settleMs}).catch(() => undefined);
+	await page
+		.waitForFunction(langIs(value), undefined, { timeout: settleMs })
+		.catch(() => undefined);
 	return page
 		.evaluate<unknown>(READ_LANG)
 		.then((lang) => readLocaleProof(value, lang))
@@ -360,16 +362,16 @@ interface Matchable {
 const runStep = async (page: Page, step: InteractionStep, stepMs: number): Promise<StepProof> => {
 	if (step.verb === "press") {
 		await page.keyboard.press(step.key);
-		return {_tag: "Acted"};
+		return { _tag: "Acted" };
 	}
 	const locator = page.locator(step.locator);
 	const attached = await locator
 		.first()
-		.waitFor({state: "attached", timeout: stepMs})
+		.waitFor({ state: "attached", timeout: stepMs })
 		.then(() => true)
 		.catch(() => false);
 	if (!attached) {
-		return {_tag: "Refused", reason: `no element matched ${step.locator} within ${stepMs}ms`};
+		return { _tag: "Refused", reason: `no element matched ${step.locator} within ${stepMs}ms` };
 	}
 	const counted = readMatchCount(step, await locator.count());
 	if (counted !== null) return counted;
@@ -379,24 +381,24 @@ const runStep = async (page: Page, step: InteractionStep, stepMs: number): Promi
 		});
 	switch (step.verb) {
 		case "click":
-			await locator.click({timeout: stepMs});
-			return {_tag: "Acted"};
+			await locator.click({ timeout: stepMs });
+			return { _tag: "Acted" };
 		case "hover":
-			await locator.hover({timeout: stepMs});
+			await locator.hover({ timeout: stepMs });
 			return readPseudoProof(
-				{verb: "hover", locator: step.locator},
+				{ verb: "hover", locator: step.locator },
 				await matches(PSEUDO_CLASS.hover),
 			);
 		case "focus":
-			await locator.focus({timeout: stepMs});
+			await locator.focus({ timeout: stepMs });
 			return readPseudoProof(
-				{verb: "focus", locator: step.locator},
+				{ verb: "focus", locator: step.locator },
 				await matches(PSEUDO_CLASS.focus),
 			);
 		case "expect":
 			// An element may be attached before it is shown — a menu mid-animation — so visibility is
 			// waited for, and the read after the wait decides.
-			await locator.waitFor({state: "visible", timeout: stepMs}).catch(() => undefined);
+			await locator.waitFor({ state: "visible", timeout: stepMs }).catch(() => undefined);
 			return readVisibleProof(step, await locator.isVisible());
 	}
 };
@@ -411,12 +413,12 @@ const proveInteraction = async (
 	interaction: Interaction,
 	stepMs: number,
 ): Promise<InteractionProof> => {
-	const answers: Array<{readonly step: InteractionStep; readonly proof: StepProof}> = [];
+	const answers: Array<{ readonly step: InteractionStep; readonly proof: StepProof }> = [];
 	for (const step of interaction.steps) {
 		const proof = await runStep(page, step, stepMs).catch(
-			(cause): StepProof => ({_tag: "Refused", reason: firstLine(cause)}),
+			(cause): StepProof => ({ _tag: "Refused", reason: firstLine(cause) }),
 		);
-		answers.push({step, proof});
+		answers.push({ step, proof });
 		if (proof._tag === "Refused") break;
 	}
 	return foldInteractionProof(answers);
@@ -442,10 +444,10 @@ export const captureShots = (
 	return Effect.acquireUseRelease(
 		Effect.tryPromise({
 			try: async () => {
-				await mkdir(outDir, {recursive: true});
+				await mkdir(outDir, { recursive: true });
 				return await chromium.launch();
 			},
-			catch: (cause) => new CaptureError({message: "failed to launch chromium", cause}),
+			catch: (cause) => new CaptureError({ message: "failed to launch chromium", cause }),
 		}),
 		(browser) =>
 			Effect.forEach(
@@ -457,12 +459,12 @@ export const captureShots = (
 							// (the downscale lever) and the run's `cookies` (the dev-override cookie)
 							// can be seeded before navigation — both are context-level in Playwright.
 							const context = await browser.newContext({
-								viewport: {width: shot.viewport.width, height: shot.viewport.height},
+								viewport: { width: shot.viewport.width, height: shot.viewport.height },
 								...(shot.deviceScaleFactor === undefined
 									? {}
-									: {deviceScaleFactor: shot.deviceScaleFactor}),
+									: { deviceScaleFactor: shot.deviceScaleFactor }),
 								// Emulated `prefers-color-scheme`, so no app's storage key is written here.
-								...(shot.scheme === undefined ? {} : {colorScheme: shot.scheme.scheme}),
+								...(shot.scheme === undefined ? {} : { colorScheme: shot.scheme.scheme }),
 							});
 							if (options.cookies && options.cookies.length > 0) {
 								await context.addCookies(options.cookies);
@@ -482,7 +484,7 @@ export const captureShots = (
 							// opaque-origin document (the initial about:blank) throws on `localStorage` access.
 							const locale = options.locale;
 							if (locale !== undefined) {
-								await context.addInitScript({content: seedScript(locale)});
+								await context.addInitScript({ content: seedScript(locale) });
 							}
 							const page = await context.newPage();
 							// Listen across the WHOLE navigation window (attached before goto), so a
@@ -526,15 +528,15 @@ export const captureShots = (
 									state: shot.surface.state,
 									fileName: shot.fileName,
 									pageErrors,
-									...(response === null ? {} : {status: response.status()}),
-									...(sessionProof === undefined ? {} : {sessionProof}),
-									...(overrideProof === undefined ? {} : {overrideProof}),
-									...(localeProof === undefined ? {} : {localeProof}),
-									...(schemeProof === undefined ? {} : {schemeProof}),
-									...(accentProof === undefined ? {} : {accentProof}),
+									...(response === null ? {} : { status: response.status() }),
+									...(sessionProof === undefined ? {} : { sessionProof }),
+									...(overrideProof === undefined ? {} : { overrideProof }),
+									...(localeProof === undefined ? {} : { localeProof }),
+									...(schemeProof === undefined ? {} : { schemeProof }),
+									...(accentProof === undefined ? {} : { accentProof }),
 								};
 								if (interactionProof?._tag === "Refused") {
-									return {...reads, interactionProof};
+									return { ...reads, interactionProof };
 								}
 								// A clip crops to the changed region; Playwright rejects clip + fullPage
 								// together, so a clipped shot is never full-page. An interaction has just
@@ -544,8 +546,8 @@ export const captureShots = (
 								const settle = interactionProof !== undefined || accentProof !== undefined;
 								const buffer = await page.screenshot({
 									type: "png",
-									...(shot.clip === undefined ? {fullPage} : {clip: shot.clip}),
-									...(settle ? {animations: "disabled" as const} : {}),
+									...(shot.clip === undefined ? { fullPage } : { clip: shot.clip }),
+									...(settle ? { animations: "disabled" as const } : {}),
 								});
 								const localPath = join(outDir, shot.fileName);
 								await writeFile(localPath, buffer);
@@ -553,7 +555,7 @@ export const captureShots = (
 									...reads,
 									localPath,
 									pngBytes: new Uint8Array(buffer),
-									...(interactionProof === undefined ? {} : {interactionProof}),
+									...(interactionProof === undefined ? {} : { interactionProof }),
 								};
 							} finally {
 								await context.close();
@@ -565,12 +567,12 @@ export const captureShots = (
 								cause,
 							}),
 					}),
-				{concurrency: 1},
+				{ concurrency: 1 },
 			),
 		(browser) =>
 			Effect.tryPromise({
 				try: () => browser.close(),
-				catch: (cause) => new CaptureError({message: "failed to close chromium", cause}),
+				catch: (cause) => new CaptureError({ message: "failed to close chromium", cause }),
 			}),
 	);
 };

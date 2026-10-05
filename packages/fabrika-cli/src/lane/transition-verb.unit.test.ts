@@ -1,9 +1,9 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {ParkCauseSurface} from "../config/keys/park-cause.ts";
-import type {Read} from "../config/read-key.ts";
-import {fakeFs} from "../fakes.test-support.ts";
-import {answer, refuse} from "../verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { ParkCauseSurface } from "../config/keys/park-cause.ts";
+import type { Read } from "../config/read-key.ts";
+import { fakeFs } from "../fakes.test-support.ts";
+import { answer, refuse } from "../verb.ts";
 import {
 	APPEND_UNKNOWN,
 	CAUSE_UNRECOGNISED,
@@ -22,18 +22,18 @@ import {
 	parkCauseDeclared,
 	parkCauseRead,
 } from "./fixtures.test-support.ts";
-import {foldLog, parseLog} from "./fold.ts";
-import {compileText} from "./machine.ts";
-import {PARK_CAUSE_TOKENS} from "./report.ts";
-import {runStatus} from "./status-verb.ts";
-import {runTransition} from "./transition-verb.ts";
+import { foldLog, parseLog } from "./fold.ts";
+import { compileText } from "./machine.ts";
+import { PARK_CAUSE_TOKENS } from "./report.ts";
+import { runStatus } from "./status-verb.ts";
+import { runTransition } from "./transition-verb.ts";
 
 const ROOT = ".fabrika/lanes";
 const WORKFLOW = `${ROOT}/42/workflow.json`;
 const LOG = `${ROOT}/42/events.jsonl`;
 
 const logLine = (event: string): string =>
-	`${JSON.stringify({task: "issue", event: `ISSUE.${event}`, at: "2026-08-16T00:00:00.000Z"})}\n`;
+	`${JSON.stringify({ task: "issue", event: `ISSUE.${event}`, at: "2026-08-16T00:00:00.000Z" })}\n`;
 
 const run = (
 	fs: ReturnType<typeof fakeFs>,
@@ -46,7 +46,7 @@ const run = (
 	rationale: string | null = null,
 	prover: ReturnType<typeof fakeProver> = fakeProver(),
 	axisIssue: number | null = null,
-	owed: {readonly rulingIssue?: number; readonly founderAct?: string} = {},
+	owed: { readonly rulingIssue?: number; readonly founderAct?: string } = {},
 ) =>
 	Effect.runPromise(
 		Effect.provide(
@@ -76,7 +76,7 @@ const run = (
 
 const freshLane = (log?: string, extra: Parameters<typeof fakeFs>[0] = {}) =>
 	fakeFs({
-		files: {[WORKFLOW]: coderTemplateText(), ...(log === undefined ? {} : {[LOG]: log})},
+		files: { [WORKFLOW]: coderTemplateText(), ...(log === undefined ? {} : { [LOG]: log }) },
 		...extra,
 	});
 
@@ -87,15 +87,15 @@ describe("lane transition — the answer", () => {
 		const out = await run(fs, "WIP");
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
-			previous: {pipeline: {issue: "queued"}},
+			previous: { pipeline: { issue: "queued" } },
 			event: "ISSUE.WIP",
-			current: {pipeline: {issue: "build"}},
+			current: { pipeline: { issue: "build" } },
 			taskAffected: "issue",
 		});
 
 		const appended = fs.written.get(LOG);
 		expect(appended).toBeDefined();
-		expect(JSON.parse(appended?.trim() ?? "")).toMatchObject({task: "issue", event: "ISSUE.WIP"});
+		expect(JSON.parse(appended?.trim() ?? "")).toMatchObject({ task: "issue", event: "ISSUE.WIP" });
 	});
 
 	it("folds the existing log first, so the event lands on the folded state", async () => {
@@ -104,8 +104,8 @@ describe("lane transition — the answer", () => {
 		const out = await run(fs, "DONE");
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
-			previous: {pipeline: {issue: "build"}},
-			current: {pipeline: {issue: "review"}},
+			previous: { pipeline: { issue: "build" } },
+			current: { pipeline: { issue: "review" } },
 		});
 	});
 
@@ -113,7 +113,7 @@ describe("lane transition — the answer", () => {
 		const out = await run(freshLane(), "wip");
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({event: "ISSUE.WIP"});
+		expect(JSON.parse(out.stdout)).toMatchObject({ event: "ISSUE.WIP" });
 	});
 });
 
@@ -147,7 +147,7 @@ describe("lane transition — refuse without append", () => {
 	});
 
 	it("refuses a lane that is provably not there, naming the remedy", async () => {
-		const fs = fakeFs({files: {}});
+		const fs = fakeFs({ files: {} });
 
 		const out = await run(fs, "WIP");
 		expect(out.code).toBe(LANE_ABSENT);
@@ -156,7 +156,7 @@ describe("lane transition — refuse without append", () => {
 	});
 
 	it("reports an append that did not land as NOT recorded, never as an answer", async () => {
-		const fs = freshLane(undefined, {unwritable: [LOG]});
+		const fs = freshLane(undefined, { unwritable: [LOG] });
 
 		const out = await run(fs, "WIP");
 		expect(out.code).toBe(APPEND_UNKNOWN);
@@ -179,7 +179,7 @@ describe("lane transition — the park cause a driver-originated BLOCKED carries
 
 		expect(out.code).toBe(0);
 		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
-		expect(appended).toMatchObject({event: "ISSUE.BLOCKED", cause: "worktree-holds-branch"});
+		expect(appended).toMatchObject({ event: "ISSUE.BLOCKED", cause: "worktree-holds-branch" });
 	});
 
 	it("refuses campaign-paused as a new cause, log byte-identical — no campaign state parks a lane", async () => {
@@ -230,7 +230,7 @@ describe("lane transition — the park cause a driver-originated BLOCKED carries
 		const out = await park(9615);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({cause: "render-axis-missing", axisIssue: 9615});
+		expect(JSON.parse(out.stdout)).toMatchObject({ cause: "render-axis-missing", axisIssue: 9615 });
 		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
 		expect(appended).toMatchObject({
 			event: "ISSUE.BLOCKED",
@@ -238,7 +238,7 @@ describe("lane transition — the park cause a driver-originated BLOCKED carries
 			axisIssue: 9615,
 		});
 		const status = await Effect.runPromise(
-			Effect.provide(runStatus({root: ROOT, lane: "42"}), fs.layer),
+			Effect.provide(runStatus({ root: ROOT, lane: "42" }), fs.layer),
 		);
 		expect(JSON.parse(status.stdout).context.issue).toMatchObject({
 			cause: "render-axis-missing",
@@ -277,14 +277,14 @@ describe("lane transition — the park cause a driver-originated BLOCKED carries
 	});
 
 	it.each([
-		[{cause: "render-axis-missing"}, /names no `axisIssue`/],
-		[{cause: "no-preview-render", axisIssue: 9615}, /waits on no issue/],
-		[{cause: "render-axis-missing", axisIssue: 0}, /no issue number/],
-		[{cause: "ruling-owed"}, /names no `rulingIssue`/],
-		[{cause: "ruling-owed", founderAct: "rotate the logins"}, /names no `rulingIssue`/],
-		[{cause: "founder-act-owed"}, /names no `founderAct`/],
-		[{cause: "founder-act-owed", rulingIssue: 42}, /waits on no ruling/],
-		[{cause: "founder-act-owed", founderAct: " "}, /says nothing/],
+		[{ cause: "render-axis-missing" }, /names no `axisIssue`/],
+		[{ cause: "no-preview-render", axisIssue: 9615 }, /waits on no issue/],
+		[{ cause: "render-axis-missing", axisIssue: 0 }, /no issue number/],
+		[{ cause: "ruling-owed" }, /names no `rulingIssue`/],
+		[{ cause: "ruling-owed", founderAct: "rotate the logins" }, /names no `rulingIssue`/],
+		[{ cause: "founder-act-owed" }, /names no `founderAct`/],
+		[{ cause: "founder-act-owed", rulingIssue: 42 }, /waits on no ruling/],
+		[{ cause: "founder-act-owed", founderAct: " " }, /says nothing/],
 	])("reads %j as a malformed line, never a park", (fields, defect) => {
 		const line = JSON.stringify({
 			task: "issue",
@@ -357,7 +357,7 @@ describe("lane transition — a cause-less park under `parkCause.uncaused: refus
 
 		expect(out.code).toBe(0);
 		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
-		expect(appended).toMatchObject({event: "ISSUE.BLOCKED", cause: "worktree-holds-branch"});
+		expect(appended).toMatchObject({ event: "ISSUE.BLOCKED", cause: "worktree-holds-branch" });
 	});
 
 	it("leaves every non-park event alone — the key binds BLOCKED and nothing else", async () => {
@@ -392,23 +392,23 @@ describe("lane transition — a park that waits on the founder", () => {
 		logLine("WIP") +
 		logLine("DONE") +
 		logLine("PASS") +
-		`${JSON.stringify({task: "issue", event: "ISSUE.DONE", at: "2026-08-16T00:00:00.000Z", partial: true})}\n`;
+		`${JSON.stringify({ task: "issue", event: "ISSUE.DONE", at: "2026-08-16T00:00:00.000Z", partial: true })}\n`;
 	const STEP = "node packages/preview-seed/src/bin.ts rotate-logins";
 	const park = (
 		fs: ReturnType<typeof fakeFs>,
 		cause: string | null,
-		owed: {readonly rulingIssue?: number; readonly founderAct?: string} = {},
+		owed: { readonly rulingIssue?: number; readonly founderAct?: string } = {},
 	) => run(fs, "BLOCKED", null, cause, [], null, strict, null, undefined, null, owed);
 	const statusOf = async (fs: ReturnType<typeof fakeFs>) =>
 		JSON.parse(
-			(await Effect.runPromise(Effect.provide(runStatus({root: ROOT, lane: "42"}), fs.layer)))
+			(await Effect.runPromise(Effect.provide(runStatus({ root: ROOT, lane: "42" }), fs.layer)))
 				.stdout,
 		);
 
 	it("refuses the requeued lane's bare park — the arrival both causes exist for", async () => {
 		const fs = freshLane(requeued);
 
-		expect((await statusOf(fs)).stateValue).toEqual({pipeline: {issue: "queued"}});
+		expect((await statusOf(fs)).stateValue).toEqual({ pipeline: { issue: "queued" } });
 		const out = await park(fs, null);
 
 		expect(out.code).toBe(PARK_UNCAUSED);
@@ -418,17 +418,17 @@ describe("lane transition — a park that waits on the founder", () => {
 	it("records the lane-10334 arrival: the rest waits on a ruling on the lane's own issue", async () => {
 		const fs = freshLane(requeued);
 
-		const out = await park(fs, "ruling-owed", {rulingIssue: 42});
+		const out = await park(fs, "ruling-owed", { rulingIssue: 42 });
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
-			previous: {pipeline: {issue: "queued"}},
-			current: {pipeline: {issue: "blocked"}},
+			previous: { pipeline: { issue: "queued" } },
+			current: { pipeline: { issue: "blocked" } },
 			cause: "ruling-owed",
 			rulingIssue: 42,
 		});
 		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
-		expect(appended).toMatchObject({cause: "ruling-owed", rulingIssue: 42});
+		expect(appended).toMatchObject({ cause: "ruling-owed", rulingIssue: 42 });
 		// The park's own time rides the status beside the issue, because the clear compares a ruling
 		// marker against it.
 		expect((await statusOf(fs)).context.issue).toMatchObject({
@@ -441,33 +441,48 @@ describe("lane transition — a park that waits on the founder", () => {
 	it("records the lane-9281 arrival: the rest is a command only the founder may run", async () => {
 		const fs = freshLane(requeued);
 
-		const out = await park(fs, "founder-act-owed", {founderAct: ` ${STEP} `});
+		const out = await park(fs, "founder-act-owed", { founderAct: ` ${STEP} ` });
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
-			current: {pipeline: {issue: "blocked"}},
+			current: { pipeline: { issue: "blocked" } },
 			cause: "founder-act-owed",
 			founderAct: STEP,
 		});
 		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
-		expect(appended).toMatchObject({cause: "founder-act-owed", founderAct: STEP});
-		expect((await statusOf(fs)).context.issue).toMatchObject({founderAct: STEP});
+		expect(appended).toMatchObject({ cause: "founder-act-owed", founderAct: STEP });
+		expect((await statusOf(fs)).context.issue).toMatchObject({ founderAct: STEP });
 	});
 
 	it.each([
 		["ruling-owed with no issue", "ruling-owed", {}, "--ruling-issue"],
-		["ruling-owed with a step for its issue", "ruling-owed", {founderAct: STEP}, "--ruling-issue"],
-		["ruling-owed with no issue number", "ruling-owed", {rulingIssue: 0}, "no issue number"],
+		[
+			"ruling-owed with a step for its issue",
+			"ruling-owed",
+			{ founderAct: STEP },
+			"--ruling-issue",
+		],
+		["ruling-owed with no issue number", "ruling-owed", { rulingIssue: 0 }, "no issue number"],
 		["founder-act-owed with no step", "founder-act-owed", {}, "--founder-act"],
-		["founder-act-owed with a blank step", "founder-act-owed", {founderAct: " "}, "--founder-act"],
+		[
+			"founder-act-owed with a blank step",
+			"founder-act-owed",
+			{ founderAct: " " },
+			"--founder-act",
+		],
 		[
 			"founder-act-owed with an issue for its step",
 			"founder-act-owed",
-			{rulingIssue: 42},
+			{ rulingIssue: 42 },
 			"drop --ruling-issue",
 		],
-		["a ruling issue beside another cause", "size-stop", {rulingIssue: 42}, "drop --ruling-issue"],
-		["a step beside another cause", "size-stop", {founderAct: STEP}, "drop --founder-act"],
+		[
+			"a ruling issue beside another cause",
+			"size-stop",
+			{ rulingIssue: 42 },
+			"drop --ruling-issue",
+		],
+		["a step beside another cause", "size-stop", { founderAct: STEP }, "drop --founder-act"],
 	] as const)("refuses %s, log byte-identical", async (_name, cause, owed, names) => {
 		const fs = freshLane(requeued);
 
@@ -486,9 +501,9 @@ describe("lane transition — the lane class the `class:<name>` arms route on", 
 		const out = await run(fs, "WIP", null, null, ["ui"]);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({current: {pipeline: {issue: "build:ui"}}});
+		expect(JSON.parse(out.stdout)).toMatchObject({ current: { pipeline: { issue: "build:ui" } } });
 		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
-		expect(appended).toMatchObject({event: "ISSUE.WIP", classes: ["ui"]});
+		expect(appended).toMatchObject({ event: "ISSUE.WIP", classes: ["ui"] });
 	});
 
 	it("refuses a class outside the closed set instead of routing it as unclassed", async () => {
@@ -509,7 +524,7 @@ describe("lane transition — the lane class the `class:<name>` arms route on", 
 		const out = await run(fs, "WIP", null, null, [" UI "]);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({current: {pipeline: {issue: "build:ui"}}});
+		expect(JSON.parse(out.stdout)).toMatchObject({ current: { pipeline: { issue: "build:ui" } } });
 	});
 });
 
@@ -528,7 +543,7 @@ describe("lane transition — the rationale a driver's clearance is recorded on"
 			rationale: "rebased the head",
 		});
 		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
-		expect(appended).toMatchObject({event: "ISSUE.UNBLOCKED", rationale: "rebased the head"});
+		expect(appended).toMatchObject({ event: "ISSUE.UNBLOCKED", rationale: "rebased the head" });
 	});
 
 	it("refuses a blank rationale at its own code, log byte-identical", async () => {
@@ -612,7 +627,7 @@ describe("lane transition — the proof gate", () => {
 		const out = await run(fs, "PASS", null, null, ["ui"], null, undefined, null, prover);
 
 		expect(out.code).toBe(0);
-		expect(prover.asked[0]).toMatchObject({event: "PASS", classes: ["ui"]});
+		expect(prover.asked[0]).toMatchObject({ event: "PASS", classes: ["ui"] });
 	});
 
 	it("never reaches the prover for an event the machine refuses", async () => {
@@ -633,7 +648,7 @@ describe("lane transition — the proof gate", () => {
 		const out = await run(fs, "PASS", null, null, ["ui"], null, undefined, null, prover);
 
 		expect(out.code).toBe(0);
-		expect(JSON.parse(out.stdout)).toMatchObject({deferred: ["review-ui"]});
+		expect(JSON.parse(out.stdout)).toMatchObject({ deferred: ["review-ui"] });
 		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
 		expect(appended.deferred).toEqual(["review-ui"]);
 	});
@@ -648,8 +663,8 @@ describe("lane transition — the proof gate", () => {
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
-			previous: {pipeline: {issue: "ship"}},
-			current: {pipeline: {issue: "queued"}},
+			previous: { pipeline: { issue: "ship" } },
+			current: { pipeline: { issue: "queued" } },
 			partial: true,
 			landed: [4242],
 		});
@@ -682,7 +697,7 @@ describe("lane transition — the proof gate", () => {
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
-			previous: {pipeline: {issue: "build"}},
+			previous: { pipeline: { issue: "build" } },
 			current: "diagnosed",
 			diagnosis: true,
 		});
@@ -697,7 +712,7 @@ describe("lane transition — the proof gate", () => {
 
 		expect(out.code).toBe(0);
 		const line = JSON.parse(out.stdout);
-		expect(line.current).toMatchObject({pipeline: {issue: "review"}});
+		expect(line.current).toMatchObject({ pipeline: { issue: "review" } });
 		expect(Object.hasOwn(line, "diagnosis")).toBe(false);
 		const appended = JSON.parse(fs.written.get(LOG)?.trim().split("\n").at(-1) ?? "");
 		expect(Object.hasOwn(appended, "diagnosis")).toBe(false);
@@ -711,17 +726,17 @@ describe("lane transition — the proof gate", () => {
 describe("lane transition — the review rewind when no open PR links the issue", () => {
 	const strict = parkCauseRead("refuse");
 	const unlinked = () =>
-		fakeProver(answer(JSON.stringify({proof: "proven", evidence: {kind: "no-linking-pull"}})));
+		fakeProver(answer(JSON.stringify({ proof: "proven", evidence: { kind: "no-linking-pull" } })));
 
 	const line = (event: string, extra: Record<string, unknown> = {}): string =>
-		`${JSON.stringify({task: "issue", event: `ISSUE.${event}`, at: "2026-08-16T00:00:00.000Z", ...extra})}\n`;
+		`${JSON.stringify({ task: "issue", event: `ISSUE.${event}`, at: "2026-08-16T00:00:00.000Z", ...extra })}\n`;
 	/** A lane standing in `review` that has already spent one repair round and one lap. */
 	const SPENT_REVIEW =
 		line("WIP") +
 		line("DONE") +
 		line("FAIL") +
 		line("DONE") +
-		line("LAP", {cause: "worktree-holds-branch"});
+		line("LAP", { cause: "worktree-holds-branch" });
 
 	const budgetsOf = (text: string | undefined) => {
 		const parsed = parseLog(text ?? "");
@@ -729,23 +744,23 @@ describe("lane transition — the review rewind when no open PR links the issue"
 		if (parsed._tag !== "Parsed" || compiled._tag !== "Compiled") throw new Error("unreadable");
 		const fold = foldLog(compiled.lane, parsed.entries);
 		if (fold._tag !== "Folded") throw new Error("unreplayable");
-		const {type, retries, laps} = fold.states.issue ?? {};
-		return {type, retries, laps};
+		const { type, retries, laps } = fold.states.issue ?? {};
+		return { type, retries, laps };
 	};
 
 	it("folds a review task to queued with retries and laps unchanged, under uncaused: refuse", async () => {
 		const fs = freshLane(SPENT_REVIEW);
-		expect(budgetsOf(SPENT_REVIEW)).toEqual({type: "review", retries: 1, laps: 1});
+		expect(budgetsOf(SPENT_REVIEW)).toEqual({ type: "review", retries: 1, laps: 1 });
 
 		const out = await run(fs, "WIP", null, null, [], null, strict, null, unlinked());
 
 		expect(out.code).toBe(0);
 		expect(JSON.parse(out.stdout)).toMatchObject({
-			previous: {pipeline: {issue: "review"}},
+			previous: { pipeline: { issue: "review" } },
 			event: "ISSUE.WIP",
-			current: {pipeline: {issue: "queued"}},
+			current: { pipeline: { issue: "queued" } },
 		});
-		expect(budgetsOf(fs.written.get(LOG))).toEqual({type: "queued", retries: 1, laps: 1});
+		expect(budgetsOf(fs.written.get(LOG))).toEqual({ type: "queued", retries: 1, laps: 1 });
 	});
 
 	it("refuses the rewind on the prover's code, log byte-identical, while a PR still links", async () => {
@@ -767,21 +782,21 @@ describe("lane transition — the review rewind when no open PR links the issue"
 		await run(fs, "WIP", null, null, [], null, strict, null, unlinked());
 		const out = await run(fs, "WIP", null, null, [], null, strict);
 
-		expect(JSON.parse(out.stdout)).toMatchObject({current: {pipeline: {issue: "build"}}});
-		expect(budgetsOf(fs.written.get(LOG))).toEqual({type: "build", retries: 1, laps: 1});
+		expect(JSON.parse(out.stdout)).toMatchObject({ current: { pipeline: { issue: "build" } } });
+		expect(budgetsOf(fs.written.get(LOG))).toEqual({ type: "build", retries: 1, laps: 1 });
 	});
 
 	it("rewinds out of review:ui too, and routes the class:ui lane to build:ui after it", async () => {
-		const fs = freshLane(line("WIP", {classes: ["ui"]}) + line("DONE") + line("PASS"));
+		const fs = freshLane(line("WIP", { classes: ["ui"] }) + line("DONE") + line("PASS"));
 
 		const rewound = await run(fs, "WIP", null, null, [], null, strict, null, unlinked());
 		expect(JSON.parse(rewound.stdout)).toMatchObject({
-			previous: {pipeline: {issue: "review:ui"}},
-			current: {pipeline: {issue: "queued"}},
+			previous: { pipeline: { issue: "review:ui" } },
+			current: { pipeline: { issue: "queued" } },
 		});
 
 		const out = await run(fs, "WIP", null, null, [], null, strict);
-		expect(JSON.parse(out.stdout)).toMatchObject({current: {pipeline: {issue: "build:ui"}}});
-		expect(budgetsOf(fs.written.get(LOG))).toEqual({type: "build:ui", retries: 0, laps: 0});
+		expect(JSON.parse(out.stdout)).toMatchObject({ current: { pipeline: { issue: "build:ui" } } });
+		expect(budgetsOf(fs.written.get(LOG))).toEqual({ type: "build:ui", retries: 0, laps: 0 });
 	});
 });

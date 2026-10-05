@@ -5,12 +5,12 @@
  * when it goes missing: an unclassed child routes to the shells it always routed to, so a decode
  * that silently dropped `labels` would read as working.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {fakeSeams, type HttpReply} from "../fakes.test-support.ts";
-import {listSubIssues} from "./github.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { fakeSeams, type HttpReply } from "../fakes.test-support.ts";
+import { listSubIssues } from "./github.ts";
 
-const ENV = {GITHUB_TOKEN: "t"} as Record<string, string | undefined>;
+const ENV = { GITHUB_TOKEN: "t" } as Record<string, string | undefined>;
 const SUB_ISSUES = /\/repos\/o\/r\/issues\/4300\/sub_issues/;
 
 const page = (...children: ReadonlyArray<Record<string, unknown>>): HttpReply => ({
@@ -27,7 +27,7 @@ const child = (number: number, labels: ReadonlyArray<string>): Record<string, un
 	number,
 	state: "open",
 	state_reason: null,
-	labels: labels.map((name) => ({name})),
+	labels: labels.map((name) => ({ name })),
 });
 
 describe("listSubIssues", () => {
@@ -37,15 +37,15 @@ describe("listSubIssues", () => {
 		expect(links).toMatchObject({
 			_tag: "Ok",
 			value: [
-				{number: 4301, classes: ["ui"]},
-				{number: 4302, classes: []},
+				{ number: 4301, classes: ["ui"] },
+				{ number: 4302, classes: [] },
 			],
 		});
 	});
 
 	it("reads a payload with no labels key as unclassed rather than failing the whole list", async () => {
-		const links = await read(page({number: 4301, state: "open", state_reason: null}));
+		const links = await read(page({ number: 4301, state: "open", state_reason: null }));
 
-		expect(links).toMatchObject({_tag: "Ok", value: [{number: 4301, classes: []}]});
+		expect(links).toMatchObject({ _tag: "Ok", value: [{ number: 4301, classes: [] }] });
 	});
 });

@@ -1,16 +1,16 @@
-import {describe, expect, it} from "vitest";
-import type {JsonSchema} from "../json-schema.ts";
-import {loadConfig, resolve} from "../load.ts";
-import {OUTSIDE_THE_BETS, SHIPPED_TABLE, TABLE, tableKey} from "./table.ts";
+import { describe, expect, it } from "vitest";
+import type { JsonSchema } from "../json-schema.ts";
+import { loadConfig, resolve } from "../load.ts";
+import { OUTSIDE_THE_BETS, SHIPPED_TABLE, TABLE, tableKey } from "./table.ts";
 
 const declared = (table: unknown) =>
-	resolve(loadConfig({_tag: "Text", text: JSON.stringify({[TABLE]: table})}), tableKey);
+	resolve(loadConfig({ _tag: "Text", text: JSON.stringify({ [TABLE]: table }) }), tableKey);
 
 describe("the shipped table", () => {
 	it("is every threshold the rulings name, for a repo with no config", () => {
-		const resolved = resolve(loadConfig({_tag: "Absent"}), tableKey);
+		const resolved = resolve(loadConfig({ _tag: "Absent" }), tableKey);
 
-		expect(resolved).toMatchObject({_tag: "Default"});
+		expect(resolved).toMatchObject({ _tag: "Default" });
 		expect(SHIPPED_TABLE).toEqual({
 			cadence: "weekly",
 			day: "monday",
@@ -22,10 +22,10 @@ describe("the shipped table", () => {
 			asksFlag: 3,
 			stuckDays: 3,
 			activeCampaignFlag: 3,
-			fabrikaShare: {percent: 40, forTables: 4, thenPercent: 30, labels: []},
+			fabrikaShare: { percent: 40, forTables: 4, thenPercent: 30, labels: [] },
 			checkDelayDays: 14,
 			evidenceSources: [],
-			project: {owner: null, number: null},
+			project: { owner: null, number: null },
 		});
 	});
 
@@ -39,7 +39,7 @@ describe("the shipped table", () => {
 		walk(SHIPPED_TABLE);
 
 		for (const text of strings) expect(text).not.toMatch(/[/#@\d]/);
-		expect(SHIPPED_TABLE.project).toEqual({owner: null, number: null});
+		expect(SHIPPED_TABLE.project).toEqual({ owner: null, number: null });
 	});
 
 	it("documents every sub-key in the schema `config schema` emits", () => {
@@ -63,7 +63,7 @@ describe("the schema's numeric bounds", () => {
 					: [],
 		);
 	const at = (path: ReadonlyArray<string>, value: number): unknown =>
-		path.reduceRight<unknown>((inner, key) => ({[key]: inner}), value);
+		path.reduceRight<unknown>((inner, key) => ({ [key]: inner }), value);
 	const cases = leaves(tableKey.jsonSchema ?? {}, []);
 
 	it("covers the percentages and the stop multiple", () => {
@@ -85,7 +85,7 @@ describe("the schema's numeric bounds", () => {
 
 describe("a declared table block", () => {
 	it("keeps the shipped value for every sub-key it leaves out", () => {
-		const resolved = declared({agendaCap: 10, fabrikaShare: {percent: 50}});
+		const resolved = declared({ agendaCap: 10, fabrikaShare: { percent: 50 } });
 
 		expect(resolved._tag).toBe("Declared");
 		if (resolved._tag !== "Declared") return;
@@ -100,11 +100,11 @@ describe("a declared table block", () => {
 	});
 
 	it("takes the labels that mark fabrika's own work", () => {
-		const resolved = declared({fabrikaShare: {labels: [" pipeline ", "fabrika"]}});
+		const resolved = declared({ fabrikaShare: { labels: [" pipeline ", "fabrika"] } });
 
 		expect(resolved).toMatchObject({
 			_tag: "Declared",
-			value: {fabrikaShare: {percent: 40, labels: ["pipeline", "fabrika"]}},
+			value: { fabrikaShare: { percent: 40, labels: ["pipeline", "fabrika"] } },
 		});
 	});
 
@@ -112,8 +112,8 @@ describe("a declared table block", () => {
 		const resolved = declared({
 			checkDelayDays: 7,
 			evidenceSources: [
-				{name: " metrics ", command: ["pnpm", "metrics"]},
-				{name: "errors", command: ["./errors.sh"], timeoutSeconds: 5},
+				{ name: " metrics ", command: ["pnpm", "metrics"] },
+				{ name: "errors", command: ["./errors.sh"], timeoutSeconds: 5 },
 			],
 		});
 
@@ -122,8 +122,8 @@ describe("a declared table block", () => {
 			value: {
 				checkDelayDays: 7,
 				evidenceSources: [
-					{name: "metrics", command: ["pnpm", "metrics"], timeoutSeconds: 60},
-					{name: "errors", command: ["./errors.sh"], timeoutSeconds: 5},
+					{ name: "metrics", command: ["pnpm", "metrics"], timeoutSeconds: 60 },
+					{ name: "errors", command: ["./errors.sh"], timeoutSeconds: 5 },
 				],
 			},
 		});
@@ -147,66 +147,66 @@ describe("a declared table block", () => {
 	});
 
 	it("takes an IANA time zone, in the spelling the platform resolves it to", () => {
-		expect(declared({timeZone: "America/Los_Angeles"})).toMatchObject({
+		expect(declared({ timeZone: "America/Los_Angeles" })).toMatchObject({
 			_tag: "Declared",
-			value: {timeZone: "America/Los_Angeles"},
+			value: { timeZone: "America/Los_Angeles" },
 		});
-		expect(declared({timeZone: "utc"})).toMatchObject({value: {timeZone: "UTC"}});
+		expect(declared({ timeZone: "utc" })).toMatchObject({ value: { timeZone: "UTC" } });
 	});
 
 	it("takes a project target", () => {
-		const resolved = declared({project: {owner: "acme", number: 4}});
+		const resolved = declared({ project: { owner: "acme", number: 4 } });
 
 		expect(resolved).toMatchObject({
 			_tag: "Declared",
-			value: {project: {owner: "acme", number: 4}},
+			value: { project: { owner: "acme", number: 4 } },
 		});
 	});
 
 	it.each([
-		[{cadence: "daily"}, "`table.cadence`"],
-		[{day: "someday"}, "`table.day`"],
-		[{timeZone: "Pacific"}, "`table.timeZone`"],
-		[{timeZone: ""}, "`table.timeZone`"],
-		[{agendaCap: 0}, "`table.agendaCap`"],
-		[{stopMultiple: 1}, "`table.stopMultiple`"],
-		[{sizes: {S: 50}}, "`table.sizes`"],
-		[{fabrikaShare: {share: 90}}, "`table.fabrikaShare.share`"],
-		[{fabrikaShare: {percent: 140}}, "`table.fabrikaShare.percent`"],
-		[{fabrikaShare: {labels: "fabrika"}}, "`table.fabrikaShare.labels`"],
-		[{fabrikaShare: {labels: ["fabrika", "fabrika"]}}, "twice"],
-		[{project: {number: -1}}, "`table.project.number`"],
-		[{project: {owner: "not a login"}}, "`table.project.owner`"],
-		[{sections: []}, "`table.sections`"],
-		[{sections: ["Tails", "Tails", OUTSIDE_THE_BETS]}, "twice"],
-		[{sections: ["Tails", "New bets"]}, OUTSIDE_THE_BETS],
-		[{sections: ["Tails", "Customers", OUTSIDE_THE_BETS]}, '"New bets"'],
-		[{sections: ["Bugs", "Features", OUTSIDE_THE_BETS]}, '"Tails", "Customers", "New bets"'],
-		[{flagMultiple: 0.5}, "`table.flagMultiple`"],
-		[{flagMultiple: 2}, "`table.flagMultiple` (2) is not below `table.stopMultiple` (2)"],
-		[{flagMultiple: 2.5, stopMultiple: 2.5}, "is not below"],
-		[{checkDelayDays: 0}, "`table.checkDelayDays`"],
-		[{evidenceSources: {name: "x"}}, "`table.evidenceSources`"],
-		[{evidenceSources: [{name: "x", command: []}]}, "`table.evidenceSources[0].command`"],
-		[{evidenceSources: [{name: "", command: ["x"]}]}, "`table.evidenceSources[0].name`"],
+		[{ cadence: "daily" }, "`table.cadence`"],
+		[{ day: "someday" }, "`table.day`"],
+		[{ timeZone: "Pacific" }, "`table.timeZone`"],
+		[{ timeZone: "" }, "`table.timeZone`"],
+		[{ agendaCap: 0 }, "`table.agendaCap`"],
+		[{ stopMultiple: 1 }, "`table.stopMultiple`"],
+		[{ sizes: { S: 50 } }, "`table.sizes`"],
+		[{ fabrikaShare: { share: 90 } }, "`table.fabrikaShare.share`"],
+		[{ fabrikaShare: { percent: 140 } }, "`table.fabrikaShare.percent`"],
+		[{ fabrikaShare: { labels: "fabrika" } }, "`table.fabrikaShare.labels`"],
+		[{ fabrikaShare: { labels: ["fabrika", "fabrika"] } }, "twice"],
+		[{ project: { number: -1 } }, "`table.project.number`"],
+		[{ project: { owner: "not a login" } }, "`table.project.owner`"],
+		[{ sections: [] }, "`table.sections`"],
+		[{ sections: ["Tails", "Tails", OUTSIDE_THE_BETS] }, "twice"],
+		[{ sections: ["Tails", "New bets"] }, OUTSIDE_THE_BETS],
+		[{ sections: ["Tails", "Customers", OUTSIDE_THE_BETS] }, '"New bets"'],
+		[{ sections: ["Bugs", "Features", OUTSIDE_THE_BETS] }, '"Tails", "Customers", "New bets"'],
+		[{ flagMultiple: 0.5 }, "`table.flagMultiple`"],
+		[{ flagMultiple: 2 }, "`table.flagMultiple` (2) is not below `table.stopMultiple` (2)"],
+		[{ flagMultiple: 2.5, stopMultiple: 2.5 }, "is not below"],
+		[{ checkDelayDays: 0 }, "`table.checkDelayDays`"],
+		[{ evidenceSources: { name: "x" } }, "`table.evidenceSources`"],
+		[{ evidenceSources: [{ name: "x", command: [] }] }, "`table.evidenceSources[0].command`"],
+		[{ evidenceSources: [{ name: "", command: ["x"] }] }, "`table.evidenceSources[0].name`"],
 		[
-			{evidenceSources: [{name: "x", command: ["x"], timeoutSeconds: 601}]},
+			{ evidenceSources: [{ name: "x", command: ["x"], timeoutSeconds: 601 }] },
 			"`table.evidenceSources[0].timeoutSeconds`",
 		],
 		[
-			{evidenceSources: [{name: "x", command: ["x"], shell: true}]},
+			{ evidenceSources: [{ name: "x", command: ["x"], shell: true }] },
 			"`table.evidenceSources[0].shell`",
 		],
 		[
 			{
 				evidenceSources: [
-					{name: "x", command: ["a"]},
-					{name: "x", command: ["b"]},
+					{ name: "x", command: ["a"] },
+					{ name: "x", command: ["b"] },
 				],
 			},
 			"twice",
 		],
-		[{unknown: 1}, "`table.unknown`"],
+		[{ unknown: 1 }, "`table.unknown`"],
 		["weekly", "`table` is not an object"],
 	])("refuses %j whole, naming %s", (table, named) => {
 		const resolved = declared(table);

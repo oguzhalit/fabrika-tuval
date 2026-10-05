@@ -1,24 +1,24 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {errOut, fakeFs, fakeSeams, type HttpReply, type Scripted} from "../fakes.test-support.ts";
-import {ANSWER, FAILED} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {RUNNING_MARKER, runHomes} from "./homes-verb.ts";
-import {offeredLanes} from "./standing-lanes.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { errOut, fakeFs, fakeSeams, type HttpReply, type Scripted } from "../fakes.test-support.ts";
+import { ANSWER, FAILED } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { RUNNING_MARKER, runHomes } from "./homes-verb.ts";
+import { offeredLanes } from "./standing-lanes.ts";
 
 const MILESTONES = /GET .*\/repos\/o\/r\/milestones\?/;
 const LABELS = /GET .*\/repos\/o\/r\/labels\?/;
 
-const UNREADABLE: HttpReply = {status: 502, body: "{}"};
+const UNREADABLE: HttpReply = { status: 502, body: "{}" };
 
 const labels = (...names: ReadonlyArray<string>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify(names.map((name) => ({name}))),
+	body: JSON.stringify(names.map((name) => ({ name }))),
 });
 
 const milestones = (
-	...rows: ReadonlyArray<{readonly number: number; readonly title: string}>
-): HttpReply => ({status: 200, body: JSON.stringify(rows)});
+	...rows: ReadonlyArray<{ readonly number: number; readonly title: string }>
+): HttpReply => ({ status: 200, body: JSON.stringify(rows) });
 
 /** The lanes this repo declares, as the delivery layer hands them over — a fixture, none is shipped. */
 const DECLARED_LANES = ["wayfinder:backlog", "axis:pipeline-hardening"];
@@ -47,12 +47,12 @@ const options = {
 	standingLanes: DECLARED_LANES as ReadonlyArray<string>,
 	repo: null,
 	json: false,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
 };
 
 const run = (
 	script: ReadonlyArray<Scripted>,
-	files: Record<string, string | null> = {"ROADMAP.md": ROADMAP},
+	files: Record<string, string | null> = { "ROADMAP.md": ROADMAP },
 	overrides: Partial<typeof options> = {},
 	fs: {
 		readonly unreadable?: ReadonlyArray<string>;
@@ -61,16 +61,16 @@ const run = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runHomes({...options, ...overrides}),
+			runHomes({ ...options, ...overrides }),
 			// The label read is appended, never prepended: a case that scripts `LABELS` itself is
 			// asserting on the presence filter, and its entry has to win the first-match lookup.
-			Layer.merge(fakeSeams([...script, bothLabels]).layer, fakeFs({files, ...fs}).layer),
+			Layer.merge(fakeSeams([...script, bothLabels]).layer, fakeFs({ files, ...fs }).layer),
 		),
 	);
 
 const twoMilestones = [
 	MILESTONES,
-	milestones({number: 24, title: "Search and discovery"}, {number: 44, title: "fabrika"}),
+	milestones({ number: 24, title: "Search and discovery" }, { number: 44, title: "fabrika" }),
 ] as const;
 
 describe("runHomes", () => {
@@ -87,24 +87,24 @@ describe("runHomes", () => {
 	});
 
 	it("joins a milestone to its roadmap row by NUMBER — the two titles share no substring", async () => {
-		const out = await run([twoMilestones], {"ROADMAP.md": ROADMAP}, {json: true});
+		const out = await run([twoMilestones], { "ROADMAP.md": ROADMAP }, { json: true });
 		const payload = JSON.parse(out.stdout);
 		expect(payload.milestones).toEqual([
-			{number: 24, title: "Search and discovery", roadmapRow: "Geçit"},
-			{number: 44, title: "fabrika", roadmapRow: "fabrika campaign"},
+			{ number: 24, title: "Search and discovery", roadmapRow: "Geçit" },
+			{ number: 44, title: "fabrika", roadmapRow: "fabrika campaign" },
 		]);
 	});
 
 	it("reports an open milestone no roadmap row pins as null rather than hiding it", async () => {
 		const out = await run(
-			[[MILESTONES, milestones({number: 99, title: "off-roadmap"})]],
-			{"ROADMAP.md": ROADMAP},
+			[[MILESTONES, milestones({ number: 99, title: "off-roadmap" })]],
+			{ "ROADMAP.md": ROADMAP },
 			{
 				json: true,
 			},
 		);
 		expect(JSON.parse(out.stdout).milestones).toEqual([
-			{number: 99, title: "off-roadmap", roadmapRow: null},
+			{ number: 99, title: "off-roadmap", roadmapRow: null },
 		]);
 	});
 
@@ -136,9 +136,9 @@ describe("runHomes", () => {
 	it("refuses a roadmap that EXISTS but cannot be read as UNKNOWN rather than answering unjoined", async () => {
 		const out = await run(
 			[twoMilestones],
-			{"ROADMAP.md": ROADMAP},
+			{ "ROADMAP.md": ROADMAP },
 			{},
-			{unreadable: ["ROADMAP.md"]},
+			{ unreadable: ["ROADMAP.md"] },
 		);
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
@@ -146,7 +146,7 @@ describe("runHomes", () => {
 	});
 
 	it("refuses a roadmap whose EXISTENCE could not be probed as UNKNOWN", async () => {
-		const out = await run([twoMilestones], {}, {}, {unprobeable: ["ROADMAP.md"]});
+		const out = await run([twoMilestones], {}, {}, { unprobeable: ["ROADMAP.md"] });
 		expect(out.code).toBe(PRECONDITION_UNKNOWN);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain("cannot probe the roadmap");
@@ -170,16 +170,16 @@ describe("runHomes", () => {
 	});
 
 	it("names the flagged path in that notice, not a compiled-in default", async () => {
-		const out = await run([twoMilestones], {}, {roadmap: "docs/ROADMAP.md"});
+		const out = await run([twoMilestones], {}, { roadmap: "docs/ROADMAP.md" });
 		expect(out.stderr.join("\n")).toContain("no roadmap at docs/ROADMAP.md");
 	});
 
 	it("carries the milestones with a null roadmapRow into valid --json on the absent path", async () => {
-		const out = await run([twoMilestones], {}, {json: true});
+		const out = await run([twoMilestones], {}, { json: true });
 		expect(out.code).toBe(ANSWER);
 		expect(JSON.parse(out.stdout).milestones).toEqual([
-			{number: 24, title: "Search and discovery", roadmapRow: null},
-			{number: 44, title: "fabrika", roadmapRow: null},
+			{ number: 24, title: "Search and discovery", roadmapRow: null },
+			{ number: 44, title: "fabrika", roadmapRow: null },
 		]);
 	});
 
@@ -190,7 +190,7 @@ describe("runHomes", () => {
 	});
 
 	it("REFUSES a roadmap that parsed to 0 arc rows — a grammar change empties the join silently", async () => {
-		const out = await run([twoMilestones], {"ROADMAP.md": "# Roadmap\n\nNo tables.\n"});
+		const out = await run([twoMilestones], { "ROADMAP.md": "# Roadmap\n\nNo tables.\n" });
 		expect(out.code).toBe(ZERO_SCOPE);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toContain("0 arc rows");
@@ -198,7 +198,7 @@ describe("runHomes", () => {
 
 	it("passes a roadmap with arcs but ZERO campaigns — that is a legitimate state", async () => {
 		const arcsOnly = "## Arcs\n\n| Arc | Milestone |\n|---|---|\n| Geçit | #24 |\n";
-		const out = await run([twoMilestones], {"ROADMAP.md": arcsOnly});
+		const out = await run([twoMilestones], { "ROADMAP.md": arcsOnly });
 		expect(out.code).toBe(ANSWER);
 	});
 
@@ -207,7 +207,7 @@ describe("runHomes", () => {
 		await Effect.runPromise(
 			Effect.provide(
 				runHomes(options),
-				Layer.merge(shell.layer, fakeFs({files: {"ROADMAP.md": ROADMAP}}).layer),
+				Layer.merge(shell.layer, fakeFs({ files: { "ROADMAP.md": ROADMAP } }).layer),
 			),
 		);
 		const call = shell.requests.find((line) => line.includes("/milestones")) ?? "";
@@ -218,7 +218,7 @@ describe("runHomes", () => {
 	it("reads the roadmap the --roadmap flag names", async () => {
 		const out = await run(
 			[twoMilestones],
-			{"docs/ROADMAP.md": ROADMAP},
+			{ "docs/ROADMAP.md": ROADMAP },
 			{
 				roadmap: "docs/ROADMAP.md",
 			},
@@ -229,7 +229,7 @@ describe("runHomes", () => {
 	it("refuses when no target repo resolves", async () => {
 		const out = await run(
 			[[/git remote get-url/, errOut("no origin")]],
-			{"ROADMAP.md": ROADMAP},
+			{ "ROADMAP.md": ROADMAP },
 			{
 				env: {},
 			},
@@ -248,7 +248,7 @@ describe("runHomes and the running-campaign marker", () => {
 	});
 
 	it("marks the active campaign's milestone row and leaves every other row exactly as today", async () => {
-		const out = await run([twoMilestones], {"ROADMAP.md": withActive("#44")});
+		const out = await run([twoMilestones], { "ROADMAP.md": withActive("#44") });
 		expect(out.code).toBe(ANSWER);
 		expect(out.stdout.trimEnd().split("\n")).toEqual([
 			"homes",
@@ -260,21 +260,21 @@ describe("runHomes and the running-campaign marker", () => {
 	});
 
 	it("carries the same fact as a per-milestone --json field, absent on an unmarked row", async () => {
-		const out = await run([twoMilestones], {"ROADMAP.md": withActive("#44")}, {json: true});
+		const out = await run([twoMilestones], { "ROADMAP.md": withActive("#44") }, { json: true });
 		expect(JSON.parse(out.stdout).milestones).toEqual([
-			{number: 24, title: "Search and discovery", roadmapRow: "Geçit"},
-			{number: 44, title: "fabrika", roadmapRow: "fabrika campaign", running: RUNNING_MARKER},
+			{ number: 24, title: "Search and discovery", roadmapRow: "Geçit" },
+			{ number: 44, title: "fabrika", roadmapRow: "fabrika campaign", running: RUNNING_MARKER },
 		]);
 	});
 
 	it("still LISTS the active campaign's milestone — the marker annotates a row, it never removes one", async () => {
-		const out = await run([twoMilestones], {"ROADMAP.md": withActive("#44")});
+		const out = await run([twoMilestones], { "ROADMAP.md": withActive("#44") });
 		expect(out.stdout).toContain("milestone\t44\tfabrika");
 	});
 
 	it("marks no row when no campaign is active, and answers exactly as it does today", async () => {
-		const text = await run([twoMilestones], {"ROADMAP.md": ROADMAP});
-		const machine = await run([twoMilestones], {"ROADMAP.md": ROADMAP}, {json: true});
+		const text = await run([twoMilestones], { "ROADMAP.md": ROADMAP });
+		const machine = await run([twoMilestones], { "ROADMAP.md": ROADMAP }, { json: true });
 		expect(text.stdout).not.toContain("running");
 		expect(machine.stdout).not.toContain("running");
 		expect(text.stderr.join("\n")).toContain("campaigns: none active");
@@ -290,7 +290,7 @@ describe("runHomes and the running-campaign marker", () => {
 	});
 
 	it("leaves every row unmarked, and does not fail, when the active campaign names a milestone not open", async () => {
-		const out = await run([twoMilestones], {"ROADMAP.md": withActive("#999")});
+		const out = await run([twoMilestones], { "ROADMAP.md": withActive("#999") });
 		expect(out.code).toBe(ANSWER);
 		expect(out.stdout).not.toContain("running");
 		expect(out.stderr.join("\n")).toContain("fabrika campaign (#999)");
@@ -330,7 +330,11 @@ describe("runHomes and the standing lanes the host repo carries", () => {
 	});
 
 	it("carries the offered lanes, not the declared set, into the --json payload", async () => {
-		const out = await run([twoMilestones, [LABELS, labels("wayfinder:backlog")]], {}, {json: true});
+		const out = await run(
+			[twoMilestones, [LABELS, labels("wayfinder:backlog")]],
+			{},
+			{ json: true },
+		);
 		expect(JSON.parse(out.stdout).lanes).toEqual(
 			offeredLanes(DECLARED_LANES, new Set(["wayfinder:backlog"])),
 		);
@@ -352,15 +356,15 @@ describe("runHomes and the standing lanes the host repo carries", () => {
 		const shell = fakeSeams([twoMilestones]);
 		await Effect.runPromise(
 			Effect.provide(
-				runHomes({...options, standingLanes: []}),
-				Layer.merge(shell.layer, fakeFs({files: {"ROADMAP.md": ROADMAP}}).layer),
+				runHomes({ ...options, standingLanes: [] }),
+				Layer.merge(shell.layer, fakeFs({ files: { "ROADMAP.md": ROADMAP } }).layer),
 			),
 		);
 		expect(shell.requests.some((line) => line.includes("/labels"))).toBe(false);
 	});
 
 	it("says the repo declares none rather than printing a bare 0-of-0 count", async () => {
-		const out = await run([twoMilestones], {"ROADMAP.md": ROADMAP}, {standingLanes: []});
+		const out = await run([twoMilestones], { "ROADMAP.md": ROADMAP }, { standingLanes: [] });
 		expect(out.code).toBe(ANSWER);
 		expect(out.stdout).not.toContain("lane\t");
 		expect(out.stderr.join("\n")).toContain("standing lanes: this repo declares none.");

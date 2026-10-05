@@ -2,10 +2,10 @@
  * `fabrika --version` reports what shipped. The derivation is the only thing that can regress,
  * so that is what these assertions read.
  */
-import {readFileSync} from "node:fs";
-import {fileURLToPath} from "node:url";
-import {assert, describe, it} from "@effect/vitest";
-import {VERSION} from "./version.ts";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { assert, describe, it } from "@effect/vitest";
+import { VERSION } from "./version.ts";
 
 const packagePath = (rel: string) => fileURLToPath(new URL(`../${rel}`, import.meta.url));
 

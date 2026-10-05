@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import {inputFromEnv, JOBS_ENV_KEY, judge} from "../ci/required.ts";
-import {CI_REQUIRED_ROLLUP_LOG} from "./fixtures.test-support.ts";
-import {classifyLog, SIGNATURES} from "./signatures.ts";
+import { describe, expect, it } from "vitest";
+import { inputFromEnv, JOBS_ENV_KEY, judge } from "../ci/required.ts";
+import { CI_REQUIRED_ROLLUP_LOG } from "./fixtures.test-support.ts";
+import { classifyLog, SIGNATURES } from "./signatures.ts";
 
 /** One fixture per row, so the table is exercised by its own contract rather than by a sample. */
 const FIXTURES: ReadonlyArray<readonly [string, string]> = [
@@ -30,7 +30,7 @@ describe("the taxonomy is a table, and every row is reachable", () => {
 	});
 
 	it("puts every transient row above every logic row, and the derived row below both", () => {
-		const rank = {transient: 0, logic: 1, derived: 2};
+		const rank = { transient: 0, logic: 1, derived: 2 };
 		const ranks = SIGNATURES.map((row) => rank[row.class]);
 		expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
 		expect(SIGNATURES.at(-1)?.class).toBe("derived");
@@ -55,12 +55,12 @@ describe("a roll-up that only restates another job's verdict is derived", () => 
 	});
 
 	it.each([
-		["a should-have-run job that failed", "success", {required: true, result: "failure"}],
-		["a should-have-run job that never ran", "success", {required: true, result: "skipped"}],
-		["a not-required job that was cancelled", "success", {required: false, result: "cancelled"}],
-		["a failed required-ness source", "failure", {required: false, result: "skipped"}],
+		["a should-have-run job that failed", "success", { required: true, result: "failure" }],
+		["a should-have-run job that never ran", "success", { required: true, result: "skipped" }],
+		["a not-required job that was cancelled", "success", { required: false, result: "cancelled" }],
+		["a failed required-ness source", "failure", { required: false, result: "skipped" }],
 	] as const)("matches the line the gate prints for %s", (_case, changesResult, job) => {
-		const verdict = judge({changesResult, jobs: [{name: "unit", ...job}], scopeReasons: []});
+		const verdict = judge({ changesResult, jobs: [{ name: "unit", ...job }], scopeReasons: [] });
 		const failing = [verdict.changesReport, ...verdict.jobs].filter(
 			(report) => report?.verdict === "FAIL",
 		);
@@ -70,10 +70,10 @@ describe("a roll-up that only restates another job's verdict is derived", () => 
 	});
 
 	it.each([
-		["names no gating job", {CHANGES_RESULT: "success"}],
+		["names no gating job", { CHANGES_RESULT: "success" }],
 		[
 			"declares a job whose required-ness key is absent",
-			{CHANGES_RESULT: "success", [JOBS_ENV_KEY]: "unit", UNIT_RESULT: "success"},
+			{ CHANGES_RESULT: "success", [JOBS_ENV_KEY]: "unit", UNIT_RESULT: "success" },
 		],
 	])("leaves a roll-up that failed on its own scope read unclassified when it %s", (_case, env) => {
 		const verdict = judge(inputFromEnv(env));

@@ -20,7 +20,7 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9508
  */
 
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const CI = "ci";
 
@@ -45,7 +45,7 @@ export interface MainAlarmSurface {
 }
 
 /** The shipped alarm surface: fabrika's own label, and nobody to wake until a repo says who. */
-export const SHIPPED_MAIN_ALARM: MainAlarmSurface = {mention: [], label: "fabrika-main-alarm"};
+export const SHIPPED_MAIN_ALARM: MainAlarmSurface = { mention: [], label: "fabrika-main-alarm" };
 
 export interface CiSurface {
 	readonly noProducer: NoProducer;
@@ -72,7 +72,7 @@ const KNOWN: ReadonlyArray<string> = ["noProducer", "gateWorkflow", "mainAlarm"]
 
 const decodeNoProducer = (raw: unknown): Decoded<NoProducer> =>
 	typeof raw === "string" && (NO_PRODUCER_VALUES as ReadonlyArray<string>).includes(raw.trim())
-		? {_tag: "Value", value: raw.trim() as NoProducer}
+		? { _tag: "Value", value: raw.trim() as NoProducer }
 		: {
 				_tag: "Malformed",
 				reason: `${named("noProducer")} is not one of ${NO_PRODUCER_VALUES.join(", ")}`,
@@ -93,7 +93,7 @@ const decodeGateWorkflow = (raw: unknown): Decoded<string> => {
 			reason: `${named("gateWorkflow")} is not a bare workflow filename — e.g. "ci.yml", not a path under .github/workflows`,
 		};
 	}
-	return {_tag: "Value", value};
+	return { _tag: "Value", value };
 };
 
 const MAIN_ALARM_KNOWN: ReadonlyArray<string> = ["mention", "label"];
@@ -108,7 +108,7 @@ const MAIN_ALARM_KNOWN: ReadonlyArray<string> = ["mention", "label"];
  */
 const decodeMention = (raw: unknown): Decoded<ReadonlyArray<string>> => {
 	if (!Array.isArray(raw)) {
-		return {_tag: "Malformed", reason: `${named("mainAlarm.mention")} is not a list of handles`};
+		return { _tag: "Malformed", reason: `${named("mainAlarm.mention")} is not a list of handles` };
 	}
 	const handles: string[] = [];
 	for (const entry of raw) {
@@ -120,7 +120,7 @@ const decodeMention = (raw: unknown): Decoded<ReadonlyArray<string>> => {
 		}
 		handles.push(entry.trim());
 	}
-	return {_tag: "Value", value: handles};
+	return { _tag: "Value", value: handles };
 };
 
 /**
@@ -138,13 +138,13 @@ const decodeLabel = (raw: unknown): Decoded<string> => {
 			reason: `${named("mainAlarm.label")} is not a single label name — e.g. "fabrika-main-alarm"`,
 		};
 	}
-	return {_tag: "Value", value};
+	return { _tag: "Value", value };
 };
 
 const decodeMainAlarm = (raw: unknown): Decoded<MainAlarmSurface> => {
 	const record = asRecord(raw);
 	if (record === null) {
-		return {_tag: "Malformed", reason: `${named("mainAlarm")} is not an object`};
+		return { _tag: "Malformed", reason: `${named("mainAlarm")} is not an object` };
 	}
 	const stray = Object.keys(record).find((key) => !MAIN_ALARM_KNOWN.includes(key));
 	if (stray !== undefined) {
@@ -156,22 +156,22 @@ const decodeMainAlarm = (raw: unknown): Decoded<MainAlarmSurface> => {
 
 	const mention =
 		record.mention === undefined
-			? ({_tag: "Value", value: SHIPPED_MAIN_ALARM.mention} as const)
+			? ({ _tag: "Value", value: SHIPPED_MAIN_ALARM.mention } as const)
 			: decodeMention(record.mention);
 	if (mention._tag === "Malformed") return mention;
 
 	const label =
 		record.label === undefined
-			? ({_tag: "Value", value: SHIPPED_MAIN_ALARM.label} as const)
+			? ({ _tag: "Value", value: SHIPPED_MAIN_ALARM.label } as const)
 			: decodeLabel(record.label);
 	if (label._tag === "Malformed") return label;
 
-	return {_tag: "Value", value: {mention: mention.value, label: label.value}};
+	return { _tag: "Value", value: { mention: mention.value, label: label.value } };
 };
 
 const decode = (raw: unknown): Decoded<CiSurface> => {
 	const record = asRecord(raw);
-	if (record === null) return {_tag: "Malformed", reason: `\`${CI}\` is not an object`};
+	if (record === null) return { _tag: "Malformed", reason: `\`${CI}\` is not an object` };
 	const stray = Object.keys(record).find((key) => !KNOWN.includes(key));
 	if (stray !== undefined) {
 		return {
@@ -182,19 +182,19 @@ const decode = (raw: unknown): Decoded<CiSurface> => {
 
 	const noProducer =
 		record.noProducer === undefined
-			? ({_tag: "Value", value: SHIPPED_CI.noProducer} as const)
+			? ({ _tag: "Value", value: SHIPPED_CI.noProducer } as const)
 			: decodeNoProducer(record.noProducer);
 	if (noProducer._tag === "Malformed") return noProducer;
 
 	const gateWorkflow =
 		record.gateWorkflow === undefined
-			? ({_tag: "Value", value: SHIPPED_CI.gateWorkflow} as const)
+			? ({ _tag: "Value", value: SHIPPED_CI.gateWorkflow } as const)
 			: decodeGateWorkflow(record.gateWorkflow);
 	if (gateWorkflow._tag === "Malformed") return gateWorkflow;
 
 	const mainAlarm =
 		record.mainAlarm === undefined
-			? ({_tag: "Value", value: SHIPPED_MAIN_ALARM} as const)
+			? ({ _tag: "Value", value: SHIPPED_MAIN_ALARM } as const)
 			: decodeMainAlarm(record.mainAlarm);
 	if (mainAlarm._tag === "Malformed") return mainAlarm;
 
@@ -238,7 +238,7 @@ export const ciKey: KeyGroup<CiSurface> = {
 						type: "array",
 						description:
 							'The handles the alarm mentions — e.g. ["@someone"]. Empty mentions nobody and still files.',
-						items: {type: "string", minLength: 1, pattern: "^\\S+$"},
+						items: { type: "string", minLength: 1, pattern: "^\\S+$" },
 					},
 					label: {
 						type: "string",

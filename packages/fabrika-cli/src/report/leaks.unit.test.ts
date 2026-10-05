@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {isBareAtReference, renderLeaks, scanBody} from "./leaks.ts";
+import { describe, expect, it } from "vitest";
+import { isBareAtReference, renderLeaks, scanBody } from "./leaks.ts";
 
 describe("scanBody", () => {
 	it("classifies the three shapes and keeps the class root in the mask", () => {
@@ -52,7 +52,7 @@ describe("scanBody", () => {
 
 	it("reports the 1-based line of each hit", () => {
 		const scan = scanBody(["clean", "clean", "/tmp/x/y"].join("\n"));
-		expect(scan.leaks).toEqual([{line: 3, class: "temp root", text: "/tmp/x/y"}]);
+		expect(scan.leaks).toEqual([{ line: 3, class: "temp root", text: "/tmp/x/y" }]);
 		expect(renderLeaks(scan.leaks)).toEqual(["  line 3, temp root"]);
 	});
 
@@ -70,7 +70,7 @@ describe("scanBody", () => {
 
 	it("leaves a repo-relative path untouched — the Pointers section is repo-relative by contract", () => {
 		const body = "packages/fabrika-cli/src/report/leaks.ts and src/worker/http/retry.ts";
-		expect(scanBody(body)).toEqual({leaks: [], redacted: body});
+		expect(scanBody(body)).toEqual({ leaks: [], redacted: body });
 	});
 
 	/**
@@ -82,13 +82,13 @@ describe("scanBody", () => {
 		it("takes a home marker inside a fenced code block", () => {
 			const body = ["```bash", "grep -nE '(~/|/Users/|/home/)' -- .", "```"].join("\n");
 			expect(scanBody(body).leaks).toEqual([
-				{line: 2, class: "home-relative", text: "~/|/Users/|/home"},
+				{ line: 2, class: "home-relative", text: "~/|/Users/|/home" },
 			]);
 		});
 
 		it("takes a scratch root a doc may legitimately cite", () => {
 			expect(scanBody("scratch lands under /tmp/fabrika-build/x").leaks).toEqual([
-				{line: 1, class: "temp root", text: "/tmp/fabrika-build/x"},
+				{ line: 1, class: "temp root", text: "/tmp/fabrika-build/x" },
 			]);
 		});
 
@@ -116,7 +116,7 @@ describe("scanBody's tilde-slash path-alias shapes", () => {
 		["a double-quoted `paths` key", `    "~/*": ["./src/*"],`],
 		["a single-quoted `paths` key", "{'~/components/*' : ['./src/components/*']}"],
 	])("passes %s", (_name, body) => {
-		expect(scanBody(body)).toEqual({leaks: [], redacted: body});
+		expect(scanBody(body)).toEqual({ leaks: [], redacted: body });
 	});
 
 	it.each([
@@ -147,7 +147,7 @@ describe("scanBody's tilde-slash path-alias shapes", () => {
 		],
 	])("still refuses %s", (_name, body) => {
 		expect(scanBody(body).leaks).toEqual([
-			expect.objectContaining({line: 1, class: "home-relative"}),
+			expect.objectContaining({ line: 1, class: "home-relative" }),
 		]);
 	});
 
@@ -158,7 +158,9 @@ describe("scanBody's tilde-slash path-alias shapes", () => {
 	it("masks only the home path on a line that also carries an exempt specifier", () => {
 		const specifier = `import {cn} from "~/lib/utils";`;
 		const scan = scanBody(`${specifier} // copied from ~/Documents/notes.txt`);
-		expect(scan.leaks).toEqual([{line: 1, class: "home-relative", text: "~/Documents/notes.txt"}]);
+		expect(scan.leaks).toEqual([
+			{ line: 1, class: "home-relative", text: "~/Documents/notes.txt" },
+		]);
 		expect(scan.redacted).toBe(`${specifier} // copied from ~/<redacted>`);
 	});
 });
@@ -166,7 +168,9 @@ describe("scanBody's tilde-slash path-alias shapes", () => {
 describe("scanBody's email shape", () => {
 	it("refuses an address and masks it whole, domain included", () => {
 		const scan = scanBody("mail first.last+tag@mail.company.io, then retry");
-		expect(scan.leaks).toEqual([{line: 1, class: "email", text: "first.last+tag@mail.company.io"}]);
+		expect(scan.leaks).toEqual([
+			{ line: 1, class: "email", text: "first.last+tag@mail.company.io" },
+		]);
 		expect(scan.redacted).toBe("mail <redacted email>, then retry");
 	});
 
@@ -179,7 +183,7 @@ describe("scanBody's email shape", () => {
 		["an @mention", "@usirin said so"],
 		["a scoped package", "@effect/platform@4.0.0"],
 	])("passes %s", (_name, body) => {
-		expect(scanBody(body)).toEqual({leaks: [], redacted: body});
+		expect(scanBody(body)).toEqual({ leaks: [], redacted: body });
 	});
 
 	it("masks a path whole before the address inside it is read", () => {
@@ -189,11 +193,11 @@ describe("scanBody's email shape", () => {
 });
 
 describe("scanBody with declared leakNames", () => {
-	const names = {privateRepos: ["acme/secret"], identifiers: ["Jane Roe"]};
+	const names = { privateRepos: ["acme/secret"], identifiers: ["Jane Roe"] };
 
 	it("passes the bare slug — naming the repo is allowed", () => {
 		const body = "the acme/secret repo has the same bug; see acme/secret-tools#4 too";
-		expect(scanBody(body, names)).toEqual({leaks: [], redacted: body});
+		expect(scanBody(body, names)).toEqual({ leaks: [], redacted: body });
 	});
 
 	it("refuses a link to the repo, with or without a scheme, and masks it whole", () => {
@@ -214,7 +218,7 @@ describe("scanBody with declared leakNames", () => {
 	it("refuses an issue reference and keeps the name while dropping the number", () => {
 		const scan = scanBody("tracked in acme/secret#482.", names);
 		expect(scan.leaks).toEqual([
-			{line: 1, class: "private repo reference", text: "acme/secret#482"},
+			{ line: 1, class: "private repo reference", text: "acme/secret#482" },
 		]);
 		expect(scan.redacted).toBe("tracked in acme/secret#<redacted>.");
 	});
@@ -231,7 +235,7 @@ describe("scanBody with declared leakNames", () => {
 	});
 
 	it("treats a declared name as literal text, not a pattern", () => {
-		const scan = scanBody("a.b and axb", {privateRepos: [], identifiers: ["a.b"]});
+		const scan = scanBody("a.b and axb", { privateRepos: [], identifiers: ["a.b"] });
 		expect(scan.redacted).toBe("<redacted> and axb");
 	});
 });

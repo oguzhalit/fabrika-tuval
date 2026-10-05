@@ -18,12 +18,12 @@
  * The write is proved the way the arm is: `merged` **and** the merge commit read back off the PR
  * after the call, because the merge call's own response is a claim and not evidence.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {listComments} from "../io/issues.ts";
-import {ownershipGate} from "../ownership/gate.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { listComments } from "../io/issues.ts";
+import { ownershipGate } from "../ownership/gate.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
 import {
 	NO_LANDING_METHOD,
 	PR_NOT_OURS,
@@ -33,8 +33,8 @@ import {
 	STALE_HEAD,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {mergePull, readLanding, readMergeProof} from "./landing.ts";
-import {readDefiniteMergeability} from "./mergeability.ts";
+import { mergePull, readLanding, readMergeProof } from "./landing.ts";
+import { readDefiniteMergeability } from "./mergeability.ts";
 import {
 	badNumber,
 	inspectedSha,
@@ -64,7 +64,7 @@ export const runMerge = (
 	ChildProcessSpawner.ChildProcessSpawner | HttpClient.HttpClient
 > =>
 	Effect.gen(function* () {
-		const {pr, json} = options;
+		const { pr, json } = options;
 		const bad = badNumber(VERB, "a pull-request number", pr);
 		if (bad !== null) return bad;
 		const bound = inspectedSha(VERB, options.sha);
@@ -92,9 +92,9 @@ export const runMerge = (
 		const owned = yield* ownershipGate(
 			VERB,
 			repo,
-			{number: pr, author: pull.authorLogin, baseRef: pull.baseRef},
+			{ number: pr, author: pull.authorLogin, baseRef: pull.baseRef },
 			listComments(repo, pr),
-			{notOurs: PR_NOT_OURS, unknown: PRECONDITION_UNKNOWN},
+			{ notOurs: PR_NOT_OURS, unknown: PRECONDITION_UNKNOWN },
 			"nothing was merged.",
 		);
 		if (owned._tag === "Refused") return owned.outcome;
@@ -181,7 +181,7 @@ export const runMerge = (
 
 		return json
 			? answer(
-					JSON.stringify({outcome: "merged", sha: bound, method, mergeCommit: commit}),
+					JSON.stringify({ outcome: "merged", sha: bound, method, mergeCommit: commit }),
 					diagnostics,
 				)
 			: answer(`merged\t${commit}\t${method}`, diagnostics);

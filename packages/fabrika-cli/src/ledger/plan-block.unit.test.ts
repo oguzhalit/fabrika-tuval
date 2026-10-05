@@ -1,7 +1,7 @@
-import {describe, expect, it} from "vitest";
-import {read as readAcceptanceCriteria} from "../wire/acceptance-criteria.ts";
-import {planBlock} from "./fixtures.test-support.ts";
-import {checkPlanBlock, PLAN_SECTIONS} from "./plan-block.ts";
+import { describe, expect, it } from "vitest";
+import { read as readAcceptanceCriteria } from "../wire/acceptance-criteria.ts";
+import { planBlock } from "./fixtures.test-support.ts";
+import { checkPlanBlock, PLAN_SECTIONS } from "./plan-block.ts";
 
 describe("checkPlanBlock", () => {
 	it("passes a block carrying every section once, in order, with contiguous stories", () => {
@@ -13,8 +13,8 @@ describe("checkPlanBlock", () => {
 	});
 
 	it("names the missing sections rather than the first one", () => {
-		const checked = checkPlanBlock(planBlock({drop: "Approach"}));
-		expect(checked).toMatchObject({_tag: "Bad"});
+		const checked = checkPlanBlock(planBlock({ drop: "Approach" }));
+		expect(checked).toMatchObject({ _tag: "Bad" });
 		expect(checked).toMatchObject({
 			reason: expect.stringContaining("missing section(s): Approach"),
 		});
@@ -44,7 +44,7 @@ describe("checkPlanBlock", () => {
 	});
 
 	it("refuses a mis-numbered story list", () => {
-		const checked = checkPlanBlock(planBlock({stories: "1. one\n2. two\n4. four"}));
+		const checked = checkPlanBlock(planBlock({ stories: "1. one\n2. two\n4. four" }));
 		expect(checked).toMatchObject({
 			reason:
 				"user stories are numbered 1, 2, 4 — a story list must run from 1 with no gaps or repeats.",
@@ -57,20 +57,20 @@ describe("checkPlanBlock", () => {
 	 * gate's floor then reds `MISSING_STORIES_SECTION` over the whole epic.
 	 */
 	it("refuses a story section written as bullets — it parses as zero stories", () => {
-		const checked = checkPlanBlock(planBlock({stories: "- As a moderator, I want a queue."}));
+		const checked = checkPlanBlock(planBlock({ stories: "- As a moderator, I want a queue." }));
 		expect(checked).toMatchObject({
 			reason: expect.stringContaining("the plan declares zero user stories"),
 		});
 	});
 
 	it("refuses an `S<n>`-labelled story list for the same reason", () => {
-		expect(checkPlanBlock(planBlock({stories: "S1. one\nS2. two"}))).toMatchObject({
+		expect(checkPlanBlock(planBlock({ stories: "S1. one\nS2. two" }))).toMatchObject({
 			reason: expect.stringContaining("zero user stories"),
 		});
 	});
 
 	it("names `Acceptance criteria` when the plan omits it — the epic tail's contract", () => {
-		const checked = checkPlanBlock(planBlock({drop: "Acceptance criteria"}));
+		const checked = checkPlanBlock(planBlock({ drop: "Acceptance criteria" }));
 		expect(checked).toMatchObject({
 			reason: expect.stringContaining("missing section(s): Acceptance criteria"),
 		});
@@ -78,7 +78,7 @@ describe("checkPlanBlock", () => {
 
 	it("refuses criteria written as prose — the wire reader would find none", () => {
 		const checked = checkPlanBlock(
-			planBlock({criteria: "The tail ships when every child is wired."}),
+			planBlock({ criteria: "The tail ships when every child is wired." }),
 		);
 		expect(checked).toMatchObject({
 			reason: expect.stringContaining("acceptance criteria read as"),
@@ -109,11 +109,11 @@ describe("checkPlanBlock", () => {
 		const checked = checkPlanBlock(
 			planBlock().replace("### Approach\n\nSomething true about this section.", fencedExample),
 		);
-		expect(checked).toMatchObject({_tag: "Ok"});
+		expect(checked).toMatchObject({ _tag: "Ok" });
 	});
 
 	it("passes criteria written as checkbox rows under their heading", () => {
-		expect(checkPlanBlock(planBlock({criteria: "- [ ] one\n- [ ] two"}))).toMatchObject({
+		expect(checkPlanBlock(planBlock({ criteria: "- [ ] one\n- [ ] two" }))).toMatchObject({
 			_tag: "Ok",
 		});
 	});
@@ -121,7 +121,7 @@ describe("checkPlanBlock", () => {
 	it("does not judge content — a TBD section passes", () => {
 		expect(
 			checkPlanBlock(planBlock().replace("Something true about this section.", "TBD")),
-		).toMatchObject({_tag: "Ok"});
+		).toMatchObject({ _tag: "Ok" });
 	});
 });
 
@@ -132,8 +132,8 @@ describe("checkPlanBlock", () => {
  */
 describe("the staged block survives the splice into an epic body", () => {
 	it("reads back Found, and the enriched appendix's buried block is not the contract", () => {
-		const block = planBlock({criteria: "- [ ] one\n- [ ] two"});
-		expect(checkPlanBlock(block)).toMatchObject({_tag: "Ok"});
+		const block = planBlock({ criteria: "- [ ] one\n- [ ] two" });
+		expect(checkPlanBlock(block)).toMatchObject({ _tag: "Ok" });
 
 		const body = [
 			"## Pitch\n\nwords\n",

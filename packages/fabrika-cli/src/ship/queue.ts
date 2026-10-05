@@ -11,7 +11,7 @@
  *   other. The timeline itself lags the truth by up to ~65 minutes, which is why the base branch is
  *   cross-checked at all.
  */
-import type {TimelineEvent} from "./github.ts";
+import type { TimelineEvent } from "./github.ts";
 
 export const ADDED = "added_to_merge_queue";
 export const REMOVED = "removed_from_merge_queue";

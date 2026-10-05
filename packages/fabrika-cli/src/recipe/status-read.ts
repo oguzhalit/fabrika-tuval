@@ -10,8 +10,8 @@
  * A finished workflow answers {@link Finished} rather than a leaf: a terminal is not a park, and
  * inventing a leaf for it is how a completed lane would read as clearable.
  */
-import {isRecord, parseJson} from "../io/json.ts";
-import {isPark} from "./parks.ts";
+import { isRecord, parseJson } from "../io/json.ts";
+import { isPark } from "./parks.ts";
 
 export type LeafRead =
 	| {
@@ -29,8 +29,8 @@ export type LeafRead =
 			/** The founder's step the park waits on, off `context.<task>.founderAct`; else `null`. */
 			readonly founderAct: string | null;
 	  }
-	| {readonly _tag: "Finished"; readonly terminal: string}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Finished"; readonly terminal: string }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 /**
  * The tasks of the active phase — the one phase whose value is an object rather than `"waiting"`.
@@ -87,14 +87,14 @@ const contextOf = (
 export const leafOf = (stdout: string, requested: string | null): LeafRead => {
 	const parsed = parseJson(stdout);
 	if (!isRecord(parsed) || parsed.stateValue === undefined) {
-		return {_tag: "Unreadable", reason: "lane status answered no `stateValue`"};
+		return { _tag: "Unreadable", reason: "lane status answered no `stateValue`" };
 	}
 	const stateValue = parsed.stateValue;
-	if (typeof stateValue === "string") return {_tag: "Finished", terminal: stateValue};
+	if (typeof stateValue === "string") return { _tag: "Finished", terminal: stateValue };
 
 	const tasks = activeTasks(stateValue);
 	if (tasks === null) {
-		return {_tag: "Unreadable", reason: "lane status answered no active phase"};
+		return { _tag: "Unreadable", reason: "lane status answered no active phase" };
 	}
 	const names = Object.keys(tasks);
 	if (requested === null && names.length !== 1) {
@@ -122,12 +122,12 @@ export const leafOf = (stdout: string, requested: string | null): LeafRead => {
 				parkedAt: textOn(parsed, task, "parkedAt"),
 				founderAct: textOn(parsed, task, "founderAct"),
 			}
-		: {_tag: "Unreadable", reason: `task "${task}" carries no leaf state`};
+		: { _tag: "Unreadable", reason: `task "${task}" carries no leaf state` };
 };
 
 export type ClearProof =
-	| {readonly _tag: "Cleared"; readonly leaf: string}
-	| {readonly _tag: "Unproven"; readonly reason: string};
+	| { readonly _tag: "Cleared"; readonly leaf: string }
+	| { readonly _tag: "Unproven"; readonly reason: string };
 
 /**
  * Whether a re-fold proves a park was cleared — the whole read-back decision, as a pure function.
@@ -139,27 +139,27 @@ export type ClearProof =
  */
 export const clearProof = (code: number, stdout: string, task: string): ClearProof => {
 	if (code !== 0) {
-		return {_tag: "Unproven", reason: `the re-fold refused at exit ${code}`};
+		return { _tag: "Unproven", reason: `the re-fold refused at exit ${code}` };
 	}
 	const read = leafOf(stdout, task);
 	if (read._tag !== "Leaf") {
 		const detail = read._tag === "Finished" ? `is "${read.terminal}"` : read.reason;
-		return {_tag: "Unproven", reason: `the re-fold ${detail}`};
+		return { _tag: "Unproven", reason: `the re-fold ${detail}` };
 	}
 	return isPark(read.leaf)
-		? {_tag: "Unproven", reason: `the re-fold still reads the park "${read.leaf}"`}
-		: {_tag: "Cleared", leaf: read.leaf};
+		? { _tag: "Unproven", reason: `the re-fold still reads the park "${read.leaf}"` }
+		: { _tag: "Cleared", leaf: read.leaf };
 };
 
 export type RepairProof =
 	/** The task left the park for the leaf the machine's repair arm reached. */
-	| {readonly _tag: "Repaired"; readonly leaf: string}
+	| { readonly _tag: "Repaired"; readonly leaf: string }
 	/**
 	 * The repair arm's spent-budget fallthrough took the task to an error final, so the fold reads the
 	 * lane's own terminal with the task among its `errors` rather than a leaf.
 	 */
-	| {readonly _tag: "Spent"; readonly terminal: string}
-	| {readonly _tag: "Unproven"; readonly reason: string};
+	| { readonly _tag: "Spent"; readonly terminal: string }
+	| { readonly _tag: "Unproven"; readonly reason: string };
 
 /** Whether `lane status`'s `context.errors` names the task — the fold's own trip record. */
 const trippedOn = (stdout: string, task: string): boolean => {
@@ -184,20 +184,23 @@ export const repairProof = (
 	park: string,
 ): RepairProof => {
 	if (code !== 0) {
-		return {_tag: "Unproven", reason: `the re-fold refused at exit ${code}`};
+		return { _tag: "Unproven", reason: `the re-fold refused at exit ${code}` };
 	}
 	const read = leafOf(stdout, task);
 	if (read._tag === "Finished") {
 		return trippedOn(stdout, task)
-			? {_tag: "Spent", terminal: read.terminal}
-			: {_tag: "Unproven", reason: `the re-fold is "${read.terminal}" with no error on "${task}"`};
+			? { _tag: "Spent", terminal: read.terminal }
+			: {
+					_tag: "Unproven",
+					reason: `the re-fold is "${read.terminal}" with no error on "${task}"`,
+				};
 	}
 	if (read._tag === "Unreadable") {
-		return {_tag: "Unproven", reason: `the re-fold ${read.reason}`};
+		return { _tag: "Unproven", reason: `the re-fold ${read.reason}` };
 	}
 	return read.leaf === park
-		? {_tag: "Unproven", reason: `the re-fold still reads the park "${park}"`}
-		: {_tag: "Repaired", leaf: read.leaf};
+		? { _tag: "Unproven", reason: `the re-fold still reads the park "${park}"` }
+		: { _tag: "Repaired", leaf: read.leaf };
 };
 
 /**

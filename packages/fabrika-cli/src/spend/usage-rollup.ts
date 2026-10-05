@@ -1,5 +1,5 @@
-import type {readUsageLedger} from "./usage-ledger.ts";
-import {type Counter, type Measurement, recordKey, type UsageRecord} from "./usage-record.ts";
+import type { readUsageLedger } from "./usage-ledger.ts";
+import { type Counter, type Measurement, recordKey, type UsageRecord } from "./usage-record.ts";
 
 type Read = ReturnType<typeof readUsageLedger>;
 type Response = typeof Measurement.Type;
@@ -25,7 +25,7 @@ export interface CounterTotal {
 }
 
 const countersOf = (rows: ReadonlyArray<Response>): CounterTotal[] => {
-	const groups = new Map<string, {counter: CounterTotal; values: NativeCounter["value"][]}>();
+	const groups = new Map<string, { counter: CounterTotal; values: NativeCounter["value"][] }>();
 	for (const row of rows) {
 		for (const counter of row.counters) {
 			const identity = {
@@ -41,7 +41,7 @@ const countersOf = (rows: ReadonlyArray<Response>): CounterTotal[] => {
 				counter: {
 					...identity,
 					tokens: null,
-					states: {measured: 0, absent: 0, unsupported: 0, unavailable: 0, "not-applicable": 0},
+					states: { measured: 0, absent: 0, unsupported: 0, unavailable: 0, "not-applicable": 0 },
 				},
 				values: [],
 			};
@@ -51,8 +51,8 @@ const countersOf = (rows: ReadonlyArray<Response>): CounterTotal[] => {
 	}
 	return [...groups.entries()]
 		.sort(([a], [b]) => a.localeCompare(b))
-		.map(([, {counter, values}]) => {
-			const states = {...counter.states};
+		.map(([, { counter, values }]) => {
+			const states = { ...counter.states };
 			states.absent =
 				rows.filter(
 					(row) =>
@@ -65,7 +65,7 @@ const countersOf = (rows: ReadonlyArray<Response>): CounterTotal[] => {
 				states[value.state]++;
 				if (value.state === "measured") tokens = (tokens ?? 0) + value.tokens;
 			}
-			return {...counter, tokens, states};
+			return { ...counter, tokens, states };
 		});
 };
 
@@ -163,7 +163,7 @@ const coverageOf = (records: ReadonlyArray<UsageRecord>, measured: ReadonlyArray
 							: "Coverage is limited to collector evidence.",
 			};
 		});
-	return {state: measured.length > 0 ? "partial" : "unavailable", hosts, groups};
+	return { state: measured.length > 0 ? "partial" : "unavailable", hosts, groups };
 };
 
 export const rollUpUsage = (read: Read, scope: UsageScope = {}) => {
@@ -194,7 +194,7 @@ export const rollUpUsage = (read: Read, scope: UsageScope = {}) => {
 		else groups.set(key, [row]);
 	}
 	return {
-		scope: {repo: scope.repo ?? null, issue: scope.issue ?? null, run: scope.run ?? null},
+		scope: { repo: scope.repo ?? null, issue: scope.issue ?? null, run: scope.run ?? null },
 		responses: rows.length,
 		counters: countersOf(rows),
 		byModel: [...groups.entries()]

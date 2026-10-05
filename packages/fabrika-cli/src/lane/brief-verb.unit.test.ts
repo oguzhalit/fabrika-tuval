@@ -1,8 +1,8 @@
 /** `lane brief` — the three shell prompts it prints, and every refusal that prints none. */
-import {resolve} from "node:path";
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import type {EntrypointRead} from "../delegate/entrypoint.ts";
+import { resolve } from "node:path";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import type { EntrypointRead } from "../delegate/entrypoint.ts";
 import {
 	errOut,
 	fakeFs,
@@ -11,10 +11,10 @@ import {
 	okOut,
 	type Scripted,
 } from "../fakes.test-support.ts";
-import type {ExecResult} from "../io/exec.ts";
-import {PROJECT_SCOPE_FIX} from "../io/projects.ts";
-import type {OverSize} from "../table/flags.ts";
-import type {SizeStop} from "../table/size-stop.ts";
+import type { ExecResult } from "../io/exec.ts";
+import { PROJECT_SCOPE_FIX } from "../io/projects.ts";
+import type { OverSize } from "../table/flags.ts";
+import type { SizeStop } from "../table/size-stop.ts";
 import {
 	EPIC_RULES,
 	EPIC_TAIL_REPAIR_RULES,
@@ -23,8 +23,8 @@ import {
 	RULES,
 	read as readBrief,
 } from "../wire/lane-brief.ts";
-import {runBrief} from "./brief-verb.ts";
-import {seedClasses} from "./class-seed.ts";
+import { runBrief } from "./brief-verb.ts";
+import { seedClasses } from "./class-seed.ts";
 import {
 	BRIEFED_VERB_ABSENT,
 	ISSUE_UNRESOLVED,
@@ -38,8 +38,8 @@ import {
 	SIZE_STOPPED,
 	TASK_UNKNOWN,
 } from "./codes.ts";
-import {emitMachine} from "./emit.ts";
-import {coderTemplateText} from "./fixtures.test-support.ts";
+import { emitMachine } from "./emit.ts";
+import { coderTemplateText } from "./fixtures.test-support.ts";
 
 const ROOT = ".fabrika/lanes";
 const ISSUE_URL = "https://forge.example/o/r/issues/5751";
@@ -50,8 +50,8 @@ const ISSUE_READ = /^GET .*\/repos\/o\/r\/issues\/5751$/;
 const CHILD_READ = /^GET .*\/repos\/o\/r\/issues\/5729$/;
 const PR_CLOSERS = /^POST .*\/graphql$/;
 
-const NOT_FOUND: HttpReply = {status: 404, body: '{"message":"Not Found"}'};
-const SERVER_ERROR: HttpReply = {status: 503, body: '{"message":"Server Error"}'};
+const NOT_FOUND: HttpReply = { status: 404, body: '{"message":"Not Found"}' };
+const SERVER_ERROR: HttpReply = { status: 503, body: '{"message":"Server Error"}' };
 
 const issuePayload = (number: number, url: string): HttpReply => ({
 	status: 200,
@@ -60,7 +60,7 @@ const issuePayload = (number: number, url: string): HttpReply => ({
 		title: TITLE,
 		body: "## What is wrong\n\nNothing prints it, nothing records it.",
 		state: "open",
-		labels: [{name: "type:feature"}],
+		labels: [{ name: "type:feature" }],
 		html_url: url,
 	}),
 });
@@ -73,8 +73,8 @@ const closingPulls = (...rows: ReadonlyArray<readonly [number, string]>): HttpRe
 			repository: {
 				issue: {
 					closedByPullRequestsReferences: {
-						pageInfo: {hasNextPage: false, endCursor: null},
-						nodes: rows.map(([number, url]) => ({number, url, state: "OPEN"})),
+						pageInfo: { hasNextPage: false, endCursor: null },
+						nodes: rows.map(([number, url]) => ({ number, url, state: "OPEN" })),
 					},
 				},
 			},
@@ -85,7 +85,10 @@ const closingPulls = (...rows: ReadonlyArray<readonly [number, string]>): HttpRe
 /** The search index's nomination envelope — candidate numbers, never a proof (`searchOpenPulls`). */
 const nominated = (...numbers: ReadonlyArray<number>): HttpReply => ({
 	status: 200,
-	body: JSON.stringify({total_count: numbers.length, items: numbers.map((number) => ({number}))}),
+	body: JSON.stringify({
+		total_count: numbers.length,
+		items: numbers.map((number) => ({ number })),
+	}),
 });
 
 /** Nothing nominated by the body half, so the union answers off the closing edge alone. */
@@ -94,7 +97,7 @@ const NO_NOMINATIONS: Scripted = [/^GET .*\/search\/issues\?/, nominated()];
 /** An issue nobody commented on, so the owner-comments read is a proven zero unless a case scripts one. */
 const NO_COMMENTS: Scripted = [
 	/^GET .*\/repos\/o\/r\/issues\/\d+\/comments\?/,
-	{status: 200, body: "[]"},
+	{ status: 200, body: "[]" },
 ];
 
 const pullPayload = (number: number, url: string, body: string): HttpReply => ({
@@ -102,8 +105,8 @@ const pullPayload = (number: number, url: string, body: string): HttpReply => ({
 	body: JSON.stringify({
 		number,
 		state: "open",
-		head: {sha: "6ba0a4e2ff5e4f6b9e2b0e4b1f7cf50b7b6a3d21"},
-		base: {ref: "main"},
+		head: { sha: "6ba0a4e2ff5e4f6b9e2b0e4b1f7cf50b7b6a3d21" },
+		base: { ref: "main" },
 		body,
 		changed_files: 1,
 		comments: 0,
@@ -149,7 +152,7 @@ const lane = (
 									task: "issue",
 									event: `ISSUE.${event}`,
 									at: "2026-08-17T00:00:00Z",
-									...(index === 0 && classes !== null ? {classes} : {}),
+									...(index === 0 && classes !== null ? { classes } : {}),
 								}),
 							)
 							.join("\n")}\n`,
@@ -205,7 +208,7 @@ const epicLane = (
 	childClasses: ReadonlyArray<string> = [],
 ) => {
 	const emitted = emitMachine(EPIC, "## Dependencies\n\n- phase 1: #5828\n", [
-		{number: 5828, state: "open", stateReason: null, classes: childClasses},
+		{ number: 5828, state: "open", stateReason: null, classes: childClasses },
 	]);
 	if (emitted._tag !== "Emitted") throw new Error(`the epic fixture did not emit: ${emitted._tag}`);
 	return fakeFs({
@@ -220,7 +223,7 @@ const epicLane = (
 									task,
 									event: `${task.toUpperCase()}.${event}`,
 									at: "2026-08-17T00:00:00Z",
-									...(classes === undefined ? {} : {classes}),
+									...(classes === undefined ? {} : { classes }),
 								}),
 							)
 							.join("\n")}\n`,
@@ -240,8 +243,8 @@ const options = {
 	lane: "5751",
 	task: null as string | null,
 	repo: null as string | null,
-	env: {CLAUDE_PIPELINE_REPO: "o/r"} as Record<string, string | undefined>,
-	entrypoint: {_tag: "Entrypoint", entrypoint: ENTRY} as EntrypointRead,
+	env: { CLAUDE_PIPELINE_REPO: "o/r" } as Record<string, string | undefined>,
+	entrypoint: { _tag: "Entrypoint", entrypoint: ENTRY } as EntrypointRead,
 };
 
 const run = (
@@ -251,7 +254,7 @@ const run = (
 ) =>
 	Effect.runPromise(
 		Effect.provide(
-			runBrief({...options, ...overrides}),
+			runBrief({ ...options, ...overrides }),
 			// The body half is tailed, so a test scripting its own wins the seam's first-match lookup.
 			Layer.merge(fs.layer, fakeSeams([...script, NO_NOMINATIONS, NO_COMMENTS]).layer),
 		),
@@ -268,7 +271,7 @@ describe("lane brief", () => {
 		const brief = readBrief(out.stdout);
 		expect(brief).toMatchObject({
 			_tag: "Found",
-			value: {lane: "5751", task: "issue", state: "build", shell: "builder", issue: ISSUE_URL},
+			value: { lane: "5751", task: "issue", state: "build", shell: "builder", issue: ISSUE_URL },
 		});
 		expect(out.stdout).toContain(RULES);
 	});
@@ -286,7 +289,7 @@ describe("lane brief", () => {
 				state: "review",
 				shell: "reviewer",
 				issue: ISSUE_URL,
-				ground: {_tag: "Pull", pr: PR_URL},
+				ground: { _tag: "Pull", pr: PR_URL },
 			},
 		});
 	});
@@ -306,7 +309,7 @@ describe("lane brief", () => {
 				body: JSON.stringify([
 					{
 						id: 900010,
-						user: {login: "usirin"},
+						user: { login: "usirin" },
 						created_at: "2026-08-17T00:00:00Z",
 						updated_at: "2026-08-17T00:00:00Z",
 						body: "Use the second fork, not the first.",
@@ -315,14 +318,14 @@ describe("lane brief", () => {
 			},
 		];
 		const ROSTER: ReadonlyArray<Scripted> = [
-			[/^GET .*\/repos\/o\/r$/, {status: 200, body: JSON.stringify({default_branch: "main"})}],
+			[/^GET .*\/repos\/o\/r$/, { status: 200, body: JSON.stringify({ default_branch: "main" }) }],
 			[
 				/contents\/\.github\/CODEOWNERS\?ref=main$/,
-				{status: 200, body: "/packages/fabrika-cli/ @o/control-plane\n"},
+				{ status: 200, body: "/packages/fabrika-cli/ @o/control-plane\n" },
 			],
 			[
 				/^GET .*\/orgs\/o\/teams\/control-plane\/members/,
-				{status: 200, body: JSON.stringify([{login: "usirin"}])},
+				{ status: 200, body: JSON.stringify([{ login: "usirin" }]) },
 			],
 		];
 
@@ -340,7 +343,7 @@ describe("lane brief", () => {
 			expect(out.stdout).not.toContain("Use the second fork");
 			expect(readBrief(out.stdout)).toMatchObject({
 				_tag: "Found",
-				value: {ownerComments: {_tag: "Unmarked", urls: [OWNER_COMMENT]}},
+				value: { ownerComments: { _tag: "Unmarked", urls: [OWNER_COMMENT] } },
 			});
 		});
 
@@ -354,7 +357,7 @@ describe("lane brief", () => {
 			expect(out.code).toBe(0);
 			expect(readBrief(out.stdout)).toMatchObject({
 				_tag: "Found",
-				value: {ownerComments: {_tag: "Unknown"}},
+				value: { ownerComments: { _tag: "Unknown" } },
 			});
 			expect(out.stderr.join("\n")).toContain("is UNKNOWN, never zero");
 		});
@@ -369,7 +372,7 @@ describe("lane brief", () => {
 		expect(out.code).toBe(0);
 		expect(readBrief(out.stdout)).toMatchObject({
 			_tag: "Found",
-			value: {state: "build:ui", shell: "ui-builder", ground: {_tag: "Pull", pr: null}},
+			value: { state: "build:ui", shell: "ui-builder", ground: { _tag: "Pull", pr: null } },
 		});
 	});
 
@@ -382,7 +385,7 @@ describe("lane brief", () => {
 		expect(out.code).toBe(0);
 		expect(readBrief(out.stdout)).toMatchObject({
 			_tag: "Found",
-			value: {state: "build:mixed", shell: "mixed-builder", ground: {_tag: "Pull", pr: null}},
+			value: { state: "build:mixed", shell: "mixed-builder", ground: { _tag: "Pull", pr: null } },
 		});
 	});
 
@@ -412,7 +415,7 @@ describe("lane brief", () => {
 		expect(out.code).toBe(0);
 		expect(readBrief(out.stdout)).toMatchObject({
 			_tag: "Found",
-			value: {state: "build:ui", shell: "ui-builder"},
+			value: { state: "build:ui", shell: "ui-builder" },
 		});
 	});
 
@@ -425,7 +428,7 @@ describe("lane brief", () => {
 		expect(out.code).toBe(0);
 		expect(readBrief(out.stdout)).toMatchObject({
 			_tag: "Found",
-			value: {state: "review:ui", shell: "ui-reviewer", ground: {_tag: "Pull", pr: PR_URL}},
+			value: { state: "review:ui", shell: "ui-reviewer", ground: { _tag: "Pull", pr: PR_URL } },
 		});
 	});
 
@@ -448,7 +451,7 @@ describe("lane brief", () => {
 
 		expect(readBrief(out.stdout)).toMatchObject({
 			_tag: "Found",
-			value: {root: resolve(ROOT)},
+			value: { root: resolve(ROOT) },
 		});
 	});
 
@@ -469,11 +472,11 @@ describe("lane brief", () => {
 				[ISSUE_READ, issuePayload(5751, ISSUE_URL)],
 				[PR_CLOSERS, closingPulls()],
 			],
-			{root: absolute},
+			{ root: absolute },
 		);
 
 		expect(out.code).toBe(0);
-		expect(readBrief(out.stdout)).toMatchObject({_tag: "Found", value: {root: absolute}});
+		expect(readBrief(out.stdout)).toMatchObject({ _tag: "Found", value: { root: absolute } });
 	});
 
 	it("briefs the shipper on a `ship` state", async () => {
@@ -485,7 +488,7 @@ describe("lane brief", () => {
 		expect(out.code).toBe(0);
 		expect(readBrief(out.stdout)).toMatchObject({
 			_tag: "Found",
-			value: {state: "ship", shell: "shipper", ground: {_tag: "Pull", pr: PR_URL}},
+			value: { state: "ship", shell: "shipper", ground: { _tag: "Pull", pr: PR_URL } },
 		});
 	});
 
@@ -508,7 +511,7 @@ describe("lane brief", () => {
 					machine: {
 						id: "epic-5680",
 						initial: "phase1",
-						context: {issue_5729: {retries: 0, maxRetries: 2}},
+						context: { issue_5729: { retries: 0, maxRetries: 2 } },
 						states: {
 							phase1: {
 								type: "parallel",
@@ -516,18 +519,18 @@ describe("lane brief", () => {
 									issue_5729: {
 										initial: "queued",
 										states: {
-											queued: {on: {"ISSUE_5729.WIP": "build"}},
-											build: {on: {"ISSUE_5729.DONE": "review"}},
-											review: {on: {"ISSUE_5729.PASS": "ship"}},
-											ship: {on: {"ISSUE_5729.DONE": "shipped"}},
-											shipped: {type: "final"},
+											queued: { on: { "ISSUE_5729.WIP": "build" } },
+											build: { on: { "ISSUE_5729.DONE": "review" } },
+											review: { on: { "ISSUE_5729.PASS": "ship" } },
+											ship: { on: { "ISSUE_5729.DONE": "shipped" } },
+											shipped: { type: "final" },
 										},
 									},
 								},
-								onDone: [{target: "complete", guard: "noErrors"}, {target: "tripped"}],
+								onDone: [{ target: "complete", guard: "noErrors" }, { target: "tripped" }],
 							},
-							complete: {type: "final"},
-							tripped: {type: "final"},
+							complete: { type: "final" },
+							tripped: { type: "final" },
 						},
 					},
 				}),
@@ -544,13 +547,13 @@ describe("lane brief", () => {
 				[CHILD_READ, issuePayload(5729, "https://forge.example/o/r/issues/5729")],
 				[PR_CLOSERS, closingPulls()],
 			],
-			{lane: "5680", task: "issue_5729"},
+			{ lane: "5680", task: "issue_5729" },
 		);
 
 		expect(out.code).toBe(0);
 		expect(readBrief(out.stdout)).toMatchObject({
 			_tag: "Found",
-			value: {lane: "5680", task: "issue_5729", issue: "https://forge.example/o/r/issues/5729"},
+			value: { lane: "5680", task: "issue_5729", issue: "https://forge.example/o/r/issues/5729" },
 		});
 	});
 
@@ -578,19 +581,19 @@ describe("lane brief", () => {
 		expect(out.code).toBe(0);
 		expect(readBrief(out.stdout)).toMatchObject({
 			_tag: "Found",
-			value: {state: "review", shell: "reviewer", ground: {_tag: "Pull", pr: PR_URL}},
+			value: { state: "review", shell: "reviewer", ground: { _tag: "Pull", pr: PR_URL } },
 		});
 	});
 
 	it("refuses a task the machine does not hold", async () => {
-		const out = await run(lane("5751", ["WIP"]), [], {task: "issue_9999"});
+		const out = await run(lane("5751", ["WIP"]), [], { task: "issue_9999" });
 
 		expect(out.code).toBe(TASK_UNKNOWN);
 		expect(out.stdout).toBe("");
 	});
 
 	it("refuses a lane that is not there", async () => {
-		const out = await run(fakeFs({files: {}}), []);
+		const out = await run(fakeFs({ files: {} }), []);
 
 		expect(out.code).toBe(LANE_ABSENT);
 		expect(out.stdout).toBe("");
@@ -610,7 +613,7 @@ describe("lane brief", () => {
 
 	it("refuses when this fabrika's own entrypoint could not be resolved — UNKNOWN, never a brief", async () => {
 		const out = await run(lane("5751", ["WIP"]), [], {
-			entrypoint: {_tag: "Unresolved", reason: "this fabrika's own package root is not on disk"},
+			entrypoint: { _tag: "Unresolved", reason: "this fabrika's own package root is not on disk" },
 		});
 
 		expect(out.code).toBe(LANE_UNREADABLE);
@@ -621,7 +624,7 @@ describe("lane brief", () => {
 	it("refuses a resolved entrypoint node cannot run — a binstub must never reach the brief", async () => {
 		const binstub = "/checkout/node_modules/.bin/fabrika";
 		const out = await run(lane("5751", ["WIP"]), [], {
-			entrypoint: {_tag: "Entrypoint", entrypoint: binstub},
+			entrypoint: { _tag: "Entrypoint", entrypoint: binstub },
 		});
 
 		expect(out.code).toBe(LANE_UNREADABLE);
@@ -630,7 +633,7 @@ describe("lane brief", () => {
 	});
 
 	it("refuses when neither the task nor the lane names an issue", async () => {
-		const out = await run(lane("scratch", ["WIP"]), [], {lane: "scratch"});
+		const out = await run(lane("scratch", ["WIP"]), [], { lane: "scratch" });
 
 		expect(out.code).toBe(ISSUE_UNRESOLVED);
 		expect(out.stdout).toBe("");
@@ -660,7 +663,7 @@ describe("lane brief", () => {
 		expect(out.code).toBe(0);
 		expect(readBrief(out.stdout)).toMatchObject({
 			_tag: "Found",
-			value: {state: "review", shell: "reviewer", ground: {_tag: "Pull", pr: PR_URL}},
+			value: { state: "review", shell: "reviewer", ground: { _tag: "Pull", pr: PR_URL } },
 		});
 	});
 
@@ -737,11 +740,11 @@ describe("lane brief at the size stop", () => {
 				),
 			),
 		);
-		return {outcome, asked};
+		return { outcome, asked };
 	};
 
 	it("briefs no shell once the issue's row spent its stop, and names the park to record", async () => {
-		const {outcome, asked} = briefWith({_tag: "Stopped", flag: OVER, rec: "Extend?"});
+		const { outcome, asked } = briefWith({ _tag: "Stopped", flag: OVER, rec: "Extend?" });
 		const out = await outcome;
 
 		expect(asked).toEqual([["o/r", 5751]]);
@@ -759,7 +762,7 @@ describe("lane brief at the size stop", () => {
 		}).outcome;
 
 		expect(out.code).toBe(0);
-		expect(readBrief(out.stdout)).toMatchObject({_tag: "Found", value: {shell: "builder"}});
+		expect(readBrief(out.stdout)).toMatchObject({ _tag: "Found", value: { shell: "builder" } });
 		expect(out.stderr.join("\n")).toContain("size stop: #5751 stands on no row");
 	});
 
@@ -771,7 +774,7 @@ describe("lane brief at the size stop", () => {
 		}).outcome;
 
 		expect(out.code).toBe(0);
-		expect(readBrief(out.stdout)).toMatchObject({_tag: "Found", value: {shell: "builder"}});
+		expect(readBrief(out.stdout)).toMatchObject({ _tag: "Found", value: { shell: "builder" } });
 		expect(out.stderr.join("\n")).toContain("size stop NOT checked");
 		expect(out.stderr.join("\n")).not.toContain("size stop: ");
 	});
@@ -784,7 +787,7 @@ describe("lane brief at the size stop", () => {
 		}).outcome;
 
 		expect(out.code).toBe(0);
-		expect(readBrief(out.stdout)).toMatchObject({_tag: "Found", value: {shell: "builder"}});
+		expect(readBrief(out.stdout)).toMatchObject({ _tag: "Found", value: { shell: "builder" } });
 		const notes = out.stderr.filter((line) => line.includes("size stop NOT checked"));
 		expect(notes).toHaveLength(1);
 		expect(notes[0]).toContain(PROJECT_SCOPE_FIX);
@@ -792,7 +795,7 @@ describe("lane brief at the size stop", () => {
 	});
 
 	it("refuses when the table could not be read — UNKNOWN, never a brief", async () => {
-		const out = await briefWith({_tag: "Unknown", reason: "the project read failed"}).outcome;
+		const out = await briefWith({ _tag: "Unknown", reason: "the project read failed" }).outcome;
 
 		expect(out.code).toBe(LANE_UNREADABLE);
 		expect(out.stdout).toBe("");
@@ -808,39 +811,39 @@ describe("lane brief on an epic lane", () => {
 		const seams = fakeSeams([...script, NO_NOMINATIONS, NO_COMMENTS]);
 		const out = await Effect.runPromise(
 			Effect.provide(
-				runBrief({...options, lane: String(EPIC), ...overrides}),
+				runBrief({ ...options, lane: String(EPIC), ...overrides }),
 				Layer.merge(fs.layer, seams.layer),
 			),
 		);
-		return {out, calls: seams.calls, requests: seams.requests};
+		return { out, calls: seams.calls, requests: seams.requests };
 	};
 
 	/** The epic half of the same proof: the class is on the emitted child, not on any event. */
 	it("briefs a `class:ui` child's FIRST WIP to ui-builder, off the emitted document", async () => {
-		const {out} = await runEpic(
+		const { out } = await runEpic(
 			epicLane([["issue_5828", "WIP"]], ["ui"]),
 			[
 				[EPIC_CHILD_READ, issuePayload(5828, CHILD_URL)],
 				[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)],
 			],
-			{task: "issue_5828"},
+			{ task: "issue_5828" },
 		);
 
 		expect(out.code).toBe(0);
 		expect(readBrief(out.stdout)).toMatchObject({
 			_tag: "Found",
-			value: {task: "issue_5828", state: "build:ui", shell: "ui-builder"},
+			value: { task: "issue_5828", state: "build:ui", shell: "ui-builder" },
 		});
 	});
 
 	it("briefs a child's build on the epic branch, resolving no PR at all", async () => {
-		const {out, calls, requests} = await runEpic(
+		const { out, calls, requests } = await runEpic(
 			epicLane([["issue_5828", "WIP"]]),
 			[
 				[EPIC_CHILD_READ, issuePayload(5828, CHILD_URL)],
 				[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)],
 			],
-			{task: "issue_5828"},
+			{ task: "issue_5828" },
 		);
 
 		expect(out.code).toBe(0);
@@ -852,7 +855,7 @@ describe("lane brief on an epic lane", () => {
 				state: "build",
 				shell: "builder",
 				issue: CHILD_URL,
-				ground: {_tag: "Epic", epic: EPIC_URL, branch: "epic/5800"},
+				ground: { _tag: "Epic", epic: EPIC_URL, branch: "epic/5800" },
 			},
 		});
 		expect(out.stdout).toContain(EPIC_RULES);
@@ -875,7 +878,7 @@ describe("lane brief on an epic lane", () => {
 		]);
 
 	it("briefs a child's review with the range this tree resolved and the range-verdict contract", async () => {
-		const {out, requests} = await runEpic(atReview(), reviewing(), {task: "issue_5828"});
+		const { out, requests } = await runEpic(atReview(), reviewing(), { task: "issue_5828" });
 
 		expect(out.code).toBe(0);
 		expect(readBrief(out.stdout)).toMatchObject({
@@ -886,7 +889,7 @@ describe("lane brief on an epic lane", () => {
 				ground: {
 					_tag: "EpicRange",
 					branch: "epic/5800",
-					range: {base: EPIC_BASE, tip: CHILD_TIP},
+					range: { base: EPIC_BASE, tip: CHILD_TIP },
 				},
 			},
 		});
@@ -896,13 +899,13 @@ describe("lane brief on an epic lane", () => {
 	});
 
 	it("never prints a literal HEAD — the spawned reviewer would re-resolve it in its own worktree", async () => {
-		const {out} = await runEpic(atReview(), reviewing(), {task: "issue_5828"});
+		const { out } = await runEpic(atReview(), reviewing(), { task: "issue_5828" });
 
 		expect(out.stdout).not.toContain("HEAD");
 	});
 
 	it("refuses a child review when no branch in this tree carries the child's commits", async () => {
-		const {out} = await runEpic(atReview(), reviewing(locating(["main", "epic/5800"])), {
+		const { out } = await runEpic(atReview(), reviewing(locating(["main", "epic/5800"])), {
 			task: "issue_5828",
 		});
 
@@ -912,10 +915,10 @@ describe("lane brief on an epic lane", () => {
 	});
 
 	it("refuses a child review when several branches carry the child's commits", async () => {
-		const {out} = await runEpic(
+		const { out } = await runEpic(
 			atReview(),
 			reviewing(locating([CHILD_BRANCH, "build/5828-second-try-deadbeef"])),
-			{task: "issue_5828"},
+			{ task: "issue_5828" },
 		);
 
 		expect(out.code).toBe(PROOF_AMBIGUOUS);
@@ -924,10 +927,10 @@ describe("lane brief on an epic lane", () => {
 	});
 
 	it("leaves a child review UNKNOWN when the epic branch is not in this tree", async () => {
-		const {out} = await runEpic(
+		const { out } = await runEpic(
 			atReview(),
 			reviewing([[REV("epic/5800"), errOut("unknown revision")]]),
-			{task: "issue_5828"},
+			{ task: "issue_5828" },
 		);
 
 		expect(out.code).toBe(LANE_UNREADABLE);
@@ -936,14 +939,14 @@ describe("lane brief on an epic lane", () => {
 	});
 
 	it("leaves a child review UNKNOWN when the range's base sits on a shallow graft boundary", async () => {
-		const {out, calls} = await runEpic(
+		const { out, calls } = await runEpic(
 			atReview(),
 			reviewing([
 				[/^git rev-parse --is-shallow-repository$/, okOut("true\n")],
 				[REV("epic/5800"), okOut(`${EPIC_BASE}\n`)],
 				[/^git log -1 --format=%P /, okOut("\n")],
 			]),
-			{task: "issue_5828"},
+			{ task: "issue_5828" },
 		);
 
 		expect(out.code).toBe(LANE_UNREADABLE);
@@ -953,14 +956,14 @@ describe("lane brief on an epic lane", () => {
 	});
 
 	it("briefs the epic tail's review on the one PR the run produced", async () => {
-		const {out} = await runEpic(
+		const { out } = await runEpic(
 			epicLane([
 				["issue_5828", "WIP"],
 				["issue_5828", "DONE"],
 				["issue_5828", "PASS"],
 			]),
 			[[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)], ...linked(EPIC, [5890, PR_URL])],
-			{task: "epic_5800"},
+			{ task: "epic_5800" },
 		);
 
 		expect(out.code).toBe(0);
@@ -971,7 +974,7 @@ describe("lane brief on an epic lane", () => {
 				state: "review",
 				shell: "reviewer",
 				issue: EPIC_URL,
-				ground: {_tag: "Tail", pr: PR_URL, epic: EPIC_URL},
+				ground: { _tag: "Tail", pr: PR_URL, epic: EPIC_URL },
 			},
 		});
 		// The tail's brief names where each child's build-deviations disclosure lives.
@@ -986,7 +989,7 @@ describe("lane brief on an epic lane", () => {
 	 * the tail's own `review` brief with the `shell:` line swapped, which `operate` otherwise forbids.
 	 */
 	it("briefs the ui-reviewer on a tail sitting in review:ui, over that same one PR", async () => {
-		const {out} = await runEpic(
+		const { out } = await runEpic(
 			epicLane([
 				["issue_5828", "WIP"],
 				["issue_5828", "DONE"],
@@ -995,7 +998,7 @@ describe("lane brief on an epic lane", () => {
 				["epic_5800", "PASS", ["ui"]],
 			]),
 			[[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)], ...linked(EPIC, [5890, PR_URL])],
-			{task: "epic_5800"},
+			{ task: "epic_5800" },
 		);
 
 		expect(out.code).toBe(0);
@@ -1006,7 +1009,7 @@ describe("lane brief on an epic lane", () => {
 				state: "review:ui",
 				shell: "ui-reviewer",
 				issue: EPIC_URL,
-				ground: {_tag: "Tail", pr: PR_URL, epic: EPIC_URL},
+				ground: { _tag: "Tail", pr: PR_URL, epic: EPIC_URL },
 			},
 		});
 		expect(out.stdout).toContain(EPIC_TAIL_RULES);
@@ -1015,7 +1018,7 @@ describe("lane brief on an epic lane", () => {
 	// `lane brief` used to fall through to a `Pull` ground for any build state, so the builder sent
 	// to repair the assembly was told no branch at all.
 	it("briefs the tail's repair on the assembly branch as well as the run's one PR", async () => {
-		const {out} = await runEpic(
+		const { out } = await runEpic(
 			epicLane([
 				["issue_5828", "WIP"],
 				["issue_5828", "DONE"],
@@ -1024,7 +1027,7 @@ describe("lane brief on an epic lane", () => {
 				["epic_5800", "FAIL"],
 			]),
 			[[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)], ...linked(EPIC, [5890, PR_URL])],
-			{task: "epic_5800"},
+			{ task: "epic_5800" },
 		);
 
 		expect(out.code).toBe(0);
@@ -1035,7 +1038,7 @@ describe("lane brief on an epic lane", () => {
 				state: "build",
 				shell: "builder",
 				issue: EPIC_URL,
-				ground: {_tag: "TailRepair", pr: PR_URL, epic: EPIC_URL, branch: "epic/5800"},
+				ground: { _tag: "TailRepair", pr: PR_URL, epic: EPIC_URL, branch: "epic/5800" },
 			},
 		});
 		expect(out.stdout).toContain("branch: epic/5800");
@@ -1045,7 +1048,7 @@ describe("lane brief on an epic lane", () => {
 	});
 
 	it("keeps the tail's zero-PR refusal — a run with no PR is a real ambiguity", async () => {
-		const {out} = await runEpic(
+		const { out } = await runEpic(
 			epicLane([
 				["issue_5828", "WIP"],
 				["issue_5828", "DONE"],
@@ -1055,7 +1058,7 @@ describe("lane brief on an epic lane", () => {
 				[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)],
 				[PR_CLOSERS, closingPulls()],
 			],
-			{task: "epic_5800"},
+			{ task: "epic_5800" },
 		);
 
 		expect(out.code).toBe(PR_AMBIGUOUS);
@@ -1063,7 +1066,7 @@ describe("lane brief on an epic lane", () => {
 	});
 
 	it("refuses the tail when several open PRs claim the epic", async () => {
-		const {out} = await runEpic(
+		const { out } = await runEpic(
 			epicLane([
 				["issue_5828", "WIP"],
 				["issue_5828", "DONE"],
@@ -1073,7 +1076,7 @@ describe("lane brief on an epic lane", () => {
 				[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)],
 				...linked(EPIC, [5890, PR_URL], [5891, "https://forge.example/o/r/pull/5891"]),
 			],
-			{task: "epic_5800"},
+			{ task: "epic_5800" },
 		);
 
 		expect(out.code).toBe(PR_AMBIGUOUS);
@@ -1081,13 +1084,13 @@ describe("lane brief on an epic lane", () => {
 	});
 
 	it("refuses a child whose epic issue could not be read — UNKNOWN, never a brief", async () => {
-		const {out} = await runEpic(
+		const { out } = await runEpic(
 			epicLane([["issue_5828", "WIP"]]),
 			[
 				[EPIC_CHILD_READ, issuePayload(5828, CHILD_URL)],
 				[EPIC_ISSUE_READ, SERVER_ERROR],
 			],
-			{task: "issue_5828"},
+			{ task: "issue_5828" },
 		);
 
 		expect(out.code).toBe(LANE_UNREADABLE);
@@ -1112,14 +1115,14 @@ describe("lane brief on an epic lane", () => {
 	];
 
 	it("refuses a child build when the assembly branch does not carry a lane verb the brief names", async () => {
-		const {out} = await runEpic(
+		const { out } = await runEpic(
 			epicLane([["issue_5828", "WIP"]]),
 			[
 				[EPIC_CHILD_READ, issuePayload(5828, CHILD_URL)],
 				[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)],
 				...readingBranch(false),
 			],
-			{task: "issue_5828", entrypoint: IN_TREE},
+			{ task: "issue_5828", entrypoint: IN_TREE },
 		);
 
 		expect(out.code).toBe(BRIEFED_VERB_ABSENT);
@@ -1130,32 +1133,32 @@ describe("lane brief on an epic lane", () => {
 	});
 
 	it("briefs a child build unchanged when the branch carries every lane verb the brief names", async () => {
-		const {out} = await runEpic(
+		const { out } = await runEpic(
 			epicLane([["issue_5828", "WIP"]]),
 			[
 				[EPIC_CHILD_READ, issuePayload(5828, CHILD_URL)],
 				[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)],
 				...readingBranch(true),
 			],
-			{task: "issue_5828", entrypoint: IN_TREE},
+			{ task: "issue_5828", entrypoint: IN_TREE },
 		);
 
 		expect(out.code).toBe(0);
 		expect(readBrief(out.stdout)).toMatchObject({
 			_tag: "Found",
-			value: {ground: {_tag: "Epic", epic: EPIC_URL, branch: "epic/5800"}},
+			value: { ground: { _tag: "Epic", epic: EPIC_URL, branch: "epic/5800" } },
 		});
 		expect(out.stdout).toContain("fabrika: packages/fabrika-cli/src/bin.ts");
 	});
 
 	it("leaves the branch unread for an installed entrypoint it cannot carry", async () => {
-		const {out, calls} = await runEpic(
+		const { out, calls } = await runEpic(
 			epicLane([["issue_5828", "WIP"]]),
 			[
 				[EPIC_CHILD_READ, issuePayload(5828, CHILD_URL)],
 				[EPIC_ISSUE_READ, issuePayload(EPIC, EPIC_URL)],
 			],
-			{task: "issue_5828"},
+			{ task: "issue_5828" },
 		);
 
 		expect(out.code).toBe(0);

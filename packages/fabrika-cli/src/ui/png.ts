@@ -11,8 +11,8 @@
  * screenshot emits. Anything else decodes to an {@link Invalid} with the encoding named, never to a
  * silently wrong raster.
  */
-import {createHash} from "node:crypto";
-import {inflateSync} from "node:zlib";
+import { createHash } from "node:crypto";
+import { inflateSync } from "node:zlib";
 
 /** A decoded image: `pixels` is RGBA, row-major, length exactly `width * height * 4`. */
 export interface RasterImage {
@@ -22,14 +22,14 @@ export interface RasterImage {
 }
 
 export type PngRead =
-	| {readonly _tag: "Image"; readonly image: RasterImage}
+	| { readonly _tag: "Image"; readonly image: RasterImage }
 	/** Proven invalid: the bytes are not a decodable, non-zero-area PNG. `detail` names why. */
-	| {readonly _tag: "Invalid"; readonly detail: string};
+	| { readonly _tag: "Invalid"; readonly detail: string };
 
 const SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
-const CHANNELS: Readonly<Record<number, number>> = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4};
+const CHANNELS: Readonly<Record<number, number>> = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 };
 
-const invalid = (detail: string): PngRead => ({_tag: "Invalid", detail});
+const invalid = (detail: string): PngRead => ({ _tag: "Invalid", detail });
 
 const paeth = (a: number, b: number, c: number): number => {
 	const p = a + b - c;
@@ -174,7 +174,7 @@ export const decodePng = (bytes: Uint8Array): PngRead => {
 	if (typeof samples === "string") return invalid(samples);
 	const pixels = toRgba(samples, width, height, colorType, palette, transparency);
 	if (typeof pixels === "string") return invalid(pixels);
-	return {_tag: "Image", image: {width, height, pixels}};
+	return { _tag: "Image", image: { width, height, pixels } };
 };
 
 /** The lowercase-hex sha256 of some bytes — the content address every capture is named by. */

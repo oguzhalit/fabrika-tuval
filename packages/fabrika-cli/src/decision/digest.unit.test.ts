@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {bodyDigest, DIGEST_RE} from "./digest.ts";
+import { describe, expect, it } from "vitest";
+import { bodyDigest, DIGEST_RE } from "./digest.ts";
 
 const BODY = "## The decision\n\nWhich fork?\n\n- [ ] an ADR records the choice\n";
 

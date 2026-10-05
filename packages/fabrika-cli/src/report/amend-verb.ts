@@ -11,10 +11,10 @@
  * of text this verb never authored, which is the one thing it must never do.
  */
 
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {LEAK_NAMES, type LeakNames} from "../config/keys/leak-names.ts";
-import type {Read} from "../config/read-key.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { LEAK_NAMES, type LeakNames } from "../config/keys/leak-names.ts";
+import type { Read } from "../config/read-key.ts";
 import {
 	type Existence,
 	getIssue,
@@ -22,9 +22,9 @@ import {
 	patchIssueBody,
 	resolveRepo,
 } from "../io/issues.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {compose} from "./amend.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { compose } from "./amend.ts";
 import {
 	BARE_AT_PATH,
 	EMPTY_STDIN,
@@ -34,8 +34,8 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {normalizeForReadback} from "./compose.ts";
-import {isBareAtReference, renderLeaks, scanBody} from "./leaks.ts";
+import { normalizeForReadback } from "./compose.ts";
+import { isBareAtReference, renderLeaks, scanBody } from "./leaks.ts";
 
 export interface AmendOptions {
 	readonly issue: number;
@@ -80,7 +80,7 @@ export const runAmend = (
 	options: AmendOptions,
 ): Effect.Effect<VerbOutcome, never, ChildProcessSpawner.ChildProcessSpawner> =>
 	Effect.gen(function* () {
-		const {issue, json} = options;
+		const { issue, json } = options;
 
 		if (!Number.isInteger(issue) || issue <= 0) {
 			return refuse(FAILED, `report amend: --issue ${issue} is not an issue number.`);
@@ -136,7 +136,7 @@ export const runAmend = (
 		}
 		const section = options.redact ? scan.redacted : sent;
 		const redactions = options.redact
-			? scan.leaks.map((leak) => ({line: leak.line, class: leak.class}))
+			? scan.leaks.map((leak) => ({ line: leak.line, class: leak.class }))
 			: [];
 		const redactionNotes = redactions.map(
 			(r) => `report amend: redacted a leak — line ${r.line}, ${r.class}`,

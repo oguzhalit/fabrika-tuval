@@ -1,10 +1,10 @@
-import {Effect, Layer} from "effect";
-import {describe, expect, it} from "vitest";
-import {GATEWAY, GIT_DIRS, served} from "../build/fixtures.test-support.ts";
-import {CONFIG_PATH} from "../config/document.ts";
-import {fakeFs, fakeSeams, type Scripted} from "../fakes.test-support.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {runChild} from "./child-verb.ts";
+import { Effect, Layer } from "effect";
+import { describe, expect, it } from "vitest";
+import { GATEWAY, GIT_DIRS, served } from "../build/fixtures.test-support.ts";
+import { CONFIG_PATH } from "../config/document.ts";
+import { fakeFs, fakeSeams, type Scripted } from "../fakes.test-support.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { runChild } from "./child-verb.ts";
 import {
 	BAD_SECTIONS,
 	EMPTY_STDIN,
@@ -16,7 +16,7 @@ import {
 	READBACK_MISMATCH,
 	WRITE_UNKNOWN,
 } from "./codes.ts";
-import {bodyDigest} from "./digest.ts";
+import { bodyDigest } from "./digest.ts";
 import {
 	CLAIMED,
 	childBody,
@@ -29,7 +29,7 @@ import {
 	milestones,
 	TOKEN,
 } from "./fixtures.test-support.ts";
-import {manifestPath, parseManifest, renderRunRecord, runJsonPath} from "./run.ts";
+import { manifestPath, parseManifest, renderRunRecord, runJsonPath } from "./run.ts";
 
 const CREATE = /^POST https:\/\/api\.github\.com\/repos\/o\/r\/issues$/;
 const LINK = /^POST https:\/\/api\.github\.com\/repos\/o\/r\/issues\/4300\/sub_issues$/;
@@ -54,7 +54,7 @@ const RUN_JSON = (cycleDoc: "present" | "absent" | "unknown" = "present") =>
 		bodyDigest: bodyDigest("An epic brief about the moderation queue.\n"),
 	});
 
-const CREATED = served({number: 4301, id: 90210});
+const CREATED = served({ number: 4301, id: 90210 });
 
 const HAPPY: ReadonlyArray<Scripted> = [
 	[EPIC_READ, epic()],
@@ -64,8 +64,8 @@ const HAPPY: ReadonlyArray<Scripted> = [
 	[MILESTONES, milestones([44, "fabrika campaign"])],
 	[CREATE, CREATED],
 	[LINK, served({})],
-	[READBACK, childIssue({number: 4301, labels: MINTED_LABELS, milestone: HOME})],
-	[SUBS, served([{number: 4301, id: 90210, state: "open", state_reason: null}])],
+	[READBACK, childIssue({ number: 4301, labels: MINTED_LABELS, milestone: HOME })],
+	[SUBS, served([{ number: 4301, id: 90210, state: "open", state_reason: null }])],
 ];
 
 const options = {
@@ -86,15 +86,15 @@ const options = {
 const run = (
 	overrides: Partial<typeof options> = {},
 	script: ReadonlyArray<Scripted> = HAPPY,
-	files: Readonly<Record<string, string | null>> = {[runJsonPath(DIR)]: RUN_JSON()},
+	files: Readonly<Record<string, string | null>> = { [runJsonPath(DIR)]: RUN_JSON() },
 	body: string = childBody(),
 ) => {
 	const shell = fakeSeams(script);
-	const fs = fakeFs({files});
-	const stdin: Effect.Effect<StdinRead> = Effect.succeed({_tag: "Text", text: body});
+	const fs = fakeFs({ files });
+	const stdin: Effect.Effect<StdinRead> = Effect.succeed({ _tag: "Text", text: body });
 	return Effect.runPromise(
 		Effect.provide(
-			runChild({...options, ...overrides, stdin}),
+			runChild({ ...options, ...overrides, stdin }),
 			Layer.mergeAll(shell.layer, fs.layer),
 		),
 	).then((outcome) => ({
@@ -110,13 +110,13 @@ const run = (
 const LANED: Readonly<Record<string, string | null>> = {
 	[runJsonPath(DIR)]: RUN_JSON(),
 	[`${DIR}/${CONFIG_PATH}`]: JSON.stringify({
-		boardVocabulary: {standingLanes: ["wayfinder:backlog", LANE]},
+		boardVocabulary: { standingLanes: ["wayfinder:backlog", LANE] },
 	}),
 };
 
 /** The JSON a matching request carried — where every write's fields travel now. */
 const sent = (
-	run: {requests: ReadonlyArray<string>; bodies: ReadonlyArray<string>},
+	run: { requests: ReadonlyArray<string>; bodies: ReadonlyArray<string> },
 	pattern: RegExp,
 ): Record<string, unknown> => {
 	const at = run.requests.findIndex((line) => pattern.test(line));
@@ -125,14 +125,14 @@ const sent = (
 
 describe("runChild", () => {
 	it("mints, records, links, re-reads, and reports the OBSERVED result", async () => {
-		const {outcome, written} = await run();
+		const { outcome, written } = await run();
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout)).toEqual({
 			answer: "minted",
 			epic: 4300,
 			child: 4301,
 			linked: true,
-			observed: {labels: [...MINTED_LABELS].sort(), assignees: [], milestone: HOME},
+			observed: { labels: [...MINTED_LABELS].sort(), assignees: [], milestone: HOME },
 			stories: [1, 2],
 			containment: "flag",
 		});
@@ -158,7 +158,7 @@ describe("runChild", () => {
 	 * opens a window in which the child exists with no `ready-for:` value at all.
 	 */
 	it("puts every birth attribute in the one POST", async () => {
-		const minted = await run({milestone: "fabrika campaign", labels: ["fabrika"]}, [
+		const minted = await run({ milestone: "fabrika campaign", labels: ["fabrika"] }, [
 			...HAPPY.filter(([pattern]) => pattern !== LABELS && pattern !== READBACK),
 			[LABELS, labelSet(...DEFAULT_LABELS, "fabrika")],
 			[
@@ -181,7 +181,7 @@ describe("runChild", () => {
 
 	/** A child must never inherit its audience by omission. */
 	it("refuses an absent --ready-for before it reads anything", async () => {
-		const {outcome, calls} = await run({readyFor: null});
+		const { outcome, calls } = await run({ readyFor: null });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toBe(
 			"ledger child: --ready-for is required — a child must never inherit its audience by omission.",
@@ -191,7 +191,7 @@ describe("runChild", () => {
 
 	/** The label is the routing signal, born-assignment is the enforced hold. */
 	it("refuses --ready-for human without --assignee", async () => {
-		const {outcome} = await run({readyFor: "human"});
+		const { outcome } = await run({ readyFor: "human" });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toBe(
 			"ledger child: --ready-for human requires --assignee — a held child is born assigned.",
@@ -203,7 +203,7 @@ describe("runChild", () => {
 	 * carries none — so the pair publishes a child every builder refuses.
 	 */
 	it("refuses a decision child routed to an agent before it reads anything", async () => {
-		const {outcome, calls, written} = await run({type: "type:decision"});
+		const { outcome, calls, written } = await run({ type: "type:decision" });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toBe(
 			"ledger child: --type type:decision with --ready-for agent is refused — a child minted now carries no ruling comment of its own, and the citation that opens a decision claim names a comment on the decision issue itself, so the first builder refuses it on the type axis. Mint it --ready-for human with --assignee, record the ruling on the child, then flip it with `fabrika decision rule <n> --cites <child-comment-url>`.",
@@ -215,10 +215,10 @@ describe("runChild", () => {
 	/** The supported route: the decision is held by a named human until its own ruling exists. */
 	it("mints a decision child held by an assigned human", async () => {
 		const labels = ["type:decision", "p1", "status:planned", "ready-for:human"];
-		const minted = await run({type: "type:decision", readyFor: "human", assignee: "usirin"}, [
+		const minted = await run({ type: "type:decision", readyFor: "human", assignee: "usirin" }, [
 			...HAPPY.filter(([pattern]) => pattern !== LABELS && pattern !== READBACK),
 			[LABELS, labelSet(...DEFAULT_LABELS, "type:decision")],
-			[READBACK, childIssue({number: 4301, labels, milestone: HOME, assignees: ["usirin"]})],
+			[READBACK, childIssue({ number: 4301, labels, milestone: HOME, assignees: ["usirin"] })],
 		]);
 		expect(minted.outcome.code).toBe(0);
 		expect(sent(minted, CREATE).labels).toEqual(labels);
@@ -230,7 +230,7 @@ describe("runChild", () => {
 	 * The three cases are the whole homing axis.
 	 */
 	it("refuses a homeless child before it reads the board, naming both remedies", async () => {
-		const {outcome, calls} = await run({milestone: null}, HAPPY, LANED);
+		const { outcome, calls } = await run({ milestone: null }, HAPPY, LANED);
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toBe(
 			"ledger child: a child needs a home — pass --milestone <open milestone title>, or --label the child with the parent's standing lane (wayfinder:backlog, axis:pipeline-hardening). A homeless child groups under no campaign and no lane, so nothing on the board shows where it belongs.",
@@ -240,7 +240,7 @@ describe("runChild", () => {
 
 	/** A lane label is a home only where the repo declares it, so here a milestone is the one remedy. */
 	it("refuses a lane-labelled child in a repo that declares no lane, naming the milestone alone", async () => {
-		const {outcome, calls} = await run({milestone: null, labels: [LANE]});
+		const { outcome, calls } = await run({ milestone: null, labels: [LANE] });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toContain("this repo declares no standing lane");
 		expect(outcome.stderr.at(-1)).not.toContain(LANE);
@@ -249,9 +249,9 @@ describe("runChild", () => {
 
 	/** An unreadable declaration is not "no lanes": that reading refuses a valid lane child on `10`. */
 	it("refuses on 11 when the lane declaration cannot be read, and reads no board", async () => {
-		const {outcome, calls, written} = await run({milestone: null, labels: [LANE]}, HAPPY, {
+		const { outcome, calls, written } = await run({ milestone: null, labels: [LANE] }, HAPPY, {
 			[runJsonPath(DIR)]: RUN_JSON(),
-			[`${DIR}/${CONFIG_PATH}`]: JSON.stringify({boardVocabulary: LANE}),
+			[`${DIR}/${CONFIG_PATH}`]: JSON.stringify({ boardVocabulary: LANE }),
 		});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 		expect(outcome.stderr.at(-1)).toContain(
@@ -271,12 +271,12 @@ describe("runChild", () => {
 			[
 				...HAPPY.filter(([pattern]) => pattern !== LABELS && pattern !== READBACK),
 				[LABELS, labelSet(...DEFAULT_LABELS, "state:planned")],
-				[READBACK, childIssue({number: 4301, labels, milestone: HOME})],
+				[READBACK, childIssue({ number: 4301, labels, milestone: HOME })],
 			],
 			{
 				[runJsonPath(DIR)]: RUN_JSON(),
 				[`${DIR}/${CONFIG_PATH}`]: JSON.stringify({
-					boardVocabulary: {statuses: {planned: "state:planned"}},
+					boardVocabulary: { statuses: { planned: "state:planned" } },
 				}),
 			},
 		);
@@ -285,7 +285,7 @@ describe("runChild", () => {
 	});
 
 	it("mints a milestone-homed child", async () => {
-		const minted = await run({milestone: HOME});
+		const minted = await run({ milestone: HOME });
 		expect(minted.outcome.code).toBe(0);
 		expect(sent(minted, CREATE).milestone).toBe(44);
 	});
@@ -293,11 +293,11 @@ describe("runChild", () => {
 	/** The lane exemption holds here too — homing is never collapsed into "milestone required". */
 	it("mints a lane-homed child carrying no milestone", async () => {
 		const minted = await run(
-			{milestone: null, labels: [LANE]},
+			{ milestone: null, labels: [LANE] },
 			[
 				...HAPPY.filter(([pattern]) => pattern !== LABELS && pattern !== READBACK),
 				[LABELS, labelSet(...DEFAULT_LABELS, LANE)],
-				[READBACK, childIssue({number: 4301, labels: [...MINTED_LABELS, LANE]})],
+				[READBACK, childIssue({ number: 4301, labels: [...MINTED_LABELS, LANE] })],
 			],
 			LANED,
 		);
@@ -309,14 +309,14 @@ describe("runChild", () => {
 	});
 
 	it("refuses a retired priority", async () => {
-		const {outcome} = await run({priority: "p3"});
+		const { outcome } = await run({ priority: "p3" });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toContain("off the closed set (p0, p1, p2)");
 	});
 
 	/** `POST .../labels` CREATES an unknown label rather than rejecting it. */
 	it("refuses a label absent from the repo taxonomy rather than minting it", async () => {
-		const {outcome, requests} = await run({labels: ["not-a-label"]});
+		const { outcome, requests } = await run({ labels: ["not-a-label"] });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toBe(
 			'ledger child: label "not-a-label" is absent from o/r\'s taxonomy — refusing to create it. No `fabrika status bootstrap` surface creates not-a-label — create it by hand, then re-run.',
@@ -325,7 +325,7 @@ describe("runChild", () => {
 	});
 
 	it("names the bootstrap surface that creates a missing status:planned", async () => {
-		const {outcome} = await run({}, [
+		const { outcome } = await run({}, [
 			...HAPPY.filter(([pattern]) => pattern !== LABELS),
 			[LABELS, labelSet(...DEFAULT_LABELS.filter((label) => label !== "status:planned"))],
 		]);
@@ -335,7 +335,7 @@ describe("runChild", () => {
 	});
 
 	it("refuses a milestone that is not open in the repo", async () => {
-		const {outcome} = await run({milestone: "first release"});
+		const { outcome } = await run({ milestone: "first release" });
 		expect(outcome.code).toBe(OFF_VOCABULARY);
 		expect(outcome.stderr.at(-1)).toBe(
 			'ledger child: milestone "first release" is not an open milestone of o/r.',
@@ -343,16 +343,16 @@ describe("runChild", () => {
 	});
 
 	it("refuses a body whose acceptance criteria are absent", async () => {
-		const {outcome} = await run({}, HAPPY, {[runJsonPath(DIR)]: RUN_JSON()}, "**TDD:** yes\n");
+		const { outcome } = await run({}, HAPPY, { [runJsonPath(DIR)]: RUN_JSON() }, "**TDD:** yes\n");
 		expect(outcome.code).toBe(BAD_SECTIONS);
 	});
 
 	it("refuses a type:feature child with no containment while the cycle doc is present", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			{},
 			HAPPY,
-			{[runJsonPath(DIR)]: RUN_JSON()},
-			childBody({containment: null}),
+			{ [runJsonPath(DIR)]: RUN_JSON() },
+			childBody({ containment: null }),
 		);
 		expect(outcome.code).toBe(BAD_SECTIONS);
 		expect(outcome.stderr.at(-1)).toContain("needs **Containment:** flag or exempt");
@@ -363,7 +363,7 @@ describe("runChild", () => {
 	 * another gets that one. The arm above is the bare-repo half — it writes no config at all.
 	 */
 	it("names the repo's own values in the refusal, off the resolved vocabulary", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			{},
 			HAPPY,
 			{
@@ -371,40 +371,40 @@ describe("runChild", () => {
 				[`${DIR}/${CONFIG_PATH}`]:
 					'{"containmentVocabulary": {"values": ["unpublished", "exempt"]}}',
 			},
-			childBody({containment: null}),
+			childBody({ containment: null }),
 		);
 		expect(outcome.code).toBe(BAD_SECTIONS);
 		expect(outcome.stderr.at(-1)).toContain("needs **Containment:** unpublished or exempt");
 	});
 
 	it("admits a marker the repo's vocabulary carries and the shipped default does not", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			{},
 			HAPPY,
 			{
 				[runJsonPath(DIR)]: RUN_JSON(),
 				[`${DIR}/${CONFIG_PATH}`]: '{"containmentVocabulary": {"values": ["unpublished"]}}',
 			},
-			childBody({containment: "unpublished"}),
+			childBody({ containment: "unpublished" }),
 		);
 		expect(outcome.code).toBe(0);
 	});
 
 	it("asks nothing of any child on an empty vocabulary", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			{},
 			HAPPY,
 			{
 				[runJsonPath(DIR)]: RUN_JSON(),
 				[`${DIR}/${CONFIG_PATH}`]: '{"containmentVocabulary": {"types": []}}',
 			},
-			childBody({containment: null}),
+			childBody({ containment: null }),
 		);
 		expect(outcome.code).toBe(0);
 	});
 
 	it("refuses on 11 when the config exists and its vocabulary does not decode", async () => {
-		const {outcome} = await run({}, HAPPY, {
+		const { outcome } = await run({}, HAPPY, {
 			[runJsonPath(DIR)]: RUN_JSON(),
 			[`${DIR}/${CONFIG_PATH}`]: '{"containmentVocabulary": {"values": ["none"]}}',
 		});
@@ -412,27 +412,27 @@ describe("runChild", () => {
 	});
 
 	it("drops the containment line when the run's cycle-doc read is absent", async () => {
-		const minted = await run({}, HAPPY, {[runJsonPath(DIR)]: RUN_JSON("absent")});
+		const minted = await run({}, HAPPY, { [runJsonPath(DIR)]: RUN_JSON("absent") });
 		expect(String(sent(minted, CREATE).body)).not.toContain("**Containment:**");
 	});
 
 	it("refuses an empty pipe on its own code", async () => {
-		const {outcome} = await run({}, HAPPY, {[runJsonPath(DIR)]: RUN_JSON()}, "  \n");
+		const { outcome } = await run({}, HAPPY, { [runJsonPath(DIR)]: RUN_JSON() }, "  \n");
 		expect(outcome.code).toBe(EMPTY_STDIN);
 	});
 
 	it("refuses a machine-local path in the child body", async () => {
-		const {outcome} = await run(
+		const { outcome } = await run(
 			{},
 			HAPPY,
-			{[runJsonPath(DIR)]: RUN_JSON()},
+			{ [runJsonPath(DIR)]: RUN_JSON() },
 			childBody().replace("The queue view", "See /Users/someone/plan.md"),
 		);
 		expect(outcome.code).toBe(LEAKED_PATH);
 	});
 
 	it("refuses when a precondition read fails, and creates nothing", async () => {
-		const {outcome, requests} = await run({}, [
+		const { outcome, requests } = await run({}, [
 			...HAPPY.filter(([pattern]) => pattern !== LABELS),
 			[LABELS, GATEWAY],
 		]);
@@ -441,7 +441,7 @@ describe("runChild", () => {
 	});
 
 	it("seats a create that could not be proven on 8", async () => {
-		const {outcome} = await run({}, [
+		const { outcome } = await run({}, [
 			...HAPPY.filter(([pattern]) => pattern !== CREATE),
 			[CREATE, GATEWAY],
 		]);
@@ -454,19 +454,19 @@ describe("runChild", () => {
 	 * be neither placed nor retired.
 	 */
 	it("records the child before it links, so a 23 leaves a findable number", async () => {
-		const {outcome, written} = await run({}, [
+		const { outcome, written } = await run({}, [
 			...HAPPY.filter(([pattern]) => pattern !== LINK),
-			[LINK, {status: 422, body: '{"message":"Unprocessable"}'}],
+			[LINK, { status: 422, body: '{"message":"Unprocessable"}' }],
 		]);
 		expect(outcome.code).toBe(LINK_UNPROVEN);
 		expect(outcome.stderr.at(-1)).toContain("recorded in the run manifest as linked:false");
 		expect(parseManifest(written.get(manifestPath(DIR)) ?? "")).toMatchObject([
-			{number: 4301, id: 90210, linked: false},
+			{ number: 4301, id: 90210, linked: false },
 		]);
 	});
 
 	it("seats an unprovable link on 23 even when the write itself returned", async () => {
-		const {outcome} = await run({}, [
+		const { outcome } = await run({}, [
 			...HAPPY.filter(([pattern]) => pattern !== SUBS),
 			[SUBS, served([])],
 		]);
@@ -474,7 +474,7 @@ describe("runChild", () => {
 	});
 
 	it("seats a create it cannot re-read on 8", async () => {
-		const {outcome} = await run({}, [
+		const { outcome } = await run({}, [
 			...HAPPY.filter(([pattern]) => pattern !== READBACK),
 			[READBACK, GATEWAY],
 		]);
@@ -483,9 +483,9 @@ describe("runChild", () => {
 
 	/** The observed labels decide, never the intent the write was issued with. */
 	it("refuses when the child does not read back as sent", async () => {
-		const {outcome} = await run({}, [
+		const { outcome } = await run({}, [
 			...HAPPY.filter(([pattern]) => pattern !== READBACK),
-			[READBACK, childIssue({number: 4301, labels: ["type:feature", "p1"]})],
+			[READBACK, childIssue({ number: 4301, labels: ["type:feature", "p1"] })],
 		]);
 		expect(outcome.code).toBe(READBACK_MISMATCH);
 	});
@@ -493,14 +493,14 @@ describe("runChild", () => {
 	it("seats a manifest it could not write on 26, naming the number that now exists", async () => {
 		const shell = fakeSeams(HAPPY);
 		const fs = fakeFs({
-			files: {[runJsonPath(DIR)]: RUN_JSON()},
+			files: { [runJsonPath(DIR)]: RUN_JSON() },
 			unwritable: [manifestPath(DIR)],
 		});
 		const outcome = await Effect.runPromise(
 			Effect.provide(
 				runChild({
 					...options,
-					stdin: Effect.succeed({_tag: "Text", text: childBody()} as StdinRead),
+					stdin: Effect.succeed({ _tag: "Text", text: childBody() } as StdinRead),
 				}),
 				Layer.mergeAll(shell.layer, fs.layer),
 			),
@@ -510,7 +510,7 @@ describe("runChild", () => {
 	});
 
 	it("refuses when the run directory holds no run.json", async () => {
-		const {outcome} = await run({}, HAPPY, {});
+		const { outcome } = await run({}, HAPPY, {});
 		expect(outcome.code).toBe(PRECONDITION_UNKNOWN);
 	});
 });

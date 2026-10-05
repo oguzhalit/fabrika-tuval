@@ -18,12 +18,12 @@
  * ever reached. Nothing about that changes here; this verb only puts the context where the queue
  * looks for it.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {answer, type VerbOutcome} from "../verb.ts";
-import {type CheckPlan, publishFloorCheck} from "./floor-check.ts";
-import {NAMESPACE} from "./floor-verb.ts";
-import {inspectedSha, NULL_TOKEN, resolveTargetRepo} from "./target.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { answer, type VerbOutcome } from "../verb.ts";
+import { type CheckPlan, publishFloorCheck } from "./floor-check.ts";
+import { NAMESPACE } from "./floor-verb.ts";
+import { inspectedSha, NULL_TOKEN, resolveTargetRepo } from "./target.ts";
 
 const VERB = "ship floor-batch";
 
@@ -59,7 +59,7 @@ export const runFloorBatch = (
 
 		const published = yield* publishFloorCheck(VERB, resolved.repo, bound, BATCH_PLAN, []);
 		if (published._tag === "Refused") return published.outcome;
-		const {written, rewritten} = published;
+		const { written, rewritten } = published;
 
 		const posted = `${VERB}: ${rewritten ? "rewrote" : "posted"} check-run ${written.id} at ${bound} — the batch carries the context; no floor was resolved on it.`;
 		return answer(

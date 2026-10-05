@@ -8,11 +8,11 @@
  * empty-pipe spawn stands for every group that takes a body on stdin through the shared reader.
  * Registration is in `command.unit.test.ts`; the verbs are covered in-process beside them.
  */
-import {execFileSync} from "node:child_process";
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
-import {EMPTY_STDIN} from "./codes.ts";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
+import { EMPTY_STDIN } from "./codes.ts";
 
 const BIN = fileURLToPath(new URL("../bin.ts", import.meta.url));
 
@@ -27,18 +27,22 @@ const fabrika = (args: ReadonlyArray<string>, stdin = ""): Run => {
 	try {
 		const stdout = execFileSync(process.execPath, [BIN, ...args], {
 			encoding: "utf8",
-			env: {...process.env, FABRIKA_SKIP_INFER: "1"},
+			env: { ...process.env, FABRIKA_SKIP_INFER: "1" },
 			input: stdin,
 			stdio: ["pipe", "pipe", "pipe"],
 		});
-		return {code: 0, stdout, stderr: ""};
+		return { code: 0, stdout, stderr: "" };
 	} catch (err) {
-		const failure = err as {status?: number; stdout?: string; stderr?: string};
-		return {code: failure.status ?? -1, stdout: failure.stdout ?? "", stderr: failure.stderr ?? ""};
+		const failure = err as { status?: number; stdout?: string; stderr?: string };
+		return {
+			code: failure.status ?? -1,
+			stdout: failure.stdout ?? "",
+			stderr: failure.stderr ?? "",
+		};
 	}
 };
 
-describe("fabrika grill, end to end", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
+describe("fabrika grill, end to end", { timeout: SUBPROCESS_TEST_TIMEOUT_MS }, () => {
 	// The refusal moved to the adapter when `OpenSubject` made "neither flag" unrepresentable in the
 	// verb, so this is the only tier that still reaches it.
 	it("refuses grill open with neither --topic nor --ticket, touching no network", () => {

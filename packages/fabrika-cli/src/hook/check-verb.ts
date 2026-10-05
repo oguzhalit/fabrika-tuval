@@ -9,11 +9,11 @@
  * byte-identical to a verb that never ran (cli-interface-convention rule 2). The scope it judged goes
  * to stderr on every path, so a verdict is never reported over unstated scope.
  */
-import {Effect} from "effect";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {EMPTY_STDIN, ENVELOPE_UNKNOWN, MALFORMED_ENVELOPE} from "./codes.ts";
-import {classifyEnvelope, type EnvelopeRead} from "./envelope.ts";
+import { Effect } from "effect";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { EMPTY_STDIN, ENVELOPE_UNKNOWN, MALFORMED_ENVELOPE } from "./codes.ts";
+import { classifyEnvelope, type EnvelopeRead } from "./envelope.ts";
 
 const VERB = "fabrika hook check";
 
@@ -24,14 +24,14 @@ export interface CheckOptions {
 
 /** An unread fd 0 stays UNKNOWN: a TTY and a failed read prove nothing about the envelope. */
 const readEnvelope = (piped: StdinRead): EnvelopeRead =>
-	piped._tag === "Text" ? classifyEnvelope(piped.text) : {_tag: "Unknown", reason: piped.reason};
+	piped._tag === "Text" ? classifyEnvelope(piped.text) : { _tag: "Unknown", reason: piped.reason };
 
 const scopeLine = (piped: StdinRead): string =>
 	piped._tag === "Text"
 		? `${VERB}: judged ${piped.text.length} bytes on fd 0`
 		: `${VERB}: judged nothing — fd 0 was not read`;
 
-export const runCheck = ({json, stdin}: CheckOptions): Effect.Effect<VerbOutcome> =>
+export const runCheck = ({ json, stdin }: CheckOptions): Effect.Effect<VerbOutcome> =>
 	Effect.map(stdin, (piped) => {
 		const scope = scopeLine(piped);
 		const read = readEnvelope(piped);
@@ -49,9 +49,9 @@ export const runCheck = ({json, stdin}: CheckOptions): Effect.Effect<VerbOutcome
 			]);
 		}
 
-		const {event, fields} = read.envelope;
+		const { event, fields } = read.envelope;
 		const stdout = json
-			? `${JSON.stringify({outcome: "conforms", event, fields: fields.length})}\n`
+			? `${JSON.stringify({ outcome: "conforms", event, fields: fields.length })}\n`
 			: `conforms\t${event}\t${fields.length}\n`;
 		return answer(stdout, [scope]);
 	});

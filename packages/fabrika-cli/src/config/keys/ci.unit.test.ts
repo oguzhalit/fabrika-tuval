@@ -1,25 +1,25 @@
-import {describe, expect, it} from "vitest";
-import {producerFor} from "../ci-producer.ts";
-import {loadConfig, resolve} from "../load.ts";
-import {CI, ciKey, SHIPPED_CI, SHIPPED_MAIN_ALARM} from "./ci.ts";
+import { describe, expect, it } from "vitest";
+import { producerFor } from "../ci-producer.ts";
+import { loadConfig, resolve } from "../load.ts";
+import { CI, ciKey, SHIPPED_CI, SHIPPED_MAIN_ALARM } from "./ci.ts";
 
 const declared = (config: unknown) =>
-	resolve(loadConfig({_tag: "Text", text: JSON.stringify({[CI]: config})}), ciKey);
+	resolve(loadConfig({ _tag: "Text", text: JSON.stringify({ [CI]: config }) }), ciKey);
 
 describe("the shipped CI surface", () => {
 	it("resolves refuse and ci.yml for a repo with no config at all", () => {
-		const resolved = resolve(loadConfig({_tag: "Absent"}), ciKey);
+		const resolved = resolve(loadConfig({ _tag: "Absent" }), ciKey);
 		expect(resolved._tag).toBe("Default");
 		if (resolved._tag !== "Default") return;
 		expect(resolved.value).toEqual({
 			noProducer: "refuse",
 			gateWorkflow: "ci.yml",
-			mainAlarm: {mention: [], label: "fabrika-main-alarm"},
+			mainAlarm: { mention: [], label: "fabrika-main-alarm" },
 		});
 	});
 
 	it("falls to the shipped value for each sub-key the repo leaves out", () => {
-		const resolved = declared({noProducer: "degrade"});
+		const resolved = declared({ noProducer: "degrade" });
 		expect(resolved._tag).toBe("Declared");
 		if (resolved._tag !== "Declared") return;
 		expect(resolved.value.gateWorkflow).toBe(SHIPPED_CI.gateWorkflow);
@@ -28,36 +28,36 @@ describe("the shipped CI surface", () => {
 
 describe("an off-vocabulary or malformed value is refused at load", () => {
 	it("refuses a noProducer outside refuse | degrade", () => {
-		const resolved = declared({noProducer: "ignore"});
+		const resolved = declared({ noProducer: "ignore" });
 		expect(resolved._tag).toBe("Malformed");
 		if (resolved._tag !== "Malformed") return;
 		expect(resolved.reason).toContain("is not one of refuse, degrade");
 	});
 
 	it.each([null, 3, ["refuse"]])("refuses a non-string noProducer (%p)", (value) => {
-		expect(declared({noProducer: value})._tag).toBe("Malformed");
+		expect(declared({ noProducer: value })._tag).toBe("Malformed");
 	});
 
 	it("refuses a sub-key this module does not own, rather than dropping it", () => {
-		const resolved = declared({noProducerr: "degrade"});
+		const resolved = declared({ noProducerr: "degrade" });
 		expect(resolved._tag).toBe("Malformed");
 		if (resolved._tag !== "Malformed") return;
 		expect(resolved.reason).toContain("is not a CI setting");
 	});
 
 	it("refuses a gateWorkflow given as a path — a silently-basenamed value is a false accept", () => {
-		const resolved = declared({gateWorkflow: ".github/workflows/build.yml"});
+		const resolved = declared({ gateWorkflow: ".github/workflows/build.yml" });
 		expect(resolved._tag).toBe("Malformed");
 		if (resolved._tag !== "Malformed") return;
 		expect(resolved.reason).toContain("bare workflow filename");
 	});
 
 	it("refuses an empty gateWorkflow", () => {
-		expect(declared({gateWorkflow: "  "})._tag).toBe("Malformed");
+		expect(declared({ gateWorkflow: "  " })._tag).toBe("Malformed");
 	});
 
 	it("takes a bare filename", () => {
-		const resolved = declared({gateWorkflow: "build.yml"});
+		const resolved = declared({ gateWorkflow: "build.yml" });
 		expect(resolved._tag).toBe("Declared");
 		if (resolved._tag !== "Declared") return;
 		expect(resolved.value.gateWorkflow).toBe("build.yml");
@@ -66,54 +66,53 @@ describe("an off-vocabulary or malformed value is refused at load", () => {
 
 describe("mainAlarm — who the alarm wakes, and under which label", () => {
 	it("ships an empty mention and fabrika's own label", () => {
-		expect(SHIPPED_MAIN_ALARM).toEqual({mention: [], label: "fabrika-main-alarm"});
+		expect(SHIPPED_MAIN_ALARM).toEqual({ mention: [], label: "fabrika-main-alarm" });
 	});
 
 	it("takes a declared handle list and keeps the repo's own spelling", () => {
-		const resolved = declared({mainAlarm: {mention: ["@someone"]}});
+		const resolved = declared({ mainAlarm: { mention: ["@someone"] } });
 		expect(resolved._tag).toBe("Declared");
 		if (resolved._tag !== "Declared") return;
-		expect(resolved.value.mainAlarm).toEqual({mention: ["@someone"], label: "fabrika-main-alarm"});
+		expect(resolved.value.mainAlarm).toEqual({
+			mention: ["@someone"],
+			label: "fabrika-main-alarm",
+		});
 	});
 
 	it("takes an explicitly empty mention — filing still happens, so nothing is disabled", () => {
-		const resolved = declared({mainAlarm: {mention: []}});
+		const resolved = declared({ mainAlarm: { mention: [] } });
 		expect(resolved._tag).toBe("Declared");
 		if (resolved._tag !== "Declared") return;
 		expect(resolved.value.mainAlarm.mention).toEqual([]);
 	});
 
-	it.each([
-		null,
-		"someone",
-		3,
-		[3],
-		[""],
-		["two words"],
-	])("refuses a mention that is not a list of handles (%p)", (value) => {
-		expect(declared({mainAlarm: {mention: value}})._tag).toBe("Malformed");
-	});
+	it.each([null, "someone", 3, [3], [""], ["two words"]])(
+		"refuses a mention that is not a list of handles (%p)",
+		(value) => {
+			expect(declared({ mainAlarm: { mention: value } })._tag).toBe("Malformed");
+		},
+	);
 
 	it("refuses a label carrying a comma — the lookup query would silently widen", () => {
-		const resolved = declared({mainAlarm: {label: "alarm,triage"}});
+		const resolved = declared({ mainAlarm: { label: "alarm,triage" } });
 		expect(resolved._tag).toBe("Malformed");
 		if (resolved._tag !== "Malformed") return;
 		expect(resolved.reason).toContain("single label name");
 	});
 
 	it("refuses an empty label", () => {
-		expect(declared({mainAlarm: {label: "  "}})._tag).toBe("Malformed");
+		expect(declared({ mainAlarm: { label: "  " } })._tag).toBe("Malformed");
 	});
 
 	it("refuses a sub-key this surface does not own, rather than dropping it", () => {
-		const resolved = declared({mainAlarm: {mentions: ["@someone"]}});
+		const resolved = declared({ mainAlarm: { mentions: ["@someone"] } });
 		expect(resolved._tag).toBe("Malformed");
 		if (resolved._tag !== "Malformed") return;
 		expect(resolved.reason).toContain("is not a main-alarm setting");
 	});
 
 	it("refuses a mainAlarm that is not an object", () => {
-		expect(declared({mainAlarm: ["@someone"]})._tag).toBe("Malformed");
+		expect(declared({ mainAlarm: ["@someone"] })._tag).toBe("Malformed");
 	});
 });
 
@@ -131,12 +130,12 @@ describe("producerFor", () => {
 
 	it("is Present on any repo-authored workflow — existence is the whole test", () => {
 		expect(at([CI_YML], {})._tag).toBe("Present");
-		expect(at([CI_YML], {noProducer: "degrade"})._tag).toBe("Present");
+		expect(at([CI_YML], { noProducer: "degrade" })._tag).toBe("Present");
 	});
 
 	it("is Present on a mixed inventory, whatever platform entries sit beside the repo's own", () => {
 		expect(at([...PLATFORM, CI_YML], {})._tag).toBe("Present");
-		expect(at([...PLATFORM, CI_YML], {noProducer: "degrade"})._tag).toBe("Present");
+		expect(at([...PLATFORM, CI_YML], { noProducer: "degrade" })._tag).toBe("Present");
 	});
 
 	it("refuses zero workflows under the shipped default", () => {
@@ -155,25 +154,25 @@ describe("producerFor", () => {
 	});
 
 	it("reports the fact, never a green, under degrade", () => {
-		const answer = at([], {noProducer: "degrade"});
+		const answer = at([], { noProducer: "degrade" });
 		expect(answer._tag).toBe("OptedOut");
 		if (answer._tag !== "OptedOut") return;
 		expect(answer.note).not.toContain("green");
 	});
 
 	it("opts an all-dynamic inventory out under degrade — the route such a repo declares is reachable", () => {
-		const answer = at(PLATFORM, {noProducer: "degrade"});
+		const answer = at(PLATFORM, { noProducer: "degrade" });
 		expect(answer._tag).toBe("OptedOut");
 		if (answer._tag !== "OptedOut") return;
 		expect(answer.note).toContain("zero repo-authored workflows");
 	});
 
 	it("is Unknown on a config that never decoded — never the shipped default", () => {
-		expect(at([], {noProducer: "ignore"})._tag).toBe("Unknown");
+		expect(at([], { noProducer: "ignore" })._tag).toBe("Unknown");
 	});
 
 	it("is Unknown on a config nobody could read", () => {
-		const unreadable = resolve(loadConfig({_tag: "Unreadable", reason: "EACCES"}), ciKey);
+		const unreadable = resolve(loadConfig({ _tag: "Unreadable", reason: "EACCES" }), ciKey);
 		expect(producerFor("verb", "o/r", [], unreadable)._tag).toBe("Unknown");
 	});
 });

@@ -13,12 +13,12 @@
  * `completed`. Both are the same claim from two directions, and accepting either keeps a re-read
  * that caught the run mid-transition from reading as a refusal.
  */
-import {Effect} from "effect";
+import { Effect } from "effect";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {pagedEnvelope, refusalText, resolveToken, restRead} from "../io/gh-api.ts";
-import {type Attempt, fail, ok} from "../io/git.ts";
-import {isRecord} from "../io/json.ts";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { pagedEnvelope, refusalText, resolveToken, restRead } from "../io/gh-api.ts";
+import { type Attempt, fail, ok } from "../io/git.ts";
+import { isRecord } from "../io/json.ts";
 
 /** An authenticated GitHub read: the transport, plus the spawner the `gh auth token` leg needs. */
 type Authed<A> = Effect.Effect<
@@ -44,7 +44,7 @@ export interface WorkflowRun {
 
 const toRun = (value: unknown): WorkflowRun | null => {
 	if (!isRecord(value)) return null;
-	const {id, name, status, conclusion} = value;
+	const { id, name, status, conclusion } = value;
 	if (typeof id !== "number" || typeof status !== "string") return null;
 	const attempt = value.run_attempt;
 	return {
@@ -82,7 +82,7 @@ export const listRunsAtHead = (
 			"workflow_runs",
 		);
 		if (read._tag === "Failure") return read;
-		const {declared, entries} = read.value;
+		const { declared, entries } = read.value;
 		if (entries.length < declared) {
 			return fail(
 				`the workflow-run list at ${sha} is short — GitHub declared ${declared} run(s) and ${entries.length} arrived`,

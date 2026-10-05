@@ -1,28 +1,28 @@
-import {NodeServices} from "@effect/platform-node";
-import {Cause, Effect, Exit, Layer, Option} from "effect";
-import {CliError, Command} from "effect/unstable/cli";
+import { NodeServices } from "@effect/platform-node";
+import { Cause, Effect, Exit, Layer, Option } from "effect";
+import { CliError, Command } from "effect/unstable/cli";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
-import {describe, expect, it} from "vitest";
-import {registeredGroups} from "./registry.ts";
-import {fabrikaCommand} from "./root-command.ts";
-import {type CommandNode, findUnknownSubcommand, refusal} from "./unknown-subcommand.ts";
+import { describe, expect, it } from "vitest";
+import { registeredGroups } from "./registry.ts";
+import { fabrikaCommand } from "./root-command.ts";
+import { type CommandNode, findUnknownSubcommand, refusal } from "./unknown-subcommand.ts";
 
 const node = (
 	name: string,
 	subs: ReadonlyArray<CommandNode> = [],
-	extra: {alias?: string; unlisted?: boolean} = {},
+	extra: { alias?: string; unlisted?: boolean } = {},
 ): CommandNode => ({
 	name,
 	alias: extra.alias,
 	unlisted: extra.unlisted ?? false,
-	subcommands: subs.length === 0 ? [] : [{commands: subs}],
+	subcommands: subs.length === 0 ? [] : [{ commands: subs }],
 });
 
 describe("findUnknownSubcommand", () => {
 	const leaf = node("leaf");
 	const group = node("group", [
-		node("verb", [], {alias: "v"}),
-		node("secret", [], {unlisted: true}),
+		node("verb", [], { alias: "v" }),
+		node("secret", [], { unlisted: true }),
 	]);
 	const root = node("root", [group, leaf]);
 
@@ -61,13 +61,13 @@ describe("findUnknownSubcommand", () => {
 
 describe("refusal", () => {
 	it("keeps the runner's own wording and appends what the node accepts", () => {
-		expect(refusal({token: "bogus", path: ["fabrika", "adr"], known: ["next", "new"]})).toBe(
+		expect(refusal({ token: "bogus", path: ["fabrika", "adr"], known: ["next", "new"] })).toBe(
 			'fabrika: Unknown subcommand "bogus" for "fabrika adr" — known subcommands: next, new',
 		);
 	});
 
 	it("says so rather than trailing off when a node offers nothing", () => {
-		expect(refusal({token: "bogus", path: ["fabrika"], known: []})).toContain(
+		expect(refusal({ token: "bogus", path: ["fabrika"], known: [] })).toContain(
 			"known subcommands: (none)",
 		);
 	});
@@ -182,22 +182,23 @@ describe("the parser refuses an unknown token at every node that carries subcomm
 		expect(paths.length).toBeGreaterThan(0);
 	});
 
-	it.each(
-		paths.map((path) => [path.join(" ") || "(root)", path] as const),
-	)("refuses at `fabrika %s`", async (_label, path) => {
-		const exit = await Effect.runPromiseExit(
-			Command.runWith(fabrikaCommand, {version: "test"})([...path, "__no_such_token__"]).pipe(
-				Effect.provide(Layer.merge(NodeServices.layer, FetchHttpClient.layer)),
-			),
-		);
-		expect(Exit.isFailure(exit)).toBe(true);
-		const failure = Exit.isFailure(exit)
-			? Option.getOrUndefined(Cause.findErrorOption(exit.cause))
-			: undefined;
-		expect(
-			CliError.isCliError(failure) &&
-				failure._tag === "ShowHelp" &&
-				failure.errors.some((error) => error._tag === "UnknownSubcommand"),
-		).toBe(true);
-	});
+	it.each(paths.map((path) => [path.join(" ") || "(root)", path] as const))(
+		"refuses at `fabrika %s`",
+		async (_label, path) => {
+			const exit = await Effect.runPromiseExit(
+				Command.runWith(fabrikaCommand, { version: "test" })([...path, "__no_such_token__"]).pipe(
+					Effect.provide(Layer.merge(NodeServices.layer, FetchHttpClient.layer)),
+				),
+			);
+			expect(Exit.isFailure(exit)).toBe(true);
+			const failure = Exit.isFailure(exit)
+				? Option.getOrUndefined(Cause.findErrorOption(exit.cause))
+				: undefined;
+			expect(
+				CliError.isCliError(failure) &&
+					failure._tag === "ShowHelp" &&
+					failure.errors.some((error) => error._tag === "UnknownSubcommand"),
+			).toBe(true);
+		},
+	);
 });

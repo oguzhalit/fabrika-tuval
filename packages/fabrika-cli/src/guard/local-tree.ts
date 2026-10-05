@@ -10,9 +10,9 @@
  * a skill — is the drift the decision exists to prevent.
  */
 
-import type {Effect, FileSystem, Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {VerbOutcome} from "../verb.ts";
+import type { Effect, FileSystem, Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { VerbOutcome } from "../verb.ts";
 
 /**
  * One local-tree guard's invocation, bound to the tree it judges.
@@ -45,8 +45,8 @@ export type LocalTreeRun = (options: {
  * scoping, never a per-repo list of guards.
  */
 export type TreeScope =
-	| {readonly _tag: "WholeTree"}
-	| {readonly _tag: "Change"; readonly paths: ReadonlyArray<string>};
+	| { readonly _tag: "WholeTree" }
+	| { readonly _tag: "Change"; readonly paths: ReadonlyArray<string> };
 
 /** A member of the local-tree set, as `build check` invokes and names it. */
 export interface LocalTreeGuard {
@@ -64,11 +64,11 @@ export interface LocalTreeGuard {
  * clause of the predicate it fails is a row whose membership was never decided.
  */
 export type Membership =
-	| {readonly _tag: "LocalTree"; readonly guard: LocalTreeGuard}
-	| {readonly _tag: "NotLocalTree"; readonly why: string};
+	| { readonly _tag: "LocalTree"; readonly guard: LocalTreeGuard }
+	| { readonly _tag: "NotLocalTree"; readonly why: string };
 
 /** One registry row: the registered command and its membership, side by side. */
-export interface GuardRow<C extends {readonly name: string}> {
+export interface GuardRow<C extends { readonly name: string }> {
 	readonly command: C;
 	readonly membership: Membership;
 }
@@ -79,23 +79,23 @@ export interface GuardRow<C extends {readonly name: string}> {
  * The name comes off the command, so a member cannot be registered under a name the CLI does not
  * answer to.
  */
-export const localTree = <C extends {readonly name: string}>(
+export const localTree = <C extends { readonly name: string }>(
 	command: C,
 	leaf: string,
 	run: LocalTreeRun,
 ): GuardRow<C> => ({
 	command,
-	membership: {_tag: "LocalTree", guard: {name: command.name, leaf, run}},
+	membership: { _tag: "LocalTree", guard: { name: command.name, leaf, run } },
 });
 
 /** Register a guard as a non-member, naming the clause of the predicate it fails. */
-export const notLocalTree = <C extends {readonly name: string}>(
+export const notLocalTree = <C extends { readonly name: string }>(
 	command: C,
 	why: string,
-): GuardRow<C> => ({command, membership: {_tag: "NotLocalTree", why}});
+): GuardRow<C> => ({ command, membership: { _tag: "NotLocalTree", why } });
 
 /** The members of a registry, in registration order — the set `build check` sweeps. */
 export const membersOf = (
-	rows: ReadonlyArray<GuardRow<{readonly name: string}>>,
+	rows: ReadonlyArray<GuardRow<{ readonly name: string }>>,
 ): ReadonlyArray<LocalTreeGuard> =>
 	rows.flatMap((row) => (row.membership._tag === "LocalTree" ? [row.membership.guard] : []));

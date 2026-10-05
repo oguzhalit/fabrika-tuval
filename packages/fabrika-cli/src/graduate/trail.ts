@@ -17,9 +17,9 @@
  * file a second spec.
  */
 
-import {createHash} from "node:crypto";
-import type {DecisionEntry, OutOfScopeEntry} from "../map/body.ts";
-import type {Ticket} from "../map/frontier.ts";
+import { createHash } from "node:crypto";
+import type { DecisionEntry, OutOfScopeEntry } from "../map/body.ts";
+import type { Ticket } from "../map/frontier.ts";
 
 /** The two words a decision's authority may carry. There is deliberately no word for *inferred*. */
 export type Provenance = "ruled" | "established";
@@ -140,17 +140,17 @@ export const fromSession = (questions: ReadonlyArray<ResolvedQuestion>): Normali
 	const unresolved: UnresolvedRow[] = [];
 	for (const question of questions) {
 		if (question.state === "ruled") {
-			decisions.push({ref: question.id, provenance: "ruled", text: question.text});
+			decisions.push({ ref: question.id, provenance: "ruled", text: question.text });
 			continue;
 		}
 		if (question.state === "answered") {
-			decisions.push({ref: question.id, provenance: "established", text: question.text});
+			decisions.push({ ref: question.id, provenance: "established", text: question.text });
 			continue;
 		}
 		if (question.state === "superseded") continue;
-		unresolved.push({ref: question.id, state: question.state});
+		unresolved.push({ ref: question.id, state: question.state });
 	}
-	return {decisions, unresolved};
+	return { decisions, unresolved };
 };
 
 /**
@@ -184,17 +184,17 @@ export const fromMap = (
 	),
 	unresolved: tickets
 		.filter((ticket) => ticket.state !== "graduated" && ticket.state !== "retired")
-		.map((ticket) => ({ref: `#${ticket.number}`, state: ticket.state})),
+		.map((ticket) => ({ ref: `#${ticket.number}`, state: ticket.state })),
 });
 
 const HEX_12 = /^[0-9a-f]{12}$/;
 
 /** A `--trail` file read back into a trail, or the reason those bytes are not one. */
 export type TrailDocument =
-	| {readonly _tag: "Trail"; readonly value: Trail}
-	| {readonly _tag: "Unreadable"; readonly reason: string}
+	| { readonly _tag: "Trail"; readonly value: Trail }
+	| { readonly _tag: "Unreadable"; readonly reason: string }
 	/** A field the digest is taken over is missing — the binding is unbindable, not malformed. */
-	| {readonly _tag: "Unbindable"; readonly reason: string};
+	| { readonly _tag: "Unbindable"; readonly reason: string };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value);
@@ -211,38 +211,39 @@ export const parseTrailDocument = (text: string): TrailDocument => {
 	try {
 		parsed = JSON.parse(text);
 	} catch (error) {
-		return {_tag: "Unreadable", reason: `it is not JSON (${(error as Error).message})`};
+		return { _tag: "Unreadable", reason: `it is not JSON (${(error as Error).message})` };
 	}
-	if (!isRecord(parsed)) return {_tag: "Unreadable", reason: "it is not a JSON object"};
+	if (!isRecord(parsed)) return { _tag: "Unreadable", reason: "it is not a JSON object" };
 
 	const rows = parsed.decisions;
 	if (!Array.isArray(rows)) {
-		return {_tag: "Unreadable", reason: "it carries no `decisions` array"};
+		return { _tag: "Unreadable", reason: "it carries no `decisions` array" };
 	}
 	const decisions: DecisionRow[] = [];
 	for (const row of rows) {
-		if (!isRecord(row)) return {_tag: "Unreadable", reason: "a `decisions` entry is not an object"};
+		if (!isRecord(row))
+			return { _tag: "Unreadable", reason: "a `decisions` entry is not an object" };
 		for (const field of ["ref", "provenance", "text"] as const) {
 			if (typeof row[field] !== "string" || (row[field] as string).trim() === "") {
-				return {_tag: "Unbindable", reason: field};
+				return { _tag: "Unbindable", reason: field };
 			}
 		}
 		const provenance = row.provenance as string;
 		if (provenance !== "ruled" && provenance !== "established") {
-			return {_tag: "Unbindable", reason: "provenance"};
+			return { _tag: "Unbindable", reason: "provenance" };
 		}
-		decisions.push({ref: row.ref as string, provenance, text: row.text as string});
+		decisions.push({ ref: row.ref as string, provenance, text: row.text as string });
 	}
 
 	const digest = parsed.trailDigest;
 	if (typeof digest !== "string" || !HEX_12.test(digest)) {
-		return {_tag: "Unbindable", reason: "trailDigest"};
+		return { _tag: "Unbindable", reason: "trailDigest" };
 	}
 
 	const unresolvedRows = Array.isArray(parsed.unresolved) ? parsed.unresolved : [];
 	const unresolved = unresolvedRows.flatMap((row): UnresolvedRow[] =>
 		isRecord(row) && typeof row.ref === "string" && typeof row.state === "string"
-			? [{ref: row.ref, state: row.state}]
+			? [{ ref: row.ref, state: row.state }]
 			: [],
 	);
 	const outOfScopeRows = Array.isArray(parsed.outOfScope) ? parsed.outOfScope : [];
@@ -251,7 +252,7 @@ export const parseTrailDocument = (text: string): TrailDocument => {
 		typeof row.direction === "string" &&
 		typeof row.reason === "string" &&
 		typeof row.recordedAt === "string"
-			? [{direction: row.direction, reason: row.reason, recordedAt: row.recordedAt}]
+			? [{ direction: row.direction, reason: row.reason, recordedAt: row.recordedAt }]
 			: [],
 	);
 

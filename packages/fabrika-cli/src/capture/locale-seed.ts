@@ -31,15 +31,15 @@ export interface LocaleSeed {
  * under the requested name.
  */
 export type LocaleOperandRead =
-	| {readonly _tag: "Default"}
-	| {readonly _tag: "Seeded"; readonly seed: LocaleSeed}
-	| {readonly _tag: "Malformed"; readonly value: string; readonly reason: string};
+	| { readonly _tag: "Default" }
+	| { readonly _tag: "Seeded"; readonly seed: LocaleSeed }
+	| { readonly _tag: "Malformed"; readonly value: string; readonly reason: string };
 
 export const parseLocaleOperand = (
 	operand: string | null,
 	declared: LocaleDeclaration | null,
 ): LocaleOperandRead => {
-	if (operand === null) return {_tag: "Default"};
+	if (operand === null) return { _tag: "Default" };
 	if (declared === null) {
 		return {
 			_tag: "Malformed",
@@ -54,7 +54,7 @@ export const parseLocaleOperand = (
 			reason: `the declared locales are ${declared.values.join(", ")}`,
 		};
 	}
-	return {_tag: "Seeded", seed: {storageKey: declared.storageKey, value: operand}};
+	return { _tag: "Seeded", seed: { storageKey: declared.storageKey, value: operand } };
 };
 
 /**
@@ -63,13 +63,15 @@ export const parseLocaleOperand = (
  * `Unreadable` stays apart from `Mismatch`: both refuse, but only one is a fact about the page.
  */
 export type LocaleProof =
-	| {readonly _tag: "Seeded"}
-	| {readonly _tag: "Mismatch"; readonly rendered: string}
-	| {readonly _tag: "Unreadable"; readonly reason: string};
+	| { readonly _tag: "Seeded" }
+	| { readonly _tag: "Mismatch"; readonly rendered: string }
+	| { readonly _tag: "Unreadable"; readonly reason: string };
 
 export const readLocaleProof = (requested: string, renderedLang: unknown): LocaleProof => {
 	if (typeof renderedLang !== "string") {
-		return {_tag: "Unreadable", reason: "the page's lang did not read back as a string"};
+		return { _tag: "Unreadable", reason: "the page's lang did not read back as a string" };
 	}
-	return renderedLang === requested ? {_tag: "Seeded"} : {_tag: "Mismatch", rendered: renderedLang};
+	return renderedLang === requested
+		? { _tag: "Seeded" }
+		: { _tag: "Mismatch", rendered: renderedLang };
 };

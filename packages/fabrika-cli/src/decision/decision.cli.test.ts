@@ -15,10 +15,10 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/8857#issuecomment-5625302485
  */
 
-import {execFileSync} from "node:child_process";
-import {fileURLToPath} from "node:url";
-import {describe, expect, it} from "vitest";
-import {SUBPROCESS_TEST_TIMEOUT_MS} from "../test-budget.ts";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import { SUBPROCESS_TEST_TIMEOUT_MS } from "../test-budget.ts";
 
 const BIN = fileURLToPath(new URL("../bin.ts", import.meta.url));
 
@@ -33,17 +33,23 @@ const fabrika = (args: ReadonlyArray<string>): Run => {
 	try {
 		const stdout = execFileSync(process.execPath, [BIN, ...args], {
 			encoding: "utf8",
-			env: {...process.env, FABRIKA_SKIP_INFER: "1"},
+			env: { ...process.env, FABRIKA_SKIP_INFER: "1" },
 			stdio: ["pipe", "pipe", "pipe"],
 		});
-		return {code: 0, stdout, stderr: ""};
+		return { code: 0, stdout, stderr: "" };
 	} catch (err) {
-		const failure = err as {status?: number; stdout?: string; stderr?: string};
-		return {code: failure.status ?? -1, stdout: failure.stdout ?? "", stderr: failure.stderr ?? ""};
+		const failure = err as { status?: number; stdout?: string; stderr?: string };
+		return {
+			code: failure.status ?? -1,
+			stdout: failure.stdout ?? "",
+			stderr: failure.stderr ?? "",
+		};
 	}
 };
 
-describe("fabrika decision rule — exactly one flag", {timeout: SUBPROCESS_TEST_TIMEOUT_MS}, () => {
+describe("fabrika decision rule — exactly one flag", {
+	timeout: SUBPROCESS_TEST_TIMEOUT_MS,
+}, () => {
 	it("refuses with neither --cites nor --authorization, writing nothing", () => {
 		const run = fabrika(["decision", "rule", "9412", "--repo", "o/r"]);
 		expect(run.code).toBe(1);

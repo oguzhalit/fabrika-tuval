@@ -6,11 +6,11 @@
  * the group's exit taxonomy.
  */
 
-import {Effect, FileSystem, Option, Path} from "effect";
-import {discoverRepoRoot} from "../delegate/root.ts";
-import {type ReadFailed, readDir, readFile} from "../io/fs.ts";
-import {parseJson} from "../io/json.ts";
-import type {VerbOutcome} from "../verb.ts";
+import { Effect, FileSystem, Option, Path } from "effect";
+import { discoverRepoRoot } from "../delegate/root.ts";
+import { type ReadFailed, readDir, readFile } from "../io/fs.ts";
+import { parseJson } from "../io/json.ts";
+import type { VerbOutcome } from "../verb.ts";
 import {
 	type Allowance,
 	annotationsFor,
@@ -95,15 +95,15 @@ const gather = (
 		for (const abs of files) {
 			const rel = toRel(path, root, abs);
 			if (!isInScope(rel)) continue;
-			scans.push({path: rel, hits: scanSource(yield* readFile(abs))});
+			scans.push({ path: rel, hits: scanSource(yield* readFile(abs)) });
 		}
 		return scans.sort((a, b) => a.path.localeCompare(b.path));
 	});
 
 /** The parsed allow-list, or the named reason it is unusable. */
 type ConfigRead =
-	| {readonly _tag: "Config"; readonly config: I18nGuardConfig}
-	| {readonly _tag: "Malformed"; readonly report: string};
+	| { readonly _tag: "Config"; readonly config: I18nGuardConfig }
+	| { readonly _tag: "Malformed"; readonly report: string };
 
 const isAllowanceMap = (value: unknown): value is Readonly<Record<string, Allowance>> => {
 	if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -131,7 +131,7 @@ const readConfig = (
 				report: `${VERB}: ${CONFIG_PATH} does not parse, or an entry under exempt/unmigrated is missing a numeric \`ceiling\` or a non-empty \`why\` — the allow-list the ratchet is judged against is broken, fail-closed (ADR 0092).\n`,
 			};
 		}
-		return {_tag: "Config", config: {exempt: parsed.exempt, unmigrated: parsed.unmigrated}};
+		return { _tag: "Config", config: { exempt: parsed.exempt, unmigrated: parsed.unmigrated } };
 	});
 
 const judgeTree = (
@@ -140,7 +140,7 @@ const judgeTree = (
 	Effect.gen(function* () {
 		const config = yield* readConfig(root);
 		if (config._tag === "Malformed") return zeroScope(config.report);
-		const verdict = judge({files: yield* gather(root), config: config.config});
+		const verdict = judge({ files: yield* gather(root), config: config.config });
 		const report = renderReport(verdict);
 		if (verdict._tag === "Clean") return clean(report, verdict.filesScanned);
 		if (verdict._tag === "ZeroScope") return zeroScope(report);

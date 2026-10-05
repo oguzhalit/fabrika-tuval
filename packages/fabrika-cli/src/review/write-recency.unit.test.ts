@@ -1,4 +1,4 @@
-import {describe, expect, it} from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	compareWriteRecency,
 	latestByWriteRecency,
@@ -57,14 +57,14 @@ describe("writeRecencyOf — created_at is the floor, never the key", () => {
 
 	it("takes the stamp when it is later than the slot", () => {
 		const body = withWrittenAt("review-doc: FAIL @ abc1234 — x", "2026-08-09T05:00:00Z");
-		expect(writeRecencyOf({id: 1, createdAt: "2026-08-09T03:00:00Z", body})).toBe(
+		expect(writeRecencyOf({ id: 1, createdAt: "2026-08-09T03:00:00Z", body })).toBe(
 			"2026-08-09T05:00:00Z",
 		);
 	});
 
 	it("refuses a backdated stamp — a verdict cannot predate the slot that carries it", () => {
 		const body = withWrittenAt("review-doc: FAIL @ abc1234 — x", "2026-08-09T01:00:00Z");
-		expect(writeRecencyOf({id: 1, createdAt: "2026-08-09T03:00:00Z", body})).toBe(
+		expect(writeRecencyOf({ id: 1, createdAt: "2026-08-09T03:00:00Z", body })).toBe(
 			"2026-08-09T03:00:00Z",
 		);
 	});
@@ -94,7 +94,7 @@ describe("compareWriteRecency", () => {
 		expect(compareWriteRecency(marker, advisory)).toBeGreaterThan(0);
 		expect(latestByWriteRecency([marker, advisory])).toBe(marker);
 		// And the defect it replaces: unstamped, the same pair ranks the other way round.
-		const unstamped = {...marker, body: "review-code: FAIL @ abc1234 — a criterion is red"};
+		const unstamped = { ...marker, body: "review-code: FAIL @ abc1234 — a criterion is red" };
 		expect(compareWriteRecency(unstamped, advisory)).toBeLessThan(0);
 	});
 

@@ -9,11 +9,11 @@
  * test asserts the three codes are pairwise distinct, which is the property a future edit could
  * quietly lose.
  */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {StdinRead} from "../io/stdin.ts";
-import {ANSWER} from "../verb.ts";
-import {runCheck} from "./check-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { StdinRead } from "../io/stdin.ts";
+import { ANSWER } from "../verb.ts";
+import { runCheck } from "./check-verb.ts";
 import {
 	ABSENT,
 	ARTIFACT_UNKNOWN,
@@ -23,16 +23,16 @@ import {
 	WIRE_EXIT_TABLE,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {runCodes} from "./codes-verb.ts";
-import {runEmit} from "./emit-verb.ts";
-import {runFormats} from "./formats-verb.ts";
-import {runRead} from "./read-verb.ts";
-import {registeredFormats} from "./registry.ts";
+import { runCodes } from "./codes-verb.ts";
+import { runEmit } from "./emit-verb.ts";
+import { runFormats } from "./formats-verb.ts";
+import { runRead } from "./read-verb.ts";
+import { registeredFormats } from "./registry.ts";
 
 const KEY = "acceptance-criteria";
 const VERDICT = "verdict-marker";
 
-const piped = (text: string): Effect.Effect<StdinRead> => Effect.succeed({_tag: "Text", text});
+const piped = (text: string): Effect.Effect<StdinRead> => Effect.succeed({ _tag: "Text", text });
 const noStdin: Effect.Effect<StdinRead> = Effect.succeed({
 	_tag: "NoStdin",
 	reason: "fd 0 is a TTY — nothing was piped in",
@@ -47,11 +47,11 @@ const NO_BLOCK = "### What to build\n\nStand up the group. No criteria section h
 const DRIFTED = "### Acceptance Criteria\n- [ ] one\n";
 
 const read = (stdin: Effect.Effect<StdinRead>, format = KEY, json = false) =>
-	Effect.runPromise(runRead({format, json, stdin}));
+	Effect.runPromise(runRead({ format, json, stdin }));
 const check = (stdin: Effect.Effect<StdinRead>, format = KEY, json = false) =>
-	Effect.runPromise(runCheck({format, json, stdin}));
+	Effect.runPromise(runCheck({ format, json, stdin }));
 const emit = (stdin: Effect.Effect<StdinRead>, format = KEY, json = false) =>
-	Effect.runPromise(runEmit({format, json, stdin}));
+	Effect.runPromise(runEmit({ format, json, stdin }));
 
 describe("wire read", () => {
 	it("prints the criteria on stdout with a positive token, exit 0", async () => {
@@ -186,7 +186,7 @@ describe("wire emit", () => {
 
 describe("wire formats", () => {
 	it("derives one row per registered format — no parallel hand-written list", () => {
-		const out = runFormats({json: false});
+		const out = runFormats({ json: false });
 		const lines = out.stdout.trimEnd().split("\n");
 		expect(lines[0]).toBe(`formats\t${registeredFormats.length}`);
 		expect(lines).toHaveLength(registeredFormats.length + 1);
@@ -196,7 +196,7 @@ describe("wire formats", () => {
 	});
 
 	it("lists the founding format with its producers and consumers", () => {
-		const out = runFormats({json: true});
+		const out = runFormats({ json: true });
 		expect(JSON.parse(out.stdout).formats).toContainEqual({
 			key: KEY,
 			purpose: expect.any(String),
@@ -258,7 +258,7 @@ describe("a second format on the same seam", () => {
 
 describe("wire codes", () => {
 	it("prints one `<code>\\t<meaning>` line per row and always exits 0", () => {
-		const out = runCodes({json: false});
+		const out = runCodes({ json: false });
 		expect(out.code).toBe(ANSWER);
 		expect(out.stdout.trimEnd().split("\n")).toHaveLength(WIRE_EXIT_TABLE.length);
 	});

@@ -7,10 +7,10 @@
  * between them would let one file's green rest on a repo shape the other never exercises. The
  * `.test-support.ts` suffix is what `tsconfig.build.json` excludes, so it stays out of `dist/`.
  */
-import {execFileSync} from "node:child_process";
-import {mkdtempSync, rmSync, writeFileSync} from "node:fs";
-import {tmpdir} from "node:os";
-import {join} from "node:path";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 /** Pinned away from the developer's own config: a fixture that inherits it proves what this machine does. */
 export const GIT_ENV = {
@@ -24,7 +24,7 @@ export const GIT_ENV = {
 };
 
 export const gitSync = (cwd: string | undefined, ...args: ReadonlyArray<string>): string =>
-	execFileSync("git", [...args], {cwd, env: GIT_ENV, encoding: "utf8"});
+	execFileSync("git", [...args], { cwd, env: GIT_ENV, encoding: "utf8" });
 
 /** The git this machine runs, so a declared skip names the version it was declared against. */
 export const gitVersion = (): string => gitSync(undefined, "--version").trim();
@@ -47,7 +47,7 @@ const roots: string[] = [];
 
 /** Every clone this process opened, removed together — call from one `afterAll`. */
 export const removeClones = (): void => {
-	for (const root of roots) rmSync(root, {recursive: true, force: true});
+	for (const root of roots) rmSync(root, { recursive: true, force: true });
 	roots.length = 0;
 };
 
@@ -70,5 +70,5 @@ export const openClone = (): Clone => {
 	// `--no-local`: a local clone hardlinks its objects and skips the transfer the race lives in.
 	gitSync(undefined, "clone", "--quiet", "--no-local", remote, clone);
 
-	return {clone, scratch: join(root, "trees"), tip: gitSync(seed, "rev-parse", "HEAD").trim()};
+	return { clone, scratch: join(root, "trees"), tip: gitSync(seed, "rev-parse", "HEAD").trim() };
 };

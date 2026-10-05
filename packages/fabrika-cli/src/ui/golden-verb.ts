@@ -13,17 +13,17 @@
  * lane-independent by construction: a content-addressed file is write-once, so concurrent lanes
  * cannot clobber each other and this verb needs no lane precondition to stay safe.
  */
-import {Effect, type FileSystem, type Path} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {readBytes, writeBytes} from "./bytes.ts";
-import {BAD_SECTIONS, CAPTURE_INVALID, PRECONDITION_UNKNOWN} from "./codes.ts";
-import {atRoot, GOLDEN_POINTER_PATHS} from "./conventions.ts";
-import {diffAgainstGolden, REGION_CAP} from "./diff.ts";
-import {resolveRoot} from "./lane.ts";
-import {probe} from "./manifest-verb.ts";
-import {decodePng, sha256Of} from "./png.ts";
-import {goldenUrl, parsePointer} from "./pointer.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { readBytes, writeBytes } from "./bytes.ts";
+import { BAD_SECTIONS, CAPTURE_INVALID, PRECONDITION_UNKNOWN } from "./codes.ts";
+import { atRoot, GOLDEN_POINTER_PATHS } from "./conventions.ts";
+import { diffAgainstGolden, REGION_CAP } from "./diff.ts";
+import { resolveRoot } from "./lane.ts";
+import { probe } from "./manifest-verb.ts";
+import { decodePng, sha256Of } from "./png.ts";
+import { goldenUrl, parsePointer } from "./pointer.ts";
 
 const VERB = "ui golden";
 
@@ -31,8 +31,8 @@ const VERB = "ui golden";
 export type FetchLeg = (
 	url: string,
 ) => Effect.Effect<
-	| {readonly _tag: "Ok"; readonly bytes: Uint8Array}
-	| {readonly _tag: "Failed"; readonly reason: string}
+	| { readonly _tag: "Ok"; readonly bytes: Uint8Array }
+	| { readonly _tag: "Failed"; readonly reason: string }
 >;
 
 export interface GoldenOptions {
@@ -51,7 +51,9 @@ const unresolvable = (surface: string, reason: string): VerbOutcome =>
 	);
 
 const unblessed = (surface: string, note: string): VerbOutcome =>
-	answer(JSON.stringify({surface, blessed: false, golden: null, diff: null}), [`${VERB}: ${note}`]);
+	answer(JSON.stringify({ surface, blessed: false, golden: null, diff: null }), [
+		`${VERB}: ${note}`,
+	]);
 
 export const runGolden = (
 	options: GoldenOptions,
@@ -61,7 +63,7 @@ export const runGolden = (
 	ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function* () {
-		const {surface} = options;
+		const { surface } = options;
 		const root = yield* resolveRoot(VERB);
 		if (root._tag === "Refused") return root.outcome;
 
@@ -115,10 +117,10 @@ export const runGolden = (
 			if (failure !== null) return unresolvable(surface, `cannot cache the golden: ${failure}`);
 			goldenBytes = fetched.bytes;
 		}
-		const golden = {sha256, path: cachePath};
+		const golden = { sha256, path: cachePath };
 
 		if (options.candidate === null) {
-			return answer(JSON.stringify({surface, blessed: true, golden, diff: null}), [
+			return answer(JSON.stringify({ surface, blessed: true, golden, diff: null }), [
 				`${VERB}: resolved the blessed golden for "${surface}"; no candidate to diff.`,
 			]);
 		}
@@ -155,5 +157,5 @@ export const runGolden = (
 				`${VERB}: ${outcome.found} regions differ; the list is capped at ${REGION_CAP}, largest area first.`,
 			);
 		}
-		return answer(JSON.stringify({surface, blessed: true, golden, diff: outcome.diff}), notes);
+		return answer(JSON.stringify({ surface, blessed: true, golden, diff: outcome.diff }), notes);
 	});

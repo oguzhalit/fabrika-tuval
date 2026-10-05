@@ -1,11 +1,11 @@
 /**
  * The six-event contract, tested as the state-ledger spike's recorded runs.
  */
-import {describe, expect, it} from "vitest";
-import {classifyPark} from "../recipe/parks.ts";
-import {CAP_ROUND, RETRY_BUDGET} from "../retry-budget.ts";
-import {WAIT_BUDGET} from "../wait-budget.ts";
-import {coderWorkflow, twoPhaseWorkflow} from "./fixtures.test-support.ts";
+import { describe, expect, it } from "vitest";
+import { classifyPark } from "../recipe/parks.ts";
+import { CAP_ROUND, RETRY_BUDGET } from "../retry-budget.ts";
+import { WAIT_BUDGET } from "../wait-budget.ts";
+import { coderWorkflow, twoPhaseWorkflow } from "./fixtures.test-support.ts";
 import {
 	applyBoardTerminal,
 	applyClearance,
@@ -28,7 +28,7 @@ import {
 	LANDED_EVENT,
 	OPERATOR_EVENTS,
 } from "./machine.ts";
-import {routeForCause} from "./report.ts";
+import { routeForCause } from "./report.ts";
 
 const lane = (workflow: unknown): CompiledLane => {
 	const result = compile(workflow);
@@ -85,14 +85,14 @@ describe("run 1 — a fresh lane's status shape", () => {
 
 		expect(statusOf(compiled, [])).toEqual({
 			stateValue: {
-				phase1: {task_a: "doing", task_b: "doing"},
+				phase1: { task_a: "doing", task_b: "doing" },
 				phase2: "waiting",
 			},
 			status: "active",
 			context: {
-				task_a: {retries: 0, maxRetries: 2, waits: 0, maxWaits: WAIT_BUDGET, code: true},
-				task_b: {retries: 0, maxRetries: 3, waits: 0, maxWaits: WAIT_BUDGET, code: false},
-				task_c: {retries: 0, maxRetries: 3, waits: 0, maxWaits: WAIT_BUDGET, code: true},
+				task_a: { retries: 0, maxRetries: 2, waits: 0, maxWaits: WAIT_BUDGET, code: true },
+				task_b: { retries: 0, maxRetries: 3, waits: 0, maxWaits: WAIT_BUDGET, code: false },
+				task_c: { retries: 0, maxRetries: 3, waits: 0, maxWaits: WAIT_BUDGET, code: true },
 				errors: [],
 			},
 		});
@@ -107,7 +107,7 @@ describe("run 1 — a fresh lane's status shape", () => {
 
 		// The driver relays this back onto the next event's `--class`; unclassed stays key-absent, so
 		// a lane that never raised one reads exactly as it always did.
-		expect(statusOf(compiled, [applied.entry]).context.issue).toMatchObject({classes: ["ui"]});
+		expect(statusOf(compiled, [applied.entry]).context.issue).toMatchObject({ classes: ["ui"] });
 		expect(statusOf(compiled, []).context.issue).not.toHaveProperty("classes");
 	});
 });
@@ -124,7 +124,7 @@ describe("run 2 — the happy path", () => {
 			["task_c", "PASS"],
 		]);
 
-		expect(statusOf(compiled, log)).toMatchObject({stateValue: "complete", status: "done"});
+		expect(statusOf(compiled, log)).toMatchObject({ stateValue: "complete", status: "done" });
 	});
 
 	it("walks the coder template queued → build → review → ship → shipped → complete", () => {
@@ -136,7 +136,7 @@ describe("run 2 — the happy path", () => {
 			["issue", "DONE"],
 		]);
 
-		expect(statusOf(compiled, log)).toMatchObject({stateValue: "complete", status: "done"});
+		expect(statusOf(compiled, log)).toMatchObject({ stateValue: "complete", status: "done" });
 	});
 });
 
@@ -149,8 +149,8 @@ describe("run 3 — FAIL with retries remaining", () => {
 		]);
 
 		const status = statusOf(compiled, log);
-		expect(status.stateValue).toMatchObject({phase1: {task_a: "doing"}});
-		expect(status.context.task_a).toMatchObject({retries: 1, maxRetries: 2});
+		expect(status.stateValue).toMatchObject({ phase1: { task_a: "doing" } });
+		expect(status.context.task_a).toMatchObject({ retries: 1, maxRetries: 2 });
 	});
 });
 
@@ -166,20 +166,20 @@ describe("run 4 — exhaustion, sibling isolation, and the noErrors gate", () =>
 			["task_a", "DONE"],
 			["task_a", "FAIL"],
 		]);
-		return {compiled, log};
+		return { compiled, log };
 	};
 
 	it("falls through to the error final at the retry budget — freeze-after-2 as data", () => {
-		const {compiled, log} = exhausted();
+		const { compiled, log } = exhausted();
 
 		const status = statusOf(compiled, log);
-		expect(status.stateValue).toMatchObject({phase1: {task_a: "tripped"}});
+		expect(status.stateValue).toMatchObject({ phase1: { task_a: "tripped" } });
 		expect(status.status).toBe("active");
 		expect(status.context.errors).toEqual(["task_a"]);
 	});
 
 	it("keeps the sibling moving after the trip, then trips the workflow at the gate", () => {
-		const {compiled, log} = exhausted();
+		const { compiled, log } = exhausted();
 
 		const done = applyEvent(
 			compiled,
@@ -200,7 +200,7 @@ describe("run 4 — exhaustion, sibling isolation, and the noErrors gate", () =>
 		);
 		expect(pass._tag).toBe("Applied");
 		if (pass._tag !== "Applied") return;
-		expect(pass.current).toMatchObject({stateValue: "tripped", status: "done"});
+		expect(pass.current).toMatchObject({ stateValue: "tripped", status: "done" });
 	});
 });
 
@@ -213,7 +213,7 @@ describe("run 5 — BLOCKED then UNBLOCKED resumes the state it left", () => {
 			["task_a", "UNBLOCKED"],
 		]);
 
-		expect(statusOf(compiled, log).stateValue).toMatchObject({phase1: {task_a: "checking"}});
+		expect(statusOf(compiled, log).stateValue).toMatchObject({ phase1: { task_a: "checking" } });
 	});
 
 	it("routes ship BLOCKED to human:cp-approval and resumes ship on UNBLOCKED", () => {
@@ -225,7 +225,7 @@ describe("run 5 — BLOCKED then UNBLOCKED resumes the state it left", () => {
 			["issue", "BLOCKED"],
 		]);
 		expect(statusOf(compiled, log).stateValue).toMatchObject({
-			pipeline: {issue: "human:cp-approval"},
+			pipeline: { issue: "human:cp-approval" },
 		});
 
 		const applied = applyEvent(
@@ -237,7 +237,7 @@ describe("run 5 — BLOCKED then UNBLOCKED resumes the state it left", () => {
 		);
 		expect(applied._tag).toBe("Applied");
 		if (applied._tag === "Applied") {
-			expect(applied.current.stateValue).toMatchObject({pipeline: {issue: "ship"}});
+			expect(applied.current.stateValue).toMatchObject({ pipeline: { issue: "ship" } });
 		}
 	});
 });
@@ -250,16 +250,16 @@ describe("the spent-budget park — the driver's own door out", () => {
 	/** WIP, then a FAIL per round until the budget is spent and the last one parks the task. */
 	const freeze: ReadonlyArray<readonly [string, string]> = [
 		["issue", "WIP"],
-		...Array.from({length: RETRY_BUDGET + 1}, () => round).flat(),
+		...Array.from({ length: RETRY_BUDGET + 1 }, () => round).flat(),
 	];
 
 	it("trips the lane on the parked task rather than hanging its phase", () => {
 		const compiled = lane(coderWorkflow());
 
 		const status = statusOf(compiled, drive(compiled, freeze));
-		expect(status).toMatchObject({stateValue: "tripped", status: "done"});
+		expect(status).toMatchObject({ stateValue: "tripped", status: "done" });
 		expect(status.context.errors).toEqual(["issue"]);
-		expect(status.context.issue).toMatchObject({retries: RETRY_BUDGET, maxRetries: RETRY_BUDGET});
+		expect(status.context.issue).toMatchObject({ retries: RETRY_BUDGET, maxRetries: RETRY_BUDGET });
 	});
 
 	// The leaf's name is the whole delta from `frozen`: `isPark` matches `human:*` and matched
@@ -285,7 +285,7 @@ describe("the spent-budget park — the driver's own door out", () => {
 		// Never a silent `active`/`review` whose only walkable arm is PASS: the resume is refused with
 		// the log unappended, and the refusal names a remedy for each seat — the founder's grant on a
 		// pull request, and the driver's own on a lane that has none.
-		expect(applied).toMatchObject({_tag: "Refused", kind: "unbudgeted-resume"});
+		expect(applied).toMatchObject({ _tag: "Refused", kind: "unbudgeted-resume" });
 		if (applied._tag !== "Refused") return;
 		expect(applied.reason).toContain("build clear");
 		expect(applied.reason).toContain("lane clear");
@@ -304,7 +304,7 @@ describe("the spent-budget park — the driver's own door out", () => {
 			grant(compiled, frozen, "issue", CAP_ROUND),
 		);
 		expect(statusOf(compiled, resumed)).toMatchObject({
-			stateValue: {pipeline: {issue: "review"}},
+			stateValue: { pipeline: { issue: "review" } },
 			status: "active",
 		});
 		expect(statusOf(compiled, resumed).context.issue).toMatchObject({
@@ -325,7 +325,7 @@ describe("the spent-budget park — the driver's own door out", () => {
 
 		// The granted round is walkable: FAIL routes to `build`, not straight back to the park.
 		const spent = drive(compiled, [["issue", "FAIL"]], resumed);
-		expect(statusOf(compiled, spent).stateValue).toMatchObject({pipeline: {issue: "build"}});
+		expect(statusOf(compiled, spent).stateValue).toMatchObject({ pipeline: { issue: "build" } });
 		expect(statusOf(compiled, drive(compiled, round, spent))).toMatchObject({
 			stateValue: "tripped",
 			status: "done",
@@ -335,7 +335,7 @@ describe("the spent-budget park — the driver's own door out", () => {
 	it("re-recording the same grant buys nothing — CLEARED is keyed by its round", () => {
 		const compiled = lane(coderWorkflow());
 		const once = grant(compiled, drive(compiled, freeze), "issue", CAP_ROUND);
-		const twice = [...once, {...once[once.length - 1]} as LogEntry];
+		const twice = [...once, { ...once[once.length - 1] } as LogEntry];
 
 		expect(statusOf(compiled, twice).context.issue).toMatchObject({
 			maxRetries: RETRY_BUDGET + 1,
@@ -343,20 +343,20 @@ describe("the spent-budget park — the driver's own door out", () => {
 		});
 		expect(
 			applyClearance(compiled, once, "issue", CAP_ROUND, "2026-08-16T00:00:00.000Z"),
-		).toMatchObject({_tag: "AlreadyHeld"});
+		).toMatchObject({ _tag: "AlreadyHeld" });
 	});
 
 	it("a grant landing on the park moves nothing — the door out is still UNBLOCKED", () => {
 		const compiled = lane(coderWorkflow());
 		const granted = grant(compiled, drive(compiled, freeze), "issue", CAP_ROUND);
 
-		expect(statusOf(compiled, granted)).toMatchObject({stateValue: "tripped", status: "done"});
+		expect(statusOf(compiled, granted)).toMatchObject({ stateValue: "tripped", status: "done" });
 		expect(statusOf(compiled, granted).context.errors).toEqual(["issue"]);
 	});
 
 	it("refuses the door on a region booted in the park — there is no state to resume", () => {
 		const workflow = coderWorkflow() as {
-			machine: {states: {pipeline: {states: {issue: {initial: string}}}}};
+			machine: { states: { pipeline: { states: { issue: { initial: string } } } } };
 		};
 		workflow.machine.states.pipeline.states.issue.initial = "human:budget-spent";
 		const compiled = lane(workflow);
@@ -368,7 +368,7 @@ describe("the spent-budget park — the driver's own door out", () => {
 			"UNBLOCKED",
 			"2026-08-16T00:00:00.000Z",
 		);
-		expect(applied).toMatchObject({_tag: "Refused"});
+		expect(applied).toMatchObject({ _tag: "Refused" });
 		if (applied._tag === "Refused") expect(applied.reason).toContain("no state to resume");
 	});
 
@@ -377,10 +377,12 @@ describe("the spent-budget park — the driver's own door out", () => {
 		const workflow = twoPhaseWorkflow();
 		const region = (
 			workflow.machine as {
-				states: {phase1: {states: {task_a: {initial: string; states: Record<string, unknown>}}}};
+				states: {
+					phase1: { states: { task_a: { initial: string; states: Record<string, unknown> } } };
+				};
 			}
 		).states.phase1.states.task_a;
-		region.states.tripped = {type: "final", on: {"TASK_A.UNBLOCKED": "hist"}};
+		region.states.tripped = { type: "final", on: { "TASK_A.UNBLOCKED": "hist" } };
 		if (booted) region.initial = "tripped";
 		return workflow;
 	};
@@ -398,7 +400,7 @@ describe("the spent-budget park — the driver's own door out", () => {
 			"UNBLOCKED",
 			"2026-08-16T00:00:00.000Z",
 		);
-		expect(applied).toMatchObject({_tag: "Refused"});
+		expect(applied).toMatchObject({ _tag: "Refused" });
 		if (applied._tag === "Refused") expect(applied.reason).toContain("no state to resume");
 	});
 
@@ -414,7 +416,7 @@ describe("the spent-budget park — the driver's own door out", () => {
 			["task_a", "FAIL"],
 		]);
 		expect(statusOf(compiled, log)).toMatchObject({
-			stateValue: {phase1: {task_a: "tripped", task_b: "doing"}},
+			stateValue: { phase1: { task_a: "tripped", task_b: "doing" } },
 			status: "active",
 		});
 		const applied = applyEvent(
@@ -426,7 +428,7 @@ describe("the spent-budget park — the driver's own door out", () => {
 		);
 		expect(applied._tag).toBe("Applied");
 		if (applied._tag !== "Applied") return;
-		expect(applied.current.stateValue).toMatchObject({phase1: {task_a: "checking"}});
+		expect(applied.current.stateValue).toMatchObject({ phase1: { task_a: "checking" } });
 	});
 
 	it("refuses that same park's door with no grant behind it, phase active or not", () => {
@@ -447,7 +449,7 @@ describe("the spent-budget park — the driver's own door out", () => {
 			"UNBLOCKED",
 			"2026-08-16T00:00:00.000Z",
 		);
-		expect(applied).toMatchObject({_tag: "Refused", kind: "unbudgeted-resume"});
+		expect(applied).toMatchObject({ _tag: "Refused", kind: "unbudgeted-resume" });
 	});
 
 	it("still refuses an event the park holds no cell for", () => {
@@ -460,7 +462,7 @@ describe("the spent-budget park — the driver's own door out", () => {
 			"DONE",
 			"2026-08-16T00:00:00.000Z",
 		);
-		expect(applied).toMatchObject({_tag: "Refused"});
+		expect(applied).toMatchObject({ _tag: "Refused" });
 		if (applied._tag === "Refused") expect(applied.reason).toContain("NoCellError");
 	});
 });
@@ -477,7 +479,7 @@ describe("one lane — an UNBLOCKED, then a `build clear` for that round", () =>
 	];
 	const freeze: ReadonlyArray<readonly [string, string]> = [
 		["issue", "WIP"],
-		...Array.from({length: RETRY_BUDGET + 1}, () => round).flat(),
+		...Array.from({ length: RETRY_BUDGET + 1 }, () => round).flat(),
 	];
 
 	it("refuses the UNBLOCKED that folded with no budget rather than advertising `active`", () => {
@@ -497,7 +499,7 @@ describe("one lane — an UNBLOCKED, then a `build clear` for that round", () =>
 			"UNBLOCKED",
 			"2026-08-20T19:00:00.000Z",
 		);
-		expect(applied).toMatchObject({_tag: "Refused", kind: "unbudgeted-resume"});
+		expect(applied).toMatchObject({ _tag: "Refused", kind: "unbudgeted-resume" });
 	});
 
 	it("keeps the log replayable when the grant lands after the resume", () => {
@@ -518,7 +520,7 @@ describe("one lane — an UNBLOCKED, then a `build clear` for that round", () =>
 		const fold = foldLog(compiled, later);
 		expect(fold._tag).toBe("Folded");
 		expect(statusOf(compiled, later)).toMatchObject({
-			stateValue: {pipeline: {issue: "review"}},
+			stateValue: { pipeline: { issue: "review" } },
 			status: "active",
 		});
 		expect(statusOf(compiled, later).context.issue).toMatchObject({
@@ -555,7 +557,7 @@ describe("run 6 — invalid events refuse, producing nothing to append", () => {
 			"PASS",
 			"2026-08-16T00:00:00.000Z",
 		);
-		expect(applied).toMatchObject({_tag: "Refused"});
+		expect(applied).toMatchObject({ _tag: "Refused" });
 		if (applied._tag === "Refused") expect(applied.reason).toContain("NoCellError");
 	});
 
@@ -569,7 +571,7 @@ describe("run 6 — invalid events refuse, producing nothing to append", () => {
 			"MERGE",
 			"2026-08-16T00:00:00.000Z",
 		);
-		expect(applied).toMatchObject({_tag: "Refused"});
+		expect(applied).toMatchObject({ _tag: "Refused" });
 		// The refusal names the whole set rather than a count, so a seventh event does not make it lie.
 		if (applied._tag === "Refused") {
 			for (const event of OPERATOR_EVENTS) expect(applied.reason).toContain(event);
@@ -588,7 +590,7 @@ describe("run 6 — invalid events refuse, producing nothing to append", () => {
 			CLEARED_EVENT,
 			"2026-08-16T00:00:00.000Z",
 		);
-		expect(applied).toMatchObject({_tag: "Refused", kind: "event"});
+		expect(applied).toMatchObject({ _tag: "Refused", kind: "event" });
 		if (applied._tag === "Refused") expect(applied.reason).toContain("build clear");
 	});
 
@@ -602,7 +604,7 @@ describe("run 6 — invalid events refuse, producing nothing to append", () => {
 			"DONE",
 			"2026-08-16T00:00:00.000Z",
 		);
-		expect(applied).toMatchObject({_tag: "Refused"});
+		expect(applied).toMatchObject({ _tag: "Refused" });
 		if (applied._tag === "Refused") expect(applied.reason).toContain("active phase");
 	});
 
@@ -622,7 +624,7 @@ describe("run 6 — invalid events refuse, producing nothing to append", () => {
 			"DONE",
 			"2026-08-16T00:00:00.000Z",
 		);
-		expect(applied).toMatchObject({_tag: "Refused"});
+		expect(applied).toMatchObject({ _tag: "Refused" });
 		if (applied._tag === "Refused") expect(applied.reason).toContain("no further events");
 	});
 });
@@ -632,32 +634,32 @@ describe("the fold is total over its inputs", () => {
 		const compiled = lane(twoPhaseWorkflow());
 
 		const fold = foldLog(compiled, [entry("task_z", "DONE")]);
-		expect(fold).toMatchObject({_tag: "Unreplayable"});
+		expect(fold).toMatchObject({ _tag: "Unreplayable" });
 	});
 
 	it("refuses to fold a log the machine holds no cell for — a hand edit, named", () => {
 		const compiled = lane(twoPhaseWorkflow());
 
 		const fold = foldLog(compiled, [entry("task_a", "PASS")]);
-		expect(fold).toMatchObject({_tag: "Unreplayable"});
+		expect(fold).toMatchObject({ _tag: "Unreplayable" });
 		if (fold._tag === "Unreplayable") expect(fold.defects.join()).toContain("does not replay");
 	});
 
 	it("parses only whole well-formed lines, naming each defective one", () => {
 		const good = JSON.stringify(entry("task_a", "DONE"));
 
-		expect(parseLog(`${good}\n`)).toMatchObject({_tag: "Parsed"});
+		expect(parseLog(`${good}\n`)).toMatchObject({ _tag: "Parsed" });
 		expect(parseLog(`${good}\nnot json\n`)).toMatchObject({
 			_tag: "Malformed",
 			defects: ["line 2 is not JSON"],
 		});
-		expect(parseLog(`{"task":"task_a"}\n`)).toMatchObject({_tag: "Malformed"});
+		expect(parseLog(`{"task":"task_a"}\n`)).toMatchObject({ _tag: "Malformed" });
 	});
 
 	it("resolves an omitted --task only when the machine leaves no choice", () => {
-		expect(resolveTask(lane(coderWorkflow()), null)).toEqual({_tag: "Task", taskId: "issue"});
-		expect(resolveTask(lane(twoPhaseWorkflow()), null)).toMatchObject({_tag: "Unresolved"});
-		expect(resolveTask(lane(coderWorkflow()), "nope")).toMatchObject({_tag: "Unresolved"});
+		expect(resolveTask(lane(coderWorkflow()), null)).toEqual({ _tag: "Task", taskId: "issue" });
+		expect(resolveTask(lane(twoPhaseWorkflow()), null)).toMatchObject({ _tag: "Unresolved" });
+		expect(resolveTask(lane(coderWorkflow()), "nope")).toMatchObject({ _tag: "Unresolved" });
 	});
 });
 
@@ -677,7 +679,7 @@ describe("nextLeaf — the arm an event would take, asked before it is recorded"
 	};
 
 	it("routes a review PASS into `review:ui` only when the ui class rides on it", () => {
-		const {compiled, states} = atReview();
+		const { compiled, states } = atReview();
 
 		expect(nextLeaf(compiled, states, "issue", "PASS", ["ui"])).toBe("review:ui");
 		expect(nextLeaf(compiled, states, "issue", "PASS", null)).toBe("ship");
@@ -685,7 +687,7 @@ describe("nextLeaf — the arm an event would take, asked before it is recorded"
 	});
 
 	it("answers null where the machine holds no cell for the event, rather than guessing one", () => {
-		const {compiled, states} = atReview();
+		const { compiled, states } = atReview();
 
 		expect(nextLeaf(compiled, states, "issue", "UNBLOCKED", null)).toBeNull();
 		expect(nextLeaf(compiled, states, "issue", "NOPE", null)).toBeNull();
@@ -696,11 +698,11 @@ describe("nextLeaf — the arm an event would take, asked before it is recorded"
 describe("walkOf — which of the three reasons a null nextLeaf stands for", () => {
 	const at = (steps: ReadonlyArray<readonly [string, string]>) => {
 		const compiled = lane(coderWorkflow());
-		return {compiled, states: statesOf(compiled, drive(compiled, steps))};
+		return { compiled, states: statesOf(compiled, drive(compiled, steps)) };
 	};
 
 	it("answers the leaf a walkable event lands in", () => {
-		const {compiled, states} = at([
+		const { compiled, states } = at([
 			["issue", "WIP"],
 			["issue", "DONE"],
 		]);
@@ -712,7 +714,7 @@ describe("walkOf — which of the three reasons a null nextLeaf stands for", () 
 	});
 
 	it("separates an event no state of the machine holds a cell for from one this leaf lacks", () => {
-		const {compiled, states} = at([
+		const { compiled, states } = at([
 			["issue", "WIP"],
 			["issue", "BLOCKED"],
 		]);
@@ -727,7 +729,7 @@ describe("walkOf — which of the three reasons a null nextLeaf stands for", () 
 	});
 
 	it("keeps an unreadable task apart from both, so a caller never reads it as a refusal", () => {
-		const {compiled, states} = at([["issue", "WIP"]]);
+		const { compiled, states } = at([["issue", "WIP"]]);
 
 		expect(walkOf(compiled, states, "task_z", "PASS", null)._tag).toBe("Unreadable");
 	});
@@ -743,16 +745,16 @@ describe("the deferral a proven PASS carries", () => {
 	it("carries the deferred namespaces back off the line, and refuses a shape that is not a list", () => {
 		expect(parseLog(line(`,"deferred":["review-ui"]`))).toEqual({
 			_tag: "Parsed",
-			entries: [{task: "issue", event: "ISSUE.PASS", at: "t", deferred: ["review-ui"]}],
+			entries: [{ task: "issue", event: "ISSUE.PASS", at: "t", deferred: ["review-ui"] }],
 		});
-		expect(parseLog(line(`,"deferred":"review-ui"`))).toMatchObject({_tag: "Malformed"});
-		expect(parseLog(line(`,"deferred":[""]`))).toMatchObject({_tag: "Malformed"});
+		expect(parseLog(line(`,"deferred":"review-ui"`))).toMatchObject({ _tag: "Malformed" });
+		expect(parseLog(line(`,"deferred":[""]`))).toMatchObject({ _tag: "Malformed" });
 	});
 
 	it("leaves a line that deferred nothing without the field", () => {
 		expect(parseLog(line(""))).toEqual({
 			_tag: "Parsed",
-			entries: [{task: "issue", event: "ISSUE.PASS", at: "t"}],
+			entries: [{ task: "issue", event: "ISSUE.PASS", at: "t" }],
 		});
 	});
 });
@@ -771,7 +773,7 @@ describe("the basis a flagged route carries onto a proven PASS", () => {
 					event: "ISSUE.PASS",
 					at: "t",
 					routed: ["review-ui"],
-					routedBasis: {"review-ui": "hand-check"},
+					routedBasis: { "review-ui": "hand-check" },
 				},
 			],
 		});
@@ -780,7 +782,7 @@ describe("the basis a flagged route carries onto a proven PASS", () => {
 	it("refuses a basis off the vocabulary, one for a namespace nobody routed, or an empty one", () => {
 		expect(
 			parseLog(line(`,"routed":["review-ui"],"routedBasis":{"review-ui":"eyeballed"}`)),
-		).toMatchObject({_tag: "Malformed"});
+		).toMatchObject({ _tag: "Malformed" });
 		expect(parseLog(line(`,"routedBasis":{"review-ui":"skip"}`))).toMatchObject({
 			_tag: "Malformed",
 		});
@@ -800,29 +802,29 @@ describe("the partial merge a ship DONE carries", () => {
 	it("carries the flag back off the line, and refuses a shape that is not a boolean", () => {
 		expect(parseLog(line(`,"partial":true`))).toEqual({
 			_tag: "Parsed",
-			entries: [{task: "issue", event: "ISSUE.DONE", at: "t", partial: true}],
+			entries: [{ task: "issue", event: "ISSUE.DONE", at: "t", partial: true }],
 		});
-		expect(parseLog(line(`,"partial":"yes"`))).toMatchObject({_tag: "Malformed"});
+		expect(parseLog(line(`,"partial":"yes"`))).toMatchObject({ _tag: "Malformed" });
 	});
 
 	it("leaves a closing merge's line without the field", () => {
 		expect(parseLog(line(""))).toEqual({
 			_tag: "Parsed",
-			entries: [{task: "issue", event: "ISSUE.DONE", at: "t"}],
+			entries: [{ task: "issue", event: "ISSUE.DONE", at: "t" }],
 		});
 	});
 
 	it("carries the merged PRs that `partial` was read off", () => {
 		expect(parseLog(line(`,"partial":false,"landed":[7329]`))).toEqual({
 			_tag: "Parsed",
-			entries: [{task: "issue", event: "ISSUE.DONE", at: "t", partial: false, landed: [7329]}],
+			entries: [{ task: "issue", event: "ISSUE.DONE", at: "t", partial: false, landed: [7329] }],
 		});
 	});
 
 	it("refuses a `landed` naming no merged PR, which would read as evidence and attest nothing", () => {
-		expect(parseLog(line(`,"landed":[]`))).toMatchObject({_tag: "Malformed"});
-		expect(parseLog(line(`,"landed":["7329"]`))).toMatchObject({_tag: "Malformed"});
-		expect(parseLog(line(`,"landed":7329`))).toMatchObject({_tag: "Malformed"});
+		expect(parseLog(line(`,"landed":[]`))).toMatchObject({ _tag: "Malformed" });
+		expect(parseLog(line(`,"landed":["7329"]`))).toMatchObject({ _tag: "Malformed" });
+		expect(parseLog(line(`,"landed":7329`))).toMatchObject({ _tag: "Malformed" });
 	});
 });
 
@@ -833,10 +835,10 @@ describe("the issueClose a ship DONE carries", () => {
 	it("carries the answer back off the line, and refuses one outside the set or off a DONE", () => {
 		expect(parseLog(line("DONE", `,"issueClose":"closed-by-lane"`))).toEqual({
 			_tag: "Parsed",
-			entries: [{task: "issue", event: "ISSUE.DONE", at: "t", issueClose: "closed-by-lane"}],
+			entries: [{ task: "issue", event: "ISSUE.DONE", at: "t", issueClose: "closed-by-lane" }],
 		});
-		expect(parseLog(line("DONE", `,"issueClose":"closed"`))).toMatchObject({_tag: "Malformed"});
-		expect(parseLog(line("PASS", `,"issueClose":"unread"`))).toMatchObject({_tag: "Malformed"});
+		expect(parseLog(line("DONE", `,"issueClose":"closed"`))).toMatchObject({ _tag: "Malformed" });
+		expect(parseLog(line("PASS", `,"issueClose":"unread"`))).toMatchObject({ _tag: "Malformed" });
 	});
 });
 
@@ -846,9 +848,9 @@ describe("the diagnosis a build DONE carries", () => {
 	it("carries the flag back off the line, and refuses a shape that is not a boolean", () => {
 		expect(parseLog(line(`,"diagnosis":true`))).toEqual({
 			_tag: "Parsed",
-			entries: [{task: "issue", event: "ISSUE.DONE", at: "t", diagnosis: true}],
+			entries: [{ task: "issue", event: "ISSUE.DONE", at: "t", diagnosis: true }],
 		});
-		expect(parseLog(line(`,"diagnosis":"yes"`))).toMatchObject({_tag: "Malformed"});
+		expect(parseLog(line(`,"diagnosis":"yes"`))).toMatchObject({ _tag: "Malformed" });
 	});
 
 	it("leaves a PR-backed DONE's line without the field, folding to `review` as it always did", () => {
@@ -860,7 +862,7 @@ describe("the diagnosis a build DONE carries", () => {
 
 		expect(log.at(-1)).not.toHaveProperty("diagnosis");
 		expect(statusOf(compiled, log)).toMatchObject({
-			stateValue: {pipeline: {issue: "review"}},
+			stateValue: { pipeline: { issue: "review" } },
 			status: "active",
 		});
 	});
@@ -883,7 +885,7 @@ describe("the diagnosis a build DONE carries", () => {
 		);
 		if (applied._tag !== "Applied") throw new Error(applied.reason);
 
-		expect(applied.entry).toMatchObject({diagnosis: true});
+		expect(applied.entry).toMatchObject({ diagnosis: true });
 		expect(statusOf(compiled, [entry("issue", "WIP"), applied.entry])).toMatchObject({
 			stateValue: "diagnosed",
 			status: "done",
@@ -900,7 +902,7 @@ describe("the park cause a BLOCKED carries", () => {
 	it("parses a cause off the line and refuses one that is not a string", () => {
 		expect(parseLog(`{"task":"issue","event":"ISSUE.BLOCKED","at":"t","cause":"x"}\n`)).toEqual({
 			_tag: "Parsed",
-			entries: [{task: "issue", event: "ISSUE.BLOCKED", at: "t", cause: "x"}],
+			entries: [{ task: "issue", event: "ISSUE.BLOCKED", at: "t", cause: "x" }],
 		});
 		expect(parseLog(`{"task":"issue","event":"ISSUE.BLOCKED","at":"t","cause":7}\n`)).toMatchObject(
 			{
@@ -916,7 +918,7 @@ describe("the park cause a BLOCKED carries", () => {
 				caused("issue_1", "BLOCKED", "worktree-holds-branch"),
 				entry("issue_2", "WIP"),
 			]),
-		).toEqual({issue_1: "worktree-holds-branch"});
+		).toEqual({ issue_1: "worktree-holds-branch" });
 	});
 
 	it("drops the cause once a later event supersedes it — an UNBLOCKED carries none", () => {
@@ -936,8 +938,8 @@ describe("the park cause a BLOCKED carries", () => {
 
 		const status = deriveStatus(compiled, folded.states, standingCauses(entries));
 
-		expect(status.stateValue).toEqual({pipeline: {issue: "blocked"}});
-		expect(status.context.issue).toMatchObject({retries: 0, cause: "worktree-holds-branch"});
+		expect(status.stateValue).toEqual({ pipeline: { issue: "blocked" } });
+		expect(status.context.issue).toMatchObject({ retries: 0, cause: "worktree-holds-branch" });
 	});
 
 	it("folds a log written before the field existed with no cause key at all", () => {
@@ -952,7 +954,7 @@ describe("the park cause a BLOCKED carries", () => {
 	});
 
 	it("leaves a park's cause standing across a grant — CLEARED supersedes nothing", () => {
-		const granted: LogEntry = {...entry("issue", CLEARED_EVENT), round: CAP_ROUND};
+		const granted: LogEntry = { ...entry("issue", CLEARED_EVENT), round: CAP_ROUND };
 
 		expect(standingCauses([caused("issue", "BLOCKED", "worktree-holds-branch"), granted])).toEqual({
 			issue: "worktree-holds-branch",
@@ -977,7 +979,7 @@ describe("the rationale a driver's clearance stands on", () => {
 				cleared("issue_1", "rebased the head onto main"),
 				entry("issue_2", "WIP"),
 			]),
-		).toEqual({issue_1: "rebased the head onto main"});
+		).toEqual({ issue_1: "rebased the head onto main" });
 	});
 
 	it("drops the rationale once a later event supersedes it", () => {
@@ -1003,8 +1005,8 @@ describe("the rationale a driver's clearance stands on", () => {
 			standingRationales(entries),
 		);
 
-		expect(status.stateValue).toEqual({pipeline: {issue: "build"}});
-		expect(status.context.issue).toMatchObject({rationale: "rebased the head onto main"});
+		expect(status.stateValue).toEqual({ pipeline: { issue: "build" } });
+		expect(status.context.issue).toMatchObject({ rationale: "rebased the head onto main" });
 		expect(Object.hasOwn(status.context.issue as object, "cause")).toBe(false);
 	});
 
@@ -1058,7 +1060,7 @@ describe("the parse defects that keep a grant from folding as a silent no-op", (
 	it("parses the well-formed grant both defects sit beside", () => {
 		expect(parseLog(line(`,"round":3`))).toEqual({
 			_tag: "Parsed",
-			entries: [{task: "issue", event: `ISSUE.${CLEARED_EVENT}`, at: "t", round: 3}],
+			entries: [{ task: "issue", event: `ISSUE.${CLEARED_EVENT}`, at: "t", round: 3 }],
 		});
 	});
 
@@ -1068,7 +1070,10 @@ describe("the parse defects that keep a grant from folding as a silent no-op", (
 			`{"task":"issue","event":"ISSUE.UNBLOCKED","at":"t"${fields}}\n`;
 		const defect = ["line 1 carries a `waitGrant` that names no whole grant of waits"];
 
-		expect(parseLog(resume(`,"waitGrant":0`))).toMatchObject({_tag: "Malformed", defects: defect});
+		expect(parseLog(resume(`,"waitGrant":0`))).toMatchObject({
+			_tag: "Malformed",
+			defects: defect,
+		});
 		expect(parseLog(resume(`,"waitGrant":1.5`))).toMatchObject({
 			_tag: "Malformed",
 			defects: defect,
@@ -1079,7 +1084,7 @@ describe("the parse defects that keep a grant from folding as a silent no-op", (
 		});
 		expect(parseLog(resume(`,"waitGrant":1`))).toEqual({
 			_tag: "Parsed",
-			entries: [{task: "issue", event: "ISSUE.UNBLOCKED", at: "t", waitGrant: 1}],
+			entries: [{ task: "issue", event: "ISSUE.UNBLOCKED", at: "t", waitGrant: 1 }],
 		});
 	});
 });
@@ -1094,21 +1099,21 @@ describe("the queue stall — a resume out of it needs the waits granted on the 
 	const stalled = () => {
 		const compiled = lane(coderWorkflow());
 		const dwell: ReadonlyArray<readonly [string, string]> = Array.from(
-			{length: WAIT_BUDGET + 2},
+			{ length: WAIT_BUDGET + 2 },
 			() => ["issue", "WIP"] as const,
 		);
 		const log = drive(compiled, [["issue", "WIP"], ["issue", "DONE"], ["issue", "PASS"], ...dwell]);
 		const states = statesOf(compiled, log);
-		expect(states.issue).toMatchObject({type: "human:queue-stall", waits: WAIT_BUDGET});
-		return {compiled, log, states};
+		expect(states.issue).toMatchObject({ type: "human:queue-stall", waits: WAIT_BUDGET });
+		return { compiled, log, states };
 	};
 
 	it("refuses a bare UNBLOCKED with the log unappended, naming the grant route and not `build clear`", () => {
-		const {compiled, states} = stalled();
+		const { compiled, states } = stalled();
 
 		const applied = applyEvent(compiled, states, "issue", "UNBLOCKED", "2026-08-29T00:00:00.000Z");
 
-		expect(applied).toMatchObject({_tag: "Refused", kind: "unbudgeted-resume"});
+		expect(applied).toMatchObject({ _tag: "Refused", kind: "unbudgeted-resume" });
 		const reason = applied._tag === "Refused" ? applied.reason : "";
 		expect(reason).toMatch(/the state comes back and the wait budget does not/);
 		expect(reason).toMatch(/recipe unpark/);
@@ -1116,7 +1121,7 @@ describe("the queue stall — a resume out of it needs the waits granted on the 
 	});
 
 	it("applies the same UNBLOCKED when it carries the grant, resuming one read below the budget", () => {
-		const {compiled, log, states} = stalled();
+		const { compiled, log, states } = stalled();
 
 		const applied = applyEvent(
 			compiled,
@@ -1128,7 +1133,7 @@ describe("the queue stall — a resume out of it needs the waits granted on the 
 			1,
 		);
 
-		expect(applied).toMatchObject({_tag: "Applied", entry: {waitGrant: 1}});
+		expect(applied).toMatchObject({ _tag: "Applied", entry: { waitGrant: 1 } });
 		if (applied._tag !== "Applied") return;
 		expect(statesOf(compiled, [...log, applied.entry]).issue).toMatchObject({
 			type: "ship:queued",
@@ -1147,14 +1152,14 @@ describe("the board-proven terminals", () => {
 		taskId: string,
 		event: string,
 		outcome: string,
-		evidence: {landed?: ReadonlyArray<number>; sha?: string; assertedBy?: string} = {},
+		evidence: { landed?: ReadonlyArray<number>; sha?: string; assertedBy?: string } = {},
 	) =>
 		applyBoardTerminal(
 			compiled,
 			statesOf(compiled, log),
 			taskId,
 			event,
-			{outcome, ...evidence},
+			{ outcome, ...evidence },
 			AT,
 		);
 
@@ -1168,9 +1173,9 @@ describe("the board-proven terminals", () => {
 
 		expect(applied).toMatchObject({
 			_tag: "Appendable",
-			entry: {task: "issue", event: "ISSUE.CANCELLED", outcome: "not_planned"},
-			previous: {stateValue: {pipeline: {issue: "blocked"}}},
-			current: {stateValue: "board:cancelled", status: "done"},
+			entry: { task: "issue", event: "ISSUE.CANCELLED", outcome: "not_planned" },
+			previous: { stateValue: { pipeline: { issue: "blocked" } } },
+			current: { stateValue: "board:cancelled", status: "done" },
 		});
 	});
 
@@ -1194,18 +1199,18 @@ describe("the board-proven terminals", () => {
 				landed: [6874],
 				sha: "b0ab5804263e3ca232aa950e906b997e0e6b1963",
 			},
-			previous: {stateValue: {pipeline: {issue: "review"}}},
-			current: {stateValue: "board:landed", status: "done"},
+			previous: { stateValue: { pipeline: { issue: "review" } } },
+			current: { stateValue: "board:landed", status: "done" },
 		});
 	});
 
 	it("keeps the two terminals apart: a landing is not `cancelled` and not `complete`", () => {
 		const compiled = lane(coderWorkflow());
-		const landed = settleWith(compiled, [], "issue", LANDED_EVENT, "completed", {landed: [1]});
+		const landed = settleWith(compiled, [], "issue", LANDED_EVENT, "completed", { landed: [1] });
 		const cancelled = settleWith(compiled, [], "issue", CANCELLED_EVENT, "not_planned");
 
-		expect(landed).toMatchObject({current: {stateValue: "board:landed"}});
-		expect(cancelled).toMatchObject({current: {stateValue: "board:cancelled"}});
+		expect(landed).toMatchObject({ current: { stateValue: "board:landed" } });
+		expect(cancelled).toMatchObject({ current: { stateValue: "board:cancelled" } });
 	});
 
 	it("refuses an event outside the two, so no caller can settle on a name it invented", () => {
@@ -1220,7 +1225,10 @@ describe("the board-proven terminals", () => {
 		const compiled = lane(coderWorkflow());
 		const applied = settleWith(compiled, [], "issue", CANCELLED_EVENT, "duplicate");
 
-		expect(applied).toMatchObject({_tag: "Appendable", current: {stateValue: "board:cancelled"}});
+		expect(applied).toMatchObject({
+			_tag: "Appendable",
+			current: { stateValue: "board:cancelled" },
+		});
 	});
 
 	it("refuses a lane already folded to its own terminal", () => {
@@ -1233,7 +1241,7 @@ describe("the board-proven terminals", () => {
 		]);
 		const applied = settleWith(compiled, log, "issue", CANCELLED_EVENT, "not_planned");
 
-		expect(applied).toMatchObject({_tag: "Refused"});
+		expect(applied).toMatchObject({ _tag: "Refused" });
 		expect(applied._tag === "Refused" && applied.reason).toContain("already carries a terminal");
 	});
 
@@ -1245,7 +1253,7 @@ describe("the board-proven terminals", () => {
 		]);
 		const applied = settleWith(compiled, log, "task_a", CANCELLED_EVENT, "duplicate");
 
-		expect(applied).toMatchObject({_tag: "Refused"});
+		expect(applied).toMatchObject({ _tag: "Refused" });
 		expect(applied._tag === "Refused" && applied.reason).toContain("nothing here to settle");
 	});
 
@@ -1253,23 +1261,23 @@ describe("the board-proven terminals", () => {
 		const compiled = lane(twoPhaseWorkflow());
 		const applied = settleWith(compiled, [], "task_a", CANCELLED_EVENT, "not_planned");
 
-		expect(applied).toMatchObject({_tag: "Appendable", current: {status: "active"}});
+		expect(applied).toMatchObject({ _tag: "Appendable", current: { status: "active" } });
 	});
 
 	it("cannot be hand-typed through `lane transition` — it is not an operator event", () => {
 		const compiled = lane(coderWorkflow());
 		const applied = applyEvent(compiled, statesOf(compiled, []), "issue", CANCELLED_EVENT, AT);
 
-		expect(applied).toMatchObject({_tag: "Refused"});
+		expect(applied).toMatchObject({ _tag: "Refused" });
 		expect(applied._tag === "Refused" && applied.reason).toContain("`lane settle`");
 	});
 
 	it("refuses a recorded landing that names no merged pull request", () => {
 		const parsed = parseLog(
-			`${JSON.stringify({task: "issue", event: "ISSUE.LANDED", at: AT, outcome: "completed"})}\n`,
+			`${JSON.stringify({ task: "issue", event: "ISSUE.LANDED", at: AT, outcome: "completed" })}\n`,
 		);
 
-		expect(parsed).toMatchObject({_tag: "Malformed"});
+		expect(parsed).toMatchObject({ _tag: "Malformed" });
 		expect(parsed._tag === "Malformed" && parsed.defects[0]).toContain("naming no `landed`");
 	});
 
@@ -1277,7 +1285,7 @@ describe("the board-proven terminals", () => {
 		const compiled = lane(coderWorkflow());
 		const parsed = parseLog(
 			[
-				JSON.stringify({task: "issue", event: "ISSUE.WIP", at: AT}),
+				JSON.stringify({ task: "issue", event: "ISSUE.WIP", at: AT }),
 				JSON.stringify({
 					task: "issue",
 					event: "ISSUE.LANDED",
@@ -1298,10 +1306,10 @@ describe("the board-proven terminals", () => {
 
 	it("refuses a recorded line that names no board outcome", () => {
 		const parsed = parseLog(
-			`${JSON.stringify({task: "issue", event: "ISSUE.CANCELLED", at: AT})}\n`,
+			`${JSON.stringify({ task: "issue", event: "ISSUE.CANCELLED", at: AT })}\n`,
 		);
 
-		expect(parsed).toMatchObject({_tag: "Malformed"});
+		expect(parsed).toMatchObject({ _tag: "Malformed" });
 		expect(parsed._tag === "Malformed" && parsed.defects[0]).toContain("carrying no `outcome`");
 	});
 
@@ -1314,13 +1322,15 @@ describe("the board-proven terminals", () => {
 
 		expect(applied).toMatchObject({
 			_tag: "Appendable",
-			entry: {event: "ISSUE.LANDED", landed: [6894], assertedBy: "caller"},
+			entry: { event: "ISSUE.LANDED", landed: [6894], assertedBy: "caller" },
 		});
 	});
 
 	it("leaves a body-proven landing's line without an `assertedBy` at all", () => {
 		const compiled = lane(coderWorkflow());
-		const applied = settleWith(compiled, [], "issue", LANDED_EVENT, "completed", {landed: [6874]});
+		const applied = settleWith(compiled, [], "issue", LANDED_EVENT, "completed", {
+			landed: [6874],
+		});
 
 		expect(applied._tag === "Appendable" && applied.entry).not.toHaveProperty("assertedBy");
 	});
@@ -1339,7 +1349,7 @@ describe("the board-proven terminals", () => {
 		);
 		if (parsed._tag !== "Parsed") throw new Error("fixture log does not parse");
 
-		expect(parsed.entries[0]).toMatchObject({assertedBy: "caller"});
+		expect(parsed.entries[0]).toMatchObject({ assertedBy: "caller" });
 		expect(deriveStatus(compiled, statesOf(compiled, parsed.entries))).toMatchObject({
 			stateValue: "board:landed",
 		});
@@ -1347,10 +1357,10 @@ describe("the board-proven terminals", () => {
 
 	it("refuses an `assertedBy` riding an event that establishes no link", () => {
 		const parsed = parseLog(
-			`${JSON.stringify({task: "issue", event: "ISSUE.DONE", at: AT, assertedBy: "caller"})}\n`,
+			`${JSON.stringify({ task: "issue", event: "ISSUE.DONE", at: AT, assertedBy: "caller" })}\n`,
 		);
 
-		expect(parsed).toMatchObject({_tag: "Malformed"});
+		expect(parsed).toMatchObject({ _tag: "Malformed" });
 		expect(parsed._tag === "Malformed" && parsed.defects[0]).toContain("only a LANDED");
 	});
 
@@ -1366,24 +1376,24 @@ describe("the board-proven terminals", () => {
 			})}\n`,
 		);
 
-		expect(parsed).toMatchObject({_tag: "Malformed"});
+		expect(parsed).toMatchObject({ _tag: "Malformed" });
 	});
 
 	it("refuses an `outcome` riding an event that stands on no closure", () => {
 		const parsed = parseLog(
-			`${JSON.stringify({task: "issue", event: "ISSUE.DONE", at: AT, outcome: "not_planned"})}\n`,
+			`${JSON.stringify({ task: "issue", event: "ISSUE.DONE", at: AT, outcome: "not_planned" })}\n`,
 		);
 
-		expect(parsed).toMatchObject({_tag: "Malformed"});
+		expect(parsed).toMatchObject({ _tag: "Malformed" });
 	});
 
 	it("folds a recorded cancellation straight to the terminal, from the log alone", () => {
 		const compiled = lane(coderWorkflow());
 		const parsed = parseLog(
 			[
-				JSON.stringify({task: "issue", event: "ISSUE.WIP", at: AT}),
-				JSON.stringify({task: "issue", event: "ISSUE.BLOCKED", at: AT}),
-				JSON.stringify({task: "issue", event: "ISSUE.CANCELLED", at: AT, outcome: "duplicate"}),
+				JSON.stringify({ task: "issue", event: "ISSUE.WIP", at: AT }),
+				JSON.stringify({ task: "issue", event: "ISSUE.BLOCKED", at: AT }),
+				JSON.stringify({ task: "issue", event: "ISSUE.CANCELLED", at: AT, outcome: "duplicate" }),
 			].join("\n"),
 		);
 		if (parsed._tag !== "Parsed") throw new Error("fixture log does not parse");
@@ -1396,8 +1406,8 @@ describe("the board-proven terminals", () => {
 
 	it("clears the park's standing cause, because the lane is no longer waiting on anyone", () => {
 		const entries: ReadonlyArray<LogEntry> = [
-			{task: "issue", event: "ISSUE.BLOCKED", at: AT, cause: "spawn-dead"},
-			{task: "issue", event: "ISSUE.CANCELLED", at: AT, outcome: "not_planned"},
+			{ task: "issue", event: "ISSUE.BLOCKED", at: AT, cause: "spawn-dead" },
+			{ task: "issue", event: "ISSUE.CANCELLED", at: AT, outcome: "not_planned" },
 		];
 
 		expect(standingCauses(entries)).toEqual({});
@@ -1412,7 +1422,7 @@ describe("the topology amendment — a line about the lane, not about a task", (
 		const worked = drive(compiled, [["issue", "WIP"]]);
 		const amended: ReadonlyArray<LogEntry> = [
 			...worked,
-			{task: "epic_900", event: "EPIC_900.AMENDED", at: AT, tasks: ["issue"]},
+			{ task: "epic_900", event: "EPIC_900.AMENDED", at: AT, tasks: ["issue"] },
 		];
 
 		expect(statusOf(compiled, amended)).toEqual(statusOf(compiled, worked));
@@ -1420,15 +1430,17 @@ describe("the topology amendment — a line about the lane, not about a task", (
 
 	it("leaves a park's standing cause alone — it re-derives a machine and clears nothing", () => {
 		const entries: ReadonlyArray<LogEntry> = [
-			{task: "issue", event: "ISSUE.BLOCKED", at: AT, cause: "spawn-dead"},
-			{task: "epic_900", event: "EPIC_900.AMENDED", at: AT, tasks: ["issue"]},
+			{ task: "issue", event: "ISSUE.BLOCKED", at: AT, cause: "spawn-dead" },
+			{ task: "epic_900", event: "EPIC_900.AMENDED", at: AT, tasks: ["issue"] },
 		];
 
-		expect(standingCauses(entries)).toEqual({issue: "spawn-dead"});
+		expect(standingCauses(entries)).toEqual({ issue: "spawn-dead" });
 	});
 
 	it("refuses an amendment naming no task set, the way a roundless clearance is refused", () => {
-		const parsed = parseLog(JSON.stringify({task: "epic_900", event: "EPIC_900.AMENDED", at: AT}));
+		const parsed = parseLog(
+			JSON.stringify({ task: "epic_900", event: "EPIC_900.AMENDED", at: AT }),
+		);
 
 		expect(parsed).toMatchObject({
 			_tag: "Malformed",
@@ -1440,18 +1452,18 @@ describe("the topology amendment — a line about the lane, not about a task", (
 
 	it("refuses a `tasks` payload on any other event, which names a set nothing re-derived", () => {
 		const parsed = parseLog(
-			JSON.stringify({task: "issue", event: "ISSUE.WIP", at: AT, tasks: ["issue"]}),
+			JSON.stringify({ task: "issue", event: "ISSUE.WIP", at: AT, tasks: ["issue"] }),
 		);
 
-		expect(parsed).toMatchObject({_tag: "Malformed"});
+		expect(parsed).toMatchObject({ _tag: "Malformed" });
 	});
 
 	it("refuses it as an operator event, naming the verb that appends one", () => {
 		const compiled = lane(coderWorkflow());
 		const applied = applyEvent(compiled, statesOf(compiled, []), "issue", "AMENDED", AT);
 
-		expect(applied).toMatchObject({_tag: "Refused"});
-		expect((applied as {reason: string}).reason).toContain("lane amend");
+		expect(applied).toMatchObject({ _tag: "Refused" });
+		expect((applied as { reason: string }).reason).toContain("lane amend");
 	});
 });
 
@@ -1468,12 +1480,12 @@ describe("a deferred task", () => {
 		event: "EPIC_900.AMENDED",
 		at: AT,
 		tasks: ["issue"],
-		defers: [{task, through, reason: REASON}],
+		defers: [{ task, through, reason: REASON }],
 	});
 
 	it("folds cleanly once its task is gone from the machine — its lines are accounted for, not unknown", () => {
 		const folded = foldLog(afterTheWrite(), [
-			{task: "issue_3", event: "ISSUE_3.BLOCKED", at: EARLIER},
+			{ task: "issue_3", event: "ISSUE_3.BLOCKED", at: EARLIER },
 			deferring("issue_3", EARLIER),
 		]);
 
@@ -1483,7 +1495,7 @@ describe("a deferred task", () => {
 
 	it("is still an unknown task when no amendment defers it", () => {
 		const folded = foldLog(afterTheWrite(), [
-			{task: "issue_3", event: "ISSUE_3.BLOCKED", at: EARLIER},
+			{ task: "issue_3", event: "ISSUE_3.BLOCKED", at: EARLIER },
 		]);
 
 		expect(folded).toMatchObject({
@@ -1494,7 +1506,7 @@ describe("a deferred task", () => {
 
 	it("refuses an unresolvable deferral rather than folding past it", () => {
 		const folded = foldLog(afterTheWrite(), [
-			{task: "issue_3", event: "ISSUE_3.BLOCKED", at: EARLIER},
+			{ task: "issue_3", event: "ISSUE_3.BLOCKED", at: EARLIER },
 			deferring("issue_3", AT),
 		]);
 
@@ -1503,7 +1515,7 @@ describe("a deferred task", () => {
 
 	it("still folds through the OLD machine, which holds the task the amendment has not yet dropped", () => {
 		const folded = foldLog(afterTheWrite(), [
-			{task: "issue", event: "ISSUE.WIP", at: EARLIER},
+			{ task: "issue", event: "ISSUE.WIP", at: EARLIER },
 			deferring("issue", EARLIER),
 		]);
 
@@ -1518,7 +1530,7 @@ describe("a deferred task", () => {
 				event: "EPIC_900.AMENDED",
 				at: AT,
 				tasks: ["issue"],
-				defers: [{task: "issue_3", through: EARLIER}],
+				defers: [{ task: "issue_3", through: EARLIER }],
 			}),
 		);
 
@@ -1536,12 +1548,12 @@ describe("a deferred task", () => {
 				task: "issue",
 				event: "ISSUE.WIP",
 				at: AT,
-				defers: [{task: "issue_3", through: EARLIER, reason: REASON}],
+				defers: [{ task: "issue_3", through: EARLIER, reason: REASON }],
 			}),
 		);
 
-		expect(parsed).toMatchObject({_tag: "Malformed"});
-		expect((parsed as {defects: ReadonlyArray<string>}).defects[0]).toContain(
+		expect(parsed).toMatchObject({ _tag: "Malformed" });
+		expect((parsed as { defects: ReadonlyArray<string> }).defects[0]).toContain(
 			"only an AMENDED defers a task out of the plan",
 		);
 	});
@@ -1554,12 +1566,12 @@ describe("a deferred task", () => {
 				at: AT,
 				tasks: ["issue"],
 				defers: [
-					{task: "issue_3", through: EARLIER, reason: REASON},
-					{task: "issue_3", through: EARLIER, reason: REASON},
+					{ task: "issue_3", through: EARLIER, reason: REASON },
+					{ task: "issue_3", through: EARLIER, reason: REASON },
 				],
 			}),
 		);
 
-		expect(parsed).toMatchObject({_tag: "Malformed"});
+		expect(parsed).toMatchObject({ _tag: "Malformed" });
 	});
 });

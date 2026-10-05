@@ -84,9 +84,9 @@ export interface PreviewAnnouncement {
  * would let a garbled comment resolve to "no preview" and route a reviewer down the can't-see path.
  */
 export type AnnouncementRead =
-	| {readonly _tag: "Announced"; readonly value: PreviewAnnouncement}
-	| {readonly _tag: "Malformed"; readonly reason: string}
-	| {readonly _tag: "NoApp"};
+	| { readonly _tag: "Announced"; readonly value: PreviewAnnouncement }
+	| { readonly _tag: "Malformed"; readonly reason: string }
+	| { readonly _tag: "NoApp" };
 
 /** Any absolute http(s) URL — the announcement's domain is the repo's business, not this module's. */
 const ANY_URL = /https?:\/\/[^\s<>()"'`\]]+/;
@@ -109,10 +109,10 @@ const DEPLOYED_SHA = /(?:@|\(|`|\bhead\b)[ \t]*`?([0-9a-f]{7,40})`?/i;
  */
 export const readPreviewAnnouncement = (commentBody: string, app: string): AnnouncementRead => {
 	const block = appBlock(commentBody, app);
-	if (block === null) return {_tag: "NoApp"};
+	if (block === null) return { _tag: "NoApp" };
 	const url = ANY_URL.exec(block)?.[0];
 	if (url === undefined) {
-		return {_tag: "Malformed", reason: `the "${app}" block names no absolute http(s) URL`};
+		return { _tag: "Malformed", reason: `the "${app}" block names no absolute http(s) URL` };
 	}
 	// The URLs come out first: a hex-looking path segment inside one is not a deployed head.
 	const sha = DEPLOYED_SHA.exec(block.replace(EVERY_URL, " "))?.[1];
@@ -122,5 +122,5 @@ export const readPreviewAnnouncement = (commentBody: string, app: string): Annou
 			reason: `the "${app}" block names no deployed head SHA (expected \`@ <sha>\`, a backticked SHA, or "head <sha>")`,
 		};
 	}
-	return {_tag: "Announced", value: {app, url, deployedSha: sha.toLowerCase()}};
+	return { _tag: "Announced", value: { app, url, deployedSha: sha.toLowerCase() } };
 };

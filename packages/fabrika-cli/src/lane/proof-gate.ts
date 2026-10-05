@@ -10,15 +10,15 @@
  * The prover is a parameter rather than an import so both verbs' unit tiers stay offline; the CLI
  * hands each of them `runProve`, the only prover either verb ever invokes.
  */
-import {Effect} from "effect";
-import {ANSWER, refuse, type VerbOutcome} from "../verb.ts";
-import type {ProofOutcome, ProveOptions} from "./prove-verb.ts";
+import { Effect } from "effect";
+import { ANSWER, refuse, type VerbOutcome } from "../verb.ts";
+import type { ProofOutcome, ProveOptions } from "./prove-verb.ts";
 
 const PROVE_VERB = "fabrika lane prove";
 
 export type Proven =
-	| {readonly _tag: "Proven"; readonly proof: ProofOutcome}
-	| {readonly _tag: "Refused"; readonly outcome: VerbOutcome};
+	| { readonly _tag: "Proven"; readonly proof: ProofOutcome }
+	| { readonly _tag: "Refused"; readonly outcome: VerbOutcome };
 
 /**
  * Run the proof and seat its verdict.
@@ -34,7 +34,7 @@ export const gateOnProof = <R>(
 ): Effect.Effect<Proven, never, R> =>
 	Effect.map(prove(options), (proof) =>
 		proof.code === ANSWER
-			? ({_tag: "Proven", proof} as const)
+			? ({ _tag: "Proven", proof } as const)
 			: ({
 					_tag: "Refused",
 					outcome: refuse(

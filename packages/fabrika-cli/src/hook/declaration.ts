@@ -83,7 +83,7 @@ export const declaredHooks = (document: unknown): ReadonlyArray<DeclaredHook> =>
 			for (const hook of entry.hooks) {
 				const declared = asRecord(hook);
 				if (declared === undefined || typeof declared.command !== "string") continue;
-				rows.push({event, matcher, command: declared.command});
+				rows.push({ event, matcher, command: declared.command });
 			}
 		}
 	}
@@ -93,16 +93,19 @@ export const declaredHooks = (document: unknown): ReadonlyArray<DeclaredHook> =>
 /** Every way the declared commands break rule 5 or rule 6. Empty is the conforming state. */
 export const violations = (hooks: ReadonlyArray<DeclaredHook>): ReadonlyArray<Violation> => {
 	const found: Violation[] = [];
-	for (const {command} of hooks) {
+	for (const { command } of hooks) {
 		for (const [pattern, reason] of SHELL_CONSTRUCTS) {
-			if (pattern.test(command)) found.push({command, reason: `rule 5: ${reason}`});
+			if (pattern.test(command)) found.push({ command, reason: `rule 5: ${reason}` });
 		}
 		if (!LITERAL_COMMAND.test(command)) {
-			found.push({command, reason: "rule 5: not a plain literal `fabrika <group> <verb>` string"});
+			found.push({
+				command,
+				reason: "rule 5: not a plain literal `fabrika <group> <verb>` string",
+			});
 		}
 		for (const foreign of OUTSIDE_FABRIKA) {
 			if (command.includes(foreign)) {
-				found.push({command, reason: `rule 6: names ${foreign}, which is outside fabrika`});
+				found.push({ command, reason: `rule 6: names ${foreign}, which is outside fabrika` });
 			}
 		}
 	}

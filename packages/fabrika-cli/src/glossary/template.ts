@@ -4,7 +4,7 @@
  * **No section is scaffolded.** An empty section invites filler; `add --create-section` writes the
  * first one together with the row that justifies it.
  */
-import type {RegisterName} from "./register.ts";
+import type { RegisterName } from "./register.ts";
 
 /** The register file a fresh repo starts from, for the repo directory named `repo`. */
 export const registerTemplate = (repo: string, register: RegisterName): string =>

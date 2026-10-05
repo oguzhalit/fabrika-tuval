@@ -1,7 +1,7 @@
 /** The two derivations an epic run's assembly PR opens with, and the guard floor under the section. */
-import {describe, expect, it} from "vitest";
-import {bodyDefect, classificationIn, closingTargets, proseOf} from "../build/pr-body.ts";
-import {aboutSection, assemblyTitle, boundedParagraph, problemParagraph} from "./assembly-pr.ts";
+import { describe, expect, it } from "vitest";
+import { bodyDefect, classificationIn, closingTargets, proseOf } from "../build/pr-body.ts";
+import { aboutSection, assemblyTitle, boundedParagraph, problemParagraph } from "./assembly-pr.ts";
 
 const EPIC = ["type:epic"];
 

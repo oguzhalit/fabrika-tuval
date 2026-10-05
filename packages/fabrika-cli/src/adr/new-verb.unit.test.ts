@@ -1,9 +1,9 @@
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import {type FakeFs, fakeFs} from "../fakes.test-support.ts";
-import {FAILED} from "../verb.ts";
-import {ALREADY_EXISTS} from "./codes.ts";
-import {type NewOptions, runNew} from "./new-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import { type FakeFs, fakeFs } from "../fakes.test-support.ts";
+import { FAILED } from "../verb.ts";
+import { ALREADY_EXISTS } from "./codes.ts";
+import { type NewOptions, runNew } from "./new-verb.ts";
 
 const options: NewOptions = {
 	id: "0240",
@@ -17,7 +17,7 @@ const options: NewOptions = {
 };
 
 const run = (fs: FakeFs, overrides: Partial<typeof options> = {}) =>
-	Effect.runPromise(Effect.provide(runNew({...options, ...overrides}), fs.layer));
+	Effect.runPromise(Effect.provide(runNew({ ...options, ...overrides }), fs.layer));
 
 describe("runNew", () => {
 	it("writes the record and prints its path", async () => {
@@ -29,7 +29,7 @@ describe("runNew", () => {
 	});
 
 	it("--json carries path, id and slug", async () => {
-		const out = await run(fakeFs({}), {json: true});
+		const out = await run(fakeFs({}), { json: true });
 		expect(JSON.parse(out.stdout)).toEqual({
 			path: ".records/0240-only-landed-adrs-may-be-cited.md",
 			id: "0240",
@@ -38,8 +38,8 @@ describe("runNew", () => {
 	});
 
 	it("refuses to overwrite an existing record and writes nothing", async () => {
-		const fs = fakeFs({files: {".records/0126-ambient-adr-discovery.md": "existing"}});
-		const out = await run(fs, {id: "0126", slug: "ambient-adr-discovery"});
+		const fs = fakeFs({ files: { ".records/0126-ambient-adr-discovery.md": "existing" } });
+		const out = await run(fs, { id: "0126", slug: "ambient-adr-discovery" });
 		expect(out.code).toBe(ALREADY_EXISTS);
 		expect(out.stdout).toBe("");
 		expect(out.stderr.at(-1)).toBe(
@@ -49,19 +49,19 @@ describe("runNew", () => {
 	});
 
 	it("refuses an id that is not four zero-padded digits", async () => {
-		const out = await run(fakeFs({}), {id: "240"});
+		const out = await run(fakeFs({}), { id: "240" });
 		expect(out.code).toBe(FAILED);
 		expect(out.stderr.at(-1)).toBe('adr new: id "240" is not four zero-padded digits.');
 	});
 
 	it("refuses a slug that is not kebab-case", async () => {
-		const out = await run(fakeFs({}), {slug: "Not Kebab"});
+		const out = await run(fakeFs({}), { slug: "Not Kebab" });
 		expect(out.code).toBe(FAILED);
 		expect(out.stderr.at(-1)).toContain("is not kebab-case");
 	});
 
 	it("refuses — rather than reporting success — when the write itself fails", async () => {
-		const fs = fakeFs({unwritable: [".records/0240-only-landed-adrs-may-be-cited.md"]});
+		const fs = fakeFs({ unwritable: [".records/0240-only-landed-adrs-may-be-cited.md"] });
 		const out = await run(fs);
 		expect(out.code).toBe(1);
 		expect(out.stdout).toBe("");
@@ -69,7 +69,7 @@ describe("runNew", () => {
 	});
 
 	it("refuses an existence probe that FAILED, rather than reading it as 'absent' and writing", async () => {
-		const fs = fakeFs({unprobeable: [".records/0240-only-landed-adrs-may-be-cited.md"]});
+		const fs = fakeFs({ unprobeable: [".records/0240-only-landed-adrs-may-be-cited.md"] });
 		const out = await run(fs);
 		expect(out.code).toBe(1);
 		expect(out.stdout).toBe("");
@@ -78,7 +78,7 @@ describe("runNew", () => {
 
 	it("uses --title and --tags when given", async () => {
 		const fs = fakeFs({});
-		await run(fs, {title: "A real title", tags: "decisions,gates"});
+		await run(fs, { title: "A real title", tags: "decisions,gates" });
 		const written = fs.written.get(".records/0240-only-landed-adrs-may-be-cited.md") ?? "";
 		expect(written).toContain("title: A real title");
 		expect(written).toContain("tags: [decisions, gates]");

@@ -7,10 +7,10 @@
  *
  * See `status menu --help` for results and exit codes.
  */
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {PRECONDITION_UNKNOWN, ZERO_SCOPE} from "./codes.ts";
-import {type AsOf, asOfToken, description, row} from "./fields.ts";
-import type {RosterRead} from "./roster.ts";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { PRECONDITION_UNKNOWN, ZERO_SCOPE } from "./codes.ts";
+import { type AsOf, asOfToken, description, row } from "./fields.ts";
+import type { RosterRead } from "./roster.ts";
 
 const VERB = "status menu";
 
@@ -25,7 +25,7 @@ export interface MenuInput {
 export const menuState = (skillCount: number): MenuState => (skillCount === 0 ? "empty" : "ready");
 
 /** A roster read that did not resolve — the only two shapes that owe a refusal. */
-export type RosterUnresolved = Exclude<RosterRead, {readonly _tag: "Resolved"}>;
+export type RosterUnresolved = Exclude<RosterRead, { readonly _tag: "Resolved" }>;
 
 /**
  * The refusal an unresolved roster owes.
@@ -44,7 +44,7 @@ export const rosterRefusal = (verb: string, roster: RosterUnresolved): VerbOutco
 				`${verb}: cannot read ${roster.display}: ${roster.reason} — the roster is UNKNOWN, never empty.`,
 			);
 
-export const runMenu = ({roster, asOf, json}: MenuInput): VerbOutcome => {
+export const runMenu = ({ roster, asOf, json }: MenuInput): VerbOutcome => {
 	if (roster._tag !== "Resolved") return rosterRefusal(VERB, roster);
 
 	const state = menuState(roster.skills.length);

@@ -36,10 +36,10 @@ export const literalExpansions = (env: ReadonlyArray<EnvEntry>): ReadonlyArray<E
  */
 export const envEntries = (settings: unknown): ReadonlyArray<EnvEntry> => {
 	if (typeof settings !== "object" || settings === null) return [];
-	const env = (settings as {env?: unknown}).env;
+	const env = (settings as { env?: unknown }).env;
 	if (typeof env !== "object" || env === null) return [];
 	return Object.entries(env as Record<string, unknown>).flatMap(([key, value]) =>
-		typeof value === "string" ? [{key, value}] : [],
+		typeof value === "string" ? [{ key, value }] : [],
 	);
 };
 

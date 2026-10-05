@@ -17,11 +17,11 @@
  * That order lets a run that died between the two writes be re-run: the breach is still on the
  * board, and the trail is found rather than posted twice.
  */
-import {Effect} from "effect";
-import type {ChildProcessSpawner} from "effect/unstable/process";
-import type {Read} from "../config/read-key.ts";
-import {TRIAGED_LABEL, unhomedRemedy} from "../guard/homing.ts";
-import {toTriaged} from "../guard/homing-verb.ts";
+import { Effect } from "effect";
+import type { ChildProcessSpawner } from "effect/unstable/process";
+import type { Read } from "../config/read-key.ts";
+import { TRIAGED_LABEL, unhomedRemedy } from "../guard/homing.ts";
+import { toTriaged } from "../guard/homing-verb.ts";
 import {
 	clearMilestone,
 	createComment,
@@ -30,9 +30,9 @@ import {
 	openIssuesWithLabelRecords,
 	resolveRepo,
 } from "../io/issues.ts";
-import type {StdinRead} from "../io/stdin.ts";
-import {answer, FAILED, refuse, type VerbOutcome} from "../verb.ts";
-import {type AuthoredSurface, leakRefusal, readAuthored} from "./authored.ts";
+import type { StdinRead } from "../io/stdin.ts";
+import { answer, FAILED, refuse, type VerbOutcome } from "../verb.ts";
+import { type AuthoredSurface, leakRefusal, readAuthored } from "./authored.ts";
 import {
 	PRECONDITION_UNKNOWN,
 	READBACK_MISMATCH,
@@ -40,7 +40,7 @@ import {
 	WRITE_UNKNOWN,
 	ZERO_SCOPE,
 } from "./codes.ts";
-import {scannedLine} from "./scope.ts";
+import { scannedLine } from "./scope.ts";
 import {
 	type DoubleMarked,
 	hasTrail,
@@ -78,12 +78,12 @@ type Shell = ChildProcessSpawner.ChildProcessSpawner;
 
 /** One double-marked issue's outcome. `would-clear` is a dry run's, never an apply's. */
 type Row =
-	| {readonly outcome: "would-clear"; readonly breach: DoubleMarked}
-	| {readonly outcome: "cleared"; readonly breach: DoubleMarked; readonly trail: string}
-	| {readonly outcome: "moved"; readonly breach: DoubleMarked; readonly reason: string};
+	| { readonly outcome: "would-clear"; readonly breach: DoubleMarked }
+	| { readonly outcome: "cleared"; readonly breach: DoubleMarked; readonly trail: string }
+	| { readonly outcome: "moved"; readonly breach: DoubleMarked; readonly reason: string };
 
 const rowLine = (row: Row): string => {
-	const {number, milestone, lanes} = row.breach;
+	const { number, milestone, lanes } = row.breach;
 	const head = `${row.outcome}\t${number}\t${milestone}\t${lanes.join(",")}`;
 	switch (row.outcome) {
 		case "would-clear":
@@ -123,7 +123,7 @@ const sweepOne = (
 			};
 		}
 		if (fresh._tag === "Absent" || fresh.value.state !== "open") {
-			return {outcome: "moved", breach, reason: "the issue left the open board mid-sweep"};
+			return { outcome: "moved", breach, reason: "the issue left the open board mid-sweep" };
 		}
 		if (!stillDoubleMarked(toTriaged(fresh.value), breach, lanes)) {
 			return {
@@ -179,7 +179,7 @@ const sweepOne = (
 				reason: `#${n}'s read-back is not milestone-less with ${breach.lanes.join(", ")} kept — inspect it before continuing.`,
 			};
 		}
-		return {outcome: "cleared", breach, trail: trailUrl};
+		return { outcome: "cleared", breach, trail: trailUrl };
 	});
 
 const isHalt = (step: Row | Halt): step is Halt => "code" in step;
@@ -188,7 +188,7 @@ export const runSweepHomes = (
 	options: SweepHomesOptions,
 ): Effect.Effect<VerbOutcome, never, Shell> =>
 	Effect.gen(function* () {
-		const {mode, json} = options;
+		const { mode, json } = options;
 		const repoAttempt = yield* resolveRepo(options.repo, options.env);
 		if (repoAttempt._tag === "Failure") {
 			return refuse(
@@ -246,7 +246,7 @@ export const runSweepHomes = (
 		const rows: Row[] = [];
 		for (const [index, breach] of plan.clears.entries()) {
 			if (mode === "dry-run") {
-				rows.push({outcome: "would-clear", breach});
+				rows.push({ outcome: "would-clear", breach });
 				continue;
 			}
 			const step = yield* sweepOne(repo, breach, trails[index] ?? "", declared);
@@ -284,8 +284,8 @@ export const runSweepHomes = (
 						number: row.breach.number,
 						milestone: row.breach.milestone,
 						lanes: row.breach.lanes,
-						...(row.outcome === "cleared" ? {trail: row.trail} : {}),
-						...(row.outcome === "moved" ? {reason: row.reason} : {}),
+						...(row.outcome === "cleared" ? { trail: row.trail } : {}),
+						...(row.outcome === "moved" ? { reason: row.reason } : {}),
 					})),
 				}),
 				[scanned, tally],

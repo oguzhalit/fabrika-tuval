@@ -12,15 +12,15 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9989
  */
 
-import {OUTSIDE_THE_BETS} from "../config/keys/table.ts";
-import type {StatusUpdate, StatusUpdateInput} from "../io/projects.ts";
-import {asksOf, type LaneRecord} from "../wire/lane-record.ts";
-import {optionOf} from "./agenda.ts";
-import {type Flag, type FlagReport, type OnCallSpend, type Unread, weekLanes} from "./flags.ts";
-import type {RuledUnbuilt} from "./ruled.ts";
-import {FIELD} from "./shape.ts";
-import type {Row} from "./sync.ts";
-import {dayLabel, plusDays, type TableDay} from "./table-day.ts";
+import { OUTSIDE_THE_BETS } from "../config/keys/table.ts";
+import type { StatusUpdate, StatusUpdateInput } from "../io/projects.ts";
+import { asksOf, type LaneRecord } from "../wire/lane-record.ts";
+import { optionOf } from "./agenda.ts";
+import { type Flag, type FlagReport, type OnCallSpend, type Unread, weekLanes } from "./flags.ts";
+import type { RuledUnbuilt } from "./ruled.ts";
+import { FIELD } from "./shape.ts";
+import type { Row } from "./sync.ts";
+import { dayLabel, plusDays, type TableDay } from "./table-day.ts";
 
 /** Lane outcomes that mean the work landed. */
 const LANDED: ReadonlySet<string> = new Set(["complete", "board:landed"]);
@@ -71,11 +71,11 @@ export const outsideOf = (
 		if (spent === null) unmeasured += 1;
 		else spentUsd += spent;
 	}
-	return {count: running.length, kinds, spentUsd: cents(spentUsd), unmeasured};
+	return { count: running.length, kinds, spentUsd: cents(spentUsd), unmeasured };
 };
 
 export interface HealthInput {
-	readonly window: {readonly start: string; readonly end: string};
+	readonly window: { readonly start: string; readonly end: string };
 	readonly records: ReadonlyMap<number, ReadonlyArray<LaneRecord>>;
 	readonly report: FlagReport;
 	readonly outside: OutsideTally;
@@ -109,8 +109,8 @@ export interface Health {
 
 /** How many items a flag names, or how many it proved while some item's check went unread. */
 export type FlagCount =
-	| {readonly _tag: "Counted"; readonly count: number}
-	| {readonly _tag: "Unread"; readonly atLeast: number; readonly unread: number};
+	| { readonly _tag: "Counted"; readonly count: number }
+	| { readonly _tag: "Unread"; readonly atLeast: number; readonly unread: number };
 
 export const flagCount = (
 	report: FlagReport,
@@ -119,7 +119,7 @@ export const flagCount = (
 ): FlagCount => {
 	const count = report.flags.filter((one) => one._tag === flag).length;
 	const unread = report.unread.filter((one) => one.check === check).length;
-	return unread > 0 ? {_tag: "Unread", atLeast: count, unread} : {_tag: "Counted", count};
+	return unread > 0 ? { _tag: "Unread", atLeast: count, unread } : { _tag: "Counted", count };
 };
 
 export const healthOf = (input: HealthInput): Health => {
@@ -170,14 +170,14 @@ export interface OnCallHealth {
 }
 
 const onCallLines = (onCall: OnCallHealth): ReadonlyArray<string> => {
-	const {spend} = onCall;
+	const { spend } = onCall;
 	const spent =
 		spend._tag === "Measured"
 			? `${spend.percent}% of the week's spend ($${spend.onCallUsd} of $${spend.totalUsd}), against a ${onCall.share}% share${spend.percent > onCall.share ? " — over it" : ""}`
 			: spend._tag === "Unmeasured"
 				? `not known, ${plural(spend.lanes, "lane")} not measured (share ${onCall.share}%)`
 				: `no lane spent anything last week (share ${onCall.share}%)`;
-	const {pastTarget} = onCall;
+	const { pastTarget } = onCall;
 	const past =
 		pastTarget._tag === "Unread"
 			? ` (past their response target: not known, ${plural(pastTarget.unread, "item")} could not be checked${pastTarget.atLeast > 0 ? `, at least ${pastTarget.atLeast}` : ""})`
@@ -207,7 +207,7 @@ export const renderHealth = (
 	flagged: boolean,
 	onCall: OnCallHealth | null = null,
 ): StatusUpdateInput => {
-	const {outside} = health;
+	const { outside } = health;
 	const kinds = Object.entries(outside.kinds)
 		.sort(([a], [b]) => a.localeCompare(b))
 		.map(([kind, count]) => `${count} ${kind}`)

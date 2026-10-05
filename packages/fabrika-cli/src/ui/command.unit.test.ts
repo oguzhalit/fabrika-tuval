@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import type {CommandNode} from "../unknown-subcommand.ts";
-import {uiCommand} from "./command.ts";
+import { describe, expect, it } from "vitest";
+import type { CommandNode } from "../unknown-subcommand.ts";
+import { uiCommand } from "./command.ts";
 
 /**
  * Registration is the only route to a verb: a leaf dropped from `withSubcommands` is unreachable
@@ -9,17 +9,14 @@ import {uiCommand} from "./command.ts";
 describe("the `ui` group registers each verb", () => {
 	const group: CommandNode = uiCommand;
 
-	it.each([
-		"manifest",
-		"law",
-		"render",
-		"golden",
-		"evidence",
-	])("resolves `ui %s` to a leaf", (verb) => {
-		const leaf = group.subcommands
-			.flatMap((set) => set.commands)
-			.find((child) => child.name === verb);
-		expect(leaf).toBeDefined();
-		expect(leaf?.subcommands.flatMap((set) => set.commands)).toEqual([]);
-	});
+	it.each(["manifest", "law", "render", "golden", "evidence"])(
+		"resolves `ui %s` to a leaf",
+		(verb) => {
+			const leaf = group.subcommands
+				.flatMap((set) => set.commands)
+				.find((child) => child.name === verb);
+			expect(leaf).toBeDefined();
+			expect(leaf?.subcommands.flatMap((set) => set.commands)).toEqual([]);
+		},
+	);
 });

@@ -29,7 +29,7 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/9972#issuecomment-5974135601
  */
 
-import type {AppetiteSizes, Size} from "../config/keys/appetite-sizes.ts";
+import type { AppetiteSizes, Size } from "../config/keys/appetite-sizes.ts";
 import {
 	CUSTOMERS,
 	NEW_BETS,
@@ -37,25 +37,25 @@ import {
 	TAILS,
 	type TableSettings,
 } from "../config/keys/table.ts";
-import {readPitch} from "../guard/pitch.ts";
-import type {ListedIssue} from "../io/issues.ts";
-import type {FieldValue, ItemFieldValue} from "../io/projects.ts";
-import {NEEDS_INFO, NEEDS_TRIAGE} from "../labels.ts";
-import {EPIC_TYPE_LABEL, PRIORITIES} from "../triage/facets.ts";
-import {readPlainSummary} from "../triage/plain-summary.ts";
-import {BET_STAGE} from "./bets.ts";
-import {type Flag, recOf} from "./flags.ts";
-import {type Group, issuesOf, membersOf} from "./group.ts";
-import type {RuledUnbuilt} from "./ruled.ts";
-import {FIELD} from "./shape.ts";
-import type {Row, Write} from "./sync.ts";
-import type {TableDay} from "./table-day.ts";
+import { readPitch } from "../guard/pitch.ts";
+import type { ListedIssue } from "../io/issues.ts";
+import type { FieldValue, ItemFieldValue } from "../io/projects.ts";
+import { NEEDS_INFO, NEEDS_TRIAGE } from "../labels.ts";
+import { EPIC_TYPE_LABEL, PRIORITIES } from "../triage/facets.ts";
+import { readPlainSummary } from "../triage/plain-summary.ts";
+import { BET_STAGE } from "./bets.ts";
+import { type Flag, recOf } from "./flags.ts";
+import { type Group, issuesOf, membersOf } from "./group.ts";
+import type { RuledUnbuilt } from "./ruled.ts";
+import { FIELD } from "./shape.ts";
+import type { Row, Write } from "./sync.ts";
+import type { TableDay } from "./table-day.ts";
 
 export const PROPOSED = "proposed";
 export const CHECK_STAGE = "check";
 export const READY_FOR_HUMAN = "ready-for:human";
 
-export {CUSTOMERS, NEW_BETS, TAILS};
+export { CUSTOMERS, NEW_BETS, TAILS };
 
 /** Stages that are an answer already given: none of these rows is proposed again. */
 const ANSWERED: ReadonlySet<string> = new Set([
@@ -72,17 +72,17 @@ const WORKERS: ReadonlySet<string> = new Set(["OWNER", "MEMBER", "COLLABORATOR"]
 /** Why an issue is on the agenda. */
 export type Reason =
 	/** Already on this table's agenda from an earlier run; it keeps its place and its cells. */
-	| {readonly _tag: "Standing"}
+	| { readonly _tag: "Standing" }
 	/** A running bet the flags bring back. */
-	| {readonly _tag: "Flagged"; readonly flags: ReadonlyArray<Flag>}
+	| { readonly _tag: "Flagged"; readonly flags: ReadonlyArray<Flag> }
 	/** Left open under an epic that has closed. */
-	| {readonly _tag: "FollowUp"; readonly epic: number}
+	| { readonly _tag: "FollowUp"; readonly epic: number }
 	/** Ruled on, still open, and not built. */
-	| {readonly _tag: "Ruled"; readonly ruledAt: string}
+	| { readonly _tag: "Ruled"; readonly ruledAt: string }
 	/** Filed by someone who uses the product, and triaged. */
-	| {readonly _tag: "Customer"}
+	| { readonly _tag: "Customer" }
 	/** An epic with a pitch nobody has bet on. */
-	| {readonly _tag: "Pitched"; readonly appetite: string};
+	| { readonly _tag: "Pitched"; readonly appetite: string };
 
 export interface Candidate {
 	readonly issue: number;
@@ -183,7 +183,7 @@ export const candidatesOf = (
 	readonly candidates: ReadonlyArray<Candidate>;
 	readonly triageFirst: ReadonlyArray<TriageFirst>;
 } => {
-	const {open, rows, settings, target} = input;
+	const { open, rows, settings, target } = input;
 	const order = byPriority(open);
 	const sections = settings.sections.filter((name) => name !== OUTSIDE_THE_BETS);
 	const rank = (section: string): number => {
@@ -198,7 +198,7 @@ export const candidatesOf = (
 		.map((row) => ({
 			issue: row.issue,
 			section: optionOf(row, FIELD.section) as string,
-			reason: {_tag: "Standing"} as const,
+			reason: { _tag: "Standing" } as const,
 		}))
 		.sort((a, b) => rank(a.section) - rank(b.section) || a.issue - b.issue);
 
@@ -209,7 +209,7 @@ export const candidatesOf = (
 
 	for (const [head, flags] of [...input.flagged].sort(([a], [b]) => a - b)) {
 		if (open.has(head) && optionOf(rows.get(head), FIELD.stage) === BET_STAGE) {
-			push(TAILS, {issue: head, section: TAILS, reason: {_tag: "Flagged", flags}});
+			push(TAILS, { issue: head, section: TAILS, reason: { _tag: "Flagged", flags } });
 		}
 	}
 	for (const one of input.ruled) {
@@ -217,7 +217,7 @@ export const candidatesOf = (
 			push(TAILS, {
 				issue: one.issue,
 				section: TAILS,
-				reason: {_tag: "Ruled", ruledAt: one.ruledAt},
+				reason: { _tag: "Ruled", ruledAt: one.ruledAt },
 			});
 		}
 	}
@@ -225,19 +225,19 @@ export const candidatesOf = (
 		.filter((one) => fresh(one.issue))
 		.sort((a, b) => order(a.issue, b.issue));
 	for (const one of followUps) {
-		push(TAILS, {issue: one.issue, section: TAILS, reason: {_tag: "FollowUp", epic: one.epic}});
+		push(TAILS, { issue: one.issue, section: TAILS, reason: { _tag: "FollowUp", epic: one.epic } });
 	}
 
 	const triageFirst: TriageFirst[] = [];
 	const customers: number[] = [];
-	const pitched: Array<{readonly issue: number; readonly appetite: string}> = [];
+	const pitched: Array<{ readonly issue: number; readonly appetite: string }> = [];
 	for (const issue of open.values()) {
 		if (!fresh(issue.number)) continue;
 		if (isCustomer(issue)) {
 			if (issue.labels.includes(NEEDS_INFO)) {
-				triageFirst.push({issue: issue.number, waitingOnFiler: true});
+				triageFirst.push({ issue: issue.number, waitingOnFiler: true });
 			} else if (issue.labels.length === 0 || issue.labels.includes(NEEDS_TRIAGE)) {
-				triageFirst.push({issue: issue.number, waitingOnFiler: false});
+				triageFirst.push({ issue: issue.number, waitingOnFiler: false });
 			} else {
 				customers.push(issue.number);
 			}
@@ -257,13 +257,13 @@ export const candidatesOf = (
 		}
 	}
 	for (const issue of customers.sort(order)) {
-		push(CUSTOMERS, {issue, section: CUSTOMERS, reason: {_tag: "Customer"}});
+		push(CUSTOMERS, { issue, section: CUSTOMERS, reason: { _tag: "Customer" } });
 	}
 	for (const one of pitched.sort((a, b) => order(a.issue, b.issue))) {
 		push(NEW_BETS, {
 			issue: one.issue,
 			section: NEW_BETS,
-			reason: {_tag: "Pitched", appetite: one.appetite},
+			reason: { _tag: "Pitched", appetite: one.appetite },
 		});
 	}
 
@@ -295,7 +295,7 @@ export interface Selection {
 	readonly overflow: ReadonlyArray<number>;
 }
 
-export const EMPTY_SELECTION: Selection = {chosen: [], overflow: []};
+export const EMPTY_SELECTION: Selection = { chosen: [], overflow: [] };
 
 /** Every issue a selection already stands for, heads and members. */
 export const coveredBy = (selection: Selection): ReadonlySet<number> =>
@@ -316,9 +316,9 @@ export const admit = (
 	const members = new Set(membersOf(group));
 	const kept = selection.chosen.filter((chosen) => !members.has(chosen.candidate.issue));
 	if (kept.length + 1 > cap) {
-		return {...selection, overflow: [...selection.overflow, candidate.issue]};
+		return { ...selection, overflow: [...selection.overflow, candidate.issue] };
 	}
-	return {...selection, chosen: [...kept, {candidate, group}]};
+	return { ...selection, chosen: [...kept, { candidate, group }] };
 };
 
 /** The cells prep writes on a chosen row. */
@@ -401,11 +401,11 @@ export const sizeOfGroup = (
 	group: Group,
 	open: ReadonlyMap<number, ListedIssue>,
 	sizes: AppetiteSizes,
-): {readonly size: Size; readonly usd: number} => {
+): { readonly size: Size; readonly usd: number } => {
 	const usd = issuesOf(group).reduce((sum, issue) => sum + sizes[issueSize(open.get(issue))], 0);
-	if (group._tag === "Epic") return {size: "L", usd};
+	if (group._tag === "Epic") return { size: "L", usd };
 	const size: Size = usd <= sizes.S ? "S" : usd <= sizes.M ? "M" : "L";
-	return {size, usd};
+	return { size, usd };
 };
 
 const numbers = (issues: ReadonlyArray<number>): string => {
@@ -442,10 +442,10 @@ export const cellsOf = (
 	settings: TableSettings,
 	sizes: AppetiteSizes,
 ): RowCells => {
-	const {candidate, group} = chosen;
+	const { candidate, group } = chosen;
 	const head = open.get(candidate.issue);
 	const members = membersOf(group);
-	const {size, usd} = sizeOfGroup(group, open, sizes);
+	const { size, usd } = sizeOfGroup(group, open, sizes);
 	const headWords = head === undefined ? `#${candidate.issue}` : plainWordsOf(head);
 	const plainWords =
 		group._tag === "Chain"
@@ -455,7 +455,7 @@ export const cellsOf = (
 	const ruling = issuesOf(group)
 		.map((issue) => open.get(issue))
 		.find((issue) => issue?.labels.includes(READY_FOR_HUMAN) === true);
-	if (ruling !== undefined) return {size, plainWords, rec: pickRec(ruling, candidate.issue)};
+	if (ruling !== undefined) return { size, plainWords, rec: pickRec(ruling, candidate.issue) };
 
 	const whole =
 		group._tag === "Chain"
@@ -463,7 +463,7 @@ export const cellsOf = (
 			: group._tag === "Epic" && members.length > 0
 				? ` Covers ${members.length} open child issue${members.length === 1 ? "" : "s"}.`
 				: "";
-	return {size, plainWords, rec: `${baseRec(candidate.reason, settings)}${whole}`};
+	return { size, plainWords, rec: `${baseRec(candidate.reason, settings)}${whole}` };
 };
 
 interface Select {
@@ -493,7 +493,7 @@ export interface AgendaRow {
 
 export type PrepWrite =
 	| Write
-	| {readonly _tag: "Delete"; readonly issue: number; readonly itemId: string};
+	| { readonly _tag: "Delete"; readonly issue: number; readonly itemId: string };
 
 export interface PrepInput {
 	readonly fields: PrepFields;
@@ -552,7 +552,7 @@ export interface PrepPlan {
  * @ruling https://github.com/kamp-us/phoenix/issues/10086
  */
 export const prepPlan = (input: PrepInput): PrepPlan => {
-	const {fields, rows, target} = input;
+	const { fields, rows, target } = input;
 	const answered = new Set([...input.rollover, ...input.checks.map((check) => check.issue)]);
 	const leaving = (issue: number): boolean => input.onCall.has(issue) && !answered.has(issue);
 	const writes: PrepWrite[] = [];
@@ -560,19 +560,27 @@ export const prepPlan = (input: PrepInput): PrepPlan => {
 	const add = (issue: number): void => {
 		if (added.has(issue) || !input.open.has(issue) || leaving(issue)) return;
 		added.add(issue);
-		writes.push({_tag: "Add", issue});
+		writes.push({ _tag: "Add", issue });
 	};
 	const setOn = (row: Row, field: string, fieldId: string, value: FieldValue, shown: string) =>
-		writes.push({_tag: "Set", issue: row.issue, itemId: row.itemId, field, fieldId, value, shown});
+		writes.push({
+			_tag: "Set",
+			issue: row.issue,
+			itemId: row.itemId,
+			field,
+			fieldId,
+			value,
+			shown,
+		});
 	const option = (select: Select, name: string): FieldValue => ({
 		_tag: "Option",
 		optionId: select.options.get(name) as string,
 	});
 	const clear = (row: Row, field: string, fieldId: string) =>
-		writes.push({_tag: "Clear", issue: row.issue, itemId: row.itemId, field, fieldId});
+		writes.push({ _tag: "Clear", issue: row.issue, itemId: row.itemId, field, fieldId });
 	const dateOn = (row: Row) => {
 		if (tableDayOf(row) !== target) {
-			setOn(row, FIELD.tableDay, fields.tableDay, {_tag: "Date", date: target}, target);
+			setOn(row, FIELD.tableDay, fields.tableDay, { _tag: "Date", date: target }, target);
 		}
 	};
 	const kept = new Map<number, KeptRec>();
@@ -580,10 +588,10 @@ export const prepPlan = (input: PrepInput): PrepPlan => {
 		const standing = textOf(row, FIELD.rec);
 		if (standing === null) {
 			if (wanted !== null) {
-				setOn(row, FIELD.rec, fields.rec, {_tag: "Text", text: wanted}, `"${wanted}"`);
+				setOn(row, FIELD.rec, fields.rec, { _tag: "Text", text: wanted }, `"${wanted}"`);
 			}
 		} else if (standing !== wanted) {
-			kept.set(row.issue, {issue: row.issue, rec: standing, wanted});
+			kept.set(row.issue, { issue: row.issue, rec: standing, wanted });
 		}
 	};
 
@@ -593,7 +601,7 @@ export const prepPlan = (input: PrepInput): PrepPlan => {
 		if (row === undefined) {
 			add(entry.issue);
 		} else if (entry.cells !== null) {
-			const {cells} = entry;
+			const { cells } = entry;
 			if (!entry.flaggedBet && optionOf(row, FIELD.stage) !== PROPOSED) {
 				setOn(row, FIELD.stage, fields.stage.id, option(fields.stage, PROPOSED), PROPOSED);
 			}
@@ -616,7 +624,7 @@ export const prepPlan = (input: PrepInput): PrepPlan => {
 					row,
 					FIELD.plainWords,
 					fields.plainWords,
-					{_tag: "Text", text: cells.plainWords},
+					{ _tag: "Text", text: cells.plainWords },
 					`"${cells.plainWords}"`,
 				);
 			}
@@ -660,7 +668,7 @@ export const prepPlan = (input: PrepInput): PrepPlan => {
 				row,
 				FIELD.plainWords,
 				fields.plainWords,
-				{_tag: "Text", text: check.plainWords},
+				{ _tag: "Text", text: check.plainWords },
 				`"${check.plainWords}"`,
 			);
 		}
@@ -668,9 +676,9 @@ export const prepPlan = (input: PrepInput): PrepPlan => {
 
 	for (const issue of input.removals) {
 		const row = rows.get(issue);
-		if (row !== undefined) writes.push({_tag: "Delete", issue, itemId: row.itemId});
+		if (row !== undefined) writes.push({ _tag: "Delete", issue, itemId: row.itemId });
 	}
-	return {writes, kept: [...kept.values()].sort((a, b) => a.issue - b.issue)};
+	return { writes, kept: [...kept.values()].sort((a, b) => a.issue - b.issue) };
 };
 
 /** The writes of {@link prepPlan}, for a caller that only applies them. */

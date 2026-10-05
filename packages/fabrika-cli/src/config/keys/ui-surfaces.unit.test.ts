@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {loadConfig, resolve} from "../load.ts";
+import { describe, expect, it } from "vitest";
+import { loadConfig, resolve } from "../load.ts";
 import {
 	DEFAULT_VIEWPORT,
 	fillPorts,
@@ -29,10 +29,10 @@ const DESK = {
 };
 
 const load = (config: Record<string, unknown>) =>
-	loadConfig({_tag: "Text", text: JSON.stringify(config)});
+	loadConfig({ _tag: "Text", text: JSON.stringify(config) });
 
 const declared = (rows: ReadonlyArray<unknown> = [WEB]) =>
-	resolve(load({[UI_SURFACES]: rows}), uiSurfacesKey);
+	resolve(load({ [UI_SURFACES]: rows }), uiSurfacesKey);
 
 /** The decoded rows, or a thrown assertion — every reader below wants the Declared arm. */
 const rowsOf = (rows: ReadonlyArray<unknown>): ReadonlyArray<UiSurface> => {
@@ -45,15 +45,15 @@ const rowsOf = (rows: ReadonlyArray<unknown>): ReadonlyArray<UiSurface> => {
 
 describe("the shipped default", () => {
 	it("is the empty list on both no-file and no-key, so no repo inherits another's surfaces", () => {
-		expect(resolve(loadConfig({_tag: "Absent"}), uiSurfacesKey)).toMatchObject({
+		expect(resolve(loadConfig({ _tag: "Absent" }), uiSurfacesKey)).toMatchObject({
 			_tag: "Default",
 			value: [],
 		});
-		expect(resolve(load({}), uiSurfacesKey)).toMatchObject({_tag: "Default", value: []});
+		expect(resolve(load({}), uiSurfacesKey)).toMatchObject({ _tag: "Default", value: [] });
 	});
 
 	it("admits a declared empty list — no rendered gate is a declaration, not a malformity", () => {
-		expect(declared([])).toMatchObject({_tag: "Declared", layer: "tracked", value: []});
+		expect(declared([])).toMatchObject({ _tag: "Declared", layer: "tracked", value: [] });
 	});
 
 	it("defaults the capture settings a repo declares none of", () => {
@@ -73,13 +73,13 @@ describe("the shipped default", () => {
 
 describe("a declared uiSurfaces row", () => {
 	it("defaults readyPath and basePath", () => {
-		expect(rowsOf([WEB])).toEqual([{...WEB, basePath: null, readyPath: "/"}]);
+		expect(rowsOf([WEB])).toEqual([{ ...WEB, basePath: null, readyPath: "/" }]);
 	});
 
 	it("accepts more than one row, each with its own command, mount and readiness probe", () => {
 		const answer = rowsOf([
-			{...WEB, readyPath: "/api/health"},
-			{...DESK, readyPath: "/index.html"},
+			{ ...WEB, readyPath: "/api/health" },
+			{ ...DESK, readyPath: "/index.html" },
 		]);
 		expect(answer.map((row) => [row.name, row.mount, row.readyPath])).toEqual([
 			["web", "/", "/api/health"],
@@ -88,7 +88,7 @@ describe("a declared uiSurfaces row", () => {
 	});
 
 	it("allows two rows under one prefix — web and web-lab are two mounts over one source root", () => {
-		const answer = rowsOf([WEB, {...WEB, name: "web-lab", mount: "/lab"}]);
+		const answer = rowsOf([WEB, { ...WEB, name: "web-lab", mount: "/lab" }]);
 		expect(prefixesOf(answer)).toEqual(["apps/site/src/"]);
 	});
 
@@ -100,15 +100,15 @@ describe("a declared uiSurfaces row", () => {
 
 	it("decodes a list-shaped prefix — directories and exact files — into one row's roots", () => {
 		const roots = ["app/", "components/", "tailwind.config.ts"];
-		const answer = rowsOf([{...WEB, prefix: roots}]);
+		const answer = rowsOf([{ ...WEB, prefix: roots }]);
 		expect(answer[0]?.prefix).toEqual(roots);
 		expect(prefixesOf(answer)).toEqual(roots);
 	});
 
 	it("flattens and deduplicates roots across both shapes in declaration order", () => {
 		const answer = rowsOf([
-			{...WEB, prefix: ["app/", "tailwind.config.ts"]},
-			{...DESK, prefix: "app/"},
+			{ ...WEB, prefix: ["app/", "tailwind.config.ts"] },
+			{ ...DESK, prefix: "app/" },
 		]);
 		expect(prefixesOf(answer)).toEqual(["app/", "tailwind.config.ts"]);
 	});
@@ -121,33 +121,33 @@ describe("a declared uiSurfaces row", () => {
 	const READY_PATH = `"${UI_SURFACES}[].readyPath" is not a path beginning with "/"`;
 
 	it.each([
-		["no name", [{prefix: "a/", mount: "/", command: "x {{port}}"}], NAME],
-		["a non-kebab name", [{...WEB, name: "Web App"}], NAME],
-		["no command", [{name: "web", prefix: "a/", mount: "/"}], COMMAND],
-		["a non-string command", [{...WEB, command: 3}], COMMAND],
-		["no prefix", [{name: "web", mount: "/", command: "x {{port}}"}], PREFIX],
-		["a blank prefix", [{...WEB, prefix: "  "}], PREFIX],
-		["a padded prefix", [{...WEB, prefix: " apps/site/src/"}], PREFIX],
-		["an absolute prefix", [{...WEB, prefix: "/apps/site/src/"}], PREFIX],
-		["a parent-relative prefix", [{...WEB, prefix: "../web/src/"}], PREFIX],
-		["a non-string prefix", [{...WEB, prefix: 3}], PREFIX],
-		["an empty prefix list", [{...WEB, prefix: []}], PREFIX],
-		["a blank entry in a prefix list", [{...WEB, prefix: ["app/", ""]}], PREFIX],
-		["an absolute entry in a prefix list", [{...WEB, prefix: ["app/", "/etc/"]}], PREFIX],
-		["a parent-relative entry in a prefix list", [{...WEB, prefix: ["../x.ts"]}], PREFIX],
-		["a non-string entry in a prefix list", [{...WEB, prefix: ["app/", 3]}], PREFIX],
-		["no mount", [{name: "web", prefix: "a/", command: "x {{port}}"}], MOUNT],
-		["a relative mount", [{...WEB, mount: "lab"}], MOUNT],
-		["a relative basePath", [{...WEB, basePath: "lab"}], BASE_PATH],
-		["a relative readyPath", [{...WEB, readyPath: "health"}], READY_PATH],
-		["a null readyPath", [{...WEB, readyPath: null}], READY_PATH],
-		["an unknown key inside a row", [{...WEB, url: "http://x"}], 'unknown key "url"'],
+		["no name", [{ prefix: "a/", mount: "/", command: "x {{port}}" }], NAME],
+		["a non-kebab name", [{ ...WEB, name: "Web App" }], NAME],
+		["no command", [{ name: "web", prefix: "a/", mount: "/" }], COMMAND],
+		["a non-string command", [{ ...WEB, command: 3 }], COMMAND],
+		["no prefix", [{ name: "web", mount: "/", command: "x {{port}}" }], PREFIX],
+		["a blank prefix", [{ ...WEB, prefix: "  " }], PREFIX],
+		["a padded prefix", [{ ...WEB, prefix: " apps/site/src/" }], PREFIX],
+		["an absolute prefix", [{ ...WEB, prefix: "/apps/site/src/" }], PREFIX],
+		["a parent-relative prefix", [{ ...WEB, prefix: "../web/src/" }], PREFIX],
+		["a non-string prefix", [{ ...WEB, prefix: 3 }], PREFIX],
+		["an empty prefix list", [{ ...WEB, prefix: [] }], PREFIX],
+		["a blank entry in a prefix list", [{ ...WEB, prefix: ["app/", ""] }], PREFIX],
+		["an absolute entry in a prefix list", [{ ...WEB, prefix: ["app/", "/etc/"] }], PREFIX],
+		["a parent-relative entry in a prefix list", [{ ...WEB, prefix: ["../x.ts"] }], PREFIX],
+		["a non-string entry in a prefix list", [{ ...WEB, prefix: ["app/", 3] }], PREFIX],
+		["no mount", [{ name: "web", prefix: "a/", command: "x {{port}}" }], MOUNT],
+		["a relative mount", [{ ...WEB, mount: "lab" }], MOUNT],
+		["a relative basePath", [{ ...WEB, basePath: "lab" }], BASE_PATH],
+		["a relative readyPath", [{ ...WEB, readyPath: "health" }], READY_PATH],
+		["a null readyPath", [{ ...WEB, readyPath: null }], READY_PATH],
+		["an unknown key inside a row", [{ ...WEB, url: "http://x" }], 'unknown key "url"'],
 	])("refuses %s whole-value, naming the field it rejected", (_label, rows, reason) => {
-		expect(declared(rows)).toMatchObject({_tag: "Malformed", reason});
+		expect(declared(rows)).toMatchObject({ _tag: "Malformed", reason });
 	});
 
 	it("refuses a value that is not an array at all", () => {
-		expect(resolve(load({[UI_SURFACES]: {}}), uiSurfacesKey)).toMatchObject({
+		expect(resolve(load({ [UI_SURFACES]: {} }), uiSurfacesKey)).toMatchObject({
 			_tag: "Malformed",
 			reason: `\`${UI_SURFACES}\` is not an array of surface declarations`,
 		});
@@ -156,197 +156,209 @@ describe("a declared uiSurfaces row", () => {
 	it.each([
 		[
 			"a command with no {{port}} placeholder",
-			[{...WEB, command: "pnpm dev"}],
+			[{ ...WEB, command: "pnpm dev" }],
 			LIST_VIOLATION.noPort("web"),
 		],
 		[
 			"a command carrying only a NAMED port token",
-			[{...WEB, command: "pnpm dev --worker {{port:worker}}"}],
+			[{ ...WEB, command: "pnpm dev --worker {{port:worker}}" }],
 			LIST_VIOLATION.noPort("web"),
 		],
-		["two rows under one name", [WEB, {...DESK, name: "web"}], LIST_VIOLATION.duplicateName("web")],
-		["two rows under one mount", [WEB, {...DESK, mount: "/"}], LIST_VIOLATION.duplicateMount("/")],
+		[
+			"two rows under one name",
+			[WEB, { ...DESK, name: "web" }],
+			LIST_VIOLATION.duplicateName("web"),
+		],
+		[
+			"two rows under one mount",
+			[WEB, { ...DESK, mount: "/" }],
+			LIST_VIOLATION.duplicateMount("/"),
+		],
 	])("refuses %s — the whole-list rule no field check can state", (_label, rows, reason) => {
-		expect(declared(rows)).toMatchObject({_tag: "Malformed", reason});
+		expect(declared(rows)).toMatchObject({ _tag: "Malformed", reason });
 	});
 });
 
 describe("a declared uiCapture", () => {
 	const capture = (value: Record<string, unknown>) =>
-		resolve(load({[UI_CAPTURE]: value}), uiCaptureKey);
+		resolve(load({ [UI_CAPTURE]: value }), uiCaptureKey);
 
 	it("carries a declared storageState through", () => {
-		expect(capture({storageState: ".fabrika/design-session.json"})).toMatchObject({
+		expect(capture({ storageState: ".fabrika/design-session.json" })).toMatchObject({
 			_tag: "Declared",
 			layer: "tracked",
-			value: {storageState: ".fabrika/design-session.json"},
+			value: { storageState: ".fabrika/design-session.json" },
 		});
 	});
 
 	it("carries a declared viewport and evidenceStore through", () => {
 		expect(
-			capture({viewport: {width: 390, height: 844}, evidenceStore: "https://depo/x"}),
+			capture({ viewport: { width: 390, height: 844 }, evidenceStore: "https://depo/x" }),
 		).toMatchObject({
 			_tag: "Declared",
 			layer: "tracked",
-			value: {viewport: {width: 390, height: 844}, evidenceStore: "https://depo/x"},
+			value: { viewport: { width: 390, height: 844 }, evidenceStore: "https://depo/x" },
 		});
 	});
 
 	it("carries a declared locale through, and leaves it null when absent", () => {
-		const locale = {storageKey: "app.locale", values: ["tr", "en", "pt-BR"]};
-		expect(capture({locale})).toMatchObject({_tag: "Declared", value: {locale}});
-		expect(capture({storageState: ".fabrika/s.json"})).toMatchObject({
+		const locale = { storageKey: "app.locale", values: ["tr", "en", "pt-BR"] };
+		expect(capture({ locale })).toMatchObject({ _tag: "Declared", value: { locale } });
+		expect(capture({ storageState: ".fabrika/s.json" })).toMatchObject({
 			_tag: "Declared",
-			value: {locale: null},
+			value: { locale: null },
 		});
-		expect(capture({locale: null})).toMatchObject({_tag: "Declared", value: {locale: null}});
+		expect(capture({ locale: null })).toMatchObject({ _tag: "Declared", value: { locale: null } });
 	});
 
 	it.each([
-		["a non-object locale", {locale: "en"}, `"${UI_CAPTURE}.locale" is not an object`],
+		["a non-object locale", { locale: "en" }, `"${UI_CAPTURE}.locale" is not an object`],
 		[
 			"a locale with no storageKey",
-			{locale: {values: ["en"]}},
+			{ locale: { values: ["en"] } },
 			`"${UI_CAPTURE}.locale.storageKey" is missing or not a non-empty string`,
 		],
 		[
 			"a blank storageKey",
-			{locale: {storageKey: "  ", values: ["en"]}},
+			{ locale: { storageKey: "  ", values: ["en"] } },
 			`"${UI_CAPTURE}.locale.storageKey" is missing or not a non-empty string`,
 		],
 		[
 			"a locale with no values",
-			{locale: {storageKey: "k"}},
+			{ locale: { storageKey: "k" } },
 			`"${UI_CAPTURE}.locale.values" is missing or not a non-empty list of distinct locale tags`,
 		],
 		[
 			"an empty values list",
-			{locale: {storageKey: "k", values: []}},
+			{ locale: { storageKey: "k", values: [] } },
 			`"${UI_CAPTURE}.locale.values" is missing or not a non-empty list of distinct locale tags`,
 		],
 		[
 			"a repeated value",
-			{locale: {storageKey: "k", values: ["en", "en"]}},
+			{ locale: { storageKey: "k", values: ["en", "en"] } },
 			`"${UI_CAPTURE}.locale.values" is missing or not a non-empty list of distinct locale tags`,
 		],
 		[
 			"a value that is no locale tag",
-			{locale: {storageKey: "k", values: ["en us"]}},
+			{ locale: { storageKey: "k", values: ["en us"] } },
 			`"${UI_CAPTURE}.locale.values" is missing or not a non-empty list of distinct locale tags`,
 		],
 		[
 			"an unknown key inside locale",
-			{locale: {storageKey: "k", values: ["en"], cookie: "x"}},
+			{ locale: { storageKey: "k", values: ["en"], cookie: "x" } },
 			'unknown key "cookie"',
 		],
 	])("refuses %s whole-value, naming the field it rejected", (_label, value, reason) => {
-		expect(capture(value)).toMatchObject({_tag: "Malformed", reason});
+		expect(capture(value)).toMatchObject({ _tag: "Malformed", reason });
 	});
 
 	it("carries a declared scheme attribute through, and leaves it null when absent", () => {
-		const scheme = {rootAttribute: "data-theme"};
-		expect(capture({scheme})).toMatchObject({_tag: "Declared", value: {scheme}});
-		expect(capture({locale: null})).toMatchObject({_tag: "Declared", value: {scheme: null}});
-		expect(capture({scheme: null})).toMatchObject({_tag: "Declared", value: {scheme: null}});
+		const scheme = { rootAttribute: "data-theme" };
+		expect(capture({ scheme })).toMatchObject({ _tag: "Declared", value: { scheme } });
+		expect(capture({ locale: null })).toMatchObject({ _tag: "Declared", value: { scheme: null } });
+		expect(capture({ scheme: null })).toMatchObject({ _tag: "Declared", value: { scheme: null } });
 	});
 
 	it.each([
-		["a non-object scheme", {scheme: "dark"}, `"${UI_CAPTURE}.scheme" is not an object`],
+		["a non-object scheme", { scheme: "dark" }, `"${UI_CAPTURE}.scheme" is not an object`],
 		[
 			"a scheme with no rootAttribute",
-			{scheme: {}},
+			{ scheme: {} },
 			`"${UI_CAPTURE}.scheme.rootAttribute" is missing or not a lowercase HTML attribute name`,
 		],
 		[
 			"a rootAttribute that is no attribute name",
-			{scheme: {rootAttribute: "data theme"}},
+			{ scheme: { rootAttribute: "data theme" } },
 			`"${UI_CAPTURE}.scheme.rootAttribute" is missing or not a lowercase HTML attribute name`,
 		],
 		[
 			"an unknown key inside scheme",
-			{scheme: {rootAttribute: "data-theme", storageKey: "kampus.theme"}},
+			{ scheme: { rootAttribute: "data-theme", storageKey: "kampus.theme" } },
 			'unknown key "storageKey"',
 		],
 	])("refuses %s whole-value, naming the field it rejected", (_label, value, reason) => {
-		expect(capture(value)).toMatchObject({_tag: "Malformed", reason});
+		expect(capture(value)).toMatchObject({ _tag: "Malformed", reason });
 	});
 
 	it("carries a declared accent through, and leaves it null when absent", () => {
-		const accent = {rootAttribute: "data-color-theme", values: ["ember", "amber"]};
-		expect(capture({accent})).toMatchObject({_tag: "Declared", value: {accent}});
-		expect(capture({locale: null})).toMatchObject({_tag: "Declared", value: {accent: null}});
-		expect(capture({accent: null})).toMatchObject({_tag: "Declared", value: {accent: null}});
+		const accent = { rootAttribute: "data-color-theme", values: ["ember", "amber"] };
+		expect(capture({ accent })).toMatchObject({ _tag: "Declared", value: { accent } });
+		expect(capture({ locale: null })).toMatchObject({ _tag: "Declared", value: { accent: null } });
+		expect(capture({ accent: null })).toMatchObject({ _tag: "Declared", value: { accent: null } });
 	});
 
 	const ACCENT_VALUES = `"${UI_CAPTURE}.accent.values" is missing or not a non-empty list of distinct accent names`;
 	const ACCENT_ATTRIBUTE = `"${UI_CAPTURE}.accent.rootAttribute" is missing or not a lowercase HTML attribute name`;
 	it.each([
-		["a non-object accent", {accent: "amber"}, `"${UI_CAPTURE}.accent" is not an object`],
-		["an accent with no rootAttribute", {accent: {values: ["amber"]}}, ACCENT_ATTRIBUTE],
+		["a non-object accent", { accent: "amber" }, `"${UI_CAPTURE}.accent" is not an object`],
+		["an accent with no rootAttribute", { accent: { values: ["amber"] } }, ACCENT_ATTRIBUTE],
 		[
 			"a rootAttribute that is no attribute name",
-			{accent: {rootAttribute: "Data Color", values: ["amber"]}},
+			{ accent: { rootAttribute: "Data Color", values: ["amber"] } },
 			ACCENT_ATTRIBUTE,
 		],
-		["an accent with no values", {accent: {rootAttribute: "data-accent"}}, ACCENT_VALUES],
-		["an empty values list", {accent: {rootAttribute: "data-accent", values: []}}, ACCENT_VALUES],
+		["an accent with no values", { accent: { rootAttribute: "data-accent" } }, ACCENT_VALUES],
+		[
+			"an empty values list",
+			{ accent: { rootAttribute: "data-accent", values: [] } },
+			ACCENT_VALUES,
+		],
 		[
 			"a repeated value",
-			{accent: {rootAttribute: "data-accent", values: ["amber", "amber"]}},
+			{ accent: { rootAttribute: "data-accent", values: ["amber", "amber"] } },
 			ACCENT_VALUES,
 		],
 		[
 			"a value that is no accent name",
-			{accent: {rootAttribute: "data-accent", values: ["amber red"]}},
+			{ accent: { rootAttribute: "data-accent", values: ["amber red"] } },
 			ACCENT_VALUES,
 		],
 		[
 			"an unknown key inside accent",
-			{accent: {rootAttribute: "data-accent", values: ["amber"], storageKey: "k"}},
+			{ accent: { rootAttribute: "data-accent", values: ["amber"], storageKey: "k" } },
 			'unknown key "storageKey"',
 		],
 	])("refuses %s whole-value, naming the field it rejected", (_label, value, reason) => {
-		expect(capture(value)).toMatchObject({_tag: "Malformed", reason});
+		expect(capture(value)).toMatchObject({ _tag: "Malformed", reason });
 	});
 
 	it("reads an explicit null evidenceStore as no store", () => {
-		expect(capture({evidenceStore: null})).toMatchObject({
+		expect(capture({ evidenceStore: null })).toMatchObject({
 			_tag: "Declared",
 			layer: "tracked",
-			value: {evidenceStore: null},
+			value: { evidenceStore: null },
 		});
 	});
 
 	it.each([
 		[
 			"a fractional viewport",
-			{viewport: {width: 12.5, height: 900}},
+			{ viewport: { width: 12.5, height: 900 } },
 			`"${UI_CAPTURE}.viewport.width" is not a positive integer`,
 		],
-		["a non-object viewport", {viewport: 3}, `"${UI_CAPTURE}.viewport" is not an object`],
+		["a non-object viewport", { viewport: 3 }, `"${UI_CAPTURE}.viewport" is not an object`],
 		[
 			"an unknown key inside viewport",
-			{viewport: {width: 390, height: 844, depth: 2}},
+			{ viewport: { width: 390, height: 844, depth: 2 } },
 			'unknown key "depth"',
 		],
-		["an unknown key", {browser: "chromium"}, 'unknown key "browser"'],
+		["an unknown key", { browser: "chromium" }, 'unknown key "browser"'],
 		[
 			"an absolute storageState",
-			{storageState: "/Users/someone/session.json"},
+			{ storageState: "/Users/someone/session.json" },
 			`"${UI_CAPTURE}.storageState" is not a repo-root-relative path`,
 		],
 		[
 			"an empty storageState",
-			{storageState: "   "},
+			{ storageState: "   " },
 			`"${UI_CAPTURE}.storageState" is not a repo-root-relative path`,
 		],
 	])("refuses %s whole-value, naming the field it rejected", (_label, value, reason) => {
-		expect(capture(value)).toMatchObject({_tag: "Malformed", reason});
+		expect(capture(value)).toMatchObject({ _tag: "Malformed", reason });
 	});
 
 	it("refuses a non-object value", () => {
-		expect(resolve(load({[UI_CAPTURE]: []}), uiCaptureKey)).toMatchObject({
+		expect(resolve(load({ [UI_CAPTURE]: [] }), uiCaptureKey)).toMatchObject({
 			_tag: "Malformed",
 			reason: `\`${UI_CAPTURE}\` is not an object`,
 		});
@@ -405,8 +417,8 @@ describe("the emitted editor schema for uiSurfaces[].prefix", () => {
 
 	it("describes both shapes: one source root, or a non-empty list of them", () => {
 		const [single, list] = prefix?.oneOf ?? [];
-		expect(single).toMatchObject({type: "string", minLength: 1});
-		expect(list).toMatchObject({type: "array", minItems: 1, items: single});
+		expect(single).toMatchObject({ type: "string", minLength: 1 });
+		expect(list).toMatchObject({ type: "array", minItems: 1, items: single });
 	});
 
 	it("admits a directory and an exact file, and refuses a padded, absolute or parent-relative entry", () => {

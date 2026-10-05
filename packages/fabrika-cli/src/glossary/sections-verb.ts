@@ -2,9 +2,9 @@
  * `glossary sections` reads the live section names of a register.
  * See `glossary sections --help` for the bootstrap and row formats.
  */
-import {Effect, Path} from "effect";
-import {answer, refuse, type VerbOutcome} from "../verb.ts";
-import {BAD_SECTIONS} from "./codes.ts";
+import { Effect, Path } from "effect";
+import { answer, refuse, type VerbOutcome } from "../verb.ts";
+import { BAD_SECTIONS } from "./codes.ts";
 import {
 	type GlossaryEffect,
 	type RegisterFile,
@@ -29,7 +29,7 @@ interface SectionLine {
 	readonly rows: number;
 }
 
-const BOOTSTRAP: SectionLine = {register: "-", section: "bootstrap", rows: 0};
+const BOOTSTRAP: SectionLine = { register: "-", section: "bootstrap", rows: 0 };
 
 const messages = {
 	unreadable: (path: string, reason: string) =>
@@ -43,7 +43,7 @@ const scopeLine = (file: RegisterFile, bytes: number, state: string): string =>
 
 export const runSections = (options: SectionsOptions): GlossaryEffect<VerbOutcome> =>
 	Effect.gen(function* () {
-		const selected = selectRegisters(VERB, options.register, {allowed: true, refusal: ""});
+		const selected = selectRegisters(VERB, options.register, { allowed: true, refusal: "" });
 		if (selected._tag === "Refused") return selected.outcome;
 
 		const dir = yield* resolveDir(VERB, options.cwd, options.dir);
@@ -60,7 +60,7 @@ export const runSections = (options: SectionsOptions): GlossaryEffect<VerbOutcom
 				lines.push(BOOTSTRAP);
 				continue;
 			}
-			const {text, parsed} = state.value;
+			const { text, parsed } = state.value;
 			scope.push(scopeLine(file, new TextEncoder().encode(text).length, "present"));
 			if (parsed.headings === 0) {
 				// Content the verb can see and cannot place under any section — distinct from a register
@@ -76,7 +76,7 @@ export const runSections = (options: SectionsOptions): GlossaryEffect<VerbOutcom
 				continue;
 			}
 			for (const section of parsed.sections) {
-				lines.push({register: file.name, section: section.name, rows: section.rows.length});
+				lines.push({ register: file.name, section: section.name, rows: section.rows.length });
 			}
 		}
 

@@ -24,7 +24,7 @@
  * `Malformed` is what makes the caller refuse instead of resume.
  */
 
-import {type Heading, scanHeadings} from "./acceptance-criteria.ts";
+import { type Heading, scanHeadings } from "./acceptance-criteria.ts";
 import type {
 	NonEmptyReadonlyArray,
 	WireEmit,
@@ -52,7 +52,7 @@ declare const BINDING: unique symbol;
  * caller hold `"the founder mentioned it on a call"` as a binding, which is precisely the value the
  * read refuses — and {@link ticketOf} would then have to answer something about it.
  */
-export type CameFromBinding = string & {readonly [BINDING]: true};
+export type CameFromBinding = string & { readonly [BINDING]: true };
 
 const TICKET_LINE = /^#([0-9]+)$/;
 
@@ -121,10 +121,10 @@ const ATX_HEADING = /^ {0,3}#{1,6}[ \t]+/;
 const valueLineOf = (
 	lines: ReadonlyArray<string>,
 	heading: Heading,
-): {readonly text: string; readonly line: number} | null => {
+): { readonly text: string; readonly line: number } | null => {
 	for (const [offset, line] of lines.slice(heading.line).entries()) {
 		if (ATX_HEADING.test(line)) return null;
-		if (line.trim() !== "") return {text: line.trim(), line: heading.line + offset + 1};
+		if (line.trim() !== "") return { text: line.trim(), line: heading.line + offset + 1 };
 	}
 	return null;
 };
@@ -177,7 +177,7 @@ export const read = (body: string): CameFromRead => {
 			`line ${value.line}: "${value.text}"`,
 		);
 	}
-	return {_tag: "Found", value: {binding}};
+	return { _tag: "Found", value: { binding } };
 };
 
 /** Compose the section's bytes. Round-trips through {@link read}. */
@@ -188,8 +188,8 @@ export const renderBinding = (cameFrom: CameFrom): NonEmptyReadonlyArray<string>
 ];
 
 export type CameFromFields =
-	| {readonly _tag: "Fields"; readonly cameFrom: CameFrom}
-	| {readonly _tag: "Unusable"; readonly reason: string};
+	| { readonly _tag: "Fields"; readonly cameFrom: CameFrom }
+	| { readonly _tag: "Unusable"; readonly reason: string };
 
 /** `<key>: <value>` or `<key><TAB><value>`, so `wire read`'s own output pipes back into `wire emit`. */
 const FIELD_LINE = /^([A-Za-z-]+)[ \t]*[:\t][ \t]*(.*)$/;
@@ -227,19 +227,19 @@ export const parseFields = (fields: string): CameFromFields => {
 				_tag: "Unusable",
 				reason: `"${seen ?? ""}" is not a binding — expected "#<issue>" or the literal "${STANDALONE}"`,
 			}
-		: {_tag: "Fields", cameFrom: {binding}};
+		: { _tag: "Fields", cameFrom: { binding } };
 };
 
 /** The registry row's byte-level `emit`, bound to this module's typed core. */
 export const emitFromFields = (fields: string): WireEmit => {
 	const parsed = parseFields(fields);
 	return parsed._tag === "Fields"
-		? {_tag: "Composed", bytes: emit(parsed.cameFrom)}
-		: {_tag: "Unusable", reason: parsed.reason};
+		? { _tag: "Composed", bytes: emit(parsed.cameFrom) }
+		: { _tag: "Unusable", reason: parsed.reason };
 };
 
 /** The registry row's byte-level `read`, bound to this module's typed core. */
 export const readToLines = (artifact: string): WireReadLines => {
 	const result = read(artifact);
-	return result._tag === "Found" ? {_tag: "Found", value: renderBinding(result.value)} : result;
+	return result._tag === "Found" ? { _tag: "Found", value: renderBinding(result.value) } : result;
 };

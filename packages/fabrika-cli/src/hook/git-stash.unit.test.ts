@@ -1,6 +1,6 @@
-import {describe, expect, it} from "vitest";
-import type {ChildOutcome} from "../io/exec.ts";
-import {decideStash, findGitStash, PATTERN_DOC, readGitDirs} from "./git-stash.ts";
+import { describe, expect, it } from "vitest";
+import type { ChildOutcome } from "../io/exec.ts";
+import { decideStash, findGitStash, PATTERN_DOC, readGitDirs } from "./git-stash.ts";
 
 describe("findGitStash", () => {
 	it.each([
@@ -50,7 +50,7 @@ describe("findGitStash", () => {
 		"cat <<< 'git stash'",
 		"git reflog stash",
 	])("finds none in %j", (command) => {
-		expect(findGitStash(command)).toEqual({_tag: "None"});
+		expect(findGitStash(command)).toEqual({ _tag: "None" });
 	});
 
 	it("names the simple command that runs it", () => {
@@ -74,13 +74,17 @@ describe("readGitDirs", () => {
 	it("reads two absolute paths", () => {
 		expect(readGitDirs(ran("/r/.git/worktrees/a\n/r/.git\n"), 5)).toEqual({
 			_tag: "Read",
-			dirs: {gitDir: "/r/.git/worktrees/a", commonDir: "/r/.git"},
+			dirs: { gitDir: "/r/.git/worktrees/a", commonDir: "/r/.git" },
 		});
 	});
 
 	it.each<[string, ChildOutcome, string]>([
 		["a timeout", ran("", null), "did not finish within 5s"],
-		["an unstartable git", {_tag: "Unstartable", reason: "spawn git ENOENT"}, "could not run git"],
+		[
+			"an unstartable git",
+			{ _tag: "Unstartable", reason: "spawn git ENOENT" },
+			"could not run git",
+		],
 		["a failed rev-parse", ran("", 128, "fatal: not a git repository"), "not a git repository"],
 		["one line", ran("/r/.git\n"), "1 line(s)"],
 		["a relative path", ran(".git\n.git\n"), "relative path"],

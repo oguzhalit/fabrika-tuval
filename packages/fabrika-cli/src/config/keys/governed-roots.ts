@@ -18,9 +18,9 @@
  * `lane prove`), and off the working tree only for `review preview` over a diff file.
  */
 
-import {CONFIG_PATH} from "../document.ts";
-import {trimmedStrings} from "../entries.ts";
-import type {Decoded, KeyGroup} from "../key-group.ts";
+import { CONFIG_PATH } from "../document.ts";
+import { trimmedStrings } from "../entries.ts";
+import type { Decoded, KeyGroup } from "../key-group.ts";
 
 export const GOVERNED_ROOTS = "governedRoots";
 
@@ -42,7 +42,7 @@ const governs = (roots: ReadonlyArray<string>, path: string): boolean =>
 
 const decode = (raw: unknown): Decoded<ReadonlyArray<string>> => {
 	if (!Array.isArray(raw)) {
-		return {_tag: "Malformed", reason: `\`${GOVERNED_ROOTS}\` is not an array`};
+		return { _tag: "Malformed", reason: `\`${GOVERNED_ROOTS}\` is not an array` };
 	}
 	const roots = trimmedStrings(raw);
 	if (roots === null) {
@@ -53,8 +53,8 @@ const decode = (raw: unknown): Decoded<ReadonlyArray<string>> => {
 	}
 	// An empty list would read as "nothing is governed", silently disabling the gate this key drives.
 	return roots.length === 0
-		? {_tag: "Malformed", reason: `\`${GOVERNED_ROOTS}\` is empty — nothing would be governed`}
-		: {_tag: "Value", value: roots};
+		? { _tag: "Malformed", reason: `\`${GOVERNED_ROOTS}\` is empty — nothing would be governed` }
+		: { _tag: "Value", value: roots };
 };
 
 export const governedRootsKey: KeyGroup<ReadonlyArray<string>> = {
@@ -68,7 +68,7 @@ export const governedRootsKey: KeyGroup<ReadonlyArray<string>> = {
 	jsonSchema: {
 		type: "array",
 		description: `The repo-relative roots a diff derives the governance namespace over. Must cover ${CONFIG_PATH} itself — a config cannot un-govern itself.`,
-		items: {type: "string", minLength: 1},
+		items: { type: "string", minLength: 1 },
 		minItems: 1,
 	},
 };

@@ -1,16 +1,16 @@
 /** `lane recover` — the lane-9185 shape, what it records, and what it refuses to record. */
-import {Effect} from "effect";
-import {describe, expect, it} from "vitest";
-import type {ClaimStanding} from "../build/dead-claim.ts";
-import {fakeFs} from "../fakes.test-support.ts";
-import {appendText} from "../io/fs.ts";
-import {answer, refuse} from "../verb.ts";
-import {APPEND_UNKNOWN, LANE_UNREADABLE, PROOF_ABSENT} from "./codes.ts";
-import {coderTemplateText, parkCauseRead} from "./fixtures.test-support.ts";
-import {foldLog, parseLog} from "./fold.ts";
-import {compileText} from "./machine.ts";
-import type {ProofOutcome, ProveOptions} from "./prove-verb.ts";
-import {proofLabelOf} from "./prove-verb.ts";
+import { Effect } from "effect";
+import { describe, expect, it } from "vitest";
+import type { ClaimStanding } from "../build/dead-claim.ts";
+import { fakeFs } from "../fakes.test-support.ts";
+import { appendText } from "../io/fs.ts";
+import { answer, refuse } from "../verb.ts";
+import { APPEND_UNKNOWN, LANE_UNREADABLE, PROOF_ABSENT } from "./codes.ts";
+import { coderTemplateText, parkCauseRead } from "./fixtures.test-support.ts";
+import { foldLog, parseLog } from "./fold.ts";
+import { compileText } from "./machine.ts";
+import type { ProofOutcome, ProveOptions } from "./prove-verb.ts";
+import { proofLabelOf } from "./prove-verb.ts";
 import {
 	type BranchRead,
 	type PullsRead,
@@ -18,7 +18,7 @@ import {
 	queueReadOf,
 	runRecover,
 } from "./recover-verb.ts";
-import {DEFAULT_CHORES_ROOT, DEFAULT_LANES_ROOT} from "./store.ts";
+import { DEFAULT_CHORES_ROOT, DEFAULT_LANES_ROOT } from "./store.ts";
 
 /** A queue read for a sweep with no lane in `ship:queued`: asking it at all is the defect. */
 
@@ -29,12 +29,12 @@ const unaskedQueue = (pr: number): Effect.Effect<QueueRead> =>
 	});
 
 /** No recover case here reaches a closing merge, so a close is never owed. */
-const noClose = () => Effect.succeed({_tag: "Failed" as const, reason: "no close expected"});
+const noClose = () => Effect.succeed({ _tag: "Failed" as const, reason: "no close expected" });
 
 const at = (n: number): string => `2026-09-15T18:1${n}:00.000Z`;
 
 const line = (event: string, when: string, task = "issue"): string =>
-	`${JSON.stringify({task, event: `${task.toUpperCase()}.${event}`, at: when})}\n`;
+	`${JSON.stringify({ task, event: `${task.toUpperCase()}.${event}`, at: when })}\n`;
 
 /**
  * The coder machine with its one region duplicated under a second task, so one lane can stand in
@@ -46,7 +46,7 @@ const twoRegionTemplate = (): string => {
 	pipeline.states.child = JSON.parse(
 		JSON.stringify(pipeline.states.issue).replaceAll("ISSUE.", "CHILD."),
 	);
-	doc.machine.context.child = {...doc.machine.context.issue};
+	doc.machine.context.child = { ...doc.machine.context.issue };
 	return JSON.stringify(doc);
 };
 
@@ -56,7 +56,7 @@ const REVIEWING_LOG = `${line("WIP", at(0))}${line("DONE", at(1))}`;
 /** A lane still in `build`, whose leaf owes nothing: an open PR proves a `DONE` for a live builder too. */
 const BUILDING_LOG = line("WIP", at(0));
 
-const REVIEW_FOLD = JSON.stringify({pipeline: {issue: "review"}});
+const REVIEW_FOLD = JSON.stringify({ pipeline: { issue: "review" } });
 
 interface LaneFixture {
 	readonly lane: string;
@@ -67,13 +67,17 @@ interface LaneFixture {
 const tree = (lanes: ReadonlyArray<LaneFixture>) => {
 	const files: Record<string, string | null> = {};
 	const names: string[] = [];
-	for (const {lane, log, workflow} of lanes) {
+	for (const { lane, log, workflow } of lanes) {
 		names.push(lane);
 		const value = workflow === undefined ? coderTemplateText() : workflow;
 		if (value !== null) files[`${DEFAULT_LANES_ROOT}/${lane}/workflow.json`] = value;
 		if (log !== undefined) files[`${DEFAULT_LANES_ROOT}/${lane}/events.jsonl`] = log;
 	}
-	return fakeFs({files, dirs: {[DEFAULT_LANES_ROOT]: names}, directories: [DEFAULT_LANES_ROOT]});
+	return fakeFs({
+		files,
+		dirs: { [DEFAULT_LANES_ROOT]: names },
+		directories: [DEFAULT_LANES_ROOT],
+	});
 };
 
 /** A prover scripted per lane, recording every question the sweep and the append asked it. */
@@ -122,7 +126,7 @@ const sweep = (
 			}),
 			fs.layer,
 		),
-	).then((outcome) => ({outcome, asked, queued, fs}));
+	).then((outcome) => ({ outcome, asked, queued, fs }));
 };
 
 const proven = () =>
@@ -131,19 +135,19 @@ const proven = () =>
 			proof: "proven",
 			event: "PASS",
 			task: "issue",
-			evidence: {kind: "head-verdicts", pr: 9188},
+			evidence: { kind: "head-verdicts", pr: 9188 },
 		}),
 	);
 
 const rows = (stdout: string): ReadonlyArray<Record<string, unknown>> =>
-	(JSON.parse(stdout) as {lanes: ReadonlyArray<Record<string, unknown>>}).lanes;
+	(JSON.parse(stdout) as { lanes: ReadonlyArray<Record<string, unknown>> }).lanes;
 
 const logOf = (fs: ReturnType<typeof fakeFs>, lane: string): string | undefined =>
 	fs.written.get(`${DEFAULT_LANES_ROOT}/${lane}/events.jsonl`);
 
 describe("runRecover — the lane-9185 shape", () => {
 	it("records the PASS a killed reviewer proved on the PR and never wrote to the log", async () => {
-		const {outcome, fs} = await sweep(tree([{lane: "9185", log: REVIEWING_LOG}]), proven);
+		const { outcome, fs } = await sweep(tree([{ lane: "9185", log: REVIEWING_LOG }]), proven);
 		expect(outcome.code).toBe(0);
 		const [row] = rows(outcome.stdout);
 		expect(row).toMatchObject({
@@ -154,13 +158,13 @@ describe("runRecover — the lane-9185 shape", () => {
 			event: "PASS",
 			proof: "proven",
 			from: REVIEW_FOLD,
-			to: JSON.stringify({pipeline: {issue: "ship"}}),
+			to: JSON.stringify({ pipeline: { issue: "ship" } }),
 		});
 		expect(logOf(fs, "9185")).toContain('"ISSUE.PASS"');
 	});
 
 	it("leaves a lane whose PR carries no verdict exactly where it is", async () => {
-		const {outcome, fs} = await sweep(tree([{lane: "9185", log: REVIEWING_LOG}]), () =>
+		const { outcome, fs } = await sweep(tree([{ lane: "9185", log: REVIEWING_LOG }]), () =>
 			refuse(PROOF_ABSENT, "fabrika lane prove: unproven — no verdict at the head"),
 		);
 		expect(outcome.code).toBe(0);
@@ -177,14 +181,14 @@ describe("runRecover — the lane-9185 shape", () => {
 	});
 
 	it("asks the board once about a lane it cannot recover, and twice about one it can", async () => {
-		const unprovable = await sweep(tree([{lane: "9185", log: REVIEWING_LOG}]), () =>
+		const unprovable = await sweep(tree([{ lane: "9185", log: REVIEWING_LOG }]), () =>
 			refuse(PROOF_ABSENT, "unproven"),
 		);
 		expect(unprovable.asked).toHaveLength(1);
 
 		// The second read is `lane transition`'s own gate, which is the append declining to take this
 		// sweep's word for the proof rather than a read this verb makes twice.
-		const provable = await sweep(tree([{lane: "9185", log: REVIEWING_LOG}]), proven);
+		const provable = await sweep(tree([{ lane: "9185", log: REVIEWING_LOG }]), proven);
 		expect(provable.asked).toHaveLength(2);
 		expect(provable.asked.map((options) => options.event)).toEqual(["PASS", "PASS"]);
 	});
@@ -192,8 +196,8 @@ describe("runRecover — the lane-9185 shape", () => {
 
 describe("runRecover — what it will not record", () => {
 	it("records nothing on a `not-required` answer and reports it as its own row", async () => {
-		const {outcome, fs} = await sweep(tree([{lane: "9185", log: REVIEWING_LOG}]), () =>
-			answer(JSON.stringify({proof: "not-required", event: "PASS", task: "issue"})),
+		const { outcome, fs } = await sweep(tree([{ lane: "9185", log: REVIEWING_LOG }]), () =>
+			answer(JSON.stringify({ proof: "not-required", event: "PASS", task: "issue" })),
 		);
 		expect(outcome.code).toBe(0);
 		expect(rows(outcome.stdout)[0]).toMatchObject({
@@ -205,43 +209,43 @@ describe("runRecover — what it will not record", () => {
 	});
 
 	it("records nothing on an `uncontradicted` answer, which is the park's negative claim", async () => {
-		const {outcome, fs} = await sweep(tree([{lane: "9185", log: REVIEWING_LOG}]), () =>
-			answer(JSON.stringify({proof: "uncontradicted", event: "BLOCKED", task: "issue"})),
+		const { outcome, fs } = await sweep(tree([{ lane: "9185", log: REVIEWING_LOG }]), () =>
+			answer(JSON.stringify({ proof: "uncontradicted", event: "BLOCKED", task: "issue" })),
 		);
-		expect(rows(outcome.stdout)[0]).toMatchObject({verdict: "unproven", proof: "uncontradicted"});
+		expect(rows(outcome.stdout)[0]).toMatchObject({ verdict: "unproven", proof: "uncontradicted" });
 		expect(logOf(fs, "9185")).toBeUndefined();
 	});
 
 	it("never asks about a BLOCKED — the owed event out of a review cell is the PASS alone", async () => {
-		const {asked} = await sweep(tree([{lane: "9185", log: REVIEWING_LOG}]), proven);
+		const { asked } = await sweep(tree([{ lane: "9185", log: REVIEWING_LOG }]), proven);
 		expect(asked.map((options) => options.event)).not.toContain("BLOCKED");
 	});
 
 	it("spends no read on a terminal lane and reports it as terminal", async () => {
 		const terminal = `${REVIEWING_LOG}${line("PASS", at(2))}${line("DONE", at(3))}`;
-		const {outcome, asked} = await sweep(tree([{lane: "9185", log: terminal}]), proven);
+		const { outcome, asked } = await sweep(tree([{ lane: "9185", log: terminal }]), proven);
 		expect(asked).toHaveLength(0);
-		expect(rows(outcome.stdout)[0]).toMatchObject({key: "9185", verdict: "terminal"});
+		expect(rows(outcome.stdout)[0]).toMatchObject({ key: "9185", verdict: "terminal" });
 	});
 
 	it("reports a non-terminal lane owing nothing as `current`, unread", async () => {
-		const {outcome, asked} = await sweep(tree([{lane: "9185"}]), proven);
+		const { outcome, asked } = await sweep(tree([{ lane: "9185" }]), proven);
 		expect(asked).toHaveLength(0);
-		expect(rows(outcome.stdout)[0]).toMatchObject({key: "9185", verdict: "current"});
+		expect(rows(outcome.stdout)[0]).toMatchObject({ key: "9185", verdict: "current" });
 	});
 });
 
 describe("runRecover — the sweep", () => {
 	it("--check reports the move it would make and appends nothing", async () => {
-		const {outcome, asked, fs} = await sweep(
-			tree([{lane: "9185", log: REVIEWING_LOG}]),
+		const { outcome, asked, fs } = await sweep(
+			tree([{ lane: "9185", log: REVIEWING_LOG }]),
 			proven,
 			true,
 		);
 		expect(rows(outcome.stdout)[0]).toMatchObject({
 			verdict: "recoverable",
 			from: REVIEW_FOLD,
-			to: JSON.stringify({pipeline: {issue: "ship"}}),
+			to: JSON.stringify({ pipeline: { issue: "ship" } }),
 		});
 		expect(asked).toHaveLength(1);
 		expect(logOf(fs, "9185")).toBeUndefined();
@@ -249,10 +253,10 @@ describe("runRecover — the sweep", () => {
 	});
 
 	it("judges each lane on its own, so an unreadable one is a row rather than the end", async () => {
-		const {outcome, fs} = await sweep(
+		const { outcome, fs } = await sweep(
 			tree([
-				{lane: "9100", log: "{ not json\n"},
-				{lane: "9185", log: REVIEWING_LOG},
+				{ lane: "9100", log: "{ not json\n" },
+				{ lane: "9185", log: REVIEWING_LOG },
 			]),
 			proven,
 		);
@@ -268,10 +272,10 @@ describe("runRecover — the sweep", () => {
 		// `claimOf`'s build arm proves a `DONE` off one open PR, which a builder in a repair round has
 		// for the whole round — so a sweep owing a `DONE` would fold that lane to `review` under the
 		// live shell. The lane is reported `current` instead, and costs no board read.
-		const {asked, outcome} = await sweep(
+		const { asked, outcome } = await sweep(
 			tree([
-				{lane: "9100", log: BUILDING_LOG},
-				{lane: "9185", log: REVIEWING_LOG},
+				{ lane: "9100", log: BUILDING_LOG },
+				{ lane: "9185", log: REVIEWING_LOG },
 			]),
 			() => refuse(PROOF_ABSENT, "unproven"),
 		);
@@ -284,21 +288,21 @@ describe("runRecover — the sweep", () => {
 
 	it("re-derives the preview per append, so a second region does not leave a state the first left", async () => {
 		const log = `${REVIEWING_LOG}${line("WIP", at(2), "child")}${line("DONE", at(3), "child")}`;
-		const {outcome} = await sweep(
-			tree([{lane: "9185", log, workflow: twoRegionTemplate()}]),
+		const { outcome } = await sweep(
+			tree([{ lane: "9185", log, workflow: twoRegionTemplate() }]),
 			proven,
 			true,
 		);
 		expect(rows(outcome.stdout).map((row) => [row.task, row.from, row.to])).toEqual([
 			[
 				"issue",
-				JSON.stringify({pipeline: {issue: "review", child: "review"}}),
-				JSON.stringify({pipeline: {issue: "ship", child: "review"}}),
+				JSON.stringify({ pipeline: { issue: "review", child: "review" } }),
+				JSON.stringify({ pipeline: { issue: "ship", child: "review" } }),
 			],
 			[
 				"child",
-				JSON.stringify({pipeline: {issue: "ship", child: "review"}}),
-				JSON.stringify({pipeline: {issue: "ship", child: "ship"}}),
+				JSON.stringify({ pipeline: { issue: "ship", child: "review" } }),
+				JSON.stringify({ pipeline: { issue: "ship", child: "ship" } }),
 			],
 		]);
 	});
@@ -314,11 +318,11 @@ describe("runRecover — the sweep", () => {
 				[`${DEFAULT_LANES_ROOT}/9185/workflow.json`]: twoRegionTemplate(),
 				[`${DEFAULT_LANES_ROOT}/9185/events.jsonl`]: log,
 			},
-			dirs: {[DEFAULT_LANES_ROOT]: ["9185"]},
+			dirs: { [DEFAULT_LANES_ROOT]: ["9185"] },
 			directories: [DEFAULT_LANES_ROOT],
 		});
 		let asks = 0;
-		const {outcome} = await sweep(fs, (options) => {
+		const { outcome } = await sweep(fs, (options) => {
 			if (options.task !== "issue") return refuse(PROOF_ABSENT, "unproven");
 			asks += 1;
 			// The append's own gate read is the last thing before its lock, so a write here is exactly
@@ -338,15 +342,17 @@ describe("runRecover — the sweep", () => {
 		expect(recovered).toMatchObject({
 			task: "issue",
 			verdict: "recovered",
-			from: JSON.stringify({pipeline: {issue: "review", child: "review"}}),
-			to: JSON.stringify({pipeline: {issue: "ship", child: "ship"}}),
+			from: JSON.stringify({ pipeline: { issue: "review", child: "review" } }),
+			to: JSON.stringify({ pipeline: { issue: "ship", child: "ship" } }),
 		});
 		// What the offline preview says, and what the row would have reported had it kept it.
-		expect(recovered?.to).not.toBe(JSON.stringify({pipeline: {issue: "ship", child: "review"}}));
+		expect(recovered?.to).not.toBe(
+			JSON.stringify({ pipeline: { issue: "ship", child: "review" } }),
+		);
 		// The landing rides into the next region's `from`, so one stale read does not compound.
 		expect(second).toMatchObject({
 			task: "child",
-			from: JSON.stringify({pipeline: {issue: "ship", child: "ship"}}),
+			from: JSON.stringify({ pipeline: { issue: "ship", child: "ship" } }),
 		});
 	});
 
@@ -358,19 +364,19 @@ describe("runRecover — the sweep", () => {
 				[`${DEFAULT_LANES_ROOT}/9185/workflow.json`]: coderTemplateText(),
 				[`${DEFAULT_LANES_ROOT}/9185/events.jsonl`]: REVIEWING_LOG,
 			},
-			dirs: {[DEFAULT_LANES_ROOT]: ["9185"]},
+			dirs: { [DEFAULT_LANES_ROOT]: ["9185"] },
 			directories: [DEFAULT_LANES_ROOT],
 			mkdirExisting: [lock],
-			mtimes: {[lock]: new Date()},
+			mtimes: { [lock]: new Date() },
 		});
 		try {
-			const {outcome} = await sweep(fs, proven);
+			const { outcome } = await sweep(fs, proven);
 
 			// Exit 0: nothing is UNKNOWN here — the event was never validated, so the lane is knowably
 			// still missing it and the same event is still the right one to send.
 			expect(outcome.code).toBe(0);
 			const [row] = rows(outcome.stdout);
-			expect(row).toMatchObject({key: "9185", verdict: "contended", event: "PASS"});
+			expect(row).toMatchObject({ key: "9185", verdict: "contended", event: "PASS" });
 			expect(String(row?.reason)).toContain("re-run the sweep");
 			expect(outcome.stderr.join(" ")).toContain("only lost the ledger lock");
 			expect(logOf(fs, "9185")).toBeUndefined();
@@ -385,11 +391,11 @@ describe("runRecover — the sweep", () => {
 				[`${DEFAULT_LANES_ROOT}/9185/workflow.json`]: coderTemplateText(),
 				[`${DEFAULT_LANES_ROOT}/9185/events.jsonl`]: REVIEWING_LOG,
 			},
-			dirs: {[DEFAULT_LANES_ROOT]: ["9185"]},
+			dirs: { [DEFAULT_LANES_ROOT]: ["9185"] },
 			directories: [DEFAULT_LANES_ROOT],
 			unwritable: [`${DEFAULT_LANES_ROOT}/9185/events.jsonl`],
 		});
-		const {outcome} = await sweep(fs, proven);
+		const { outcome } = await sweep(fs, proven);
 		expect(outcome.code).toBe(APPEND_UNKNOWN);
 		expect(outcome.stdout).toBe("");
 		expect(outcome.stderr.join(" ")).toContain("9185");
@@ -397,8 +403,8 @@ describe("runRecover — the sweep", () => {
 	});
 
 	it("refuses rather than reporting an empty sweep when a root is there and cannot be listed", async () => {
-		const fs = fakeFs({dirs: {[DEFAULT_LANES_ROOT]: null}, directories: [DEFAULT_LANES_ROOT]});
-		const {outcome} = await sweep(fs, proven);
+		const fs = fakeFs({ dirs: { [DEFAULT_LANES_ROOT]: null }, directories: [DEFAULT_LANES_ROOT] });
+		const { outcome } = await sweep(fs, proven);
 		expect(outcome.code).toBe(LANE_UNREADABLE);
 		expect(outcome.stderr.join(" ")).toContain("UNKNOWN, never empty");
 	});
@@ -411,10 +417,10 @@ describe("runRecover — the sweep", () => {
 				[`${DEFAULT_LANES_ROOT}/9185/workflow.json`]: coderTemplateText(),
 				[`${DEFAULT_LANES_ROOT}/9185/events.jsonl`]: REVIEWING_LOG,
 			},
-			dirs: {[DEFAULT_LANES_ROOT]: ["9185"], [DEFAULT_CHORES_ROOT]: null},
+			dirs: { [DEFAULT_LANES_ROOT]: ["9185"], [DEFAULT_CHORES_ROOT]: null },
 			directories: [DEFAULT_LANES_ROOT, DEFAULT_CHORES_ROOT],
 		});
-		const {outcome, asked} = await sweep(fs, proven, false, [
+		const { outcome, asked } = await sweep(fs, proven, false, [
 			DEFAULT_LANES_ROOT,
 			DEFAULT_CHORES_ROOT,
 		]);
@@ -425,10 +431,10 @@ describe("runRecover — the sweep", () => {
 	});
 
 	it("reads an absent root as holding no lanes, which is not a fault", async () => {
-		const {outcome} = await sweep(fakeFs({}), proven);
+		const { outcome } = await sweep(fakeFs({}), proven);
 		expect(outcome.code).toBe(0);
 		expect(JSON.parse(outcome.stdout)).toMatchObject({
-			scanned: [{root: DEFAULT_LANES_ROOT, present: false, lanes: 0}],
+			scanned: [{ root: DEFAULT_LANES_ROOT, present: false, lanes: 0 }],
 			lanes: [],
 		});
 	});
@@ -447,14 +453,14 @@ const dead = (): ClaimStanding => ({
 /** The board saying no PR links the issue — the trace that means "nothing published". */
 const noPull = (): PullsRead => ({
 	_tag: "Read",
-	trace: {_tag: "None", why: "no open PR links #7778"},
+	trace: { _tag: "None", why: "no open PR links #7778" },
 	scanned: 0,
 });
 
 const spawnSweep = (
 	fs: ReturnType<typeof fakeFs>,
 	claim: ClaimStanding,
-	branches: BranchRead = {_tag: "Read", branches: []},
+	branches: BranchRead = { _tag: "Read", branches: [] },
 	check = false,
 	pull: PullsRead = noPull(),
 ) => {
@@ -465,7 +471,7 @@ const spawnSweep = (
 			// The spawn arm asks this prover nothing — its publication read is its own — so the only
 			// question reaching here is the one `runTransition` asks about the event it appends, and a
 			// `BLOCKED` out of a build leaf claims no artifact.
-			const outcome = answer(JSON.stringify({proof: null}));
+			const outcome = answer(JSON.stringify({ proof: null }));
 			return {
 				...outcome,
 				deferred: [],
@@ -505,10 +511,10 @@ const spawnSweep = (
 			}),
 			fs.layer,
 		),
-	).then((outcome) => ({outcome, claimed, asked, fs}));
+	).then((outcome) => ({ outcome, claimed, asked, fs }));
 };
 
-const building = () => tree([{lane: "7778", log: BUILDING_LOG}]);
+const building = () => tree([{ lane: "7778", log: BUILDING_LOG }]);
 
 /** The coder machine with its `WIP` landing in `build:ui` — the rendered-surface builder's leaf. */
 const uiTemplate = (): string => {
@@ -528,18 +534,18 @@ const childTemplate = (): string => {
 	pipeline.states.issue_9301 = JSON.parse(region.replaceAll("ISSUE.", "ISSUE_9301."));
 	pipeline.states.epic_9241 = JSON.parse(region.replaceAll("ISSUE.", "EPIC_9241."));
 	delete pipeline.states.issue;
-	doc.machine.context.issue_9301 = {...doc.machine.context.issue};
-	doc.machine.context.epic_9241 = {...doc.machine.context.issue};
+	doc.machine.context.issue_9301 = { ...doc.machine.context.issue };
+	doc.machine.context.epic_9241 = { ...doc.machine.context.issue };
 	delete doc.machine.context.issue;
 	return JSON.stringify(doc);
 };
 
-const BUILD_FOLD = JSON.stringify({pipeline: {issue: "build"}});
-const BLOCKED_FOLD = JSON.stringify({pipeline: {issue: "blocked"}});
+const BUILD_FOLD = JSON.stringify({ pipeline: { issue: "build" } });
+const BLOCKED_FOLD = JSON.stringify({ pipeline: { issue: "blocked" } });
 
 describe("runRecover --spawns — the lane-7778 shape", () => {
 	it("parks the lane a dead builder left with no branch and no PR", async () => {
-		const {outcome, claimed, fs} = await spawnSweep(building(), dead());
+		const { outcome, claimed, fs } = await spawnSweep(building(), dead());
 		expect(outcome.code).toBe(0);
 		const [row] = rows(outcome.stdout);
 		expect(row).toMatchObject({
@@ -559,7 +565,7 @@ describe("runRecover --spawns — the lane-7778 shape", () => {
 	});
 
 	it("leaves a live-but-quiet builder alone, ledger untouched", async () => {
-		const {outcome, fs} = await spawnSweep(building(), {
+		const { outcome, fs } = await spawnSweep(building(), {
 			_tag: "Alive",
 			token: "build:live-session:9092",
 			ageMinutes: 12,
@@ -568,75 +574,75 @@ describe("runRecover --spawns — the lane-7778 shape", () => {
 		});
 		expect(outcome.code).toBe(0);
 		const [row] = rows(outcome.stdout);
-		expect(row).toMatchObject({key: "7778", verdict: "working", state: "build"});
+		expect(row).toMatchObject({ key: "7778", verdict: "working", state: "build" });
 		expect(row?.reason).toContain("may still be working");
 		expect(logOf(fs, "7778")).toBeUndefined();
 	});
 
 	it("leaves a lane whose branch still carries the dead builder's commits", async () => {
-		const {outcome, fs} = await spawnSweep(building(), dead(), {
+		const { outcome, fs } = await spawnSweep(building(), dead(), {
 			_tag: "Read",
 			branches: ["build/7778-editor-focus-4f2a"],
 		});
 		expect(outcome.code).toBe(0);
 		const [row] = rows(outcome.stdout);
-		expect(row).toMatchObject({key: "7778", verdict: "working"});
+		expect(row).toMatchObject({ key: "7778", verdict: "working" });
 		expect(row?.reason).toContain("build/7778-editor-focus-4f2a");
 		expect(logOf(fs, "7778")).toBeUndefined();
 	});
 
 	it("leaves a lane whose builder published a PR before it went quiet", async () => {
-		const {outcome, fs} = await spawnSweep(building(), dead(), undefined, false, {
+		const { outcome, fs } = await spawnSweep(building(), dead(), undefined, false, {
 			_tag: "Read",
-			trace: {_tag: "One", pr: 9257},
+			trace: { _tag: "One", pr: 9257 },
 			scanned: 1,
 		});
 		expect(outcome.code).toBe(0);
 		const [row] = rows(outcome.stdout);
-		expect(row).toMatchObject({key: "7778", verdict: "working"});
+		expect(row).toMatchObject({ key: "7778", verdict: "working" });
 		expect(row?.reason).toContain("#9257 is open and links #7778");
 		expect(logOf(fs, "7778")).toBeUndefined();
 	});
 
 	it("never reads an unreadable claim as a dead one", async () => {
-		const {outcome, fs} = await spawnSweep(building(), {
+		const { outcome, fs } = await spawnSweep(building(), {
 			_tag: "Unknown",
 			reason: "the comment list could not be read",
 		});
 		expect(outcome.code).toBe(0);
 		const [row] = rows(outcome.stdout);
-		expect(row).toMatchObject({key: "7778", verdict: "unreadable"});
+		expect(row).toMatchObject({ key: "7778", verdict: "unreadable" });
 		expect(row?.reason).toContain("never read as dead");
 		expect(logOf(fs, "7778")).toBeUndefined();
 	});
 
 	it("never reads an unsettled PR question as a dead builder", async () => {
-		const {outcome, fs} = await spawnSweep(building(), dead(), undefined, false, {
+		const { outcome, fs } = await spawnSweep(building(), dead(), undefined, false, {
 			_tag: "Unknown",
 			reason: "the pull request search could not be read",
 		});
 		expect(outcome.code).toBe(0);
 		const [row] = rows(outcome.stdout);
-		expect(row).toMatchObject({key: "7778", verdict: "unreadable"});
+		expect(row).toMatchObject({ key: "7778", verdict: "unreadable" });
 		expect(row?.reason).toContain("never read as dead");
 		expect(logOf(fs, "7778")).toBeUndefined();
 	});
 
 	it("never reads several linking PRs as nothing published", async () => {
-		const {outcome, fs} = await spawnSweep(building(), dead(), undefined, false, {
+		const { outcome, fs } = await spawnSweep(building(), dead(), undefined, false, {
 			_tag: "Read",
-			trace: {_tag: "Many", prs: [9257, 9258]},
+			trace: { _tag: "Many", prs: [9257, 9258] },
 			scanned: 2,
 		});
 		expect(outcome.code).toBe(0);
 		const [row] = rows(outcome.stdout);
-		expect(row).toMatchObject({key: "7778", verdict: "unreadable"});
+		expect(row).toMatchObject({ key: "7778", verdict: "unreadable" });
 		expect(row?.reason).toContain("#9257, #9258 are open and link #7778");
 		expect(logOf(fs, "7778")).toBeUndefined();
 	});
 
 	it("carries no event on a row that judged the lane to owe none", async () => {
-		const {outcome} = await spawnSweep(building(), {
+		const { outcome } = await spawnSweep(building(), {
 			_tag: "Alive",
 			token: "build:live-session:9092",
 			ageMinutes: 12,
@@ -644,21 +650,21 @@ describe("runRecover --spawns — the lane-7778 shape", () => {
 			scanned: 1,
 		});
 		const [row] = rows(outcome.stdout);
-		expect(row).toMatchObject({verdict: "working"});
+		expect(row).toMatchObject({ verdict: "working" });
 		expect(row).not.toHaveProperty("event");
 	});
 
 	it("reads a lane holding no claim at all as a dispatch, not a park", async () => {
-		const {outcome, fs} = await spawnSweep(building(), {_tag: "Unclaimed", scanned: 0});
+		const { outcome, fs } = await spawnSweep(building(), { _tag: "Unclaimed", scanned: 0 });
 		expect(outcome.code).toBe(0);
 		const [row] = rows(outcome.stdout);
-		expect(row).toMatchObject({key: "7778", verdict: "working"});
+		expect(row).toMatchObject({ key: "7778", verdict: "working" });
 		expect(row?.reason).toContain("no build claim stands on #7778");
 		expect(logOf(fs, "7778")).toBeUndefined();
 	});
 
 	it("withholds the append under --check and still names where the park would land", async () => {
-		const {outcome, fs} = await spawnSweep(building(), dead(), undefined, true);
+		const { outcome, fs } = await spawnSweep(building(), dead(), undefined, true);
 		expect(outcome.code).toBe(0);
 		const [row] = rows(outcome.stdout);
 		expect(row).toMatchObject({
@@ -672,9 +678,9 @@ describe("runRecover --spawns — the lane-7778 shape", () => {
 	});
 
 	it("spends no board read on a building lane when the arm is off", async () => {
-		const {outcome, asked, fs} = await sweep(building(), proven);
+		const { outcome, asked, fs } = await sweep(building(), proven);
 		expect(outcome.code).toBe(0);
-		expect(rows(outcome.stdout)[0]).toMatchObject({key: "7778", verdict: "current"});
+		expect(rows(outcome.stdout)[0]).toMatchObject({ key: "7778", verdict: "current" });
 		expect(asked).toHaveLength(0);
 		expect(logOf(fs, "7778")).toBeUndefined();
 	});
@@ -682,8 +688,8 @@ describe("runRecover --spawns — the lane-7778 shape", () => {
 
 describe("runRecover --spawns — the populations beside a single lane's plain build leaf", () => {
 	it("parks a dead rendered-surface builder on a PR read it actually made", async () => {
-		const ui = tree([{lane: "7778", log: BUILDING_LOG, workflow: uiTemplate()}]);
-		const {outcome, asked, fs} = await spawnSweep(ui, dead());
+		const ui = tree([{ lane: "7778", log: BUILDING_LOG, workflow: uiTemplate() }]);
+		const { outcome, asked, fs } = await spawnSweep(ui, dead());
 		expect(outcome.code).toBe(0);
 		const [row] = rows(outcome.stdout);
 		expect(row).toMatchObject({
@@ -701,23 +707,23 @@ describe("runRecover --spawns — the populations beside a single lane's plain b
 	});
 
 	it("leaves a rendered-surface lane whose builder published a PR", async () => {
-		const ui = tree([{lane: "7778", log: BUILDING_LOG, workflow: uiTemplate()}]);
-		const {outcome, fs} = await spawnSweep(ui, dead(), undefined, false, {
+		const ui = tree([{ lane: "7778", log: BUILDING_LOG, workflow: uiTemplate() }]);
+		const { outcome, fs } = await spawnSweep(ui, dead(), undefined, false, {
 			_tag: "Read",
-			trace: {_tag: "One", pr: 9257},
+			trace: { _tag: "One", pr: 9257 },
 			scanned: 1,
 		});
 		const [row] = rows(outcome.stdout);
-		expect(row).toMatchObject({key: "7778", verdict: "working", state: "build:ui"});
+		expect(row).toMatchObject({ key: "7778", verdict: "working", state: "build:ui" });
 		expect(row?.reason).toContain("#9257 is open and links #7778");
 		expect(logOf(fs, "7778")).toBeUndefined();
 	});
 
 	it("parks an epic child on its branch read and spends no board read on a PR it cannot have", async () => {
 		const child = tree([
-			{lane: "9241", log: line("WIP", at(0), "issue_9301"), workflow: childTemplate()},
+			{ lane: "9241", log: line("WIP", at(0), "issue_9301"), workflow: childTemplate() },
 		]);
-		const {outcome, claimed, asked, fs} = await spawnSweep(child, dead());
+		const { outcome, claimed, asked, fs } = await spawnSweep(child, dead());
 		expect(outcome.code).toBe(0);
 		const parked = rows(outcome.stdout).find((row) => row.verdict === "parked");
 		expect(parked).toMatchObject({
@@ -737,14 +743,14 @@ describe("runRecover --spawns — the populations beside a single lane's plain b
 
 	it("leaves an epic child whose lane branch still carries its commits", async () => {
 		const child = tree([
-			{lane: "9241", log: line("WIP", at(0), "issue_9301"), workflow: childTemplate()},
+			{ lane: "9241", log: line("WIP", at(0), "issue_9301"), workflow: childTemplate() },
 		]);
-		const {outcome, asked, fs} = await spawnSweep(child, dead(), {
+		const { outcome, asked, fs } = await spawnSweep(child, dead(), {
 			_tag: "Read",
 			branches: ["build/9301-editor-focus-4f2a"],
 		});
 		const row = rows(outcome.stdout).find((entry) => entry.task === "issue_9301");
-		expect(row).toMatchObject({verdict: "working"});
+		expect(row).toMatchObject({ verdict: "working" });
 		expect(row?.reason).toContain("build/9301-editor-focus-4f2a");
 		expect(asked).toEqual([]);
 		expect(logOf(fs, "9241")).toBeUndefined();
@@ -754,13 +760,13 @@ describe("runRecover --spawns — the populations beside a single lane's plain b
 /** Lane 9455's shape: the shipper recorded `QUEUED` and its watch ended before the queue merged. */
 const QUEUED_PR = "https://forge.example/o/r/pull/9877";
 const prLine = (event: string, when: string, pr: string): string =>
-	`${JSON.stringify({task: "issue", event: `ISSUE.${event}`, at: when, pr})}\n`;
+	`${JSON.stringify({ task: "issue", event: `ISSUE.${event}`, at: when, pr })}\n`;
 const QUEUED_LOG = `${line("WIP", at(0))}${prLine("DONE", at(1), QUEUED_PR)}${line("PASS", at(2))}${prLine("WIP", at(3), QUEUED_PR)}`;
-const QUEUED_FOLD = JSON.stringify({pipeline: {issue: "ship:queued"}});
+const QUEUED_FOLD = JSON.stringify({ pipeline: { issue: "ship:queued" } });
 
 /** A prover answering `not-required`, which is what a ship-stage `DONE` or `FAIL` claims. */
 const notRequired = (options: ProveOptions) =>
-	answer(JSON.stringify({proof: "not-required", event: options.event, task: "issue"}));
+	answer(JSON.stringify({ proof: "not-required", event: options.event, task: "issue" }));
 
 /** The task's state after the sweep's append, re-folded off the bytes it left. */
 const refolded = (fs: ReturnType<typeof fakeFs>, lane: string) => {
@@ -775,7 +781,7 @@ const refolded = (fs: ReturnType<typeof fakeFs>, lane: string) => {
 
 const queueSweep = (read: QueueRead, check = false) =>
 	sweep(
-		tree([{lane: "9455", log: QUEUED_LOG}]),
+		tree([{ lane: "9455", log: QUEUED_LOG }]),
 		notRequired,
 		check,
 		[DEFAULT_LANES_ROOT],
@@ -784,7 +790,7 @@ const queueSweep = (read: QueueRead, check = false) =>
 
 describe("runRecover — the ship:queued arm", () => {
 	it("records LANDED through `lane report` when the queue merged the PR, folding the lane to shipped", async () => {
-		const {outcome, asked, queued, fs} = await queueSweep({_tag: "Read", answer: "landed"});
+		const { outcome, asked, queued, fs } = await queueSweep({ _tag: "Read", answer: "landed" });
 		expect(outcome.code).toBe(0);
 		expect(queued).toEqual([9877]);
 		const [row] = rows(outcome.stdout);
@@ -801,7 +807,9 @@ describe("runRecover — the ship:queued arm", () => {
 			to: "complete",
 		});
 		// `lane report`'s proof is asked about the DONE off this very PR, so its closure is read.
-		expect(asked).toEqual([expect.objectContaining({event: "DONE", task: "issue", pr: QUEUED_PR})]);
+		expect(asked).toEqual([
+			expect.objectContaining({ event: "DONE", task: "issue", pr: QUEUED_PR }),
+		]);
 		const last = (logOf(fs, "9455") ?? "").split("\n").filter(Boolean).at(-1) ?? "";
 		expect(last).toContain('"ISSUE.DONE"');
 		expect(last).toContain(QUEUED_PR);
@@ -809,24 +817,24 @@ describe("runRecover — the ship:queued arm", () => {
 	});
 
 	it("records EJECTED when the queue ejected the PR, and the lane spends one retry back into build", async () => {
-		const {outcome, fs} = await queueSweep({_tag: "Read", answer: "ejected"});
+		const { outcome, fs } = await queueSweep({ _tag: "Read", answer: "ejected" });
 		expect(outcome.code).toBe(0);
 		expect(rows(outcome.stdout)[0]).toMatchObject({
 			verdict: "settled",
 			answer: "ejected",
 			token: "EJECTED",
 			event: "FAIL",
-			to: JSON.stringify({pipeline: {issue: "build"}}),
+			to: JSON.stringify({ pipeline: { issue: "build" } }),
 		});
 		expect(logOf(fs, "9455")).toContain('"ISSUE.FAIL"');
-		expect(refolded(fs, "9455")).toMatchObject({type: "build", retries: 1});
+		expect(refolded(fs, "9455")).toMatchObject({ type: "build", retries: 1 });
 	});
 
 	it("appends nothing on `unresolved` and reports a waiting row naming the answer, so no wait is spent", async () => {
-		const {outcome, asked, fs} = await queueSweep({_tag: "Read", answer: "unresolved"});
+		const { outcome, asked, fs } = await queueSweep({ _tag: "Read", answer: "unresolved" });
 		expect(outcome.code).toBe(0);
 		const [row] = rows(outcome.stdout);
-		expect(row).toMatchObject({verdict: "waiting", answer: "unresolved", pr: QUEUED_PR});
+		expect(row).toMatchObject({ verdict: "waiting", answer: "unresolved", pr: QUEUED_PR });
 		expect(String(row?.reason)).toContain('"unresolved"');
 		expect(row).not.toHaveProperty("token");
 		expect(row).not.toHaveProperty("owes");
@@ -836,7 +844,7 @@ describe("runRecover — the ship:queued arm", () => {
 	});
 
 	it("appends nothing on `parked` and reports a disarm-owed row naming the post-enqueue disarm, never a wait", async () => {
-		const {outcome, asked, fs} = await queueSweep({_tag: "Read", answer: "parked"});
+		const { outcome, asked, fs } = await queueSweep({ _tag: "Read", answer: "parked" });
 		expect(outcome.code).toBe(0);
 		const [row] = rows(outcome.stdout);
 		expect(row).toMatchObject({
@@ -848,27 +856,30 @@ describe("runRecover — the ship:queued arm", () => {
 		expect(String(row?.reason)).toContain("`ship disarm 9877 --site post-enqueue`");
 		expect(String(row?.reason)).toContain("not a wait");
 		expect(row).not.toHaveProperty("token");
-		expect(JSON.parse(outcome.stdout).summary).toMatchObject({"disarm-owed": 1, waiting: 0});
+		expect(JSON.parse(outcome.stdout).summary).toMatchObject({ "disarm-owed": 1, waiting: 0 });
 		expect(asked).toHaveLength(0);
 		expect(logOf(fs, "9455")).toBeUndefined();
 		expect(outcome.stderr.join("\n")).toContain("ship disarm 9877 --site post-enqueue");
 	});
 
 	it("is its own row and appends nothing when the reconcile read did not answer", async () => {
-		const {outcome, asked, fs} = await queueSweep({
+		const { outcome, asked, fs } = await queueSweep({
 			_tag: "Unknown",
 			reason: "ship reconcile exited 11: every poll failed to read #9877",
 		});
 		expect(outcome.code).toBe(0);
 		const [row] = rows(outcome.stdout);
-		expect(row).toMatchObject({verdict: "unreadable", pr: QUEUED_PR});
+		expect(row).toMatchObject({ verdict: "unreadable", pr: QUEUED_PR });
 		expect(String(row?.reason)).toContain("exited 11");
 		expect(asked).toHaveLength(0);
 		expect(logOf(fs, "9455")).toBeUndefined();
 	});
 
 	it("under --check runs the read and reports what would be recorded, appending nothing", async () => {
-		const {outcome, queued, asked, fs} = await queueSweep({_tag: "Read", answer: "landed"}, true);
+		const { outcome, queued, asked, fs } = await queueSweep(
+			{ _tag: "Read", answer: "landed" },
+			true,
+		);
 		expect(outcome.code).toBe(0);
 		expect(queued).toEqual([9877]);
 		expect(rows(outcome.stdout)[0]).toMatchObject({
@@ -884,15 +895,15 @@ describe("runRecover — the ship:queued arm", () => {
 
 	it("asks the queue nothing when the task's ledger names no PR URL", async () => {
 		const bare = `${line("WIP", at(0))}${line("DONE", at(1))}${line("PASS", at(2))}${line("WIP", at(3))}`;
-		const {outcome, queued, fs} = await sweep(
-			tree([{lane: "9455", log: bare}]),
+		const { outcome, queued, fs } = await sweep(
+			tree([{ lane: "9455", log: bare }]),
 			notRequired,
 			false,
 			[DEFAULT_LANES_ROOT],
-			() => ({_tag: "Read", answer: "landed"}),
+			() => ({ _tag: "Read", answer: "landed" }),
 		);
 		expect(queued).toEqual([]);
-		expect(rows(outcome.stdout)[0]).toMatchObject({verdict: "unreadable", state: "ship:queued"});
+		expect(rows(outcome.stdout)[0]).toMatchObject({ verdict: "unreadable", state: "ship:queued" });
 		expect(logOf(fs, "9455")).toBeUndefined();
 	});
 });
@@ -900,7 +911,7 @@ describe("runRecover — the ship:queued arm", () => {
 describe("queueReadOf — `ship reconcile --json` relayed", () => {
 	it("reads each of the four outcomes", () => {
 		for (const said of ["landed", "ejected", "unresolved", "parked"] as const) {
-			expect(queueReadOf(answer(JSON.stringify({outcome: said, polls: 1})))).toEqual({
+			expect(queueReadOf(answer(JSON.stringify({ outcome: said, polls: 1 })))).toEqual({
 				_tag: "Read",
 				answer: said,
 			});
@@ -909,12 +920,12 @@ describe("queueReadOf — `ship reconcile --json` relayed", () => {
 
 	it("reads a non-zero exit as UNKNOWN, carrying the code", () => {
 		const read = queueReadOf(refuse(11, "ship reconcile: every poll failed to read #9877"));
-		expect(read).toMatchObject({_tag: "Unknown"});
+		expect(read).toMatchObject({ _tag: "Unknown" });
 		expect(read._tag === "Unknown" ? read.reason : "").toContain("exited 11");
 	});
 
 	it("reads an answer naming no known outcome as UNKNOWN, never a wait", () => {
 		expect(queueReadOf(answer("reconcile\tlanded\t1\t0"))._tag).toBe("Unknown");
-		expect(queueReadOf(answer(JSON.stringify({outcome: "merged"})))._tag).toBe("Unknown");
+		expect(queueReadOf(answer(JSON.stringify({ outcome: "merged" })))._tag).toBe("Unknown");
 	});
 });

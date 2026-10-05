@@ -13,9 +13,9 @@
  * @ruling https://github.com/kamp-us/phoenix/issues/6469
  */
 
-import {Effect, type FileSystem, type Path} from "effect";
-import {boardVocabularyKey} from "../config/keys/board-vocabulary.ts";
-import {type Read, readKey} from "../config/read-key.ts";
+import { Effect, type FileSystem, type Path } from "effect";
+import { boardVocabularyKey } from "../config/keys/board-vocabulary.ts";
+import { type Read, readKey } from "../config/read-key.ts";
 
 /** One standing lane: a label that is a home in its own right, and what routing to it means. */
 export interface StandingLane {
@@ -40,7 +40,7 @@ export const readStandingLanes = (
 		const read = yield* readKey(cwd, boardVocabularyKey);
 		return read._tag === "Refused"
 			? read
-			: {_tag: "Value" as const, value: read.value.standingLanes, note: read.note};
+			: { _tag: "Value" as const, value: read.value.standingLanes, note: read.note };
 	});
 
 /**
@@ -55,4 +55,4 @@ export const offeredLanes = (
 ): ReadonlyArray<StandingLane> =>
 	declared
 		.filter((label) => present.has(label))
-		.map((label) => ({label, meaning: DECLARED_MEANING}));
+		.map((label) => ({ label, meaning: DECLARED_MEANING }));
