@@ -1,10 +1,10 @@
 name: 🚀 PR Preview Deploy (Proxmox QEMU Guest Agent + Cloudflare)
 
 on:
+  pull_request:
+    types: [opened, synchronize, closed]
   pull_request_review:
     types: [submitted]
-  pull_request:
-    types: [closed]
 
 env:
   REGISTRY: ghcr.io
@@ -16,7 +16,8 @@ env:
 
 jobs:
   deploy-preview:
-    if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
+    if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize')
+    name: 🚀 Deploy Preview (pr-${{ github.event.number }}-draw)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -183,6 +184,100 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `✅ **Preview Ready!**\n\n🌐 **URL:** [${previewUrl}](${previewUrl})\n\n📦 **Deployment Details:**\n- Container: pr-${{ env.PR_NUMBER }}-draw\n- Image: ${registryImage}\n- Port: 3000:80\n- Host: Proxmox QEMU Guest (via Guest Agent)\n- Route: Cloudflare Tunnel CNAME\n\n**Test it:**\n1. Visit the preview URL\n2. Test your changes\n3. Share feedback\n\n🧹 Preview cleanup on PR close`
+            })
+
+  deploy-production:
+    if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
+    name: 🌍 Deploy Production (draw.oguzsak.com)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      packages: write
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: 🐳 Build Docker image
+        run: |
+          docker build \
+            -t ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:latest \
+            -f apps/goal-hedef/Dockerfile \
+            .
+
+      - name: 🔐 Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📤 Push Docker image
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: 🚀 Deploy to Production (draw.oguzsak.com)
+        env:
+          PROXMOX_HOST: ${{ secrets.PROXMOX_HOST }}
+          PROXMOX_PORT: ${{ secrets.PROXMOX_PORT }}
+          PROXMOX_USER: ${{ secrets.PROXMOX_USER }}
+          PROXMOX_TOKEN_NAME: ${{ secrets.PROXMOX_TOKEN_NAME }}
+          PROXMOX_TOKEN_SECRET: ${{ secrets.PROXMOX_TOKEN_SECRET }}
+          REGISTRY_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:latest
+        run: |
+          set -e
+
+          PROXMOX_API="https://${PROXMOX_HOST}:${PROXMOX_PORT}/api2/json"
+          API_TOKEN="PVEAPIToken=${PROXMOX_USER}!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_SECRET}"
+
+          echo "🌍 Deploying to production (draw.oguzsak.com)..."
+
+          # Get node name
+          NODE_RESPONSE=$(curl -s -k -w "\n%{http_code}" \
+            -H "Authorization: $API_TOKEN" \
+            "${PROXMOX_API}/cluster/resources?type=vm")
+
+          HTTP_CODE=$(echo "$NODE_RESPONSE" | tail -n1)
+          RESPONSE_BODY=$(echo "$NODE_RESPONSE" | head -n-1)
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Proxmox API error (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+
+          NODE=$(echo "$RESPONSE_BODY" | jq -r ".data[] | select(.vmid | tonumber == ${{ env.GUEST_VMID }}) | .node" | head -1)
+
+          # Deploy production container
+          COMMANDS_B64=$(echo -n "echo '${{ secrets.GITHUB_TOKEN }}' | docker login -u ${{ github.actor }} --password-stdin ${{ env.REGISTRY }} && \
+            docker pull ${{ env.REGISTRY_IMAGE }} && \
+            docker stop draw 2>/dev/null || true && \
+            docker rm draw 2>/dev/null || true && \
+            docker run -d \
+              --name draw \
+              -p 80:${{ env.CONTAINER_PORT }} \
+              ${{ env.REGISTRY_IMAGE }}" | base64 -w 0)
+
+          curl -s -k -X POST \
+            -H "Authorization: $API_TOKEN" \
+            -H "Content-Type: application/json" \
+            "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
+            -d "{\"command\": \"sh -c 'echo $COMMANDS_B64 | base64 -d | bash'\"}" | jq '.'
+
+          echo "✅ Production deployment complete!"
+
+      - name: 💬 Production Ready Comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: ${{ github.event.pull_request.number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🌍 **Production Live!**\n\n🎉 Your changes are now live at https://draw.oguzsak.com\n\nDeployed from PR #${{ github.event.pull_request.number }}`
             })
 
   cleanup-preview:
