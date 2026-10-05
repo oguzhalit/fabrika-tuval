@@ -3339,7 +3339,7 @@ export const DrawingLayer: React.FC = () => {
 
 			{/* Excalidraw Tarzı Üst Yüzen Neo-Brutalist Araç Çubuğu (Sadece Çizim Araçları) */}
 			{isDrawingMode && (
-				<div className="absolute top-[60px] sm:top-[68px] left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2 select-none max-w-full px-2">
+				<div className="absolute top-[60px] sm:top-[68px] left-1/2 -translate-x-1/2 z-[101] flex flex-col items-center gap-2 select-none max-w-full px-2 pointer-events-auto">
 					<aside
 						aria-label="Çizim ve Şekil Araçları"
 						className="flex items-center gap-1 p-1 sm:p-1.5 bg-white border-2.5 sm:border-3 border-black rounded-xl sm:rounded-2xl shadow-[3px_3px_0px_0px_#000] sm:shadow-[5px_5px_0px_0px_#000] relative max-w-[calc(100vw-1rem)] overflow-x-auto touch-pan-x scrollbar-none"
