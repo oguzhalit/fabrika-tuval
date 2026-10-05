@@ -10,7 +10,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: goal-hedef-preview
   CONTAINER_PORT: 80
-  GUEST_VMID: "100"
+  GUEST_VMID: "101"
 
 jobs:
   deploy-preview:
