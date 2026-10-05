@@ -201,16 +201,13 @@ jobs:
           # Step 2: Pull image
           exec_guest_cmd "📥 Pull image" "sh -c 'docker pull $REGISTRY_IMAGE'"
 
-          # Step 3: Stop existing
-          exec_guest_cmd "🛑 Stop existing container" "sh -c 'docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
+          # Step 3: Stop & Remove existing (force)
+          exec_guest_cmd "🛑 Stop & Remove existing container" "sh -c 'docker rm -f pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
 
-          # Step 4: Remove existing
-          exec_guest_cmd "🗑️ Remove existing container" "sh -c 'docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
-
-          # Step 5: Run new container
+          # Step 4: Run new container
           exec_guest_cmd "🐳 Run new container" "sh -c 'docker run -d --name pr-${{ env.PR_NUMBER }}-draw -p 3000:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
 
-          # Step 6: Verify
+          # Step 5: Verify
           exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=pr-${{ env.PR_NUMBER }}-draw'"
 
           echo ""
@@ -369,16 +366,13 @@ jobs:
           # Step 2: Pull image
           exec_guest_cmd "📥 Pull image" "sh -c 'docker pull $REGISTRY_IMAGE'"
 
-          # Step 3: Stop existing
-          exec_guest_cmd "🛑 Stop existing container" "sh -c 'docker stop draw 2>/dev/null || true'"
+          # Step 3: Stop & Remove existing (force)
+          exec_guest_cmd "🛑 Stop & Remove existing container" "sh -c 'docker rm -f draw 2>/dev/null || true'"
 
-          # Step 4: Remove existing
-          exec_guest_cmd "🗑️ Remove existing container" "sh -c 'docker rm draw 2>/dev/null || true'"
-
-          # Step 5: Run new container
+          # Step 4: Run new container
           exec_guest_cmd "🐳 Run new container" "sh -c 'docker run -d --name draw -p 80:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
 
-          # Step 6: Verify
+          # Step 5: Verify
           exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=draw'"
 
           echo ""
@@ -463,8 +457,7 @@ jobs:
             return 0
           }
 
-          exec_guest_cmd "Stop container" "sh -c 'docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
-          exec_guest_cmd "Remove container" "sh -c 'docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
+          exec_guest_cmd "Remove container (force)" "sh -c 'docker rm -f pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
 
       - name: 🌐 Remove DNS Record
         env:
