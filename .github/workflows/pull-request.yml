@@ -140,6 +140,8 @@ jobs:
             # Extract actual command from "sh -c 'command'" pattern
             if [[ $cmd =~ ^sh\ -c\ \'(.*)\'$ ]]; then
               local actual_cmd="${BASH_REMATCH[1]}"
+              echo "  [DEBUG] Matched sh -c pattern"
+              echo "  [DEBUG] actual_cmd: $actual_cmd"
               RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
                 -H "Authorization: $PVE_TOKEN" \
                 --data-urlencode "command=sh" \
@@ -147,11 +149,13 @@ jobs:
                 --data-urlencode "command=$actual_cmd")
             else
               # Fallback for simple commands
+              echo "  [DEBUG] Simple command (no sh -c)"
               RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
                 -H "Authorization: $PVE_TOKEN" \
                 --data-urlencode "command=$cmd")
             fi
 
+            echo "  [DEBUG] curl response: $RESP"
             PID=$(echo "$RESP" | jq -r '.data.pid // empty')
             if [ -z "$PID" ]; then
               echo "❌ Failed to start command"
@@ -309,6 +313,8 @@ jobs:
             # Extract actual command from "sh -c 'command'" pattern
             if [[ $cmd =~ ^sh\ -c\ \'(.*)\'$ ]]; then
               local actual_cmd="${BASH_REMATCH[1]}"
+              echo "  [DEBUG] Matched sh -c pattern"
+              echo "  [DEBUG] actual_cmd: $actual_cmd"
               RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
                 -H "Authorization: $PVE_TOKEN" \
                 --data-urlencode "command=sh" \
@@ -316,11 +322,13 @@ jobs:
                 --data-urlencode "command=$actual_cmd")
             else
               # Fallback for simple commands
+              echo "  [DEBUG] Simple command (no sh -c)"
               RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
                 -H "Authorization: $PVE_TOKEN" \
                 --data-urlencode "command=$cmd")
             fi
 
+            echo "  [DEBUG] curl response: $RESP"
             PID=$(echo "$RESP" | jq -r '.data.pid // empty')
             if [ -z "$PID" ]; then
               echo "❌ Failed to start command"
