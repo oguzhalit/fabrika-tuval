@@ -148,28 +148,44 @@ jobs:
             local cmd=$2
             echo "⏳ $desc..."
 
-            # Start command
-            EXEC=$(curl -s -k -X POST -H "Authorization: $API_TOKEN" -H "Content-Type: application/json" \
+            # Start command (capture HTTP status)
+            EXEC=$(curl -s -k -w "\n%{http_code}" -X POST -H "Authorization: $API_TOKEN" -H "Content-Type: application/json" \
               "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
               -d "{\"command\": \"$cmd\"}")
 
-            PID=$(echo "$EXEC" | jq -r '.data.pid // empty')
+            HTTP_CODE=$(echo "$EXEC" | tail -n1)
+            EXEC_BODY=$(echo "$EXEC" | head -n-1)
+
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "❌ API Error (HTTP $HTTP_CODE): $EXEC_BODY"
+              return 1
+            fi
+
+            PID=$(echo "$EXEC_BODY" | jq -r '.data.pid // empty')
             if [ -z "$PID" ]; then
-              echo "❌ Failed to start command: $EXEC"
+              echo "❌ Failed to start command: $EXEC_BODY"
               return 1
             fi
 
             # Wait for completion (max 30s)
             for i in {1..30}; do
               sleep 1
-              STATUS=$(curl -s -k -H "Authorization: $API_TOKEN" \
+              STATUS=$(curl -s -k -w "\n%{http_code}" -H "Authorization: $API_TOKEN" \
                 "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec-status?pid=${PID}")
 
-              EXITED=$(echo "$STATUS" | jq -r '.data.exited // empty')
+              STATUS_CODE=$(echo "$STATUS" | tail -n1)
+              STATUS_BODY=$(echo "$STATUS" | head -n-1)
+
+              if [ "$STATUS_CODE" != "200" ]; then
+                echo "⚠️ Status API error (HTTP $STATUS_CODE), retrying..."
+                continue
+              fi
+
+              EXITED=$(echo "$STATUS_BODY" | jq -r '.data.exited // empty')
               if [ "$EXITED" = "true" ]; then
-                OUT=$(echo "$STATUS" | jq -r '.data."out-data" // ""' | base64 -d 2>/dev/null || echo "")
-                ERR=$(echo "$STATUS" | jq -r '.data."err-data" // ""' | base64 -d 2>/dev/null || echo "")
-                EXIT_CODE=$(echo "$STATUS" | jq -r '.data."exit-code" // 0')
+                OUT=$(echo "$STATUS_BODY" | jq -r '.data."out-data" // ""' | base64 -d 2>/dev/null || echo "")
+                ERR=$(echo "$STATUS_BODY" | jq -r '.data."err-data" // ""' | base64 -d 2>/dev/null || echo "")
+                EXIT_CODE=$(echo "$STATUS_BODY" | jq -r '.data."exit-code" // 0')
 
                 if [ -n "$OUT" ]; then echo "Output: $OUT"; fi
                 if [ -n "$ERR" ]; then echo "Error: $ERR"; fi
@@ -296,14 +312,22 @@ jobs:
             local cmd=$2
             echo "⏳ $desc..."
 
-            # Start command
-            EXEC=$(curl -s -k -X POST -H "Authorization: $API_TOKEN" -H "Content-Type: application/json" \
+            # Start command (capture HTTP status)
+            EXEC=$(curl -s -k -w "\n%{http_code}" -X POST -H "Authorization: $API_TOKEN" -H "Content-Type: application/json" \
               "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
               -d "{\"command\": \"$cmd\"}")
 
-            PID=$(echo "$EXEC" | jq -r '.data.pid // empty')
+            HTTP_CODE=$(echo "$EXEC" | tail -n1)
+            EXEC_BODY=$(echo "$EXEC" | head -n-1)
+
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "❌ API Error (HTTP $HTTP_CODE): $EXEC_BODY"
+              return 1
+            fi
+
+            PID=$(echo "$EXEC_BODY" | jq -r '.data.pid // empty')
             if [ -z "$PID" ]; then
-              echo "❌ Failed to start command: $EXEC"
+              echo "❌ Failed to start command: $EXEC_BODY"
               return 1
             fi
 
@@ -395,24 +419,34 @@ jobs:
             local cmd=$2
             echo "⏳ $desc..."
 
-            # Start command
-            EXEC=$(curl -s -k -X POST -H "Authorization: $API_TOKEN" -H "Content-Type: application/json" \
+            # Start command (capture HTTP status)
+            EXEC=$(curl -s -k -w "\n%{http_code}" -X POST -H "Authorization: $API_TOKEN" -H "Content-Type: application/json" \
               "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
               -d "{\"command\": \"$cmd\"}" 2>/dev/null)
 
-            PID=$(echo "$EXEC" | jq -r '.data.pid // empty')
+            HTTP_CODE=$(echo "$EXEC" | tail -n1)
+            EXEC_BODY=$(echo "$EXEC" | head -n-1)
+
+            PID=$(echo "$EXEC_BODY" | jq -r '.data.pid // empty')
             if [ -z "$PID" ]; then
-              echo "⚠️ Could not start cleanup, skipping"
+              echo "⚠️ Could not start cleanup (HTTP $HTTP_CODE), skipping"
               return 0
             fi
 
             # Wait for completion (max 15s)
             for i in {1..15}; do
               sleep 1
-              STATUS=$(curl -s -k -H "Authorization: $API_TOKEN" \
+              STATUS=$(curl -s -k -w "\n%{http_code}" -H "Authorization: $API_TOKEN" \
                 "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec-status?pid=${PID}" 2>/dev/null)
 
-              EXITED=$(echo "$STATUS" | jq -r '.data.exited // empty')
+              STATUS_CODE=$(echo "$STATUS" | tail -n1)
+              STATUS_BODY=$(echo "$STATUS" | head -n-1)
+
+              if [ "$STATUS_CODE" != "200" ]; then
+                continue
+              fi
+
+              EXITED=$(echo "$STATUS_BODY" | jq -r '.data.exited // empty')
               if [ "$EXITED" = "true" ]; then
                 echo "✅ Cleaned up"
                 return 0
