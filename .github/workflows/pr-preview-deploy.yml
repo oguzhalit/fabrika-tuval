@@ -15,7 +15,6 @@ env:
 jobs:
   deploy-preview:
     if: github.event.action != 'closed'
-    needs: [build]
     runs-on: ubuntu-latest
     permissions:
       contents: read
