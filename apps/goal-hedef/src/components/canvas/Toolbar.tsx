@@ -12,6 +12,7 @@ import {
 	Upload,
 } from "lucide-react";
 import React, { useRef } from "react";
+import { clampCanvasPosition, TOOLBAR_CONFIG } from "../../constants/canvas";
 import { useGoalStore } from "../../store/useGoalStore";
 import { ActiveOSView } from "../../types/goal";
 import { triggerGoalCelebration } from "../../utils/confetti";
@@ -242,9 +243,20 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 
 					{/* + Kilometre Taşı */}
 					<button
-						onClick={() => addMilestone("YENİ AŞAMA")}
+						onClick={(e) => {
+							// Get button position in toolbar (at bottom center)
+							const button = e.currentTarget as HTMLElement;
+							const rect = button.getBoundingClientRect();
+
+							// Position stage above the toolbar button
+							// Button is at bottom-center, so place stage above it
+							const xPos = clampCanvasPosition(rect.left, true);
+							const yPos = clampCanvasPosition(rect.top + TOOLBAR_CONFIG.POSITION_OFFSET_Y, false);
+
+							addMilestone("YENİ AŞAMA", undefined, { x: xPos, y: yPos });
+						}}
 						className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-2 bg-[#00C2CB] hover:bg-[#00abb3] text-black font-black text-[10px] sm:text-xs border-2 sm:border-3 border-black rounded-lg sm:rounded-2xl shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] uppercase transition-all whitespace-nowrap shrink-0 active:translate-x-[1px] active:translate-y-[1px]"
-						title="Kilometre Taşı / Aşama Ekle"
+						title="Tıklanan konumun yakınında yeni aşama oluştur"
 					>
 						<Flag className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
 						<span>+ AŞAMA</span>

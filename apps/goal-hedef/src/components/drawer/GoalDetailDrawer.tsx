@@ -17,6 +17,7 @@ import {
 	X,
 } from "lucide-react";
 import React, { useState } from "react";
+import { clampCanvasPosition, DRAWER_CONFIG } from "../../constants/canvas";
 import { useGoalStore } from "../../store/useGoalStore";
 import { GoalCategory, GoalPriority, GoalStatus } from "../../types/goal";
 import { triggerSmallCelebration } from "../../utils/confetti";
@@ -896,8 +897,34 @@ export const GoalDetailDrawer: React.FC = () => {
 							<div className="flex items-center justify-between">
 								<h4 className="text-xs font-black uppercase">BAĞLI ALT AŞAMALAR</h4>
 								<button
-									onClick={() => addMilestone("YENİ AŞAMA", selectedGoalId)}
-									className="text-xs font-black uppercase bg-[#00C2CB] border-2 border-black rounded-lg px-2 py-0.5 shadow-[2px_2px_0px_0px_#000]"
+									onClick={(e) => {
+										// Get button position and drawer width from DOM
+										const button = e.currentTarget as HTMLElement;
+										const rect = button.getBoundingClientRect();
+
+										// Read drawer width from the drawer element
+										const drawerElement = document.querySelector(
+											".fixed.inset-y-0.right-0.w-\\[580px\\]",
+										);
+										const drawerWidth = drawerElement
+											? drawerElement.clientWidth
+											: DRAWER_CONFIG.WIDTH;
+
+										// Calculate position on canvas, offsetting from button
+										// Position to the left of the drawer, at button height
+										const xPos = clampCanvasPosition(
+											rect.left - drawerWidth / 2 + DRAWER_CONFIG.DROPDOWN_OFFSET_X,
+											true,
+										);
+										const yPos = clampCanvasPosition(
+											rect.top + DRAWER_CONFIG.DROPDOWN_OFFSET_Y,
+											false,
+										);
+
+										addMilestone("YENİ AŞAMA", selectedGoalId, { x: xPos, y: yPos });
+									}}
+									className="text-xs font-black uppercase bg-[#00C2CB] border-2 border-black rounded-lg px-2 py-0.5 shadow-[2px_2px_0px_0px_#000] hover:bg-[#00b3bb] active:shadow-none transition-all"
+									title="Tıklanan konumun yakınında yeni aşama oluştur"
 								>
 									+ AŞAMA
 								</button>
