@@ -199,36 +199,40 @@ jobs:
           CONTAINER_SUFFIX=$(date +%s%N | tail -c 6)
           CONTAINER_NAME="pr-${{ env.PR_NUMBER }}-draw-$CONTAINER_SUFFIX"
 
-          # Find first available port (3000-3999) using netstat
+          # Find first available port (3000-3999)
           PREVIEW_PORT=""
-          NETSTAT_OUTPUT=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
-            -H "Authorization: $PVE_TOKEN" \
-            --data-urlencode "command=sh" \
-            --data-urlencode "command=-c" \
-            --data-urlencode "command=netstat -tln | grep LISTEN | awk '{print \$4}' | cut -d: -f2 | sort -n" 2>/dev/null)
+          for port in {3000..3999}; do
+            # Test if port is available using /dev/tcp
+            PORT_TEST=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+              -H "Authorization: $PVE_TOKEN" \
+              --data-urlencode "command=sh" \
+              --data-urlencode "command=-c" \
+              --data-urlencode "command=(timeout 1 bash -c '</dev/tcp/localhost/$port') 2>/dev/null && echo USED || echo FREE" 2>/dev/null)
 
-          PID=$(echo "$NETSTAT_OUTPUT" | jq -r '.data.pid // empty')
-          if [ -n "$PID" ]; then
-            for i in {1..10}; do
-              sleep 1
+            PID=$(echo "$PORT_TEST" | jq -r '.data.pid // empty')
+            if [ -z "$PID" ]; then
+              PREVIEW_PORT=$port
+              break
+            fi
+
+            # Check result (max 3s wait)
+            for i in {1..6}; do
+              sleep 0.5
               STATUS=$(curl -s -k -X GET "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec-status?pid=$PID" \
                 -H "Authorization: $PVE_TOKEN")
               EXITED=$(echo "$STATUS" | jq -r '.data.exited // 0')
               if [ "$EXITED" -eq 1 ]; then
-                USED_PORTS=$(echo "$STATUS" | jq -r '.data["out-data"] // ""')
+                RESULT=$(echo "$STATUS" | jq -r '.data["out-data"] // "UNKNOWN"' | tr -d ' \n')
+                if [ "$RESULT" = "FREE" ]; then
+                  PREVIEW_PORT=$port
+                  break 2
+                fi
                 break
               fi
             done
-          fi
-
-          # Find first available port
-          for port in {3000..3999}; do
-            if ! echo "$USED_PORTS" | grep -q "^$port$"; then
-              PREVIEW_PORT=$port
-              break
-            fi
           done
 
+          # Fallback
           if [ -z "$PREVIEW_PORT" ]; then
             PREVIEW_PORT=$((3000 + ${{ env.PR_NUMBER }}))
           fi
