@@ -20,16 +20,12 @@ import { MeetingNode } from "../nodes/MeetingNode";
 import { MilestoneNode } from "../nodes/MilestoneNode";
 import { StickyNoteNode } from "../nodes/StickyNoteNode";
 import { CanvasDropZone } from "./CanvasDropZone";
-import { DraggableItemsPanel } from "./DraggableItemsPanel";
 import { DrawingLayer } from "./DrawingLayer";
-import { Toolbar } from "./Toolbar";
+import { RightSidebar } from "./RightSidebar";
 
-interface GoalCanvasProps {
-	onToggleGoalBox: () => void;
-	isGoalBoxOpen: boolean;
-}
+interface GoalCanvasProps {}
 
-export const GoalCanvas: React.FC<GoalCanvasProps> = ({ onToggleGoalBox, isGoalBoxOpen }) => {
+export const GoalCanvas: React.FC<GoalCanvasProps> = () => {
 	const nodes = useGoalStore((s) => s.nodes);
 	const edges = useGoalStore((s) => s.edges);
 	const onNodesChange = useGoalStore((s) => s.onNodesChange);
@@ -87,11 +83,8 @@ export const GoalCanvas: React.FC<GoalCanvasProps> = ({ onToggleGoalBox, isGoalB
 				maxZoom={2}
 			>
 				<CanvasDropZone draggedItemTypeRef={draggedItemTypeRef}>
-					{/* Draggable Items Panel - Right Sidebar */}
-					<DraggableItemsPanel onDragStart={handleDragStart} />
-
-					{/* Toolbar with ReactFlow context access */}
-					<Toolbar onToggleGoalBox={onToggleGoalBox} isGoalBoxOpen={isGoalBoxOpen} />
+					{/* Right Sidebar - Draggable Items + Tools */}
+					<RightSidebar onDragStart={handleDragStart} />
 
 					{/* React Flow Viewport'una Doğrudan Bağlı Çizim Katmanı */}
 					<DrawingLayer />

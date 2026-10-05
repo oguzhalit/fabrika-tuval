@@ -24,13 +24,13 @@ export function App() {
 	const renderActiveView = () => {
 		switch (activeView) {
 			case "canvas":
-				return <GoalCanvas onToggleGoalBox={handleToggleGoalBox} isGoalBoxOpen={isGoalBoxOpen} />;
+				return <GoalCanvas />;
 			case "roadmap":
 				return <RoadmapView />;
 			case "habits":
 				return <HabitView />;
 			default:
-				return <GoalCanvas onToggleGoalBox={handleToggleGoalBox} isGoalBoxOpen={isGoalBoxOpen} />;
+				return <GoalCanvas />;
 		}
 	};
 
