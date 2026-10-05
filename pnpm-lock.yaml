@@ -32,10 +32,12 @@ catalogs:
       version: 2.9.0
 
 overrides:
-  react: 19.2.7
-  react-dom: 19.2.7
   '@cloudflare/workers-types': 5.20260901.1
-  effect: 4.0.0-rc.112
+  '@earendil-works/chord': 0.85.1
+  '@earendil-works/pi-agent-core': 0.85.1
+  '@earendil-works/pi-ai': 0.85.1
+  '@earendil-works/pi-telemetry': 0.85.1
+  '@earendil-works/pi-tui': 0.85.1
   '@effect/platform-bun': 4.0.0-rc.112
   '@effect/platform-node': 4.0.0-rc.112
   '@effect/platform-node-shared': 4.0.0-rc.112
@@ -43,13 +45,16 @@ overrides:
   '@effect/sql-pg': 4.0.0-rc.112
   '@effect/sql-sqlite-do': 4.0.0-rc.112
   '@effect/vitest': 4.0.0-rc.112
-  '@earendil-works/chord': 0.85.1
-  '@earendil-works/pi-agent-core': 0.85.1
-  '@earendil-works/pi-ai': 0.85.1
-  '@earendil-works/pi-telemetry': 0.85.1
-  '@earendil-works/pi-tui': 0.85.1
+  effect: 4.0.0-rc.112
+  react: 19.2.7
+  react-dom: 19.2.7
 
 pnpmfileChecksum: sha256-ENBbpnCM6iEJZwql5y+XIdMMnEPnYSp47O6FmPjp4UI=
+
+patchedDependencies:
+  effect@4.0.0-rc.112:
+    hash: aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11
+    path: patches/effect@4.0.0-rc.112.patch
 
 importers:
 
@@ -181,19 +186,19 @@ importers:
     dependencies:
       '@demlik/tea':
         specifier: 'catalog:'
-        version: 0.19.0(effect@4.0.0-rc.112)(fast-check@4.10.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.11(@types/node@25.9.9)(vite@6.4.3(@types/node@25.9.9)(jiti@1.21.7)(yaml@2.9.0)))(ws@8.22.0)
+        version: 0.19.0(effect@4.0.0-rc.112(patch_hash=aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11))(fast-check@4.10.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.11(@types/node@25.9.9)(vite@6.4.3(@types/node@25.9.9)(jiti@1.21.7)(yaml@2.9.0)))(ws@8.22.0)
       '@effect/platform-node':
         specifier: 4.0.0-rc.112
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.3.0)
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112(patch_hash=aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11))(redis@6.3.0)
       '@effect/platform-node-shared':
         specifier: 4.0.0-rc.112
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112(patch_hash=aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11))
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.63.0
       effect:
         specifier: 4.0.0-rc.112
-        version: 4.0.0-rc.112
+        version: 4.0.0-rc.112(patch_hash=aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11)
       fast-xml-parser:
         specifier: 'catalog:'
         version: 5.8.0
@@ -206,7 +211,7 @@ importers:
         version: 0.36.5
       '@effect/vitest':
         specifier: 4.0.0-rc.112
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11(@types/node@25.9.9)(vite@6.4.3(@types/node@25.9.9)(jiti@1.21.7)(yaml@2.9.0)))
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112(patch_hash=aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11))(vitest@4.1.11(@types/node@25.9.9)(vite@6.4.3(@types/node@25.9.9)(jiti@1.21.7)(yaml@2.9.0)))
       '@types/node':
         specifier: 'catalog:'
         version: 25.9.9
@@ -2332,30 +2337,30 @@ snapshots:
   '@biomejs/cli-win32-x64@2.5.15':
     optional: true
 
-  '@demlik/tea@0.19.0(effect@4.0.0-rc.112)(fast-check@4.10.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.11(@types/node@25.9.9)(vite@6.4.3(@types/node@25.9.9)(jiti@1.21.7)(yaml@2.9.0)))(ws@8.22.0)':
+  '@demlik/tea@0.19.0(effect@4.0.0-rc.112(patch_hash=aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11))(fast-check@4.10.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.11(@types/node@25.9.9)(vite@6.4.3(@types/node@25.9.9)(jiti@1.21.7)(yaml@2.9.0)))(ws@8.22.0)':
     dependencies:
       '@standard-schema/spec': 1.1.0
     optionalDependencies:
-      effect: 4.0.0-rc.112
+      effect: 4.0.0-rc.112(patch_hash=aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11)
       fast-check: 4.10.2
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
       vitest: 4.1.11(@types/node@25.9.9)(vite@6.4.3(@types/node@25.9.9)(jiti@1.21.7)(yaml@2.9.0))
       ws: 8.22.0
 
-  '@effect/platform-node-shared@4.0.0-rc.112(effect@4.0.0-rc.112)':
+  '@effect/platform-node-shared@4.0.0-rc.112(effect@4.0.0-rc.112(patch_hash=aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11))':
     dependencies:
       '@types/ws': 8.18.2
-      effect: 4.0.0-rc.112
+      effect: 4.0.0-rc.112(patch_hash=aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11)
       ws: 8.22.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform-node@4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.3.0)':
+  '@effect/platform-node@4.0.0-rc.112(effect@4.0.0-rc.112(patch_hash=aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11))(redis@6.3.0)':
     dependencies:
-      '@effect/platform-node-shared': 4.0.0-rc.112(effect@4.0.0-rc.112)
-      effect: 4.0.0-rc.112
+      '@effect/platform-node-shared': 4.0.0-rc.112(effect@4.0.0-rc.112(patch_hash=aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11))
+      effect: 4.0.0-rc.112(patch_hash=aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11)
       mime: 4.1.0
       redis: 6.3.0
       undici: 8.11.2
@@ -2394,9 +2399,9 @@ snapshots:
       '@effect/tsgo-win32-arm64': 0.36.5
       '@effect/tsgo-win32-x64': 0.36.5
 
-  '@effect/vitest@4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11(@types/node@25.9.9)(vite@6.4.3(@types/node@25.9.9)(jiti@1.21.7)(yaml@2.9.0)))':
+  '@effect/vitest@4.0.0-rc.112(effect@4.0.0-rc.112(patch_hash=aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11))(vitest@4.1.11(@types/node@25.9.9)(vite@6.4.3(@types/node@25.9.9)(jiti@1.21.7)(yaml@2.9.0)))':
     dependencies:
-      effect: 4.0.0-rc.112
+      effect: 4.0.0-rc.112(patch_hash=aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11)
       vitest: 4.1.11(@types/node@25.9.9)(vite@6.4.3(@types/node@25.9.9)(jiti@1.21.7)(yaml@2.9.0))
 
   '@esbuild/aix-ppc64@0.25.12':
@@ -3168,7 +3173,7 @@ snapshots:
 
   dlv@1.1.3: {}
 
-  effect@4.0.0-rc.112:
+  effect@4.0.0-rc.112(patch_hash=aad6096dd5b19a9e6aa57e5f7752c4c561d1491ac6c22b311082497aee42cf11):
     dependencies:
       fast-check: 4.10.2
       msgpackr: 2.1.0
