@@ -6,11 +6,15 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy entire workspace
+# Copy monorepo root files and directories
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY . ./
 
-# Install dependencies
-RUN pnpm install
+# Install dependencies - skip build scripts (not needed in Docker)
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+ENV CI=true
+RUN pnpm install --ignore-scripts
 
 # Build production bundle for goal-hedef app
 RUN pnpm --filter=@hedef/goal-hedef-canvas build
