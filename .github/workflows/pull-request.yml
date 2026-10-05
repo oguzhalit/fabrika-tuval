@@ -264,7 +264,8 @@ jobs:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           CF_DOMAIN: ${{ secrets.CLOUDFLARE_DOMAIN }}
-          HOMELAB_HOST: ${{ secrets.HOMELAB_HOST }}
+          TUNNEL_CNAME: ${{ secrets.CLOUDFLARE_TUNNEL_CNAME }}
+          HOMELAB_IP: ${{ secrets.HOMELAB_IP }}
           PVE_TOKEN: PVEAPIToken=${{ secrets.PROXMOX_USER }}@pve!${{ secrets.PROXMOX_TOKEN_NAME }}=${{ secrets.PROXMOX_TOKEN_SECRET }}
           PVE_URL: https://${{ secrets.PROXMOX_HOST }}:${{ secrets.PROXMOX_PORT }}
           NODE: prox
@@ -273,34 +274,34 @@ jobs:
           set -e
           SUBDOMAIN="pr-${{ env.PR_NUMBER }}-draw"
 
-          # Update Cloudflare Tunnel config to route dynamic port
+          # 1. Add ingress rule to Cloudflare Tunnel config (uses HOMELAB_IP not localhost)
           UPDATE_TUNNEL=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
             -H "Authorization: $PVE_TOKEN" \
             --data-urlencode "command=sh" \
             --data-urlencode "command=-c" \
-            --data-urlencode "command=sed -i \"/^  - hostname: $SUBDOMAIN/,/^    service:/c\\  - hostname: $SUBDOMAIN\\n    service: http://localhost:$PREVIEW_PORT\" /root/.cloudflared/config.yml && cloudflared service install && systemctl restart cloudflared")
+            --data-urlencode "command=sed -i '/^ingress:/a\  - hostname: $SUBDOMAIN\n    service: http://$HOMELAB_IP:$PREVIEW_PORT' /root/.cloudflared/config.yml && systemctl restart cloudflared")
 
           PID=$(echo "$UPDATE_TUNNEL" | jq -r '.data.pid // empty')
           if [ -n "$PID" ]; then
-            for i in {1..10}; do
+            for i in {1..15}; do
               sleep 1
               STATUS=$(curl -s -k -X GET "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec-status?pid=$PID" \
                 -H "Authorization: $PVE_TOKEN")
               EXITED=$(echo "$STATUS" | jq -r '.data.exited // 0')
               if [ "$EXITED" -eq 1 ]; then
-                echo "✅ Tunnel config updated"
+                echo "✅ Tunnel config updated and restarted"
                 break
               fi
             done
           fi
 
-          # Create DNS record
+          # 2. Create DNS CNAME record pointing to Tunnel CNAME (NOT home.oguzsak.com!)
           curl -s -X POST -H "Authorization: Bearer $CF_API_TOKEN" \
             -H "Content-Type: application/json" \
             https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records \
-            -d "{\"type\": \"CNAME\", \"name\": \"$SUBDOMAIN\", \"content\": \"$HOMELAB_HOST\", \"ttl\": 1, \"proxied\": true}" | jq '.'
+            -d "{\"type\": \"CNAME\", \"name\": \"$SUBDOMAIN\", \"content\": \"$TUNNEL_CNAME\", \"ttl\": 1, \"proxied\": false}" | jq '.'
 
-          echo "✅ DNS record created"
+          echo "✅ DNS CNAME record created: $SUBDOMAIN → $TUNNEL_CNAME"
 
       - name: 💬 Comment Preview URL
         env:
