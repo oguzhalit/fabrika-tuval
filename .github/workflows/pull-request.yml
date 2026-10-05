@@ -116,107 +116,95 @@ jobs:
 
       - name: 🚀 Deploy to Homelab
         env:
-          PROXMOX_HOST: ${{ secrets.PROXMOX_HOST }}
-          PROXMOX_PORT: ${{ secrets.PROXMOX_PORT }}
-          PROXMOX_USER: ${{ secrets.PROXMOX_USER }}
-          PROXMOX_TOKEN_NAME: ${{ secrets.PROXMOX_TOKEN_NAME }}
-          PROXMOX_TOKEN_SECRET: ${{ secrets.PROXMOX_TOKEN_SECRET }}
+          PVE_TOKEN: PVEAPIToken=${{ secrets.PROXMOX_USER }}@pve!${{ secrets.PROXMOX_TOKEN_NAME }}=${{ secrets.PROXMOX_TOKEN_SECRET }}
+          PVE_URL: https://${{ secrets.PROXMOX_HOST }}:${{ secrets.PROXMOX_PORT }}
           REGISTRY_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          REGISTRY: ${{ env.REGISTRY }}
+          NODE: prox
+          VMID: ${{ env.GUEST_VMID }}
         run: |
           set -e
-          PROXMOX_API="https://${PROXMOX_HOST}:${PROXMOX_PORT}/api2/json"
-          API_TOKEN="PVEAPIToken=${PROXMOX_USER}@pve!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_SECRET}"
 
-          echo "📍 Connecting to Proxmox..."
-          NODE_RESPONSE=$(curl -s -k -w "\n%{http_code}" -H "Authorization: $API_TOKEN" "${PROXMOX_API}/cluster/resources?type=vm")
-          HTTP_CODE=$(echo "$NODE_RESPONSE" | tail -n1)
-          RESPONSE_BODY=$(echo "$NODE_RESPONSE" | head -n-1)
+          echo "📍 Connecting to Proxmox Guest Agent via $PVE_URL"
 
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "❌ Proxmox API error (HTTP $HTTP_CODE)"
-            exit 1
-          fi
-
-          NODE=$(echo "$RESPONSE_BODY" | jq -r ".data[] | select(.vmid | tonumber == ${{ env.GUEST_VMID }}) | .node" | head -1)
-          [ -z "$NODE" ] && echo "❌ VM not found" && exit 1
-
-          echo "✅ Found VM on node: $NODE"
-
-          # Helper function to execute command via guest agent and wait for result
+          # Helper function to execute command via guest agent
           exec_guest_cmd() {
             local desc=$1
             local cmd=$2
-            echo "⏳ $desc..."
+            echo ""
+            echo "⏳ $desc"
 
-            # Start command (capture HTTP status)
-            EXEC=$(curl -s -k -w "\n%{http_code}" -X POST -H "Authorization: $API_TOKEN" -H "Content-Type: application/json" \
-              "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
-              -d "{\"command\": \"$cmd\"}")
+            # 1. Start command and get PID
+            RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+              -H "Authorization: $PVE_TOKEN" \
+              --data-urlencode "command=$cmd")
 
-            HTTP_CODE=$(echo "$EXEC" | tail -n1)
-            EXEC_BODY=$(echo "$EXEC" | head -n-1)
-
-            if [ "$HTTP_CODE" != "200" ]; then
-              echo "❌ API Error (HTTP $HTTP_CODE): $EXEC_BODY"
-              return 1
-            fi
-
-            PID=$(echo "$EXEC_BODY" | jq -r '.data.pid // empty')
+            PID=$(echo "$RESP" | jq -r '.data.pid // empty')
             if [ -z "$PID" ]; then
-              echo "❌ Failed to start command: $EXEC_BODY"
+              echo "❌ Failed to start command"
+              echo "Response: $RESP"
               return 1
             fi
 
-            # Wait for completion (max 30s)
+            echo "  PID: $PID"
+
+            # 2. Poll for completion (max 30s)
             for i in {1..30}; do
               sleep 1
-              STATUS=$(curl -s -k -w "\n%{http_code}" -H "Authorization: $API_TOKEN" \
-                "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec-status?pid=${PID}")
 
-              STATUS_CODE=$(echo "$STATUS" | tail -n1)
-              STATUS_BODY=$(echo "$STATUS" | head -n-1)
+              STATUS=$(curl -s -k -X GET "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec-status?pid=$PID" \
+                -H "Authorization: $PVE_TOKEN")
 
-              if [ "$STATUS_CODE" != "200" ]; then
-                echo "⚠️ Status API error (HTTP $STATUS_CODE), retrying..."
-                continue
-              fi
+              EXITED=$(echo "$STATUS" | jq -r '.data.exited // 0')
 
-              EXITED=$(echo "$STATUS_BODY" | jq -r '.data.exited // empty')
-              if [ "$EXITED" = "true" ]; then
-                OUT=$(echo "$STATUS_BODY" | jq -r '.data."out-data" // ""' | base64 -d 2>/dev/null || echo "")
-                ERR=$(echo "$STATUS_BODY" | jq -r '.data."err-data" // ""' | base64 -d 2>/dev/null || echo "")
-                EXIT_CODE=$(echo "$STATUS_BODY" | jq -r '.data."exit-code" // 0')
+              if [ "$EXITED" -eq 1 ]; then
+                EXITCODE=$(echo "$STATUS" | jq -r '.data.exitcode // 0')
+                OUT=$(echo "$STATUS" | jq -r '.data["out-data"] // ""')
+                ERR=$(echo "$STATUS" | jq -r '.data["err-data"] // ""')
 
-                if [ -n "$OUT" ]; then echo "Output: $OUT"; fi
-                if [ -n "$ERR" ]; then echo "Error: $ERR"; fi
-                echo "✅ Exit code: $EXIT_CODE"
-                return $EXIT_CODE
+                if [ -n "$OUT" ]; then
+                  echo "  Output: $OUT"
+                fi
+                if [ -n "$ERR" ]; then
+                  echo "  Error: $ERR"
+                fi
+
+                if [ "$EXITCODE" -eq 0 ]; then
+                  echo "  ✅ Success"
+                  return 0
+                else
+                  echo "  ❌ Exit code: $EXITCODE"
+                  return $EXITCODE
+                fi
               fi
             done
 
-            echo "⚠️ Timeout waiting for command"
+            echo "  ⚠️ Timeout waiting for command"
             return 1
           }
 
           # Step 1: Docker login
-          exec_guest_cmd "🔐 Docker login" "sh -c 'echo \${{ secrets.GITHUB_TOKEN }} | docker login -u ${{ github.actor }} --password-stdin ${{ env.REGISTRY }}'"
+          exec_guest_cmd "🔐 Docker login" "sh -c 'echo $GITHUB_TOKEN | docker login -u $GITHUB_ACTOR --password-stdin $REGISTRY'"
 
           # Step 2: Pull image
-          exec_guest_cmd "📥 Pull image" "sh -c 'docker pull ${{ env.REGISTRY_IMAGE }}'"
+          exec_guest_cmd "📥 Pull image" "docker pull $REGISTRY_IMAGE"
 
           # Step 3: Stop existing
-          exec_guest_cmd "🛑 Stop existing container" "sh -c 'docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
+          exec_guest_cmd "🛑 Stop existing container" "docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true"
 
           # Step 4: Remove existing
-          exec_guest_cmd "🗑️ Remove existing container" "sh -c 'docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
+          exec_guest_cmd "🗑️ Remove existing container" "docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true"
 
           # Step 5: Run new container
-          exec_guest_cmd "🐳 Run new container" "sh -c 'docker run -d --name pr-${{ env.PR_NUMBER }}-draw -p 3000:${{ env.CONTAINER_PORT }} ${{ env.REGISTRY_IMAGE }}'"
+          exec_guest_cmd "🐳 Run new container" "docker run -d --name pr-${{ env.PR_NUMBER }}-draw -p 3000:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE"
 
           # Step 6: Verify
-          exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=pr-${{ env.PR_NUMBER }}-draw'"
+          exec_guest_cmd "✅ Verify container" "docker ps -a --filter name=pr-${{ env.PR_NUMBER }}-draw"
 
-          echo "✅ Container deployed"
+          echo ""
+          echo "✅ Container deployed successfully"
 
       - name: 🌐 Setup Cloudflare DNS
         env:
@@ -286,93 +274,95 @@ jobs:
 
       - name: 🚀 Deploy to Production
         env:
-          PROXMOX_HOST: ${{ secrets.PROXMOX_HOST }}
-          PROXMOX_PORT: ${{ secrets.PROXMOX_PORT }}
-          PROXMOX_USER: ${{ secrets.PROXMOX_USER }}
-          PROXMOX_TOKEN_NAME: ${{ secrets.PROXMOX_TOKEN_NAME }}
-          PROXMOX_TOKEN_SECRET: ${{ secrets.PROXMOX_TOKEN_SECRET }}
+          PVE_TOKEN: PVEAPIToken=${{ secrets.PROXMOX_USER }}@pve!${{ secrets.PROXMOX_TOKEN_NAME }}=${{ secrets.PROXMOX_TOKEN_SECRET }}
+          PVE_URL: https://${{ secrets.PROXMOX_HOST }}:${{ secrets.PROXMOX_PORT }}
           REGISTRY_IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:latest
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
           REGISTRY: ${{ env.REGISTRY }}
+          NODE: prox
+          VMID: ${{ env.GUEST_VMID }}
         run: |
           set -e
-          PROXMOX_API="https://${PROXMOX_HOST}:${PROXMOX_PORT}/api2/json"
-          API_TOKEN="PVEAPIToken=${PROXMOX_USER}@pve!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_SECRET}"
 
-          echo "🌍 Finding production VM..."
-          NODE=$(curl -s -k -H "Authorization: $API_TOKEN" "${PROXMOX_API}/cluster/resources?type=vm" | \
-            jq -r ".data[] | select(.vmid | tonumber == ${{ env.GUEST_VMID }}) | .node" | head -1)
-          [ -z "$NODE" ] && echo "❌ VM not found" && exit 1
-          echo "✅ Found VM on node: $NODE"
+          echo "🌍 Deploying to production..."
 
-          # Helper function to execute command via guest agent and wait for result
+          # Helper function to execute command via guest agent
           exec_guest_cmd() {
             local desc=$1
             local cmd=$2
-            echo "⏳ $desc..."
+            echo ""
+            echo "⏳ $desc"
 
-            # Start command (capture HTTP status)
-            EXEC=$(curl -s -k -w "\n%{http_code}" -X POST -H "Authorization: $API_TOKEN" -H "Content-Type: application/json" \
-              "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
-              -d "{\"command\": \"$cmd\"}")
+            # 1. Start command and get PID
+            RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+              -H "Authorization: $PVE_TOKEN" \
+              --data-urlencode "command=$cmd")
 
-            HTTP_CODE=$(echo "$EXEC" | tail -n1)
-            EXEC_BODY=$(echo "$EXEC" | head -n-1)
-
-            if [ "$HTTP_CODE" != "200" ]; then
-              echo "❌ API Error (HTTP $HTTP_CODE): $EXEC_BODY"
-              return 1
-            fi
-
-            PID=$(echo "$EXEC_BODY" | jq -r '.data.pid // empty')
+            PID=$(echo "$RESP" | jq -r '.data.pid // empty')
             if [ -z "$PID" ]; then
-              echo "❌ Failed to start command: $EXEC_BODY"
+              echo "❌ Failed to start command"
+              echo "Response: $RESP"
               return 1
             fi
 
-            # Wait for completion (max 60s for production)
+            echo "  PID: $PID"
+
+            # 2. Poll for completion (max 60s for production)
             for i in {1..60}; do
               sleep 1
-              STATUS=$(curl -s -k -H "Authorization: $API_TOKEN" \
-                "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec-status?pid=${PID}")
 
-              EXITED=$(echo "$STATUS" | jq -r '.data.exited // empty')
-              if [ "$EXITED" = "true" ]; then
-                OUT=$(echo "$STATUS" | jq -r '.data."out-data" // ""' | base64 -d 2>/dev/null || echo "")
-                ERR=$(echo "$STATUS" | jq -r '.data."err-data" // ""' | base64 -d 2>/dev/null || echo "")
-                EXIT_CODE=$(echo "$STATUS" | jq -r '.data."exit-code" // 0')
+              STATUS=$(curl -s -k -X GET "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec-status?pid=$PID" \
+                -H "Authorization: $PVE_TOKEN")
 
-                if [ -n "$OUT" ]; then echo "Output: $OUT"; fi
-                if [ -n "$ERR" ]; then echo "Error: $ERR"; fi
-                echo "✅ Exit code: $EXIT_CODE"
-                return $EXIT_CODE
+              EXITED=$(echo "$STATUS" | jq -r '.data.exited // 0')
+
+              if [ "$EXITED" -eq 1 ]; then
+                EXITCODE=$(echo "$STATUS" | jq -r '.data.exitcode // 0')
+                OUT=$(echo "$STATUS" | jq -r '.data["out-data"] // ""')
+                ERR=$(echo "$STATUS" | jq -r '.data["err-data"] // ""')
+
+                if [ -n "$OUT" ]; then
+                  echo "  Output: $OUT"
+                fi
+                if [ -n "$ERR" ]; then
+                  echo "  Error: $ERR"
+                fi
+
+                if [ "$EXITCODE" -eq 0 ]; then
+                  echo "  ✅ Success"
+                  return 0
+                else
+                  echo "  ❌ Exit code: $EXITCODE"
+                  return $EXITCODE
+                fi
               fi
             done
 
-            echo "⚠️ Timeout waiting for command"
+            echo "  ⚠️ Timeout waiting for command"
             return 1
           }
 
           # Step 1: Docker login
-          exec_guest_cmd "🔐 Docker login" "sh -c 'echo ${GITHUB_TOKEN} | docker login -u ${GITHUB_ACTOR} --password-stdin ${REGISTRY}'"
+          exec_guest_cmd "🔐 Docker login" "sh -c 'echo $GITHUB_TOKEN | docker login -u $GITHUB_ACTOR --password-stdin $REGISTRY'"
 
           # Step 2: Pull image
-          exec_guest_cmd "📥 Pull image" "sh -c 'docker pull ${REGISTRY_IMAGE}'"
+          exec_guest_cmd "📥 Pull image" "docker pull $REGISTRY_IMAGE"
 
           # Step 3: Stop existing
-          exec_guest_cmd "🛑 Stop existing container" "sh -c 'docker stop draw 2>/dev/null || true'"
+          exec_guest_cmd "🛑 Stop existing container" "docker stop draw 2>/dev/null || true"
 
           # Step 4: Remove existing
-          exec_guest_cmd "🗑️ Remove existing container" "sh -c 'docker rm draw 2>/dev/null || true'"
+          exec_guest_cmd "🗑️ Remove existing container" "docker rm draw 2>/dev/null || true"
 
           # Step 5: Run new container
-          exec_guest_cmd "🐳 Run new container" "sh -c 'docker run -d --name draw -p 80:${{ env.CONTAINER_PORT }} ${REGISTRY_IMAGE}'"
+          exec_guest_cmd "🐳 Run new container" "docker run -d --name draw -p 80:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE"
 
           # Step 6: Verify
-          exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=draw'"
+          exec_guest_cmd "✅ Verify container" "docker ps -a --filter name=draw"
 
-          echo "✅ Production deployed"
+          echo ""
+          echo "✅ Production deployed successfully"
 
       - name: 💬 Comment Production URL
         uses: actions/github-script@v7
@@ -399,19 +389,12 @@ jobs:
     steps:
       - name: 🗑️ Stop Container
         env:
-          PROXMOX_HOST: ${{ secrets.PROXMOX_HOST }}
-          PROXMOX_PORT: ${{ secrets.PROXMOX_PORT }}
-          PROXMOX_USER: ${{ secrets.PROXMOX_USER }}
-          PROXMOX_TOKEN_NAME: ${{ secrets.PROXMOX_TOKEN_NAME }}
-          PROXMOX_TOKEN_SECRET: ${{ secrets.PROXMOX_TOKEN_SECRET }}
+          PVE_TOKEN: PVEAPIToken=${{ secrets.PROXMOX_USER }}@pve!${{ secrets.PROXMOX_TOKEN_NAME }}=${{ secrets.PROXMOX_TOKEN_SECRET }}
+          PVE_URL: https://${{ secrets.PROXMOX_HOST }}:${{ secrets.PROXMOX_PORT }}
+          NODE: prox
+          VMID: ${{ env.GUEST_VMID }}
         run: |
           set -e
-          PROXMOX_API="https://${PROXMOX_HOST}:${PROXMOX_PORT}/api2/json"
-          API_TOKEN="PVEAPIToken=${PROXMOX_USER}@pve!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_SECRET}"
-
-          NODE=$(curl -s -k -H "Authorization: $API_TOKEN" "${PROXMOX_API}/cluster/resources?type=vm" | \
-            jq -r ".data[] | select(.vmid | tonumber == ${{ env.GUEST_VMID }}) | .node" | head -1)
-          [ -z "$NODE" ] && echo "⚠️ VM not found, skipping cleanup" && exit 0
 
           # Helper function to execute command via guest agent
           exec_guest_cmd() {
@@ -419,35 +402,27 @@ jobs:
             local cmd=$2
             echo "⏳ $desc..."
 
-            # Start command (capture HTTP status)
-            EXEC=$(curl -s -k -w "\n%{http_code}" -X POST -H "Authorization: $API_TOKEN" -H "Content-Type: application/json" \
-              "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
-              -d "{\"command\": \"$cmd\"}" 2>/dev/null)
+            # 1. Start command and get PID
+            RESP=$(curl -s -k -X POST "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec" \
+              -H "Authorization: $PVE_TOKEN" \
+              --data-urlencode "command=$cmd" 2>/dev/null)
 
-            HTTP_CODE=$(echo "$EXEC" | tail -n1)
-            EXEC_BODY=$(echo "$EXEC" | head -n-1)
-
-            PID=$(echo "$EXEC_BODY" | jq -r '.data.pid // empty')
+            PID=$(echo "$RESP" | jq -r '.data.pid // empty')
             if [ -z "$PID" ]; then
-              echo "⚠️ Could not start cleanup (HTTP $HTTP_CODE), skipping"
+              echo "⚠️ Could not start cleanup"
               return 0
             fi
 
-            # Wait for completion (max 15s)
+            # 2. Poll for completion (max 15s)
             for i in {1..15}; do
               sleep 1
-              STATUS=$(curl -s -k -w "\n%{http_code}" -H "Authorization: $API_TOKEN" \
-                "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec-status?pid=${PID}" 2>/dev/null)
 
-              STATUS_CODE=$(echo "$STATUS" | tail -n1)
-              STATUS_BODY=$(echo "$STATUS" | head -n-1)
+              STATUS=$(curl -s -k -X GET "$PVE_URL/api2/json/nodes/$NODE/qemu/$VMID/agent/exec-status?pid=$PID" \
+                -H "Authorization: $PVE_TOKEN" 2>/dev/null)
 
-              if [ "$STATUS_CODE" != "200" ]; then
-                continue
-              fi
+              EXITED=$(echo "$STATUS" | jq -r '.data.exited // 0')
 
-              EXITED=$(echo "$STATUS_BODY" | jq -r '.data.exited // empty')
-              if [ "$EXITED" = "true" ]; then
+              if [ "$EXITED" -eq 1 ]; then
                 echo "✅ Cleaned up"
                 return 0
               fi
@@ -457,8 +432,8 @@ jobs:
             return 0
           }
 
-          exec_guest_cmd "Stop container" "sh -c 'docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
-          exec_guest_cmd "Remove container" "sh -c 'docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
+          exec_guest_cmd "Stop container" "docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true"
+          exec_guest_cmd "Remove container" "docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true"
 
       - name: 🌐 Remove DNS Record
         env:
