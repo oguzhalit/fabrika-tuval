@@ -387,14 +387,44 @@ jobs:
 
           NODE=$(curl -s -k -H "Authorization: $API_TOKEN" "${PROXMOX_API}/cluster/resources?type=vm" | \
             jq -r ".data[] | select(.vmid | tonumber == ${{ env.GUEST_VMID }}) | .node" | head -1)
+          [ -z "$NODE" ] && echo "⚠️ VM not found, skipping cleanup" && exit 0
 
-          CLEANUP_B64=$(echo -n "docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true && docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true" | base64 -w 0)
+          # Helper function to execute command via guest agent
+          exec_guest_cmd() {
+            local desc=$1
+            local cmd=$2
+            echo "⏳ $desc..."
 
-          curl -s -k -X POST -H "Authorization: $API_TOKEN" -H "Content-Type: application/json" \
-            "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
-            -d "{\"command\": \"sh -c 'echo $CLEANUP_B64 | base64 -d | bash'\"}" || true
+            # Start command
+            EXEC=$(curl -s -k -X POST -H "Authorization: $API_TOKEN" -H "Content-Type: application/json" \
+              "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec" \
+              -d "{\"command\": \"$cmd\"}" 2>/dev/null)
 
-          echo "✅ Container cleaned up"
+            PID=$(echo "$EXEC" | jq -r '.data.pid // empty')
+            if [ -z "$PID" ]; then
+              echo "⚠️ Could not start cleanup, skipping"
+              return 0
+            fi
+
+            # Wait for completion (max 15s)
+            for i in {1..15}; do
+              sleep 1
+              STATUS=$(curl -s -k -H "Authorization: $API_TOKEN" \
+                "${PROXMOX_API}/nodes/${NODE}/qemu/${{ env.GUEST_VMID }}/agent/exec-status?pid=${PID}" 2>/dev/null)
+
+              EXITED=$(echo "$STATUS" | jq -r '.data.exited // empty')
+              if [ "$EXITED" = "true" ]; then
+                echo "✅ Cleaned up"
+                return 0
+              fi
+            done
+
+            echo "⚠️ Cleanup timeout"
+            return 0
+          }
+
+          exec_guest_cmd "Stop container" "sh -c 'docker stop pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
+          exec_guest_cmd "Remove container" "sh -c 'docker rm pr-${{ env.PR_NUMBER }}-draw 2>/dev/null || true'"
 
       - name: 🌐 Remove DNS Record
         env:
