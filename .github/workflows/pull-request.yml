@@ -318,16 +318,15 @@ jobs:
             echo "  ✅ DNS record already exists (skipping)"
           fi
 
-          # 3. Published Application Routes (Tunnel Ingress) via Configurations API
-          echo "🔌 Setting up Cloudflare Tunnel Published Application Route..."
-
-          # Fetch current tunnel configuration
+          # 3. Published Application Route (Tunnel Ingress) Ekleme
+          echo "🔌 Updating Cloudflare Tunnel Configurations (Published Routes)..."
+          # Mevcut tünel ingress listesini çek
           CURRENT_CONFIG=$(curl -s -X GET \
-            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/cfd_tunnel/${CF_TUNNEL_ID}/configurations" \
-            -H "Authorization: Bearer ${CF_API_TOKEN}")
-
-          # Update ingress rules (add new route, remove old ones with same hostname, keep catch-all)
-          UPDATED_CONFIG=$(echo "$CURRENT_CONFIG" | jq \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/cfd_tunnel/$CF_TUNNEL_ID/configurations" \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H "Content-Type: application/json")
+          # Yeni rotayı listeye ekle (404 kuralından hemen önceye)
+          UPDATED_PAYLOAD=$(echo "$CURRENT_CONFIG" | jq \
             --arg host "$FULL_HOSTNAME" \
             --arg service "$TARGET_SERVICE" \
             '
@@ -339,23 +338,19 @@ jobs:
                 }
               }
             ')
-
-          # Apply updated configuration
-          CF_RESP=$(curl -s -X PUT \
-            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/cfd_tunnel/${CF_TUNNEL_ID}/configurations" \
-            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+          # Cloudflare tüneline PUT et
+          TUNNEL_RESPONSE=$(curl -s -X PUT \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/cfd_tunnel/$CF_TUNNEL_ID/configurations" \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
             -H "Content-Type: application/json" \
-            -d "$UPDATED_CONFIG")
-
-          echo "📋 Tunnel Configuration Response:"
-          echo "$CF_RESP" | jq .
-
-          CF_SUCCESS=$(echo "$CF_RESP" | jq -r '.success // false')
-          if [ "$CF_SUCCESS" = "true" ]; then
-            echo "✅ Published Application Route created: https://${FULL_HOSTNAME}"
+            -d "$UPDATED_PAYLOAD")
+          echo "📋 Tunnel API Response:"
+          echo "$TUNNEL_RESPONSE" | jq '.'
+          SUCCESS=$(echo "$TUNNEL_RESPONSE" | jq -r '.success // false')
+          if [ "$SUCCESS" = "true" ]; then
+            echo "✅ Published Application Route created: $FULL_HOSTNAME → $TARGET_SERVICE"
           else
-            echo "❌ Error: $CF_RESP"
-            exit 1
+            echo "❌ Hata oluştu: $(echo "$TUNNEL_RESPONSE" | jq -r '.errors[0].message // "Unknown error"')"
           fi
 
       - name: 💬 Comment Preview URL
