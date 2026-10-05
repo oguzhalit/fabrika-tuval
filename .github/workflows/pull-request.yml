@@ -1,10 +1,12 @@
-name: 🔄 Pull Request Workflow
+name: 🔄 Pull Request & Deploy Workflow
 
 on:
   pull_request:
     types: [opened, synchronize, closed]
   pull_request_review:
     types: [submitted]
+  push:
+    branches: [main]
 
 env:
   REGISTRY: ghcr.io
@@ -322,7 +324,7 @@ jobs:
   deploy-production:
     name: 🌍 Deploy Production
     needs: [ci-required]
-    if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
+    if: (github.event_name == 'pull_request_review' && github.event.review.state == 'approved') || github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -442,10 +444,13 @@ jobs:
           # Step 2: Pull image
           exec_guest_cmd "📥 Pull image" "sh -c 'docker pull $REGISTRY_IMAGE'"
 
-          # Step 3: Run production container
+          # Step 3: Remove old production container (force)
+          exec_guest_cmd "🛑 Stop & remove old container" "sh -c 'docker rm -f draw 2>/dev/null || true'"
+
+          # Step 4: Run production container
           exec_guest_cmd "🐳 Run production container" "sh -c 'docker run -d --name draw -p 80:${{ env.CONTAINER_PORT }} $REGISTRY_IMAGE'"
 
-          # Step 4: Verify
+          # Step 5: Verify
           exec_guest_cmd "✅ Verify container" "sh -c 'docker ps -a --filter name=draw'"
 
           echo ""
