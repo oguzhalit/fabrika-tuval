@@ -1,3 +1,16 @@
 {
-  "agentGuidance": true
+  "agentGuidance": true,
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "fabrika hook check",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
 }
