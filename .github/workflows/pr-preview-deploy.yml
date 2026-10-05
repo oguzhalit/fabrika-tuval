@@ -1,23 +1,31 @@
 name: 🚀 PR Preview Deploy (Proxmox QEMU Guest Agent + Cloudflare)
 
 on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
   pull_request:
-    types: [opened, synchronize, closed]
+    types: [closed]
   pull_request_review:
     types: [submitted]
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: goal-hedef-preview
-  IMAGE_TAG: pr-${{ github.event.pull_request.number || github.event.number }}
-  PR_NUMBER: ${{ github.event.pull_request.number || github.event.number }}
   CONTAINER_PORT: 80
   GUEST_VMID: "100"
 
 jobs:
   deploy-preview:
-    if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize')
-    name: 🚀 Deploy Preview (pr-${{ github.event.number }}-draw)
+    if: |
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.pull_requests[0].number != null
+    name: 🚀 Deploy Preview (pr-${{ github.event.workflow_run.pull_requests[0].number }}-draw)
+    env:
+      PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+      IMAGE_TAG: pr-${{ github.event.workflow_run.pull_requests[0].number }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -28,7 +36,7 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.workflow_run.head_commit.id }}
 
       # 1️⃣ Build Docker Image
       - name: 🐳 Build Docker image
@@ -194,6 +202,8 @@ jobs:
       contents: read
       pull-requests: write
       packages: write
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
 
     steps:
       - name: 📥 Checkout code
@@ -281,10 +291,12 @@ jobs:
             })
 
   cleanup-preview:
-    if: github.event.action == 'closed'
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
 
     steps:
       - name: 🗑️ Stop Docker container (Proxmox Guest Agent)
