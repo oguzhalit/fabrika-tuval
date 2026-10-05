@@ -15,6 +15,7 @@ import React, { useRef } from "react";
 import { useGoalStore } from "../../store/useGoalStore";
 import { ActiveOSView } from "../../types/goal";
 import { triggerGoalCelebration } from "../../utils/confetti";
+import { TOOLBAR_CONFIG, clampCanvasPosition } from "../../constants/canvas";
 import { CanvasTabBar } from "./CanvasTabBar";
 
 interface ToolbarProps {
@@ -243,14 +244,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 					{/* + Kilometre Taşı */}
 					<button
 						onClick={(e) => {
-							// Get button position and convert to canvas coordinates
+							// Get button position in toolbar (at bottom center)
 							const button = e.currentTarget as HTMLElement;
 							const rect = button.getBoundingClientRect();
 
-							// Calculate position on canvas near the button
-							// Button is at the bottom center of the screen
-							const xPos = Math.max(300, Math.min(800, rect.left));
-							const yPos = Math.max(150, Math.min(500, rect.top - 100));
+							// Position stage above the toolbar button
+							// Button is at bottom-center, so place stage above it
+							const xPos = clampCanvasPosition(rect.left, true);
+							const yPos = clampCanvasPosition(
+								rect.top + TOOLBAR_CONFIG.POSITION_OFFSET_Y,
+								false
+							);
 
 							addMilestone("YENİ AŞAMA", undefined, { x: xPos, y: yPos });
 						}}

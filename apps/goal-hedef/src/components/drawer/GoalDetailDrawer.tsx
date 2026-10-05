@@ -20,6 +20,7 @@ import React, { useState } from "react";
 import { useGoalStore } from "../../store/useGoalStore";
 import { GoalCategory, GoalPriority, GoalStatus } from "../../types/goal";
 import { triggerSmallCelebration } from "../../utils/confetti";
+import { DRAWER_CONFIG, clampCanvasPosition } from "../../constants/canvas";
 import { RichTextEditor } from "./RichTextEditor";
 
 const KEEP_COLORS = [
@@ -897,19 +898,26 @@ export const GoalDetailDrawer: React.FC = () => {
 								<h4 className="text-xs font-black uppercase">BAĞLI ALT AŞAMALAR</h4>
 								<button
 									onClick={(e) => {
-										// Get button position in viewport and convert to canvas coordinates
+										// Get button position and drawer width from DOM
 										const button = e.currentTarget as HTMLElement;
 										const rect = button.getBoundingClientRect();
-										const drawerWidth = 580; // From GoalDetailDrawer width
 
-										// Position near the button but within canvas bounds
-										const buttonScreenX = rect.left;
-										const buttonScreenY = rect.top;
+										// Read drawer width from the drawer element
+										const drawerElement = document.querySelector('.fixed.inset-y-0.right-0.w-\\[580px\\]');
+										const drawerWidth = drawerElement
+											? drawerElement.clientWidth
+											: DRAWER_CONFIG.WIDTH;
 
-										// Convert to canvas-relative coordinates
-										// Estimate canvas coordinates based on visible area
-										const xPos = Math.max(200, Math.min(800, buttonScreenX - drawerWidth / 2));
-										const yPos = Math.max(200, Math.min(600, buttonScreenY + 50));
+										// Calculate position on canvas, offsetting from button
+										// Position to the left of the drawer, at button height
+										const xPos = clampCanvasPosition(
+											rect.left - drawerWidth / 2 + DRAWER_CONFIG.DROPDOWN_OFFSET_X,
+											true
+										);
+										const yPos = clampCanvasPosition(
+											rect.top + DRAWER_CONFIG.DROPDOWN_OFFSET_Y,
+											false
+										);
 
 										addMilestone("YENİ AŞAMA", selectedGoalId, { x: xPos, y: yPos });
 									}}
