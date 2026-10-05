@@ -534,6 +534,9 @@ jobs:
             return 0
           }
 
+          # Remove PR container
+          exec_guest_cmd "Remove container" "sh -c 'docker rm -f pr-${{ env.PR_NUMBER }}-draw-* 2>/dev/null || true'"
+
       - name: 🌐 Remove DNS Record
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
