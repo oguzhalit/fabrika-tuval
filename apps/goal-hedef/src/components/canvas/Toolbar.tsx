@@ -242,9 +242,20 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 
 					{/* + Kilometre Taşı */}
 					<button
-						onClick={() => addMilestone("YENİ AŞAMA")}
+						onClick={(e) => {
+							// Get button position and convert to canvas coordinates
+							const button = e.currentTarget as HTMLElement;
+							const rect = button.getBoundingClientRect();
+
+							// Calculate position on canvas near the button
+							// Button is at the bottom center of the screen
+							const xPos = Math.max(300, Math.min(800, rect.left));
+							const yPos = Math.max(150, Math.min(500, rect.top - 100));
+
+							addMilestone("YENİ AŞAMA", undefined, { x: xPos, y: yPos });
+						}}
 						className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-2 bg-[#00C2CB] hover:bg-[#00abb3] text-black font-black text-[10px] sm:text-xs border-2 sm:border-3 border-black rounded-lg sm:rounded-2xl shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] uppercase transition-all whitespace-nowrap shrink-0 active:translate-x-[1px] active:translate-y-[1px]"
-						title="Kilometre Taşı / Aşama Ekle"
+						title="Tıklanan konumun yakınında yeni aşama oluştur"
 					>
 						<Flag className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
 						<span>+ AŞAMA</span>

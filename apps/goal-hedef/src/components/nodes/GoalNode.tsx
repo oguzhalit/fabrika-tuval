@@ -88,7 +88,10 @@ export const GoalNode = memo(({ id, data, selected }: NodeProps<any>) => {
 
 	const handleAddChild = (e: React.MouseEvent) => {
 		e.stopPropagation();
-		addMilestone("Yeni Kilometre Taşı", id);
+		// Capture cursor position and create milestone near the clicked node
+		const xPos = Math.max(300, Math.min(900, e.clientX));
+		const yPos = Math.max(150, Math.min(600, e.clientY));
+		addMilestone("Yeni Kilometre Taşı", id, { x: xPos, y: yPos });
 	};
 
 	const handlePin = (e: React.MouseEvent) => {

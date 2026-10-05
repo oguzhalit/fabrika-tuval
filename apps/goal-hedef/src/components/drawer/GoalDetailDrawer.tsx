@@ -896,8 +896,25 @@ export const GoalDetailDrawer: React.FC = () => {
 							<div className="flex items-center justify-between">
 								<h4 className="text-xs font-black uppercase">BAĞLI ALT AŞAMALAR</h4>
 								<button
-									onClick={() => addMilestone("YENİ AŞAMA", selectedGoalId)}
-									className="text-xs font-black uppercase bg-[#00C2CB] border-2 border-black rounded-lg px-2 py-0.5 shadow-[2px_2px_0px_0px_#000]"
+									onClick={(e) => {
+										// Get button position in viewport and convert to canvas coordinates
+										const button = e.currentTarget as HTMLElement;
+										const rect = button.getBoundingClientRect();
+										const drawerWidth = 580; // From GoalDetailDrawer width
+
+										// Position near the button but within canvas bounds
+										const buttonScreenX = rect.left;
+										const buttonScreenY = rect.top;
+
+										// Convert to canvas-relative coordinates
+										// Estimate canvas coordinates based on visible area
+										const xPos = Math.max(200, Math.min(800, buttonScreenX - drawerWidth / 2));
+										const yPos = Math.max(200, Math.min(600, buttonScreenY + 50));
+
+										addMilestone("YENİ AŞAMA", selectedGoalId, { x: xPos, y: yPos });
+									}}
+									className="text-xs font-black uppercase bg-[#00C2CB] border-2 border-black rounded-lg px-2 py-0.5 shadow-[2px_2px_0px_0px_#000] hover:bg-[#00b3bb] active:shadow-none transition-all"
+									title="Tıklanan konumun yakınında yeni aşama oluştur"
 								>
 									+ AŞAMA
 								</button>
