@@ -31,6 +31,9 @@
 		"gateWorkflow": "pull-request.yml"
 	},
 
+	// Allow shipping from main working tree (single-seat development)
+	"shipScope": { "mainWorkingTree": "allow" },
+
 	// This repo has no standing lanes: every issue homes on a milestone.
 	"boardVocabulary": { "standingLanes": [] }
 }
