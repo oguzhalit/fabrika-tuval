@@ -2759,10 +2759,12 @@ export const DrawingLayer: React.FC = () => {
 					setSelectedStrokeIds([]);
 				}
 			} else if (e.key === "Escape") {
-				// Just deselect strokes, don't exit drawing mode
+				// Exit drawing mode or deselect strokes
 				if (selectedStrokeId || selectedStrokeIds.length > 0) {
 					setSelectedStrokeId(null);
 					setSelectedStrokeIds([]);
+				} else {
+					toggleDrawingMode();
 				}
 			}
 		};

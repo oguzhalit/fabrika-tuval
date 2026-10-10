@@ -48,7 +48,19 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 		});
 	};
 
+	// Helper to get sticky note button position in canvas coordinates
+	const getStickyNoteButtonPosition = () => {
+		if (!stickyNoteButtonRef.current) return getViewportCenter();
+		const rect = stickyNoteButtonRef.current.getBoundingClientRect();
+		const POSITION_OFFSET_Y = 20; // Offset below button
+		return screenToFlowPosition({
+			x: rect.left,
+			y: rect.top + rect.height + POSITION_OFFSET_Y,
+		});
+	};
+
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const stickyNoteButtonRef = useRef<HTMLButtonElement>(null);
 
 	const goalNodes = nodes.filter((n) => n.type === "goalNode");
 	const completedGoals = goalNodes.filter((n) => n.data.status === "completed");
@@ -264,13 +276,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 
 					{/* + Sticky Not (Post-it) */}
 					<button
+						ref={stickyNoteButtonRef}
 						onClick={() => {
-							// Use current viewport center for node creation
-							const viewportCenter = getViewportCenter();
+							// Use button position for node creation (below button)
+							const buttonPosition = getStickyNoteButtonPosition();
 
 							// Clamp position within canvas bounds
-							const xPos = clampCanvasPosition(viewportCenter.x, true);
-							const yPos = clampCanvasPosition(viewportCenter.y, false);
+							const xPos = clampCanvasPosition(buttonPosition.x, true);
+							const yPos = clampCanvasPosition(buttonPosition.y, false);
 
 							addStickyNote(undefined, undefined, { x: xPos, y: yPos });
 						}}
