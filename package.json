@@ -11,22 +11,15 @@
 		"typecheck": "echo '✅ Typecheck runs with build step'",
 		"lint": "biome check .",
 		"format": "biome check --write .",
-		"fabrika": "fabrika",
 		"dev:turbo": "turbo run dev",
 		"build:turbo": "turbo run build"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.15",
-		"@kampus/fabrika-cli": "workspace:*",
 		"turbo": "^2.9.14",
 		"typescript": "^7.0.2"
 	},
 	"volta": {
 		"node": "26.2.0"
-	},
-	"pnpm": {
-		"patchedDependencies": {
-			"effect@4.0.0-rc.112": "patches/effect@4.0.0-rc.112.patch"
-		}
 	}
 }
