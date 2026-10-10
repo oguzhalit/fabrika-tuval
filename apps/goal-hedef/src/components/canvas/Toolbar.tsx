@@ -1,3 +1,4 @@
+import { useReactFlow } from "@xyflow/react";
 import {
 	Download,
 	Flag,
@@ -12,7 +13,7 @@ import {
 	Upload,
 } from "lucide-react";
 import React, { useRef } from "react";
-import { clampCanvasPosition, TOOLBAR_CONFIG } from "../../constants/canvas";
+import { clampCanvasPosition } from "../../constants/canvas";
 import { useGoalStore } from "../../store/useGoalStore";
 import { ActiveOSView } from "../../types/goal";
 import { triggerGoalCelebration } from "../../utils/confetti";
@@ -34,8 +35,32 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 	const toggleDrawingMode = useGoalStore((s) => s.toggleDrawingMode);
 	const nodes = useGoalStore((s) => s.nodes);
 	const edges = useGoalStore((s) => s.edges);
+	const { screenToFlowPosition } = useReactFlow();
+
+	// Helper to get current viewport center in canvas coordinates
+	const getViewportCenter = () => {
+		// Get the center of the screen and convert to canvas coordinates
+		const screenCenterX = window.innerWidth / 2;
+		const screenCenterY = window.innerHeight / 2;
+		return screenToFlowPosition({
+			x: screenCenterX,
+			y: screenCenterY,
+		});
+	};
+
+	// Helper to get sticky note button position in canvas coordinates
+	const getStickyNoteButtonPosition = () => {
+		if (!stickyNoteButtonRef.current) return getViewportCenter();
+		const rect = stickyNoteButtonRef.current.getBoundingClientRect();
+		const POSITION_OFFSET_Y = 20; // Offset below button
+		return screenToFlowPosition({
+			x: rect.left,
+			y: rect.top + rect.height + POSITION_OFFSET_Y,
+		});
+	};
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const stickyNoteButtonRef = useRef<HTMLButtonElement>(null);
 
 	const goalNodes = nodes.filter((n) => n.type === "goalNode");
 	const completedGoals = goalNodes.filter((n) => n.data.status === "completed");
@@ -195,7 +220,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 				>
 					{/* Yol haritasında sadece Hedef Ekle butonu */}
 					<button
-						onClick={() => addGoal({ title: "YENİ HEDEF" })}
+						onClick={() => {
+							// Use current viewport center for node creation
+							const viewportCenter = getViewportCenter();
+
+							// Clamp position within canvas bounds
+							const xPos = clampCanvasPosition(viewportCenter.x, true);
+							const yPos = clampCanvasPosition(viewportCenter.y, false);
+
+							addGoal({ title: "YENİ HEDEF" }, { x: xPos, y: yPos });
+						}}
 						className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-[#FFE600] hover:bg-[#ffd900] text-black font-black text-xs sm:text-sm border-2 sm:border-3 border-black rounded-lg sm:rounded-2xl shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] uppercase transition-all whitespace-nowrap active:translate-x-[1px] active:translate-y-[1px]"
 						title="Yeni Hedef Ekle"
 					>
@@ -212,7 +246,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 				>
 					{/* + Hedef Kartı */}
 					<button
-						onClick={() => addGoal({ title: "YENİ HEDEF" })}
+						onClick={() => {
+							// Use current viewport center for node creation
+							const viewportCenter = getViewportCenter();
+
+							// Clamp position within canvas bounds
+							const xPos = clampCanvasPosition(viewportCenter.x, true);
+							const yPos = clampCanvasPosition(viewportCenter.y, false);
+
+							addGoal({ title: "YENİ HEDEF" }, { x: xPos, y: yPos });
+						}}
 						className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-1 sm:py-2 bg-[#FFE600] hover:bg-[#ffd900] text-black font-black text-[10px] sm:text-xs border-2 sm:border-3 border-black rounded-lg sm:rounded-2xl shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] uppercase transition-all whitespace-nowrap shrink-0 active:translate-x-[1px] active:translate-y-[1px]"
 						title="Tuvale Yeni Hedef Kartı Ekle"
 					>
@@ -233,15 +276,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 
 					{/* + Sticky Not (Post-it) */}
 					<button
-						onClick={(e) => {
-							// Get button position in toolbar (at bottom center)
-							const button = e.currentTarget as HTMLElement;
-							const rect = button.getBoundingClientRect();
+						ref={stickyNoteButtonRef}
+						onClick={() => {
+							// Use button position for node creation (below button)
+							const buttonPosition = getStickyNoteButtonPosition();
 
-							// Position sticky note above the toolbar button
-							// Button is at bottom-center, so place note above it
-							const xPos = clampCanvasPosition(rect.left, true);
-							const yPos = clampCanvasPosition(rect.top + TOOLBAR_CONFIG.POSITION_OFFSET_Y, false);
+							// Clamp position within canvas bounds
+							const xPos = clampCanvasPosition(buttonPosition.x, true);
+							const yPos = clampCanvasPosition(buttonPosition.y, false);
 
 							addStickyNote(undefined, undefined, { x: xPos, y: yPos });
 						}}
@@ -254,20 +296,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleGoalBox, isGoalBoxOpen
 
 					{/* + Kilometre Taşı */}
 					<button
-						onClick={(e) => {
-							// Get button position in toolbar (at bottom center)
-							const button = e.currentTarget as HTMLElement;
-							const rect = button.getBoundingClientRect();
+						onClick={() => {
+							// Use current viewport center for node creation
+							const viewportCenter = getViewportCenter();
 
-							// Position stage above the toolbar button
-							// Button is at bottom-center, so place stage above it
-							const xPos = clampCanvasPosition(rect.left, true);
-							const yPos = clampCanvasPosition(rect.top + TOOLBAR_CONFIG.POSITION_OFFSET_Y, false);
+							// Clamp position within canvas bounds
+							const xPos = clampCanvasPosition(viewportCenter.x, true);
+							const yPos = clampCanvasPosition(viewportCenter.y, false);
 
 							addMilestone("YENİ AŞAMA", undefined, { x: xPos, y: yPos });
 						}}
 						className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-2 bg-[#00C2CB] hover:bg-[#00abb3] text-black font-black text-[10px] sm:text-xs border-2 sm:border-3 border-black rounded-lg sm:rounded-2xl shadow-[1.5px_1.5px_0px_0px_#000] sm:shadow-[2px_2px_0px_0px_#000] uppercase transition-all whitespace-nowrap shrink-0 active:translate-x-[1px] active:translate-y-[1px]"
-						title="Tıklanan konumun yakınında yeni aşama oluştur"
+						title="Mevcut viewport merkezinde yeni aşama oluştur"
 					>
 						<Flag className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
 						<span>+ AŞAMA</span>
