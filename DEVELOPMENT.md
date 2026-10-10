@@ -80,24 +80,22 @@ cd apps/my-app
 }
 ```
 
+   Every dependency is a `catalog:` reference. Add any version that is not in the `catalog:`
+   block of `pnpm-workspace.yaml` there first; fabrika's catalog guard checks this.
+
 3. Create `tsconfig.json` and source files
 
 ## Working with Fabrika
 
-Fabrika provides build and deployment verbs. Install dependencies and run:
+The fabrika CLI comes in with `pnpm install`, pinned in the root `package.json`:
 
 ```bash
-pnpm install
 pnpm exec fabrika --help
+pnpm exec fabrika status settings
 ```
 
-For more information on Fabrika commands and configuration, see:
-- `@kampus/fabrika-cli` documentation
-- `.fabrika.jsonc` (Fabrika configuration)
-
-## Publishing Packages
-
-Packages are published to npm using Release Please. Commit messages following Conventional Commits trigger automatic version bumps and releases.
+The skills come from the `fabrika@kampus` Claude Code plugin, which `.claude/settings.json` turns
+on for this repo. See "Using Fabrika" in the README.
 
 ## Troubleshooting
 

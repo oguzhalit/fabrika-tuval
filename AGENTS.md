@@ -1,3 +1,8 @@
+# fabrika-tuval
+
+Runnable apps live under `apps/`. Install with `pnpm install`; check with `pnpm typecheck` and
+`pnpm lint`. Every dependency is a `catalog:` reference declared in `pnpm-workspace.yaml`.
+
 ## Work flows through fabrika
 
 report → triage → plan → build → review → ship. Every unit of work is a GitHub issue moving
