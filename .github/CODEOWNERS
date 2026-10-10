@@ -1,0 +1,12 @@
+# fabrika's codeowners-cp guard requires an owner row for each of the first nine paths, including
+# the ones this repo does not have. A PR that touches an owned path waits for an owner's approval.
+/.github/ @oguzhalit
+/.claude/ @oguzhalit
+/.claude-plugin/ @oguzhalit
+/packages/ci-required/ @oguzhalit
+/packages/fabrika-cli/src/ci/ @oguzhalit
+/biome.jsonc @oguzhalit
+/biome-plugins/ @oguzhalit
+**/lefthook* @oguzhalit
+**/.lefthook* @oguzhalit
+/.fabrika.jsonc @oguzhalit
