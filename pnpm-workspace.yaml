@@ -1,47 +1,37 @@
 packages:
-  - packages/*
   - apps/*
-  - infra/*
+  - packages/*
 
 catalog:
-  '@demlik/tea': 0.19.0
-  '@effect/platform-node': 4.0.0-rc.112
-  '@effect/platform-node-shared': 4.0.0-rc.112
-  '@effect/tsgo': ^0.36.4
-  '@effect/vitest': 4.0.0-rc.112
-  '@playwright/test': ^1.62.1
-  '@types/node': ^25.6.2
-  effect: 4.0.0-rc.112
-  fast-xml-parser: 5.8.0
-  typescript: ^7.0.2
-  vitest: ^4.1.5
-  yaml: 2.9.0
-
-cleanupUnusedCatalogs: true
+  '@biomejs/biome': '^2.4.15'
+  '@kampus/fabrika-cli': 0.9.0
+  '@tiptap/extension-placeholder': '^2.11.5'
+  '@tiptap/extension-task-item': '^2.11.5'
+  '@tiptap/extension-task-list': '^2.11.5'
+  '@tiptap/react': '^2.11.5'
+  '@tiptap/starter-kit': '^2.11.5'
+  '@types/canvas-confetti': '^1.9.0'
+  '@types/node': '^22.13.9'
+  '@types/react': '^18.3.18'
+  '@types/react-dom': '^18.3.5'
+  '@vitejs/plugin-react': '^4.3.4'
+  '@xyflow/react': '^12.4.2'
+  autoprefixer: '^10.4.20'
+  canvas-confetti: '^1.9.4'
+  clsx: '^2.1.1'
+  lucide-react: '^1.16.0'
+  playwright-core: '^1.63.0'
+  postcss: '^8.5.3'
+  react: '^18.3.1'
+  react-dom: '^18.3.1'
+  roughjs: '^4.6.6'
+  tailwind-merge: '^3.0.2'
+  tailwindcss: '^3.4.17'
+  turbo: '^2.9.14'
+  typescript: '~5.7.2'
+  vite: '^6.2.0'
+  zustand: '^5.0.3'
 
 onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - core-js-pure
+  - '@kampus/fabrika-cli'
   - esbuild
-  - lefthook
-  - workerd
-
-overrides:
-  '@cloudflare/workers-types': 5.20260901.1
-  '@earendil-works/chord': 0.85.1
-  '@earendil-works/pi-agent-core': 0.85.1
-  '@earendil-works/pi-ai': 0.85.1
-  '@earendil-works/pi-telemetry': 0.85.1
-  '@earendil-works/pi-tui': 0.85.1
-  '@effect/platform-bun': 4.0.0-rc.112
-  '@effect/platform-node': 4.0.0-rc.112
-  '@effect/platform-node-shared': 4.0.0-rc.112
-  '@effect/sql-d1': 4.0.0-rc.112
-  '@effect/sql-pg': 4.0.0-rc.112
-  '@effect/sql-sqlite-do': 4.0.0-rc.112
-  '@effect/vitest': 4.0.0-rc.112
-  effect: 4.0.0-rc.112
-  react: 19.2.7
-  react-dom: 19.2.7
-
-patchedDependencies: {}

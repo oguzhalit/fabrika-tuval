@@ -1,78 +1,36 @@
-// Fabrika configuration for fabrika-tuval
+// fabrika's config for this repo. Every key is optional: one you leave out takes its shipped default.
+// `fabrika status settings` prints what every key resolves to and where the value came from.
 {
-	"$schema": "./.fabrika.schema.json",
+	// The commands that compile and lint this repo's code. While this list is empty,
+	// `fabrika build check --surface code` and `fabrika lane integrate` refuse.
+	"codeValidators": [{ "command": ["pnpm", "typecheck"] }, { "command": ["pnpm", "lint"] }],
 
-	// Project metadata
-	"project": {
-		"name": "fabrika-tuval",
-		"description": "Fabrika: deterministic build and deployment system"
-	},
+	// The command that installs what the lockfile pins. Without it, `fabrika lane integrate` skips
+	// the install, so a change that moves the lockfile is checked against the old install.
+	"dependencyReconciler": { "command": ["pnpm", "install", "--frozen-lockfile"] },
 
-	// Governed roots — paths that fabric fabric enforces
-	"governedRoots": [".decisions/", ".claude/", ".github/", ".fabrika.jsonc"],
-
-	// Repository names used in portability checks
-	"portability": {
-		"repoNames": ["fabrika-tuval", "kamp-us"]
-	},
-
-	// Board vocabulary for issue lanes
-	"boardVocabulary": {
-		"standingLanes": []
-	},
-
-	// Lane concurrency cap
-	"laneConcurrencyCap": 2,
-
-	// Assembly configuration
-	"assemblyRefresh": {
-		"onReview": "on",
-		"onDispatch": "on"
-	},
-	"assemblyReplay": {
-		"onCollision": "on"
-	},
-	"machineryLaps": {
-		"onEmit": "on"
-	},
-	"parkCause": {
-		"uncaused": "refuse",
-		"driverRouted": "clear"
-	},
-
-	// Build commands for code surface checks
-	"buildCommands": {
-		"typecheck": "pnpm typecheck",
-		"lint": "pnpm lint"
-	},
-
-	// Deployed applications
-	"apps": {
-		"goal-hedef": {
-			"path": "apps/goal-hedef",
-			"description": "Goal & habit tracking canvas application",
-			"commands": {
-				"dev": "pnpm dev",
-				"build": "pnpm build",
-				"typecheck": "pnpm typecheck"
-			}
+	// The app this repo renders. The prefix makes a change under it a screen change, and the command
+	// lets `fabrika ui render` start the app on a free port.
+	"uiSurfaces": [
+		{
+			"name": "goal-hedef",
+			"prefix": "apps/goal-hedef/src/",
+			"mount": "/",
+			"command": "pnpm --filter @hedef/goal-hedef-canvas dev --port {{port}} --strictPort"
 		}
-	},
-
-	// Default app (when no app specified in command)
-	"defaultApp": "goal-hedef",
-
-	// Doc leak exemptions — paths that the gate allows despite matching leak patterns
-	"docLeakExempt": [
-		"/CLAUDE.md",
-		"/agents/triager.md",
-		"/packages/leak-guard/README.md",
-		"/skills/report/SKILL.md",
-		"/skills/review-doc/SKILL.md",
-		"/skills/skill-doctor/references/supported-harnesses.md",
-		"/skills/triage/SKILL.md"
 	],
 
-	// Control plane gate configuration
-	"unreadableCodeowners": "refuse"
+	// The PR previews this repo deploys post no fabrika `preview-deploy` comment, so the reviewer has
+	// no hosted copy to open. A screen change waits for an owner's screenshots on the PR instead.
+	"reviewUi": {
+		"whenNoPreview": [{ "paths": ["apps/goal-hedef/**"], "mode": "hand-check" }]
+	},
+
+	"ci": {
+		// The workflow that runs lint, typecheck and build on every pull request.
+		"gateWorkflow": "pull-request.yml"
+	},
+
+	// This repo has no standing lanes: every issue homes on a milestone.
+	"boardVocabulary": { "standingLanes": [] }
 }
