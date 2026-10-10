@@ -1,80 +1,20 @@
 {
 	"$schema": "https://turbo.build/schema.json",
-	"daemon": true,
-	// Bound how many packages turbo runs at once; the default is 10, so `pnpm test` (`turbo run
-	// test`) started up to 10 vitest pools on one machine (#8119). Each pool is itself capped at 2
-	// forks locally by the app's `vitest.config.ts`, so `pnpm test` now holds at most 8 workers.
-	// `concurrency` is a GLOBAL key — turbo's schema has no per-task one (turbo 2.10.3
-	// `node_modules/turbo/schema.json`: only `properties.concurrency` and
-	// `definitions.GlobalConfig.properties.concurrency`), so it bounds every task, not just `test`.
-	// The floor is set by `pnpm dev`: turbo refuses to start when persistent tasks are not fewer
-	// than the concurrency, and `turbo run dev dev:worker` has three (tuval#dev, web#dev,
-	// web#dev:worker). A fourth persistent task in the repo has to raise this number with it.
-	"concurrency": "4",
-	// 25 package tsconfigs `extends` the root one, but turbo hashes it into no package and
-	// the changed-package selection behind `pnpm typecheck:affected` — what `.fabrika.jsonc` declares
-	// for `build check --surface code`, and what the pre-push hook runs — then selects `//` alone and
-	// plans 0 typecheck tasks on a root-tsconfig-only change (#8275). Listing it here makes every
-	// package changed for that selection and part of every task's hash.
-	//
-	// `infra/preview-auth-key/key.txt` belongs to no package, and `@kampus/web`'s unit suite reads it.
-	// It sits here rather than in that task's `inputs` because `--affected` selects packages from
-	// their own files and this list, never from a task's `inputs`: on turbo 2.10.3 a changed file
-	// named only in `inputs` changes the task hash but selects no package (#10074).
-	"globalDependencies": ["tsconfig.json", "infra/preview-auth-key/key.txt"],
 	"tasks": {
 		"dev": {
 			"dependsOn": ["^build"],
 			"cache": false,
 			"persistent": true
 		},
-		"dev:worker": {
-			"cache": false,
-			"persistent": true
-		},
-		"deploy": {
-			"dependsOn": ["^build"],
-			"cache": false
-		},
 		"build": {
 			"dependsOn": ["^build"],
-			"outputs": ["dist", "*.tsbuildinfo", "build"],
-			"cache": true
+			"outputs": ["dist/**"]
 		},
 		"typecheck": {
-			"dependsOn": ["^build"],
-			"cache": true
+			"dependsOn": ["^build"]
 		},
 		"test": {
-			"dependsOn": ["^build"],
-			"cache": true,
-			// CI-secret roster: these three are a subset (no BETTER_AUTH_SECRET — tests
-			// don't sign sessions) of the four CI secrets enumerated canonically in
-			// infra/ci-credentials/github.ts (the provisioner); keep in sync (#1432).
-			"passThroughEnv": ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "ALCHEMY_PASSWORD"]
-		},
-		"lint": {
-			"dependsOn": ["^build"],
-			"cache": true
-		},
-		// A no-op every package answers, so a task that `dependsOn` it hashes the files of every
-		// workspace package it depends on without building them. The app unit suites import their
-		// dependencies' sources directly, so without this edge a dependency change would leave the
-		// app's hash, and a cached pass, unchanged.
-		"transit": {
-			"dependsOn": ["^transit"]
-		},
-		"test:unit": {
-			"dependsOn": ["transit"],
-			"outputs": []
-		},
-		"test:client": {
-			"dependsOn": ["transit"],
-			"outputs": []
-		},
-		"start": {
-			"dependsOn": ["build"],
-			"cache": false
+			"dependsOn": ["^build"]
 		}
 	}
 }

@@ -7,7 +7,7 @@
 		"dev": "vite",
 		"build": "tsc -b && vite build",
 		"preview": "vite preview",
-		"typecheck": "effect-tsgo diagnostics --project tsconfig.json --strict && tsc --noEmit"
+		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@tiptap/extension-placeholder": "^2.11.5",
@@ -26,7 +26,6 @@
 		"zustand": "^5.0.3"
 	},
 	"devDependencies": {
-		"@effect/tsgo": "^0.36.4",
 		"@types/canvas-confetti": "^1.9.0",
 		"@types/node": "^22.13.9",
 		"@types/react": "^18.3.18",

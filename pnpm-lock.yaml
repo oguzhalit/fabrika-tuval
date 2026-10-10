@@ -4,24 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  '@cloudflare/workers-types': 5.20260901.1
-  '@earendil-works/chord': 0.85.1
-  '@earendil-works/pi-agent-core': 0.85.1
-  '@earendil-works/pi-ai': 0.85.1
-  '@earendil-works/pi-telemetry': 0.85.1
-  '@earendil-works/pi-tui': 0.85.1
-  '@effect/platform-bun': 4.0.0-rc.112
-  '@effect/platform-node': 4.0.0-rc.112
-  '@effect/platform-node-shared': 4.0.0-rc.112
-  '@effect/sql-d1': 4.0.0-rc.112
-  '@effect/sql-pg': 4.0.0-rc.112
-  '@effect/sql-sqlite-do': 4.0.0-rc.112
-  '@effect/vitest': 4.0.0-rc.112
-  effect: 4.0.0-rc.112
-  react: 19.2.7
-  react-dom: 19.2.7
-
 importers:
 
   .:
@@ -49,13 +31,13 @@ importers:
         version: 2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))
       '@tiptap/react':
         specifier: ^2.11.5
-        version: 2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tiptap/starter-kit':
         specifier: ^2.11.5
         version: 2.27.3
       '@xyflow/react':
         specifier: ^12.4.2
-        version: 12.12.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 12.12.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       canvas-confetti:
         specifier: ^1.9.4
         version: 1.9.4
@@ -64,13 +46,13 @@ importers:
         version: 2.1.1
       lucide-react:
         specifier: ^1.16.0
-        version: 1.52.0(@types/react@18.3.31)(react@19.2.7)
+        version: 1.52.0(@types/react@18.3.31)(react@18.3.1)
       react:
-        specifier: 19.2.7
-        version: 19.2.7
+        specifier: ^18.3.1
+        version: 18.3.1
       react-dom:
-        specifier: 19.2.7
-        version: 19.2.7(react@19.2.7)
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
       roughjs:
         specifier: ^4.6.6
         version: 4.6.6
@@ -79,11 +61,8 @@ importers:
         version: 3.7.0
       zustand:
         specifier: ^5.0.3
-        version: 5.0.15(@types/react@18.3.31)(react@19.2.7)(use-sync-external-store@1.7.0(react@19.2.7))
+        version: 5.0.15(@types/react@18.3.31)(react@18.3.1)(use-sync-external-store@1.7.0(react@18.3.1))
     devDependencies:
-      '@effect/tsgo':
-        specifier: ^0.36.4
-        version: 0.36.5
       '@types/canvas-confetti':
         specifier: ^1.9.0
         version: 1.9.0
@@ -117,96 +96,6 @@ importers:
       vite:
         specifier: ^6.2.0
         version: 6.4.3(@types/node@22.20.5)(jiti@1.21.7)(yaml@2.9.0)
-
-  packages/authz:
-    devDependencies:
-      '@effect/tsgo':
-        specifier: ^0.36.4
-        version: 0.36.5
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-
-  packages/billing:
-    devDependencies:
-      '@effect/tsgo':
-        specifier: ^0.36.4
-        version: 0.36.5
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-
-  packages/events:
-    devDependencies:
-      '@effect/tsgo':
-        specifier: ^0.36.4
-        version: 0.36.5
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-
-  packages/gateway:
-    devDependencies:
-      '@effect/tsgo':
-        specifier: ^0.36.4
-        version: 0.36.5
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-
-  packages/metrics:
-    devDependencies:
-      '@effect/tsgo':
-        specifier: ^0.36.4
-        version: 0.36.5
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-
-  packages/platform:
-    devDependencies:
-      '@effect/tsgo':
-        specifier: ^0.36.4
-        version: 0.36.5
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-
-  packages/security:
-    devDependencies:
-      '@effect/tsgo':
-        specifier: ^0.36.4
-        version: 0.36.5
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-
-  packages/telemetry:
-    devDependencies:
-      '@effect/tsgo':
-        specifier: ^0.36.4
-        version: 0.36.5
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-
-  packages/validation:
-    devDependencies:
-      '@effect/tsgo':
-        specifier: ^0.36.4
-        version: 0.36.5
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-
-  packages/workflow:
-    devDependencies:
-      '@effect/tsgo':
-        specifier: ^0.36.4
-        version: 0.36.5
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
 
 packages:
 
@@ -349,45 +238,6 @@ packages:
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [win32]
-
-  '@effect/tsgo-darwin-arm64@0.36.5':
-    resolution: {integrity: sha512-+JPS65Ekod5NS41Kg9OIyuUsygNcSw5/4Y+UNbY6Wob6dvP+CkEa51pGBAmHKQp3Z/D3g/A9GNE66ndu9kz8dw==}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@effect/tsgo-darwin-x64@0.36.5':
-    resolution: {integrity: sha512-S67mS1GTSvfeN5Tsij7QarJNuv3q7U/PMhjTbGtKO9mqgDTOA2IOlxq7YPIxkWq+AiOIv0H3aHGk7ToRjcPWxg==}
-    cpu: [x64]
-    os: [darwin]
-
-  '@effect/tsgo-linux-arm64@0.36.5':
-    resolution: {integrity: sha512-bNLzLrQ/4Sf0N7NlAqcEpr+g+RW/ERIvmSFQN9Nu+hSFti4Kx9Nrfo1LJ4V0qASry5Rj2DG4Wa9C5ydQAD9qqA==}
-    cpu: [arm64]
-    os: [linux]
-
-  '@effect/tsgo-linux-arm@0.36.5':
-    resolution: {integrity: sha512-UqtTPUgoVMRHAOcHiK7sddxjUEj6kOkXAlu4Y2TL/MhGiu81ZBzZrg8TXf0ApNeEMOD0EIK8hwU2kik8O+buxA==}
-    cpu: [arm]
-    os: [linux]
-
-  '@effect/tsgo-linux-x64@0.36.5':
-    resolution: {integrity: sha512-QWdyuUcAb1kZBeItycHg1ZKloNbVDtlVm1C0bbDVHqZIZ/d2rqhKi6Zajm64GnHtfdwPTn8Oi1iOCH1IYgo0IQ==}
-    cpu: [x64]
-    os: [linux]
-
-  '@effect/tsgo-win32-arm64@0.36.5':
-    resolution: {integrity: sha512-5tO5em1DfplFz5GqpQVGRSrAoE+kEgIc7Y0ClbT9jkxaK18IFVq9KIYybt4d6VT4+QnNQGdqWOahMcGE4JAZ8w==}
-    cpu: [arm64]
-    os: [win32]
-
-  '@effect/tsgo-win32-x64@0.36.5':
-    resolution: {integrity: sha512-pmaKwdYAIs9GFpMV9glIUks0UZDHE1/xwP6+GCGhSFxB76cDLMnrHr/IBt5VfGddT65SK+Dyw/vAtcX7fRp4KA==}
-    cpu: [x64]
-    os: [win32]
-
-  '@effect/tsgo@0.36.5':
-    resolution: {integrity: sha512-BHxVjeRK1/XlqYHWXkbT4W9JpOrT3sNA2wrfwQPBTojD5OSyxI2TUIltobYhWudyfuCrn770qP6uOpDjdrmghA==}
-    hasBin: true
 
   '@esbuild/aix-ppc64@0.25.12':
     resolution: {integrity: sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==}
@@ -855,8 +705,8 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
       '@tiptap/pm': ^2.7.0
-      react: 19.2.7
-      react-dom: 19.2.7
+      react: ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
 
   '@tiptap/starter-kit@2.27.3':
     resolution: {integrity: sha512-xqglSBavS4PDCWVFVruQPPRbmisWatXu7PZvzZSbR6HrLEX4ccRC3fNayRy9dUgDhuh2iLtEaXkVmy1Sd8DjBw==}
@@ -1084,8 +934,8 @@ packages:
     peerDependencies:
       '@types/react': '>=17'
       '@types/react-dom': '>=17'
-      react: 19.2.7
-      react-dom: 19.2.7
+      react: '>=17'
+      react-dom: '>=17'
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -1349,6 +1199,10 @@ packages:
   linkify-it@5.0.2:
     resolution: {integrity: sha512-ONTm2jCMAVZjgQa/Fy1kScXsuOoF5NPTsoFBdE1KVIZ2vAh/r9+Bqo+0jINCBYnavTPQZz38QzFTme79ENoN3Q==}
 
+  loose-envify@1.4.0:
+    resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
+    hasBin: true
+
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
@@ -1356,7 +1210,7 @@ packages:
     resolution: {integrity: sha512-TUgPtl5ZI9WgxOcbu4ckaC5B3l1qxPQrCMgb6OfUB9owx/OvSJfcf93SMgUWAxRw5/1XDfh9uI5F5iNGXCcGDQ==}
     peerDependencies:
       '@types/react': '*'
-      react: 19.2.7
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -1550,17 +1404,17 @@ packages:
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
-  react-dom@19.2.7:
-    resolution: {integrity: sha512-t0BRVXvbiE/o20Hfw669rLbMCDWtYZLvmJigy2f0MxsXF+71pxhR3xOkspmsO8h3ZlNzyibAmtCa3l4lYKk6gQ==}
+  react-dom@18.3.1:
+    resolution: {integrity: sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==}
     peerDependencies:
-      react: 19.2.7
+      react: ^18.3.1
 
   react-refresh@0.17.0:
     resolution: {integrity: sha512-z6F7K9bV85EfseRCp2bzrpyQ0Gkw1uLoCel9XBVWPg/TjRj94SkJzUTGfOa4bs7iJvBWtQG0Wq7wnI0syw3EBQ==}
     engines: {node: '>=0.10.0'}
 
-  react@19.2.7:
-    resolution: {integrity: sha512-HNe9WslTbXmFK8o8cmwgAeJFSBvt1bPdHCVKtaaV+WlAN36mpT4hcRpwbf3fY56ar2oIXzsBpOAiIRHAdY0OlQ==}
+  react@18.3.1:
+    resolution: {integrity: sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==}
     engines: {node: '>=0.10.0'}
 
   read-cache@1.0.2:
@@ -1593,8 +1447,8 @@ packages:
   run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
 
-  scheduler@0.27.0:
-    resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
+  scheduler@0.23.2:
+    resolution: {integrity: sha512-UOShsPwz7NrMUqhR6t0hWjFduvOzbtv7toDH1/hIrfRNIDBnnBWd0CwJTGvTpngVlmwGCdP9/Zl/tVrDqcuYzQ==}
 
   semver@6.3.1:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
@@ -1671,7 +1525,7 @@ packages:
   use-sync-external-store@1.7.0:
     resolution: {integrity: sha512-6L+EeigHMQhdaIPNIFUKwfWJSwWFQ8gJbJ2DLOs5sDIegTwR9fRxvnM3uciHKjIZhFz+KAv2emhWMRvDmMcY8A==}
     peerDependencies:
-      react: 19.2.7
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
@@ -1733,7 +1587,7 @@ packages:
     peerDependencies:
       '@types/react': '>=16.8'
       immer: '>=9.0.6'
-      react: 19.2.7
+      react: '>=16.8'
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -1748,7 +1602,7 @@ packages:
     peerDependencies:
       '@types/react': '>=18.0.0'
       immer: '>=9.0.6'
-      react: 19.2.7
+      react: '>=18.0.0'
       use-sync-external-store: '>=1.2.0'
     peerDependenciesMeta:
       '@types/react':
@@ -1910,37 +1764,6 @@ snapshots:
 
   '@biomejs/cli-win32-x64@2.5.15':
     optional: true
-
-  '@effect/tsgo-darwin-arm64@0.36.5':
-    optional: true
-
-  '@effect/tsgo-darwin-x64@0.36.5':
-    optional: true
-
-  '@effect/tsgo-linux-arm64@0.36.5':
-    optional: true
-
-  '@effect/tsgo-linux-arm@0.36.5':
-    optional: true
-
-  '@effect/tsgo-linux-x64@0.36.5':
-    optional: true
-
-  '@effect/tsgo-win32-arm64@0.36.5':
-    optional: true
-
-  '@effect/tsgo-win32-x64@0.36.5':
-    optional: true
-
-  '@effect/tsgo@0.36.5':
-    optionalDependencies:
-      '@effect/tsgo-darwin-arm64': 0.36.5
-      '@effect/tsgo-darwin-x64': 0.36.5
-      '@effect/tsgo-linux-arm': 0.36.5
-      '@effect/tsgo-linux-arm64': 0.36.5
-      '@effect/tsgo-linux-x64': 0.36.5
-      '@effect/tsgo-win32-arm64': 0.36.5
-      '@effect/tsgo-win32-x64': 0.36.5
 
   '@esbuild/aix-ppc64@0.25.12':
     optional: true
@@ -2267,7 +2090,7 @@ snapshots:
       prosemirror-transform: 1.12.2
       prosemirror-view: 1.42.6
 
-  '@tiptap/react@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@tiptap/react@2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@tiptap/core': 2.27.3(@tiptap/pm@2.27.3)
       '@tiptap/extension-bubble-menu': 2.27.3(@tiptap/core@2.27.3(@tiptap/pm@2.27.3))(@tiptap/pm@2.27.3)
@@ -2275,9 +2098,9 @@ snapshots:
       '@tiptap/pm': 2.27.3
       '@types/use-sync-external-store': 0.0.6
       fast-deep-equal: 3.1.3
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
-      use-sync-external-store: 1.7.0(react@19.2.7)
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      use-sync-external-store: 1.7.0(react@18.3.1)
 
   '@tiptap/starter-kit@2.27.3':
     dependencies:
@@ -2465,13 +2288,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@xyflow/react@12.12.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@xyflow/react@12.12.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@xyflow/system': 0.0.83
       classcat: 5.0.5
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
-      zustand: 4.5.7(@types/react@18.3.31)(react@19.2.7)
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      zustand: 4.5.7(@types/react@18.3.31)(react@18.3.1)
     optionalDependencies:
       '@types/react': 18.3.31
       '@types/react-dom': 18.3.7(@types/react@18.3.31)
@@ -2718,13 +2541,17 @@ snapshots:
     dependencies:
       uc.micro: 2.1.0
 
+  loose-envify@1.4.0:
+    dependencies:
+      js-tokens: 4.0.0
+
   lru-cache@5.1.1:
     dependencies:
       yallist: 3.1.1
 
-  lucide-react@1.52.0(@types/react@18.3.31)(react@19.2.7):
+  lucide-react@1.52.0(@types/react@18.3.31)(react@18.3.1):
     dependencies:
-      react: 19.2.7
+      react: 18.3.1
     optionalDependencies:
       '@types/react': 18.3.31
 
@@ -2932,14 +2759,17 @@ snapshots:
 
   queue-microtask@1.2.3: {}
 
-  react-dom@19.2.7(react@19.2.7):
+  react-dom@18.3.1(react@18.3.1):
     dependencies:
-      react: 19.2.7
-      scheduler: 0.27.0
+      loose-envify: 1.4.0
+      react: 18.3.1
+      scheduler: 0.23.2
 
   react-refresh@0.17.0: {}
 
-  react@19.2.7: {}
+  react@18.3.1:
+    dependencies:
+      loose-envify: 1.4.0
 
   read-cache@1.0.2: {}
 
@@ -3001,7 +2831,9 @@ snapshots:
     dependencies:
       queue-microtask: 1.2.3
 
-  scheduler@0.27.0: {}
+  scheduler@0.23.2:
+    dependencies:
+      loose-envify: 1.4.0
 
   semver@6.3.1: {}
 
@@ -3116,9 +2948,9 @@ snapshots:
       escalade: 3.2.0
       picocolors: 1.1.1
 
-  use-sync-external-store@1.7.0(react@19.2.7):
+  use-sync-external-store@1.7.0(react@18.3.1):
     dependencies:
-      react: 19.2.7
+      react: 18.3.1
 
   util-deprecate@1.0.2: {}
 
@@ -3143,15 +2975,15 @@ snapshots:
   yaml@2.9.0:
     optional: true
 
-  zustand@4.5.7(@types/react@18.3.31)(react@19.2.7):
+  zustand@4.5.7(@types/react@18.3.31)(react@18.3.1):
     dependencies:
-      use-sync-external-store: 1.7.0(react@19.2.7)
+      use-sync-external-store: 1.7.0(react@18.3.1)
     optionalDependencies:
       '@types/react': 18.3.31
-      react: 19.2.7
+      react: 18.3.1
 
-  zustand@5.0.15(@types/react@18.3.31)(react@19.2.7)(use-sync-external-store@1.7.0(react@19.2.7)):
+  zustand@5.0.15(@types/react@18.3.31)(react@18.3.1)(use-sync-external-store@1.7.0(react@18.3.1)):
     optionalDependencies:
       '@types/react': 18.3.31
-      react: 19.2.7
-      use-sync-external-store: 1.7.0(react@19.2.7)
+      react: 18.3.1
+      use-sync-external-store: 1.7.0(react@18.3.1)

@@ -1,31 +1,6 @@
 packages:
-  - packages/*
   - apps/*
-  - infra/*
-
-cleanupUnusedCatalogs: true
+  - packages/*
 
 onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - core-js-pure
   - esbuild
-  - lefthook
-  - workerd
-
-overrides:
-  '@cloudflare/workers-types': 5.20260901.1
-  '@earendil-works/chord': 0.85.1
-  '@earendil-works/pi-agent-core': 0.85.1
-  '@earendil-works/pi-ai': 0.85.1
-  '@earendil-works/pi-telemetry': 0.85.1
-  '@earendil-works/pi-tui': 0.85.1
-  '@effect/platform-bun': 4.0.0-rc.112
-  '@effect/platform-node': 4.0.0-rc.112
-  '@effect/platform-node-shared': 4.0.0-rc.112
-  '@effect/sql-d1': 4.0.0-rc.112
-  '@effect/sql-pg': 4.0.0-rc.112
-  '@effect/sql-sqlite-do': 4.0.0-rc.112
-  '@effect/vitest': 4.0.0-rc.112
-  effect: 4.0.0-rc.112
-  react: 19.2.7
-  react-dom: 19.2.7
