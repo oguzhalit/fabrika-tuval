@@ -347,7 +347,7 @@ export const useGoalStore = create<GoalStore>((set, get) => ({
 		get().saveToLocalStorage();
 	},
 
-	isDrawingMode: true,
+	isDrawingMode: false,
 	currentSessionId: Date.now(),
 	drawingStrokes: [],
 
