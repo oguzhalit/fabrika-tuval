@@ -1,0 +1,154 @@
+name: 🚀 Production Deploy
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: goal-hedef-production
+  CONTAINER_PORT: 80
+  GUEST_VMID: "101"
+  CLOUDFLARE_TUNNEL_ID: ${{ secrets.CLOUDFLARE_TUNNEL_ID }}
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  PROXMOX_TOKEN: ${{ secrets.PROXMOX_TOKEN }}
+
+jobs:
+  deploy-production:
+    name: 🎯 Deploy to Production
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: 🔐 Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏗️ Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: apps/goal-hedef
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🎲 Select available production port
+        id: port
+        run: |
+          for port in {5000..5999}; do
+            if ! timeout 1 bash -c "cat < /dev/null > /dev/tcp/127.0.0.1/$port" 2>/dev/null; then
+              echo "port=$port" >> $GITHUB_OUTPUT
+              break
+            fi
+          done
+
+      - name: 🧹 Clean up old production containers
+        env:
+          PROXMOX_NODE: homelab
+          PROXMOX_VMID: ${{ env.GUEST_VMID }}
+        run: |
+          EXISTING=$(curl -s -H "Authorization: PVEAPIToken=${{ env.PROXMOX_TOKEN }}" \
+            "https://homelab.local:8006/api2/json/nodes/$PROXMOX_NODE/qemu/$PROXMOX_VMID/status/current" | jq -r '.data.status')
+
+          if [ "$EXISTING" = "running" ]; then
+            curl -X POST -H "Authorization: PVEAPIToken=${{ env.PROXMOX_TOKEN }}" \
+              "https://homelab.local:8006/api2/json/nodes/$PROXMOX_NODE/qemu/$PROXMOX_VMID/status/stop"
+            sleep 5
+          fi
+
+      - name: 🐳 Deploy to Proxmox
+        env:
+          HOST: homelab.local
+          PROXMOX_TOKEN: ${{ secrets.PROXMOX_TOKEN }}
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+          DEPLOY_PORT: ${{ steps.port.outputs.port }}
+        run: |
+          COMMAND="docker run -d \
+            -p $DEPLOY_PORT:$CONTAINER_PORT \
+            --name goal-hedef-production \
+            $IMAGE"
+
+          echo "$PROXMOX_TOKEN" | curl -X POST \
+            -H "Authorization: PVEAPIToken=$PROXMOX_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"command\": \"$COMMAND\"}" \
+            "https://$HOST:8006/api2/json/nodes/homelab/qemu/$GUEST_VMID/status/start"
+
+          sleep 10
+
+      - name: 🌐 Configure Cloudflare Tunnel
+        env:
+          TUNNEL_ID: ${{ env.CLOUDFLARE_TUNNEL_ID }}
+          API_TOKEN: ${{ env.CLOUDFLARE_API_TOKEN }}
+          DEPLOY_PORT: ${{ steps.port.outputs.port }}
+        run: |
+          # Get current tunnel config
+          CONFIG=$(curl -s -H "Authorization: Bearer $API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$(echo $API_TOKEN | cut -d: -f1)/cfd_tunnel/$TUNNEL_ID/configurations?version=0" | jq '.result.config')
+
+          # Update ingress rule for home.oguzsak.com
+          UPDATED_CONFIG=$(echo "$CONFIG" | jq ".ingress |= map(if .hostname == \"home.oguzsak.com\" then .service = \"http://localhost:$DEPLOY_PORT\" else . end)")
+
+          # Apply config
+          curl -X PUT -H "Authorization: Bearer $API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"config\": $UPDATED_CONFIG}" \
+            "https://api.cloudflare.com/client/v4/accounts/$(echo $API_TOKEN | cut -d: -f1)/cfd_tunnel/$TUNNEL_ID/configurations?version=0"
+
+      - name: 📡 Create/Update Cloudflare DNS
+        env:
+          ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          API_TOKEN: ${{ env.CLOUDFLARE_API_TOKEN }}
+          TUNNEL_CNAME: ${{ secrets.CLOUDFLARE_TUNNEL_CNAME }}
+        run: |
+          # Check if DNS record exists
+          EXISTING_RECORD=$(curl -s -H "Authorization: Bearer $API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=home.oguzsak.com" | jq '.result[0]')
+
+          if [ "$EXISTING_RECORD" != "null" ]; then
+            # Update existing record
+            RECORD_ID=$(echo "$EXISTING_RECORD" | jq -r '.id')
+            curl -X PUT -H "Authorization: Bearer $API_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"type\": \"CNAME\", \"name\": \"home.oguzsak.com\", \"content\": \"$TUNNEL_CNAME\", \"ttl\": 1, \"proxied\": false}" \
+              "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID"
+          else
+            # Create new record
+            curl -X POST -H "Authorization: Bearer $API_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"type\": \"CNAME\", \"name\": \"home.oguzsak.com\", \"content\": \"$TUNNEL_CNAME\", \"ttl\": 1, \"proxied\": false}" \
+              "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records"
+          fi
+
+      - name: ✅ Verify deployment
+        env:
+          DEPLOY_PORT: ${{ steps.port.outputs.port }}
+        run: |
+          echo "Production deployment complete!"
+          echo "App deployed to: http://homelab.local:$DEPLOY_PORT"
+          echo "DNS: home.oguzsak.com (via Cloudflare Tunnel)"
+
+          # Health check
+          for i in {1..30}; do
+            if curl -f http://homelab.local:$DEPLOY_PORT/health 2>/dev/null; then
+              echo "✅ Health check passed"
+              exit 0
+            fi
+            echo "⏳ Waiting for app to be ready... ($i/30)"
+            sleep 2
+          done
+
+          echo "⚠️ Health check timeout - deployment may still be initializing"
