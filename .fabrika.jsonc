@@ -20,12 +20,6 @@
 		}
 	],
 
-	// The PR previews this repo deploys post no fabrika `preview-deploy` comment, so the reviewer has
-	// no hosted copy to open. A screen change waits for an owner's screenshots on the PR instead.
-	"reviewUi": {
-		"whenNoPreview": [{ "paths": ["apps/goal-hedef/**"], "mode": "hand-check" }]
-	},
-
 	"ci": {
 		// The workflow that runs lint, typecheck and build on every pull request.
 		"gateWorkflow": "pull-request.yml"
@@ -33,6 +27,16 @@
 
 	// Allow shipping from main working tree (single-seat development)
 	"shipScope": { "mainWorkingTree": "allow" },
+
+	// The PR previews this repo deploys post no fabrika `preview-deploy` comment, so the reviewer has
+	// no hosted copy to open. A screen change waits for an owner's screenshots on the PR instead.
+	"reviewUi": {
+		"mode": "hand-check"
+	},
+
+	// A lane that has to stop for a reason no park cause names still stops and comes to you,
+	// instead of being refused and left where it was.
+	"parkCause": { "uncaused": "record" },
 
 	// This repo has no standing lanes: every issue homes on a milestone.
 	"boardVocabulary": { "standingLanes": [] }
